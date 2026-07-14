@@ -59,7 +59,7 @@ const NAV: NavItem[] = [
   { label: "Eventos", icon: "eventos", href: "/eventos" },
   { label: "Cotações", icon: "cotacoes" },
   { label: "Clientes", icon: "clientes", href: "/clientes" },
-  { label: "Cerimonialistas", icon: "cerimonialistas" },
+  { label: "Cerimonialistas", icon: "cerimonialistas", href: "/cerimonialistas" },
   { label: "Fornecedores", icon: "fornecedores" },
   { label: "Tarefas", icon: "tarefas", href: "/tarefas" },
   { label: "Calendário", icon: "calendario", href: "/calendario" },
