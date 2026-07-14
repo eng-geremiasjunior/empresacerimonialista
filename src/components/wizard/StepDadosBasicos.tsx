@@ -1,5 +1,7 @@
 "use client";
 
+import { membroOptionLabel, type MembroOption } from "@/lib/equipe-shared";
+
 export type DadosBasicos = {
   name: string;
   date: string;
@@ -20,6 +22,9 @@ type Props = {
   value: DadosBasicos;
   suggestedName: string;
   onChange: (patch: Partial<DadosBasicos>) => void;
+  membros: MembroOption[];
+  responsavelId: string | null;
+  onResponsavel: (id: string) => void;
   onQuick: () => void;
   onComplete: () => void;
   creating: boolean;
@@ -30,6 +35,9 @@ export function StepDadosBasicos({
   value,
   suggestedName,
   onChange,
+  membros,
+  responsavelId,
+  onResponsavel,
   onQuick,
   onComplete,
   creating,
@@ -140,6 +148,29 @@ export function StepDadosBasicos({
             />
           </div>
         </div>
+
+        {membros.length > 0 && (
+          <div>
+            <label htmlFor="ev_responsavel" className={labelClass}>
+              Cerimonialista responsável
+            </label>
+            <select
+              id="ev_responsavel"
+              value={responsavelId ?? ""}
+              onChange={(e) => onResponsavel(e.target.value)}
+              className={inputClass}
+            >
+              {membros.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {membroOptionLabel(m)}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-stone-400">
+              Quem cuida deste evento. Você pode trocar depois em Editar.
+            </p>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>

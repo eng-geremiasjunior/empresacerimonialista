@@ -43,6 +43,17 @@ export const CARGOS_CADASTRO: Exclude<Cargo, "proprietaria">[] = [
   "assistente",
 ];
 
+// Opção enxuta para selects de responsável (wizard/edição de evento)
+export type MembroOption = {
+  id: string;
+  nome: string;
+  cargo: Cargo;
+};
+
+export function membroOptionLabel(m: MembroOption) {
+  return `${m.nome} — ${CARGO_LABELS[m.cargo]}`;
+}
+
 export const ESPECIALIDADES = [
   "Casamento",
   "Debutante",

@@ -26,6 +26,7 @@ export type WizardPayload = {
   contractValue: string;
   entrada: string;
   status: string; // orcamento | confirmado
+  responsavelId: string | null; // membro_equipe responsável
   respostas: WizardRespostas;
   tasks: WizardTaskInput[]; // checklist final (já editado na revisão)
   incluirTimeline: boolean; // true no fluxo completo, false no rápido
@@ -63,7 +64,7 @@ export async function criarEventoCompleto(
   }));
 
   const supabase = createClient();
-  const { data, error } = await supabase.rpc("criar_evento_completo", {
+  const args = {
     p_client_id: payload.clientId,
     p_new_client_name: payload.newClientName || null,
     p_new_client_phone: payload.newClientPhone || null,
@@ -80,7 +81,18 @@ export async function criarEventoCompleto(
     p_tasks: tasks,
     p_phases: phases,
     p_timeline: timeline,
+  };
+
+  let { data, error } = await supabase.rpc("criar_evento_completo", {
+    ...args,
+    p_responsavel_id: payload.responsavelId,
   });
+
+  // Migração 022 pendente: a assinatura com p_responsavel_id não existe
+  // ainda (PGRST202) — cria sem o responsável em vez de bloquear.
+  if (error?.code === "PGRST202") {
+    ({ data, error } = await supabase.rpc("criar_evento_completo", args));
+  }
 
   if (error || !data) {
     return {

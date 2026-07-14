@@ -27,7 +27,7 @@ export default async function ResumoPage({
   const supabase = createClient();
   const eventId = params.id;
 
-  const [clientRes, tasksRes, itemsRes, linksRes, unreadRes] =
+  const [clientRes, tasksRes, itemsRes, linksRes, unreadRes, responsavelRes] =
     await Promise.all([
       supabase
         .from("events")
@@ -46,6 +46,12 @@ export default async function ResumoPage({
         .eq("event_id", eventId)
         .eq("sender_type", "fornecedor")
         .is("read_at", null),
+      // Responsável (migração 022); antes dela a query erra e ignoramos.
+      supabase
+        .from("events")
+        .select("responsavel:membros_equipe(nome, cargo)")
+        .eq("id", eventId)
+        .single(),
     ]);
 
   const client = (
@@ -59,6 +65,12 @@ export default async function ResumoPage({
       } | null;
     } | null
   )?.clients;
+
+  const responsavel = (
+    responsavelRes.data as unknown as {
+      responsavel: { nome: string; cargo: string } | null;
+    } | null
+  )?.responsavel;
 
   const tasks = (tasksRes.data ?? []) as { status: string }[];
   const tasksDone = tasks.filter((t) => t.status === "concluido").length;
@@ -120,6 +132,17 @@ export default async function ResumoPage({
           </div>
         ) : (
           <p className="mt-2 text-sm text-stone-500">Sem cliente vinculado.</p>
+        )}
+
+        {responsavel && (
+          <div className="mt-4 flex items-center justify-between gap-3 border-t border-stone-100 pt-3">
+            <span className="text-sm text-stone-500">
+              Cerimonialista responsável
+            </span>
+            <span className="text-sm font-medium text-stone-900">
+              {responsavel.nome}
+            </span>
+          </div>
         )}
       </div>
     </div>

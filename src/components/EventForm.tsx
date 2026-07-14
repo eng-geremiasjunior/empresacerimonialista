@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useFormState, useFormStatus } from "react-dom";
 import type { EventFormState } from "@/app/(app)/eventos/actions";
 import { EVENT_STATUS_LABELS, EVENT_TYPE_LABELS } from "@/lib/types";
+import { membroOptionLabel, type MembroOption } from "@/lib/equipe-shared";
 
 const inputClass =
   "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm focus:border-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-200";
@@ -17,11 +18,13 @@ type Initial = {
   date: string;
   location: string;
   status: string;
+  responsavelId?: string | null;
 };
 
 type Props = {
   action: (state: EventFormState, formData: FormData) => Promise<EventFormState>;
   initial?: Initial;
+  membros?: MembroOption[];
 };
 
 function SubmitButton({ label }: { label: string }) {
@@ -37,7 +40,7 @@ function SubmitButton({ label }: { label: string }) {
   );
 }
 
-export function EventForm({ action, initial }: Props) {
+export function EventForm({ action, initial, membros }: Props) {
   const [state, formAction] = useFormState(action, null);
 
   return (
@@ -150,6 +153,29 @@ export function EventForm({ action, initial }: Props) {
               </option>
             ))}
           </select>
+        </div>
+      )}
+
+      {membros && membros.length > 0 && (
+        <div>
+          <label htmlFor="responsavel_id" className="mb-1 block text-sm font-medium">
+            Cerimonialista responsável
+          </label>
+          <select
+            id="responsavel_id"
+            name="responsavel_id"
+            defaultValue={initial?.responsavelId ?? membros[0].id}
+            className={inputClass}
+          >
+            {membros.map((m) => (
+              <option key={m.id} value={m.id}>
+                {membroOptionLabel(m)}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-stone-400">
+            Trocar o responsável não altera tarefas nem financeiro do evento.
+          </p>
         </div>
       )}
 

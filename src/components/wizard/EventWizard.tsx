@@ -15,6 +15,7 @@ import {
   type WizardRespostas,
 } from "@/lib/event-templates";
 import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
+import type { MembroOption } from "@/lib/equipe-shared";
 import { WizardProgress } from "./WizardProgress";
 import { StepTipoEvento } from "./StepTipoEvento";
 import {
@@ -43,15 +44,21 @@ const DADOS_INICIAIS: DadosBasicos = {
 type Props = {
   clients: ClientOption[];
   preselected: ClientOption | null;
+  membros: MembroOption[];
+  meuMembroId: string | null;
 };
 
-export function EventWizard({ clients, preselected }: Props) {
+export function EventWizard({ clients, preselected, membros, meuMembroId }: Props) {
   const [step, setStep] = useState(1);
   const [tipo, setTipo] = useState<EventType | null>(null);
   const [cliente, setCliente] = useState<ClienteEscolhido | null>(
     preselected ? { kind: "existing", client: preselected } : null
   );
   const [dados, setDados] = useState<DadosBasicos>(DADOS_INICIAIS);
+  // Responsável: pré-selecionado com quem está criando; editável.
+  const [responsavelId, setResponsavelId] = useState<string | null>(
+    meuMembroId ?? membros[0]?.id ?? null
+  );
   const [respostas, setRespostas] = useState<WizardRespostas>({});
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -100,6 +107,7 @@ export function EventWizard({ clients, preselected }: Props) {
       contractValue: dados.contractValue,
       entrada: dados.entrada,
       status: dados.status,
+      responsavelId,
       respostas,
       tasks,
       incluirTimeline,
@@ -149,6 +157,9 @@ export function EventWizard({ clients, preselected }: Props) {
           value={dados}
           suggestedName={suggestedName}
           onChange={patchDados}
+          membros={membros}
+          responsavelId={responsavelId}
+          onResponsavel={setResponsavelId}
           creating={creating}
           error={error}
           onQuick={() => submit(checklistMinimoRapido(), false)}

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getMembrosSelecionaveis } from "@/lib/supabase/equipe";
 import { EventForm } from "@/components/EventForm";
 import { DeleteEventButton } from "@/components/DeleteEventButton";
 import type { Event } from "@/lib/types";
@@ -11,15 +12,38 @@ export default async function EditarEventoPage({
   params: { id: string };
 }) {
   const supabase = createClient();
-  const { data } = await supabase
+
+  // Tenta com o responsável (migração 022); sem a coluna, degrada.
+  let responsavelId: string | null = null;
+  let { data, error } = await supabase
     .from("events")
-    .select("id, client_id, type, date, location, status, clients(id, name, phone, email)")
+    .select(
+      "id, client_id, type, date, location, status, cerimonialista_responsavel_id, clients(id, name, phone, email)"
+    )
     .eq("id", params.id)
     .single();
+
+  let temResponsavel = true;
+  if (error?.code === "42703") {
+    temResponsavel = false;
+    ({ data } = await supabase
+      .from("events")
+      .select("id, client_id, type, date, location, status, clients(id, name, phone, email)")
+      .eq("id", params.id)
+      .single());
+  }
 
   if (!data) {
     notFound();
   }
+
+  responsavelId =
+    (data as { cerimonialista_responsavel_id?: string | null })
+      .cerimonialista_responsavel_id ?? null;
+
+  const equipe = temResponsavel
+    ? await getMembrosSelecionaveis()
+    : { membros: [], meuMembroId: null };
 
   const event = data as unknown as Event;
 
@@ -33,6 +57,7 @@ export default async function EditarEventoPage({
       </div>
       <EventForm
         action={updateEvent}
+        membros={equipe.membros}
         initial={{
           eventId: event.id,
           clientId: event.clients?.id ?? null,
@@ -42,6 +67,7 @@ export default async function EditarEventoPage({
           date: event.date,
           location: event.location ?? "",
           status: event.status,
+          responsavelId,
         }}
       />
     </div>

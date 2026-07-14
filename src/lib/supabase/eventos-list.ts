@@ -10,6 +10,7 @@ export type EventoRow = {
   city: string | null;
   status: EventStatus;
   client_name: string | null;
+  responsavel_name: string | null;
 };
 
 export type EventosListResult = {
@@ -54,12 +55,11 @@ export async function getEventosList(
     clientIds = (matchingClients ?? []).map((c) => c.id as string);
   }
 
-  function buildQuery(withArchivedFilter: boolean) {
-    let query = supabase
-      .from("events")
-      .select("id, type, date, location, city, status, clients(name)", {
-        count: "exact",
-      });
+  function buildQuery(withArchivedFilter: boolean, withResponsavel: boolean) {
+    const cols = withResponsavel
+      ? "id, type, date, location, city, status, clients(name), responsavel:membros_equipe(nome)"
+      : "id, type, date, location, city, status, clients(name)";
+    let query = supabase.from("events").select(cols, { count: "exact" });
 
     if (withArchivedFilter) query = query.eq("archived", false);
     if (statuses.length > 0) query = query.in("status", statuses);
@@ -87,18 +87,27 @@ export async function getEventosList(
     return query.range(from, to);
   }
 
-  let { data, count, error } = await buildQuery(true);
+  // Fallbacks: PGRST200 = relação do responsável ausente (migração 022
+  // pendente); 42703 = coluna archived ausente (migração 015 pendente).
+  let withArchived = true;
+  let withResponsavel = true;
   let migrationPendente = false;
 
-  // Coluna "archived" ainda não existe (migração 015 pendente) — refaz sem
-  // o filtro em vez de derrubar a página inteira.
-  if (error?.code === "42703") {
-    migrationPendente = true;
-    ({ data, count, error } = await buildQuery(false));
+  let { data, count, error } = await buildQuery(withArchived, withResponsavel);
+  for (let i = 0; i < 2 && error; i++) {
+    if (error.code === "PGRST200" && withResponsavel) {
+      withResponsavel = false;
+    } else if (error.code === "42703" && withArchived) {
+      withArchived = false;
+      migrationPendente = true;
+    } else {
+      break;
+    }
+    ({ data, count, error } = await buildQuery(withArchived, withResponsavel));
   }
 
-  const rows: EventoRow[] = (data ?? []).map((row) => {
-    const record = row as unknown as {
+  const rows: EventoRow[] = ((data ?? []) as unknown[]).map((row) => {
+    const record = row as {
       id: string;
       type: EventType;
       date: string;
@@ -106,6 +115,7 @@ export async function getEventosList(
       city: string | null;
       status: EventStatus;
       clients: { name: string } | null;
+      responsavel?: { nome: string } | null;
     };
     return {
       id: record.id,
@@ -115,6 +125,7 @@ export async function getEventosList(
       city: record.city,
       status: record.status,
       client_name: record.clients?.name ?? null,
+      responsavel_name: record.responsavel?.nome ?? null,
     };
   });
 

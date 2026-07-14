@@ -97,13 +97,14 @@ export function EventosTable({
 
   function handleExportCsv() {
     const chosen = rows.filter((r) => selected.has(r.id));
-    const header = ["Cliente", "Tipo", "Data", "Local", "Status"];
+    const header = ["Cliente", "Tipo", "Data", "Local", "Responsável", "Status"];
     const lines = chosen.map((r) =>
       [
         r.client_name ?? "",
         EVENT_TYPE_LABELS[r.type],
         r.date,
         r.city ?? r.location ?? "",
+        r.responsavel_name ?? "",
         EVENT_STATUS_LABELS[r.status],
       ]
         .map(csvEscape)
@@ -198,6 +199,7 @@ export function EventosTable({
                 {sortHeader("date", "Data")}
               </th>
               <th className="py-2.5 pr-4 font-medium">Local</th>
+              <th className="py-2.5 pr-4 font-medium">Responsável</th>
               <th className="py-2.5 pr-4 font-medium">
                 {sortHeader("status", "Status")}
               </th>
@@ -242,6 +244,9 @@ export function EventosTable({
                   </td>
                   <td className="max-w-[180px] truncate py-3 pr-4 text-gray-500">
                     {row.city ?? row.location ?? "—"}
+                  </td>
+                  <td className="max-w-[160px] truncate py-3 pr-4 text-gray-500">
+                    {row.responsavel_name ?? "—"}
                   </td>
                   <td className="py-3 pr-4">
                     <span

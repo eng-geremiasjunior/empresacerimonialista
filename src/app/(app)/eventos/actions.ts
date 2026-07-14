@@ -3,10 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { EVENT_TYPE_LABELS } from "@/lib/types";
 
 export type EventFormState = { error: string } | null;
 
-const TYPES = ["casamento", "debutante"];
+const TYPES = Object.keys(EVENT_TYPE_LABELS);
 const STATUSES = ["orcamento", "confirmado", "concluido", "cancelado"];
 
 function readForm(formData: FormData) {
@@ -18,6 +19,7 @@ function readForm(formData: FormData) {
     date: String(formData.get("date") ?? ""),
     location: String(formData.get("location") ?? "").trim(),
     status: String(formData.get("status") ?? ""),
+    responsavelId: String(formData.get("responsavel_id") ?? "").trim(),
   };
 }
 
@@ -134,16 +136,31 @@ export async function updateEvent(
     finalClientId = client.id;
   }
 
-  const { error: eventError } = await supabase
+  const patch: Record<string, unknown> = {
+    client_id: finalClientId,
+    type: form.type,
+    date: form.date,
+    location: form.location || null,
+    status: form.status,
+  };
+  // Só troca o responsável se o campo veio no formulário (a coluna pode
+  // não existir ainda se a migração 022 estiver pendente).
+  if (form.responsavelId) {
+    patch.cerimonialista_responsavel_id = form.responsavelId;
+  }
+
+  let { error: eventError } = await supabase
     .from("events")
-    .update({
-      client_id: finalClientId,
-      type: form.type,
-      date: form.date,
-      location: form.location || null,
-      status: form.status,
-    })
+    .update(patch)
     .eq("id", eventId);
+
+  if (eventError?.code === "42703" && form.responsavelId) {
+    delete patch.cerimonialista_responsavel_id;
+    ({ error: eventError } = await supabase
+      .from("events")
+      .update(patch)
+      .eq("id", eventId));
+  }
 
   if (eventError) {
     return { error: "Não foi possível salvar o evento. Tente novamente." };
