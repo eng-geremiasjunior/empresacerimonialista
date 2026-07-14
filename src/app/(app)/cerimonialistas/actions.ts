@@ -19,16 +19,24 @@ async function empresaDoOwner() {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Não autenticado" as const };
 
-  const { data: empresa } = await supabase
+  const { data: empresa, error } = await supabase
     .from("empresas")
     .select("id")
     .eq("owner_user_id", user.id)
     .maybeSingle();
 
-  if (!empresa) {
+  if (error?.code === "42P01" || error?.code === "PGRST205") {
     return {
       error:
-        "Empresa não encontrada — a migração 021 precisa estar aplicada" as const,
+        "A migração 021_fundacao_empresas_equipe.sql ainda não foi aplicada no Supabase" as const,
+    };
+  }
+  if (!empresa) {
+    // Usuário logado não é dono de empresa (ex.: uma cerimonialista da
+    // equipe) — só a proprietária gerencia a equipe.
+    return {
+      error:
+        "Apenas a proprietária da empresa pode gerenciar a equipe" as const,
     };
   }
   return { empresaId: empresa.id as string, supabase };

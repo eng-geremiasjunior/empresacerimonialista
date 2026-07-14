@@ -39,6 +39,12 @@ export default async function CerimonialistasPage() {
           <code>supabase/migrations/021_fundacao_empresas_equipe.sql</code> no
           SQL Editor do Supabase.
         </div>
+      ) : membros.length === 0 ? (
+        // O RLS só mostra os membros para a dona da empresa: lista vazia
+        // significa que quem está logado não é a proprietária.
+        <div className="rounded-lg border-2 border-dashed border-gray-200 bg-white p-12 text-center text-sm text-gray-500">
+          A gestão da equipe é exclusiva da proprietária da empresa.
+        </div>
       ) : (
         <CerimonialistasTable
           membros={membros}
