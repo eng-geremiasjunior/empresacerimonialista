@@ -81,9 +81,11 @@ function MenuAcoes({
 export function CerimonialistasTable({
   membros,
   currentUserId,
+  readOnly = false,
 }: {
   membros: MembroEquipe[];
   currentUserId: string | null;
+  readOnly?: boolean;
 }) {
   const [cadastrando, setCadastrando] = useState(false);
   const [editando, setEditando] = useState<MembroEquipe | null>(null);
@@ -91,15 +93,17 @@ export function CerimonialistasTable({
 
   return (
     <div className="space-y-3">
-      <div className="flex justify-end">
-        <button
-          onClick={() => setCadastrando(true)}
-          className="flex items-center gap-1.5 rounded-lg bg-gray-900 px-3.5 py-2 text-sm font-semibold text-white hover:bg-gray-800"
-        >
-          <Plus size={15} />
-          Cadastrar cerimonialista
-        </button>
-      </div>
+      {!readOnly && (
+        <div className="flex justify-end">
+          <button
+            onClick={() => setCadastrando(true)}
+            className="flex items-center gap-1.5 rounded-lg bg-gray-900 px-3.5 py-2 text-sm font-semibold text-white hover:bg-gray-800"
+          >
+            <Plus size={15} />
+            Cadastrar cerimonialista
+          </button>
+        </div>
+      )}
 
       {msg && (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
@@ -176,7 +180,7 @@ export function CerimonialistasTable({
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end">
-                      {m.is_owner ? (
+                      {m.is_owner || readOnly ? (
                         <span className="pr-1.5 text-xs text-gray-400">—</span>
                       ) : (
                         <MenuAcoes

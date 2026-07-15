@@ -137,6 +137,84 @@ create trigger trg_handle_novo_usuario
   for each row execute function public.handle_novo_usuario();
 
 -- ------------------------------------------------------------
+-- 3b) Limpeza defensiva: remove policies desta migração (re-execução)
+--     e nomes do rascunho da especificação (execução parcial anterior).
+-- ------------------------------------------------------------
+
+drop policy if exists "events_visibilidade" on public.events;
+drop policy if exists "events_editar" on public.events;
+drop policy if exists "events_criar" on public.events;
+drop policy if exists "events_select" on public.events;
+drop policy if exists "events_insert" on public.events;
+drop policy if exists "events_update" on public.events;
+drop policy if exists "events_delete" on public.events;
+
+drop policy if exists "tasks_visibilidade" on public.tasks;
+drop policy if exists "tasks_atualizar" on public.tasks;
+drop policy if exists "tasks_deletar" on public.tasks;
+drop policy if exists "tasks_select" on public.tasks;
+drop policy if exists "tasks_insert" on public.tasks;
+drop policy if exists "tasks_update" on public.tasks;
+drop policy if exists "tasks_delete" on public.tasks;
+
+drop policy if exists "transactions_select" on public.transactions;
+drop policy if exists "transactions_insert" on public.transactions;
+drop policy if exists "transactions_update" on public.transactions;
+drop policy if exists "transactions_delete" on public.transactions;
+
+drop policy if exists "business_transactions_apenas_proprietaria" on public.business_transactions;
+drop policy if exists "business_transactions_proprietaria" on public.business_transactions;
+
+drop policy if exists "roteiro_items_select" on public.roteiro_items;
+drop policy if exists "roteiro_items_write" on public.roteiro_items;
+drop policy if exists "roteiro_items_update" on public.roteiro_items;
+drop policy if exists "roteiro_items_delete" on public.roteiro_items;
+
+drop policy if exists "roteiro_links_select" on public.roteiro_links;
+drop policy if exists "roteiro_links_write" on public.roteiro_links;
+drop policy if exists "roteiro_links_update" on public.roteiro_links;
+drop policy if exists "roteiro_links_delete" on public.roteiro_links;
+
+drop policy if exists "event_phases_select" on public.event_phases;
+drop policy if exists "event_phases_write" on public.event_phases;
+drop policy if exists "event_phases_update" on public.event_phases;
+drop policy if exists "event_phases_delete" on public.event_phases;
+
+drop policy if exists "event_messages_select" on public.event_messages;
+drop policy if exists "event_messages_insert" on public.event_messages;
+drop policy if exists "event_messages_update" on public.event_messages;
+drop policy if exists "event_messages_delete" on public.event_messages;
+
+drop policy if exists "confirmations_select" on public.supplier_confirmations;
+drop policy if exists "confirmations_write" on public.supplier_confirmations;
+drop policy if exists "confirmations_update" on public.supplier_confirmations;
+drop policy if exists "confirmations_delete" on public.supplier_confirmations;
+
+drop policy if exists "event_suppliers_select" on public.event_suppliers;
+drop policy if exists "event_suppliers_write" on public.event_suppliers;
+drop policy if exists "event_suppliers_delete" on public.event_suppliers;
+
+drop policy if exists "suppliers_select" on public.suppliers;
+drop policy if exists "suppliers_insert" on public.suppliers;
+drop policy if exists "suppliers_update" on public.suppliers;
+drop policy if exists "suppliers_delete" on public.suppliers;
+
+drop policy if exists "clients_visibilidade" on public.clients;
+drop policy if exists "clients_select" on public.clients;
+drop policy if exists "clients_insert" on public.clients;
+drop policy if exists "clients_update" on public.clients;
+drop policy if exists "clients_delete" on public.clients;
+
+drop policy if exists "activities_select" on public.activities;
+drop policy if exists "activities_write" on public.activities;
+drop policy if exists "activities_delete" on public.activities;
+
+drop policy if exists "membros_select" on public.membros_equipe;
+drop policy if exists "membros_insert" on public.membros_equipe;
+drop policy if exists "membros_update" on public.membros_equipe;
+drop policy if exists "membros_delete" on public.membros_equipe;
+
+-- ------------------------------------------------------------
 -- 4) EVENTS
 -- ------------------------------------------------------------
 

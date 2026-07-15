@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getMeuCargo } from "@/lib/supabase/equipe";
 import { AppShell } from "@/components/AppShell";
 import { TaskNotifications } from "@/components/TaskNotifications";
 import { signOut } from "./actions";
@@ -18,10 +19,13 @@ export default async function AppLayout({
     redirect("/login");
   }
 
+  const { cargo } = await getMeuCargo();
+
   return (
     <>
       <AppShell
         userEmail={user.email ?? ""}
+        cargo={cargo}
         avatarUrl={
           ((user.user_metadata as { avatar_url?: string | null } | null)
             ?.avatar_url as string | null) ?? null

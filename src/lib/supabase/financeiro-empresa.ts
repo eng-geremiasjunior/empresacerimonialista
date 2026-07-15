@@ -230,6 +230,12 @@ export async function getEmpresa6Meses(): Promise<MesEmpresa[]> {
 // ------------------------------------------------------------
 
 export async function getSaldoEmpresaMes(): Promise<SaldoEmpresaMes> {
+  // Exclusivo da proprietária (Etapa 4): para outros cargos o card do
+  // dashboard se esconde. Cargo null (sem equipe) mantém o acesso.
+  const { getMeuCargo } = await import("@/lib/supabase/equipe");
+  const { cargo } = await getMeuCargo();
+  if (cargo !== null && cargo !== "proprietaria") return null;
+
   const resumo = await getResumoEmpresa();
   if (resumo.migrationPendente) return null;
   return {

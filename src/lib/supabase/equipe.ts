@@ -4,7 +4,36 @@
 // escondem o campo (comportamento documentado da Etapa 3).
 
 import { createClient } from "@/lib/supabase/server";
-import type { MembroOption } from "@/lib/equipe-shared";
+import type { Cargo, MembroOption } from "@/lib/equipe-shared";
+
+// Cargo do usuário logado (null = sem registro na equipe ou migração 021
+// pendente). Usado para restringir menu e telas por papel (Etapa 4).
+export async function getMeuCargo(): Promise<{
+  cargo: Cargo | null;
+  empresaId: string | null;
+  membroId: string | null;
+}> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { cargo: null, empresaId: null, membroId: null };
+
+  const { data } = await supabase
+    .from("membros_equipe")
+    .select("id, empresa_id, cargo")
+    .eq("user_id", user.id)
+    .eq("status", "ativo")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  return {
+    cargo: (data?.cargo as Cargo) ?? null,
+    empresaId: data?.empresa_id ?? null,
+    membroId: data?.id ?? null,
+  };
+}
 
 export type MembrosSelecionaveis = {
   membros: MembroOption[];

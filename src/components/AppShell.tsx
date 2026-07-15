@@ -52,18 +52,35 @@ function Icon({ name, className }: { name: string; className?: string }) {
   );
 }
 
-type NavItem = { label: string; icon: string; href?: string };
+type NavItem = {
+  label: string;
+  icon: string;
+  href?: string;
+  // cargos que enxergam o item; ausente = todos. Cargo null (conta sem
+  // equipe/migração pendente) vê tudo, preservando o comportamento antigo.
+  cargos?: string[];
+};
 
 const NAV: NavItem[] = [
   { label: "Dashboard", icon: "dashboard", href: "/eventos/dashboard" },
   { label: "Eventos", icon: "eventos", href: "/eventos" },
   { label: "Cotações", icon: "cotacoes" },
   { label: "Clientes", icon: "clientes", href: "/clientes" },
-  { label: "Cerimonialistas", icon: "cerimonialistas", href: "/cerimonialistas" },
+  {
+    label: "Cerimonialistas",
+    icon: "cerimonialistas",
+    href: "/cerimonialistas",
+    cargos: ["proprietaria", "coordenadora"],
+  },
   { label: "Fornecedores", icon: "fornecedores" },
   { label: "Tarefas", icon: "tarefas", href: "/tarefas" },
   { label: "Calendário", icon: "calendario", href: "/calendario" },
-  { label: "Financeiro", icon: "financeiro", href: "/financeiro" },
+  {
+    label: "Financeiro",
+    icon: "financeiro",
+    href: "/financeiro",
+    cargos: ["proprietaria"],
+  },
   { label: "Relatórios", icon: "relatorios" },
   { label: "Catálogo", icon: "catalogo" },
   { label: "Configurações", icon: "configuracoes", href: "/configuracoes" },
@@ -82,11 +99,15 @@ function isActive(pathname: string, href: string) {
 type Props = {
   userEmail: string;
   avatarUrl: string | null;
+  cargo: string | null;
   signOut: () => Promise<void>;
   children: React.ReactNode;
 };
 
-export function AppShell({ userEmail, avatarUrl, signOut, children }: Props) {
+export function AppShell({ userEmail, avatarUrl, cargo, signOut, children }: Props) {
+  const navVisivel = NAV.filter(
+    (item) => !item.cargos || cargo === null || item.cargos.includes(cargo)
+  );
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [today, setToday] = useState("");
@@ -119,7 +140,7 @@ export function AppShell({ userEmail, avatarUrl, signOut, children }: Props) {
         </button>
       </div>
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 pb-4">
-        {NAV.map((item) =>
+        {navVisivel.map((item) =>
           item.href ? (
             <Link
               key={item.label}

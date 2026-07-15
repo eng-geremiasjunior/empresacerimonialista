@@ -3,6 +3,7 @@
 // Financeiro dentro do evento — são módulos paralelos e independentes.
 
 import { parseFinanceiroEmpresaParams } from "@/lib/financeiro-empresa-url";
+import { getMeuCargo } from "@/lib/supabase/equipe";
 import {
   getDespesasFixas,
   getEmpresa6Meses,
@@ -22,6 +23,24 @@ export default async function FinanceiroEmpresaPage({
   searchParams: Record<string, string | string[] | undefined>;
 }) {
   const current = parseFinanceiroEmpresaParams(searchParams);
+
+  // Financeiro da empresa é exclusivo da proprietária (Etapa 4). Cargo
+  // null (conta sem equipe/migração antiga) mantém o acesso de antes.
+  const { cargo } = await getMeuCargo();
+  if (cargo !== null && cargo !== "proprietaria") {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h1 className="text-xl font-semibold text-gray-900">
+            Financeiro — Minha Empresa
+          </h1>
+        </div>
+        <div className="rounded-lg border-2 border-dashed border-gray-200 bg-white p-12 text-center text-sm text-gray-500">
+          O financeiro da empresa é exclusivo da proprietária.
+        </div>
+      </div>
+    );
+  }
 
   const resumo = await getResumoEmpresa();
 

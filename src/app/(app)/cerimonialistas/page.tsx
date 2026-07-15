@@ -1,8 +1,8 @@
-// Gestão da equipe (Etapa 2 da transição multiusuário): listagem e
-// cadastro de cerimonialistas com criação de login pela proprietária.
-// Permissões de visibilidade de dados virão na Etapa 4.
+// Gestão da equipe: cadastro/edição pela proprietária; coordenadora
+// visualiza a equipe (somente leitura); demais cargos não acessam.
 
 import { createClient } from "@/lib/supabase/server";
+import { getMeuCargo } from "@/lib/supabase/equipe";
 import { CerimonialistasTable } from "@/components/cerimonialistas/CerimonialistasTable";
 import type { MembroEquipe } from "@/lib/equipe-shared";
 
@@ -11,6 +11,23 @@ export default async function CerimonialistasPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  const { cargo } = await getMeuCargo();
+
+  if (cargo !== null && cargo !== "proprietaria" && cargo !== "coordenadora") {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h1 className="text-xl font-semibold text-gray-900">
+            Cerimonialistas
+          </h1>
+        </div>
+        <div className="rounded-lg border-2 border-dashed border-gray-200 bg-white p-12 text-center text-sm text-gray-500">
+          A gestão da equipe é exclusiva da proprietária e da coordenação.
+        </div>
+      </div>
+    );
+  }
 
   const { data, error } = await supabase
     .from("membros_equipe")
@@ -24,12 +41,22 @@ export default async function CerimonialistasPage() {
     error?.code === "42P01" || error?.code === "PGRST205";
   const membros = (data ?? []) as MembroEquipe[];
 
+  // Só a dona da empresa gerencia (cadastra/edita/desativa).
+  const { data: empresaPropriedade } = await supabase
+    .from("empresas")
+    .select("id")
+    .eq("owner_user_id", user?.id ?? "")
+    .maybeSingle();
+  const podeGerenciar = Boolean(empresaPropriedade);
+
   return (
     <div className="space-y-4">
       <div>
         <h1 className="text-xl font-semibold text-gray-900">Cerimonialistas</h1>
         <p className="text-sm text-gray-500">
-          Gerencie quem administra os eventos da sua empresa
+          {podeGerenciar
+            ? "Gerencie quem administra os eventos da sua empresa"
+            : "Equipe da empresa (visualização)"}
         </p>
       </div>
 
@@ -40,8 +67,6 @@ export default async function CerimonialistasPage() {
           SQL Editor do Supabase.
         </div>
       ) : membros.length === 0 ? (
-        // O RLS só mostra os membros para a dona da empresa: lista vazia
-        // significa que quem está logado não é a proprietária.
         <div className="rounded-lg border-2 border-dashed border-gray-200 bg-white p-12 text-center text-sm text-gray-500">
           A gestão da equipe é exclusiva da proprietária da empresa.
         </div>
@@ -49,6 +74,7 @@ export default async function CerimonialistasPage() {
         <CerimonialistasTable
           membros={membros}
           currentUserId={user?.id ?? null}
+          readOnly={!podeGerenciar}
         />
       )}
     </div>

@@ -36,7 +36,9 @@ export async function criarCerimonialista(params: {
     email: params.email,
     password: params.senha,
     email_confirm: true,
-    user_metadata: { name: params.nome },
+    // equipe: true → o trigger de signup (migração 024) NÃO cria uma
+    // empresa própria para este login; ele entra como membro da equipe.
+    user_metadata: { name: params.nome, equipe: true },
   });
 
   if (authError || !authData?.user) {
