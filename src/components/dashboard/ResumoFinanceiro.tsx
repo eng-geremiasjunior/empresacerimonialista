@@ -34,13 +34,17 @@ export function ResumoFinanceiro({
         <h2 className="text-sm font-semibold text-gray-700">
           Financeiro dos eventos
         </h2>
-        <Link
-          href="/financeiro"
-          className="flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-gray-900"
-        >
-          Minha empresa
-          <ArrowRight size={13} />
-        </Link>
+        {/* /financeiro (empresa) é exclusivo da proprietária: o link só
+            aparece para ela (empresa != null vem de getSaldoEmpresaMes). */}
+        {empresa && (
+          <Link
+            href="/financeiro"
+            className="flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-gray-900"
+          >
+            Minha empresa
+            <ArrowRight size={13} />
+          </Link>
+        )}
       </div>
 
       {!data.temDados ? (
