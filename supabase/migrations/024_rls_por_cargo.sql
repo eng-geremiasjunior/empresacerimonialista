@@ -131,10 +131,20 @@ begin
 end;
 $$;
 
-drop trigger if exists trg_handle_novo_usuario on auth.users;
-create trigger trg_handle_novo_usuario
-  after insert on auth.users
-  for each row execute function public.handle_novo_usuario();
+-- O gatilho em auth.users pode falhar por permissão no Supabase hospedado
+-- (a tabela pertence a supabase_auth_admin). Se falhar, NÃO deve derrubar
+-- toda a migração — o RLS abaixo é o que importa. O bloco captura o erro.
+-- (Sem o gatilho, apenas o fluxo "Criar conta gratuita" fica sem empresa
+--  automática; usuários existentes já têm empresa desde a Etapa 1.)
+do $$
+begin
+  drop trigger if exists trg_handle_novo_usuario on auth.users;
+  create trigger trg_handle_novo_usuario
+    after insert on auth.users
+    for each row execute function public.handle_novo_usuario();
+exception when others then
+  raise notice 'Gatilho de signup nao instalado (sem permissao em auth.users): %', sqlerrm;
+end $$;
 
 -- ------------------------------------------------------------
 -- 3b) Limpeza defensiva: remove policies desta migração (re-execução)
