@@ -7,6 +7,18 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { criarCerimonialista } from "@/lib/cerimonialistas-admin";
 import { CARGOS_CADASTRO } from "@/lib/equipe-shared";
+import {
+  getDetalheCerimonialista,
+  type DetalheCerimonialista,
+} from "@/lib/supabase/cerimonialistas";
+
+// Detalhe do membro para o painel (carregado sob demanda ao abrir o card).
+// O RLS garante que só quem pode ver a equipe recebe os dados.
+export async function carregarDetalhe(
+  membroId: string
+): Promise<DetalheCerimonialista | null> {
+  return getDetalheCerimonialista(membroId);
+}
 
 type Resultado = { error?: string };
 

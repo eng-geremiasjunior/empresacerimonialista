@@ -54,6 +54,30 @@ export function membroOptionLabel(m: MembroOption) {
   return `${m.nome} — ${CARGO_LABELS[m.cargo]}`;
 }
 
+// Status do dia (Painel de Equipe — Etapa 5). Cores dessaturadas.
+export type StatusMembro = "disponivel" | "em_evento" | "inativo";
+
+export const STATUS_MEMBRO_UI: Record<
+  StatusMembro,
+  { label: string; dot: string; badge: string }
+> = {
+  disponivel: {
+    label: "Disponível",
+    dot: "text-emerald-500",
+    badge: "bg-emerald-50 text-emerald-700",
+  },
+  em_evento: {
+    label: "Em evento",
+    dot: "text-amber-500",
+    badge: "bg-amber-50 text-amber-700",
+  },
+  inativo: {
+    label: "Inativa",
+    dot: "text-gray-400",
+    badge: "bg-gray-100 text-gray-600",
+  },
+};
+
 export const ESPECIALIDADES = [
   "Casamento",
   "Debutante",
