@@ -72,7 +72,7 @@ const NAV: NavItem[] = [
     href: "/cerimonialistas",
     cargos: ["proprietaria", "coordenadora"],
   },
-  { label: "Fornecedores", icon: "fornecedores" },
+  { label: "Fornecedores", icon: "fornecedores", href: "/fornecedores" },
   { label: "Tarefas", icon: "tarefas", href: "/tarefas" },
   { label: "Calendário", icon: "calendario", href: "/calendario" },
   {
