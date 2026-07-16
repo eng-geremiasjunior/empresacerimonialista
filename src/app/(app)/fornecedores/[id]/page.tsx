@@ -2,14 +2,20 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
-  Clock,
+  CalendarCheck,
+  CalendarClock,
+  CircleCheck,
   Mail,
   MapPin,
   MessageCircle,
   Phone,
 } from "lucide-react";
-import { getFornecedor } from "@/lib/supabase/fornecedores";
+import {
+  getFornecedor,
+  getHistoricoFornecedor,
+} from "@/lib/supabase/fornecedores";
 import { EditarFornecedorButton } from "@/components/fornecedores/EditarFornecedorButton";
+import { formatDate } from "@/lib/format";
 import {
   FAIXA_PRECO_CIFRAO,
   FAIXA_PRECO_LABELS,
@@ -28,6 +34,8 @@ export default async function FornecedorDetalhePage({
 }) {
   const f = await getFornecedor(params.id);
   if (!f) notFound();
+
+  const historico = await getHistoricoFornecedor(params.id);
 
   const wa = waLink(f.whatsapp ?? f.phone);
   const contatos = [
@@ -117,13 +125,89 @@ export default async function FornecedorDetalhePage({
         )}
       </div>
 
-      {/* Histórico — placeholder (a lógica real vem na Etapa 4) */}
+      {/* Histórico — dados reais (via roteiro_links) */}
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
         <h2 className="text-sm font-semibold text-gray-700">Histórico</h2>
-        <div className="mt-3 flex items-center gap-2 rounded-lg border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">
-          <Clock size={15} className="text-gray-400" />
-          Em breve: eventos atendidos por este fornecedor.
+
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="rounded-lg border border-gray-200 p-3 text-center">
+            <CalendarCheck size={16} className="mx-auto text-gray-400" strokeWidth={1.75} />
+            <p className="mt-1 text-lg font-semibold tabular-nums text-gray-900">
+              {historico.eventosAtendidos}
+            </p>
+            <p className="text-xs text-gray-500">Eventos atendidos</p>
+          </div>
+          <div className="rounded-lg border border-gray-200 p-3 text-center">
+            <CircleCheck size={16} className="mx-auto text-gray-400" strokeWidth={1.75} />
+            <p className="mt-1 text-lg font-semibold tabular-nums text-gray-900">
+              {historico.taxaConfirmacao === null
+                ? "—"
+                : `${historico.taxaConfirmacao}%`}
+            </p>
+            <p className="text-xs text-gray-500">
+              Confirmação
+              {historico.eventosAtendidos > 0 && (
+                <span className="block text-[11px] text-gray-400">
+                  {historico.totalConfirmados} de {historico.eventosAtendidos}
+                </span>
+              )}
+            </p>
+          </div>
+          <div className="rounded-lg border border-gray-200 p-3 text-center">
+            <CalendarClock size={16} className="mx-auto text-gray-400" strokeWidth={1.75} />
+            <p className="mt-1 truncate text-sm font-semibold text-gray-900">
+              {historico.proximoEvento
+                ? formatDate(historico.proximoEvento.date)
+                : "—"}
+            </p>
+            <p className="text-xs text-gray-500">Próximo evento</p>
+          </div>
+          <div className="rounded-lg border border-gray-200 p-3 text-center">
+            <CalendarCheck size={16} className="mx-auto text-gray-400" strokeWidth={1.75} />
+            <p className="mt-1 truncate text-sm font-semibold text-gray-900">
+              {historico.ultimoEvento
+                ? formatDate(historico.ultimoEvento.date)
+                : "—"}
+            </p>
+            <p className="text-xs text-gray-500">Último evento</p>
+          </div>
         </div>
+
+        {historico.eventos.length === 0 ? (
+          <p className="mt-4 text-sm text-gray-500">
+            Este fornecedor ainda não foi vinculado a nenhum evento.
+          </p>
+        ) : (
+          <ul className="mt-4 space-y-1.5">
+            {historico.eventos.map((ev) => (
+              <li key={ev.id}>
+                <Link
+                  href={`/eventos/${ev.id}`}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm hover:border-gray-300"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span className="truncate font-medium text-gray-800">
+                      {ev.label}
+                    </span>
+                    {ev.confirmado && (
+                      <span className="shrink-0 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
+                        confirmado
+                      </span>
+                    )}
+                    {ev.futuro && (
+                      <span className="shrink-0 rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700">
+                        agendado
+                      </span>
+                    )}
+                  </span>
+                  <span className="shrink-0 text-gray-500">
+                    {formatDate(ev.date)}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

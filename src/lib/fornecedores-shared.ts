@@ -24,7 +24,14 @@ export type Fornecedor = {
   endereco: string | null;
   cidade: string | null;
   categorias: string[];
+  // Nº de eventos aos quais o fornecedor está vinculado (via roteiro_links).
+  // Preenchido na listagem; 0 quando não calculado.
+  eventos_atendidos?: number;
 };
+
+// A partir de quantos eventos um fornecedor é considerado "Frequente"
+// (indicador automático de uso, distinto do status manual "Favorito").
+export const LIMIAR_FREQUENTE = 5;
 
 export const TIPO_OPERACIONAL_LABELS: Record<TipoOperacional, string> = {
   operacional: "Operacional",

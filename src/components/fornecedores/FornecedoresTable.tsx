@@ -4,12 +4,14 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  ArrowDownWideNarrow,
   ChevronLeft,
   ChevronRight,
   Eye,
   MessageCircle,
   MoreVertical,
   Pencil,
+  Repeat,
   Star,
 } from "lucide-react";
 import { FornecedorFormModal } from "@/components/fornecedores/FornecedorFormModal";
@@ -20,6 +22,7 @@ import {
 } from "@/lib/fornecedores-url";
 import {
   FAIXA_PRECO_CIFRAO,
+  LIMIAR_FREQUENTE,
   STATUS_BADGE,
   STATUS_LABELS,
   TIPO_OPERACIONAL_BADGE,
@@ -113,7 +116,7 @@ export function FornecedoresTable({
   return (
     <div className="rounded-lg border border-gray-200 bg-white">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[820px] text-left text-sm">
+        <table className="w-full min-w-[920px] text-left text-sm">
           <thead>
             <tr className="border-b border-gray-200 text-xs uppercase tracking-wide text-gray-400">
               <th className="px-4 py-2.5 font-medium">Nome</th>
@@ -121,6 +124,21 @@ export function FornecedoresTable({
               <th className="px-4 py-2.5 font-medium">Tipo</th>
               <th className="px-4 py-2.5 font-medium">Status</th>
               <th className="px-4 py-2.5 font-medium">Preço</th>
+              <th className="px-4 py-2.5 font-medium">
+                <Link
+                  href={buildFornecedoresHref(current, {
+                    sort: current.sort === "eventos" ? "nome" : "eventos",
+                    page: "1",
+                  })}
+                  className="inline-flex items-center gap-1 hover:text-gray-700"
+                  title="Ordenar por mais utilizados"
+                >
+                  Eventos
+                  {current.sort === "eventos" && (
+                    <ArrowDownWideNarrow size={13} className="text-gray-500" />
+                  )}
+                </Link>
+              </th>
               <th className="px-4 py-2.5 font-medium">Contato</th>
               <th className="w-10 px-4 py-2.5" />
             </tr>
@@ -177,6 +195,22 @@ export function FornecedoresTable({
                   </td>
                   <td className="px-4 py-3 text-gray-600">
                     {f.faixa_preco ? FAIXA_PRECO_CIFRAO[f.faixa_preco] : "—"}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="flex items-center gap-1.5">
+                      <span className="tabular-nums text-gray-700">
+                        {f.eventos_atendidos ?? 0}
+                      </span>
+                      {(f.eventos_atendidos ?? 0) >= LIMIAR_FREQUENTE && (
+                        <span
+                          className="inline-flex items-center gap-0.5 rounded-full border border-gray-200 px-1.5 py-0.5 text-[10px] font-medium text-gray-500"
+                          title={`Fornecedor frequente (${f.eventos_atendidos} eventos)`}
+                        >
+                          <Repeat size={10} />
+                          Frequente
+                        </span>
+                      )}
+                    </span>
                   </td>
                   <td className="px-4 py-3">
                     {f.phone || f.whatsapp ? (

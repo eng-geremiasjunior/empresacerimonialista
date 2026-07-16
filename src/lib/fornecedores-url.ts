@@ -8,6 +8,7 @@ export type FornecedoresParams = {
   tipo: string; // operacional | apoio | parceiro | ""
   status: string; // status ou ""
   faixa: string; // economico | intermediario | premium | ""
+  sort: string; // nome (default) | eventos (mais utilizados)
 };
 
 const DEFAULTS: FornecedoresParams = {
@@ -18,6 +19,7 @@ const DEFAULTS: FornecedoresParams = {
   tipo: "",
   status: "",
   faixa: "",
+  sort: "nome",
 };
 
 export function parseFornecedoresParams(
@@ -36,6 +38,7 @@ export function parseFornecedoresParams(
     tipo: get("tipo"),
     status: get("status"),
     faixa: get("faixa"),
+    sort: get("sort"),
   };
 }
 
