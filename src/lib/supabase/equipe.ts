@@ -35,6 +35,21 @@ export async function getMeuCargo(): Promise<{
   };
 }
 
+// Auto-provisiona empresa+membro (proprietária) para um usuário logado
+// que ainda não pertence a nenhuma equipe. Idempotente via RPC
+// SECURITY DEFINER (migração 025). Chamada só quando o cargo é null,
+// para não custar nada no fluxo normal.
+export async function garantirEmpresaDoUsuario(): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("garantir_empresa_propria");
+  // Migração 025 pendente (PGRST202) ou outra falha: silencioso — o pior
+  // caso é o usuário novo ver o app vazio até a migração ser aplicada,
+  // sem quebrar a página.
+  if (error) {
+    console.debug("[vela:equipe] garantir_empresa_propria:", error.message);
+  }
+}
+
 export type MembrosSelecionaveis = {
   membros: MembroOption[];
   // membro correspondente ao usuário logado (pré-seleção do wizard)
