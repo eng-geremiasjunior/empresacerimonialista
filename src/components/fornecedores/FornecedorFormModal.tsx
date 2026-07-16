@@ -26,9 +26,13 @@ const labelClass = "mb-1 block text-sm font-medium text-gray-700";
 export function FornecedorFormModal({
   editar,
   onClose,
+  onCreated,
 }: {
   editar?: Fornecedor;
   onClose: () => void;
+  // Chamado com o id do fornecedor recém-criado (só no modo criação).
+  // Usado pelo modal de vínculo do evento para ligar o novo fornecedor.
+  onCreated?: (id: string) => void | Promise<void>;
 }) {
   const router = useRouter();
   const [f, setF] = useState<FornecedorInput>({
@@ -72,6 +76,9 @@ export function FornecedorFormModal({
       if (r.error) {
         setErro(r.error);
         return;
+      }
+      if (!editar && r.id && onCreated) {
+        await onCreated(r.id);
       }
       onClose();
       router.refresh();

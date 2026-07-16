@@ -20,8 +20,9 @@ function readForm(formData: FormData) {
     time: String(formData.get("time") ?? "").trim(),
     title: String(formData.get("title") ?? "").trim(),
     description: String(formData.get("description") ?? "").trim(),
-    supplierChoice: String(formData.get("supplier_id") ?? ""),
-    newSupplierName: String(formData.get("new_supplier_name") ?? "").trim(),
+    // Só um fornecedor JÁ VINCULADO ao evento (via aba Fornecedores).
+    // Não há mais criação de fornecedor solto aqui (Etapa 3).
+    supplierId: String(formData.get("supplier_id") ?? "") || null,
     status: String(formData.get("status") ?? "pendente"),
   };
 }
@@ -58,29 +59,6 @@ async function hasDuplicateTime(
   return (data ?? []).length > 0;
 }
 
-// Resolve o fornecedor escolhido no select; "__new__" cadastra um novo.
-async function resolveSupplier(
-  supabase: ReturnType<typeof createClient>,
-  userId: string,
-  form: ReturnType<typeof readForm>
-): Promise<{ supplierId: string | null } | { error: string }> {
-  if (form.supplierChoice !== "__new__") {
-    return { supplierId: form.supplierChoice || null };
-  }
-  if (!form.newSupplierName) {
-    return { error: "Informe o nome do novo fornecedor." };
-  }
-  const { data, error } = await supabase
-    .from("suppliers")
-    .insert({ cerimonialista_id: userId, name: form.newSupplierName })
-    .select("id")
-    .single();
-  if (error) {
-    return { error: "Não foi possível cadastrar o fornecedor." };
-  }
-  return { supplierId: data.id };
-}
-
 export async function createRoteiroItem(
   eventId: string,
   _prev: RoteiroFormState,
@@ -101,15 +79,12 @@ export async function createRoteiroItem(
     return { error: "Já existe um item nesse horário. Escolha outro horário." };
   }
 
-  const supplier = await resolveSupplier(supabase, user.id, form);
-  if ("error" in supplier) return supplier;
-
   const { error } = await supabase.from("roteiro_items").insert({
     event_id: eventId,
     time,
     title: form.title,
     description: form.description || null,
-    supplier_id: supplier.supplierId,
+    supplier_id: form.supplierId,
     status: form.status,
   });
 
@@ -142,16 +117,13 @@ export async function updateRoteiroItem(
     return { error: "Já existe um item nesse horário. Escolha outro horário." };
   }
 
-  const supplier = await resolveSupplier(supabase, user.id, form);
-  if ("error" in supplier) return supplier;
-
   const { error } = await supabase
     .from("roteiro_items")
     .update({
       time,
       title: form.title,
       description: form.description || null,
-      supplier_id: supplier.supplierId,
+      supplier_id: form.supplierId,
       status: form.status,
     })
     .eq("id", itemId)

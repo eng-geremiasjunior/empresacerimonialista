@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check, Mail, Pencil, Send } from "lucide-react";
+import Link from "next/link";
+import { Check, ExternalLink, Mail, Pencil, Send, X } from "lucide-react";
 import {
   salvarEmailFornecedor,
   enviarConfirmacaoAgora,
   setSupplierConfirmed,
+  desvincularFornecedor,
 } from "@/app/(app)/eventos/[id]/fornecedores/actions";
 import { formatDate } from "@/lib/format";
 
@@ -88,7 +90,13 @@ export function FornecedorRow({
     <li className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate font-medium text-gray-900">{name}</p>
+          <Link
+            href={`/fornecedores/${supplierId}`}
+            className="flex items-center gap-1 truncate font-medium text-gray-900 hover:text-indigo-600"
+          >
+            {name}
+            <ExternalLink size={12} className="shrink-0 text-gray-400" />
+          </Link>
           {category && <p className="text-sm text-gray-500">{category}</p>}
         </div>
         <div className="flex shrink-0 items-center gap-3">
@@ -114,6 +122,20 @@ export function FornecedorRow({
             className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:border-gray-400 disabled:opacity-60"
           >
             {confirmed ? "Desmarcar" : "Confirmar"}
+          </button>
+          <button
+            onClick={() => {
+              if (!confirm(`Remover ${name} deste evento? O cadastro global do fornecedor é mantido.`)) return;
+              startTransition(async () => {
+                await desvincularFornecedor(eventId, supplierId);
+              });
+            }}
+            disabled={pending}
+            aria-label="Remover do evento"
+            title="Remover do evento"
+            className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-60"
+          >
+            <X size={16} />
           </button>
         </div>
       </div>

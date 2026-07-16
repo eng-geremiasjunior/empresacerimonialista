@@ -60,6 +60,7 @@ export function RoteiroList({ eventId, items, suppliers }: Props) {
       {adding && (
         <RoteiroForm
           action={createRoteiroItem.bind(null, eventId)}
+          eventId={eventId}
           suppliers={suppliers}
           onClose={() => setAdding(false)}
         />
@@ -85,6 +86,7 @@ export function RoteiroList({ eventId, items, suppliers }: Props) {
                 <li key={item.id}>
                   <RoteiroForm
                     action={updateRoteiroItem.bind(null, eventId, item.id)}
+                    eventId={eventId}
                     suppliers={suppliers}
                     initial={{
                       time: formatTime(item.time),

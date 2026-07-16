@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { TriangleAlert } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -6,6 +5,7 @@ import {
   type ConfirmacaoInfo,
 } from "@/components/fornecedores/FornecedorRow";
 import { ConfigAntecedencia } from "@/components/fornecedores/ConfigAntecedencia";
+import { AdicionarFornecedorButton } from "@/components/fornecedores/AdicionarFornecedorButton";
 
 type LinkRow = {
   supplier_id: string;
@@ -84,14 +84,17 @@ export default async function EventoFornecedoresPage({
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-sm font-semibold text-gray-700">
-          Fornecedores do evento
-        </h2>
-        <p className="mt-0.5 text-sm text-gray-500">
-          Os fornecedores vêm do Cronograma. Cadastre o e-mail para enviar o
-          convite de confirmação — a resposta alimenta a Saúde do Evento.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold text-gray-700">
+            Fornecedores do evento
+          </h2>
+          <p className="mt-0.5 text-sm text-gray-500">
+            Vincule fornecedores do seu cadastro global. O e-mail habilita o
+            convite de confirmação — a resposta alimenta a Saúde do Evento.
+          </p>
+        </div>
+        {links.length > 0 && <AdicionarFornecedorButton eventId={eventId} />}
       </div>
 
       {migrationPendente && (
@@ -114,12 +117,15 @@ export default async function EventoFornecedoresPage({
       {links.length === 0 ? (
         <div className="rounded-xl border-2 border-dashed border-gray-300 bg-white p-10 text-center text-gray-600">
           <p>Nenhum fornecedor vinculado ainda.</p>
-          <Link
-            href={`/eventos/${eventId}/roteiro`}
-            className="mt-3 inline-block text-sm font-medium text-gray-900 underline underline-offset-4 hover:no-underline"
-          >
-            Adicionar fornecedores no Cronograma
-          </Link>
+          <p className="mt-1 text-sm text-gray-500">
+            Busque no seu cadastro global e vincule ao evento.
+          </p>
+          <div className="mt-4 flex justify-center">
+            <AdicionarFornecedorButton
+              eventId={eventId}
+              label="Adicionar primeiro fornecedor"
+            />
+          </div>
         </div>
       ) : (
         <ul className="space-y-2">

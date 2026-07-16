@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useFormState, useFormStatus } from "react-dom";
 import type { RoteiroFormState } from "@/app/(app)/eventos/[id]/roteiro/actions";
 import { ROTEIRO_STATUS_LABELS, type Supplier } from "@/lib/types";
@@ -23,7 +24,8 @@ type Props = {
     state: RoteiroFormState,
     formData: FormData
   ) => Promise<RoteiroFormState>;
-  suppliers: Supplier[];
+  eventId: string;
+  suppliers: Supplier[]; // fornecedores VINCULADOS ao evento
   initial?: RoteiroInitial;
   onClose: () => void;
 };
@@ -41,7 +43,7 @@ function SubmitButton({ label }: { label: string }) {
   );
 }
 
-export function RoteiroForm({ action, suppliers, initial, onClose }: Props) {
+export function RoteiroForm({ action, eventId, suppliers, initial, onClose }: Props) {
   const [state, formAction] = useFormState(action, null);
   const [supplierChoice, setSupplierChoice] = useState(
     initial?.supplierId ?? ""
@@ -105,31 +107,35 @@ export function RoteiroForm({ action, suppliers, initial, onClose }: Props) {
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div>
           <label htmlFor="supplier_id" className={labelClass}>
-            Fornecedor
+            Fornecedor responsável
           </label>
-          <select
-            id="supplier_id"
-            name="supplier_id"
-            value={supplierChoice}
-            onChange={(e) => setSupplierChoice(e.target.value)}
-            className={inputClass}
-          >
-            <option value="">Sem fornecedor</option>
-            {suppliers.map((supplier) => (
-              <option key={supplier.id} value={supplier.id}>
-                {supplier.name}
-              </option>
-            ))}
-            <option value="__new__">+ Cadastrar novo fornecedor</option>
-          </select>
-          {supplierChoice === "__new__" && (
-            <input
-              name="new_supplier_name"
-              type="text"
-              required
-              placeholder="Nome do fornecedor"
-              className={`${inputClass} mt-2.5`}
-            />
+          {suppliers.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3 py-2.5 text-xs text-gray-500">
+              Nenhum fornecedor vinculado a este evento ainda.{" "}
+              <Link
+                href={`/eventos/${eventId}/fornecedores`}
+                className="font-medium text-indigo-600 underline underline-offset-2 hover:no-underline"
+              >
+                Adicione um na aba Fornecedores primeiro
+              </Link>
+              .
+              <input type="hidden" name="supplier_id" value="" />
+            </div>
+          ) : (
+            <select
+              id="supplier_id"
+              name="supplier_id"
+              value={supplierChoice}
+              onChange={(e) => setSupplierChoice(e.target.value)}
+              className={inputClass}
+            >
+              <option value="">Sem fornecedor</option>
+              {suppliers.map((supplier) => (
+                <option key={supplier.id} value={supplier.id}>
+                  {supplier.name}
+                </option>
+              ))}
+            </select>
           )}
         </div>
 
