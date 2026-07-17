@@ -194,7 +194,7 @@ export type ResumoEvento = {
     email: string | null;
     instagram: string | null;
   } | null;
-  responsavel: { nome: string; cargo: string } | null;
+  responsavel: { nome: string; cargo: string; user_id: string | null } | null;
   saude: Saude;
   // Critérios OK reais (para a lista verde do Status Operacional)
   criterios: {
@@ -235,7 +235,7 @@ export async function getResumoEvento(
   const evRes = await supabase
     .from("events")
     .select(
-      "id, type, name, date, location, city, status, contract_value, guests, time, confirmation_days_before, confirmation_sent_at, clients(name, phone, whatsapp, email, instagram), responsavel:membros_equipe(nome, cargo)"
+      "id, type, name, date, location, city, status, contract_value, guests, time, confirmation_days_before, confirmation_sent_at, clients(name, phone, whatsapp, email, instagram), responsavel:membros_equipe(nome, cargo, user_id)"
     )
     .eq("id", eventId)
     .single();
@@ -353,7 +353,11 @@ export async function getResumoEvento(
 
   const client = (evData.clients as ResumoEvento["client"]) ?? null;
   const responsavel =
-    (evData.responsavel as { nome: string; cargo: string } | null) ?? null;
+    (evData.responsavel as {
+      nome: string;
+      cargo: string;
+      user_id: string | null;
+    } | null) ?? null;
 
   return {
     event: {

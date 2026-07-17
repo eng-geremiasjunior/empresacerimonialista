@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+
 type Size = "sm" | "md" | "lg";
 
 const SIZES: Record<Size, string> = {
@@ -7,6 +11,8 @@ const SIZES: Record<Size, string> = {
 };
 
 // Avatar reaproveitável: foto quando existe, iniciais como fallback.
+// Se a imagem falhar ao carregar (ex.: usuário sem foto), cai para as
+// iniciais em vez de mostrar imagem quebrada.
 export function Avatar({
   src,
   fallback,
@@ -18,12 +24,15 @@ export function Avatar({
   size?: Size;
   className?: string;
 }) {
-  if (src) {
+  const [erro, setErro] = useState(false);
+
+  if (src && !erro) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={src}
         alt="Foto de perfil"
+        onError={() => setErro(true)}
         className={`${SIZES[size]} shrink-0 rounded-full border border-gray-200 object-cover ${className}`}
       />
     );

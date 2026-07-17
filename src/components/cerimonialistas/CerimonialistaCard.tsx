@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Circle, MoreVertical } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
+import { avatarPublicUrl } from "@/lib/avatar";
 import { setStatusMembro } from "@/app/(app)/cerimonialistas/actions";
 import {
   CARGO_BADGE,
@@ -49,7 +50,11 @@ export function CerimonialistaCard({
       }`}
     >
       <div className="flex items-start gap-3">
-        <Avatar src={null} fallback={iniciais(membro.nome)} size="md" />
+        <Avatar
+          src={avatarPublicUrl(membro.user_id)}
+          fallback={iniciais(membro.nome)}
+          size="md"
+        />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <p className="truncate font-semibold text-gray-900">{membro.nome}</p>

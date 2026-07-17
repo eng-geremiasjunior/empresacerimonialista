@@ -2,6 +2,15 @@ import { createClient } from "@/lib/supabase/client";
 
 const MAX_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB
 
+// URL pública da foto de qualquer usuário (bucket avatars é público, path
+// fixo por user_id). Retorna null se não houver user_id. Se o usuário não
+// tiver foto, a URL 404 e o componente Avatar cai para as iniciais.
+export function avatarPublicUrl(userId: string | null | undefined): string | null {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!userId || !base) return null;
+  return `${base}/storage/v1/object/public/avatars/${userId}/avatar`;
+}
+
 export function validateAvatarFile(file: File): string | null {
   if (!file.type.startsWith("image/")) {
     return "Escolha um arquivo de imagem.";

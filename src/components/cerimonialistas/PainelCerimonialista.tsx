@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
+import { avatarPublicUrl } from "@/lib/avatar";
 import { carregarDetalhe } from "@/app/(app)/cerimonialistas/actions";
 import {
   CARGO_BADGE,
@@ -82,7 +83,11 @@ export function PainelCerimonialista({
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Avatar src={null} fallback={iniciais(membro.nome)} size="lg" />
+            <Avatar
+              src={avatarPublicUrl(membro.user_id)}
+              fallback={iniciais(membro.nome)}
+              size="lg"
+            />
             <div>
               <div className="flex items-center gap-1.5">
                 <h2 className="text-lg font-semibold text-gray-900">

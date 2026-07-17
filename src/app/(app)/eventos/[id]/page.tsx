@@ -18,6 +18,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { getResumoEvento } from "@/lib/supabase/resumo-evento";
 import { Avatar } from "@/components/ui/Avatar";
+import { avatarPublicUrl } from "@/lib/avatar";
 import { StatusOperacional } from "@/components/eventos/StatusOperacional";
 import { ResumoOperacional } from "@/components/eventos/ResumoOperacional";
 import { AcoesRapidas } from "@/components/eventos/AcoesRapidas";
@@ -122,7 +123,7 @@ export default async function ResumoPage({
                     </p>
                     <div className="mt-1 flex items-center gap-2">
                       <Avatar
-                        src={null}
+                        src={avatarPublicUrl(resumo.responsavel.user_id)}
                         fallback={iniciais(resumo.responsavel.nome)}
                         size="sm"
                       />
