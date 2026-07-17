@@ -9,7 +9,7 @@ export type EventosParams = {
   type: string; // lista separada por vírgula de EventType
   sort: string; // date | client | status
   dir: string; // asc | desc
-  view: string; // table | cards
+  view: string; // list (cards horizontais) | grid
 };
 
 const DEFAULTS: EventosParams = {
@@ -20,7 +20,7 @@ const DEFAULTS: EventosParams = {
   type: "",
   sort: "date",
   dir: "asc",
-  view: "table",
+  view: "list",
 };
 
 export function parseEventosParams(

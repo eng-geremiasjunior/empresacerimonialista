@@ -74,8 +74,8 @@ export function EventosFiltros({ current }: { current: EventosParams }) {
             type="search"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Buscar por cliente ou local..."
-            className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-100"
+            placeholder="Buscar por cliente, local, tipo, responsável ou fornecedor…"
+            className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-100"
           />
         </div>
 
@@ -113,10 +113,10 @@ export function EventosFiltros({ current }: { current: EventosParams }) {
 
         <div className="flex items-center overflow-hidden rounded-lg border border-gray-300">
           <Link
-            href={buildEventosHref(current, { view: "table" })}
+            href={buildEventosHref(current, { view: "list" })}
             aria-label="Ver em lista"
             className={`flex items-center p-2 ${
-              current.view === "table"
+              current.view !== "grid"
                 ? "bg-gray-900 text-white"
                 : "bg-white text-gray-500 hover:bg-gray-50"
             }`}
@@ -124,10 +124,10 @@ export function EventosFiltros({ current }: { current: EventosParams }) {
             <List size={16} />
           </Link>
           <Link
-            href={buildEventosHref(current, { view: "cards" })}
-            aria-label="Ver em cards"
+            href={buildEventosHref(current, { view: "grid" })}
+            aria-label="Ver em grade"
             className={`flex items-center p-2 ${
-              current.view === "cards"
+              current.view === "grid"
                 ? "bg-gray-900 text-white"
                 : "bg-white text-gray-500 hover:bg-gray-50"
             }`}

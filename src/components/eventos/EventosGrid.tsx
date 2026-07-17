@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { Image as ImageIcon } from "lucide-react";
 import type { EventoRow } from "@/lib/supabase/eventos-list";
+import { coverPublicUrl } from "@/lib/event-cover";
 import { SAUDE_UI, type Saude } from "@/lib/saude-evento";
 import { formatDate } from "@/lib/format";
 import {
@@ -33,8 +35,23 @@ export function EventosGrid({ rows, saudeById, todayIso, weekEndIso }: Props) {
           <Link
             key={row.id}
             href={`/eventos/${row.id}`}
-            className="rounded-lg border border-gray-200 bg-white p-4 transition hover:border-gray-300"
+            className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:border-gray-300"
           >
+            <div className="h-28 w-full bg-gray-100">
+              {row.cover_image_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={row.cover_image_url || coverPublicUrl(row.id) || ""}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-gray-300">
+                  <ImageIcon size={26} strokeWidth={1.5} />
+                </div>
+              )}
+            </div>
+            <div className="p-4">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="truncate font-medium text-gray-900">
@@ -73,6 +90,7 @@ export function EventosGrid({ rows, saudeById, todayIso, weekEndIso }: Props) {
                 </span>
               </div>
             )}
+            </div>
           </Link>
         );
       })}

@@ -5,6 +5,7 @@ import { useFormState, useFormStatus } from "react-dom";
 import type { EventFormState } from "@/app/(app)/eventos/actions";
 import { EVENT_STATUS_LABELS, EVENT_TYPE_LABELS } from "@/lib/types";
 import { membroOptionLabel, type MembroOption } from "@/lib/equipe-shared";
+import { CapaEventoUpload } from "@/components/eventos/CapaEventoUpload";
 
 const inputClass =
   "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm focus:border-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-200";
@@ -19,6 +20,7 @@ type Initial = {
   location: string;
   status: string;
   responsavelId?: string | null;
+  coverUrl?: string | null;
 };
 
 type Props = {
@@ -177,6 +179,10 @@ export function EventForm({ action, initial, membros }: Props) {
             Trocar o responsável não altera tarefas nem financeiro do evento.
           </p>
         </div>
+      )}
+
+      {initial && (
+        <CapaEventoUpload eventId={initial.eventId} atual={initial.coverUrl ?? null} />
       )}
 
       {state?.error && <p className="text-sm text-rose-600">{state.error}</p>}

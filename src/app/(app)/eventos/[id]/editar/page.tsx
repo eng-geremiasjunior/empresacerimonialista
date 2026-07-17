@@ -18,7 +18,7 @@ export default async function EditarEventoPage({
   let { data, error } = await supabase
     .from("events")
     .select(
-      "id, client_id, type, date, location, status, cerimonialista_responsavel_id, clients(id, name, phone, email)"
+      "id, client_id, type, date, location, status, cover_image_url, cerimonialista_responsavel_id, clients(id, name, phone, email)"
     )
     .eq("id", params.id)
     .single();
@@ -68,6 +68,9 @@ export default async function EditarEventoPage({
           location: event.location ?? "",
           status: event.status,
           responsavelId,
+          coverUrl:
+            (data as { cover_image_url?: string | null }).cover_image_url ??
+            null,
         }}
       />
     </div>
