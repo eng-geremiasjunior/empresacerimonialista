@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Avatar } from "@/components/ui/Avatar";
+import { CopilotoSidebarCard } from "@/components/layout/CopilotoSidebarCard";
 
 const ICONS: Record<string, string> = {
   dashboard:
@@ -100,11 +101,12 @@ type Props = {
   userEmail: string;
   avatarUrl: string | null;
   cargo: string | null;
+  atencaoCount: number;
   signOut: () => Promise<void>;
   children: React.ReactNode;
 };
 
-export function AppShell({ userEmail, avatarUrl, cargo, signOut, children }: Props) {
+export function AppShell({ userEmail, avatarUrl, cargo, atencaoCount, signOut, children }: Props) {
   const navVisivel = NAV.filter(
     (item) => !item.cargos || cargo === null || item.cargos.includes(cargo)
   );
@@ -170,7 +172,10 @@ export function AppShell({ userEmail, avatarUrl, cargo, signOut, children }: Pro
           )
         )}
       </nav>
-      <div className="border-t border-stone-800 px-5 py-4">
+      <div className="border-t border-stone-800 p-3">
+        <CopilotoSidebarCard atencao={atencaoCount} />
+      </div>
+      <div className="border-t border-stone-800 px-5 py-3">
         <p className="truncate text-xs text-stone-500">{userEmail}</p>
       </div>
     </div>

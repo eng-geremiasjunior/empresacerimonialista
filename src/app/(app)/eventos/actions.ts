@@ -197,8 +197,11 @@ export async function archiveEvents(eventIds: string[]) {
   revalidatePath("/eventos");
 }
 
-// Duplica os dados básicos do evento (não o checklist/roteiro/financeiro);
-// a cerimonialista ajusta data e status na cópia.
+// Duplica um evento como atalho para "criar um parecido": copia tipo,
+// local/cidade e convidados, mas deixa CLIENTE e DATA em branco para a
+// cerimonialista preencher (data é obrigatória no banco → usa hoje como
+// placeholder e redireciona para a edição). Não copia checklist/roteiro/
+// financeiro.
 export async function duplicateEvent(eventId: string) {
   const supabase = createClient();
   const {
@@ -208,21 +211,119 @@ export async function duplicateEvent(eventId: string) {
 
   const { data: original } = await supabase
     .from("events")
-    .select("client_id, type, date, location, city")
+    .select("type, location, city, guests")
     .eq("id", eventId)
     .single();
 
   if (!original) return;
 
-  await supabase.from("events").insert({
-    cerimonialista_id: user.id,
-    client_id: original.client_id,
-    type: original.type,
-    date: original.date,
-    location: original.location,
-    city: original.city,
-    status: "orcamento",
-  });
+  const hoje = new Date().toISOString().slice(0, 10);
+  const { data: created } = await supabase
+    .from("events")
+    .insert({
+      cerimonialista_id: user.id,
+      client_id: null, // em branco para preencher
+      type: original.type,
+      date: hoje, // placeholder (coluna NOT NULL) — ajustar na edição
+      location: original.location,
+      city: original.city,
+      guests: original.guests,
+      status: "orcamento",
+    })
+    .select("id")
+    .single();
 
   revalidatePath("/eventos");
+  if (created?.id) redirect(`/eventos/${created.id}/editar`);
+}
+
+// Importa múltiplos eventos de um CSV. Cada linha: nome do cliente, tipo,
+// data (YYYY-MM-DD), local. Cria o cliente se não existir. Retorna quantos
+// entraram e os erros por linha.
+export type ImportarResultado = {
+  criados: number;
+  erros: { linha: number; motivo: string }[];
+};
+
+export async function importarEventos(
+  linhas: { cliente: string; tipo: string; data: string; local: string }[]
+): Promise<ImportarResultado> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { criados: 0, erros: [{ linha: 0, motivo: "Não autenticado" }] };
+
+  const tiposValidos = Object.keys(EVENT_TYPE_LABELS);
+  // slug por rótulo (aceita "Casamento" ou "casamento")
+  const porRotulo = new Map(
+    Object.entries(EVENT_TYPE_LABELS).map(([slug, label]) => [
+      label.toLowerCase(),
+      slug,
+    ])
+  );
+
+  const erros: { linha: number; motivo: string }[] = [];
+  let criados = 0;
+
+  for (let i = 0; i < linhas.length; i++) {
+    const l = linhas[i];
+    const nLinha = i + 2; // +1 header, +1 base-1
+    const cliente = l.cliente?.trim();
+    const dataStr = l.data?.trim();
+    let tipo = l.tipo?.trim().toLowerCase() ?? "";
+    if (porRotulo.has(tipo)) tipo = porRotulo.get(tipo)!;
+
+    if (!cliente) {
+      erros.push({ linha: nLinha, motivo: "nome do cliente vazio" });
+      continue;
+    }
+    if (!tiposValidos.includes(tipo)) {
+      erros.push({ linha: nLinha, motivo: `tipo inválido: "${l.tipo}"` });
+      continue;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dataStr)) {
+      erros.push({ linha: nLinha, motivo: `data inválida (use AAAA-MM-DD): "${l.data}"` });
+      continue;
+    }
+
+    // cliente: reusa se já existir na empresa (nome exato), senão cria
+    const { data: existente } = await supabase
+      .from("clients")
+      .select("id")
+      .ilike("name", cliente)
+      .limit(1)
+      .maybeSingle();
+
+    let clientId = existente?.id as string | undefined;
+    if (!clientId) {
+      const { data: novo, error } = await supabase
+        .from("clients")
+        .insert({ cerimonialista_id: user.id, name: cliente })
+        .select("id")
+        .single();
+      if (error || !novo) {
+        erros.push({ linha: nLinha, motivo: "falha ao criar cliente" });
+        continue;
+      }
+      clientId = novo.id;
+    }
+
+    const { error: evErr } = await supabase.from("events").insert({
+      cerimonialista_id: user.id,
+      client_id: clientId,
+      type: tipo,
+      date: dataStr,
+      location: l.local?.trim() || null,
+      status: "orcamento",
+    });
+    if (evErr) {
+      erros.push({ linha: nLinha, motivo: "falha ao criar evento" });
+      continue;
+    }
+    criados++;
+  }
+
+  revalidatePath("/eventos");
+  return { criados, erros };
 }

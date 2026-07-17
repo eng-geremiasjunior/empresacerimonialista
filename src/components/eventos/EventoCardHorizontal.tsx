@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   CalendarDays,
+  Copy,
   Image as ImageIcon,
   MapPin,
   MoreVertical,
@@ -14,7 +15,7 @@ import {
   Pencil,
   Archive,
 } from "lucide-react";
-import { archiveEvent } from "@/app/(app)/eventos/actions";
+import { archiveEvent, duplicateEvent } from "@/app/(app)/eventos/actions";
 import { coverPublicUrl } from "@/lib/event-cover";
 import { ACAO_PATH } from "@/lib/proxima-acao";
 import type { EventoRow } from "@/lib/supabase/eventos-list";
@@ -105,6 +106,18 @@ function Menu({ eventId, archivingDisabled }: { eventId: string; archivingDisabl
           <Link href={`/eventos/${eventId}/editar`} className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50">
             <Pencil size={14} /> Editar
           </Link>
+          <button
+            onClick={() => {
+              setOpen(false);
+              startTransition(async () => {
+                await duplicateEvent(eventId);
+              });
+            }}
+            disabled={pending}
+            className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+          >
+            <Copy size={14} /> Duplicar
+          </button>
           <button
             onClick={() => {
               if (archivingDisabled || !confirm("Arquivar este evento? Ele sai da listagem, mas os dados continuam guardados.")) return;

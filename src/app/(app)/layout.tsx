@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { garantirEmpresaDoUsuario, getMeuCargo } from "@/lib/supabase/equipe";
+import { getEventosAtencaoCount } from "@/lib/supabase/eventos-list";
 import { AppShell } from "@/components/AppShell";
 import { TaskNotifications } from "@/components/TaskNotifications";
 import { signOut } from "./actions";
@@ -28,11 +29,14 @@ export default async function AppLayout({
     ({ cargo } = await getMeuCargo());
   }
 
+  const atencaoCount = await getEventosAtencaoCount().catch(() => 0);
+
   return (
     <>
       <AppShell
         userEmail={user.email ?? ""}
         cargo={cargo}
+        atencaoCount={atencaoCount}
         avatarUrl={
           ((user.user_metadata as { avatar_url?: string | null } | null)
             ?.avatar_url as string | null) ?? null

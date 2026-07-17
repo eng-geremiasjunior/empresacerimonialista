@@ -10,6 +10,10 @@ export type EventosParams = {
   sort: string; // date | client | status
   dir: string; // asc | desc
   view: string; // list (cards horizontais) | grid
+  responsavel: string; // membro_equipe id ou ""
+  city: string; // cidade exata ou ""
+  saude: string; // critico | atencao | saudavel | ""
+  arquivados: string; // "sim" mostra arquivados; "" mostra ativos
 };
 
 const DEFAULTS: EventosParams = {
@@ -21,6 +25,10 @@ const DEFAULTS: EventosParams = {
   sort: "date",
   dir: "asc",
   view: "list",
+  responsavel: "",
+  city: "",
+  saude: "",
+  arquivados: "",
 };
 
 export function parseEventosParams(
@@ -40,6 +48,10 @@ export function parseEventosParams(
     sort: get("sort"),
     dir: get("dir"),
     view: get("view"),
+    responsavel: get("responsavel"),
+    city: get("city"),
+    saude: get("saude"),
+    arquivados: get("arquivados"),
   };
 }
 
