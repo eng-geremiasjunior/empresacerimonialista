@@ -4,10 +4,16 @@
 import Link from "next/link";
 import {
   AtSign,
+  CalendarDays,
   CircleUserRound,
+  Clock,
   Mail,
+  MapPin,
   MessageCircle,
   Phone,
+  Sparkles,
+  Tag,
+  Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getResumoEvento } from "@/lib/supabase/resumo-evento";
@@ -19,7 +25,7 @@ import { ProximasAtividades } from "@/components/eventos/ProximasAtividades";
 import { NotasRapidas } from "@/components/eventos/NotasRapidas";
 import { CARGO_LABELS, type Cargo } from "@/lib/equipe-shared";
 import { EVENT_TYPE_LABELS } from "@/lib/types";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 import type { NotaEvento } from "./notas-actions";
 
 function iniciais(nome: string) {
@@ -163,6 +169,59 @@ export default async function ResumoPage({
               Sem cliente vinculado.
             </p>
           )}
+        </section>
+
+        {/* Visão geral do evento */}
+        <section>
+          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-gray-900">
+            <Sparkles size={15} className="text-indigo-500" />
+            Visão geral do evento
+          </h2>
+          <div className="mt-3 grid gap-4 sm:grid-cols-3">
+            {(
+              [
+                {
+                  icon: Tag,
+                  label: "Tipo de evento",
+                  valor: EVENT_TYPE_LABELS[resumo.event.type],
+                },
+                {
+                  icon: CalendarDays,
+                  label: "Data",
+                  valor: formatDate(resumo.event.date),
+                },
+                {
+                  icon: MapPin,
+                  label: "Local",
+                  valor: resumo.event.location || resumo.event.city || "—",
+                },
+                resumo.event.guests != null && {
+                  icon: Users,
+                  label: "Convidados esperados",
+                  valor: `${resumo.event.guests} pessoas`,
+                },
+                resumo.event.time && {
+                  icon: Clock,
+                  label: "Início previsto",
+                  valor: resumo.event.time.slice(0, 5),
+                },
+              ].filter(Boolean) as {
+                icon: typeof Tag;
+                label: string;
+                valor: string;
+              }[]
+            ).map(({ icon: Icon, label, valor }) => (
+              <div key={label} className="flex items-start gap-2.5">
+                <Icon size={16} className="mt-0.5 shrink-0 text-gray-400" />
+                <div className="min-w-0">
+                  <p className="text-xs text-gray-400">{label}</p>
+                  <p className="truncate text-sm font-medium text-gray-800">
+                    {valor}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
         </section>
 
         <NotasRapidas

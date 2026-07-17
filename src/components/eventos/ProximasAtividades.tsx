@@ -1,47 +1,77 @@
 import Link from "next/link";
 import { CalendarClock, Mail } from "lucide-react";
 import type { ProximaTarefa, ResumoEvento } from "@/lib/supabase/resumo-evento";
-import { formatDate, formatTime } from "@/lib/format";
+import { formatTime } from "@/lib/format";
 
-function Linha({ t, eventId }: { t: ProximaTarefa; eventId: string }) {
+const MESES = [
+  "JAN",
+  "FEV",
+  "MAR",
+  "ABR",
+  "MAI",
+  "JUN",
+  "JUL",
+  "AGO",
+  "SET",
+  "OUT",
+  "NOV",
+  "DEZ",
+];
+const SEMANA = [
+  "Domingo",
+  "Segunda-feira",
+  "Terça-feira",
+  "Quarta-feira",
+  "Quinta-feira",
+  "Sexta-feira",
+  "Sábado",
+];
+
+function SeloData({ dateIso }: { dateIso: string }) {
+  const d = new Date(`${dateIso}T00:00:00`);
+  return (
+    <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-lg bg-gray-50 leading-none">
+      <span className="text-base font-semibold text-gray-900">
+        {d.getDate()}
+      </span>
+      <span className="text-[10px] font-medium text-gray-400">
+        {MESES[d.getMonth()]}
+      </span>
+    </div>
+  );
+}
+
+function Item({
+  dateIso,
+  titulo,
+  subtitulo,
+  href,
+  icon,
+}: {
+  dateIso: string;
+  titulo: string;
+  subtitulo: string;
+  href: string;
+  icon?: React.ReactNode;
+}) {
   return (
     <Link
-      href={`/eventos/${eventId}/tarefas`}
-      className="flex items-center gap-2 rounded-md py-1 text-sm text-gray-700 hover:text-gray-900"
+      href={href}
+      className="flex items-center gap-3 rounded-lg py-1.5 transition-colors hover:bg-gray-50"
     >
-      <span className="h-3.5 w-3.5 shrink-0 rounded border border-gray-300" />
-      <span className="flex-1 truncate">{t.title}</span>
-      {t.due_time && (
-        <span className="shrink-0 text-xs text-gray-400">
-          {formatTime(t.due_time)}
-        </span>
-      )}
+      {icon ?? <SeloData dateIso={dateIso} />}
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium text-gray-800">{titulo}</p>
+        <p className="text-xs text-gray-400">{subtitulo}</p>
+      </div>
     </Link>
   );
 }
 
-function Janela({
-  titulo,
-  tarefas,
-  eventId,
-}: {
-  titulo: string;
-  tarefas: ProximaTarefa[];
-  eventId: string;
-}) {
-  if (tarefas.length === 0) return null;
-  return (
-    <div>
-      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-        {titulo}
-      </p>
-      <div className="space-y-0.5">
-        {tarefas.map((t) => (
-          <Linha key={t.id} t={t} eventId={eventId} />
-        ))}
-      </div>
-    </div>
-  );
+function subtitulo(t: ProximaTarefa) {
+  const d = new Date(`${t.due_date}T00:00:00`);
+  const dia = SEMANA[d.getDay()];
+  return t.due_time ? `${dia} · ${formatTime(t.due_time)}` : dia;
 }
 
 export function ProximasAtividades({
@@ -51,11 +81,12 @@ export function ProximasAtividades({
   eventId: string;
   proximas: ResumoEvento["proximas"];
 }) {
-  const vazio =
-    proximas.hoje.length === 0 &&
-    proximas.amanha.length === 0 &&
-    proximas.proximos7.length === 0 &&
-    !proximas.confirmacaoAgendada;
+  const todas: ProximaTarefa[] = [
+    ...proximas.hoje,
+    ...proximas.amanha,
+    ...proximas.proximos7,
+  ];
+  const vazio = todas.length === 0 && !proximas.confirmacaoAgendada;
 
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
@@ -77,32 +108,28 @@ export function ProximasAtividades({
           Nada agendado para os próximos dias.
         </p>
       ) : (
-        <div className="mt-3 space-y-3">
-          <Janela titulo="Hoje" tarefas={proximas.hoje} eventId={eventId} />
-          <Janela titulo="Amanhã" tarefas={proximas.amanha} eventId={eventId} />
-          <Janela
-            titulo="Próximos 7 dias"
-            tarefas={proximas.proximos7}
-            eventId={eventId}
-          />
+        <div className="mt-2 space-y-0.5">
+          {todas.map((t) => (
+            <Item
+              key={t.id}
+              dateIso={t.due_date}
+              titulo={t.title}
+              subtitulo={subtitulo(t)}
+              href={`/eventos/${eventId}/tarefas`}
+            />
+          ))}
           {proximas.confirmacaoAgendada && (
-            <div>
-              <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-                Automático
-              </p>
-              <Link
-                href={`/eventos/${eventId}/fornecedores`}
-                className="flex items-center gap-2 rounded-md py-1 text-sm text-gray-700 hover:text-gray-900"
-              >
-                <Mail size={14} className="shrink-0 text-indigo-500" />
-                <span className="flex-1">
-                  Convites de confirmação aos fornecedores
-                </span>
-                <span className="shrink-0 text-xs text-gray-400">
-                  {formatDate(proximas.confirmacaoAgendada)}
-                </span>
-              </Link>
-            </div>
+            <Item
+              dateIso={proximas.confirmacaoAgendada}
+              titulo="Convites de confirmação aos fornecedores"
+              subtitulo="Envio automático"
+              href={`/eventos/${eventId}/fornecedores`}
+              icon={
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-50">
+                  <Mail size={16} className="text-indigo-500" />
+                </div>
+              }
+            />
           )}
         </div>
       )}

@@ -7,7 +7,8 @@ import {
 } from "lucide-react";
 import type { ResumoEvento } from "@/lib/supabase/resumo-evento";
 
-// 4 blocos ricos (item 8) — números reais, títulos fortes, pouca borda.
+// 4 blocos ricos (item 8) — cards com ícone colorido, número forte e
+// rótulo, no estilo do painel de referência.
 export function ResumoOperacional({
   eventId,
   op,
@@ -18,63 +19,59 @@ export function ResumoOperacional({
   const base = `/eventos/${eventId}`;
   const cards = [
     {
-      href: `${base}/roteiro`,
-      icon: CalendarRange,
-      titulo: "Cronograma",
-      valor: `${op.cronogramaItens}`,
-      unidade: op.cronogramaItens === 1 ? "etapa" : "etapas",
-      detalhe: null as string | null,
-    },
-    {
       href: `${base}/tarefas`,
       icon: ListChecks,
-      titulo: "Checklist",
+      cor: "bg-indigo-50 text-indigo-600",
+      titulo: "Tarefas",
       valor: `${op.checklistFeitas}/${op.checklistTotal}`,
-      unidade: "concluído",
-      detalhe: null,
+      label: "Concluídas",
+    },
+    {
+      href: `${base}/roteiro`,
+      icon: CalendarRange,
+      cor: "bg-emerald-50 text-emerald-600",
+      titulo: "Cronograma",
+      valor: `${op.cronogramaItens}`,
+      label: op.cronogramaItens === 1 ? "Item" : "Itens",
     },
     {
       href: `${base}/fornecedores`,
       icon: Users,
+      cor: "bg-sky-50 text-sky-600",
       titulo: "Fornecedores",
-      valor: `${op.fornecedoresTotal}`,
-      unidade: op.fornecedoresTotal === 1 ? "total" : "no total",
-      detalhe:
-        op.fornecedoresTotal > 0
-          ? `${op.fornecedoresConfirmados} confirmados · ${op.fornecedoresPendentes} pendentes`
-          : null,
+      valor: `${op.fornecedoresConfirmados}/${op.fornecedoresTotal}`,
+      label: "Confirmados",
     },
     {
       href: `${base}/comunicacao`,
       icon: MessageSquare,
-      titulo: "Comunicação",
+      cor: "bg-amber-50 text-amber-600",
+      titulo: "Mensagens",
       valor: `${op.comunicacaoNaoLidas}`,
-      unidade: op.comunicacaoNaoLidas === 1 ? "não lida" : "não lidas",
-      detalhe: null,
+      label: op.comunicacaoNaoLidas === 1 ? "Não lida" : "Não lidas",
     },
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-      {cards.map(({ href, icon: Icon, titulo, valor, unidade, detalhe }) => (
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {cards.map(({ href, icon: Icon, cor, titulo, valor, label }) => (
         <Link
           key={titulo}
           href={href}
-          className="group rounded-xl p-4 transition-colors hover:bg-gray-50"
+          className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-colors hover:border-gray-300"
         >
-          <div className="flex items-center gap-1.5 text-gray-500">
-            <Icon size={15} strokeWidth={1.75} />
-            <span className="text-xs font-medium">{titulo}</span>
+          <div className="flex items-center gap-2.5">
+            <span
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${cor}`}
+            >
+              <Icon size={17} strokeWidth={1.75} />
+            </span>
+            <span className="text-sm font-medium text-gray-700">{titulo}</span>
           </div>
-          <p className="mt-2 text-2xl font-semibold tracking-tight text-gray-900">
+          <p className="mt-3 text-2xl font-semibold tracking-tight text-gray-900">
             {valor}
           </p>
-          <p className="text-xs text-gray-500">{unidade}</p>
-          {detalhe && (
-            <p className="mt-1 text-[11px] leading-tight text-gray-400">
-              {detalhe}
-            </p>
-          )}
+          <p className="text-xs text-gray-500">{label}</p>
         </Link>
       ))}
     </div>

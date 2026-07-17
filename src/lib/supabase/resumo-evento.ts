@@ -1,13 +1,125 @@
 // Dados do painel de Resumo do evento (redesign). Tudo real, via queries
 // já existentes. Reaproveita o cálculo de Saúde do Evento.
 
-import { addDays, format } from "date-fns";
+import { addDays, differenceInCalendarDays, format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { getSaudeEvento } from "@/lib/supabase/evento";
-import type { Saude } from "@/lib/saude-evento";
+import { calcularSaudeEvento, type Saude } from "@/lib/saude-evento";
 import type { EventStatus, EventType } from "@/lib/types";
 
 const iso = (d: Date) => format(d, "yyyy-MM-dd");
+
+// ------------------------------------------------------------
+// Cabeçalho do evento (layout): saúde + 3 fases do ciclo + contadores,
+// tudo numa leva de queries. As fases reaproveitam os MESMOS agregados
+// da Saúde do Evento — nenhum cálculo inventado:
+//   Planejamento → % de tarefas concluídas (checklist)
+//   Operação     → prontidão do dia: fornecedores confirmados + cronograma
+//   Pós-evento   → fechamento financeiro: receitas recebidas
+// ------------------------------------------------------------
+
+export type FasesEvento = {
+  planejamento: number;
+  operacao: number;
+  posEvento: number;
+};
+
+export type CabecalhoEvento = {
+  saude: Saude;
+  fases: FasesEvento;
+  contadores: EventoContadores;
+};
+
+export async function getCabecalhoEvento(
+  eventId: string
+): Promise<CabecalhoEvento> {
+  const supabase = createClient();
+  const hoje = iso(new Date());
+  const em7 = iso(addDays(new Date(), 7));
+
+  const [tasksRes, linksRes, itemsRes, txRes, msgRes] = await Promise.all([
+    supabase.from("tasks").select("status").eq("event_id", eventId),
+    supabase.from("roteiro_links").select("confirmed").eq("event_id", eventId),
+    supabase
+      .from("roteiro_items")
+      .select("id", { count: "exact", head: true })
+      .eq("event_id", eventId),
+    supabase
+      .from("transactions")
+      .select("type, paid, due_date")
+      .eq("event_id", eventId),
+    supabase
+      .from("event_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("event_id", eventId)
+      .eq("sender_type", "fornecedor")
+      .is("read_at", null),
+  ]);
+
+  const tasks = (tasksRes.data ?? []) as { status: string }[];
+  const links = (linksRes.data ?? []) as { confirmed: boolean }[];
+  const tx = (txRes.data ?? []) as {
+    type: string;
+    paid: boolean;
+    due_date: string | null;
+  }[];
+  const cronogramaItens = itemsRes.count ?? 0;
+
+  const tarefasTotal = tasks.length;
+  const tarefasConcluidas = tasks.filter((t) => t.status === "concluido").length;
+  const fornTotal = links.length;
+  const fornConfirmados = links.filter((l) => l.confirmed).length;
+  const vencidas = tx.filter(
+    (t) => t.type === "receita" && !t.paid && t.due_date && t.due_date < hoje
+  );
+  let diasMaisVencida: number | null = null;
+  for (const t of vencidas) {
+    const d = differenceInCalendarDays(
+      new Date(`${hoje}T00:00:00`),
+      new Date(`${t.due_date}T00:00:00`)
+    );
+    if (diasMaisVencida === null || d > diasMaisVencida) diasMaisVencida = d;
+  }
+
+  const saude = calcularSaudeEvento({
+    tarefasTotal,
+    tarefasConcluidas,
+    fornecedoresTotal: fornTotal,
+    fornecedoresConfirmados: fornConfirmados,
+    parcelasVencidas: vencidas.length,
+    diasParcelaMaisVencida: diasMaisVencida,
+    roteiroItens: cronogramaItens,
+  });
+
+  // Fases (0-100)
+  const planejamento =
+    tarefasTotal > 0
+      ? Math.round((tarefasConcluidas / tarefasTotal) * 100)
+      : 100;
+  const fornNorm = fornTotal > 0 ? (fornConfirmados / fornTotal) * 100 : 100;
+  const cronNorm = cronogramaItens > 0 ? 100 : 0;
+  const operacao = Math.round((fornNorm + cronNorm) / 2);
+  const receitas = tx.filter((t) => t.type === "receita");
+  const receitasPagas = receitas.filter((t) => t.paid).length;
+  const posEvento =
+    receitas.length > 0
+      ? Math.round((receitasPagas / receitas.length) * 100)
+      : 100;
+
+  const receberContador = tx.filter(
+    (t) => t.type === "receita" && !t.paid && t.due_date && t.due_date <= em7
+  ).length;
+
+  return {
+    saude,
+    fases: { planejamento, operacao, posEvento },
+    contadores: {
+      fornecedoresPendentes: fornTotal - fornConfirmados,
+      comunicacaoNaoLidas: msgRes.count ?? 0,
+      financeiroVencendo: receberContador,
+    },
+  };
+}
 
 // Contadores de pendência para as abas (item 6). Leve — usado no layout.
 export type EventoContadores = {

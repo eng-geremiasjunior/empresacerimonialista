@@ -4,8 +4,8 @@ import { differenceInCalendarDays } from "date-fns";
 import { ArrowLeft, Pencil, Play } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { EventTabs } from "@/components/evento/EventTabs";
-import { getSaudeEvento } from "@/lib/supabase/evento";
-import { getEventoContadores } from "@/lib/supabase/resumo-evento";
+import { ProgressoEvento } from "@/components/eventos/ProgressoEvento";
+import { getCabecalhoEvento } from "@/lib/supabase/resumo-evento";
 import { formatDate } from "@/lib/format";
 import {
   EVENT_STATUS_LABELS,
@@ -14,11 +14,12 @@ import {
   type EventType,
 } from "@/lib/types";
 
-const STATUS_STYLES: Record<EventStatus, string> = {
-  orcamento: "bg-amber-50 text-amber-700",
-  confirmado: "bg-emerald-50 text-emerald-700",
-  concluido: "bg-sky-50 text-sky-700",
-  cancelado: "bg-rose-50 text-rose-700",
+// Pílula de status: bolinha colorida + rótulo, fundo bem sutil.
+const STATUS_STYLES: Record<EventStatus, { pill: string; dot: string }> = {
+  orcamento: { pill: "bg-amber-50 text-amber-700", dot: "bg-amber-500" },
+  confirmado: { pill: "bg-emerald-50 text-emerald-700", dot: "bg-emerald-500" },
+  concluido: { pill: "bg-sky-50 text-sky-700", dot: "bg-sky-500" },
+  cancelado: { pill: "bg-rose-50 text-rose-700", dot: "bg-rose-500" },
 };
 
 export default async function EventoLayout({
@@ -49,10 +50,7 @@ export default async function EventoLayout({
     clients: { name: string } | null;
   };
 
-  const [saude, contadores] = await Promise.all([
-    getSaudeEvento(event.id),
-    getEventoContadores(event.id),
-  ]);
+  const { saude, fases, contadores } = await getCabecalhoEvento(event.id);
 
   const titulo =
     event.name ||
@@ -87,7 +85,15 @@ export default async function EventoLayout({
           Voltar para eventos
         </Link>
 
-        <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
+        {/* Status em pílula com bolinha */}
+        <span
+          className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[event.status].pill}`}
+        >
+          <span className={`h-1.5 w-1.5 rounded-full ${STATUS_STYLES[event.status].dot}`} />
+          {EVENT_STATUS_LABELS[event.status]}
+        </span>
+
+        <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
@@ -115,59 +121,32 @@ export default async function EventoLayout({
             </p>
           </div>
 
-          <div className="flex flex-col items-end gap-2">
-            <span
-              className={`shrink-0 rounded-full px-3 py-1 text-sm font-medium ${STATUS_STYLES[event.status]}`}
+          {/* Modo Evento — condicional por proximidade (item 2) */}
+          <div className="shrink-0">
+            {modoDestaque && !modoHoje && (
+              <p className="mb-1 text-right text-xs font-medium text-gray-500">
+                {proximidade}
+              </p>
+            )}
+            <Link
+              href={`/eventos/${event.id}/modo-evento`}
+              className={
+                modoHoje
+                  ? "flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white ring-2 ring-indigo-200 transition-colors hover:bg-indigo-700"
+                  : modoDestaque
+                    ? "flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-gray-800"
+                    : "inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-gray-400"
+              }
             >
-              {EVENT_STATUS_LABELS[event.status]}
-            </span>
+              <Play size={modoDestaque ? 16 : 14} strokeWidth={2} />
+              Modo Evento
+            </Link>
           </div>
-        </div>
-
-        {/* Progresso geral (reaproveita a Saúde do Evento) */}
-        <div className="mt-4">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500">Progresso geral</span>
-            <span className="font-semibold tabular-nums text-gray-900">
-              {saude.score}%
-            </span>
-          </div>
-          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
-            <div
-              className={`h-full rounded-full ${
-                saude.score >= 80
-                  ? "bg-emerald-500"
-                  : saude.score >= 50
-                    ? "bg-amber-500"
-                    : "bg-red-500"
-              }`}
-              style={{ width: `${saude.score}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Modo Evento — condicional por proximidade (item 2) */}
-        <div className="mt-4">
-          {modoDestaque && !modoHoje && (
-            <p className="mb-1 text-xs font-medium text-gray-500">
-              {proximidade} — prepare o modo evento
-            </p>
-          )}
-          <Link
-            href={`/eventos/${event.id}/modo-evento`}
-            className={
-              modoHoje
-                ? "flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white ring-2 ring-indigo-200 transition-colors hover:bg-indigo-700"
-                : modoDestaque
-                  ? "flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-gray-800"
-                  : "inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-gray-400"
-            }
-          >
-            <Play size={modoDestaque ? 16 : 14} strokeWidth={2} />
-            Modo Evento
-          </Link>
         </div>
       </div>
+
+      {/* Card de progresso com stepper de 3 fases */}
+      <ProgressoEvento saude={saude} fases={fases} />
 
       <EventTabs
         eventId={event.id}

@@ -10,6 +10,7 @@ import {
   Wallet,
   StickyNote,
   X,
+  Zap,
 } from "lucide-react";
 import { TaskForm } from "@/components/tasks/TaskForm";
 import { BuscarVincularFornecedorModal } from "@/components/fornecedores/BuscarVincularFornecedorModal";
@@ -18,23 +19,28 @@ import { criarNota } from "@/app/(app)/eventos/[id]/notas-actions";
 
 function ItemBotao({
   icon: Icon,
-  children,
+  titulo,
+  descricao,
   onClick,
   href,
 }: {
   icon: typeof ListPlus;
-  children: React.ReactNode;
+  titulo: string;
+  descricao: string;
   onClick?: () => void;
   href?: string;
 }) {
   const cls =
-    "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50";
+    "flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-gray-50";
   const inner = (
     <>
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500">
-        <Icon size={16} strokeWidth={1.75} />
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+        <Icon size={17} strokeWidth={1.75} />
       </span>
-      {children}
+      <span className="min-w-0">
+        <span className="block text-sm font-medium text-gray-800">{titulo}</span>
+        <span className="block truncate text-xs text-gray-500">{descricao}</span>
+      </span>
     </>
   );
   return href ? (
@@ -79,23 +85,41 @@ export function AcoesRapidas({
 
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-      <h3 className="text-sm font-semibold text-gray-900">Ações rápidas</h3>
+      <h3 className="flex items-center gap-1.5 text-sm font-semibold text-gray-900">
+        <Zap size={15} className="text-indigo-500" />
+        Ações rápidas
+      </h3>
       <div className="mt-2 space-y-0.5">
-        <ItemBotao icon={ListPlus} onClick={() => setTarefa(true)}>
-          Nova tarefa
-        </ItemBotao>
-        <ItemBotao icon={Users} onClick={() => setFornecedor(true)}>
-          Adicionar fornecedor
-        </ItemBotao>
-        <ItemBotao icon={MessageSquare} href={`/eventos/${eventId}/comunicacao`}>
-          Abrir comunicação
-        </ItemBotao>
-        <ItemBotao icon={Wallet} href={`/eventos/${eventId}/financeiro`}>
-          Abrir financeiro
-        </ItemBotao>
-        <ItemBotao icon={StickyNote} onClick={() => setNota(true)}>
-          Adicionar observação
-        </ItemBotao>
+        <ItemBotao
+          icon={ListPlus}
+          titulo="Nova tarefa"
+          descricao="Crie uma tarefa para este evento"
+          onClick={() => setTarefa(true)}
+        />
+        <ItemBotao
+          icon={Users}
+          titulo="Adicionar fornecedor"
+          descricao="Busque e vincule do seu cadastro"
+          onClick={() => setFornecedor(true)}
+        />
+        <ItemBotao
+          icon={MessageSquare}
+          titulo="Abrir comunicação"
+          descricao="Converse com equipe e fornecedores"
+          href={`/eventos/${eventId}/comunicacao`}
+        />
+        <ItemBotao
+          icon={Wallet}
+          titulo="Abrir financeiro"
+          descricao="Contratos, parcelas e despesas"
+          href={`/eventos/${eventId}/financeiro`}
+        />
+        <ItemBotao
+          icon={StickyNote}
+          titulo="Adicionar observação"
+          descricao="Anote algo sobre o evento"
+          onClick={() => setNota(true)}
+        />
       </div>
 
       {tarefa && (
