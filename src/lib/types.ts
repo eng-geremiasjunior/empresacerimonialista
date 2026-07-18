@@ -57,6 +57,27 @@ export type RoteiroItem = {
   suppliers: Pick<Supplier, "id" | "name"> | null;
 };
 
+// Status do cronograma dinâmico (Etapa 1 — status_novo em roteiro_items)
+export type RoteiroStatusNovo =
+  | "planejado"
+  | "em_andamento"
+  | "concluido"
+  | "problema";
+
+export type PublicRoteiroItem = {
+  id: string;
+  time: string | null;
+  title: string;
+  description: string | null;
+  status: RoteiroStatus;
+  status_novo: RoteiroStatusNovo;
+  horario_real_inicio: string | null;
+  horario_real_fim: string | null;
+  observacao: string | null;
+  responsavel_nome: string | null;
+  etapa_obrigatoria: boolean;
+};
+
 export type PublicRoteiroData = {
   event: {
     type: EventType;
@@ -65,13 +86,7 @@ export type PublicRoteiroData = {
     client_name: string | null;
   };
   supplier: { name: string };
-  items: {
-    id: string;
-    time: string | null;
-    title: string;
-    description: string | null;
-    status: RoteiroStatus;
-  }[];
+  items: PublicRoteiroItem[];
 };
 
 // Itens já mapeados para o Calendário (consulta em /calendario)
