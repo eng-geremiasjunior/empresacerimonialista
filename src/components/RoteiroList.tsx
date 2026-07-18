@@ -1,173 +1,261 @@
 "use client";
 
-import { useState } from "react";
+// Aba Cronograma (lado da cerimonialista) — timeline dinâmica com item
+// atual em destaque, painel lateral (progresso, próximos, alertas, ações)
+// e cálculo real de antecipação/atraso. Reflete o estado alimentado pelos
+// fornecedores (Etapa 2) via polling leve.
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Plus } from "lucide-react";
 import {
   createRoteiroItem,
   updateRoteiroItem,
   deleteRoteiroItem,
-  cycleRoteiroStatus,
 } from "@/app/(app)/eventos/[id]/roteiro/actions";
 import { RoteiroForm } from "@/components/RoteiroForm";
+import { ItemTimelineExpandido } from "@/components/cronograma/ItemTimelineExpandido";
+import { ItemTimelineCompacto } from "@/components/cronograma/ItemTimelineCompacto";
+import { HistoricoItemModal } from "@/components/cronograma/HistoricoItemModal";
+import { AtualizarStatusModal } from "@/components/cronograma/AtualizarStatusModal";
+import { PainelLateralCronograma } from "@/components/cronograma/PainelLateralCronograma";
+import { createClient } from "@/lib/supabase/client";
 import { formatTime } from "@/lib/format";
-import {
-  ROTEIRO_STATUS_LABELS,
-  type RoteiroItem,
-  type RoteiroStatus,
-  type Supplier,
-} from "@/lib/types";
+import { proximosItens, timeToMinutes, type CronogramaItem } from "@/lib/cronograma";
 
-const STATUS_STYLES: Record<RoteiroStatus, { card: string; badge: string }> = {
-  pendente: {
-    card: "border-l-4 border-l-gray-400 bg-gray-50",
-    badge: "bg-gray-400 hover:bg-gray-500",
-  },
-  em_andamento: {
-    card: "border-l-4 border-l-blue-500 bg-blue-50",
-    badge: "bg-blue-500 hover:bg-blue-600",
-  },
-  concluido: {
-    card: "border-l-4 border-l-green-500 bg-green-50",
-    badge: "bg-green-500 hover:bg-green-600",
-  },
-};
+const REFRESH_INTERVAL_MS = 20_000;
+
+function agoraEmMinutos() {
+  const d = new Date();
+  return d.getHours() * 60 + d.getMinutes();
+}
 
 type Props = {
   eventId: string;
-  items: RoteiroItem[];
-  suppliers: Supplier[];
+  eventDate: string; // yyyy-MM-dd
+  items: CronogramaItem[];
+  suppliers: { id: string; name: string; category: string | null; phone: string | null }[];
 };
 
-export function RoteiroList({ eventId, items, suppliers }: Props) {
+export function RoteiroList({ eventId, eventDate, items: initialItems, suppliers }: Props) {
+  const [items, setItems] = useState(initialItems);
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [historico, setHistorico] = useState<CronogramaItem | null>(null);
+  const [statusModal, setStatusModal] = useState<{ open: boolean; itemId?: string }>({
+    open: false,
+  });
+  const [focusId, setFocusId] = useState<string | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  // Mantém a lista sincronizada com o que os fornecedores atualizam
+  // (mesmo padrão de polling do link público).
+  const refresh = useCallback(async () => {
+    const supabase = createClient();
+    const { data } = await supabase.rpc("cronograma_evento", { p_event_id: eventId });
+    if (data) setItems(data as CronogramaItem[]);
+  }, [eventId]);
+
+  useEffect(() => {
+    const t = setInterval(refresh, REFRESH_INTERVAL_MS);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [refresh]);
+
+  useEffect(() => setItems(initialItems), [initialItems]);
+
+  const hoje = new Date().toISOString().slice(0, 10);
+  const eventoHoje = eventDate === hoje;
+
+  // Item "atual": em andamento agora, senão problema aberto, senão o
+  // próximo planejado mais próximo.
+  const currentId = useMemo(() => {
+    const emAndamento = items.find((i) => i.status_novo === "em_andamento");
+    if (emAndamento) return emAndamento.id;
+    const problema = items.find((i) => i.status_novo === "problema");
+    if (problema) return problema.id;
+    return proximosItens(items, 1)[0]?.id ?? null;
+  }, [items]);
+
+  const ordered = useMemo(
+    () =>
+      [...items].sort(
+        (a, b) => (timeToMinutes(a.time) ?? 1e9) - (timeToMinutes(b.time) ?? 1e9)
+      ),
+    [items]
+  );
+
+  function focarItem(itemId: string) {
+    setFocusId(itemId);
+    const el = document.getElementById(`crono-item-${itemId}`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setTimeout(() => setFocusId((c) => (c === itemId ? null : c)), 2000);
+  }
+
+  const nowMinutes = agoraEmMinutos();
 
   return (
-    <div className="space-y-5">
-      <div className="flex justify-end">
-        {!adding && (
-          <button
-            onClick={() => {
-              setAdding(true);
-              setEditingId(null);
-            }}
-            className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-gray-700"
-          >
-            + Adicionar item
-          </button>
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr,320px]">
+      {/* Coluna principal: timeline */}
+      <div className="min-w-0">
+        <div className="mb-4 flex items-center justify-between print:hidden">
+          <h2 className="text-sm font-semibold text-stone-700">
+            Cronograma do dia
+          </h2>
+          {!adding && (
+            <button
+              onClick={() => {
+                setAdding(true);
+                setEditingId(null);
+              }}
+              className="flex items-center gap-1.5 rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-stone-700"
+            >
+              <Plus size={16} /> Adicionar item
+            </button>
+          )}
+        </div>
+
+        {adding && (
+          <div className="mb-4 print:hidden">
+            <RoteiroForm
+              action={createRoteiroItem.bind(null, eventId)}
+              eventId={eventId}
+              suppliers={suppliers}
+              onClose={() => {
+                setAdding(false);
+                refresh();
+              }}
+            />
+          </div>
+        )}
+
+        {ordered.length === 0 && !adding ? (
+          <div className="rounded-xl border-2 border-dashed border-stone-300 bg-white p-12 text-center">
+            <p className="text-stone-600">O roteiro ainda está vazio.</p>
+            <button
+              onClick={() => setAdding(true)}
+              className="mt-4 text-sm font-medium text-stone-900 underline underline-offset-4 hover:no-underline"
+            >
+              Adicionar o primeiro item
+            </button>
+          </div>
+        ) : (
+          <div ref={listRef} className="space-y-3">
+            {ordered.map((item) => {
+              if (editingId === item.id) {
+                return (
+                  <div key={item.id} className="print:hidden">
+                    <RoteiroForm
+                      action={updateRoteiroItem.bind(null, eventId, item.id)}
+                      eventId={eventId}
+                      suppliers={suppliers}
+                      initial={{
+                        time: formatTime(item.time),
+                        title: item.title,
+                        description: item.description ?? "",
+                        supplierId: item.supplier_id ?? "",
+                        responsavelNome: item.responsavel_nome ?? "",
+                        responsavelTelefone: item.responsavel_telefone ?? "",
+                        etapaObrigatoria: item.etapa_obrigatoria,
+                        duracaoMinutos: item.duracao_minutos,
+                      }}
+                      onClose={() => {
+                        setEditingId(null);
+                        refresh();
+                      }}
+                    />
+                  </div>
+                );
+              }
+
+              const isCurrent = item.id === currentId;
+              const usaExpandido =
+                isCurrent || item.status_novo === "problema";
+              const anel =
+                focusId === item.id ? "ring-2 ring-sky-400 rounded-xl" : "";
+
+              return (
+                <div key={item.id} id={`crono-item-${item.id}`} className={anel}>
+                  {usaExpandido ? (
+                    <ItemTimelineExpandido
+                      item={item}
+                      destaque={isCurrent}
+                      nowMinutes={eventoHoje ? nowMinutes : -1}
+                      onEditar={() => {
+                        setEditingId(item.id);
+                        setAdding(false);
+                      }}
+                      onExcluir={() => {
+                        if (confirm(`Excluir "${item.title}"?`)) {
+                          deleteRoteiroItem(eventId, item.id).then(refresh);
+                        }
+                      }}
+                      onVerHistorico={() => setHistorico(item)}
+                    />
+                  ) : (
+                    <ItemTimelineCompacto item={item} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Legenda */}
+        {ordered.length > 0 && (
+          <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-stone-100 pt-4 text-xs text-stone-500">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> Concluído
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-sky-500" /> Em andamento
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-sky-400" /> Próximo
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-stone-300" /> Pendente
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-red-500" /> Atrasado/Problema
+            </span>
+          </div>
         )}
       </div>
 
-      {adding && (
-        <RoteiroForm
-          action={createRoteiroItem.bind(null, eventId)}
+      {/* Painel lateral */}
+      <aside className="lg:sticky lg:top-4 lg:self-start print:hidden">
+        <PainelLateralCronograma
+          items={items}
           eventId={eventId}
-          suppliers={suppliers}
-          onClose={() => setAdding(false)}
+          eventoHoje={eventoHoje}
+          onAtualizarStatus={() => setStatusModal({ open: true })}
+          onFocarItem={focarItem}
+        />
+      </aside>
+
+      {historico && (
+        <HistoricoItemModal
+          itemId={historico.id}
+          titulo={historico.title}
+          onFechar={() => setHistorico(null)}
         />
       )}
-
-      {items.length === 0 && !adding ? (
-        <div className="rounded-xl border-2 border-dashed border-gray-300 bg-white p-12 text-center">
-          <p className="text-gray-600">O roteiro ainda está vazio.</p>
-          <button
-            onClick={() => setAdding(true)}
-            className="mt-4 text-sm font-medium text-gray-900 underline underline-offset-4 hover:no-underline"
-          >
-            Adicionar o primeiro item
-          </button>
-        </div>
-      ) : (
-        <ul className="space-y-4">
-          {items.map((item) => {
-            const styles = STATUS_STYLES[item.status] ?? STATUS_STYLES.pendente;
-
-            if (editingId === item.id) {
-              return (
-                <li key={item.id}>
-                  <RoteiroForm
-                    action={updateRoteiroItem.bind(null, eventId, item.id)}
-                    eventId={eventId}
-                    suppliers={suppliers}
-                    initial={{
-                      time: formatTime(item.time),
-                      title: item.title,
-                      description: item.description ?? "",
-                      supplierId: item.supplier_id ?? "",
-                      status: item.status,
-                    }}
-                    onClose={() => setEditingId(null)}
-                  />
-                </li>
-              );
-            }
-
-            return (
-              <li
-                key={item.id}
-                className={`rounded-xl border border-gray-200 ${styles.card} p-5 shadow-sm transition-shadow hover:shadow-md`}
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex min-w-0 items-start gap-4">
-                    <span className="pt-0.5 font-mono text-lg font-bold text-gray-900">
-                      {formatTime(item.time)}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="font-semibold text-gray-900">{item.title}</p>
-                      {item.description && (
-                        <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-gray-600">
-                          {item.description}
-                        </p>
-                      )}
-                      {item.suppliers && (
-                        <p className="mt-2 text-xs text-gray-500">
-                          Fornecedor: {item.suppliers.name}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex shrink-0 flex-col items-end gap-3">
-                    <form action={cycleRoteiroStatus.bind(null, eventId, item.id)}>
-                      <button
-                        type="submit"
-                        title="Clique para mudar o status"
-                        className={`rounded-full px-3 py-1 text-xs font-semibold text-white shadow-sm transition-colors ${styles.badge}`}
-                      >
-                        {ROTEIRO_STATUS_LABELS[item.status] ?? item.status}
-                      </button>
-                    </form>
-                    <div className="flex items-center gap-1 text-sm">
-                      <button
-                        onClick={() => {
-                          setEditingId(item.id);
-                          setAdding(false);
-                        }}
-                        className="rounded-md px-2.5 py-1.5 text-gray-500 transition-colors hover:bg-white hover:text-gray-900"
-                      >
-                        Editar
-                      </button>
-                      <form
-                        action={deleteRoteiroItem.bind(null, eventId, item.id)}
-                        onSubmit={(e) => {
-                          if (!confirm(`Excluir "${item.title}"?`)) {
-                            e.preventDefault();
-                          }
-                        }}
-                      >
-                        <button
-                          type="submit"
-                          className="rounded-md px-2.5 py-1.5 text-red-500 transition-colors hover:bg-white hover:text-red-700"
-                        >
-                          Excluir
-                        </button>
-                      </form>
-                    </div>
-                  </div>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+      {statusModal.open && (
+        <AtualizarStatusModal
+          eventId={eventId}
+          items={ordered}
+          itemInicial={statusModal.itemId}
+          onFechar={() => {
+            setStatusModal({ open: false });
+            refresh();
+          }}
+        />
       )}
     </div>
   );

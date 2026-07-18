@@ -4,19 +4,22 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useFormState, useFormStatus } from "react-dom";
 import type { RoteiroFormState } from "@/app/(app)/eventos/[id]/roteiro/actions";
-import { ROTEIRO_STATUS_LABELS, type Supplier } from "@/lib/types";
+import type { Supplier } from "@/lib/types";
 
 const inputClass =
-  "w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100";
+  "w-full rounded-lg border border-stone-300 bg-white px-3.5 py-2.5 text-sm text-stone-900 transition-colors focus:border-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-100";
 
-const labelClass = "mb-1.5 block text-sm font-medium text-gray-700";
+const labelClass = "mb-1.5 block text-sm font-medium text-stone-700";
 
 export type RoteiroInitial = {
   time: string;
   title: string;
   description: string;
   supplierId: string;
-  status: string;
+  responsavelNome: string;
+  responsavelTelefone: string;
+  etapaObrigatoria: boolean;
+  duracaoMinutos: number | null;
 };
 
 type Props = {
@@ -36,14 +39,20 @@ function SubmitButton({ label }: { label: string }) {
     <button
       type="submit"
       disabled={pending}
-      className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-gray-700 disabled:opacity-50"
+      className="rounded-lg bg-stone-900 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-stone-700 disabled:opacity-50"
     >
       {pending ? "Salvando..." : label}
     </button>
   );
 }
 
-export function RoteiroForm({ action, eventId, suppliers, initial, onClose }: Props) {
+export function RoteiroForm({
+  action,
+  eventId,
+  suppliers,
+  initial,
+  onClose,
+}: Props) {
   const [state, formAction] = useFormState(action, null);
   const [supplierChoice, setSupplierChoice] = useState(
     initial?.supplierId ?? ""
@@ -58,12 +67,12 @@ export function RoteiroForm({ action, eventId, suppliers, initial, onClose }: Pr
   return (
     <form
       action={formAction}
-      className="space-y-5 rounded-xl border border-gray-200 bg-white p-6 shadow-md"
+      className="space-y-5 rounded-xl border border-stone-200 bg-white p-6 shadow-md"
     >
       <div className="grid grid-cols-[7rem,1fr] gap-5">
         <div>
           <label htmlFor="time" className={labelClass}>
-            Horário
+            Horário previsto
           </label>
           <input
             id="time"
@@ -92,7 +101,8 @@ export function RoteiroForm({ action, eventId, suppliers, initial, onClose }: Pr
 
       <div>
         <label htmlFor="description" className={labelClass}>
-          Descrição <span className="font-normal text-gray-400">(opcional)</span>
+          Descrição{" "}
+          <span className="font-normal text-stone-400">(opcional)</span>
         </label>
         <textarea
           id="description"
@@ -110,7 +120,7 @@ export function RoteiroForm({ action, eventId, suppliers, initial, onClose }: Pr
             Fornecedor responsável
           </label>
           {suppliers.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3 py-2.5 text-xs text-gray-500">
+            <div className="rounded-lg border border-dashed border-stone-300 bg-stone-50 px-3 py-2.5 text-xs text-stone-500">
               Nenhum fornecedor vinculado a este evento ainda.{" "}
               <Link
                 href={`/eventos/${eventId}/fornecedores`}
@@ -140,23 +150,63 @@ export function RoteiroForm({ action, eventId, suppliers, initial, onClose }: Pr
         </div>
 
         <div>
-          <label htmlFor="status" className={labelClass}>
-            Status
+          <label htmlFor="duracao_minutos" className={labelClass}>
+            Duração{" "}
+            <span className="font-normal text-stone-400">(min, opcional)</span>
           </label>
-          <select
-            id="status"
-            name="status"
-            defaultValue={initial?.status ?? "pendente"}
+          <input
+            id="duracao_minutos"
+            name="duracao_minutos"
+            type="number"
+            min={0}
+            step={5}
+            defaultValue={initial?.duracaoMinutos ?? ""}
+            placeholder="Ex.: 60"
             className={inputClass}
-          >
-            {Object.entries(ROTEIRO_STATUS_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
+          />
         </div>
       </div>
+
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div>
+          <label htmlFor="responsavel_nome" className={labelClass}>
+            Responsável{" "}
+            <span className="font-normal text-stone-400">(opcional)</span>
+          </label>
+          <input
+            id="responsavel_nome"
+            name="responsavel_nome"
+            type="text"
+            defaultValue={initial?.responsavelNome}
+            placeholder="Pessoa que atende no dia"
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label htmlFor="responsavel_telefone" className={labelClass}>
+            Telefone do responsável{" "}
+            <span className="font-normal text-stone-400">(opcional)</span>
+          </label>
+          <input
+            id="responsavel_telefone"
+            name="responsavel_telefone"
+            type="tel"
+            defaultValue={initial?.responsavelTelefone}
+            placeholder="(33) 90000-0000"
+            className={inputClass}
+          />
+        </div>
+      </div>
+
+      <label className="flex items-center gap-2.5 text-sm text-stone-700">
+        <input
+          type="checkbox"
+          name="etapa_obrigatoria"
+          defaultChecked={initial?.etapaObrigatoria}
+          className="h-4 w-4 rounded border-stone-300 text-stone-900 focus:ring-stone-400"
+        />
+        Etapa obrigatória
+      </label>
 
       {state && "error" in state && (
         <p className="text-sm text-red-600">{state.error}</p>
@@ -167,7 +217,7 @@ export function RoteiroForm({ action, eventId, suppliers, initial, onClose }: Pr
         <button
           type="button"
           onClick={onClose}
-          className="rounded-md px-3 py-2 text-sm text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
+          className="rounded-md px-3 py-2 text-sm text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-900"
         >
           Cancelar
         </button>

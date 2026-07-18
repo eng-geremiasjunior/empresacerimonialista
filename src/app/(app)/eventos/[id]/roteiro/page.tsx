@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { RoteiroList } from "@/components/RoteiroList";
-import { type Event, type RoteiroItem, type Supplier } from "@/lib/types";
+import type { CronogramaItem } from "@/lib/cronograma";
+import type { Supplier } from "@/lib/types";
 
 export default async function RoteiroPage({
   params,
@@ -12,21 +13,15 @@ export default async function RoteiroPage({
 }) {
   const supabase = createClient();
 
-  // Fornecedores disponíveis para os itens do roteiro = os VINCULADOS ao
-  // evento (aba Fornecedores). Não há mais criação de fornecedor solto aqui.
-  const [{ data: eventData }, itemsResult, linksResult] = await Promise.all([
+  const [{ data: eventData }, cronogramaResult, linksResult] = await Promise.all([
     supabase
       .from("events")
-      .select("id, type, date, location, clients(id, name, phone, email)")
+      .select("id, date")
       .eq("id", params.id)
       .single(),
-    supabase
-      .from("roteiro_items")
-      .select(
-        "id, event_id, time, title, description, supplier_id, status, suppliers(id, name)"
-      )
-      .eq("event_id", params.id)
-      .order("time", { ascending: true }),
+    // Leitura rica dos itens (status_novo, horários reais, responsável,
+    // fornecedor + categoria) — mesma fonte usada no polling do client.
+    supabase.rpc("cronograma_evento", { p_event_id: params.id }),
     supabase
       .from("roteiro_links")
       .select("supplier_id, hash, suppliers(id, name)")
@@ -37,11 +32,8 @@ export default async function RoteiroPage({
     notFound();
   }
 
-  const event = eventData as unknown as Pick<
-    Event,
-    "id" | "type" | "date" | "location" | "clients"
-  >;
-  const items = (itemsResult.data ?? []) as unknown as RoteiroItem[];
+  const event = eventData as { id: string; date: string };
+  const items = (cronogramaResult.data ?? []) as unknown as CronogramaItem[];
 
   const linkRows = (linksResult.data ?? []) as unknown as {
     supplier_id: string;
@@ -52,35 +44,41 @@ export default async function RoteiroPage({
   // Só os fornecedores vinculados aparecem no select do item de roteiro.
   const suppliers: Supplier[] = linkRows
     .filter((l) => l.suppliers)
-    .map((l) => ({ id: l.suppliers!.id, name: l.suppliers!.name }) as Supplier)
+    .map(
+      (l) =>
+        ({
+          id: l.suppliers!.id,
+          name: l.suppliers!.name,
+          category: null,
+          phone: null,
+        }) as Supplier
+    )
     .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div>
-      <h2 className="mb-4 text-sm font-semibold text-stone-700">
-        Cronograma do dia
-      </h2>
-
-      {itemsResult.error && (
+      {cronogramaResult.error && (
         <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
-          Não foi possível carregar o roteiro. Se o banco ainda não foi
-          atualizado, execute <code>supabase/migrations/002_roteiro.sql</code>{" "}
-          no SQL Editor do Supabase.
+          Não foi possível carregar o cronograma. Se o banco ainda não foi
+          atualizado, execute as migrações{" "}
+          <code>031</code>–<code>033</code> no SQL Editor do Supabase.
         </div>
       )}
 
       <RoteiroList
         eventId={event.id}
+        eventDate={event.date}
         items={items}
         suppliers={suppliers}
       />
 
       {suppliers.length > 0 && (
-        <section className="mt-10">
+        <section className="mt-10 print:hidden">
           <h2 className="text-base font-semibold">Links para fornecedores</h2>
           <p className="mt-1 text-sm text-stone-500">
             Envie o link para cada fornecedor: ele vê só os itens dele, sem
-            precisar de login, e a página se atualiza sozinha.
+            precisar de login, atualiza o status em tempo real e a página se
+            atualiza sozinha.
           </p>
           <ul className="mt-3 space-y-2">
             {linkRows

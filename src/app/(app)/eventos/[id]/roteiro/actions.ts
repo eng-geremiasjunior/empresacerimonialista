@@ -3,35 +3,51 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import type { RoteiroStatus } from "@/lib/types";
+import type { RoteiroStatusNovo } from "@/lib/types";
 
 export type RoteiroFormState = { error: string } | { success: true } | null;
 
-const STATUSES: RoteiroStatus[] = ["pendente", "em_andamento", "concluido"];
+const STATUSES_NOVO: RoteiroStatusNovo[] = [
+  "planejado",
+  "em_andamento",
+  "concluido",
+  "problema",
+];
 
-const NEXT_STATUS: Record<RoteiroStatus, RoteiroStatus> = {
-  pendente: "em_andamento",
-  em_andamento: "concluido",
-  concluido: "pendente",
+// status_novo -> status antigo (coexistência até a limpeza final).
+// 'problema' não tem equivalente antigo: mapeia para em_andamento.
+const STATUS_ANTIGO: Record<RoteiroStatusNovo, string> = {
+  planejado: "pendente",
+  em_andamento: "em_andamento",
+  concluido: "concluido",
+  problema: "em_andamento",
 };
 
 function readForm(formData: FormData) {
+  const duracaoRaw = String(formData.get("duracao_minutos") ?? "").trim();
   return {
     time: String(formData.get("time") ?? "").trim(),
     title: String(formData.get("title") ?? "").trim(),
     description: String(formData.get("description") ?? "").trim(),
     // Só um fornecedor JÁ VINCULADO ao evento (via aba Fornecedores).
-    // Não há mais criação de fornecedor solto aqui (Etapa 3).
     supplierId: String(formData.get("supplier_id") ?? "") || null,
-    status: String(formData.get("status") ?? "pendente"),
+    responsavelNome: String(formData.get("responsavel_nome") ?? "").trim(),
+    responsavelTelefone: String(
+      formData.get("responsavel_telefone") ?? ""
+    ).trim(),
+    etapaObrigatoria: formData.get("etapa_obrigatoria") === "on",
+    duracaoMinutos: duracaoRaw ? Number(duracaoRaw) : null,
   };
 }
 
 function validate(form: ReturnType<typeof readForm>): string | null {
   if (!/^\d{2}:\d{2}(:\d{2})?$/.test(form.time)) return "Informe o horário.";
   if (!form.title) return "Informe o título do item.";
-  if (!STATUSES.includes(form.status as RoteiroStatus)) {
-    return "Escolha um status válido.";
+  if (
+    form.duracaoMinutos !== null &&
+    (Number.isNaN(form.duracaoMinutos) || form.duracaoMinutos < 0)
+  ) {
+    return "Duração inválida.";
   }
   return null;
 }
@@ -85,7 +101,12 @@ export async function createRoteiroItem(
     title: form.title,
     description: form.description || null,
     supplier_id: form.supplierId,
-    status: form.status,
+    status: "pendente",
+    status_novo: "planejado",
+    responsavel_nome: form.responsavelNome || null,
+    responsavel_telefone: form.responsavelTelefone || null,
+    etapa_obrigatoria: form.etapaObrigatoria,
+    duracao_minutos: form.duracaoMinutos,
   });
 
   if (error) {
@@ -117,6 +138,8 @@ export async function updateRoteiroItem(
     return { error: "Já existe um item nesse horário. Escolha outro horário." };
   }
 
+  // Edição NÃO altera status (isso é feito pelas ações de status, que
+  // carimbam horários e registram no log). Só os campos do formulário.
   const { error } = await supabase
     .from("roteiro_items")
     .update({
@@ -124,7 +147,10 @@ export async function updateRoteiroItem(
       title: form.title,
       description: form.description || null,
       supplier_id: form.supplierId,
-      status: form.status,
+      responsavel_nome: form.responsavelNome || null,
+      responsavel_telefone: form.responsavelTelefone || null,
+      etapa_obrigatoria: form.etapaObrigatoria,
+      duracao_minutos: form.duracaoMinutos,
     })
     .eq("id", itemId)
     .eq("event_id", eventId);
@@ -152,39 +178,53 @@ export async function deleteRoteiroItem(eventId: string, itemId: string) {
   revalidatePath(`/eventos/${eventId}/roteiro`);
 }
 
-// Avança o status com um clique: pendente -> em andamento -> concluído -> pendente
-export async function cycleRoteiroStatus(eventId: string, itemId: string) {
+// Atualização manual de status pela cerimonialista — usa a MESMA função
+// agnóstica de canal da Etapa 1 (carimba horário real + grava no log),
+// com origem 'cerimonialista'.
+export async function atualizarStatusManual(
+  eventId: string,
+  itemId: string,
+  status: RoteiroStatusNovo,
+  observacao?: string | null
+): Promise<{ error: string } | { success: true }> {
+  if (!STATUSES_NOVO.includes(status)) return { error: "Status inválido." };
+
   const supabase = createClient();
-  const { data: item } = await supabase
-    .from("roteiro_items")
-    .select("status")
-    .eq("id", itemId)
-    .eq("event_id", eventId)
-    .single();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
-  if (!item) return;
+  const { data, error } = await supabase.rpc("atualizar_status_item", {
+    p_roteiro_item_id: itemId,
+    p_novo_status: status,
+    p_observacao: observacao ?? null,
+    p_origem: "cerimonialista",
+  });
 
-  await supabase
-    .from("roteiro_items")
-    .update({ status: NEXT_STATUS[item.status as RoteiroStatus] ?? "pendente" })
-    .eq("id", itemId)
-    .eq("event_id", eventId);
+  if (error || (data as { error?: string })?.error) {
+    return { error: "Não foi possível atualizar o status." };
+  }
 
   revalidatePath(`/eventos/${eventId}/roteiro`);
+  revalidatePath(`/eventos/${eventId}`, "layout");
+  return { success: true };
 }
 
-// Modo Evento: toque marca o item como concluído (ou reabre).
+// Modo Evento: toque marca o item como concluído (ou reabre). Segue pela
+// mesma função agnóstica, mantendo o log e os horários coerentes.
 export async function setRoteiroItemDone(
   eventId: string,
   itemId: string,
   done: boolean
 ) {
   const supabase = createClient();
-  await supabase
-    .from("roteiro_items")
-    .update({ status: done ? "concluido" : "pendente" })
-    .eq("id", itemId)
-    .eq("event_id", eventId);
+  await supabase.rpc("atualizar_status_item", {
+    p_roteiro_item_id: itemId,
+    p_novo_status: done ? "concluido" : "planejado",
+    p_observacao: null,
+    p_origem: "cerimonialista",
+  });
 
   revalidatePath(`/eventos/${eventId}/roteiro`);
   revalidatePath(`/eventos/${eventId}/modo-evento`);
