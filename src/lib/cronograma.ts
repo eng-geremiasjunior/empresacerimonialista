@@ -54,6 +54,29 @@ export const STATUS_UI: Record<
   },
 };
 
+// Cor do badge de categoria (visual — paleta dessaturada). Agrupa por
+// afinidade: decoração/flores=roxo, buffet=laranja, som/dj/banda=azul,
+// foto/filmagem=rosa, celebrante/cerimonial=índigo, resto=neutro.
+const CATEGORIA_CORES: Record<string, string> = {
+  decoracao: "bg-purple-50 text-purple-700",
+  flores: "bg-purple-50 text-purple-700",
+  buffet: "bg-orange-50 text-orange-700",
+  som: "bg-sky-50 text-sky-700",
+  dj: "bg-sky-50 text-sky-700",
+  banda: "bg-sky-50 text-sky-700",
+  iluminacao: "bg-sky-50 text-sky-700",
+  fotografia: "bg-pink-50 text-pink-700",
+  filmagem: "bg-pink-50 text-pink-700",
+  celebrante: "bg-indigo-50 text-indigo-700",
+  mestre_cerimonias: "bg-indigo-50 text-indigo-700",
+  cerimonial_religioso: "bg-indigo-50 text-indigo-700",
+};
+
+export function categoriaBadgeClass(slug: string | null): string {
+  if (!slug) return "bg-stone-100 text-stone-600";
+  return CATEGORIA_CORES[slug] ?? "bg-stone-100 text-stone-600";
+}
+
 // "HH:MM:SS" | "HH:MM" -> minutos desde 00:00
 export function timeToMinutes(time: string | null): number | null {
   if (!time) return null;
@@ -143,8 +166,8 @@ export function contagemRegressiva(
   if (diff <= 0) return "agora";
   const h = Math.floor(diff / 60);
   const m = diff % 60;
-  if (h === 0) return `em ${m} min`;
-  return `em ${h}h${String(m).padStart(2, "0")}min`;
+  if (h === 0) return `Em ${m} min`;
+  return `Em ${h}h ${m}min`;
 }
 
 // ---- Alertas REAIS (não IA) ----

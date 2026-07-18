@@ -14,7 +14,6 @@ import {
 } from "@/app/(app)/eventos/[id]/roteiro/actions";
 import { RoteiroForm } from "@/components/RoteiroForm";
 import { ItemTimelineExpandido } from "@/components/cronograma/ItemTimelineExpandido";
-import { ItemTimelineCompacto } from "@/components/cronograma/ItemTimelineCompacto";
 import { HistoricoItemModal } from "@/components/cronograma/HistoricoItemModal";
 import { AtualizarStatusModal } from "@/components/cronograma/AtualizarStatusModal";
 import { PainelLateralCronograma } from "@/components/cronograma/PainelLateralCronograma";
@@ -45,7 +44,12 @@ export function RoteiroList({ eventId, eventDate, items: initialItems, suppliers
     open: false,
   });
   const [focusId, setFocusId] = useState<string | null>(null);
-  const listRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+  const listRef = useRef<HTMLUListElement>(null);
+
+  // Valores dependentes de "agora" só entram após o mount, evitando
+  // divergência de hidratação (SSR vs cliente com o minuto virado).
+  useEffect(() => setMounted(true), []);
 
   // Mantém a lista sincronizada com o que os fornecedores atualizam
   // (mesmo padrão de polling do link público).
@@ -97,7 +101,7 @@ export function RoteiroList({ eventId, eventDate, items: initialItems, suppliers
     setTimeout(() => setFocusId((c) => (c === itemId ? null : c)), 2000);
   }
 
-  const nowMinutes = agoraEmMinutos();
+  const nowMinutes = mounted ? agoraEmMinutos() : -1;
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr,320px]">
@@ -145,11 +149,11 @@ export function RoteiroList({ eventId, eventDate, items: initialItems, suppliers
             </button>
           </div>
         ) : (
-          <div ref={listRef} className="space-y-3">
-            {ordered.map((item) => {
+          <ul ref={listRef} className="space-y-0">
+            {ordered.map((item, idx) => {
               if (editingId === item.id) {
                 return (
-                  <div key={item.id} className="print:hidden">
+                  <li key={item.id} className="mb-4 print:hidden">
                     <RoteiroForm
                       action={updateRoteiroItem.bind(null, eventId, item.id)}
                       eventId={eventId}
@@ -169,41 +173,38 @@ export function RoteiroList({ eventId, eventDate, items: initialItems, suppliers
                         refresh();
                       }}
                     />
-                  </div>
+                  </li>
                 );
               }
 
               const isCurrent = item.id === currentId;
-              const usaExpandido =
-                isCurrent || item.status_novo === "problema";
               const anel =
-                focusId === item.id ? "ring-2 ring-sky-400 rounded-xl" : "";
+                focusId === item.id
+                  ? "rounded-xl ring-2 ring-sky-400 ring-offset-2"
+                  : "";
 
               return (
                 <div key={item.id} id={`crono-item-${item.id}`} className={anel}>
-                  {usaExpandido ? (
-                    <ItemTimelineExpandido
-                      item={item}
-                      destaque={isCurrent}
-                      nowMinutes={eventoHoje ? nowMinutes : -1}
-                      onEditar={() => {
-                        setEditingId(item.id);
-                        setAdding(false);
-                      }}
-                      onExcluir={() => {
-                        if (confirm(`Excluir "${item.title}"?`)) {
-                          deleteRoteiroItem(eventId, item.id).then(refresh);
-                        }
-                      }}
-                      onVerHistorico={() => setHistorico(item)}
-                    />
-                  ) : (
-                    <ItemTimelineCompacto item={item} />
-                  )}
+                  <ItemTimelineExpandido
+                    item={item}
+                    destaque={isCurrent}
+                    isLast={idx === ordered.length - 1}
+                    nowMinutes={eventoHoje ? nowMinutes : -1}
+                    onEditar={() => {
+                      setEditingId(item.id);
+                      setAdding(false);
+                    }}
+                    onExcluir={() => {
+                      if (confirm(`Excluir "${item.title}"?`)) {
+                        deleteRoteiroItem(eventId, item.id).then(refresh);
+                      }
+                    }}
+                    onVerHistorico={() => setHistorico(item)}
+                  />
                 </div>
               );
             })}
-          </div>
+          </ul>
         )}
 
         {/* Legenda */}

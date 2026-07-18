@@ -42,19 +42,24 @@ export function PainelLateralCronograma({
   onAtualizarStatus: () => void;
   onFocarItem: (itemId: string) => void;
 }) {
-  const [nowMinutes, setNowMinutes] = useState(agoraEmMinutos());
+  // Começa neutro (-1) para casar SSR e 1ª render do cliente; o tempo
+  // real entra após o mount (evita divergência de hidratação).
+  const [nowMinutes, setNowMinutes] = useState(-1);
+  const mounted = nowMinutes >= 0;
 
   useEffect(() => {
+    setNowMinutes(agoraEmMinutos());
     const t = setInterval(() => setNowMinutes(agoraEmMinutos()), 60_000);
     return () => clearInterval(t);
   }, []);
 
   const progresso = progressoDoDia(items);
   const proximos = proximosItens(items, 3);
-  // Atrasos só fazem sentido no dia do evento; problema alerta sempre.
+  // Atrasos só fazem sentido no dia do evento e após o mount; problema
+  // alerta sempre.
   const alertas = alertasCronograma(
     items,
-    eventoHoje ? nowMinutes : -1
+    eventoHoje && mounted ? nowMinutes : -1
   );
 
   const raio = 26;
@@ -125,7 +130,7 @@ export function PainelLateralCronograma({
                   <span className="min-w-0 flex-1 truncate text-sm text-stone-700">
                     {item.title}
                   </span>
-                  {eventoHoje && (
+                  {eventoHoje && mounted && (
                     <span className="shrink-0 text-xs text-stone-400">
                       {contagemRegressiva(item.time, nowMinutes)}
                     </span>
@@ -151,8 +156,8 @@ export function PainelLateralCronograma({
           )}
         </div>
         {alertas.length === 0 ? (
-          <p className="mt-3 text-sm text-stone-400">
-            Tudo tranquilo por aqui. 🌱
+          <p className="mt-3 text-sm text-stone-500">
+            Tudo tranquilo por aqui 🎉
           </p>
         ) : (
           <ul className="mt-3 space-y-3">
