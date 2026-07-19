@@ -104,11 +104,11 @@ export function RoteiroList({ eventId, eventDate, items: initialItems, suppliers
   const nowMinutes = mounted ? agoraEmMinutos() : -1;
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr,320px]">
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr,340px]">
       {/* Coluna principal: timeline */}
       <div className="min-w-0">
-        <div className="mb-4 flex items-center justify-between print:hidden">
-          <h2 className="text-sm font-semibold text-stone-700">
+        <div className="mb-6 flex items-center justify-between print:hidden">
+          <h2 className="text-[15px] font-semibold text-stone-800">
             Cronograma do dia
           </h2>
           {!adding && (
@@ -117,7 +117,7 @@ export function RoteiroList({ eventId, eventDate, items: initialItems, suppliers
                 setAdding(true);
                 setEditingId(null);
               }}
-              className="flex items-center gap-1.5 rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-stone-700"
+              className="flex items-center gap-1.5 rounded-xl bg-stone-900 px-4 py-2.5 text-[13px] font-medium text-white shadow-sm transition-colors hover:bg-stone-700"
             >
               <Plus size={16} /> Adicionar item
             </button>
@@ -209,21 +209,21 @@ export function RoteiroList({ eventId, eventDate, items: initialItems, suppliers
 
         {/* Legenda */}
         {ordered.length > 0 && (
-          <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-stone-100 pt-4 text-xs text-stone-500">
+          <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1.5 rounded-xl border border-stone-100 bg-stone-50/60 px-4 py-2.5 text-[12px] text-stone-500">
             <span className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> Concluído
+              <span className="h-2 w-2 rounded-full bg-emerald-500" /> Concluído
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-sky-500" /> Em andamento
+              <span className="h-2 w-2 rounded-full bg-sky-500" /> Em andamento
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-sky-400" /> Próximo
+              <span className="h-2 w-2 rounded-full bg-indigo-500" /> Próximo
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-stone-300" /> Pendente
+              <span className="h-2 w-2 rounded-full bg-stone-300" /> Pendente
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-red-500" /> Atrasado/Problema
+              <span className="h-2 w-2 rounded-full bg-red-500" /> Atrasado/Problema
             </span>
           </div>
         )}

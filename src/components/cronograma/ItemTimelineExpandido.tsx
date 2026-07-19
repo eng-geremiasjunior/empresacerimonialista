@@ -2,8 +2,8 @@
 
 // Linha da timeline do cronograma (lado da cerimonialista): trilho com
 // círculo de status preenchido + conector vertical, coluna de horário/
-// duração e o card rico expandido. Usado para TODOS os itens; o item
-// atual ganha destaque forte (borda + fundo + "AGORA").
+// duração e card premium expandido. Usado para TODOS os itens; o item
+// atual ganha destaque forte (acento lateral + fundo tingido + "AGORA").
 
 import { useState } from "react";
 import {
@@ -44,7 +44,8 @@ function duracaoLabel(min: number | null): string | null {
   return `${min}min`;
 }
 
-// Círculo de status preenchido (verde/azul/vermelho/accent) ou vazio.
+// Círculo de status preenchido (verde/azul/vermelho/accent) ou vazio,
+// isolado do trilho por um anel branco.
 function StatusCirculo({
   item,
   destaque,
@@ -53,28 +54,30 @@ function StatusCirculo({
   destaque?: boolean;
 }) {
   const s = item.status_novo;
+  const base =
+    "flex h-6 w-6 items-center justify-center rounded-full text-white ring-4 ring-white shadow-sm";
   if (s === "concluido")
     return (
-      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white ring-4 ring-white">
+      <span className={`${base} bg-emerald-500`}>
         <Check size={13} strokeWidth={3} />
       </span>
     );
   if (s === "em_andamento")
     return (
-      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-500 text-white ring-4 ring-white">
-        <Play size={11} fill="currentColor" />
+      <span className={`${base} bg-sky-500`}>
+        <Play size={10} fill="currentColor" />
       </span>
     );
   if (s === "problema")
     return (
-      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white ring-4 ring-white">
-        <TriangleAlert size={13} />
+      <span className={`${base} bg-red-500`}>
+        <TriangleAlert size={12} />
       </span>
     );
   if (destaque)
     return (
-      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500 text-white ring-4 ring-white">
-        <Play size={11} fill="currentColor" />
+      <span className={`${base} bg-indigo-500`}>
+        <Play size={10} fill="currentColor" />
       </span>
     );
   return (
@@ -123,41 +126,48 @@ export function ItemTimelineExpandido({
   const temExtras = Boolean(item.observacao || item.etapa_obrigatoria);
 
   return (
-    <li className="relative flex gap-3">
+    <li className="relative flex gap-4 pb-5">
       {/* Trilho: círculo + conector vertical */}
       <div className="relative flex w-6 shrink-0 flex-col items-center">
-        <div className="pt-1.5">
+        <div className="pt-1">
           <StatusCirculo item={item} destaque={destaque} />
         </div>
         {!isLast && (
-          <span className="absolute top-8 bottom-[-1rem] w-px bg-stone-200" />
+          <span className="absolute left-1/2 top-8 bottom-[-1.25rem] w-px -translate-x-1/2 bg-stone-200" />
         )}
       </div>
 
       {/* Coluna de horário + duração */}
-      <div className="w-14 shrink-0 pt-1.5 text-right">
-        <div className="font-mono text-sm font-bold text-stone-900">
+      <div className="w-14 shrink-0 pt-1 text-right">
+        <div className="font-mono text-sm font-bold tabular-nums text-stone-900">
           {formatTime(item.time)}
         </div>
-        {dur && <div className="text-xs text-stone-400">{dur}</div>}
+        {dur && <div className="mt-0.5 text-[11px] text-stone-400">{dur}</div>}
       </div>
 
       {/* Card */}
       <div
-        className={`mb-4 min-w-0 flex-1 rounded-xl border p-4 ${
+        className={`min-w-0 flex-1 rounded-2xl border p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-colors ${
           destaque
-            ? "border-stone-200 border-l-4 border-l-sky-500 bg-sky-50/40 shadow-sm"
-            : "border-stone-200 bg-white"
+            ? "border-sky-100 border-l-[3px] border-l-sky-500 bg-sky-50/40 ring-1 ring-sky-100"
+            : concluido
+              ? "border-stone-200 bg-white"
+              : "border-stone-200 bg-white"
         }`}
       >
+        {/* Linha 1: título + categoria · menu */}
         <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-            <p className="text-base font-semibold leading-snug text-stone-900">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1">
+            <p
+              className={`text-[15px] font-semibold leading-snug ${
+                concluido ? "text-stone-700" : "text-stone-900"
+              }`}
+            >
               {item.title}
             </p>
             {item.supplier_categoria && (
               <span
-                className={`rounded-full px-2 py-0.5 text-xs font-medium ${categoriaBadgeClass(
+                className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${categoriaBadgeClass(
                   item.supplier_categoria
                 )}`}
               >
@@ -165,9 +175,9 @@ export function ItemTimelineExpandido({
               </span>
             )}
           </div>
-          <div className="flex shrink-0 items-center gap-1.5">
+          <div className="flex shrink-0 items-center gap-2">
             {destaque && item.status_novo === "em_andamento" && (
-              <span className="rounded-full bg-sky-500 px-2.5 py-0.5 text-xs font-semibold text-white">
+              <span className="rounded-full bg-sky-500 px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-white">
                 AGORA
               </span>
             )}
@@ -176,12 +186,12 @@ export function ItemTimelineExpandido({
                 onClick={() => setMenuAberto((v) => !v)}
                 onBlur={() => setTimeout(() => setMenuAberto(false), 150)}
                 aria-label="Ações"
-                className="rounded-md p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700"
+                className="-mr-1 rounded-md p-1 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700"
               >
                 <MoreVertical size={18} />
               </button>
               {menuAberto && (
-                <div className="absolute right-0 top-8 z-10 w-44 overflow-hidden rounded-lg border border-stone-200 bg-white py-1 shadow-lg">
+                <div className="absolute right-0 top-8 z-10 w-44 overflow-hidden rounded-xl border border-stone-200 bg-white py-1 shadow-lg">
                   <button
                     onMouseDown={onEditar}
                     className="block w-full px-3 py-2 text-left text-sm text-stone-700 hover:bg-stone-50"
@@ -206,9 +216,9 @@ export function ItemTimelineExpandido({
           </div>
         </div>
 
-        {/* Fornecedor + responsável + telefone */}
+        {/* Linha 2: identidade (fornecedor · responsável · telefone) */}
         {(item.supplier_name || item.responsavel_nome) && (
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-stone-600">
+          <div className="mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[13px] text-stone-500">
             {item.supplier_name && (
               <span className="flex items-center gap-1.5">
                 <Briefcase size={14} className="text-stone-400" />
@@ -224,7 +234,7 @@ export function ItemTimelineExpandido({
             {item.responsavel_telefone && (
               <a
                 href={`tel:${item.responsavel_telefone}`}
-                className="flex items-center gap-1.5 text-stone-500 hover:text-stone-800"
+                className="flex items-center gap-1.5 text-stone-500 transition-colors hover:text-stone-800"
               >
                 <Phone size={13} className="text-stone-400" />
                 {item.responsavel_telefone}
@@ -234,48 +244,58 @@ export function ItemTimelineExpandido({
         )}
 
         {item.description && aberto && (
-          <p className="mt-2 whitespace-pre-line text-sm text-stone-600">
+          <p className="mt-2.5 whitespace-pre-line text-[13px] leading-relaxed text-stone-500">
             {item.description}
           </p>
         )}
 
-        {/* Status + horário real */}
-        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+        {/* Linha 3: status + carimbo de horário real + variação */}
+        <div className="mt-3.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
           {atrasado ? (
-            <span className="rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-medium text-red-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
               Atrasado
             </span>
           ) : (
             <span
-              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${ui.badge}`}
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${ui.badge}`}
             >
+              <span className={`h-1.5 w-1.5 rounded-full ${ui.dot}`} />
               {ui.label}
             </span>
           )}
           {item.status_novo === "em_andamento" && inicioReal && (
-            <span className="text-xs font-medium text-sky-700">
+            <span className="text-[12px] font-medium text-sky-700">
               Iniciado às {inicioReal}
             </span>
           )}
           {concluido && fimReal && (
-            <span className="text-xs font-medium text-emerald-700">
+            <span className="text-[12px] font-medium text-emerald-700">
               Concluído às {fimReal}
             </span>
           )}
-          {variacao && <span className={`text-xs ${variacao.cor}`}>· {variacao.texto}</span>}
+          {variacao && (
+            <span className={`text-[12px] ${variacao.cor}`}>
+              · {variacao.texto}
+            </span>
+          )}
         </div>
 
-        {/* Extras (observação / obrigatória) — colapsáveis nos concluídos */}
+        {/* Observação + obrigatória (colapsáveis nos concluídos) */}
         {temExtras && aberto && (
-          <div className="mt-2 space-y-1.5">
+          <div className="mt-3 space-y-2">
             {item.observacao && (
-              <p className="text-sm text-stone-600">
-                <span className="text-stone-400">Observação:</span>{" "}
-                {item.observacao}
-              </p>
+              <div className="border-l-2 border-stone-200 pl-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
+                  Observação
+                </p>
+                <p className="mt-0.5 text-[13px] leading-relaxed text-stone-600">
+                  {item.observacao}
+                </p>
+              </div>
             )}
             {item.etapa_obrigatoria && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-600">
+              <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-600">
                 🔖 Obrigatória
               </span>
             )}
@@ -286,7 +306,7 @@ export function ItemTimelineExpandido({
         {concluido && temExtras && (
           <button
             onClick={() => setAberto((v) => !v)}
-            className="mt-2 flex items-center gap-1 text-xs font-medium text-stone-400 hover:text-stone-600"
+            className="mt-2.5 flex items-center gap-1 text-[11px] font-medium text-stone-400 transition-colors hover:text-stone-600"
           >
             {aberto ? (
               <>
