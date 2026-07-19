@@ -1,13 +1,18 @@
-import type { RoteiroStatus, TaskPriority } from "@/lib/types";
+import type { RoteiroStatusNovo, TaskPriority } from "@/lib/types";
 
-// Dados (escopados a UM evento) que o Modo Evento consome.
+// Dados (escopados a UM evento) que o Modo Evento consome. Usa os campos
+// do cronograma dinâmico (Etapa 1): status_novo, horários reais, etc.
 export type ModoItem = {
   id: string;
-  time: string | null; // null = horário ainda não definido ("A definir")
+  time: string | null; // horário previsto; null = "A definir"
   title: string;
   description: string | null;
-  status: RoteiroStatus;
+  statusNovo: RoteiroStatusNovo;
   supplierName: string | null;
+  responsavelNome: string | null;
+  horarioRealInicio: string | null;
+  horarioRealFim: string | null;
+  observacao: string | null;
 };
 
 export type ModoSupplier = { name: string; confirmed: boolean };

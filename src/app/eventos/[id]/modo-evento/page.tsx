@@ -3,10 +3,10 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { ModoEvento } from "@/components/modo-evento/ModoEvento";
 import type { ModoItem, ModoSupplier, ModoTask } from "@/lib/modo-tema";
+import type { CronogramaItem } from "@/lib/cronograma";
 import {
   EVENT_TYPE_LABELS,
   type EventType,
-  type RoteiroStatus,
   type TaskPriority,
 } from "@/lib/types";
 
@@ -36,11 +36,9 @@ export default async function ModoEventoPage({
       .select("type, date, clients(name)")
       .eq("id", eventId)
       .single(),
-    supabase
-      .from("roteiro_items")
-      .select("id, time, title, description, status, suppliers(name)")
-      .eq("event_id", eventId)
-      .order("time", { ascending: true }),
+    // Fonte única do cronograma dinâmico (Etapa 3): status_novo,
+    // horários reais, responsável, etc.
+    supabase.rpc("cronograma_evento", { p_event_id: eventId }),
     supabase
       .from("roteiro_links")
       .select("confirmed, suppliers(name)")
@@ -68,21 +66,18 @@ export default async function ModoEventoPage({
   }`;
 
   const items: ModoItem[] = (
-    (itemsRes.data ?? []) as unknown as {
-      id: string;
-      time: string | null;
-      title: string;
-      description: string | null;
-      status: RoteiroStatus;
-      suppliers: { name: string } | null;
-    }[]
+    (itemsRes.data ?? []) as unknown as CronogramaItem[]
   ).map((i) => ({
     id: i.id,
     time: i.time,
     title: i.title,
     description: i.description,
-    status: i.status,
-    supplierName: i.suppliers?.name ?? null,
+    statusNovo: i.status_novo,
+    supplierName: i.supplier_name,
+    responsavelNome: i.responsavel_nome,
+    horarioRealInicio: i.horario_real_inicio,
+    horarioRealFim: i.horario_real_fim,
+    observacao: i.observacao,
   }));
 
   const suppliers: ModoSupplier[] = (

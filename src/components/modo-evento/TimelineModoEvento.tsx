@@ -1,16 +1,17 @@
 "use client";
 
+import { Check, Play, TriangleAlert } from "lucide-react";
 import { formatTime } from "@/lib/format";
 import type { ModoItem, ModoTheme } from "@/lib/modo-tema";
 
 type Props = {
   items: ModoItem[];
   currentId: string | null;
-  onToggle: (item: ModoItem) => void;
+  onSelect: (item: ModoItem) => void;
   t: ModoTheme;
 };
 
-export function TimelineModoEvento({ items, currentId, onToggle, t }: Props) {
+export function TimelineModoEvento({ items, currentId, onSelect, t }: Props) {
   if (items.length === 0) {
     return (
       <p className={`py-8 text-center ${t.sub}`}>
@@ -22,13 +23,14 @@ export function TimelineModoEvento({ items, currentId, onToggle, t }: Props) {
   return (
     <ul className={`divide-y ${t.divide}`}>
       {items.map((item) => {
-        const done = item.status === "concluido";
+        const s = item.statusNovo;
+        const done = s === "concluido";
         const isCurrent = item.id === currentId;
 
         return (
           <li key={item.id}>
             <button
-              onClick={() => onToggle(item)}
+              onClick={() => onSelect(item)}
               className={`flex w-full items-center gap-4 px-2 py-4 text-left transition-colors ${
                 isCurrent ? "rounded-xl ring-2 ring-sky-500" : ""
               }`}
@@ -51,38 +53,39 @@ export function TimelineModoEvento({ items, currentId, onToggle, t }: Props) {
                 {item.supplierName && (
                   <span className={`text-sm ${t.sub}`}>
                     {item.supplierName}
+                    {item.responsavelNome ? ` · ${item.responsavelNome}` : ""}
                   </span>
                 )}
-                {isCurrent && !done && (
+                {s === "em_andamento" && (
                   <span className="block text-sm font-semibold text-sky-500">
-                    Agora
+                    Em andamento{isCurrent ? " · agora" : ""}
+                  </span>
+                )}
+                {s === "problema" && (
+                  <span className="block text-sm font-semibold text-red-500">
+                    Problema reportado
+                  </span>
+                )}
+                {isCurrent && s === "planejado" && (
+                  <span className="block text-sm font-semibold text-sky-500">
+                    Próximo
                   </span>
                 )}
               </span>
               <span
                 className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 ${
                   done
-                    ? "border-green-500 bg-green-500 text-white"
-                    : item.status === "em_andamento"
+                    ? "border-emerald-500 bg-emerald-500 text-white"
+                    : s === "em_andamento"
                       ? "border-sky-500 text-sky-500"
-                      : `${t.border}`
+                      : s === "problema"
+                        ? "border-red-500 text-red-500"
+                        : `${t.border}`
                 }`}
               >
-                {done && (
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={3}
-                    className="h-5 w-5"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M4.5 12.75l6 6 9-13.5"
-                    />
-                  </svg>
-                )}
+                {done && <Check size={18} strokeWidth={3} />}
+                {s === "em_andamento" && <Play size={14} fill="currentColor" />}
+                {s === "problema" && <TriangleAlert size={16} />}
               </span>
             </button>
           </li>
