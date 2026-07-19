@@ -2,15 +2,14 @@
 
 // Linha da timeline do cronograma (lado da cerimonialista): trilho com
 // círculo de status preenchido + conector vertical, coluna de horário/
-// duração e card premium expandido. Usado para TODOS os itens; o item
-// atual ganha destaque forte (acento lateral + fundo tingido + "AGORA").
+// duração e card expandido em COLUNAS (identidade · status · observação ·
+// obrigatória/menu), fiel à densidade do mockup. Usado para TODOS os
+// itens; o item atual ganha destaque (acento lateral + fundo + "AGORA").
 
 import { useState } from "react";
 import {
   Briefcase,
   Check,
-  ChevronDown,
-  ChevronRight,
   MoreVertical,
   Phone,
   Play,
@@ -104,7 +103,6 @@ export function ItemTimelineExpandido({
 }) {
   const [menuAberto, setMenuAberto] = useState(false);
   const concluido = item.status_novo === "concluido";
-  const [aberto, setAberto] = useState(!concluido); // concluídos colapsam extras
   const ui = STATUS_UI[item.status_novo] ?? STATUS_UI.planejado;
 
   const previsto = timeToMinutes(item.time);
@@ -123,7 +121,6 @@ export function ItemTimelineExpandido({
         )
       : null;
   const dur = duracaoLabel(item.duracao_minutos);
-  const temExtras = Boolean(item.observacao || item.etapa_obrigatoria);
 
   return (
     <li className="relative flex gap-4 pb-5">
@@ -145,42 +142,125 @@ export function ItemTimelineExpandido({
         {dur && <div className="mt-0.5 text-[11px] text-stone-400">{dur}</div>}
       </div>
 
-      {/* Card */}
+      {/* Card em colunas */}
       <div
         className={`min-w-0 flex-1 rounded-2xl border p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-colors ${
           destaque
             ? "border-sky-100 border-l-[3px] border-l-sky-500 bg-sky-50/40 ring-1 ring-sky-100"
-            : concluido
-              ? "border-stone-200 bg-white"
-              : "border-stone-200 bg-white"
+            : "border-stone-200 bg-white"
         }`}
       >
-        {/* Linha 1: título + categoria · menu */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1">
-            <p
-              className={`text-[15px] font-semibold leading-snug ${
-                concluido ? "text-stone-700" : "text-stone-900"
-              }`}
-            >
-              {item.title}
-            </p>
-            {item.supplier_categoria && (
-              <span
-                className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${categoriaBadgeClass(
-                  item.supplier_categoria
-                )}`}
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
+          {/* Coluna 1 — identidade */}
+          <div className="min-w-0 lg:flex-1">
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+              <p
+                className={`text-[15px] font-semibold leading-snug ${
+                  concluido ? "text-stone-700" : "text-stone-900"
+                }`}
               >
-                {categoriaLabel(item.supplier_categoria)}
-              </span>
+                {item.title}
+              </p>
+              {item.supplier_categoria && (
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${categoriaBadgeClass(
+                    item.supplier_categoria
+                  )}`}
+                >
+                  {categoriaLabel(item.supplier_categoria)}
+                </span>
+              )}
+            </div>
+
+            {item.supplier_name && (
+              <p className="mt-2.5 flex items-center gap-1.5 text-[13px] text-stone-500">
+                <Briefcase size={14} className="shrink-0 text-stone-400" />
+                {item.supplier_name}
+              </p>
+            )}
+            {item.responsavel_nome && (
+              <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-stone-500">
+                <span className="flex items-center gap-1.5">
+                  <UserRound size={14} className="shrink-0 text-stone-400" />
+                  {item.responsavel_nome}
+                </span>
+                {item.responsavel_telefone && (
+                  <a
+                    href={`tel:${item.responsavel_telefone}`}
+                    className="flex items-center gap-1.5 transition-colors hover:text-stone-800"
+                  >
+                    <Phone size={13} className="shrink-0 text-stone-400" />
+                    {item.responsavel_telefone}
+                  </a>
+                )}
+              </p>
             )}
           </div>
-          <div className="flex shrink-0 items-center gap-2">
-            {destaque && item.status_novo === "em_andamento" && (
-              <span className="rounded-full bg-sky-500 px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-white">
-                AGORA
+
+          {/* Coluna 2 — status + carimbo de horário */}
+          <div className="lg:w-40 lg:shrink-0">
+            {atrasado ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-medium text-red-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                Atrasado
+              </span>
+            ) : (
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${ui.badge}`}
+              >
+                <span className={`h-1.5 w-1.5 rounded-full ${ui.dot}`} />
+                {ui.label}
               </span>
             )}
+            {item.status_novo === "em_andamento" && inicioReal && (
+              <p className="mt-1.5 text-[12px] font-medium text-sky-700">
+                Iniciado às {inicioReal}
+              </p>
+            )}
+            {concluido && fimReal && (
+              <p className="mt-1.5 text-[12px] font-medium text-emerald-700">
+                Concluído às {fimReal}
+              </p>
+            )}
+            {variacao && (
+              <p className={`mt-0.5 text-[12px] ${variacao.cor}`}>
+                {variacao.texto}
+              </p>
+            )}
+          </div>
+
+          {/* Coluna 3 — observação */}
+          <div className="lg:w-56 lg:shrink-0">
+            {item.observacao ? (
+              <div className="border-l-2 border-stone-200 pl-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
+                  Observação
+                </p>
+                <p className="mt-0.5 text-[13px] leading-relaxed text-stone-600">
+                  {item.observacao}
+                </p>
+              </div>
+            ) : item.description ? (
+              <p className="text-[13px] leading-relaxed text-stone-400">
+                {item.description}
+              </p>
+            ) : null}
+          </div>
+
+          {/* Coluna 4 — obrigatória (no lugar da criticidade) + menu */}
+          <div className="flex shrink-0 items-start justify-between gap-2 lg:w-auto lg:flex-col lg:items-end">
+            <div className="flex items-center gap-2">
+              {destaque && item.status_novo === "em_andamento" && (
+                <span className="rounded-full bg-sky-500 px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-white">
+                  AGORA
+                </span>
+              )}
+              {item.etapa_obrigatoria && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-600">
+                  🔖 Obrigatória
+                </span>
+              )}
+            </div>
             <div className="relative">
               <button
                 onClick={() => setMenuAberto((v) => !v)}
@@ -215,110 +295,6 @@ export function ItemTimelineExpandido({
             </div>
           </div>
         </div>
-
-        {/* Linha 2: identidade (fornecedor · responsável · telefone) */}
-        {(item.supplier_name || item.responsavel_nome) && (
-          <div className="mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[13px] text-stone-500">
-            {item.supplier_name && (
-              <span className="flex items-center gap-1.5">
-                <Briefcase size={14} className="text-stone-400" />
-                {item.supplier_name}
-              </span>
-            )}
-            {item.responsavel_nome && (
-              <span className="flex items-center gap-1.5">
-                <UserRound size={14} className="text-stone-400" />
-                {item.responsavel_nome}
-              </span>
-            )}
-            {item.responsavel_telefone && (
-              <a
-                href={`tel:${item.responsavel_telefone}`}
-                className="flex items-center gap-1.5 text-stone-500 transition-colors hover:text-stone-800"
-              >
-                <Phone size={13} className="text-stone-400" />
-                {item.responsavel_telefone}
-              </a>
-            )}
-          </div>
-        )}
-
-        {item.description && aberto && (
-          <p className="mt-2.5 whitespace-pre-line text-[13px] leading-relaxed text-stone-500">
-            {item.description}
-          </p>
-        )}
-
-        {/* Linha 3: status + carimbo de horário real + variação */}
-        <div className="mt-3.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-          {atrasado ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-medium text-red-700">
-              <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-              Atrasado
-            </span>
-          ) : (
-            <span
-              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${ui.badge}`}
-            >
-              <span className={`h-1.5 w-1.5 rounded-full ${ui.dot}`} />
-              {ui.label}
-            </span>
-          )}
-          {item.status_novo === "em_andamento" && inicioReal && (
-            <span className="text-[12px] font-medium text-sky-700">
-              Iniciado às {inicioReal}
-            </span>
-          )}
-          {concluido && fimReal && (
-            <span className="text-[12px] font-medium text-emerald-700">
-              Concluído às {fimReal}
-            </span>
-          )}
-          {variacao && (
-            <span className={`text-[12px] ${variacao.cor}`}>
-              · {variacao.texto}
-            </span>
-          )}
-        </div>
-
-        {/* Observação + obrigatória (colapsáveis nos concluídos) */}
-        {temExtras && aberto && (
-          <div className="mt-3 space-y-2">
-            {item.observacao && (
-              <div className="border-l-2 border-stone-200 pl-3">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
-                  Observação
-                </p>
-                <p className="mt-0.5 text-[13px] leading-relaxed text-stone-600">
-                  {item.observacao}
-                </p>
-              </div>
-            )}
-            {item.etapa_obrigatoria && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-600">
-                🔖 Obrigatória
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Toggle de expandir (só quando há extras a esconder — concluídos) */}
-        {concluido && temExtras && (
-          <button
-            onClick={() => setAberto((v) => !v)}
-            className="mt-2.5 flex items-center gap-1 text-[11px] font-medium text-stone-400 transition-colors hover:text-stone-600"
-          >
-            {aberto ? (
-              <>
-                <ChevronDown size={13} /> Recolher
-              </>
-            ) : (
-              <>
-                <ChevronRight size={13} /> Ver detalhes
-              </>
-            )}
-          </button>
-        )}
       </div>
     </li>
   );
