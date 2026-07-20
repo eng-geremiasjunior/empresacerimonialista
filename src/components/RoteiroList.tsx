@@ -104,11 +104,11 @@ export function RoteiroList({ eventId, eventDate, items: initialItems, suppliers
   const nowMinutes = mounted ? agoraEmMinutos() : -1;
 
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr,340px]">
+    <div className="grid grid-cols-1 gap-[22px] lg:grid-cols-[minmax(0,1fr),300px]">
       {/* Coluna principal: timeline */}
       <div className="min-w-0">
         <div className="mb-6 flex items-center justify-between print:hidden">
-          <h2 className="text-[15px] font-semibold text-stone-800">
+          <h2 className="text-[17px] font-bold text-[#17162A]">
             Cronograma do dia
           </h2>
           {!adding && (
@@ -117,7 +117,7 @@ export function RoteiroList({ eventId, eventDate, items: initialItems, suppliers
                 setAdding(true);
                 setEditingId(null);
               }}
-              className="flex items-center gap-1.5 rounded-xl bg-stone-900 px-4 py-2.5 text-[13px] font-medium text-white shadow-sm transition-colors hover:bg-stone-700"
+              className="flex items-center gap-1.5 rounded-[9px] bg-[#17162A] px-3.5 py-2.5 text-[13px] font-bold text-white transition-opacity hover:opacity-90"
             >
               <Plus size={16} /> Adicionar item
             </button>
@@ -209,21 +209,29 @@ export function RoteiroList({ eventId, eventDate, items: initialItems, suppliers
 
         {/* Legenda */}
         {ordered.length > 0 && (
-          <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1.5 rounded-xl border border-stone-100 bg-stone-50/60 px-4 py-2.5 text-[12px] text-stone-500">
+          <div className="mt-5 flex flex-wrap items-center gap-[22px] border-t border-[#E9E8F1] pt-4 text-[12.5px] text-[#6B6884]">
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" /> Concluído
+              <span className="h-2 w-2 rounded-full bg-[#17A34A]" /> Concluído
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-sky-500" /> Em andamento
+              <span className="h-2 w-2 rounded-full bg-[#2563EB]" /> Em andamento
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-indigo-500" /> Próximo
+              <span className="h-2 w-2 rounded-full bg-[#6C5DD3]" /> Próximo
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-stone-300" /> Pendente
+              <span className="h-2 w-2 rounded-full bg-[#B4B1C8]" /> Pendente
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-red-500" /> Atrasado/Problema
+              <span className="h-2 w-2 rounded-full bg-[#DC2626]" /> Atrasado/Problema
+            </span>
+            <span className="flex-1" />
+            <span className="flex items-center gap-2">
+              📍
+              <span>
+                <strong className="text-[#17162A]">Dica do Copiloto:</strong>{" "}
+                itens obrigatórios impactam diretamente o andamento do evento.
+              </span>
             </span>
           </div>
         )}

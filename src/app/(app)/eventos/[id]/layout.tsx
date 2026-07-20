@@ -4,6 +4,7 @@ import { differenceInCalendarDays } from "date-fns";
 import { ArrowLeft, Pencil, Play } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { EventTabs } from "@/components/evento/EventTabs";
+import { EventoContainer } from "@/components/evento/EventoContainer";
 import { ProgressoEvento } from "@/components/eventos/ProgressoEvento";
 import { getCabecalhoEvento } from "@/lib/supabase/resumo-evento";
 import { formatDate } from "@/lib/format";
@@ -74,7 +75,7 @@ export default async function EventoLayout({
   const modoHoje = dias === 0;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <EventoContainer>
       {/* Cabeçalho compacto e rico (item 1) */}
       <div>
         <Link
@@ -158,6 +159,6 @@ export default async function EventoLayout({
       />
 
       <div>{children}</div>
-    </div>
+    </EventoContainer>
   );
 }

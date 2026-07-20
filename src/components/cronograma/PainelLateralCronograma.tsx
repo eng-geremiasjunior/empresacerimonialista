@@ -1,21 +1,13 @@
 "use client";
 
-// Painel lateral da aba Cronograma (centro operacional). Cards uniformes,
-// relógio ao vivo (atualiza a cada minuto) para a contagem regressiva dos
-// próximos itens e os alertas de atraso. Cálculos client-side a partir do
-// estado real dos itens (regras reais, sem IA).
+// Painel lateral da aba Cronograma (300px) — segue o handoff de design:
+// cards brancos radius 14, borda #ECEBF3, padding 20; anel de progresso
+// em conic-gradient; links de ação em roxo #6C5DD3.
+// Relógio ao vivo alimenta a contagem regressiva e os alertas de atraso;
+// os cálculos continuam vindo de lib/cronograma (regras reais).
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  ArrowRight,
-  Bell,
-  MessageSquare,
-  Printer,
-  RefreshCw,
-  Send,
-  TriangleAlert,
-} from "lucide-react";
 import {
   alertasCronograma,
   contagemRegressiva,
@@ -29,11 +21,11 @@ function agoraEmMinutos() {
   return d.getHours() * 60 + d.getMinutes();
 }
 
-const cardClass =
-  "rounded-2xl border border-stone-200 bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]";
-const tituloClass = "text-[13px] font-semibold text-stone-800";
-const linkClass =
-  "inline-flex items-center gap-1 text-[12px] font-medium text-stone-400 transition-colors hover:text-stone-700";
+const CARD =
+  "rounded-[14px] border border-[#ECEBF3] bg-white p-5";
+const TITULO = "text-[14.5px] font-bold text-[#17162A]";
+const LINK =
+  "mt-3.5 inline-block text-[13px] font-bold text-[#6C5DD3] hover:underline";
 
 export function PainelLateralCronograma({
   items,
@@ -61,189 +53,159 @@ export function PainelLateralCronograma({
 
   const progresso = progressoDoDia(items);
   const proximos = proximosItens(items, 3);
-  // Atrasos só fazem sentido no dia do evento e após o mount; problema
-  // alerta sempre.
   const alertas = alertasCronograma(
     items,
     eventoHoje && mounted ? nowMinutes : -1
   );
 
-  const raio = 26;
-  const circ = 2 * Math.PI * raio;
-
   return (
-    <div className="space-y-5">
-      {/* CARD 1 — Progresso do dia */}
-      <section className={cardClass}>
-        <h3 className={tituloClass}>Progresso do dia</h3>
-        <div className="mt-4 flex items-center gap-4">
-          <div className="relative h-[70px] w-[70px] shrink-0">
-            <svg className="h-[70px] w-[70px] -rotate-90" viewBox="0 0 64 64">
-              <circle
-                cx="32"
-                cy="32"
-                r={raio}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="5"
-                className="text-stone-100"
-              />
-              <circle
-                cx="32"
-                cy="32"
-                r={raio}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="5"
-                strokeLinecap="round"
-                strokeDasharray={circ}
-                strokeDashoffset={circ - (circ * progresso.pct) / 100}
-                className="text-emerald-500 transition-all duration-500"
-              />
-            </svg>
-            <span className="absolute inset-0 flex items-center justify-center text-base font-bold text-stone-800">
-              {progresso.pct}%
-            </span>
+    <div className="flex flex-col gap-4">
+      {/* Progresso do dia */}
+      <section className={CARD}>
+        <div className={`${TITULO} mb-3.5`}>Progresso do dia</div>
+        <div className="flex items-center gap-4">
+          <div
+            className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full"
+            style={{
+              background: `conic-gradient(#17A34A 0% ${progresso.pct}%, #E9E8F1 ${progresso.pct}% 100%)`,
+            }}
+          >
+            <div className="h-12 w-12 rounded-full bg-white" />
           </div>
-          <div className="text-[13px] leading-snug text-stone-500">
-            <span className="font-semibold text-stone-800">
-              {progresso.concluidos}
-            </span>{" "}
-            de {progresso.total} itens concluídos
+          <div>
+            <div className="text-[22px] font-extrabold text-[#17162A]">
+              {progresso.pct}%
+            </div>
+            <div className="text-[12.5px] text-[#6B6884]">
+              {progresso.concluidos} de {progresso.total} itens concluídos
+            </div>
           </div>
         </div>
-        <Link href={`/eventos/${eventId}`} className={`mt-4 ${linkClass}`}>
-          Ver análise completa <ArrowRight size={13} />
+        <Link href={`/eventos/${eventId}`} className={LINK}>
+          Ver análise completa →
         </Link>
       </section>
 
-      {/* CARD 2 — Próximos itens */}
-      <section className={cardClass}>
-        <h3 className={tituloClass}>Próximos itens</h3>
+      {/* Próximos itens */}
+      <section className={CARD}>
+        <div className={`${TITULO} mb-3.5`}>Próximos itens</div>
         {proximos.length === 0 ? (
-          <p className="mt-3 text-[13px] text-stone-400">
+          <p className="text-[12.5px] text-[#9A97AE]">
             Nada planejado à frente.
           </p>
         ) : (
-          <ul className="mt-3 space-y-1">
+          <div className="flex flex-col gap-3.5">
             {proximos.map((item, i) => (
-              <li key={item.id}>
-                <button
-                  onClick={() => onFocarItem(item.id)}
-                  className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors ${
-                    i === 0 ? "bg-sky-50" : "hover:bg-stone-50"
-                  }`}
+              <button
+                key={item.id}
+                onClick={() => onFocarItem(item.id)}
+                className="flex items-center gap-2.5 text-left"
+              >
+                <span
+                  className="flex h-[22px] w-[22px] flex-shrink-0 items-center justify-center rounded-full text-[10px]"
+                  style={{
+                    background: i === 0 ? "#F1EFFC" : "#F1F0F5",
+                    color: i === 0 ? "#6C5DD3" : "#9A97AE",
+                  }}
                 >
-                  <span
-                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                      i === 0 ? "bg-sky-500" : "bg-stone-300"
-                    }`}
-                  />
-                  <span className="font-mono text-[13px] font-semibold tabular-nums text-stone-600">
-                    {(item.time ?? "").slice(0, 5)}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-[13px] text-stone-700">
-                    {item.title}
-                  </span>
-                  {eventoHoje && mounted && (
-                    <span className="shrink-0 text-[11px] font-medium text-stone-400">
-                      {contagemRegressiva(item.time, nowMinutes)}
+                  {i === 0 ? "▶" : ""}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[13px] font-semibold text-[#17162A]">
+                    {(item.time ?? "").slice(0, 5)}{" "}
+                    <span className="font-normal text-[#6B6884]">
+                      {item.title}
                     </span>
-                  )}
-                </button>
-              </li>
+                  </span>
+                </span>
+                {eventoHoje && mounted && (
+                  <span className="whitespace-nowrap text-xs text-[#9A97AE]">
+                    {contagemRegressiva(item.time, nowMinutes)}
+                  </span>
+                )}
+              </button>
             ))}
-          </ul>
+          </div>
         )}
-        <Link
-          href={`/eventos/${eventId}/roteiro`}
-          className={`mt-3 ${linkClass}`}
-        >
-          Ver cronograma completo <ArrowRight size={13} />
+        <Link href={`/eventos/${eventId}/roteiro`} className={LINK}>
+          Ver cronograma completo →
         </Link>
       </section>
 
-      {/* CARD 3 — Alertas do Copiloto */}
-      <section className={cardClass}>
-        <div className="flex items-center justify-between">
-          <h3 className={`flex items-center gap-1.5 ${tituloClass}`}>
-            <Bell size={14} className="text-stone-400" />
-            Alertas do Copiloto
-          </h3>
+      {/* Alertas do Copiloto */}
+      <section className={CARD}>
+        <div className="mb-3.5 flex items-center gap-1.5">
+          <span className={TITULO}>Alertas do Copiloto</span>
           {alertas.length > 0 && (
-            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-semibold text-white">
+            <span className="rounded-lg bg-[#F1EFFC] px-[7px] py-px text-[11.5px] font-bold text-[#6C5DD3]">
               {alertas.length}
             </span>
           )}
         </div>
         {alertas.length === 0 ? (
-          <p className="mt-3 text-[13px] text-stone-500">
+          <p className="text-[12.5px] text-[#6B6884]">
             Tudo tranquilo por aqui 🎉
           </p>
         ) : (
-          <ul className="mt-3 space-y-3.5">
+          <div className="flex flex-col gap-4">
             {alertas.slice(0, 5).map((a) => (
-              <li key={a.id} className="flex items-start gap-2.5">
+              <div key={a.id} className="flex gap-2.5">
                 <span
-                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
-                    a.tipo === "problema"
-                      ? "bg-red-50 text-red-500"
-                      : "bg-amber-50 text-amber-500"
-                  }`}
+                  className="flex h-[22px] w-[22px] flex-shrink-0 items-center justify-center rounded-full text-[11px]"
+                  style={{
+                    background: a.tipo === "problema" ? "#FDECEA" : "#FEF3C7",
+                    color: a.tipo === "problema" ? "#E0574F" : "#B4790E",
+                  }}
                 >
-                  <TriangleAlert size={13} />
+                  !
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[13px] font-medium leading-snug text-stone-800">
+                  <div className="break-words text-[12.5px] leading-normal text-[#3D3A52]">
                     {a.titulo}
-                  </p>
-                  <p className="mt-0.5 text-[12px] leading-snug text-stone-500">
+                  </div>
+                  <div className="break-words text-[12px] leading-normal text-[#9A97AE]">
                     {a.detalhe}
-                  </p>
+                  </div>
                   <button
                     onClick={() => onFocarItem(a.itemId)}
-                    className={`mt-1 ${linkClass}`}
+                    className="mt-1 text-[12.5px] font-bold text-[#6C5DD3] hover:underline"
                   >
-                    Ver item <ArrowRight size={12} />
+                    Ver item →
                   </button>
                 </div>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </section>
 
-      {/* CARD 4 — Ações rápidas */}
-      <section className={cardClass}>
-        <h3 className={tituloClass}>Ações rápidas</h3>
-        <div className="mt-3 grid grid-cols-2 gap-2">
+      {/* Ações rápidas */}
+      <section className={CARD}>
+        <div className={`${TITULO} mb-3.5`}>Ações rápidas</div>
+        <div className="grid grid-cols-2 gap-2.5">
           <Link
             href={`/eventos/${eventId}/fornecedores`}
-            className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 px-2 py-2.5 text-[12px] font-medium text-stone-700 transition-colors hover:border-stone-300 hover:bg-stone-50"
+            className="flex items-center gap-2 rounded-[9px] border border-[#ECEBF3] px-[11px] py-2.5 text-[12.5px] font-semibold text-[#3D3A52] hover:bg-[#F6F6FA]"
           >
-            <Send size={14} className="text-stone-400" />
-            Enviar lembrete
+            ✉ Enviar lembrete
           </Link>
           <button
             onClick={onAtualizarStatus}
-            className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 px-2 py-2.5 text-[12px] font-medium text-stone-700 transition-colors hover:border-stone-300 hover:bg-stone-50"
+            className="flex items-center gap-2 rounded-[9px] border border-[#ECEBF3] px-[11px] py-2.5 text-left text-[12.5px] font-semibold text-[#3D3A52] hover:bg-[#F6F6FA]"
           >
-            <RefreshCw size={14} className="text-stone-400" />
-            Atualizar status
+            ↻ Atualizar status
           </button>
           <Link
             href={`/eventos/${eventId}/comunicacao`}
-            className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 px-2 py-2.5 text-[12px] font-medium text-stone-700 transition-colors hover:border-stone-300 hover:bg-stone-50"
+            className="flex items-center gap-2 rounded-[9px] border border-[#ECEBF3] px-[11px] py-2.5 text-[12.5px] font-semibold text-[#3D3A52] hover:bg-[#F6F6FA]"
           >
-            <MessageSquare size={14} className="text-stone-400" />
-            Ver comunicação
+            💬 Ver comunicação
           </Link>
           <button
             onClick={() => window.print()}
-            className="flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 px-2 py-2.5 text-[12px] font-medium text-stone-700 transition-colors hover:border-stone-300 hover:bg-stone-50"
+            className="flex items-center gap-2 rounded-[9px] border border-[#ECEBF3] px-[11px] py-2.5 text-left text-[12.5px] font-semibold text-[#3D3A52] hover:bg-[#F6F6FA]"
           >
-            <Printer size={14} className="text-stone-400" />
-            Imprimir
+            🖶 Imprimir
           </button>
         </div>
       </section>
