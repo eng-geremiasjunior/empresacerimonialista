@@ -45,7 +45,7 @@ export function RoteiroList({ eventId, eventDate, items: initialItems, suppliers
   });
   const [focusId, setFocusId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
-  const listRef = useRef<HTMLUListElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   // Valores dependentes de "agora" só entram após o mount, evitando
   // divergência de hidratação (SSR vs cliente com o minuto virado).
@@ -149,11 +149,11 @@ export function RoteiroList({ eventId, eventDate, items: initialItems, suppliers
             </button>
           </div>
         ) : (
-          <ul ref={listRef} className="space-y-0">
+          <div ref={listRef}>
             {ordered.map((item, idx) => {
               if (editingId === item.id) {
                 return (
-                  <li key={item.id} className="mb-4 print:hidden">
+                  <div key={item.id} className="mb-4 print:hidden">
                     <RoteiroForm
                       action={updateRoteiroItem.bind(null, eventId, item.id)}
                       eventId={eventId}
@@ -173,7 +173,7 @@ export function RoteiroList({ eventId, eventDate, items: initialItems, suppliers
                         refresh();
                       }}
                     />
-                  </li>
+                  </div>
                 );
               }
 
@@ -204,7 +204,7 @@ export function RoteiroList({ eventId, eventDate, items: initialItems, suppliers
                 </div>
               );
             })}
-          </ul>
+          </div>
         )}
 
         {/* Legenda */}

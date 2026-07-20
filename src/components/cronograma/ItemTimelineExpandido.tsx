@@ -1,21 +1,13 @@
 "use client";
 
-// Linha da timeline do cronograma (lado da cerimonialista): trilho com
-// círculo de status preenchido + conector vertical, coluna de horário/
-// duração e card expandido em COLUNAS (identidade · status · observação ·
-// obrigatória/menu), fiel à densidade do mockup. Usado para TODOS os
-// itens; o item atual ganha destaque (acento lateral + fundo + "AGORA").
+// Item da timeline do Cronograma — REESCRITO com estrutura simples e
+// robusta (flex + min-w-0 + flex-wrap; nada de position:absolute em
+// badge). Coluna de horário + ponto de status à esquerda; card com
+// título/categoria, fornecedor/responsável, status, observação.
+// Toda a lógica de dados vem pronta via props — só exibição aqui.
 
 import { useState } from "react";
-import {
-  Briefcase,
-  Check,
-  MoreVertical,
-  Phone,
-  Play,
-  TriangleAlert,
-  UserRound,
-} from "lucide-react";
+import { MoreVertical } from "lucide-react";
 import { formatTime } from "@/lib/format";
 import { categoriaLabel } from "@/lib/fornecedores-shared";
 import {
@@ -43,51 +35,18 @@ function duracaoLabel(min: number | null): string | null {
   return `${min}min`;
 }
 
-// Círculo de status preenchido (verde/azul/vermelho/accent) ou vazio,
-// isolado do trilho por um anel branco.
-function StatusCirculo({
-  item,
-  destaque,
-}: {
-  item: CronogramaItem;
-  destaque?: boolean;
-}) {
-  const s = item.status_novo;
-  const base =
-    "flex h-6 w-6 items-center justify-center rounded-full text-white ring-4 ring-white shadow-sm";
-  if (s === "concluido")
-    return (
-      <span className={`${base} bg-emerald-500`}>
-        <Check size={13} strokeWidth={3} />
-      </span>
-    );
-  if (s === "em_andamento")
-    return (
-      <span className={`${base} bg-sky-500`}>
-        <Play size={10} fill="currentColor" />
-      </span>
-    );
-  if (s === "problema")
-    return (
-      <span className={`${base} bg-red-500`}>
-        <TriangleAlert size={12} />
-      </span>
-    );
-  if (destaque)
-    return (
-      <span className={`${base} bg-indigo-500`}>
-        <Play size={10} fill="currentColor" />
-      </span>
-    );
-  return (
-    <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-stone-300 bg-white ring-4 ring-white" />
-  );
-}
+// Cor do ponto de status (preenchido).
+const DOT_COLOR: Record<string, string> = {
+  planejado: "bg-stone-300",
+  em_andamento: "bg-sky-500",
+  concluido: "bg-emerald-500",
+  problema: "bg-red-500",
+};
 
 export function ItemTimelineExpandido({
   item,
   destaque,
-  isLast,
+  isLast: _isLast,
   nowMinutes,
   onEditar,
   onExcluir,
@@ -121,181 +80,154 @@ export function ItemTimelineExpandido({
         )
       : null;
   const dur = duracaoLabel(item.duracao_minutos);
+  const dotColor = destaque && item.status_novo === "planejado"
+    ? "bg-indigo-500"
+    : DOT_COLOR[item.status_novo] ?? "bg-stone-300";
 
   return (
-    <li className="relative flex gap-4 pb-5">
-      {/* Trilho: círculo + conector vertical */}
-      <div className="relative flex w-6 shrink-0 flex-col items-center">
-        <div className="pt-1">
-          <StatusCirculo item={item} destaque={destaque} />
-        </div>
-        {!isLast && (
-          <span className="absolute left-1/2 top-8 bottom-[-1.25rem] w-px -translate-x-1/2 bg-stone-200" />
-        )}
-      </div>
-
-      {/* Coluna de horário + duração */}
-      <div className="w-14 shrink-0 pt-1 text-right">
-        <div className="font-mono text-sm font-bold tabular-nums text-stone-900">
+    <div className="flex gap-4 py-4">
+      {/* Coluna do horário + ponto de status */}
+      <div className="flex w-16 flex-shrink-0 flex-col items-center pt-4">
+        <span className="text-sm font-semibold text-stone-900">
           {formatTime(item.time)}
-        </div>
-        {dur && <div className="mt-0.5 text-[11px] text-stone-400">{dur}</div>}
+        </span>
+        {dur && <span className="text-xs text-stone-400">{dur}</span>}
+        <div className={`mt-1.5 h-3 w-3 rounded-full ${dotColor}`} />
       </div>
 
-      {/* Card em colunas */}
+      {/* Card do item */}
       <div
-        className={`min-w-0 flex-1 rounded-2xl border p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-colors ${
+        className={`min-w-0 flex-1 rounded-lg border bg-white p-4 ${
           destaque
-            ? "border-sky-100 border-l-[3px] border-l-sky-500 bg-sky-50/40 ring-1 ring-sky-100"
-            : "border-stone-200 bg-white"
+            ? "border-sky-200 border-l-4 border-l-sky-500 bg-sky-50/40"
+            : "border-stone-200"
         }`}
       >
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
-          {/* Coluna 1 — identidade */}
-          <div className="min-w-0 lg:flex-1">
-            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-              <p
-                className={`text-[15px] font-semibold leading-snug ${
-                  concluido ? "text-stone-700" : "text-stone-900"
-                }`}
-              >
-                {item.title}
-              </p>
-              {item.supplier_categoria && (
-                <span
-                  className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${categoriaBadgeClass(
-                    item.supplier_categoria
-                  )}`}
-                >
-                  {categoriaLabel(item.supplier_categoria)}
-                </span>
-              )}
-            </div>
-
-            {item.supplier_name && (
-              <p className="mt-2.5 flex items-center gap-1.5 text-[13px] text-stone-500">
-                <Briefcase size={14} className="shrink-0 text-stone-400" />
-                {item.supplier_name}
-              </p>
-            )}
-            {item.responsavel_nome && (
-              <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-stone-500">
-                <span className="flex items-center gap-1.5">
-                  <UserRound size={14} className="shrink-0 text-stone-400" />
-                  {item.responsavel_nome}
-                </span>
-                {item.responsavel_telefone && (
-                  <a
-                    href={`tel:${item.responsavel_telefone}`}
-                    className="flex items-center gap-1.5 transition-colors hover:text-stone-800"
-                  >
-                    <Phone size={13} className="shrink-0 text-stone-400" />
-                    {item.responsavel_telefone}
-                  </a>
-                )}
-              </p>
-            )}
-          </div>
-
-          {/* Coluna 2 — status + carimbo de horário */}
-          <div className="lg:w-40 lg:shrink-0">
-            {atrasado ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-medium text-red-700">
-                <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                Atrasado
-              </span>
-            ) : (
+        {/* Cabeçalho: título + categoria + AGORA + menu (flex-wrap, nunca sobrepõe) */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <h3 className="font-medium text-stone-900">{item.title}</h3>
+            {item.supplier_categoria && (
               <span
-                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${ui.badge}`}
+                className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${categoriaBadgeClass(
+                  item.supplier_categoria
+                )}`}
               >
-                <span className={`h-1.5 w-1.5 rounded-full ${ui.dot}`} />
-                {ui.label}
+                {categoriaLabel(item.supplier_categoria)}
               </span>
             )}
-            {item.status_novo === "em_andamento" && inicioReal && (
-              <p className="mt-1.5 text-[12px] font-medium text-sky-700">
-                Iniciado às {inicioReal}
-              </p>
-            )}
-            {concluido && fimReal && (
-              <p className="mt-1.5 text-[12px] font-medium text-emerald-700">
-                Concluído às {fimReal}
-              </p>
-            )}
-            {variacao && (
-              <p className={`mt-0.5 text-[12px] ${variacao.cor}`}>
-                {variacao.texto}
-              </p>
+            {destaque && item.status_novo === "em_andamento" && (
+              <span className="whitespace-nowrap rounded-full bg-sky-500 px-2 py-0.5 text-xs font-semibold text-white">
+                AGORA
+              </span>
             )}
           </div>
-
-          {/* Coluna 3 — observação */}
-          <div className="lg:w-56 lg:shrink-0">
-            {item.observacao ? (
-              <div className="border-l-2 border-stone-200 pl-3">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-stone-400">
-                  Observação
-                </p>
-                <p className="mt-0.5 text-[13px] leading-relaxed text-stone-600">
-                  {item.observacao}
-                </p>
+          <div className="relative flex-shrink-0">
+            <button
+              onClick={() => setMenuAberto((v) => !v)}
+              onBlur={() => setTimeout(() => setMenuAberto(false), 150)}
+              aria-label="Ações"
+              className="rounded-md p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700"
+            >
+              <MoreVertical size={18} />
+            </button>
+            {menuAberto && (
+              <div className="absolute right-0 top-8 z-10 w-44 overflow-hidden rounded-lg border border-stone-200 bg-white py-1 shadow-lg">
+                <button
+                  onMouseDown={onEditar}
+                  className="block w-full px-3 py-2 text-left text-sm text-stone-700 hover:bg-stone-50"
+                >
+                  Editar
+                </button>
+                <button
+                  onMouseDown={onVerHistorico}
+                  className="block w-full px-3 py-2 text-left text-sm text-stone-700 hover:bg-stone-50"
+                >
+                  Ver histórico
+                </button>
+                <button
+                  onMouseDown={onExcluir}
+                  className="block w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                >
+                  Excluir
+                </button>
               </div>
-            ) : item.description ? (
-              <p className="text-[13px] leading-relaxed text-stone-400">
-                {item.description}
-              </p>
-            ) : null}
-          </div>
-
-          {/* Coluna 4 — obrigatória (no lugar da criticidade) + menu */}
-          <div className="flex shrink-0 items-start justify-between gap-2 lg:w-auto lg:flex-col lg:items-end">
-            <div className="flex items-center gap-2">
-              {destaque && item.status_novo === "em_andamento" && (
-                <span className="rounded-full bg-sky-500 px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-white">
-                  AGORA
-                </span>
-              )}
-              {item.etapa_obrigatoria && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-600">
-                  🔖 Obrigatória
-                </span>
-              )}
-            </div>
-            <div className="relative">
-              <button
-                onClick={() => setMenuAberto((v) => !v)}
-                onBlur={() => setTimeout(() => setMenuAberto(false), 150)}
-                aria-label="Ações"
-                className="-mr-1 rounded-md p-1 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700"
-              >
-                <MoreVertical size={18} />
-              </button>
-              {menuAberto && (
-                <div className="absolute right-0 top-8 z-10 w-44 overflow-hidden rounded-xl border border-stone-200 bg-white py-1 shadow-lg">
-                  <button
-                    onMouseDown={onEditar}
-                    className="block w-full px-3 py-2 text-left text-sm text-stone-700 hover:bg-stone-50"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    onMouseDown={onVerHistorico}
-                    className="block w-full px-3 py-2 text-left text-sm text-stone-700 hover:bg-stone-50"
-                  >
-                    Ver histórico
-                  </button>
-                  <button
-                    onMouseDown={onExcluir}
-                    className="block w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
-                  >
-                    Excluir
-                  </button>
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
+
+        {/* Fornecedor · responsável · telefone */}
+        {(item.supplier_name ||
+          item.responsavel_nome ||
+          item.responsavel_telefone) && (
+          <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm text-stone-600">
+            {item.supplier_name && <span>{item.supplier_name}</span>}
+            {item.responsavel_nome && (
+              <>
+                {item.supplier_name && <span className="text-stone-300">·</span>}
+                <span>{item.responsavel_nome}</span>
+              </>
+            )}
+            {item.responsavel_telefone && (
+              <>
+                <span className="text-stone-300">·</span>
+                <a
+                  href={`tel:${item.responsavel_telefone}`}
+                  className="whitespace-nowrap text-stone-500 hover:text-stone-800"
+                >
+                  {item.responsavel_telefone}
+                </a>
+              </>
+            )}
+          </div>
+        )}
+
+        {item.description && (
+          <p className="mt-2 whitespace-pre-line text-sm text-stone-500">
+            {item.description}
+          </p>
+        )}
+
+        {/* Status + carimbo de horário real + variação (flex-wrap) */}
+        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+          {atrasado ? (
+            <span className="whitespace-nowrap rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
+              Atrasado
+            </span>
+          ) : (
+            <span
+              className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${ui.badge}`}
+            >
+              {ui.label}
+            </span>
+          )}
+          {item.status_novo === "em_andamento" && inicioReal && (
+            <span className="whitespace-nowrap text-xs font-medium text-sky-700">
+              Iniciado às {inicioReal}
+            </span>
+          )}
+          {concluido && fimReal && (
+            <span className="whitespace-nowrap text-xs font-medium text-emerald-700">
+              Concluído às {fimReal}
+            </span>
+          )}
+          {variacao && (
+            <span className={`text-xs ${variacao.cor}`}>{variacao.texto}</span>
+          )}
+          {item.etapa_obrigatoria && (
+            <span className="whitespace-nowrap rounded-full bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-600">
+              🔖 Obrigatória
+            </span>
+          )}
+        </div>
+
+        {/* Observação */}
+        {item.observacao && (
+          <p className="mt-2 text-sm text-stone-500">
+            <span className="text-stone-400">Observação:</span> {item.observacao}
+          </p>
+        )}
       </div>
-    </li>
+    </div>
   );
 }
