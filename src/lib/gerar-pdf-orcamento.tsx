@@ -156,9 +156,11 @@ function OrcamentoPdf({ orcamento: o, itens, empresa, contatoEmpresa }: DadosPdf
             <View key={item.id} style={styles.itemLinha}>
               <View style={{ flex: 1, paddingRight: 12 }}>
                 <Text style={styles.itemNome}>{item.nome}</Text>
-                <Text style={styles.itemDetalhe}>
-                  {descricaoCalculoItem(item)}
-                </Text>
+                {item.tipo_calculo === "por_convidado" ? (
+                  <Text style={styles.itemDetalhe}>
+                    {descricaoCalculoItem(item)}
+                  </Text>
+                ) : null}
                 {item.descricao ? (
                   <Text style={styles.itemDetalhe}>{item.descricao}</Text>
                 ) : null}

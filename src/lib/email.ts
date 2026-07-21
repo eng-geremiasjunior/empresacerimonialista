@@ -77,3 +77,60 @@ export async function enviarEmailConfirmacao(
   }
   return { ok: true };
 }
+
+export type EmailOrcamento = {
+  to: string;
+  contatoNome: string;
+  nomeEmpresa: string;
+  hash: string;
+};
+
+// Aviso ao cliente de que há um orçamento para ele responder (Etapa 5).
+export async function enviarEmailOrcamento(
+  dados: EmailOrcamento
+): Promise<{ ok: boolean; error?: string }> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    return { ok: false, error: "RESEND_API_KEY não configurada no .env.local" };
+  }
+
+  const link = `${appUrl()}/orcamento/${dados.hash}`;
+  const html = `
+    <div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:520px;margin:0 auto;color:#17162A">
+      <p style="font-size:15px">Olá, ${dados.contatoNome}!</p>
+      <p style="font-size:15px;line-height:1.6">
+        Você recebeu um orçamento de <strong>${dados.nomeEmpresa}</strong>.
+        Acesse o link abaixo para ver a proposta completa e responder.
+      </p>
+      <p style="margin:28px 0">
+        <a href="${link}"
+           style="background:#17162A;color:#fff;padding:12px 22px;border-radius:9px;text-decoration:none;font-weight:600;display:inline-block">
+          Ver orçamento
+        </a>
+      </p>
+      <p style="font-size:12px;color:#6B6884">
+        Se o botão não funcionar, copie e cole este endereço:<br />${link}
+      </p>
+    </div>
+  `;
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: process.env.EMAIL_FROM ?? "Vela <onboarding@resend.dev>",
+      to: [dados.to],
+      subject: `Seu orçamento — ${dados.nomeEmpresa}`,
+      html,
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    return { ok: false, error: `Resend ${res.status}: ${body.slice(0, 200)}` };
+  }
+  return { ok: true };
+}

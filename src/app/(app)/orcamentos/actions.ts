@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { enviarEmailOrcamento } from "@/lib/email";
 
 export type SalvarOrcamentoState =
   | { error: string }
@@ -227,4 +228,57 @@ export async function duplicarOrcamento(
 
   revalidatePath("/orcamentos");
   return { success: true, id: novo.id };
+}
+
+// Envia o orçamento ao cliente: muda status para 'enviado' e, se houver
+// e-mail no contato, dispara o aviso com o link público. O link em si é
+// sempre exibido na tela para copiar (o e-mail é um extra).
+export async function enviarOrcamento(
+  orcamentoId: string
+): Promise<
+  | { error: string }
+  | { success: true; hash: string; emailEnviado: boolean; emailErro?: string }
+> {
+  const { supabase } = await contexto();
+
+  const { data: orc } = await supabase
+    .from("orcamentos")
+    .select("id, status, hash_publico, contato_nome, contato_email, empresa_id")
+    .eq("id", orcamentoId)
+    .single();
+
+  if (!orc) return { error: "Orçamento não encontrado." };
+  if (orc.status !== "rascunho") {
+    return { error: "Este orçamento já foi enviado." };
+  }
+
+  const { error } = await supabase
+    .from("orcamentos")
+    .update({ status: "enviado" })
+    .eq("id", orcamentoId);
+  if (error) return { error: "Não foi possível enviar o orçamento." };
+
+  let emailEnviado = false;
+  let emailErro: string | undefined;
+
+  if (orc.contato_email) {
+    const { data: empresa } = await supabase
+      .from("empresas")
+      .select("nome")
+      .eq("id", orc.empresa_id)
+      .maybeSingle();
+
+    const envio = await enviarEmailOrcamento({
+      to: orc.contato_email,
+      contatoNome: orc.contato_nome,
+      nomeEmpresa: empresa?.nome ?? "Vela",
+      hash: orc.hash_publico,
+    });
+    emailEnviado = envio.ok;
+    if (!envio.ok) emailErro = envio.error;
+  }
+
+  revalidatePath("/orcamentos");
+  revalidatePath(`/orcamentos/${orcamentoId}`);
+  return { success: true, hash: orc.hash_publico, emailEnviado, emailErro };
 }

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, FileDown, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { EnviarOrcamentoBox } from "@/components/orcamentos/EnviarOrcamentoBox";
 import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
 import {
   ORCAMENTO_STATUS_BADGE,
@@ -68,6 +69,18 @@ export default async function VisualizarOrcamentoPage({
           </a>
         </div>
       </div>
+
+      {/* Envio / link do cliente */}
+      {orc.status !== "recusado" && orc.status !== "expirado" && (
+        <div className="mb-4">
+          <EnviarOrcamentoBox
+            orcamentoId={orc.id}
+            hashPublico={orc.hash_publico}
+            status={orc.status}
+            temEmail={Boolean(orc.contato_email)}
+          />
+        </div>
+      )}
 
       {/* Prévia da proposta */}
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">

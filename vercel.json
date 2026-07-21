@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/confirmacoes",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/orcamentos-expirados",
+      "schedule": "10 12 * * *"
     }
   ]
 }
