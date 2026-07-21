@@ -4,6 +4,10 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { enviarEmailConfirmacao } from "@/lib/email";
+import {
+  enviarConfirmacaoWhatsapp,
+  whatsappConfigurado,
+} from "@/lib/whatsapp";
 import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
 
 export type EventoParaConfirmar = {
@@ -21,6 +25,7 @@ export type ResultadoEnvio = {
   email: string | null;
   enviado: boolean;
   motivo?: string;
+  canais?: string[]; // canais em que o envio funcionou: 'email' | 'whatsapp'
 };
 
 export function eventLabel(ev: EventoParaConfirmar) {
@@ -32,7 +37,12 @@ export function eventLabel(ev: EventoParaConfirmar) {
 export async function enviarConfirmacaoFornecedor(
   supabase: SupabaseClient,
   evento: EventoParaConfirmar,
-  supplier: { id: string; name: string; email: string | null }
+  supplier: {
+    id: string;
+    name: string;
+    email: string | null;
+    whatsapp?: string | null;
+  }
 ): Promise<ResultadoEnvio> {
   const base: ResultadoEnvio = {
     supplierId: supplier.id,
@@ -41,8 +51,10 @@ export async function enviarConfirmacaoFornecedor(
     enviado: false,
   };
 
-  if (!supplier.email) {
-    return { ...base, motivo: "fornecedor sem e-mail cadastrado" };
+  // WhatsApp é canal ADICIONAL ao e-mail: basta ter um dos dois.
+  const telefone = supplier.whatsapp ?? null;
+  if (!supplier.email && !telefone) {
+    return { ...base, motivo: "fornecedor sem e-mail e sem WhatsApp cadastrado" };
   }
 
   // Reutiliza a confirmação existente (reenvio) ou cria uma nova.
@@ -74,18 +86,41 @@ export async function enviarConfirmacaoFornecedor(
     hash = created.hash;
   }
 
-  const envio = await enviarEmailConfirmacao({
-    to: supplier.email,
-    supplierName: supplier.name,
-    eventLabel: eventLabel(evento),
-    eventDate: evento.date,
-    eventTime: evento.time,
-    eventLocation: evento.location,
-    hash: hash!,
-  });
+  const canais: string[] = [];
+  const falhas: string[] = [];
 
-  if (!envio.ok) {
-    return { ...base, motivo: envio.error };
+  if (supplier.email) {
+    const envio = await enviarEmailConfirmacao({
+      to: supplier.email,
+      supplierName: supplier.name,
+      eventLabel: eventLabel(evento),
+      eventDate: evento.date,
+      eventTime: evento.time,
+      eventLocation: evento.location,
+      hash: hash!,
+    });
+    if (envio.ok) canais.push("email");
+    else falhas.push(`e-mail: ${envio.error}`);
+  }
+
+  // WhatsApp com botões (mesmo hash do e-mail). Só tenta se as credenciais
+  // existirem — sem elas o envio é pulado, sem quebrar o fluxo do e-mail.
+  if (telefone && whatsappConfigurado()) {
+    const zap = await enviarConfirmacaoWhatsapp({
+      telefone,
+      supplierName: supplier.name,
+      eventLabel: eventLabel(evento),
+      eventDate: evento.date,
+      eventTime: evento.time,
+      eventLocation: evento.location,
+      hash: hash!,
+    });
+    if (zap.ok) canais.push("whatsapp");
+    else falhas.push(`whatsapp: ${zap.error}`);
+  }
+
+  if (canais.length === 0) {
+    return { ...base, motivo: falhas.join(" | ") || "nenhum canal disponível" };
   }
 
   await supabase
@@ -93,27 +128,40 @@ export async function enviarConfirmacaoFornecedor(
     .update({ sent_at: new Date().toISOString() })
     .eq("id", confirmationId);
 
-  return { ...base, enviado: true };
+  return {
+    ...base,
+    enviado: true,
+    canais,
+    motivo: falhas.length ? falhas.join(" | ") : undefined,
+  };
 }
 
 // Fornecedores vinculados ao evento (via roteiro_links), com e-mail.
 export async function fornecedoresDoEvento(
   supabase: SupabaseClient,
   eventId: string
-): Promise<{ id: string; name: string; email: string | null }[]> {
+): Promise<
+  { id: string; name: string; email: string | null; whatsapp: string | null }[]
+> {
   const { data } = await supabase
     .from("roteiro_links")
-    .select("supplier_id, suppliers(id, name, email)")
+    .select("supplier_id, suppliers(id, name, email, whatsapp)")
     .eq("event_id", eventId);
 
   return ((data ?? []) as unknown as {
     supplier_id: string;
-    suppliers: { id: string; name: string; email: string | null } | null;
+    suppliers: {
+      id: string;
+      name: string;
+      email: string | null;
+      whatsapp: string | null;
+    } | null;
   }[])
     .filter((l) => l.suppliers)
     .map((l) => ({
       id: l.supplier_id,
       name: l.suppliers!.name,
       email: l.suppliers!.email,
+      whatsapp: l.suppliers!.whatsapp,
     }));
 }
