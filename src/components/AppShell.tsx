@@ -65,7 +65,7 @@ type NavItem = {
 const NAV: NavItem[] = [
   { label: "Dashboard", icon: "dashboard", href: "/eventos/dashboard" },
   { label: "Eventos", icon: "eventos", href: "/eventos" },
-  { label: "Cotações", icon: "cotacoes" },
+  { label: "Orçamentos", icon: "cotacoes", href: "/orcamentos" },
   { label: "Clientes", icon: "clientes", href: "/clientes" },
   {
     label: "Cerimonialistas",
