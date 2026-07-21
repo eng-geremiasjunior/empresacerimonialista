@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Pencil } from "lucide-react";
+import { ArrowLeft, FileDown, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
 import {
@@ -51,14 +51,22 @@ export default async function VisualizarOrcamentoPage({
         >
           <ArrowLeft size={15} /> Voltar para orçamentos
         </Link>
-        {orc.status === "rascunho" && (
-          <Link
-            href={`/orcamentos/${orc.id}/editar`}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 hover:border-gray-400"
+        <div className="flex items-center gap-2">
+          {orc.status === "rascunho" && (
+            <Link
+              href={`/orcamentos/${orc.id}/editar`}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 hover:border-gray-400"
+            >
+              <Pencil size={14} /> Editar
+            </Link>
+          )}
+          <a
+            href={`/orcamentos/${orc.id}/pdf`}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-gray-900 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700"
           >
-            <Pencil size={14} /> Editar
-          </Link>
-        )}
+            <FileDown size={14} /> Baixar PDF
+          </a>
+        </div>
       </div>
 
       {/* Prévia da proposta */}
