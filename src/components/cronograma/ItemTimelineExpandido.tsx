@@ -9,7 +9,7 @@
 // empilha (em 1280 o card tem 589px e as colunas fixas cortariam texto). min-w-0 + break-words em todo texto longo e
 // whitespace-nowrap nos badges evitam transbordo/sobreposição.
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Briefcase, Phone, UserRound } from "lucide-react";
 import { formatTime } from "@/lib/format";
 import { categoriaLabel } from "@/lib/fornecedores-shared";
@@ -127,6 +127,20 @@ export function ItemTimelineExpandido({
   onVerHistorico: () => void;
 }) {
   const [menuAberto, setMenuAberto] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Fecha ao clicar fora (padrão das outras tabelas). Substitui o onBlur,
+  // que no toque fechava o menu antes do clique registrar.
+  useEffect(() => {
+    if (!menuAberto) return;
+    function fechar(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuAberto(false);
+      }
+    }
+    document.addEventListener("mousedown", fechar);
+    return () => document.removeEventListener("mousedown", fechar);
+  }, [menuAberto]);
   const concluido = item.status_novo === "concluido";
 
   const previsto = timeToMinutes(item.time);
@@ -188,16 +202,27 @@ export function ItemTimelineExpandido({
             background: destaque ? "#FAF9FF" : "#fff",
           }}
         >
-          {/* 74px — horário + duração */}
+          {/* 74px — horário (chip cinza chumbo) + duração */}
           <div className="2xl:w-[74px] 2xl:flex-shrink-0">
-            <div
-              className="text-[15px] font-extrabold"
-              style={{ color: destaque ? "#6C5DD3" : "#17162A" }}
-            >
-              {formatTime(item.time)}
-            </div>
+            {item.time ? (
+              <span
+                className="inline-flex items-center rounded-md px-2 py-1 text-[15px] font-extrabold leading-none text-white"
+                style={{ background: destaque ? "#6C5DD3" : "#3D3A52" }}
+              >
+                {formatTime(item.time)}
+              </span>
+            ) : (
+              // Sem horário definido não leva o chip: o "fechamento" é
+              // sobre a hora em si.
+              <span
+                className="text-[15px] font-semibold"
+                style={{ color: "#9A97AE" }}
+              >
+                {formatTime(item.time)}
+              </span>
+            )}
             {dur && (
-              <div className="mt-0.5 text-xs" style={{ color: "#9A97AE" }}>
+              <div className="mt-1 text-xs" style={{ color: "#9A97AE" }}>
                 {dur}
               </div>
             )}
@@ -323,37 +348,101 @@ export function ItemTimelineExpandido({
                 🔖 Obrigatória
               </span>
             )}
-            <div className="relative flex-shrink-0">
+            <div className="relative flex-shrink-0" ref={menuRef}>
               <button
                 onClick={() => setMenuAberto((v) => !v)}
-                onBlur={() => setTimeout(() => setMenuAberto(false), 150)}
                 aria-label="Ações"
-                className="rounded px-1 text-base leading-none hover:opacity-70"
+                aria-expanded={menuAberto}
+                className="-m-2 rounded p-2 text-base leading-none hover:opacity-70"
                 style={{ color: "#B4B1C8" }}
               >
                 ⋮
               </button>
+
               {menuAberto && (
-                <div className="absolute right-0 top-7 z-10 w-44 overflow-hidden rounded-lg border border-[#ECEBF3] bg-white py-1 shadow-lg">
-                  <button
-                    onMouseDown={onEditar}
-                    className="block w-full px-3 py-2 text-left text-[12.5px] text-[#3D3A52] hover:bg-[#F6F6FA]"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    onMouseDown={onVerHistorico}
-                    className="block w-full px-3 py-2 text-left text-[12.5px] text-[#3D3A52] hover:bg-[#F6F6FA]"
-                  >
-                    Ver histórico
-                  </button>
-                  <button
-                    onMouseDown={onExcluir}
-                    className="block w-full px-3 py-2 text-left text-[12.5px] text-[#DC2626] hover:bg-[#FDECEA]"
-                  >
-                    Excluir
-                  </button>
-                </div>
+                <>
+                  {/* Mobile/tablet: bottom sheet fixo na viewport. Um
+                      dropdown absoluto dentro do card fica cortado/fora da
+                      tela nessas larguras. */}
+                  <div className="fixed inset-0 z-50 flex items-end lg:hidden">
+                    <button
+                      aria-label="Fechar"
+                      onClick={() => setMenuAberto(false)}
+                      className="absolute inset-0 bg-black/40"
+                    />
+                    <div className="relative w-full rounded-t-2xl bg-white pb-[env(safe-area-inset-bottom)] shadow-2xl">
+                      <div className="border-b border-[#ECEBF3] px-5 py-3">
+                        <p className="truncate text-sm font-bold text-[#17162A]">
+                          {item.title}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setMenuAberto(false);
+                          onEditar();
+                        }}
+                        className="block w-full px-5 py-4 text-left text-[15px] text-[#3D3A52] active:bg-[#F6F6FA]"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => {
+                          setMenuAberto(false);
+                          onVerHistorico();
+                        }}
+                        className="block w-full border-t border-[#F1F0F5] px-5 py-4 text-left text-[15px] text-[#3D3A52] active:bg-[#F6F6FA]"
+                      >
+                        Ver histórico
+                      </button>
+                      <button
+                        onClick={() => {
+                          setMenuAberto(false);
+                          onExcluir();
+                        }}
+                        className="block w-full border-t border-[#F1F0F5] px-5 py-4 text-left text-[15px] text-[#DC2626] active:bg-[#FDECEA]"
+                      >
+                        Excluir
+                      </button>
+                      <button
+                        onClick={() => setMenuAberto(false)}
+                        className="block w-full border-t border-[#ECEBF3] px-5 py-4 text-center text-[15px] font-semibold text-[#6B6884]"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Desktop: dropdown ancorado no botão. */}
+                  <div className="absolute right-0 top-7 z-20 hidden w-44 overflow-hidden rounded-lg border border-[#ECEBF3] bg-white py-1 shadow-lg lg:block">
+                    <button
+                      onClick={() => {
+                        setMenuAberto(false);
+                        onEditar();
+                      }}
+                      className="block w-full px-3 py-2 text-left text-[12.5px] text-[#3D3A52] hover:bg-[#F6F6FA]"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => {
+                        setMenuAberto(false);
+                        onVerHistorico();
+                      }}
+                      className="block w-full px-3 py-2 text-left text-[12.5px] text-[#3D3A52] hover:bg-[#F6F6FA]"
+                    >
+                      Ver histórico
+                    </button>
+                    <button
+                      onClick={() => {
+                        setMenuAberto(false);
+                        onExcluir();
+                      }}
+                      className="block w-full px-3 py-2 text-left text-[12.5px] text-[#DC2626] hover:bg-[#FDECEA]"
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                </>
               )}
             </div>
           </div>
