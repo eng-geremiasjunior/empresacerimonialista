@@ -171,6 +171,7 @@ export function OrcamentoPublico({
           local={dados.local_evento}
           cidade={dados.cidade_evento}
           diasRestantes={diasRestantes}
+          imagemUrl={dados.hero_imagem_url ?? null}
           cta={botaoHero}
         />
 
@@ -180,7 +181,7 @@ export function OrcamentoPublico({
         <NoDiaDoEvento
           titulo={tituloDia}
           itens={inst.responsabilidades_dia_evento}
-          foto={fotos[0] ?? null}
+          imagemUrl={dados.no_dia_evento_imagem_url ?? null}
         />
         <PosEvento cards={inst.pos_evento_cards} />
         <Investimento

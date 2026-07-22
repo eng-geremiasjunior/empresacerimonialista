@@ -53,6 +53,9 @@ export type OrcamentoPublicoData = {
   ficha_preenchida: boolean;
   logo_url: string | null;
   nome_empresa: string;
+  // null = a landing usa o asset padrão do sistema (ver lib/landing-imagens).
+  hero_imagem_url: string | null;
+  no_dia_evento_imagem_url: string | null;
   itens: OrcamentoPublicoItem[];
   // Podem vir nulos/vazios se a empresa ainda não rodou a migração 045.
   institucional: InstitucionalPublico | null;

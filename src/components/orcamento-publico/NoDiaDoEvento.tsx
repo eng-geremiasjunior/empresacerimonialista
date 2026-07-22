@@ -1,6 +1,10 @@
 // "No dia do evento": responsabilidades assumidas pela cerimonialista.
 // Vem de empresa_conteudo_institucional.responsabilidades_dia_evento
 // (migração 047), com seed de 6 itens genéricos.
+//
+// A imagem é a customizada em Configurações (empresas.no_dia_evento_imagem_url)
+// ou o asset padrão do sistema — não mais a primeira foto do portfólio,
+// que era um empréstimo provisório da Etapa 9.
 
 import {
   CalendarCheck,
@@ -11,7 +15,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import type { FotoPublica } from "@/lib/orcamento-publico";
+import { IMAGEM_PADRAO } from "@/lib/landing-imagens";
 
 // Ciclo fixo de ícones: a lista é editável pela cerimonialista, então não
 // dá para amarrar ícone a texto — o rodízio mantém o visual variado.
@@ -27,34 +31,24 @@ const ICONES: LucideIcon[] = [
 export function NoDiaDoEvento({
   titulo,
   itens,
-  foto,
+  imagemUrl,
 }: {
   titulo: string;
   itens: string[];
-  foto: FotoPublica | null;
+  imagemUrl: string | null;
 }) {
   if (itens.length === 0) return null;
+
+  const imagem = imagemUrl || IMAGEM_PADRAO.no_dia_evento;
 
   return (
     <section id="dia-evento" className="scroll-mt-6 pt-12 sm:pt-14">
       <div className="grid gap-6 lg:grid-cols-[280px_1fr] lg:items-start">
-        {/* Reaproveita a primeira foto do portfólio; sem portfólio, o bloco
-            decorativo some em vez de virar um retângulo vazio. */}
-        {foto ? (
-          <div
-            className="hidden min-h-[220px] overflow-hidden rounded-2xl lg:block"
-            style={{ background: "#EFDCD5" }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={foto.url}
-              alt={foto.legenda ?? ""}
-              className="h-full min-h-[220px] w-full object-cover"
-            />
-          </div>
-        ) : (
-          <div className="hidden lg:block" />
-        )}
+        <div
+          className="hidden min-h-[220px] rounded-2xl bg-cover bg-center lg:block"
+          style={{ backgroundColor: "#EFDCD5", backgroundImage: `url(${imagem})` }}
+          role="presentation"
+        />
 
         <div>
           <h2

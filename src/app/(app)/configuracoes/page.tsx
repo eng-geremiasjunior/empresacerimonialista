@@ -6,6 +6,7 @@ import { ProcessoEtapasForm } from "@/components/configuracoes/ProcessoEtapasFor
 import { FaqForm } from "@/components/configuracoes/FaqForm";
 import { CondicoesPagamentoForm } from "@/components/configuracoes/CondicoesPagamentoForm";
 import { PortfolioGaleria } from "@/components/configuracoes/PortfolioGaleria";
+import { LandingImagemForm } from "@/components/configuracoes/LandingImagemForm";
 import type { PortfolioFoto } from "@/lib/portfolio";
 
 export const dynamic = "force-dynamic";
@@ -51,8 +52,13 @@ export default async function ConfiguracoesPage() {
   const podePortfolio =
     cargo?.cargo === "proprietaria" || cargo?.cargo === "coordenadora";
 
-  let empresa: { id: string; nome: string; logo_url: string | null } | null =
-    null;
+  let empresa: {
+    id: string;
+    nome: string;
+    logo_url: string | null;
+    hero_imagem_url: string | null;
+    no_dia_evento_imagem_url: string | null;
+  } | null = null;
   let conteudo: {
     sobre_nos_texto: string | null;
     stat_anos_experiencia: number | null;
@@ -74,7 +80,7 @@ export default async function ConfiguracoesPage() {
     const [empresaRes, conteudoRes, etapasRes, faqRes] = await Promise.all([
       supabase
         .from("empresas")
-        .select("id, nome, logo_url")
+        .select("id, nome, logo_url, hero_imagem_url, no_dia_evento_imagem_url")
         .eq("id", cargo.empresa_id)
         .maybeSingle(),
       supabase
@@ -206,6 +212,34 @@ export default async function ConfiguracoesPage() {
               >
                 <FaqForm inicial={faq} />
               </SubSecao>
+
+              {empresa && (
+                <>
+                  <SubSecao
+                    titulo="Imagem de capa (Apresentação)"
+                    descricao="Fundo do topo da proposta. Fotos horizontais e claras funcionam melhor."
+                  >
+                    <LandingImagemForm
+                      empresaId={empresa.id}
+                      slot="hero"
+                      urlInicial={empresa.hero_imagem_url}
+                      dica="JPG ou PNG · máx. 20 MB (comprimimos antes de enviar)"
+                    />
+                  </SubSecao>
+
+                  <SubSecao
+                    titulo="Imagem — No dia do evento"
+                    descricao="Aparece ao lado da lista de responsabilidades do dia."
+                  >
+                    <LandingImagemForm
+                      empresaId={empresa.id}
+                      slot="no_dia_evento"
+                      urlInicial={empresa.no_dia_evento_imagem_url}
+                      dica="Formato retrato ou quadrado se encaixa melhor aqui"
+                    />
+                  </SubSecao>
+                </>
+              )}
 
               <SubSecao
                 titulo="Condições de pagamento e contato"
