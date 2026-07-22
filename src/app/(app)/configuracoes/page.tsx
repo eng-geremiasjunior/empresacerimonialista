@@ -64,6 +64,7 @@ export default async function ConfiguracoesPage() {
     condicao_desconto_a_vista_percentual: number;
     condicao_prazo_parcelas_texto: string;
     whatsapp_contato: string | null;
+    email_contato: string | null;
   } | null = null;
   let etapas: { titulo: string; descricao: string | null }[] = [];
   let faq: { pergunta: string; resposta: string; ativo: boolean }[] = [];

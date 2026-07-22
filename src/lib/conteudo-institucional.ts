@@ -21,6 +21,7 @@ export type ConteudoInstitucional = {
   condicao_desconto_a_vista_percentual: number;
   condicao_prazo_parcelas_texto: string;
   whatsapp_contato: string | null;
+  email_contato: string | null;
 };
 
 export type ProcessoEtapa = {
@@ -114,6 +115,8 @@ export async function salvarCondicoes(
         "até 5 dias antes do evento",
       whatsapp_contato:
         String(formData.get("whatsapp_contato") ?? "").trim() || null,
+      email_contato:
+        String(formData.get("email_contato") ?? "").trim() || null,
       updated_at: new Date().toISOString(),
     })
     .eq("empresa_id", empresaId);

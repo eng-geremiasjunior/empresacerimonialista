@@ -33,6 +33,7 @@ export function CondicoesPagamentoForm({
     condicao_desconto_a_vista_percentual: number;
     condicao_prazo_parcelas_texto: string;
     whatsapp_contato: string | null;
+    email_contato: string | null;
   };
 }) {
   const [state, formAction] = useFormState<AcaoResult | null, FormData>(
@@ -124,6 +125,23 @@ export function CondicoesPagamentoForm({
         />
         <p className="mt-1 text-xs text-gray-400">
           Usado nos botões de contato da proposta enviada ao cliente.
+        </p>
+      </div>
+
+      <div>
+        <label htmlFor="email_contato" className={labelClass}>
+          E-mail para contato
+        </label>
+        <input
+          id="email_contato"
+          name="email_contato"
+          type="email"
+          defaultValue={inicial.email_contato ?? ""}
+          placeholder="contato@suaempresa.com.br"
+          className={inputClass}
+        />
+        <p className="mt-1 text-xs text-gray-400">
+          Aparece no rodapé da proposta pública.
         </p>
       </div>
 
