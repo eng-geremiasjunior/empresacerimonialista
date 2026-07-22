@@ -1,6 +1,31 @@
 import { createClient } from "@/lib/supabase/server";
 import { ProfileSection } from "@/components/configuracoes/ProfileSection";
 import { EmpresaSection } from "@/components/configuracoes/EmpresaSection";
+import { SobreNosForm } from "@/components/configuracoes/SobreNosForm";
+import { ProcessoEtapasForm } from "@/components/configuracoes/ProcessoEtapasForm";
+import { FaqForm } from "@/components/configuracoes/FaqForm";
+import { CondicoesPagamentoForm } from "@/components/configuracoes/CondicoesPagamentoForm";
+
+export const dynamic = "force-dynamic";
+
+// Bloco de sub-seção do "Conteúdo da Proposta".
+function SubSecao({
+  titulo,
+  descricao,
+  children,
+}: {
+  titulo: string;
+  descricao: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="border-t border-gray-100 px-6 py-5 first:border-t-0">
+      <h3 className="text-sm font-semibold text-gray-900">{titulo}</h3>
+      <p className="mb-4 mt-0.5 text-xs text-gray-500">{descricao}</p>
+      {children}
+    </div>
+  );
+}
 
 export default async function ConfiguracoesPage() {
   const supabase = createClient();
@@ -16,18 +41,59 @@ export default async function ConfiguracoesPage() {
   const name = meta.display_name ?? "";
   const initials = (name || email).slice(0, 2).toUpperCase();
 
-  // Minha Empresa: seção exclusiva da proprietária (padrão de permissões).
+  // Seções da empresa: exclusivas da proprietária (padrão de permissões).
   const { data: cargoData } = await supabase.rpc("meu_cargo");
   const cargo = (cargoData as { empresa_id: string; cargo: string }[] | null)?.[0];
+  const proprietaria = cargo?.cargo === "proprietaria";
+
   let empresa: { id: string; nome: string; logo_url: string | null } | null =
     null;
-  if (cargo?.cargo === "proprietaria") {
-    const { data } = await supabase
-      .from("empresas")
-      .select("id, nome, logo_url")
-      .eq("id", cargo.empresa_id)
-      .maybeSingle();
-    empresa = data;
+  let conteudo: {
+    sobre_nos_texto: string | null;
+    stat_anos_experiencia: number | null;
+    stat_eventos_realizados: number | null;
+    stat_dedicacao_percentual: number;
+    stat_equipe_texto: string;
+    condicao_entrada_percentual: number;
+    condicao_parcelas_maximo: number;
+    condicao_desconto_a_vista_percentual: number;
+    condicao_prazo_parcelas_texto: string;
+    whatsapp_contato: string | null;
+  } | null = null;
+  let etapas: { titulo: string; descricao: string | null }[] = [];
+  let faq: { pergunta: string; resposta: string; ativo: boolean }[] = [];
+  let faltaMigracao = false;
+
+  if (proprietaria && cargo) {
+    const [empresaRes, conteudoRes, etapasRes, faqRes] = await Promise.all([
+      supabase
+        .from("empresas")
+        .select("id, nome, logo_url")
+        .eq("id", cargo.empresa_id)
+        .maybeSingle(),
+      supabase
+        .from("empresa_conteudo_institucional")
+        .select("*")
+        .eq("empresa_id", cargo.empresa_id)
+        .maybeSingle(),
+      supabase
+        .from("empresa_processo_etapas")
+        .select("titulo, descricao")
+        .eq("empresa_id", cargo.empresa_id)
+        .order("ordem"),
+      supabase
+        .from("empresa_faq")
+        .select("pergunta, resposta, ativo")
+        .eq("empresa_id", cargo.empresa_id)
+        .order("ordem"),
+    ]);
+
+    empresa = empresaRes.data;
+    conteudo = conteudoRes.data as typeof conteudo;
+    etapas = (etapasRes.data ?? []) as typeof etapas;
+    faq = (faqRes.data ?? []) as typeof faq;
+    // Tabelas ainda não criadas → orienta em vez de quebrar.
+    faltaMigracao = Boolean(conteudoRes.error);
   }
 
   return (
@@ -52,6 +118,62 @@ export default async function ConfiguracoesPage() {
           empresaNome={empresa.nome}
           initialLogoUrl={empresa.logo_url}
         />
+      )}
+
+      {proprietaria && (
+        <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+          <div className="border-b border-gray-100 px-6 py-5">
+            <h2 className="text-sm font-semibold text-gray-900">
+              Conteúdo da Proposta
+            </h2>
+            <p className="mt-0.5 text-xs text-gray-500">
+              Estes textos aparecem em todas as propostas de orçamento
+              enviadas aos seus clientes.
+            </p>
+          </div>
+
+          {faltaMigracao || !conteudo ? (
+            <div className="px-6 py-5">
+              <p className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
+                Conteúdo institucional ainda não disponível. Execute{" "}
+                <code>
+                  supabase/migrations/045_conteudo_institucional_proposta.sql
+                </code>{" "}
+                no SQL Editor do Supabase.
+              </p>
+            </div>
+          ) : (
+            <>
+              <SubSecao
+                titulo="Sobre nós"
+                descricao="Apresentação da empresa e números que passam confiança."
+              >
+                <SobreNosForm inicial={conteudo} />
+              </SubSecao>
+
+              <SubSecao
+                titulo="Como funciona"
+                descricao="As etapas do seu processo, na ordem em que o cliente vai ler."
+              >
+                <ProcessoEtapasForm inicial={etapas} />
+              </SubSecao>
+
+              <SubSecao
+                titulo="Perguntas frequentes"
+                descricao="Responda de antemão as dúvidas mais comuns."
+              >
+                <FaqForm inicial={faq} />
+              </SubSecao>
+
+              <SubSecao
+                titulo="Condições de pagamento e contato"
+                descricao="Valores padrão da proposta e o WhatsApp para o cliente falar com você."
+              >
+                <CondicoesPagamentoForm inicial={conteudo} />
+              </SubSecao>
+            </>
+          )}
+        </section>
       )}
     </div>
   );
