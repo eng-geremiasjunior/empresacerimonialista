@@ -5,6 +5,8 @@ import { SobreNosForm } from "@/components/configuracoes/SobreNosForm";
 import { ProcessoEtapasForm } from "@/components/configuracoes/ProcessoEtapasForm";
 import { FaqForm } from "@/components/configuracoes/FaqForm";
 import { CondicoesPagamentoForm } from "@/components/configuracoes/CondicoesPagamentoForm";
+import { PortfolioGaleria } from "@/components/configuracoes/PortfolioGaleria";
+import type { PortfolioFoto } from "@/lib/portfolio";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +47,9 @@ export default async function ConfiguracoesPage() {
   const { data: cargoData } = await supabase.rpc("meu_cargo");
   const cargo = (cargoData as { empresa_id: string; cargo: string }[] | null)?.[0];
   const proprietaria = cargo?.cargo === "proprietaria";
+  // Portfólio é vitrine, não dado sensível: a coordenadora também gerencia.
+  const podePortfolio =
+    cargo?.cargo === "proprietaria" || cargo?.cargo === "coordenadora";
 
   let empresa: { id: string; nome: string; logo_url: string | null } | null =
     null;
@@ -96,6 +101,20 @@ export default async function ConfiguracoesPage() {
     faltaMigracao = Boolean(conteudoRes.error);
   }
 
+  // Busca separada: a coordenadora vê o portfólio sem ver o resto.
+  let fotos: PortfolioFoto[] = [];
+  let faltaPortfolio = false;
+  if (podePortfolio && cargo) {
+    const fotosRes = await supabase
+      .from("portfolio_fotos")
+      .select("id, url, storage_path, legenda, ordem, ativo")
+      .eq("empresa_id", cargo.empresa_id)
+      .order("ordem")
+      .order("created_at");
+    fotos = (fotosRes.data ?? []) as PortfolioFoto[];
+    faltaPortfolio = Boolean(fotosRes.error);
+  }
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
@@ -118,6 +137,28 @@ export default async function ConfiguracoesPage() {
           empresaNome={empresa.nome}
           initialLogoUrl={empresa.logo_url}
         />
+      )}
+
+      {podePortfolio && cargo && (
+        <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+          <div className="border-b border-gray-100 px-6 py-5">
+            <h2 className="text-sm font-semibold text-gray-900">Portfólio</h2>
+            <p className="mt-0.5 text-xs text-gray-500">
+              Fotos que aparecem nas propostas de orçamento para seus clientes.
+            </p>
+          </div>
+          <div className="px-6 py-5">
+            {faltaPortfolio ? (
+              <p className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
+                Galeria ainda não disponível. Execute{" "}
+                <code>supabase/migrations/046_portfolio_fotos.sql</code> no SQL
+                Editor do Supabase.
+              </p>
+            ) : (
+              <PortfolioGaleria empresaId={cargo.empresa_id} inicial={fotos} />
+            )}
+          </div>
+        </section>
       )}
 
       {proprietaria && (
