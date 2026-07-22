@@ -7,6 +7,7 @@
 import { useState } from "react";
 import { Check, FileDown, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { criarEventoAPartirDoOrcamento } from "@/lib/orcamento-para-evento";
 import { FichaCadastroAprovacao } from "@/components/orcamento-publico/FichaCadastroAprovacao";
 import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
 import { formatBRL, formatDateBR } from "@/lib/orcamentos";
@@ -25,6 +26,10 @@ export function OrcamentoPublico({
 }) {
   const [dados, setDados] = useState(inicial);
   const [fichaEnviada, setFichaEnviada] = useState(inicial.ficha_preenchida);
+  // Etapa 6: o evento é gerado logo após a ficha. Se falhar, a ficha
+  // continua salva — a cerimonialista cria pelo painel.
+  const [eventoCriado, setEventoCriado] = useState(false);
+  const [gerando, setGerando] = useState(false);
   const [confirmandoRecusa, setConfirmandoRecusa] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -239,14 +244,46 @@ export function OrcamentoPublico({
         </div>
       </div>
 
-      {/* Ficha de cadastro (após aprovar) */}
-      {/* Ficha aparece assim que aprova (precisa_ficha_cadastro) e some
-          depois de enviada. */}
+      {/* Tela final (Etapa 6): confirmação de que está tudo registrado. */}
+      {dados.status === "aprovado" && fichaEnviada && (
+        <div className="mt-6 rounded-2xl border border-[#ECEBF3] bg-white p-6 text-center">
+          <p className="text-3xl">🎉</p>
+          <h2 className="mt-2 text-lg font-bold text-[#17162A]">Tudo certo!</h2>
+          <p className="mt-1 text-[15px] text-[#3D3A52]">
+            {gerando
+              ? "Registrando seu evento…"
+              : eventoCriado
+                ? "Seu evento foi registrado com sucesso."
+                : "Recebemos seus dados."}
+          </p>
+          <p className="mt-3 font-semibold text-[#17162A]">
+            {tipo}
+            {dados.data_evento ? ` — ${formatDateBR(dados.data_evento)}` : ""}
+          </p>
+          <p className="mt-3 text-sm text-[#6B6884]">
+            Em breve entraremos em contato para os próximos passos.
+          </p>
+        </div>
+      )}
+
+      {/* Ficha de cadastro (após aprovar, some depois de enviada). */}
       {dados.status === "aprovado" && !fichaEnviada && (
         <FichaCadastroAprovacao
           hash={hash}
           nomeInicial={dados.nome_contato}
-          onConcluido={() => setFichaEnviada(true)}
+          onConcluido={async () => {
+            setFichaEnviada(true);
+            setGerando(true);
+            const res = await criarEventoAPartirDoOrcamento(
+              hash,
+              dados.tipo_evento,
+              dados.data_evento
+            );
+            setGerando(false);
+            if ("success" in res) setEventoCriado(true);
+            // semData/erro: nada a fazer aqui — a cerimonialista é
+            // notificada e finaliza pelo painel. Os dados estão salvos.
+          }}
         />
       )}
 

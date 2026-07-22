@@ -28,6 +28,8 @@ export type Orcamento = {
   status: OrcamentoStatus;
   hash_publico: string;
   evento_gerado_id: string | null;
+  ficha_preenchida_em: string | null;
+  respondido_em: string | null;
   created_at: string;
 };
 

@@ -7,6 +7,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  CalendarCheck,
   ChevronLeft,
   ChevronRight,
   Copy,
@@ -89,6 +90,14 @@ function MenuAcoes({ o }: { o: Orcamento }) {
           >
             <Eye size={14} /> Ver proposta
           </Link>
+          {o.evento_gerado_id && (
+            <Link
+              href={`/eventos/${o.evento_gerado_id}`}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-emerald-700 hover:bg-emerald-50"
+            >
+              <CalendarCheck size={14} /> Ver evento gerado
+            </Link>
+          )}
           <button
             onClick={() =>
               startTransition(async () => {
@@ -276,6 +285,14 @@ export function OrcamentosTable({
                           />
                           {ORCAMENTO_STATUS_LABELS[o.status as OrcamentoStatus]}
                         </span>
+                        {o.evento_gerado_id && (
+                          <span
+                            title="Evento criado"
+                            className="ml-1.5 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700"
+                          >
+                            <CalendarCheck size={11} /> Evento
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <MenuAcoes o={o} />

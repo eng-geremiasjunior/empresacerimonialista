@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, FileDown, Pencil } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarCheck, FileDown, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { EnviarOrcamentoBox } from "@/components/orcamentos/EnviarOrcamentoBox";
+import { GerarEventoBox } from "@/components/orcamentos/GerarEventoBox";
 import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
 import {
   ORCAMENTO_STATUS_BADGE,
@@ -70,17 +71,42 @@ export default async function VisualizarOrcamentoPage({
         </div>
       </div>
 
-      {/* Envio / link do cliente */}
-      {orc.status !== "recusado" && orc.status !== "expirado" && (
-        <div className="mb-4">
-          <EnviarOrcamentoBox
-            orcamentoId={orc.id}
-            hashPublico={orc.hash_publico}
-            status={orc.status}
-            temEmail={Boolean(orc.contato_email)}
-          />
-        </div>
+      {/* Evento já gerado a partir deste orçamento (Etapa 6) */}
+      {orc.evento_gerado_id && (
+        <Link
+          href={`/eventos/${orc.evento_gerado_id}`}
+          className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4 hover:border-emerald-300"
+        >
+          <span className="flex items-center gap-2 text-sm font-medium text-emerald-800">
+            <CalendarCheck size={17} /> Evento criado a partir deste orçamento
+          </span>
+          <span className="flex items-center gap-1 text-sm font-semibold text-emerald-700">
+            Ver evento <ArrowRight size={15} />
+          </span>
+        </Link>
       )}
+
+      {/* Aprovado + ficha enviada, mas ainda sem evento: gerar (caso sem data). */}
+      {!orc.evento_gerado_id &&
+        orc.status === "aprovado" &&
+        orc.ficha_preenchida_em && (
+          <GerarEventoBox orcamentoId={orc.id} dataEvento={orc.data_evento} />
+        )}
+
+      {/* Envio / link do cliente (antes da aprovação) */}
+      {!orc.evento_gerado_id &&
+        orc.status !== "recusado" &&
+        orc.status !== "expirado" &&
+        !(orc.status === "aprovado" && orc.ficha_preenchida_em) && (
+          <div className="mb-4">
+            <EnviarOrcamentoBox
+              orcamentoId={orc.id}
+              hashPublico={orc.hash_publico}
+              status={orc.status}
+              temEmail={Boolean(orc.contato_email)}
+            />
+          </div>
+        )}
 
       {/* Prévia da proposta */}
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
