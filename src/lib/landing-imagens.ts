@@ -11,7 +11,9 @@ export type SlotImagem = "hero" | "no_dia_evento";
 
 // Assets de fábrica servidos de /public.
 export const IMAGEM_PADRAO: Record<SlotImagem, string> = {
-  hero: "/images/hero-padrao.jpg",
+  hero: "/images/hero-padrao.png",
+  // Ainda sem asset de fábrica: até existir o arquivo (ou a empresa subir
+  // o dela em Configurações), a área cai no tom de fundo da seção.
   no_dia_evento: "/images/no-dia-evento-padrao.jpg",
 };
 
