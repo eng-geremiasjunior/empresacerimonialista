@@ -64,7 +64,7 @@ export function OQueEstaIncluso({ itens }: { itens: OrcamentoPublicoItem[] }) {
   if (itens.length === 0) return null;
 
   // Arte: até 5 colunas, itens centrados, ícone em medalhão creme.
-  if (tema.secoesEmCartao) {
+  if (tema.secoesEmCartao || tema.cartaoComSombra) {
     return (
       <Secao id="incluso" titulo="O que está incluso" centralizado>
         <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">

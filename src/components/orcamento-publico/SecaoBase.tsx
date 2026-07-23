@@ -61,18 +61,29 @@ export function TituloSecao({
   centralizado?: boolean;
 }) {
   const tema = useTema();
+  const barra = tema.tituloEstilo === "centralizado-barra";
+
   return (
-    <h2
-      className={`text-[22px] font-medium sm:text-[24px] [font-family:var(--font-playfair)] ${
-        centralizado && tema.tituloComTraco ? "text-center" : ""
-      }`}
-      style={{ color: "var(--cor-texto-principal)" }}
-    >
-      {children}
-      {tema.tituloComTraco && (
-        <span style={{ color: "var(--cor-texto-terciario)" }}> —</span>
+    <div className={barra ? "text-center" : ""}>
+      <h2
+        className={`text-[22px] font-medium sm:text-[28px] [font-family:var(--font-playfair)] ${
+          centralizado && tema.tituloEstilo === "traco" ? "text-center" : ""
+        }`}
+        style={{ color: "var(--cor-texto-principal)" }}
+      >
+        {children}
+        {tema.tituloEstilo === "traco" && (
+          <span style={{ color: "var(--cor-texto-terciario)" }}> —</span>
+        )}
+      </h2>
+      {/* Arte do Template 3: filete dourado no lugar do traço. */}
+      {barra && (
+        <div
+          className="mx-auto mt-3 h-[2px] w-[50px]"
+          style={{ background: "var(--cor-detalhe)" }}
+        />
       )}
-    </h2>
+    </div>
   );
 }
 
@@ -117,10 +128,16 @@ export function Card({
   children: React.ReactNode;
   className?: string;
 }) {
+  const tema = useTema();
+  // Template 3 usa sombra difusa em vez de borda.
   return (
     <div
-      className={`rounded-[14px] border bg-white ${className}`}
-      style={{ borderColor: "var(--cor-borda)" }}
+      className={`rounded-[14px] bg-white ${tema.cartaoComSombra ? "" : "border"} ${className}`}
+      style={
+        tema.cartaoComSombra
+          ? { boxShadow: "0 2px 12px rgba(58,13,25,0.06)" }
+          : { borderColor: "var(--cor-borda)" }
+      }
     >
       {children}
     </div>

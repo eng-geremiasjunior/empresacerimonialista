@@ -21,7 +21,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { SECOES } from "@/lib/orcamento-publico";
-import { useTema } from "./TemaContexto";
 
 const ICONES: Record<string, LucideIcon> = {
   apresentacao: MapPin,
@@ -80,7 +79,6 @@ export function SidebarAncoras({
     setAberto(false);
   }
 
-  const estilo = useTema();
   const iniciais = nomeEmpresa.slice(0, 2).toUpperCase();
 
   const cardContato = whatsapp ? (
@@ -90,15 +88,14 @@ export function SidebarAncoras({
     >
       <div
         className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-full"
-        style={
-          estilo.navAtivaSolida
-            ? { background: "var(--cor-acento)", color: "#FFFFFF" }
-            : { background: "#FFFFFF", color: "var(--cor-acento)" }
-        }
+        style={{
+          background: "var(--cor-sidebar-ativo-bg)",
+          color: "var(--cor-sidebar-ativo-texto)",
+        }}
       >
         <MessageCircle size={16} />
       </div>
-      <div className="text-xs leading-[1.35]" style={{ color: "var(--cor-texto-secundario)" }}>
+      <div className="text-xs leading-[1.35]" style={{ color: "var(--cor-sidebar-texto)" }}>
         Dúvidas?
         <br />
         <a
@@ -138,7 +135,7 @@ export function SidebarAncoras({
             <div className="min-w-0">
               <div
                 className="truncate text-sm font-semibold uppercase tracking-[1px]"
-                style={{ color: "var(--cor-texto-principal)" }}
+                style={{ color: "var(--cor-sidebar-texto)" }}
               >
                 {nomeEmpresa}
               </div>
@@ -163,15 +160,13 @@ export function SidebarAncoras({
               href={`#${s.id}`}
               onClick={(e) => irPara(e, s.id)}
               className="flex items-center gap-3 rounded-[10px] px-3.5 py-2.5 text-[13.5px] transition-colors"
-              style={
-                atual && estilo.navAtivaSolida
-                  ? { background: "var(--cor-acento)", color: "#FFFFFF", fontWeight: 500 }
-                  : {
-                      background: atual ? "var(--cor-fundo-destaque)" : "transparent",
-                      color: atual ? "var(--cor-acento)" : "var(--cor-texto-secundario)",
-                      fontWeight: atual ? 600 : 400,
-                    }
-              }
+              style={{
+                background: atual ? "var(--cor-sidebar-ativo-bg)" : "transparent",
+                color: atual
+                  ? "var(--cor-sidebar-ativo-texto)"
+                  : "var(--cor-sidebar-texto)",
+                fontWeight: atual ? 600 : 400,
+              }}
             >
               <Icone size={15} strokeWidth={1.7} />
               {s.label}
