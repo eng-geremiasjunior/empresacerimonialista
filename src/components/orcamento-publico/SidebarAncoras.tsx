@@ -237,14 +237,31 @@ export function SidebarAncoras({
         >
           {nomeEmpresa}
         </span>
-        <button
-          onClick={() => setAberto(true)}
-          aria-label="Abrir navegação"
-          className="rounded-lg p-1.5"
-          style={{ color: "var(--cor-acento)" }}
-        >
-          <Menu size={20} />
-        </button>
+        <div className="flex items-center gap-1.5">
+          {/* Abaixo de lg a barra lateral vira gaveta e o card "Dúvidas?"
+              fica escondido atrás do menu. Este atalho mantém o contato a
+              um toque, sem precisar abrir a navegação. */}
+          {whatsapp && (
+            <a
+              href={`https://wa.me/${whatsapp.replace(/\D/g, "")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
+              style={{ background: "var(--cor-fundo-destaque)", color: "var(--cor-acento)" }}
+            >
+              <MessageCircle size={14} />
+              Dúvidas?
+            </a>
+          )}
+          <button
+            onClick={() => setAberto(true)}
+            aria-label="Abrir navegação"
+            className="rounded-lg p-1.5"
+            style={{ color: "var(--cor-acento)" }}
+          >
+            <Menu size={20} />
+          </button>
+        </div>
       </div>
 
       {aberto && (
