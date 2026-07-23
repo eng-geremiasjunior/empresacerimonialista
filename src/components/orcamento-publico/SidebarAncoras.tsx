@@ -23,44 +23,6 @@ import {
 import { SECOES } from "@/lib/orcamento-publico";
 import { useTema } from "./TemaContexto";
 
-// Ramo de oliveira decorativo (só o Template 2 usa). Inline em vez de
-// arquivo em /public para herdar a cor do tema via currentColor — um .svg
-// externo teria a cor cravada e destoaria se a paleta mudar.
-function RamoOliveira() {
-  return (
-    <div
-      aria-hidden
-      className="pointer-events-none absolute bottom-[-10px] left-[-20px] z-0 select-none"
-      style={{ color: "var(--cor-acento)", opacity: 0.45 }}
-    >
-      <svg
-        width="150"
-        height="230"
-        viewBox="0 0 120 200"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-      >
-        <path d="M6 198C24 164 32 126 42 84c6-26 14-48 26-70" />
-        <ellipse cx="22" cy="160" rx="14" ry="5.5" transform="rotate(-28 22 160)" />
-        <ellipse cx="-2" cy="152" rx="13" ry="5" transform="rotate(28 -2 152)" />
-        <ellipse cx="33" cy="130" rx="13.5" ry="5.2" transform="rotate(-24 33 130)" />
-        <ellipse cx="9" cy="122" rx="12.5" ry="5" transform="rotate(32 9 122)" />
-        <ellipse cx="43" cy="100" rx="13" ry="5" transform="rotate(-20 43 100)" />
-        <ellipse cx="19" cy="92" rx="12" ry="4.8" transform="rotate(35 19 92)" />
-        <ellipse cx="52" cy="70" rx="12.5" ry="4.8" transform="rotate(-16 52 70)" />
-        <ellipse cx="29" cy="62" rx="11.5" ry="4.5" transform="rotate(38 29 62)" />
-        <ellipse cx="62" cy="40" rx="11.5" ry="4.5" transform="rotate(-12 62 40)" />
-        <ellipse cx="41" cy="32" rx="10.5" ry="4.2" transform="rotate(40 41 32)" />
-        <circle cx="30" cy="146" r="3.2" />
-        <circle cx="16" cy="108" r="3" />
-        <circle cx="49" cy="84" r="2.8" />
-      </svg>
-    </div>
-  );
-}
-
 const ICONES: Record<string, LucideIcon> = {
   apresentacao: MapPin,
   "sobre-nos": Heart,
@@ -72,6 +34,71 @@ const ICONES: Record<string, LucideIcon> = {
   faq: HelpCircle,
   eventos: ImageIcon,
 };
+
+// Ramo de oliveira decorativo (só o Template 2 usa), com o balanço da
+// arte "Raminho Animado": o galho inteiro oscila em 7s e a ponta tem um
+// segundo movimento em 4.5s, mais rápido, para não parecer um bloco só.
+//
+// Os keyframes ficam aqui e não no CSS global porque a animação só existe
+// nesta peça. Os nomes são prefixados para não colidirem com nada.
+function RamoOliveira() {
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute bottom-[-10px] left-[-20px] z-0 h-[280px] w-[150px] select-none"
+      style={{ opacity: 0.45, overflow: "visible" }}
+    >
+      <style>{`
+        @keyframes vela-sway {
+          0%   { transform: rotate(-3deg) skewX(-2deg) translateX(-3px); }
+          22%  { transform: rotate(1.5deg) skewX(1deg) translateX(2px); }
+          38%  { transform: rotate(3.5deg) skewX(2.2deg) translateX(3px); }
+          55%  { transform: rotate(-1deg) skewX(-0.5deg) translateX(-1px); }
+          70%  { transform: rotate(-3.8deg) skewX(-2.5deg) translateX(-4px); }
+          86%  { transform: rotate(0.5deg) skewX(0.5deg) translateX(1px); }
+          100% { transform: rotate(-3deg) skewX(-2deg) translateX(-3px); }
+        }
+        @keyframes vela-sway-tip {
+          0%   { transform: rotate(-1.5deg); }
+          30%  { transform: rotate(2deg); }
+          60%  { transform: rotate(-2.5deg); }
+          100% { transform: rotate(-1.5deg); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .vela-ramo, .vela-ramo img { animation: none !important; }
+        }
+      `}</style>
+
+      <div
+        className="vela-ramo"
+        style={{
+          height: "100%",
+          transformOrigin: "50% 100%",
+          animation: "vela-sway 7s cubic-bezier(0.45,0.05,0.55,0.95) infinite",
+          willChange: "transform",
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/raminho.png"
+          alt=""
+          style={{
+            height: "100%",
+            width: "auto",
+            display: "block",
+            transformOrigin: "50% 85%",
+            // O raminho.png nao tem canal alpha (RGB puro, fundo branco).
+            // multiply faz o branco desaparecer sobre o creme da barra e
+            // preserva as folhas escuras - sem isso apareceria um retangulo.
+            mixBlendMode: "multiply",
+            animation: "vela-sway-tip 4.5s cubic-bezier(0.45,0.05,0.55,0.95) infinite",
+            willChange: "transform",
+          }}
+        />
+      </div>
+    </div>
+  );
+}
 
 export function SidebarAncoras({
   nomeEmpresa,
@@ -225,7 +252,7 @@ export function SidebarAncoras({
     <>
       {/* Desktop */}
       <aside
-        className="fixed left-0 top-0 hidden h-screen w-[250px] flex-col overflow-hidden border-r px-5 py-8 lg:flex"
+        className="fixed left-0 top-0 hidden h-screen w-[250px] flex-col overflow-visible border-r px-5 py-8 lg:flex"
         style={{ borderColor: "var(--cor-borda)", background: "var(--cor-sidebar)" }}
       >
         {estilo.ornamentoBotanico && <RamoOliveira />}
