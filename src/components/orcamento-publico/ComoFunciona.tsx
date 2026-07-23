@@ -9,12 +9,14 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { Secao } from "./SecaoBase";
+import { useTema } from "./TemaContexto";
 import type { EtapaPublica } from "@/lib/orcamento-publico";
 
 const PASSO = 0.3; // 300ms entre etapas, conforme o brief
 
 export function ComoFunciona({ etapas }: { etapas: EtapaPublica[] }) {
   const semMovimento = useReducedMotion();
+  const tema = useTema();
   if (etapas.length === 0) return null;
 
   // Duração da linha = tempo até a última etapa aparecer.
@@ -53,8 +55,12 @@ export function ComoFunciona({ etapas }: { etapas: EtapaPublica[] }) {
             transition={{ duration: 0.4, ease: "easeOut" }}
           >
             <div
-              className="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-full text-xs font-bold"
-              style={{ background: "var(--cor-fundo-destaque)", color: "var(--cor-acento)" }}
+              className="mx-auto mb-3 flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold"
+              style={
+                tema.numerosSolidos
+                  ? { background: "var(--cor-acento)", color: "#FFFFFF" }
+                  : { background: "var(--cor-fundo-destaque)", color: "var(--cor-acento)" }
+              }
             >
               {String(i + 1).padStart(2, "0")}
             </div>

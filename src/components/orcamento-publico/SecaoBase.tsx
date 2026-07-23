@@ -3,12 +3,11 @@
 // Casca comum das seções da proposta pública: âncora, espaçamento, título
 // serifado e a animação de entrada (fade + slide, uma única vez).
 //
-// A animação NUNCA deixa o conteúdo permanentemente invisível: se o leitor
-// pediu menos movimento (prefers-reduced-motion), entramos já em opacity 1
-// sem deslocamento. É uma página de conversão — animação que falha não pode
-// custar o conteúdo.
+// No Template 2 a seção vira um CARTÃO BRANCO de raio 20 com sombra suave
+// e o título ganha o traço final ("Como funciona —"), seguindo a arte.
 
 import { motion, useReducedMotion } from "framer-motion";
+import { useTema } from "./TemaContexto";
 
 const DURACAO = 0.45;
 
@@ -37,32 +36,74 @@ export function Revelar({
   );
 }
 
+// Cartão branco das seções do Template 2 (no Template 1 é transparente).
+export function MolduraSecao({ children }: { children: React.ReactNode }) {
+  const tema = useTema();
+  if (!tema.secoesEmCartao) return <>{children}</>;
+  return (
+    <div
+      className="rounded-[20px] px-6 py-7 sm:px-8"
+      style={{
+        background: "var(--cor-card)",
+        boxShadow: "0 2px 10px rgba(40,40,20,0.05)",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function TituloSecao({
+  children,
+  centralizado = false,
+}: {
+  children: React.ReactNode;
+  centralizado?: boolean;
+}) {
+  const tema = useTema();
+  return (
+    <h2
+      className={`text-[22px] font-medium sm:text-[24px] [font-family:var(--font-playfair)] ${
+        centralizado && tema.tituloComTraco ? "text-center" : ""
+      }`}
+      style={{ color: "var(--cor-texto-principal)" }}
+    >
+      {children}
+      {tema.tituloComTraco && (
+        <span style={{ color: "var(--cor-texto-terciario)" }}> —</span>
+      )}
+    </h2>
+  );
+}
+
 export function Secao({
   id,
   titulo,
   subtitulo,
+  centralizado = false,
   children,
 }: {
   id: string;
   titulo: string;
   subtitulo?: string;
+  centralizado?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <Revelar className="scroll-mt-6 pt-12 sm:pt-14">
+    <Revelar className="scroll-mt-6 pt-8 sm:pt-10">
       <section id={id} className="scroll-mt-6">
-        <h2
-          className="text-[22px] font-medium sm:text-[26px] [font-family:var(--font-playfair)]"
-          style={{ color: "var(--cor-texto-principal)" }}
-        >
-          {titulo}
-        </h2>
-        {subtitulo && (
-          <p className="mt-1 text-[12.5px] font-semibold" style={{ color: "var(--cor-acento)" }}>
-            {subtitulo}
-          </p>
-        )}
-        <div className="mt-5">{children}</div>
+        <MolduraSecao>
+          <TituloSecao centralizado={centralizado}>{titulo}</TituloSecao>
+          {subtitulo && (
+            <p
+              className="mt-1 text-[12.5px] font-semibold"
+              style={{ color: "var(--cor-acento)" }}
+            >
+              {subtitulo}
+            </p>
+          )}
+          <div className="mt-5">{children}</div>
+        </MolduraSecao>
       </section>
     </Revelar>
   );

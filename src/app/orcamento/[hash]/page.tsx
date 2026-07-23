@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Inter, Playfair_Display, Poppins } from "next/font/google";
 import { createClient } from "@/lib/supabase/server";
 import { OrcamentoPublico } from "@/components/orcamento-publico/OrcamentoPublico";
 import type { OrcamentoPublicoData } from "@/lib/orcamento-publico";
@@ -16,6 +16,13 @@ const playfair = Playfair_Display({
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+  display: "swap",
+});
+// Corpo do Template 2 (arte Karina Dries).
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-poppins",
   display: "swap",
 });
 
@@ -42,7 +49,7 @@ export default async function OrcamentoPublicoPage({
 
   return (
     <div
-      className={`${playfair.variable} ${inter.variable} min-h-screen [font-family:var(--font-inter)]`}
+      className={`${playfair.variable} ${inter.variable} ${poppins.variable} min-h-screen [font-family:var(--fonte-corpo)]`}
       style={{ ...variaveisDoTema(tema), background: "var(--cor-fundo)" }}
     >
       <noscript>

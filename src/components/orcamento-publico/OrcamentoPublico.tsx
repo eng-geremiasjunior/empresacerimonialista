@@ -28,6 +28,7 @@ import { StickyCta } from "@/components/orcamento-publico/StickyCta";
 import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
 import { formatBRL, formatDateBR } from "@/lib/orcamentos";
 import { resolverTema } from "@/lib/orcamento-temas";
+import { TemaProvider } from "@/components/orcamento-publico/TemaContexto";
 import {
   dataResposta,
   expirado,
@@ -155,7 +156,10 @@ export function OrcamentoPublico({
     </button>
   ) : null;
 
+  const tema = resolverTema(dados.template_orcamento);
+
   return (
+    <TemaProvider tema={tema}>
     <div style={{ background: "var(--cor-fundo)", color: "var(--cor-texto-principal)" }}>
       <BarraProgresso />
       <SidebarAncoras
@@ -163,7 +167,6 @@ export function OrcamentoPublico({
         logoUrl={dados.logo_url}
         whatsapp={inst.whatsapp_contato}
         secoesVisiveis={secoesVisiveis}
-        tema={resolverTema(dados.template_orcamento)}
       />
 
       {/* Espaço extra embaixo para o CTA fixo não cobrir o rodapé. */}
@@ -326,5 +329,6 @@ export function OrcamentoPublico({
         valorFormatado={formatBRL(Number(dados.valor_total))}
       />
     </div>
+    </TemaProvider>
   );
 }

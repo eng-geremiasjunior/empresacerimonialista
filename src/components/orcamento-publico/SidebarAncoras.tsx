@@ -21,7 +21,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { SECOES } from "@/lib/orcamento-publico";
-import { TEMAS, type TemaOrcamento } from "@/lib/orcamento-temas";
+import { useTema } from "./TemaContexto";
 
 // Ramo de oliveira decorativo (só o Template 2 usa). Inline em vez de
 // arquivo em /public para herdar a cor do tema via currentColor — um .svg
@@ -30,8 +30,8 @@ function RamoOliveira() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute bottom-0 left-0 z-0 select-none"
-      style={{ color: "var(--cor-acento)", opacity: 0.18 }}
+      className="pointer-events-none absolute bottom-[-10px] left-[-20px] z-0 select-none"
+      style={{ color: "var(--cor-acento)", opacity: 0.45 }}
     >
       <svg
         width="150"
@@ -78,13 +78,11 @@ export function SidebarAncoras({
   logoUrl,
   whatsapp,
   secoesVisiveis,
-  tema,
 }: {
   nomeEmpresa: string;
   logoUrl: string | null;
   whatsapp: string | null;
   secoesVisiveis: string[];
-  tema: TemaOrcamento;
 }) {
   const [aberto, setAberto] = useState(false);
   const [ativa, setAtiva] = useState<string>("apresentacao");
@@ -120,6 +118,7 @@ export function SidebarAncoras({
     setAberto(false);
   }
 
+  const estilo = useTema();
   const iniciais = nomeEmpresa.slice(0, 2).toUpperCase();
 
   const conteudo = (
@@ -138,20 +137,20 @@ export function SidebarAncoras({
         ) : (
           <>
             <div
-              className="flex h-[34px] w-[34px] items-center justify-center rounded-full border-[1.5px] text-sm [font-family:var(--font-playfair)]"
+              className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border text-[17px] font-semibold [font-family:var(--font-playfair)]"
               style={{ borderColor: "var(--cor-detalhe)", color: "var(--cor-detalhe)" }}
             >
               {iniciais}
             </div>
-            <div>
+            <div className="min-w-0">
               <div
-                className="text-sm tracking-[0.5px] [font-family:var(--font-playfair)]"
+                className="truncate text-sm font-semibold uppercase tracking-[1px]"
                 style={{ color: "var(--cor-texto-principal)" }}
               >
                 {nomeEmpresa}
               </div>
               <div
-                className="text-[9px] tracking-[1.5px]"
+                className="text-[9px] tracking-[2px]"
                 style={{ color: "var(--cor-detalhe)" }}
               >
                 EVENTOS
@@ -170,12 +169,16 @@ export function SidebarAncoras({
               key={s.id}
               href={`#${s.id}`}
               onClick={(e) => irPara(e, s.id)}
-              className="flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-[13.5px] transition-colors"
-              style={{
-                background: atual ? "var(--cor-fundo-destaque)" : "transparent",
-                color: atual ? "var(--cor-acento)" : "var(--cor-texto-secundario)",
-                fontWeight: atual ? 600 : 400,
-              }}
+              className="flex items-center gap-3 rounded-[10px] px-3.5 py-2.5 text-[13.5px] transition-colors"
+              style={
+                atual && estilo.navAtivaSolida
+                  ? { background: "var(--cor-acento)", color: "#FFFFFF", fontWeight: 500 }
+                  : {
+                      background: atual ? "var(--cor-fundo-destaque)" : "transparent",
+                      color: atual ? "var(--cor-acento)" : "var(--cor-texto-secundario)",
+                      fontWeight: atual ? 600 : 400,
+                    }
+              }
             >
               <Icone size={15} strokeWidth={1.7} />
               {s.label}
@@ -189,8 +192,15 @@ export function SidebarAncoras({
           className="mt-auto flex items-center gap-2.5 rounded-xl p-3.5"
           style={{ background: "var(--cor-fundo-destaque)" }}
         >
-          <div className="flex h-[30px] w-[30px] flex-shrink-0 items-center justify-center rounded-full bg-white">
-            <MessageCircle size={15} style={{ color: "var(--cor-acento)" }} />
+          <div
+            className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-full"
+            style={
+              estilo.navAtivaSolida
+                ? { background: "var(--cor-acento)", color: "#FFFFFF" }
+                : { background: "#FFFFFF", color: "var(--cor-acento)" }
+            }
+          >
+            <MessageCircle size={16} />
           </div>
           <div className="text-xs leading-[1.35]" style={{ color: "var(--cor-texto-secundario)" }}>
             Dúvidas?
@@ -214,10 +224,10 @@ export function SidebarAncoras({
     <>
       {/* Desktop */}
       <aside
-        className="fixed left-0 top-0 hidden h-screen w-[250px] flex-col overflow-hidden border-r bg-white px-[18px] py-7 lg:flex"
-        style={{ borderColor: "var(--cor-borda)" }}
+        className="fixed left-0 top-0 hidden h-screen w-[250px] flex-col overflow-hidden border-r px-5 py-8 lg:flex"
+        style={{ borderColor: "var(--cor-borda)", background: "var(--cor-sidebar)" }}
       >
-        {TEMAS[tema].ornamentoBotanico && <RamoOliveira />}
+        {estilo.ornamentoBotanico && <RamoOliveira />}
         {/* z-10 mantém menu e card de contato acima do ornamento: elemento
             posicionado pinta sobre estático, então o conteúdo precisa de
             um contexto próprio para não ficar por baixo. */}
@@ -228,8 +238,8 @@ export function SidebarAncoras({
 
       {/* Celular/tablet: barra fixa + gaveta */}
       <div
-        className="sticky top-0 z-40 flex items-center justify-between border-b bg-white px-4 py-3 lg:hidden"
-        style={{ borderColor: "var(--cor-borda)" }}
+        className="sticky top-0 z-40 flex items-center justify-between border-b px-4 py-3 lg:hidden"
+        style={{ borderColor: "var(--cor-borda)", background: "var(--cor-sidebar)" }}
       >
         <span
           className="text-sm tracking-[0.5px] [font-family:var(--font-playfair)]"
@@ -271,7 +281,8 @@ export function SidebarAncoras({
           onClick={() => setAberto(false)}
         >
           <div
-            className="ml-auto flex h-full w-[270px] max-w-[85vw] flex-col overflow-y-auto bg-white px-[18px] py-6"
+            className="ml-auto flex h-full w-[270px] max-w-[85vw] flex-col overflow-y-auto px-[18px] py-6"
+            style={{ background: "var(--cor-sidebar)" }}
             onClick={(e) => e.stopPropagation()}
           >
             <button
