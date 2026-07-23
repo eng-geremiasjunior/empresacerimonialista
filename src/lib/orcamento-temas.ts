@@ -31,7 +31,6 @@ export const TEMAS = {
       "linear-gradient(135deg, #EFDCD5 0%, #E7CDC4 45%, #D9B3A8 100%)",
     fonteCorpo: "var(--font-inter)",
     // --- arranjo ---
-    ornamentoBotanico: false,
     heroDividido: false,
     secoesEmCartao: false,
     navAtivaSolida: false,
@@ -59,7 +58,6 @@ export const TEMAS = {
       "linear-gradient(135deg, #EFE8D9 0%, #E5DFCF 45%, #C9C7A8 100%)",
     fonteCorpo: "var(--font-poppins)",
     // --- arranjo ---
-    ornamentoBotanico: true,
     heroDividido: true,
     secoesEmCartao: true,
     navAtivaSolida: true,
