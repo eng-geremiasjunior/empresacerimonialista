@@ -22,6 +22,7 @@ import { PosEvento } from "@/components/orcamento-publico/PosEvento";
 import { Investimento } from "@/components/orcamento-publico/Investimento";
 import { FaqAccordion } from "@/components/orcamento-publico/FaqAccordion";
 import { EventosRealizados } from "@/components/orcamento-publico/EventosRealizados";
+import { Depoimentos } from "@/components/orcamento-publico/Depoimentos";
 import { CtaFinal } from "@/components/orcamento-publico/CtaFinal";
 import { BarraProgresso } from "@/components/orcamento-publico/BarraProgresso";
 import { StickyCta } from "@/components/orcamento-publico/StickyCta";
@@ -75,6 +76,7 @@ export function OrcamentoPublico({
   const etapas = dados.etapas ?? [];
   const faq = dados.faq ?? [];
   const fotos = dados.fotos ?? [];
+  const depoimentos = dados.depoimentos ?? [];
   const itens = dados.itens ?? [];
 
   const tipo =
@@ -113,6 +115,7 @@ export function OrcamentoPublico({
     "investimento",
     faq.length > 0 ? "faq" : null,
     fotos.length > 0 ? "eventos" : null,
+    depoimentos.length > 0 ? "depoimentos" : null,
   ].filter(Boolean) as string[];
 
   async function aceitar() {
@@ -200,6 +203,7 @@ export function OrcamentoPublico({
         />
         <FaqAccordion itens={faq} />
         <EventosRealizados fotos={fotos} />
+        <Depoimentos itens={depoimentos} />
 
         <CtaFinal
           podeResponder={podeResponder}

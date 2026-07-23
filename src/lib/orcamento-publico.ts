@@ -35,6 +35,11 @@ export type InstitucionalPublico = {
 export type EtapaPublica = { titulo: string; descricao: string | null };
 export type FaqPublico = { pergunta: string; resposta: string };
 export type FotoPublica = { url: string; legenda: string | null };
+export type DepoimentoPublico = {
+  texto: string;
+  autor: string;
+  contexto: string | null;
+};
 
 export type OrcamentoPublicoData = {
   nome_contato: string;
@@ -63,6 +68,7 @@ export type OrcamentoPublicoData = {
   etapas: EtapaPublica[];
   faq: FaqPublico[];
   fotos: FotoPublica[];
+  depoimentos: DepoimentoPublico[];
 };
 
 export function expirado(d: OrcamentoPublicoData): boolean {
@@ -107,4 +113,5 @@ export const SECOES = [
   { id: "investimento", label: "Investimento" },
   { id: "faq", label: "Perguntas frequentes" },
   { id: "eventos", label: "Eventos realizados" },
+  { id: "depoimentos", label: "Depoimentos" },
 ] as const;

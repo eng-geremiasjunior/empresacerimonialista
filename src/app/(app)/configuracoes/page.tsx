@@ -4,6 +4,7 @@ import { EmpresaSection } from "@/components/configuracoes/EmpresaSection";
 import { SobreNosForm } from "@/components/configuracoes/SobreNosForm";
 import { ProcessoEtapasForm } from "@/components/configuracoes/ProcessoEtapasForm";
 import { FaqForm } from "@/components/configuracoes/FaqForm";
+import { DepoimentosForm } from "@/components/configuracoes/DepoimentosForm";
 import { CondicoesPagamentoForm } from "@/components/configuracoes/CondicoesPagamentoForm";
 import { PortfolioGaleria } from "@/components/configuracoes/PortfolioGaleria";
 import { LandingImagemForm } from "@/components/configuracoes/LandingImagemForm";
@@ -77,10 +78,17 @@ export default async function ConfiguracoesPage() {
   } | null = null;
   let etapas: { titulo: string; descricao: string | null }[] = [];
   let faq: { pergunta: string; resposta: string; ativo: boolean }[] = [];
+  let depoimentos: {
+    texto: string;
+    autor: string;
+    contexto: string | null;
+    ativo: boolean;
+  }[] = [];
   let faltaMigracao = false;
 
   if (proprietaria && cargo) {
-    const [empresaRes, conteudoRes, etapasRes, faqRes] = await Promise.all([
+    const [empresaRes, conteudoRes, etapasRes, faqRes, depoimentosRes] =
+      await Promise.all([
       supabase
         .from("empresas")
         .select(
@@ -103,12 +111,18 @@ export default async function ConfiguracoesPage() {
         .select("pergunta, resposta, ativo")
         .eq("empresa_id", cargo.empresa_id)
         .order("ordem"),
+      supabase
+        .from("empresa_depoimentos")
+        .select("texto, autor, contexto, ativo")
+        .eq("empresa_id", cargo.empresa_id)
+        .order("ordem"),
     ]);
 
     empresa = empresaRes.data;
     conteudo = conteudoRes.data as typeof conteudo;
     etapas = (etapasRes.data ?? []) as typeof etapas;
     faq = (faqRes.data ?? []) as typeof faq;
+    depoimentos = (depoimentosRes.data ?? []) as typeof depoimentos;
     // Tabelas ainda não criadas → orienta em vez de quebrar.
     faltaMigracao = Boolean(conteudoRes.error);
   }
@@ -216,6 +230,13 @@ export default async function ConfiguracoesPage() {
                 descricao="Responda de antemão as dúvidas mais comuns."
               >
                 <FaqForm inicial={faq} />
+              </SubSecao>
+
+              <SubSecao
+                titulo="Depoimentos"
+                descricao="Falas de clientes reais. A seção só aparece na proposta quando houver ao menos um ativo."
+              >
+                <DepoimentosForm inicial={depoimentos} />
               </SubSecao>
 
               {empresa && (

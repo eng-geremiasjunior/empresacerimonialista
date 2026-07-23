@@ -126,6 +126,41 @@ export async function salvarCondicoes(
   return { success: true };
 }
 
+// ---------- Depoimentos ----------
+export async function salvarDepoimentos(
+  itens: { texto: string; autor: string; contexto: string; ativo: boolean }[]
+): Promise<AcaoResult> {
+  const { supabase, empresaId, cargo } = await contexto();
+  if (!empresaId) return { error: "Empresa não encontrada." };
+  if (cargo !== "proprietaria") return { error: "Sem permissão." };
+
+  // Autor e texto são o mínimo: depoimento sem um dos dois não diz nada.
+  const validos = itens.filter((d) => d.texto.trim() && d.autor.trim());
+
+  const { error: delErr } = await supabase
+    .from("empresa_depoimentos")
+    .delete()
+    .eq("empresa_id", empresaId);
+  if (delErr) return { error: "Não foi possível salvar os depoimentos." };
+
+  if (validos.length > 0) {
+    const { error } = await supabase.from("empresa_depoimentos").insert(
+      validos.map((d, i) => ({
+        empresa_id: empresaId,
+        ordem: i + 1,
+        texto: d.texto.trim(),
+        autor: d.autor.trim(),
+        contexto: d.contexto.trim() || null,
+        ativo: d.ativo,
+      }))
+    );
+    if (error) return { error: "Não foi possível salvar os depoimentos." };
+  }
+
+  revalidatePath("/configuracoes");
+  return { success: true };
+}
+
 // ---------- Template visual da proposta ----------
 export async function salvarTemplateOrcamento(
   template: string
