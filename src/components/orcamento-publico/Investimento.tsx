@@ -86,27 +86,30 @@ export function Investimento({
         }}
       >
         <div className="grid gap-8 lg:grid-cols-[1.3fr_1fr] lg:gap-10">
-          {/* Valor — o maior elemento tipográfico da página */}
+          {/* Valor — o maior elemento tipográfico da página, em painel
+              de alto contraste para ser lido antes de qualquer outra coisa */}
           <div>
             <div
-              className="text-[11px] font-semibold uppercase tracking-[1.5px]"
-              style={{ color: "var(--cor-acento)" }}
+              className="rounded-[20px] px-6 py-7 sm:px-8"
+              style={{
+                background: "var(--cor-acento)",
+                boxShadow: "0 18px 40px -22px var(--sombra-acento)",
+              }}
             >
-              Investimento total
-            </div>
-
-            <div
-              className="mt-2 text-[40px] font-bold leading-[1.05] sm:text-[56px]"
-              style={{ color: "var(--cor-acento)" }}
-            >
-              <ValorAnimado valor={Number(valorTotal)} />
-            </div>
-
-            {convidados != null && (
-              <div className="mt-1.5 text-[13px]" style={{ color: "var(--cor-texto-terciario)" }}>
-                Até {convidados} convidados
+              <div className="text-[11px] font-semibold uppercase tracking-[1.5px] text-white/75">
+                Investimento total
               </div>
-            )}
+
+              <div className="mt-1.5 text-[46px] font-bold leading-none tracking-tight text-white sm:text-[68px]">
+                <ValorAnimado valor={Number(valorTotal)} />
+              </div>
+
+              {convidados != null && (
+                <div className="mt-2.5 text-[13px] text-white/75">
+                  Até {convidados} convidados
+                </div>
+              )}
+            </div>
 
             {/* Condições: presentes, mas claramente abaixo do valor */}
             <div

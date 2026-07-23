@@ -121,6 +121,37 @@ export function SidebarAncoras({
   const estilo = useTema();
   const iniciais = nomeEmpresa.slice(0, 2).toUpperCase();
 
+  const cardContato = whatsapp ? (
+    <div
+      className="mt-3 flex flex-shrink-0 items-center gap-2.5 rounded-xl p-3.5"
+      style={{ background: "var(--cor-fundo-destaque)" }}
+    >
+      <div
+        className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-full"
+        style={
+          estilo.navAtivaSolida
+            ? { background: "var(--cor-acento)", color: "#FFFFFF" }
+            : { background: "#FFFFFF", color: "var(--cor-acento)" }
+        }
+      >
+        <MessageCircle size={16} />
+      </div>
+      <div className="text-xs leading-[1.35]" style={{ color: "var(--cor-texto-secundario)" }}>
+        Dúvidas?
+        <br />
+        <a
+          href={`https://wa.me/${whatsapp.replace(/\D/g, "")}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold"
+          style={{ color: "var(--cor-acento)" }}
+        >
+          Fale com a gente
+        </a>
+      </div>
+    </div>
+  ) : null;
+
   const conteudo = (
     <>
       <div
@@ -187,36 +218,6 @@ export function SidebarAncoras({
         })}
       </nav>
 
-      {whatsapp && (
-        <div
-          className="mt-auto flex items-center gap-2.5 rounded-xl p-3.5"
-          style={{ background: "var(--cor-fundo-destaque)" }}
-        >
-          <div
-            className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-full"
-            style={
-              estilo.navAtivaSolida
-                ? { background: "var(--cor-acento)", color: "#FFFFFF" }
-                : { background: "#FFFFFF", color: "var(--cor-acento)" }
-            }
-          >
-            <MessageCircle size={16} />
-          </div>
-          <div className="text-xs leading-[1.35]" style={{ color: "var(--cor-texto-secundario)" }}>
-            Dúvidas?
-            <br />
-            <a
-              href={`https://wa.me/${whatsapp.replace(/\D/g, "")}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold"
-              style={{ color: "var(--cor-acento)" }}
-            >
-              Fale com a gente
-            </a>
-          </div>
-        </div>
-      )}
     </>
   );
 
@@ -231,8 +232,12 @@ export function SidebarAncoras({
         {/* z-10 mantém menu e card de contato acima do ornamento: elemento
             posicionado pinta sobre estático, então o conteúdo precisa de
             um contexto próprio para não ficar por baixo. */}
-        <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto">
-          {conteudo}
+        {/* Só o miolo rola. O card de contato fica ancorado no rodapé:
+            antes ele vivia dentro da área rolável e, em telas mais baixas
+            que ~800px, saía da vista sem nenhum indício de que existia. */}
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 overflow-y-auto">{conteudo}</div>
+          {cardContato}
         </div>
       </aside>
 
@@ -293,7 +298,8 @@ export function SidebarAncoras({
             >
               <X size={20} />
             </button>
-            {conteudo}
+            <div className="min-h-0 flex-1 overflow-y-auto">{conteudo}</div>
+            {cardContato}
           </div>
         </div>
       )}
