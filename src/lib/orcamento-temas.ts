@@ -29,6 +29,8 @@ export const TEMAS = {
     sombraAcento: "rgba(168,89,80,0.55)",
     gradienteHero:
       "linear-gradient(135deg, #EFDCD5 0%, #E7CDC4 45%, #D9B3A8 100%)",
+    // Ornamento botânico no rodapé da barra lateral.
+    ornamentoBotanico: false,
   },
   template_2: {
     nome: "Verde Oliva",
@@ -49,6 +51,7 @@ export const TEMAS = {
     sombraAcento: "rgba(107,117,72,0.45)",
     gradienteHero:
       "linear-gradient(135deg, #DDE1D0 0%, #C9CFB6 45%, #A9B18C 100%)",
+    ornamentoBotanico: true,
   },
 } as const;
 

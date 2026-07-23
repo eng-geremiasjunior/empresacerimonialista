@@ -27,6 +27,7 @@ import { BarraProgresso } from "@/components/orcamento-publico/BarraProgresso";
 import { StickyCta } from "@/components/orcamento-publico/StickyCta";
 import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
 import { formatBRL, formatDateBR } from "@/lib/orcamentos";
+import { resolverTema } from "@/lib/orcamento-temas";
 import {
   dataResposta,
   expirado,
@@ -162,6 +163,7 @@ export function OrcamentoPublico({
         logoUrl={dados.logo_url}
         whatsapp={inst.whatsapp_contato}
         secoesVisiveis={secoesVisiveis}
+        tema={resolverTema(dados.template_orcamento)}
       />
 
       {/* Espaço extra embaixo para o CTA fixo não cobrir o rodapé. */}
