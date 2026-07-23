@@ -40,6 +40,9 @@ export default async function OrcamentoPublicoPage({
       className={`${playfair.variable} ${inter.variable} min-h-screen [font-family:var(--font-inter)]`}
       style={{ background: "#FAF6F2" }}
     >
+      <noscript>
+        <style>{`[data-revelar]{opacity:1!important;transform:none!important}`}</style>
+      </noscript>
       <OrcamentoPublico
         hash={params.hash}
         inicial={data as unknown as OrcamentoPublicoData}

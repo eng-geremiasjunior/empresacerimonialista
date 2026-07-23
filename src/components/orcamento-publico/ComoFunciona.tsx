@@ -42,6 +42,7 @@ export function ComoFunciona({ etapas }: { etapas: EtapaPublica[] }) {
         {etapas.map((etapa, i) => (
           <motion.div
             key={`${etapa.titulo}-${i}`}
+            data-revelar
             className="relative z-[1] text-center"
             variants={{
               oculto: semMovimento
