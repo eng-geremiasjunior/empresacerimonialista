@@ -23,8 +23,10 @@ import { Investimento } from "@/components/orcamento-publico/Investimento";
 import { FaqAccordion } from "@/components/orcamento-publico/FaqAccordion";
 import { EventosRealizados } from "@/components/orcamento-publico/EventosRealizados";
 import { CtaFinal } from "@/components/orcamento-publico/CtaFinal";
+import { BarraProgresso } from "@/components/orcamento-publico/BarraProgresso";
+import { StickyCta } from "@/components/orcamento-publico/StickyCta";
 import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
-import { formatDateBR } from "@/lib/orcamentos";
+import { formatBRL, formatDateBR } from "@/lib/orcamentos";
 import {
   dataResposta,
   expirado,
@@ -154,6 +156,7 @@ export function OrcamentoPublico({
 
   return (
     <div style={{ background: "#FAF6F2", color: "#2E2621" }}>
+      <BarraProgresso />
       <SidebarAncoras
         nomeEmpresa={dados.nome_empresa}
         logoUrl={dados.logo_url}
@@ -161,7 +164,8 @@ export function OrcamentoPublico({
         secoesVisiveis={secoesVisiveis}
       />
 
-      <main className="mx-auto max-w-[1000px] px-5 pb-12 pt-6 sm:px-10 lg:ml-[250px] lg:mr-0">
+      {/* Espaço extra embaixo para o CTA fixo não cobrir o rodapé. */}
+      <main className="mx-auto max-w-[1000px] px-5 pb-28 pt-6 sm:px-10 lg:ml-[250px] lg:mr-0">
         <HeroApresentacao
           nome={dados.nome_contato}
           tipoEvento={dados.tipo_evento}
@@ -313,6 +317,13 @@ export function OrcamentoPublico({
           </a>
         </footer>
       </main>
+
+      <StickyCta
+        visivel={podeResponder}
+        enviando={enviando}
+        onAceitar={aceitar}
+        valorFormatado={formatBRL(Number(dados.valor_total))}
+      />
     </div>
   );
 }

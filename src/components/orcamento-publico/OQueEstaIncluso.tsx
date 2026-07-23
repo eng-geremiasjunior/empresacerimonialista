@@ -68,7 +68,10 @@ export function OQueEstaIncluso({
         {itens.map((item, i) => {
           const Icone = iconeDoItem(item);
           return (
-            <Card key={`${item.nome}-${i}`} className="px-3.5 py-4">
+            <Card
+              key={`${item.nome}-${i}`}
+              className="px-3.5 py-4 transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-[0_14px_32px_-16px_rgba(46,34,28,0.4)]"
+            >
               <Icone
                 size={22}
                 strokeWidth={1.5}

@@ -13,7 +13,7 @@ export function EventosRealizados({ fotos }: { fotos: FotoPublica[] }) {
         {fotos.map((foto, i) => (
           <figure key={`${foto.url}-${i}`} className="space-y-1.5">
             <div
-              className="overflow-hidden rounded-xl"
+              className="cursor-pointer overflow-hidden rounded-xl transition-[transform,box-shadow] duration-200 ease-out hover:scale-[1.03] hover:shadow-[0_16px_34px_-16px_rgba(46,34,28,0.45)]"
               style={{ background: "#EFDCD5" }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}

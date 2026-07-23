@@ -16,6 +16,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { IMAGEM_PADRAO } from "@/lib/landing-imagens";
+import { Revelar } from "./SecaoBase";
 
 // Ciclo fixo de ícones: a lista é editável pela cerimonialista, então não
 // dá para amarrar ícone a texto — o rodízio mantém o visual variado.
@@ -42,7 +43,8 @@ export function NoDiaDoEvento({
   const imagem = imagemUrl || IMAGEM_PADRAO.no_dia_evento;
 
   return (
-    <section id="dia-evento" className="scroll-mt-6 pt-12 sm:pt-14">
+    <Revelar className="pt-12 sm:pt-14">
+      <section id="dia-evento" className="scroll-mt-6">
       <div className="grid gap-6 lg:grid-cols-[280px_1fr] lg:items-start">
         <div
           className="hidden min-h-[220px] rounded-2xl bg-cover bg-center lg:block"
@@ -79,6 +81,7 @@ export function NoDiaDoEvento({
           </div>
         </div>
       </div>
-    </section>
+      </section>
+    </Revelar>
   );
 }

@@ -1,16 +1,68 @@
-// "Investimento": o valor é SEMPRE orcamentos.valor_total, calculado pelo
-// trigger da Etapa 1. Não há soma dinâmica por seleção do cliente — a
-// seção de extras do protótipo ficou fora de escopo de propósito.
-// As condições (entrada/parcelas/desconto) são as da empresa (Etapa 7);
-// a Etapa 3 não permitiu customizá-las por orçamento.
+"use client";
 
-import { ShieldCheck } from "lucide-react";
-import { Card, Secao } from "./SecaoBase";
+// "Investimento": a informação mais importante da proposta, com peso
+// visual proporcional — card inteiro na cor de destaque (#F6E9E6) contra
+// o fundo bege da página, e o valor na maior tipografia da página inteira
+// (56px; o título do hero tem 44px).
+//
+// O valor é SEMPRE orcamentos.valor_total, calculado pelo trigger da
+// Etapa 1. Não há soma dinâmica por seleção do cliente.
+// As condições vêm da empresa (Etapa 7); a Etapa 3 não permitiu
+// customizá-las por orçamento.
+
+import { useEffect, useRef } from "react";
+import { animate, useInView, useReducedMotion } from "framer-motion";
+import { Check, ShieldCheck } from "lucide-react";
+import { Secao } from "./SecaoBase";
 import { formatBRL } from "@/lib/orcamentos";
 import type {
   InstitucionalPublico,
   OrcamentoPublicoItem,
 } from "@/lib/orcamento-publico";
+
+// Contagem de 0 até o valor ao entrar na tela. Escreve direto no DOM via
+// ref: 60fps por ~1s viraria ~55 renders do React se fosse por estado.
+//
+// O HTML nasce com o valor FINAL, não com zero: se o JS não rodar ou o
+// IntersectionObserver não disparar, o cliente vê o preço — nunca "R$ 0,00".
+function ValorAnimado({ valor }: { valor: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const naTela = useInView(ref, { once: true, amount: 0.4 });
+  const semMovimento = useReducedMotion();
+
+  useEffect(() => {
+    if (!naTela || semMovimento || !ref.current) return;
+    const controles = animate(0, valor, {
+      duration: 0.9,
+      ease: "easeOut",
+      onUpdate: (v) => {
+        if (ref.current) ref.current.textContent = formatBRL(v);
+      },
+      onComplete: () => {
+        if (ref.current) ref.current.textContent = formatBRL(valor);
+      },
+    });
+    return () => controles.stop();
+  }, [naTela, valor, semMovimento]);
+
+  return <span ref={ref}>{formatBRL(valor)}</span>;
+}
+
+function Condicao({ numero, label }: { numero: string; label: string }) {
+  return (
+    <div>
+      <div
+        className="text-[22px] leading-none sm:text-[26px] [font-family:var(--font-playfair)]"
+        style={{ color: "#2E2621" }}
+      >
+        {numero}
+      </div>
+      <div className="mt-1.5 text-[11.5px] leading-snug" style={{ color: "#8A7B73" }}>
+        {label}
+      </div>
+    </div>
+  );
+}
 
 export function Investimento({
   valorTotal,
@@ -25,88 +77,98 @@ export function Investimento({
 }) {
   return (
     <Secao id="investimento" titulo="Investimento">
-      <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
-        <Card className="rounded-2xl p-6">
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div>
-              <div
-                className="text-[24px] [font-family:var(--font-playfair)]"
-                style={{ color: "#A85950" }}
-              >
-                {formatBRL(Number(valorTotal))}
-              </div>
-              <div className="text-[11.5px]" style={{ color: "#8A7B73" }}>
-                {convidados != null
-                  ? `Até ${convidados} convidados`
-                  : "Valor total da proposta"}
-              </div>
-            </div>
-            <div>
-              <div
-                className="text-[20px] [font-family:var(--font-playfair)]"
-                style={{ color: "#2E2621" }}
-              >
-                {condicoes.condicao_entrada_percentual}%
-              </div>
-              <div className="text-[11.5px]" style={{ color: "#8A7B73" }}>
-                Entrada no fechamento
-              </div>
-            </div>
-            <div>
-              <div
-                className="text-[20px] [font-family:var(--font-playfair)]"
-                style={{ color: "#2E2621" }}
-              >
-                {condicoes.condicao_parcelas_maximo}x
-              </div>
-              <div className="text-[11.5px]" style={{ color: "#8A7B73" }}>
-                Sem juros, {condicoes.condicao_prazo_parcelas_texto}
-              </div>
-            </div>
-            <div>
-              <div
-                className="text-[20px] [font-family:var(--font-playfair)]"
-                style={{ color: "#2E2621" }}
-              >
-                {condicoes.condicao_desconto_a_vista_percentual}%
-              </div>
-              <div className="text-[11.5px]" style={{ color: "#8A7B73" }}>
-                Desconto no pagamento à vista
-              </div>
-            </div>
-          </div>
-
-          <div
-            className="mt-5 flex items-start gap-2 text-xs"
-            style={{ color: "#8A7B73" }}
-          >
-            <ShieldCheck size={15} className="mt-px flex-shrink-0" />
-            Reserva de data somente com assinatura do contrato e pagamento da
-            entrada.
-          </div>
-        </Card>
-
-        {itens.length > 0 && (
-          <div
-            className="rounded-2xl p-6"
-            style={{ background: "#F6E9E6" }}
-          >
+      <div
+        className="rounded-[24px] px-6 py-8 sm:px-10 sm:py-10"
+        style={{
+          background: "#F6E9E6",
+          border: "1px solid #E7CFC9",
+          boxShadow: "0 20px 55px -28px rgba(168,89,80,0.55)",
+        }}
+      >
+        <div className="grid gap-8 lg:grid-cols-[1.3fr_1fr] lg:gap-10">
+          {/* Valor — o maior elemento tipográfico da página */}
+          <div>
             <div
-              className="mb-3 text-[13.5px] font-semibold"
-              style={{ color: "#2E2621" }}
+              className="text-[11px] font-semibold uppercase tracking-[1.5px]"
+              style={{ color: "#A85950" }}
             >
-              O que está incluso
+              Investimento total
             </div>
-            <ul className="flex flex-col gap-2.5 text-[13px]" style={{ color: "#5B4A43" }}>
-              {itens.map((item, i) => (
-                <li key={`${item.nome}-${i}`} className="flex gap-2">
-                  <span style={{ color: "#A85950" }}>✓</span>
-                  {item.nome}
-                </li>
-              ))}
-            </ul>
+
+            <div
+              className="mt-2 text-[40px] font-bold leading-[1.05] sm:text-[56px]"
+              style={{ color: "#A85950" }}
+            >
+              <ValorAnimado valor={Number(valorTotal)} />
+            </div>
+
+            {convidados != null && (
+              <div className="mt-1.5 text-[13px]" style={{ color: "#8A7B73" }}>
+                Até {convidados} convidados
+              </div>
+            )}
+
+            {/* Condições: presentes, mas claramente abaixo do valor */}
+            <div
+              className="mt-7 grid grid-cols-3 gap-4 border-t pt-6"
+              style={{ borderColor: "#E7CFC9" }}
+            >
+              <Condicao
+                numero={`${condicoes.condicao_entrada_percentual}%`}
+                label="Entrada no fechamento"
+              />
+              <Condicao
+                numero={`${condicoes.condicao_parcelas_maximo}x`}
+                label={`Sem juros, ${condicoes.condicao_prazo_parcelas_texto}`}
+              />
+              <Condicao
+                numero={`${condicoes.condicao_desconto_a_vista_percentual}%`}
+                label="Desconto à vista"
+              />
+            </div>
+
+            <div
+              className="mt-6 flex items-start gap-2 text-xs"
+              style={{ color: "#8A7B73" }}
+            >
+              <ShieldCheck size={15} className="mt-px flex-shrink-0" />
+              Reserva de data somente com assinatura do contrato e pagamento da
+              entrada.
+            </div>
           </div>
-        )}
+
+          {/* Checklist: fundo branco para separar, sem competir com o valor */}
+          {itens.length > 0 && (
+            <div
+              className="rounded-2xl bg-white p-6"
+              style={{ border: "1px solid #ECE0DA" }}
+            >
+              <div
+                className="mb-4 text-[11px] font-semibold uppercase tracking-[1.2px]"
+                style={{ color: "#8A7B73" }}
+              >
+                O que está incluso
+              </div>
+              <ul className="flex flex-col gap-3">
+                {itens.map((item, i) => (
+                  <li
+                    key={`${item.nome}-${i}`}
+                    className="flex items-start gap-2.5 text-[13px]"
+                    style={{ color: "#5B4A43" }}
+                  >
+                    <Check
+                      size={15}
+                      strokeWidth={2.5}
+                      className="mt-0.5 flex-shrink-0"
+                      style={{ color: "#A85950" }}
+                    />
+                    {item.nome}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
       </div>
     </Secao>
   );
