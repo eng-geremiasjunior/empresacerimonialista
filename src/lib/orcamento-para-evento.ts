@@ -14,6 +14,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   gerarChecklistPorTipo,
   gerarFasesPorTipo,
+  gerarTimelineSugerida,
   resolverTemplate,
 } from "@/lib/event-templates";
 
@@ -29,7 +30,10 @@ export async function criarEventoAPartirDoOrcamento(
 ): Promise<ResultadoGeracaoEvento> {
   const supabase = createClient();
 
-  // Mesmos templates do wizard de Eventos.
+  // Mesmos templates do wizard de Eventos. Respostas vazias ({}) de
+  // propósito: o orçamento não passa pelas perguntas de estruturação do
+  // wizard, então geramos só o checklist/timeline BASE de cada tipo, sem
+  // os itens condicionais. A cerimonialista completa dentro do evento.
   const arquetipo = resolverTemplate(tipoEvento);
   const tasks = gerarChecklistPorTipo(arquetipo, {}).map((t) => ({
     title: t.title,
@@ -37,12 +41,17 @@ export async function criarEventoAPartirDoOrcamento(
     priority: t.group === "evento" ? "media" : "alta",
   }));
   const phases = gerarFasesPorTipo(arquetipo);
+  const roteiro = gerarTimelineSugerida(arquetipo, {}).map((r) => ({
+    title: r.title,
+    order: r.order,
+  }));
 
   const { data, error } = await supabase.rpc("criar_evento_do_orcamento", {
     p_hash: hash,
     p_tasks: tasks,
     p_phases: phases,
     p_data_evento: dataEvento ?? null,
+    p_roteiro: roteiro,
   });
 
   if (error) {
@@ -53,6 +62,7 @@ export async function criarEventoAPartirDoOrcamento(
     success?: boolean;
     evento_id?: string;
     ja_existia?: boolean;
+    receitas_criadas?: number;
     error?: string;
   };
 
@@ -64,6 +74,7 @@ export async function criarEventoAPartirDoOrcamento(
 
   revalidatePath("/orcamentos");
   revalidatePath("/eventos");
+  revalidatePath("/financeiro");
   return {
     success: true,
     eventoId: res.evento_id,
