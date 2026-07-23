@@ -62,7 +62,6 @@ export async function criarEventoAPartirDoOrcamento(
     success?: boolean;
     evento_id?: string;
     ja_existia?: boolean;
-    receitas_criadas?: number;
     error?: string;
   };
 
@@ -74,7 +73,6 @@ export async function criarEventoAPartirDoOrcamento(
 
   revalidatePath("/orcamentos");
   revalidatePath("/eventos");
-  revalidatePath("/financeiro");
   return {
     success: true,
     eventoId: res.evento_id,

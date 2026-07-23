@@ -4,6 +4,10 @@ import { getFinanceiroEvento } from "@/lib/supabase/financeiro";
 import { ResumoContrato } from "@/components/financeiro/ResumoContrato";
 import { SecaoReceitas } from "@/components/financeiro/SecaoReceitas";
 import { ListaDespesas } from "@/components/financeiro/ListaDespesas";
+import {
+  ItensOrcamentoOriginal,
+  type ItemOrcamentoOriginal,
+} from "@/components/financeiro/ItensOrcamentoOriginal";
 
 export default async function EventoFinanceiroPage({
   params,
@@ -14,13 +18,31 @@ export default async function EventoFinanceiroPage({
   const supabase = createClient();
   const todayIso = format(new Date(), "yyyy-MM-dd");
 
-  const [fin, linksRes] = await Promise.all([
+  const [fin, linksRes, orcRes] = await Promise.all([
     getFinanceiroEvento(eventId),
     supabase
       .from("roteiro_links")
       .select("supplier_id, suppliers(name)")
       .eq("event_id", eventId),
+    // Orçamento que originou o evento (se houver). Só leitura: os itens
+    // são resumo do que foi vendido, não lançamento financeiro.
+    supabase
+      .from("orcamentos")
+      .select(
+        "id, valor_total, orcamento_itens(nome, descricao, valor_calculado, ordem)"
+      )
+      .eq("evento_gerado_id", eventId)
+      .maybeSingle(),
   ]);
+
+  const orcamento = orcRes.data as {
+    id: string;
+    valor_total: number;
+    orcamento_itens: (ItemOrcamentoOriginal & { ordem: number })[];
+  } | null;
+  const itensOrcamento = [...(orcamento?.orcamento_itens ?? [])].sort(
+    (a, b) => a.ordem - b.ordem
+  );
 
   const suppliers = ((linksRes.data ?? []) as unknown as {
     supplier_id: string;
@@ -61,6 +83,14 @@ export default async function EventoFinanceiroPage({
         suppliers={suppliers}
         todayIso={todayIso}
       />
+
+      {orcamento && itensOrcamento.length > 0 && (
+        <ItensOrcamentoOriginal
+          orcamentoId={orcamento.id}
+          itens={itensOrcamento}
+          valorTotal={orcamento.valor_total}
+        />
+      )}
     </div>
   );
 }
