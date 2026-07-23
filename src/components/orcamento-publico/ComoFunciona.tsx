@@ -33,7 +33,7 @@ export function ComoFunciona({ etapas }: { etapas: EtapaPublica[] }) {
       >
         <motion.div
           className="absolute left-[8%] top-5 hidden h-px origin-left lg:block"
-          style={{ background: "#ECE0DA", right: "8%" }}
+          style={{ background: "var(--cor-borda)", right: "8%" }}
           initial={semMovimento ? { scaleX: 1 } : { scaleX: 0 }}
           variants={{ visivel: { scaleX: 1 } }}
           transition={{ duration: duracaoLinha, ease: "linear" }}
@@ -54,20 +54,20 @@ export function ComoFunciona({ etapas }: { etapas: EtapaPublica[] }) {
           >
             <div
               className="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-full text-xs font-bold"
-              style={{ background: "#F6E9E6", color: "#A85950" }}
+              style={{ background: "var(--cor-fundo-destaque)", color: "var(--cor-acento)" }}
             >
               {String(i + 1).padStart(2, "0")}
             </div>
             <div
               className="mb-1 text-[13px] font-semibold"
-              style={{ color: "#2E2621" }}
+              style={{ color: "var(--cor-texto-principal)" }}
             >
               {etapa.titulo}
             </div>
             {etapa.descricao && (
               <p
                 className="text-[11.5px] leading-[1.5]"
-                style={{ color: "#8A7B73" }}
+                style={{ color: "var(--cor-texto-terciario)" }}
               >
                 {etapa.descricao}
               </p>

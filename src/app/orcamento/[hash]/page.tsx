@@ -3,6 +3,7 @@ import { Inter, Playfair_Display } from "next/font/google";
 import { createClient } from "@/lib/supabase/server";
 import { OrcamentoPublico } from "@/components/orcamento-publico/OrcamentoPublico";
 import type { OrcamentoPublicoData } from "@/lib/orcamento-publico";
+import { resolverTema, variaveisDoTema } from "@/lib/orcamento-temas";
 
 // Tipografia própria da peça pública: serifada nos títulos, sans no corpo.
 // Carregada aqui (não no layout) para não pesar no painel administrativo.
@@ -35,18 +36,19 @@ export default async function OrcamentoPublicoPage({
 
   if (!data) notFound();
 
+  const proposta = data as unknown as OrcamentoPublicoData;
+  // Uma empresa que nunca escolheu (ou migração não rodada) cai no tema 1.
+  const tema = resolverTema(proposta.template_orcamento);
+
   return (
     <div
       className={`${playfair.variable} ${inter.variable} min-h-screen [font-family:var(--font-inter)]`}
-      style={{ background: "#FAF6F2" }}
+      style={{ ...variaveisDoTema(tema), background: "var(--cor-fundo)" }}
     >
       <noscript>
         <style>{`[data-revelar]{opacity:1!important;transform:none!important}`}</style>
       </noscript>
-      <OrcamentoPublico
-        hash={params.hash}
-        inicial={data as unknown as OrcamentoPublicoData}
-      />
+      <OrcamentoPublico hash={params.hash} inicial={proposta} />
     </div>
   );
 }

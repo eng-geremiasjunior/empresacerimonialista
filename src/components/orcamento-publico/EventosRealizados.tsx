@@ -14,7 +14,7 @@ export function EventosRealizados({ fotos }: { fotos: FotoPublica[] }) {
           <figure key={`${foto.url}-${i}`} className="space-y-1.5">
             <div
               className="cursor-pointer overflow-hidden rounded-xl transition-[transform,box-shadow] duration-200 ease-out hover:scale-[1.03] hover:shadow-[0_16px_34px_-16px_rgba(46,34,28,0.45)]"
-              style={{ background: "#EFDCD5" }}
+              style={{ background: "var(--cor-placeholder)" }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -27,7 +27,7 @@ export function EventosRealizados({ fotos }: { fotos: FotoPublica[] }) {
             {foto.legenda && (
               <figcaption
                 className="truncate text-[11.5px]"
-                style={{ color: "#8A7B73" }}
+                style={{ color: "var(--cor-texto-terciario)" }}
               >
                 {foto.legenda}
               </figcaption>

@@ -39,7 +39,7 @@ export function SobreNos({ dados }: { dados: InstitucionalPublico }) {
       {dados.sobre_nos_texto && (
         <p
           className="mb-7 max-w-[640px] text-sm leading-[1.7]"
-          style={{ color: "#5B4A43" }}
+          style={{ color: "var(--cor-texto-secundario)" }}
         >
           {dados.sobre_nos_texto}
         </p>
@@ -50,16 +50,16 @@ export function SobreNos({ dados }: { dados: InstitucionalPublico }) {
             <Icone
               size={24}
               className="mx-auto"
-              style={{ color: "#A85950" }}
+              style={{ color: "var(--cor-acento)" }}
               strokeWidth={1.5}
             />
             <div
               className="mb-0.5 mt-1.5 text-[22px] [font-family:var(--font-playfair)]"
-              style={{ color: "#2E2621" }}
+              style={{ color: "var(--cor-texto-principal)" }}
             >
               {valor}
             </div>
-            <div className="text-xs" style={{ color: "#8A7B73" }}>
+            <div className="text-xs" style={{ color: "var(--cor-texto-terciario)" }}>
               {label}
             </div>
           </div>

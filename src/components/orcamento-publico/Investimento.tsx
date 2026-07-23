@@ -1,7 +1,7 @@
 "use client";
 
 // "Investimento": a informação mais importante da proposta, com peso
-// visual proporcional — card inteiro na cor de destaque (#F6E9E6) contra
+// visual proporcional — card inteiro na cor de destaque (var(--cor-fundo-destaque)) contra
 // o fundo bege da página, e o valor na maior tipografia da página inteira
 // (56px; o título do hero tem 44px).
 //
@@ -53,11 +53,11 @@ function Condicao({ numero, label }: { numero: string; label: string }) {
     <div>
       <div
         className="text-[22px] leading-none sm:text-[26px] [font-family:var(--font-playfair)]"
-        style={{ color: "#2E2621" }}
+        style={{ color: "var(--cor-texto-principal)" }}
       >
         {numero}
       </div>
-      <div className="mt-1.5 text-[11.5px] leading-snug" style={{ color: "#8A7B73" }}>
+      <div className="mt-1.5 text-[11.5px] leading-snug" style={{ color: "var(--cor-texto-terciario)" }}>
         {label}
       </div>
     </div>
@@ -80,9 +80,9 @@ export function Investimento({
       <div
         className="rounded-[24px] px-6 py-8 sm:px-10 sm:py-10"
         style={{
-          background: "#F6E9E6",
-          border: "1px solid #E7CFC9",
-          boxShadow: "0 20px 55px -28px rgba(168,89,80,0.55)",
+          background: "var(--cor-fundo-destaque)",
+          border: "1px solid var(--cor-borda-destaque)",
+          boxShadow: "0 20px 55px -28px var(--sombra-acento)",
         }}
       >
         <div className="grid gap-8 lg:grid-cols-[1.3fr_1fr] lg:gap-10">
@@ -90,20 +90,20 @@ export function Investimento({
           <div>
             <div
               className="text-[11px] font-semibold uppercase tracking-[1.5px]"
-              style={{ color: "#A85950" }}
+              style={{ color: "var(--cor-acento)" }}
             >
               Investimento total
             </div>
 
             <div
               className="mt-2 text-[40px] font-bold leading-[1.05] sm:text-[56px]"
-              style={{ color: "#A85950" }}
+              style={{ color: "var(--cor-acento)" }}
             >
               <ValorAnimado valor={Number(valorTotal)} />
             </div>
 
             {convidados != null && (
-              <div className="mt-1.5 text-[13px]" style={{ color: "#8A7B73" }}>
+              <div className="mt-1.5 text-[13px]" style={{ color: "var(--cor-texto-terciario)" }}>
                 Até {convidados} convidados
               </div>
             )}
@@ -111,7 +111,7 @@ export function Investimento({
             {/* Condições: presentes, mas claramente abaixo do valor */}
             <div
               className="mt-7 grid grid-cols-3 gap-4 border-t pt-6"
-              style={{ borderColor: "#E7CFC9" }}
+              style={{ borderColor: "var(--cor-borda-destaque)" }}
             >
               <Condicao
                 numero={`${condicoes.condicao_entrada_percentual}%`}
@@ -129,7 +129,7 @@ export function Investimento({
 
             <div
               className="mt-6 flex items-start gap-2 text-xs"
-              style={{ color: "#8A7B73" }}
+              style={{ color: "var(--cor-texto-terciario)" }}
             >
               <ShieldCheck size={15} className="mt-px flex-shrink-0" />
               Reserva de data somente com assinatura do contrato e pagamento da
@@ -141,11 +141,11 @@ export function Investimento({
           {itens.length > 0 && (
             <div
               className="rounded-2xl bg-white p-6"
-              style={{ border: "1px solid #ECE0DA" }}
+              style={{ border: "1px solid var(--cor-borda)" }}
             >
               <div
                 className="mb-4 text-[11px] font-semibold uppercase tracking-[1.2px]"
-                style={{ color: "#8A7B73" }}
+                style={{ color: "var(--cor-texto-terciario)" }}
               >
                 O que está incluso
               </div>
@@ -154,13 +154,13 @@ export function Investimento({
                   <li
                     key={`${item.nome}-${i}`}
                     className="flex items-start gap-2.5 text-[13px]"
-                    style={{ color: "#5B4A43" }}
+                    style={{ color: "var(--cor-texto-secundario)" }}
                   >
                     <Check
                       size={15}
                       strokeWidth={2.5}
                       className="mt-0.5 flex-shrink-0"
-                      style={{ color: "#A85950" }}
+                      style={{ color: "var(--cor-acento)" }}
                     />
                     {item.nome}
                   </li>

@@ -1,22 +1,14 @@
 // Hero da proposta pública. A imagem de fundo é a customizada pela
 // cerimonialista (empresas.hero_imagem_url) ou o asset padrão do sistema.
-// O gradiente continua ATRÁS da imagem como cor de base: se o arquivo
+// O gradiente do TEMA fica atrás da imagem como cor de base: se o arquivo
 // faltar ou demorar, a área fica elegante em vez de um retângulo cinza.
 
 import { CalendarDays, MapPin, Users } from "lucide-react";
 import { formatDateBR } from "@/lib/orcamentos";
 import { IMAGEM_PADRAO } from "@/lib/landing-imagens";
 
-const BASES: Record<string, string> = {
-  casamento: "linear-gradient(135deg, #EFDCD5 0%, #E7CDC4 45%, #D9B3A8 100%)",
-  debutante: "linear-gradient(135deg, #EFD9E2 0%, #E4C3D2 45%, #CFA5B8 100%)",
-};
-const BASE_PADRAO =
-  "linear-gradient(135deg, #ECE2D6 0%, #DFCFC0 45%, #C9B49F 100%)";
-
 export function HeroApresentacao({
   nome,
-  tipoEvento,
   tipoLabel,
   dataEvento,
   convidados,
@@ -27,7 +19,6 @@ export function HeroApresentacao({
   cta,
 }: {
   nome: string;
-  tipoEvento: string;
   tipoLabel: string;
   dataEvento: string | null;
   convidados: number | null;
@@ -44,7 +35,7 @@ export function HeroApresentacao({
     <section id="apresentacao" className="scroll-mt-6">
       <div
         className="relative flex min-h-[320px] flex-col justify-end overflow-hidden rounded-[20px] p-6 sm:min-h-[380px] sm:p-8"
-        style={{ background: BASES[tipoEvento] ?? BASE_PADRAO }}
+        style={{ background: "var(--gradiente-hero)" }}
       >
         <div
           className="absolute inset-0 bg-cover bg-center"
@@ -55,7 +46,7 @@ export function HeroApresentacao({
         {diasRestantes > 0 && (
           <div
             className="absolute right-4 top-4 z-10 flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold sm:right-[18px] sm:top-[18px]"
-            style={{ color: "#A85950" }}
+            style={{ color: "var(--cor-acento)" }}
           >
             <CalendarDays size={13} />
             Proposta válida por {diasRestantes}{" "}
@@ -107,9 +98,9 @@ export function HeroApresentacao({
 
       <div
         className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-[14px] px-6 py-5"
-        style={{ background: "#F6E9E6" }}
+        style={{ background: "var(--cor-fundo-destaque)" }}
       >
-        <p className="max-w-[480px] text-[13.5px]" style={{ color: "#5B4A43" }}>
+        <p className="max-w-[480px] text-[13.5px]" style={{ color: "var(--cor-texto-secundario)" }}>
           Olá, {nome}! Preparamos uma proposta personalizada com muito carinho
           para o seu grande dia.
         </p>

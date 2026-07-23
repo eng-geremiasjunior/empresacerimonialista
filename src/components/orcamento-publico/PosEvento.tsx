@@ -23,16 +23,16 @@ export function PosEvento({
               <Icone
                 size={20}
                 strokeWidth={1.5}
-                style={{ color: "#A85950" }}
+                style={{ color: "var(--cor-acento)" }}
                 className="mb-1.5"
               />
               <div
                 className="mb-1 text-[13px] font-semibold"
-                style={{ color: "#2E2621" }}
+                style={{ color: "var(--cor-texto-principal)" }}
               >
                 {card.titulo}
               </div>
-              <p className="text-xs" style={{ color: "#8A7B73" }}>
+              <p className="text-xs" style={{ color: "var(--cor-texto-terciario)" }}>
                 {card.descricao}
               </p>
             </Card>

@@ -48,14 +48,14 @@ export function NoDiaDoEvento({
       <div className="grid gap-6 lg:grid-cols-[280px_1fr] lg:items-start">
         <div
           className="hidden min-h-[220px] rounded-2xl bg-cover bg-center lg:block"
-          style={{ backgroundColor: "#EFDCD5", backgroundImage: `url(${imagem})` }}
+          style={{ backgroundColor: "var(--cor-placeholder)", backgroundImage: `url(${imagem})` }}
           role="presentation"
         />
 
         <div>
           <h2
             className="mb-4 text-[22px] font-medium sm:text-[24px] [font-family:var(--font-playfair)]"
-            style={{ color: "#2E2621" }}
+            style={{ color: "var(--cor-texto-principal)" }}
           >
             {titulo}
           </h2>
@@ -66,13 +66,13 @@ export function NoDiaDoEvento({
                 <div
                   key={`${item}-${i}`}
                   className="flex gap-2.5 text-[13px]"
-                  style={{ color: "#5B4A43" }}
+                  style={{ color: "var(--cor-texto-secundario)" }}
                 >
                   <Icone
                     size={16}
                     strokeWidth={1.6}
                     className="mt-0.5 flex-shrink-0"
-                    style={{ color: "#A85950" }}
+                    style={{ color: "var(--cor-acento)" }}
                   />
                   {item}
                 </div>

@@ -75,17 +75,17 @@ export function OQueEstaIncluso({
               <Icone
                 size={22}
                 strokeWidth={1.5}
-                style={{ color: "#A85950" }}
+                style={{ color: "var(--cor-acento)" }}
                 className="mb-2"
               />
               <div
                 className="mb-1 text-[13.5px] font-semibold"
-                style={{ color: "#2E2621" }}
+                style={{ color: "var(--cor-texto-principal)" }}
               >
                 {item.nome}
               </div>
               {item.descricao && (
-                <p className="text-xs leading-[1.5]" style={{ color: "#8A7B73" }}>
+                <p className="text-xs leading-[1.5]" style={{ color: "var(--cor-texto-terciario)" }}>
                   {item.descricao}
                 </p>
               )}

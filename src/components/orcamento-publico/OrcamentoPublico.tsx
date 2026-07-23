@@ -148,14 +148,14 @@ export function OrcamentoPublico({
       onClick={aceitar}
       disabled={enviando}
       className="whitespace-nowrap rounded-[10px] px-6 py-3 text-[13.5px] font-semibold text-white disabled:opacity-60"
-      style={{ background: "#A85950" }}
+      style={{ background: "var(--cor-acento)" }}
     >
       {enviando ? "Enviando…" : "Aceitar proposta →"}
     </button>
   ) : null;
 
   return (
-    <div style={{ background: "#FAF6F2", color: "#2E2621" }}>
+    <div style={{ background: "var(--cor-fundo)", color: "var(--cor-texto-principal)" }}>
       <BarraProgresso />
       <SidebarAncoras
         nomeEmpresa={dados.nome_empresa}
@@ -168,7 +168,6 @@ export function OrcamentoPublico({
       <main className="mx-auto max-w-[1000px] px-5 pb-28 pt-6 sm:px-10 lg:ml-[250px] lg:mr-0">
         <HeroApresentacao
           nome={dados.nome_contato}
-          tipoEvento={dados.tipo_evento}
           tipoLabel={tipo}
           dataEvento={dados.data_evento}
           convidados={dados.numero_convidados}
@@ -218,15 +217,15 @@ export function OrcamentoPublico({
           {dados.status === "aprovado" && (
             <div
               className="mt-6 rounded-2xl px-6 py-5"
-              style={{ background: "#F6E9E6" }}
+              style={{ background: "var(--cor-fundo-destaque)" }}
             >
               <p
                 className="text-[17px] font-medium [font-family:var(--font-playfair)]"
-                style={{ color: "#A85950" }}
+                style={{ color: "var(--cor-acento)" }}
               >
                 Proposta aceita!
               </p>
-              <p className="mt-1 text-sm" style={{ color: "#5B4A43" }}>
+              <p className="mt-1 text-sm" style={{ color: "var(--cor-texto-secundario)" }}>
                 {dados.respondido_em
                   ? `Confirmado em ${dataResposta(dados.respondido_em)}. `
                   : ""}
@@ -244,23 +243,23 @@ export function OrcamentoPublico({
           {dados.status === "recusado" && (
             <div
               className="mt-6 rounded-2xl px-6 py-5"
-              style={{ background: "#F1EDE9" }}
+              style={{ background: "var(--cor-neutro)" }}
             >
-              <p className="font-semibold" style={{ color: "#5B4A43" }}>
+              <p className="font-semibold" style={{ color: "var(--cor-texto-secundario)" }}>
                 Esta proposta foi recusada
                 {dados.respondido_em
                   ? ` em ${dataResposta(dados.respondido_em)}`
                   : ""}
                 .
               </p>
-              <p className="mt-1 text-sm" style={{ color: "#8A7B73" }}>
+              <p className="mt-1 text-sm" style={{ color: "var(--cor-texto-terciario)" }}>
                 Se mudar de ideia, fale com {dados.nome_empresa}.
               </p>
             </div>
           )}
 
           {dados.status === "rascunho" && (
-            <p className="mt-6 text-sm" style={{ color: "#8A7B73" }}>
+            <p className="mt-6 text-sm" style={{ color: "var(--cor-texto-terciario)" }}>
               Esta proposta ainda está sendo preparada.
             </p>
           )}
@@ -290,20 +289,20 @@ export function OrcamentoPublico({
 
         <footer
           className="mt-10 flex flex-wrap items-center justify-between gap-4 border-t pt-8"
-          style={{ borderColor: "#ECE0DA" }}
+          style={{ borderColor: "var(--cor-borda)" }}
         >
           <div className="flex items-center gap-2">
             <span
               className="text-sm [font-family:var(--font-playfair)]"
-              style={{ color: "#A6824F" }}
+              style={{ color: "var(--cor-detalhe)" }}
             >
               {dados.nome_empresa.slice(0, 2).toUpperCase()}
             </span>
-            <span className="text-xs" style={{ color: "#8A7B73" }}>
+            <span className="text-xs" style={{ color: "var(--cor-texto-terciario)" }}>
               {dados.nome_empresa}
             </span>
           </div>
-          <div className="text-xs" style={{ color: "#8A7B73" }}>
+          <div className="text-xs" style={{ color: "var(--cor-texto-terciario)" }}>
             {[inst.whatsapp_contato, inst.email_contato]
               .filter(Boolean)
               .join(" · ")}
@@ -311,7 +310,7 @@ export function OrcamentoPublico({
           <a
             href={`/orcamento/${hash}/pdf`}
             className="inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-xs font-semibold"
-            style={{ borderColor: "#ECE0DA", color: "#5B4A43" }}
+            style={{ borderColor: "var(--cor-borda)", color: "var(--cor-texto-secundario)" }}
           >
             <FileDown size={14} /> Baixar PDF
           </a>

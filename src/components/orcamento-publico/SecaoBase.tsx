@@ -53,12 +53,12 @@ export function Secao({
       <section id={id} className="scroll-mt-6">
         <h2
           className="text-[22px] font-medium sm:text-[26px] [font-family:var(--font-playfair)]"
-          style={{ color: "#2E2621" }}
+          style={{ color: "var(--cor-texto-principal)" }}
         >
           {titulo}
         </h2>
         {subtitulo && (
-          <p className="mt-1 text-[12.5px] font-semibold" style={{ color: "#A85950" }}>
+          <p className="mt-1 text-[12.5px] font-semibold" style={{ color: "var(--cor-acento)" }}>
             {subtitulo}
           </p>
         )}
@@ -79,7 +79,7 @@ export function Card({
   return (
     <div
       className={`rounded-[14px] border bg-white ${className}`}
-      style={{ borderColor: "#ECE0DA" }}
+      style={{ borderColor: "var(--cor-borda)" }}
     >
       {children}
     </div>

@@ -22,7 +22,7 @@ export function FaqAccordion({ itens }: { itens: FaqPublico[] }) {
             <div
               key={`${item.pergunta}-${i}`}
               className="rounded-xl border bg-white px-4 py-4 sm:px-[18px]"
-              style={{ borderColor: "#ECE0DA" }}
+              style={{ borderColor: "var(--cor-borda)" }}
             >
               <button
                 onClick={() => setAbertos((p) => ({ ...p, [i]: !p[i] }))}
@@ -31,18 +31,18 @@ export function FaqAccordion({ itens }: { itens: FaqPublico[] }) {
               >
                 <span
                   className="text-[13.5px] font-semibold"
-                  style={{ color: "#2E2621" }}
+                  style={{ color: "var(--cor-texto-principal)" }}
                 >
                   {item.pergunta}
                 </span>
-                <span className="flex-shrink-0" style={{ color: "#A85950" }}>
+                <span className="flex-shrink-0" style={{ color: "var(--cor-acento)" }}>
                   {aberto ? <Minus size={16} /> : <Plus size={16} />}
                 </span>
               </button>
               {aberto && (
                 <p
                   className="mt-2.5 text-[12.5px] leading-[1.6]"
-                  style={{ color: "#8A7B73" }}
+                  style={{ color: "var(--cor-texto-terciario)" }}
                 >
                   {item.resposta}
                 </p>

@@ -7,6 +7,8 @@ import { FaqForm } from "@/components/configuracoes/FaqForm";
 import { CondicoesPagamentoForm } from "@/components/configuracoes/CondicoesPagamentoForm";
 import { PortfolioGaleria } from "@/components/configuracoes/PortfolioGaleria";
 import { LandingImagemForm } from "@/components/configuracoes/LandingImagemForm";
+import { TemplateVisualForm } from "@/components/configuracoes/TemplateVisualForm";
+import { resolverTema } from "@/lib/orcamento-temas";
 import type { PortfolioFoto } from "@/lib/portfolio";
 
 export const dynamic = "force-dynamic";
@@ -58,6 +60,7 @@ export default async function ConfiguracoesPage() {
     logo_url: string | null;
     hero_imagem_url: string | null;
     no_dia_evento_imagem_url: string | null;
+    template_orcamento: string | null;
   } | null = null;
   let conteudo: {
     sobre_nos_texto: string | null;
@@ -80,7 +83,9 @@ export default async function ConfiguracoesPage() {
     const [empresaRes, conteudoRes, etapasRes, faqRes] = await Promise.all([
       supabase
         .from("empresas")
-        .select("id, nome, logo_url, hero_imagem_url, no_dia_evento_imagem_url")
+        .select(
+          "id, nome, logo_url, hero_imagem_url, no_dia_evento_imagem_url, template_orcamento"
+        )
         .eq("id", cargo.empresa_id)
         .maybeSingle(),
       supabase
@@ -215,6 +220,15 @@ export default async function ConfiguracoesPage() {
 
               {empresa && (
                 <>
+                  <SubSecao
+                    titulo="Template Visual"
+                    descricao="Paleta de cores da proposta. Vale para todas, inclusive as já enviadas."
+                  >
+                    <TemplateVisualForm
+                      inicial={resolverTema(empresa.template_orcamento)}
+                    />
+                  </SubSecao>
+
                   <SubSecao
                     titulo="Imagem de capa (Apresentação)"
                     descricao="Fundo do topo da proposta. Fotos horizontais e claras funcionam melhor."

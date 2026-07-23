@@ -22,7 +22,7 @@ export function BarraProgresso() {
     <motion.div
       aria-hidden
       className="fixed left-0 right-0 top-0 z-[60] h-1 origin-left"
-      style={{ scaleX: progresso, background: "#A85950" }}
+      style={{ scaleX: progresso, background: "var(--cor-acento)" }}
     />
   );
 }

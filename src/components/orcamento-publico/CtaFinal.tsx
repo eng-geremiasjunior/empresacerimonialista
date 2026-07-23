@@ -27,7 +27,7 @@ export function CtaFinal({
     <section className="pt-12 sm:pt-14">
       <div
         className="flex flex-wrap items-center justify-between gap-5 rounded-[18px] px-7 py-7 text-white sm:px-8"
-        style={{ background: "#A85950" }}
+        style={{ background: "var(--cor-acento)" }}
       >
         <div className="flex max-w-[420px] items-center gap-3.5">
           <Heart size={22} className="flex-shrink-0" />
@@ -48,7 +48,7 @@ export function CtaFinal({
               onClick={onAceitar}
               disabled={enviando}
               className="flex items-center gap-1.5 rounded-[10px] bg-white px-5 py-3 text-[13.5px] font-bold disabled:opacity-60"
-              style={{ color: "#A85950" }}
+              style={{ color: "var(--cor-acento)" }}
             >
               <Check size={16} />
               {enviando ? "Enviando…" : "Aceitar proposta"}

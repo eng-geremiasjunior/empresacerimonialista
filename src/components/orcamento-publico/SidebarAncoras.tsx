@@ -85,7 +85,7 @@ export function SidebarAncoras({
     <>
       <div
         className="mb-5 flex items-center gap-2.5 border-b px-2 pb-6"
-        style={{ borderColor: "#ECE0DA" }}
+        style={{ borderColor: "var(--cor-borda)" }}
       >
         {logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -98,20 +98,20 @@ export function SidebarAncoras({
           <>
             <div
               className="flex h-[34px] w-[34px] items-center justify-center rounded-full border-[1.5px] text-sm [font-family:var(--font-playfair)]"
-              style={{ borderColor: "#A6824F", color: "#A6824F" }}
+              style={{ borderColor: "var(--cor-detalhe)", color: "var(--cor-detalhe)" }}
             >
               {iniciais}
             </div>
             <div>
               <div
                 className="text-sm tracking-[0.5px] [font-family:var(--font-playfair)]"
-                style={{ color: "#2E2621" }}
+                style={{ color: "var(--cor-texto-principal)" }}
               >
                 {nomeEmpresa}
               </div>
               <div
                 className="text-[9px] tracking-[1.5px]"
-                style={{ color: "#A6824F" }}
+                style={{ color: "var(--cor-detalhe)" }}
               >
                 EVENTOS
               </div>
@@ -131,8 +131,8 @@ export function SidebarAncoras({
               onClick={(e) => irPara(e, s.id)}
               className="flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-[13.5px] transition-colors"
               style={{
-                background: atual ? "#F6E9E6" : "transparent",
-                color: atual ? "#A85950" : "#584B44",
+                background: atual ? "var(--cor-fundo-destaque)" : "transparent",
+                color: atual ? "var(--cor-acento)" : "var(--cor-texto-secundario)",
                 fontWeight: atual ? 600 : 400,
               }}
             >
@@ -146,12 +146,12 @@ export function SidebarAncoras({
       {whatsapp && (
         <div
           className="mt-auto flex items-center gap-2.5 rounded-xl p-3.5"
-          style={{ background: "#F6E9E6" }}
+          style={{ background: "var(--cor-fundo-destaque)" }}
         >
           <div className="flex h-[30px] w-[30px] flex-shrink-0 items-center justify-center rounded-full bg-white">
-            <MessageCircle size={15} style={{ color: "#A85950" }} />
+            <MessageCircle size={15} style={{ color: "var(--cor-acento)" }} />
           </div>
-          <div className="text-xs leading-[1.35]" style={{ color: "#584B44" }}>
+          <div className="text-xs leading-[1.35]" style={{ color: "var(--cor-texto-secundario)" }}>
             Dúvidas?
             <br />
             <a
@@ -159,7 +159,7 @@ export function SidebarAncoras({
               target="_blank"
               rel="noopener noreferrer"
               className="font-semibold"
-              style={{ color: "#A85950" }}
+              style={{ color: "var(--cor-acento)" }}
             >
               Fale com a gente
             </a>
@@ -174,7 +174,7 @@ export function SidebarAncoras({
       {/* Desktop */}
       <aside
         className="fixed left-0 top-0 hidden h-screen w-[250px] flex-col overflow-y-auto border-r bg-white px-[18px] py-7 lg:flex"
-        style={{ borderColor: "#ECE0DA" }}
+        style={{ borderColor: "var(--cor-borda)" }}
       >
         {conteudo}
       </aside>
@@ -182,11 +182,11 @@ export function SidebarAncoras({
       {/* Celular/tablet: barra fixa + gaveta */}
       <div
         className="sticky top-0 z-40 flex items-center justify-between border-b bg-white px-4 py-3 lg:hidden"
-        style={{ borderColor: "#ECE0DA" }}
+        style={{ borderColor: "var(--cor-borda)" }}
       >
         <span
           className="text-sm tracking-[0.5px] [font-family:var(--font-playfair)]"
-          style={{ color: "#2E2621" }}
+          style={{ color: "var(--cor-texto-principal)" }}
         >
           {nomeEmpresa}
         </span>
@@ -194,7 +194,7 @@ export function SidebarAncoras({
           onClick={() => setAberto(true)}
           aria-label="Abrir navegação"
           className="rounded-lg p-1.5"
-          style={{ color: "#A85950" }}
+          style={{ color: "var(--cor-acento)" }}
         >
           <Menu size={20} />
         </button>
@@ -214,7 +214,7 @@ export function SidebarAncoras({
               onClick={() => setAberto(false)}
               aria-label="Fechar navegação"
               className="mb-2 self-end rounded-lg p-1"
-              style={{ color: "#8A7B73" }}
+              style={{ color: "var(--cor-texto-terciario)" }}
             >
               <X size={20} />
             </button>

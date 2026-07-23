@@ -8,8 +8,8 @@ import { createClient } from "@/lib/supabase/client";
 import { buscarCep } from "@/lib/cep";
 
 const inputClass =
-  "w-full rounded-xl border border-[#ECEBF3] bg-white px-3.5 py-2.5 text-[15px] text-[#17162A] focus:border-[#6C5DD3] focus:outline-none";
-const labelClass = "mb-1.5 block text-sm font-medium text-[#3D3A52]";
+  "w-full rounded-xl border border-[var(--cor-borda)] bg-white px-3.5 py-2.5 text-[15px] text-[var(--cor-texto-principal)] focus:border-[var(--cor-acento)] focus:outline-none";
+const labelClass = "mb-1.5 block text-sm font-medium text-[var(--cor-texto-secundario)]";
 
 export function FichaCadastroAprovacao({
   hash,
@@ -77,11 +77,11 @@ export function FichaCadastroAprovacao({
   }
 
   return (
-    <div className="mt-6 rounded-2xl border border-[#ECEBF3] bg-white p-6">
-      <h2 className="text-lg font-bold text-[#17162A]">
+    <div className="mt-6 rounded-2xl border border-[var(--cor-borda)] bg-white p-6">
+      <h2 className="text-lg font-bold text-[var(--cor-texto-principal)]">
         Para finalizarmos, complete seus dados
       </h2>
-      <p className="mt-1 text-sm text-[#6B6884]">
+      <p className="mt-1 text-sm text-[var(--cor-texto-terciario)]">
         Assim conseguimos preparar tudo para o seu evento.
       </p>
 
@@ -106,7 +106,7 @@ export function FichaCadastroAprovacao({
         <div>
           <label className={labelClass}>
             WhatsApp{" "}
-            <span className="font-normal text-[#9A97AE]">(se diferente)</span>
+            <span className="font-normal text-[var(--cor-texto-terciario)]">(se diferente)</span>
           </label>
           <input
             value={whatsapp}
@@ -126,7 +126,7 @@ export function FichaCadastroAprovacao({
         <div>
           <label className={labelClass}>
             Instagram{" "}
-            <span className="font-normal text-[#9A97AE]">(opcional)</span>
+            <span className="font-normal text-[var(--cor-texto-terciario)]">(opcional)</span>
           </label>
           <input
             value={instagram}
@@ -139,7 +139,7 @@ export function FichaCadastroAprovacao({
           <label className={labelClass}>
             CEP{" "}
             {buscandoCep && (
-              <span className="font-normal text-[#9A97AE]">buscando…</span>
+              <span className="font-normal text-[var(--cor-texto-terciario)]">buscando…</span>
             )}
           </label>
           <input
@@ -174,7 +174,7 @@ export function FichaCadastroAprovacao({
       <button
         onClick={enviar}
         disabled={enviando}
-        className="mt-5 w-full rounded-xl bg-[#17162A] py-3 text-[15px] font-semibold text-white hover:opacity-90 disabled:opacity-50"
+        className="mt-5 w-full rounded-xl bg-[var(--cor-texto-principal)] py-3 text-[15px] font-semibold text-white hover:opacity-90 disabled:opacity-50"
       >
         {enviando ? "Enviando…" : "Enviar dados"}
       </button>

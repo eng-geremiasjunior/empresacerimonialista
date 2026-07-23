@@ -126,6 +126,27 @@ export async function salvarCondicoes(
   return { success: true };
 }
 
+// ---------- Template visual da proposta ----------
+export async function salvarTemplateOrcamento(
+  template: string
+): Promise<AcaoResult> {
+  const { supabase, empresaId, cargo } = await contexto();
+  if (!empresaId) return { error: "Empresa não encontrada." };
+  if (cargo !== "proprietaria") return { error: "Sem permissão." };
+  if (template !== "template_1" && template !== "template_2") {
+    return { error: "Template inválido." };
+  }
+
+  const { error } = await supabase
+    .from("empresas")
+    .update({ template_orcamento: template })
+    .eq("id", empresaId);
+
+  if (error) return { error: "Não foi possível trocar o template." };
+  revalidatePath("/configuracoes");
+  return { success: true };
+}
+
 // ---------- Etapas do processo ----------
 export async function salvarEtapas(
   etapas: { id?: string; titulo: string; descricao: string }[]

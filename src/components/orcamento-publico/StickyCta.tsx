@@ -56,7 +56,7 @@ export function StickyCta({
           className="fixed bottom-0 left-0 right-0 z-50 border-t px-4 py-3 lg:left-[250px]"
           style={{
             background: "rgba(255,255,255,0.96)",
-            borderColor: "#ECE0DA",
+            borderColor: "var(--cor-borda)",
             backdropFilter: "blur(8px)",
           }}
         >
@@ -64,13 +64,13 @@ export function StickyCta({
             <div className="min-w-0">
               <div
                 className="text-[10px] font-semibold uppercase tracking-[1.2px]"
-                style={{ color: "#8A7B73" }}
+                style={{ color: "var(--cor-texto-terciario)" }}
               >
                 Investimento
               </div>
               <div
                 className="truncate text-[17px] font-bold leading-tight"
-                style={{ color: "#A85950" }}
+                style={{ color: "var(--cor-acento)" }}
               >
                 {valorFormatado}
               </div>
@@ -79,7 +79,7 @@ export function StickyCta({
               onClick={onAceitar}
               disabled={enviando}
               className="flex flex-shrink-0 items-center gap-1.5 rounded-[10px] px-5 py-3 text-[13.5px] font-semibold text-white transition-opacity disabled:opacity-60"
-              style={{ background: "#A85950" }}
+              style={{ background: "var(--cor-acento)" }}
             >
               <Check size={16} />
               {enviando ? "Enviando…" : "Aceitar proposta"}
