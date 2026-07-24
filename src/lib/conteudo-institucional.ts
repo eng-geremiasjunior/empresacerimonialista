@@ -7,6 +7,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { TEMAS } from "@/lib/orcamento-temas";
 
 export type ConteudoInstitucional = {
   id: string;
@@ -168,7 +169,10 @@ export async function salvarTemplateOrcamento(
   const { supabase, empresaId, cargo } = await contexto();
   if (!empresaId) return { error: "Empresa não encontrada." };
   if (cargo !== "proprietaria") return { error: "Sem permissão." };
-  if (template !== "template_1" && template !== "template_2") {
+  // Deriva a lista de TEMAS em vez de cravar os valores: foi essa lista
+  // fixa que barrou o template_3 depois de ele ja existir no tema e no
+  // CHECK do banco. Um quarto template nao volta a esbarrar aqui.
+  if (!Object.keys(TEMAS).includes(template)) {
     return { error: "Template inválido." };
   }
 
