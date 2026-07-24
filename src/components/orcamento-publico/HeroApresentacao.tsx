@@ -10,6 +10,7 @@ import { CalendarDays, Leaf, MapPin, Users } from "lucide-react";
 import { formatDateBR } from "@/lib/orcamentos";
 import { IMAGEM_PADRAO } from "@/lib/landing-imagens";
 import { useTema } from "./TemaContexto";
+import { IntroSaudacao } from "./IntroSaudacao";
 
 type Props = {
   nome: string;
@@ -147,13 +148,11 @@ export function HeroApresentacao(props: Props) {
                 boxShadow: "0 2px 10px rgba(40,40,20,0.05)",
               }}
             >
-              <p
+              <IntroSaudacao
+                nome={nome}
+                mensagem="Preparamos uma proposta personalizada com muito carinho para o seu grande dia."
                 className="max-w-[320px] text-[13.5px] leading-[1.5]"
-                style={{ color: "var(--cor-texto-secundario)" }}
-              >
-                Olá, {nome}! Preparamos uma proposta personalizada com muito
-                carinho para o seu grande dia.
-              </p>
+              />
               {cta}
             </div>
           </div>
@@ -227,13 +226,11 @@ export function HeroApresentacao(props: Props) {
         className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-[14px] px-6 py-5"
         style={{ background: "var(--cor-fundo-destaque)" }}
       >
-        <p
+        <IntroSaudacao
+          nome={nome}
+          mensagem="Preparamos uma proposta personalizada com muito carinho para o seu grande dia."
           className="max-w-[480px] text-[13.5px]"
-          style={{ color: "var(--cor-texto-secundario)" }}
-        >
-          Olá, {nome}! Preparamos uma proposta personalizada com muito carinho
-          para o seu grande dia.
-        </p>
+        />
         {cta}
       </div>
     </section>
