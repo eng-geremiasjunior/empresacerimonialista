@@ -82,30 +82,35 @@ export function Investimento({
         style={{
           background: "var(--cor-fundo-destaque)",
           border: "1px solid var(--cor-borda-destaque)",
-          boxShadow: "0 20px 55px -28px var(--sombra-acento)",
+          boxShadow: "0 12px 32px -24px var(--sombra-acento)",
         }}
       >
         <div className="grid gap-8 lg:grid-cols-[1.3fr_1fr] lg:gap-10">
-          {/* Valor — o maior elemento tipográfico da página, em painel
-              de alto contraste para ser lido antes de qualquer outra coisa */}
+          {/* Valor — continua o maior número da página, mas o destaque
+              vem do tamanho e da cor de acento, não de painel sólido +
+              negrito + caixa alta somados. Serifada no lugar do bold:
+              chama atenção sem gritar. */}
           <div>
-            <div
-              className="rounded-[20px] px-6 py-7 sm:px-8"
-              style={{
-                background: "var(--cor-acento)",
-                boxShadow: "0 18px 40px -22px var(--sombra-acento)",
-              }}
-            >
-              <div className="text-[11px] font-semibold uppercase tracking-[1.5px] text-white/75">
+            <div>
+              <div
+                className="text-[11px] font-semibold uppercase tracking-[1.5px]"
+                style={{ color: "var(--cor-acento)" }}
+              >
                 Investimento total
               </div>
 
-              <div className="mt-1.5 text-[46px] font-bold leading-none tracking-tight text-white sm:text-[68px]">
+              <div
+                className="mt-2 text-[42px] font-medium leading-none sm:text-[58px] [font-family:var(--font-playfair)]"
+                style={{ color: "var(--cor-acento)" }}
+              >
                 <ValorAnimado valor={Number(valorTotal)} />
               </div>
 
               {convidados != null && (
-                <div className="mt-2.5 text-[13px] text-white/75">
+                <div
+                  className="mt-2.5 text-[13px]"
+                  style={{ color: "var(--cor-texto-terciario)" }}
+                >
                   Até {convidados} convidados
                 </div>
               )}
