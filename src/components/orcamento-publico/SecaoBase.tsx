@@ -62,9 +62,10 @@ export function TituloSecao({
 }) {
   const tema = useTema();
   const barra = tema.tituloEstilo === "centralizado-barra";
+  const soCentralizado = tema.tituloEstilo === "centralizado";
 
   return (
-    <div className={barra ? "text-center" : ""}>
+    <div className={barra || soCentralizado ? "text-center" : ""}>
       <h2
         className={`text-[22px] font-medium sm:text-[28px] [font-family:var(--font-playfair)] ${
           centralizado && tema.tituloEstilo === "traco" ? "text-center" : ""

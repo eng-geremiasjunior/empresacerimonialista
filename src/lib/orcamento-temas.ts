@@ -30,6 +30,7 @@ export const TEMAS = {
     corSidebarTexto: "#5B4A43",
     corSidebarAtivoBg: "#F6E9E6",
     corSidebarAtivoTexto: "#A85950",
+    corSidebarAtivoBorda: "transparent",
     sombraAcento: "rgba(168,89,80,0.55)",
     gradienteHero:
       "linear-gradient(135deg, #EFDCD5 0%, #E7CDC4 45%, #D9B3A8 100%)",
@@ -60,6 +61,7 @@ export const TEMAS = {
     corSidebarTexto: "#4A473C",
     corSidebarAtivoBg: "#4B5632",
     corSidebarAtivoTexto: "#FFFFFF",
+    corSidebarAtivoBorda: "transparent",
     sombraAcento: "rgba(75,86,50,0.45)",
     gradienteHero:
       "linear-gradient(135deg, #DDE1D0 0%, #C9CFB6 45%, #A9B18C 100%)",
@@ -90,6 +92,7 @@ export const TEMAS = {
     corSidebarTexto: "#F2E6DF",
     corSidebarAtivoBg: "#F5EDE6",
     corSidebarAtivoTexto: "#3A0D19",
+    corSidebarAtivoBorda: "transparent",
     sombraAcento: "rgba(58,13,25,0.35)",
     gradienteHero:
       "linear-gradient(135deg, #F5EDE6 0%, #E2D3C3 45%, #D8C4A8 100%)",
@@ -100,6 +103,38 @@ export const TEMAS = {
     tituloEstilo: "centralizado-barra" as const,
     numerosSolidos: true,
   },
+  template_4: {
+    nome: "Preto / Dourado",
+    descricao: "Marfim, preto e dourado",
+    corFundo: "#F6F1E9",
+    corCard: "#FDFBF7",
+    corFundoDestaque: "#F6F1E6",
+    corBorda: "#E7DDC9",
+    corTextoPrincipal: "#1E1A15",
+    corTextoSecundario: "#4A4436",
+    corTextoTerciario: "#7A7263",
+    corAcento: "#1C1712",
+    corDetalhe: "#C9A24D",
+    corPlaceholder: "#E7DDC9",
+    corBordaDestaque: "#E0D5BC",
+    corNeutro: "#F6F1E6",
+    // sidebar preta translúcida; item ativo é retângulo escuro com borda
+    // dourada e texto dourado — não uma pílula clara invertida.
+    corSidebar: "#000000EB",
+    corSidebarTexto: "#A89A7C",
+    corSidebarAtivoBg: "#26201A",
+    corSidebarAtivoTexto: "#E8C98A",
+    corSidebarAtivoBorda: "#47391F",
+    sombraAcento: "rgba(28,23,18,0.30)",
+    gradienteHero:
+      "linear-gradient(135deg, #F2EBDD 0%, #E7DDC9 45%, #D8CDB5 100%)",
+    fonteCorpo: "var(--font-inter)",
+    heroDividido: true,
+    secoesEmCartao: false,
+    cartaoComSombra: false,
+    tituloEstilo: "centralizado" as const,
+    numerosSolidos: true,
+  },
 } as const;
 
 export type TemaOrcamento = keyof typeof TEMAS;
@@ -107,7 +142,8 @@ export type TemaOrcamento = keyof typeof TEMAS;
 export const TEMA_PADRAO: TemaOrcamento = "template_1";
 
 export function resolverTema(valor: string | null | undefined): TemaOrcamento {
-  if (valor === "template_2" || valor === "template_3") return valor;
+  if (valor === "template_2" || valor === "template_3" || valor === "template_4")
+    return valor;
   return TEMA_PADRAO;
 }
 
@@ -130,6 +166,7 @@ export function variaveisDoTema(tema: TemaOrcamento): React.CSSProperties {
     "--cor-sidebar-texto": t.corSidebarTexto,
     "--cor-sidebar-ativo-bg": t.corSidebarAtivoBg,
     "--cor-sidebar-ativo-texto": t.corSidebarAtivoTexto,
+    "--cor-sidebar-ativo-borda": t.corSidebarAtivoBorda,
     "--sombra-acento": t.sombraAcento,
     "--gradiente-hero": t.gradienteHero,
     "--fonte-corpo": t.fonteCorpo,

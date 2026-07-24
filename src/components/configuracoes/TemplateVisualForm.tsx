@@ -23,7 +23,7 @@ function Miniatura({ tema }: { tema: TemaOrcamento }) {
         {/* "sidebar" */}
         <div
           className="h-[42px] w-[16px] flex-shrink-0 rounded-sm"
-          style={{ background: t.corCard, border: `1px solid ${t.corBorda}` }}
+          style={{ background: t.corSidebar, border: `1px solid ${t.corBorda}` }}
         />
         <div className="flex-1 space-y-1.5">
           {/* bloco de destaque + valor */}

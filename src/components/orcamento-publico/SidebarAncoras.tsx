@@ -159,9 +159,12 @@ export function SidebarAncoras({
               key={s.id}
               href={`#${s.id}`}
               onClick={(e) => irPara(e, s.id)}
-              className="flex items-center gap-3 rounded-[10px] px-3.5 py-2.5 text-[13.5px] transition-colors"
+              className="flex items-center gap-3 rounded-[10px] border px-3.5 py-2.5 text-[13.5px] transition-colors"
               style={{
                 background: atual ? "var(--cor-sidebar-ativo-bg)" : "transparent",
+                borderColor: atual
+                  ? "var(--cor-sidebar-ativo-borda)"
+                  : "transparent",
                 color: atual
                   ? "var(--cor-sidebar-ativo-texto)"
                   : "var(--cor-sidebar-texto)",
