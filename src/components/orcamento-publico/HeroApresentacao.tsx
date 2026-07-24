@@ -91,7 +91,7 @@ export function HeroApresentacao(props: Props) {
     return (
       <section id="apresentacao" className="scroll-mt-6 pt-2">
         <div className="grid items-start gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-          <div>
+          <div className="order-2 lg:order-none">
             <div
               className="mb-2.5 text-[11px] font-semibold tracking-[2px]"
               style={{ color: "var(--cor-texto-terciario)" }}
@@ -158,7 +158,7 @@ export function HeroApresentacao(props: Props) {
           </div>
 
           <div
-            className="relative h-[280px] overflow-hidden rounded-[20px] bg-cover bg-center lg:h-[390px]"
+            className="relative order-1 h-[220px] overflow-hidden rounded-[20px] bg-cover bg-center sm:h-[280px] lg:order-none lg:h-[390px]"
             style={{
               backgroundColor: "var(--cor-placeholder)",
               backgroundImage: `url(${imagem})`,
