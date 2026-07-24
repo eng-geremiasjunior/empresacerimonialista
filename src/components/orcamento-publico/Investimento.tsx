@@ -10,8 +10,7 @@
 // As condições vêm da empresa (Etapa 7); a Etapa 3 não permitiu
 // customizá-las por orçamento.
 
-import { useEffect, useRef } from "react";
-import { animate, useInView, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Check, ShieldCheck } from "lucide-react";
 import { Secao } from "./SecaoBase";
 import { formatBRL } from "@/lib/orcamentos";
@@ -20,32 +19,28 @@ import type {
   OrcamentoPublicoItem,
 } from "@/lib/orcamento-publico";
 
-// Contagem de 0 até o valor ao entrar na tela. Escreve direto no DOM via
-// ref: 60fps por ~1s viraria ~55 renders do React se fosse por estado.
+// Fade suave ao entrar na tela. NÃO conta de zero até o valor: o preço
+// subindo como painel de posto dá ares de promoção, não de proposta — e
+// exibe valores que nunca foram acordados.
 //
-// O HTML nasce com o valor FINAL, não com zero: se o JS não rodar ou o
-// IntersectionObserver não disparar, o cliente vê o preço — nunca "R$ 0,00".
+// O texto renderizado é sempre o valor final; a animação mexe só na
+// opacidade. O pequeno atraso deixa o número aparecer depois do resto da
+// seção, que já entra com o fade do <Revelar>.
 function ValorAnimado({ valor }: { valor: number }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const naTela = useInView(ref, { once: true, amount: 0.4 });
   const semMovimento = useReducedMotion();
 
-  useEffect(() => {
-    if (!naTela || semMovimento || !ref.current) return;
-    const controles = animate(0, valor, {
-      duration: 0.9,
-      ease: "easeOut",
-      onUpdate: (v) => {
-        if (ref.current) ref.current.textContent = formatBRL(v);
-      },
-      onComplete: () => {
-        if (ref.current) ref.current.textContent = formatBRL(valor);
-      },
-    });
-    return () => controles.stop();
-  }, [naTela, valor, semMovimento]);
-
-  return <span ref={ref}>{formatBRL(valor)}</span>;
+  return (
+    <motion.span
+      data-revelar
+      className="inline-block"
+      initial={semMovimento ? { opacity: 1 } : { opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true, amount: 0.6 }}
+      transition={{ duration: 0.7, ease: "easeOut", delay: 0.15 }}
+    >
+      {formatBRL(valor)}
+    </motion.span>
+  );
 }
 
 function Condicao({ numero, label }: { numero: string; label: string }) {
