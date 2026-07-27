@@ -1,28 +1,22 @@
 import { notFound } from "next/navigation";
-import { Inter, Playfair_Display, Poppins } from "next/font/google";
+import { Cormorant_Garamond, Inter } from "next/font/google";
 import { createClient } from "@/lib/supabase/server";
-import { OrcamentoPublico } from "@/components/orcamento-publico/OrcamentoPublico";
+import { PropostaV2 } from "@/components/orcamento-publico/PropostaV2";
 import type { OrcamentoPublicoData } from "@/lib/orcamento-publico";
-import { resolverTema, variaveisDoTema } from "@/lib/orcamento-temas";
+import { variaveisDoTema } from "@/lib/orcamento-temas";
 
-// Tipografia própria da peça pública: serifada nos títulos, sans no corpo.
-// Carregada aqui (não no layout) para não pesar no painel administrativo.
-const playfair = Playfair_Display({
+// Tipografia da proposta, conforme a arte: Cormorant Garamond nos títulos,
+// Inter no corpo. Carregada aqui (não no layout) para não pesar no painel.
+const titulo = Cormorant_Garamond({
   subsets: ["latin"],
-  weight: ["500", "600"],
-  variable: "--font-playfair",
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-titulo",
   display: "swap",
 });
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
-  display: "swap",
-});
-// Corpo do Template 2 (arte Karina Dries).
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-poppins",
   display: "swap",
 });
 
@@ -44,18 +38,13 @@ export default async function OrcamentoPublicoPage({
   if (!data) notFound();
 
   const proposta = data as unknown as OrcamentoPublicoData;
-  // Uma empresa que nunca escolheu (ou migração não rodada) cai no tema 1.
-  const tema = resolverTema(proposta.template_orcamento);
 
   return (
     <div
-      className={`${playfair.variable} ${inter.variable} ${poppins.variable} min-h-screen [font-family:var(--fonte-corpo)]`}
-      style={{ ...variaveisDoTema(tema), background: "var(--cor-fundo)" }}
+      className={`${titulo.variable} ${inter.variable} min-h-screen [font-family:var(--fonte-corpo)]`}
+      style={{ ...variaveisDoTema(), background: "var(--cor-fundo)" }}
     >
-      <noscript>
-        <style>{`[data-revelar]{opacity:1!important;transform:none!important}`}</style>
-      </noscript>
-      <OrcamentoPublico hash={params.hash} inicial={proposta} />
+      <PropostaV2 hash={params.hash} inicial={proposta} />
     </div>
   );
 }
