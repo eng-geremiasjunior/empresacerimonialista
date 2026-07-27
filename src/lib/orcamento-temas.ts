@@ -1,153 +1,68 @@
-// Temas visuais da landing da proposta.
+// Paleta da proposta pública.
 //
-// A troca é PURAMENTE estética: mesma estrutura de dados, mesmo
-// comportamento. Cor e fonte saem por CSS variables; as diferenças de
-// ARRANJO ficam como flags aqui e são lidas por contexto, para nenhum
-// componente precisar saber qual tema está ativo.
+// Antes havia 4 temas selecionáveis. A proposta foi refeita como peça
+// única (calculadora + aceite), então restou UMA identidade: creme,
+// marrom e dourado, extraída da arte de referência.
 //
-// A barra lateral tem tokens próprios porque no Template 3 ela é ESCURA:
-// o texto do menu não pode herdar a cor de texto da página, que é vinho
-// sobre creme.
+// As CSS variables continuam existindo porque os componentes de seção já
+// leem var(--cor-*) — trocá-las por classes fixas seria reescrever tudo
+// sem ganho. A coluna empresas.template_orcamento ficou sem uso e é
+// ignorada; não a removi para não destruir dado à toa.
+//
+// A forma de TEMAS/resolverTema foi mantida para o gerador de PDF, que
+// recebe a paleta por parâmetro (react-pdf não tem CSS variables).
 
 export const TEMAS = {
-  template_1: {
-    nome: "Rosa / Terracota",
-    descricao: "Tom quente e romântico",
-    corFundo: "#FAF6F2",
-    corCard: "#FFFFFF",
-    corFundoDestaque: "#F6E9E6",
-    corBorda: "#ECE0DA",
-    corTextoPrincipal: "#2E2621",
-    corTextoSecundario: "#5B4A43",
-    corTextoTerciario: "#8A7B73",
-    corAcento: "#A85950",
-    corDetalhe: "#A6824F",
-    corPlaceholder: "#EFDCD5",
-    corBordaDestaque: "#E7CFC9",
-    corNeutro: "#F1EDE9",
-    // barra lateral
-    corSidebar: "#FFFFFF",
-    corSidebarTexto: "#5B4A43",
-    corSidebarAtivoBg: "#F6E9E6",
-    corSidebarAtivoTexto: "#A85950",
-    corSidebarAtivoBorda: "transparent",
-    sombraAcento: "rgba(168,89,80,0.55)",
-    gradienteHero:
-      "linear-gradient(135deg, #EFDCD5 0%, #E7CDC4 45%, #D9B3A8 100%)",
-    fonteCorpo: "var(--font-inter)",
-    // --- arranjo ---
-    heroDividido: false,
-    secoesEmCartao: false,
-    cartaoComSombra: false,
-    tituloEstilo: "simples" as const,
-    numerosSolidos: false,
-  },
-  template_2: {
-    nome: "Verde Oliva",
-    descricao: "Creme, oliva e dourado",
-    corFundo: "#FAF6EF",
-    corCard: "#FFFFFF",
-    corFundoDestaque: "#F5F0E6",
-    corBorda: "#E8E1D2",
-    corTextoPrincipal: "#2B2B26",
-    corTextoSecundario: "#4A473C",
-    corTextoTerciario: "#8A8467",
-    corAcento: "#4B5632",
-    corDetalhe: "#B08D57",
-    corPlaceholder: "#EFE8D9",
-    corBordaDestaque: "#E5DFCF",
-    corNeutro: "#EFE8D9",
-    corSidebar: "#F5F0E6",
-    corSidebarTexto: "#4A473C",
-    corSidebarAtivoBg: "#4B5632",
+  proposta: {
+    nome: "Proposta",
+    descricao: "Creme, marrom e dourado",
+    corFundo: "#F9F5F0",
+    corCard: "#FDFCFB",
+    corFundoDestaque: "#FFF9F0",
+    corBorda: "#E8DDD2",
+    corTextoPrincipal: "#3C2415",
+    corTextoSecundario: "#6B5A4B",
+    corTextoTerciario: "#8B7355",
+    corAcento: "#B8935A",
+    corDetalhe: "#B8935A",
+    corEscuro: "#3C2415",
+    corPlaceholder: "#E8DDD2",
+    corBordaDestaque: "#E8DDD2",
+    corNeutro: "#F9F5F0",
+    corSidebar: "#FDFCFB",
+    corSidebarTexto: "#6B5A4B",
+    corSidebarAtivoBg: "#3C2415",
     corSidebarAtivoTexto: "#FFFFFF",
     corSidebarAtivoBorda: "transparent",
-    sombraAcento: "rgba(75,86,50,0.45)",
+    sombraAcento: "rgba(60,36,21,0.28)",
     gradienteHero:
-      "linear-gradient(135deg, #DDE1D0 0%, #C9CFB6 45%, #A9B18C 100%)",
-    fonteCorpo: "var(--font-poppins)",
-    heroDividido: true,
-    secoesEmCartao: true,
-    cartaoComSombra: false,
-    tituloEstilo: "traco" as const,
-    numerosSolidos: true,
-  },
-  template_3: {
-    nome: "Vinho / Dourado",
-    descricao: "Clássico e sofisticado",
-    corFundo: "#FAF7F2",
-    corCard: "#FFFFFF",
-    corFundoDestaque: "#F6ECE1",
-    corBorda: "#F0E6DA",
-    corTextoPrincipal: "#3A0D19",
-    corTextoSecundario: "#5C473D",
-    corTextoTerciario: "#8A7A6F",
-    corAcento: "#4A1220",
-    corDetalhe: "#C9A15A",
-    corPlaceholder: "#F5EDE6",
-    corBordaDestaque: "#E2D3C3",
-    corNeutro: "#F5EDE6",
-    // sidebar escura em degradê — por isso os tokens próprios
-    corSidebar: "linear-gradient(180deg, #4A1220, #3A0D19)",
-    corSidebarTexto: "#F2E6DF",
-    corSidebarAtivoBg: "#F5EDE6",
-    corSidebarAtivoTexto: "#3A0D19",
-    corSidebarAtivoBorda: "transparent",
-    sombraAcento: "rgba(58,13,25,0.35)",
-    gradienteHero:
-      "linear-gradient(135deg, #F5EDE6 0%, #E2D3C3 45%, #D8C4A8 100%)",
+      "linear-gradient(135deg, #E8DDD2 0%, #D9C7B4 45%, #B8935A 100%)",
     fonteCorpo: "var(--font-inter)",
+    // --- arranjo, lido pelos componentes de seção ---
     heroDividido: true,
     secoesEmCartao: false,
     cartaoComSombra: true,
-    tituloEstilo: "centralizado-barra" as const,
-    numerosSolidos: true,
-  },
-  template_4: {
-    nome: "Preto / Dourado",
-    descricao: "Marfim, preto e dourado",
-    corFundo: "#F6F1E9",
-    corCard: "#FDFBF7",
-    corFundoDestaque: "#F6F1E6",
-    corBorda: "#E7DDC9",
-    corTextoPrincipal: "#1E1A15",
-    corTextoSecundario: "#4A4436",
-    corTextoTerciario: "#7A7263",
-    corAcento: "#1C1712",
-    corDetalhe: "#C9A24D",
-    corPlaceholder: "#E7DDC9",
-    corBordaDestaque: "#E0D5BC",
-    corNeutro: "#F6F1E6",
-    // sidebar preta translúcida; item ativo é retângulo escuro com borda
-    // dourada e texto dourado — não uma pílula clara invertida.
-    corSidebar: "#000000EB",
-    corSidebarTexto: "#A89A7C",
-    corSidebarAtivoBg: "#26201A",
-    corSidebarAtivoTexto: "#E8C98A",
-    corSidebarAtivoBorda: "#47391F",
-    sombraAcento: "rgba(28,23,18,0.30)",
-    gradienteHero:
-      "linear-gradient(135deg, #F2EBDD 0%, #E7DDC9 45%, #D8CDB5 100%)",
-    fonteCorpo: "var(--font-inter)",
-    heroDividido: true,
-    secoesEmCartao: false,
-    cartaoComSombra: false,
-    tituloEstilo: "centralizado" as const,
+    tituloEstilo: "centralizado-barra" as
+      | "simples"
+      | "traco"
+      | "centralizado"
+      | "centralizado-barra",
     numerosSolidos: true,
   },
 } as const;
 
 export type TemaOrcamento = keyof typeof TEMAS;
 
-export const TEMA_PADRAO: TemaOrcamento = "template_1";
+export const TEMA_PADRAO: TemaOrcamento = "proposta";
 
-export function resolverTema(valor: string | null | undefined): TemaOrcamento {
-  if (valor === "template_2" || valor === "template_3" || valor === "template_4")
-    return valor;
+// Assinatura mantida: qualquer valor legado vira o tema único.
+export function resolverTema(_valor?: string | null): TemaOrcamento {
   return TEMA_PADRAO;
 }
 
-export function variaveisDoTema(tema: TemaOrcamento): React.CSSProperties {
+export function variaveisDoTema(
+  tema: TemaOrcamento = TEMA_PADRAO
+): React.CSSProperties {
   const t = TEMAS[tema];
   return {
     "--cor-fundo": t.corFundo,
@@ -159,6 +74,7 @@ export function variaveisDoTema(tema: TemaOrcamento): React.CSSProperties {
     "--cor-texto-terciario": t.corTextoTerciario,
     "--cor-acento": t.corAcento,
     "--cor-detalhe": t.corDetalhe,
+    "--cor-escuro": t.corEscuro,
     "--cor-placeholder": t.corPlaceholder,
     "--cor-borda-destaque": t.corBordaDestaque,
     "--cor-neutro": t.corNeutro,

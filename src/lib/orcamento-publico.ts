@@ -30,9 +30,17 @@ export type InstitucionalPublico = {
   email_contato: string | null;
   responsabilidades_dia_evento: string[];
   pos_evento_cards: { titulo: string; descricao: string }[];
+  convidados_inclusos: number;
+  valor_por_convidado_extra: number;
+  convidados_min: number;
+  convidados_max: number;
 };
 
-export type EtapaPublica = { titulo: string; descricao: string | null };
+export type EtapaPublica = {
+  titulo: string;
+  descricao: string | null;
+  texto_longo?: string | null;
+};
 export type FaqPublico = { pergunta: string; resposta: string };
 export type FotoPublica = { url: string; legenda: string | null };
 export type DepoimentoPublico = {
@@ -69,6 +77,35 @@ export type OrcamentoPublicoData = {
   faq: FaqPublico[];
   fotos: FotoPublica[];
   depoimentos: DepoimentoPublico[];
+  pacotes: PacoteRpc[];
+  extras: ExtraRpc[];
+  aceite: AceiteRpc | null;
+};
+
+
+// ---------- proposta interativa (migração 056) ----------
+export type PacoteRpc = {
+  id: string;
+  nome: string;
+  subtitulo: string | null;
+  preco: number;
+  inclui: string[];
+  nao_inclui: string[];
+  recomendado: boolean;
+};
+
+export type ExtraRpc = {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  preco: number;
+};
+
+export type AceiteRpc = {
+  recibo_codigo: string;
+  pacote_nome: string;
+  valor_total: number;
+  created_at: string;
 };
 
 export function expirado(d: OrcamentoPublicoData): boolean {

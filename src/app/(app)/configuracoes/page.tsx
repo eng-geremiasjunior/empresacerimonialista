@@ -8,8 +8,9 @@ import { DepoimentosForm } from "@/components/configuracoes/DepoimentosForm";
 import { CondicoesPagamentoForm } from "@/components/configuracoes/CondicoesPagamentoForm";
 import { PortfolioGaleria } from "@/components/configuracoes/PortfolioGaleria";
 import { LandingImagemForm } from "@/components/configuracoes/LandingImagemForm";
-import { TemplateVisualForm } from "@/components/configuracoes/TemplateVisualForm";
-import { resolverTema } from "@/lib/orcamento-temas";
+import { PacotesForm } from "@/components/configuracoes/PacotesForm";
+import { ExtrasForm } from "@/components/configuracoes/ExtrasForm";
+import { RegraConvidadosForm } from "@/components/configuracoes/RegraConvidadosForm";
 import type { PortfolioFoto } from "@/lib/portfolio";
 
 export const dynamic = "force-dynamic";
@@ -75,9 +76,28 @@ export default async function ConfiguracoesPage() {
     condicao_prazo_parcelas_texto: string;
     whatsapp_contato: string | null;
     email_contato: string | null;
+    convidados_inclusos: number;
+    valor_por_convidado_extra: number;
+    convidados_min: number;
+    convidados_max: number;
   } | null = null;
   let etapas: { titulo: string; descricao: string | null }[] = [];
   let faq: { pergunta: string; resposta: string; ativo: boolean }[] = [];
+  let pacotes: {
+    nome: string;
+    subtitulo: string | null;
+    preco: number;
+    inclui: string[];
+    nao_inclui: string[];
+    recomendado: boolean;
+    ativo: boolean;
+  }[] = [];
+  let extras: {
+    nome: string;
+    descricao: string | null;
+    preco: number;
+    ativo: boolean;
+  }[] = [];
   let depoimentos: {
     texto: string;
     autor: string;
@@ -87,8 +107,15 @@ export default async function ConfiguracoesPage() {
   let faltaMigracao = false;
 
   if (proprietaria && cargo) {
-    const [empresaRes, conteudoRes, etapasRes, faqRes, depoimentosRes] =
-      await Promise.all([
+    const [
+      empresaRes,
+      conteudoRes,
+      etapasRes,
+      faqRes,
+      depoimentosRes,
+      pacotesRes,
+      extrasRes,
+    ] = await Promise.all([
       supabase
         .from("empresas")
         .select(
@@ -116,6 +143,16 @@ export default async function ConfiguracoesPage() {
         .select("texto, autor, contexto, ativo")
         .eq("empresa_id", cargo.empresa_id)
         .order("ordem"),
+      supabase
+        .from("empresa_pacotes")
+        .select("nome, subtitulo, preco, inclui, nao_inclui, recomendado, ativo")
+        .eq("empresa_id", cargo.empresa_id)
+        .order("ordem"),
+      supabase
+        .from("empresa_extras")
+        .select("nome, descricao, preco, ativo")
+        .eq("empresa_id", cargo.empresa_id)
+        .order("ordem"),
     ]);
 
     empresa = empresaRes.data;
@@ -123,6 +160,8 @@ export default async function ConfiguracoesPage() {
     etapas = (etapasRes.data ?? []) as typeof etapas;
     faq = (faqRes.data ?? []) as typeof faq;
     depoimentos = (depoimentosRes.data ?? []) as typeof depoimentos;
+    pacotes = (pacotesRes.data ?? []) as typeof pacotes;
+    extras = (extrasRes.data ?? []) as typeof extras;
     // Tabelas ainda não criadas → orienta em vez de quebrar.
     faltaMigracao = Boolean(conteudoRes.error);
   }
@@ -212,6 +251,27 @@ export default async function ConfiguracoesPage() {
           ) : (
             <>
               <SubSecao
+                titulo="Pacotes"
+                descricao="As opções que o cliente escolhe na proposta. O destacado aparece com o selo de mais escolhido."
+              >
+                <PacotesForm inicial={pacotes} />
+              </SubSecao>
+
+              <SubSecao
+                titulo="Extras opcionais"
+                descricao="Itens que o cliente pode somar ao pacote."
+              >
+                <ExtrasForm inicial={extras} />
+              </SubSecao>
+
+              <SubSecao
+                titulo="Convidados"
+                descricao="Faixa do seletor e cobrança por convidado acima do incluso."
+              >
+                <RegraConvidadosForm inicial={conteudo} />
+              </SubSecao>
+
+              <SubSecao
                 titulo="Sobre nós"
                 descricao="Apresentação da empresa e números que passam confiança."
               >
@@ -241,15 +301,6 @@ export default async function ConfiguracoesPage() {
 
               {empresa && (
                 <>
-                  <SubSecao
-                    titulo="Template Visual"
-                    descricao="Paleta de cores da proposta. Vale para todas, inclusive as já enviadas."
-                  >
-                    <TemplateVisualForm
-                      inicial={resolverTema(empresa.template_orcamento)}
-                    />
-                  </SubSecao>
-
                   <SubSecao
                     titulo="Imagem de capa (Apresentação)"
                     descricao="Fundo do topo da proposta. Fotos horizontais e claras funcionam melhor."

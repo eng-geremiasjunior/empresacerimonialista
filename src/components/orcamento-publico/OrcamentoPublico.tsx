@@ -30,6 +30,10 @@ import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
 import { formatBRL, formatDateBR } from "@/lib/orcamentos";
 import { resolverTema } from "@/lib/orcamento-temas";
 import { TemaProvider } from "@/components/orcamento-publico/TemaContexto";
+import { Calculadora } from "@/components/orcamento-publico/Calculadora";
+import { ModalAceite } from "@/components/orcamento-publico/ModalAceite";
+import { Secao } from "@/components/orcamento-publico/SecaoBase";
+import type { SelecaoProposta } from "@/lib/proposta";
 import {
   dataResposta,
   expirado,
@@ -53,6 +57,10 @@ const CONDICOES_PADRAO: InstitucionalPublico = {
   email_contato: null,
   responsabilidades_dia_evento: [],
   pos_evento_cards: [],
+  convidados_inclusos: 150,
+  valor_por_convidado_extra: 12,
+  convidados_min: 50,
+  convidados_max: 300,
 };
 
 export function OrcamentoPublico({
@@ -68,6 +76,7 @@ export function OrcamentoPublico({
   const [gerando, setGerando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [modalAceite, setModalAceite] = useState(false);
 
   const venceu = expirado(dados);
   const podeResponder = dados.status === "enviado" && !venceu;
@@ -78,6 +87,34 @@ export function OrcamentoPublico({
   const fotos = dados.fotos ?? [];
   const depoimentos = dados.depoimentos ?? [];
   const itens = dados.itens ?? [];
+  const pacotes = dados.pacotes ?? [];
+  const extras = dados.extras ?? [];
+  // Sem pacotes cadastrados a proposta continua válida no formato antigo
+  // (valor fixo), em vez de mostrar uma calculadora vazia.
+  const temCalculadora = pacotes.length > 0;
+
+  const regraConvidados = {
+    inclusos: inst.convidados_inclusos ?? 150,
+    valorPorExtra: Number(inst.valor_por_convidado_extra ?? 0),
+    min: inst.convidados_min ?? 50,
+    max: inst.convidados_max ?? 300,
+  };
+  const condicoesPag = {
+    entradaPercentual: inst.condicao_entrada_percentual,
+    parcelasMaximo: inst.condicao_parcelas_maximo,
+    descontoAVista: inst.condicao_desconto_a_vista_percentual,
+    prazoParcelasTexto: inst.condicao_prazo_parcelas_texto,
+  };
+
+  const [selecao, setSelecao] = useState<SelecaoProposta>(() => ({
+    // já abre no recomendado: é a âncora de preço que a arte propõe
+    pacote: pacotes.find((p) => p.recomendado) ?? pacotes[0] ?? null,
+    convidados:
+      dados.numero_convidados ?? inst.convidados_inclusos ?? 150,
+    extrasIds: [],
+    formaPagamento: "parcelado",
+    parcelas: Math.min(7, inst.condicao_parcelas_maximo || 7),
+  }));
 
   const tipo =
     EVENT_TYPE_LABELS[dados.tipo_evento as EventType] ?? dados.tipo_evento;
@@ -195,12 +232,27 @@ export function OrcamentoPublico({
           imagemUrl={dados.no_dia_evento_imagem_url ?? null}
         />
         <PosEvento cards={inst.pos_evento_cards} />
-        <Investimento
-          valorTotal={Number(dados.valor_total)}
-          convidados={dados.numero_convidados}
-          itens={itens}
-          condicoes={inst}
-        />
+        {temCalculadora ? (
+          <Secao id="investimento" titulo="Investimento">
+            <Calculadora
+              pacotes={pacotes}
+              extras={extras}
+              regra={regraConvidados}
+              condicoes={condicoesPag}
+              selecao={selecao}
+              onSelecao={setSelecao}
+              onAceitar={() => setModalAceite(true)}
+              podeAceitar={podeResponder}
+            />
+          </Secao>
+        ) : (
+          <Investimento
+            valorTotal={Number(dados.valor_total)}
+            convidados={dados.numero_convidados}
+            itens={itens}
+            condicoes={inst}
+          />
+        )}
         <FaqAccordion itens={faq} />
         <EventosRealizados fotos={fotos} />
         <Depoimentos itens={depoimentos} />
@@ -208,7 +260,7 @@ export function OrcamentoPublico({
         <CtaFinal
           podeResponder={podeResponder}
           enviando={enviando}
-          onAceitar={aceitar}
+          onAceitar={temCalculadora ? () => setModalAceite(true) : aceitar}
           linkAlteracoes={linkAlteracoes}
           mensagem={
             venceu
@@ -329,10 +381,30 @@ export function OrcamentoPublico({
       <StickyCta
         visivel={podeResponder}
         enviando={enviando}
-        onAceitar={aceitar}
+        onAceitar={temCalculadora ? () => setModalAceite(true) : aceitar}
         valorFormatado={formatBRL(Number(dados.valor_total))}
       />
     </div>
+      {modalAceite && selecao.pacote && (
+        <ModalAceite
+          hash={hash}
+          selecao={selecao}
+          extras={extras}
+          regra={regraConvidados}
+          condicoes={condicoesPag}
+          nomeContato={dados.nome_contato}
+          whatsapp={inst.whatsapp_contato}
+          nomeEmpresa={dados.nome_empresa}
+          onFechar={() => setModalAceite(false)}
+          onAceito={() =>
+            setDados((d) => ({
+              ...d,
+              status: "aprovado",
+              respondido_em: new Date().toISOString(),
+            }))
+          }
+        />
+      )}
     </TemaProvider>
   );
 }
