@@ -1,13 +1,13 @@
 import { notFound } from "next/navigation";
-import { Cormorant_Garamond, Inter } from "next/font/google";
+import { Inter, Playfair_Display } from "next/font/google";
 import { createClient } from "@/lib/supabase/server";
 import { PropostaV2 } from "@/components/orcamento-publico/PropostaV2";
 import type { OrcamentoPublicoData } from "@/lib/orcamento-publico";
 import { variaveisDoTema } from "@/lib/orcamento-temas";
 
-// Tipografia da proposta, conforme a arte: Cormorant Garamond nos títulos,
-// Inter no corpo. Carregada aqui (não no layout) para não pesar no painel.
-const titulo = Cormorant_Garamond({
+// Tipografia conforme o page.tsx de referência: Playfair Display nos
+// títulos, Inter no corpo. Carregada aqui (não no layout) para não pesar no painel.
+const titulo = Playfair_Display({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   style: ["normal", "italic"],
