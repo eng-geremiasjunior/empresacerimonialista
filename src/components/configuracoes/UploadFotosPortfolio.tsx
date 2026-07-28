@@ -7,13 +7,16 @@
 import { useRef, useState } from "react";
 import { ImagePlus, Loader2 } from "lucide-react";
 import { uploadFotos, type PortfolioFoto } from "@/lib/portfolio";
+import type { EventType } from "@/lib/types";
 
 export function UploadFotosPortfolio({
   empresaId,
+  tipoEvento,
   proximaOrdem,
   onEnviadas,
 }: {
   empresaId: string;
+  tipoEvento: EventType;
   proximaOrdem: number;
   onEnviadas: (fotos: PortfolioFoto[]) => void;
 }) {
@@ -27,8 +30,12 @@ export function UploadFotosPortfolio({
     setErros([]);
     setProgresso({ feitos: 0, total: arquivos.length });
 
-    const res = await uploadFotos(empresaId, arquivos, proximaOrdem, (feitos, total) =>
-      setProgresso({ feitos, total })
+    const res = await uploadFotos(
+      empresaId,
+      tipoEvento,
+      arquivos,
+      proximaOrdem,
+      (feitos, total) => setProgresso({ feitos, total })
     );
 
     setProgresso(null);

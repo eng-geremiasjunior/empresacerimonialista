@@ -7,6 +7,7 @@
 import { useEffect, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { salvarRegraConvidados, type AcaoResult } from "@/lib/proposta-config";
+import type { EventType } from "@/lib/types";
 
 const inputClass =
   "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-500 focus:outline-none";
@@ -26,8 +27,10 @@ function Salvar() {
 }
 
 export function RegraConvidadosForm({
+  tipoEvento,
   inicial,
 }: {
+  tipoEvento: EventType;
   inicial: {
     convidados_min: number;
     convidados_max: number;
@@ -51,6 +54,8 @@ export function RegraConvidadosForm({
 
   return (
     <form action={formAction} className="space-y-4">
+      {/* a action grava só no tipo de evento desta tela */}
+      <input type="hidden" name="tipo_evento" value={tipoEvento} />
       <div className="grid gap-3 sm:grid-cols-4">
         <div>
           <label htmlFor="convidados_min" className={labelClass}>

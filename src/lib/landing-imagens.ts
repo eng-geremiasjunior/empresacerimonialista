@@ -6,6 +6,7 @@
 // "Restaurar padrão" grava null em vez de apagar a coluna.
 
 import { createClient } from "@/lib/supabase/client";
+import type { EventType } from "@/lib/types";
 
 export type SlotImagem = "hero" | "no_dia_evento";
 
@@ -58,6 +59,7 @@ async function comprimir(file: File): Promise<Blob> {
 
 export async function uploadImagemLanding(
   empresaId: string,
+  tipoEvento: EventType,
   slot: SlotImagem,
   file: File
 ): Promise<{ url?: string; error?: string }> {
@@ -70,8 +72,10 @@ export async function uploadImagemLanding(
     return { error: "A imagem continua acima de 5 MB depois de comprimida." };
   }
 
-  // Path fixo por slot: upsert sobrescreve, sem acumular arquivo antigo.
-  const path = `${empresaId}/${slot}.jpg`;
+  // Path fixo por slot e tipo: upsert sobrescreve, sem acumular arquivo
+  // antigo. A pasta segue sendo a empresa — é o que a policy do bucket
+  // valida —, então o tipo entra no nome do arquivo.
+  const path = `${empresaId}/${tipoEvento}-${slot}.jpg`;
   const { error: upErro } = await supabase.storage
     .from("landing-imagens")
     .upload(path, blob, { upsert: true, contentType: blob.type });
@@ -87,10 +91,15 @@ export async function uploadImagemLanding(
   // ?v= força o cache a soltar a versão antiga (o path é sempre o mesmo).
   const url = `${data.publicUrl}?v=${Date.now()}`;
 
+  // Desde a 057 as imagens vivem no conteúdo institucional, que tem uma
+  // linha por (empresa, tipo) — em `empresas` seriam uma capa só para
+  // todos os tipos de evento.
   const { error: metaErro } = await supabase
-    .from("empresas")
-    .update({ [COLUNA[slot]]: url })
-    .eq("id", empresaId);
+    .from("empresa_conteudo_institucional")
+    .upsert(
+      { empresa_id: empresaId, tipo_evento: tipoEvento, [COLUNA[slot]]: url },
+      { onConflict: "empresa_id,tipo_evento" }
+    );
 
   if (metaErro) {
     return { error: "Imagem enviada, mas não foi possível salvar na empresa." };
@@ -101,17 +110,19 @@ export async function uploadImagemLanding(
 // Volta ao asset de fábrica: coluna = null e arquivo removido do bucket.
 export async function restaurarImagemPadrao(
   empresaId: string,
+  tipoEvento: EventType,
   slot: SlotImagem
 ): Promise<{ error?: string }> {
   const supabase = createClient();
   const { error } = await supabase
-    .from("empresas")
+    .from("empresa_conteudo_institucional")
     .update({ [COLUNA[slot]]: null })
-    .eq("id", empresaId);
+    .eq("empresa_id", empresaId)
+    .eq("tipo_evento", tipoEvento);
   if (error) return { error: "Não foi possível restaurar a imagem padrão." };
 
   await supabase.storage
     .from("landing-imagens")
-    .remove([`${empresaId}/${slot}.jpg`]);
+    .remove([`${empresaId}/${tipoEvento}-${slot}.jpg`]);
   return {};
 }

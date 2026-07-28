@@ -6,6 +6,7 @@
 import { useState, useTransition } from "react";
 import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 import { salvarExtras, type ExtraEntrada } from "@/lib/proposta-config";
+import type { EventType } from "@/lib/types";
 
 const inputClass =
   "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-500 focus:outline-none";
@@ -16,8 +17,10 @@ let seq = 0;
 const novaKey = () => `ext-${++seq}-${Date.now()}`;
 
 export function ExtrasForm({
+  tipoEvento,
   inicial,
 }: {
+  tipoEvento: EventType;
   inicial: {
     nome: string;
     descricao: string | null;
@@ -52,7 +55,10 @@ export function ExtrasForm({
   function salvar() {
     setErro(null);
     startTransition(async () => {
-      const res = await salvarExtras(linhas.map(({ key, ...r }) => r));
+      const res = await salvarExtras(
+        tipoEvento,
+        linhas.map(({ key, ...r }) => r)
+      );
       if ("error" in res) return setErro(res.error);
       setSalvo(true);
       setTimeout(() => setSalvo(false), 2500);

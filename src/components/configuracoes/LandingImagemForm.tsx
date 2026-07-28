@@ -14,14 +14,17 @@ import {
   validarImagem,
   type SlotImagem,
 } from "@/lib/landing-imagens";
+import type { EventType } from "@/lib/types";
 
 export function LandingImagemForm({
   empresaId,
+  tipoEvento,
   slot,
   urlInicial,
   dica,
 }: {
   empresaId: string;
+  tipoEvento: EventType;
   slot: SlotImagem;
   urlInicial: string | null;
   dica: string;
@@ -43,7 +46,7 @@ export function LandingImagemForm({
       return;
     }
     setOcupado(true);
-    const res = await uploadImagemLanding(empresaId, slot, file);
+    const res = await uploadImagemLanding(empresaId, tipoEvento, slot, file);
     setOcupado(false);
     if (inputRef.current) inputRef.current.value = "";
     if (res.error) {
@@ -56,7 +59,7 @@ export function LandingImagemForm({
   async function restaurar() {
     if (!confirm("Voltar para a imagem padrão do sistema?")) return;
     setOcupado(true);
-    const res = await restaurarImagemPadrao(empresaId, slot);
+    const res = await restaurarImagemPadrao(empresaId, tipoEvento, slot);
     setOcupado(false);
     if (res.error) {
       setErro(res.error);

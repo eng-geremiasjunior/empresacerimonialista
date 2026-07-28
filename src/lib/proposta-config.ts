@@ -13,6 +13,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { tipoValido } from "@/lib/catalogo";
+import type { EventType } from "@/lib/types";
 
 export type AcaoResult = { error: string } | { success: true };
 
@@ -50,11 +52,14 @@ const linhas = (texto: string) =>
     .filter(Boolean);
 
 export async function salvarPacotes(
+  tipoEvento: EventType,
   itens: PacoteEntrada[]
 ): Promise<AcaoResult> {
   const { supabase, empresaId, cargo } = await contexto();
   if (!empresaId) return { error: "Empresa não encontrada." };
   if (cargo !== "proprietaria") return { error: "Sem permissão." };
+  const tipo = tipoValido(tipoEvento);
+  if (!tipo) return { error: "Tipo de evento inválido." };
 
   const validos = itens.filter((p) => p.nome.trim());
 
@@ -62,10 +67,13 @@ export async function salvarPacotes(
   // proposta anulam o efeito de âncora que o selo existe para criar.
   let jaTemRecomendado = false;
 
+  // O filtro por tipo é o que impede que salvar debutante apague os
+  // pacotes de casamento: este delete é a primeira metade da substituição.
   const { error: delErr } = await supabase
     .from("empresa_pacotes")
     .delete()
-    .eq("empresa_id", empresaId);
+    .eq("empresa_id", empresaId)
+    .eq("tipo_evento", tipo);
   if (delErr) return { error: "Não foi possível salvar os pacotes." };
 
   if (validos.length > 0) {
@@ -75,6 +83,7 @@ export async function salvarPacotes(
         if (recomendado) jaTemRecomendado = true;
         return {
           empresa_id: empresaId,
+          tipo_evento: tipo,
           ordem: i + 1,
           nome: p.nome.trim(),
           subtitulo: p.subtitulo.trim() || null,
@@ -89,7 +98,7 @@ export async function salvarPacotes(
     if (error) return { error: "Não foi possível salvar os pacotes." };
   }
 
-  revalidatePath("/configuracoes");
+  revalidatePath(`/catalogo/${tipo}`);
   return { success: true };
 }
 
@@ -102,24 +111,29 @@ export type ExtraEntrada = {
 };
 
 export async function salvarExtras(
+  tipoEvento: EventType,
   itens: ExtraEntrada[]
 ): Promise<AcaoResult> {
   const { supabase, empresaId, cargo } = await contexto();
   if (!empresaId) return { error: "Empresa não encontrada." };
   if (cargo !== "proprietaria") return { error: "Sem permissão." };
+  const tipo = tipoValido(tipoEvento);
+  if (!tipo) return { error: "Tipo de evento inválido." };
 
   const validos = itens.filter((x) => x.nome.trim());
 
   const { error: delErr } = await supabase
     .from("empresa_extras")
     .delete()
-    .eq("empresa_id", empresaId);
+    .eq("empresa_id", empresaId)
+    .eq("tipo_evento", tipo);
   if (delErr) return { error: "Não foi possível salvar os extras." };
 
   if (validos.length > 0) {
     const { error } = await supabase.from("empresa_extras").insert(
       validos.map((x, i) => ({
         empresa_id: empresaId,
+        tipo_evento: tipo,
         ordem: i + 1,
         nome: x.nome.trim(),
         descricao: x.descricao.trim() || null,
@@ -130,7 +144,7 @@ export async function salvarExtras(
     if (error) return { error: "Não foi possível salvar os extras." };
   }
 
-  revalidatePath("/configuracoes");
+  revalidatePath(`/catalogo/${tipo}`);
   return { success: true };
 }
 
@@ -142,6 +156,8 @@ export async function salvarRegraConvidados(
   const { supabase, empresaId, cargo } = await contexto();
   if (!empresaId) return { error: "Empresa não encontrada." };
   if (cargo !== "proprietaria") return { error: "Sem permissão." };
+  const tipo = tipoValido(String(formData.get("tipo_evento") ?? ""));
+  if (!tipo) return { error: "Tipo de evento inválido." };
 
   const min = Math.round(numero(formData.get("convidados_min"), 50));
   const max = Math.round(numero(formData.get("convidados_max"), 300));
@@ -156,21 +172,27 @@ export async function salvarRegraConvidados(
     return { error: "Os convidados inclusos precisam estar entre o mínimo e o máximo." };
   }
 
+  // upsert: um tipo de evento aberto pela primeira vez ainda não tem
+  // linha de conteúdo, e um update não gravaria nada nem avisaria.
   const { error } = await supabase
     .from("empresa_conteudo_institucional")
-    .update({
-      convidados_min: min,
-      convidados_max: max,
-      convidados_inclusos: inclusos,
-      valor_por_convidado_extra: numero(
-        formData.get("valor_por_convidado_extra"),
-        0
-      ),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("empresa_id", empresaId);
+    .upsert(
+      {
+        empresa_id: empresaId,
+        tipo_evento: tipo,
+        convidados_min: min,
+        convidados_max: max,
+        convidados_inclusos: inclusos,
+        valor_por_convidado_extra: numero(
+          formData.get("valor_por_convidado_extra"),
+          0
+        ),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "empresa_id,tipo_evento" }
+    );
 
   if (error) return { error: "Não foi possível salvar." };
-  revalidatePath("/configuracoes");
+  revalidatePath(`/catalogo/${tipo}`);
   return { success: true };
 }

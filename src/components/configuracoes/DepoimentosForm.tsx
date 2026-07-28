@@ -7,6 +7,7 @@
 import { useState, useTransition } from "react";
 import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 import { salvarDepoimentos } from "@/lib/conteudo-institucional";
+import type { EventType } from "@/lib/types";
 
 const inputClass =
   "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-500 focus:outline-none";
@@ -23,8 +24,10 @@ let seq = 0;
 const novaKey = () => `dep-${++seq}-${Date.now()}`;
 
 export function DepoimentosForm({
+  tipoEvento,
   inicial,
 }: {
+  tipoEvento: EventType;
   inicial: { texto: string; autor: string; contexto: string | null; ativo: boolean }[];
 }) {
   const [linhas, setLinhas] = useState<Linha[]>(
@@ -58,6 +61,7 @@ export function DepoimentosForm({
     setErro(null);
     startTransition(async () => {
       const res = await salvarDepoimentos(
+        tipoEvento,
         linhas.map((l) => ({
           texto: l.texto,
           autor: l.autor,

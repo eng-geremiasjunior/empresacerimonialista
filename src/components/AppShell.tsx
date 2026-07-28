@@ -83,7 +83,12 @@ const NAV: NavItem[] = [
     cargos: ["proprietaria"],
   },
   { label: "Relatórios", icon: "relatorios" },
-  { label: "Catálogo", icon: "catalogo" },
+  {
+    label: "Catálogo",
+    icon: "catalogo",
+    href: "/catalogo",
+    cargos: ["proprietaria"],
+  },
   { label: "Configurações", icon: "configuracoes", href: "/configuracoes" },
 ];
 

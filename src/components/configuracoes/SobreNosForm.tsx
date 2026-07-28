@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { salvarSobreNos, type AcaoResult } from "@/lib/conteudo-institucional";
+import type { EventType } from "@/lib/types";
 
 const inputClass =
   "w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-100";
@@ -24,8 +25,10 @@ function Salvar() {
 }
 
 export function SobreNosForm({
+  tipoEvento,
   inicial,
 }: {
+  tipoEvento: EventType;
   inicial: {
     sobre_nos_texto: string | null;
     stat_anos_experiencia: number | null;
@@ -50,6 +53,8 @@ export function SobreNosForm({
 
   return (
     <form action={formAction} className="space-y-4">
+      {/* a action grava só no tipo de evento desta tela */}
+      <input type="hidden" name="tipo_evento" value={tipoEvento} />
       <div>
         <label htmlFor="sobre_nos_texto" className={labelClass}>
           Sobre nós

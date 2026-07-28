@@ -7,6 +7,7 @@
 // landing page que não carrega no 4G do salão de festas.
 
 import { createClient } from "@/lib/supabase/client";
+import type { EventType } from "@/lib/types";
 
 export type PortfolioFoto = {
   id: string;
@@ -61,13 +62,15 @@ async function comprimir(file: File): Promise<Blob> {
 }
 
 export async function listarFotos(
-  empresaId: string
+  empresaId: string,
+  tipoEvento: EventType
 ): Promise<PortfolioFoto[]> {
   const supabase = createClient();
   const { data } = await supabase
     .from("portfolio_fotos")
     .select("id, url, storage_path, legenda, ordem, ativo")
     .eq("empresa_id", empresaId)
+    .eq("tipo_evento", tipoEvento)
     .order("ordem")
     .order("created_at");
   return (data ?? []) as PortfolioFoto[];
@@ -77,6 +80,7 @@ export async function listarFotos(
 // celular) e reporta progresso a cada arquivo concluído.
 export async function uploadFotos(
   empresaId: string,
+  tipoEvento: EventType,
   arquivos: File[],
   ordemInicial: number,
   onProgresso?: (feitos: number, total: number) => void
@@ -122,6 +126,7 @@ export async function uploadFotos(
       .from("portfolio_fotos")
       .insert({
         empresa_id: empresaId,
+        tipo_evento: tipoEvento,
         url: pub.publicUrl,
         storage_path: path,
         ordem: ordemInicial + fotos.length,

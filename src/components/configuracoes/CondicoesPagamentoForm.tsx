@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { salvarCondicoes, type AcaoResult } from "@/lib/conteudo-institucional";
+import type { EventType } from "@/lib/types";
 
 const inputClass =
   "w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-100";
@@ -25,8 +26,10 @@ function Salvar() {
 }
 
 export function CondicoesPagamentoForm({
+  tipoEvento,
   inicial,
 }: {
+  tipoEvento: EventType;
   inicial: {
     condicao_entrada_percentual: number;
     condicao_parcelas_maximo: number;
@@ -52,6 +55,8 @@ export function CondicoesPagamentoForm({
 
   return (
     <form action={formAction} className="space-y-4">
+      {/* a action grava só no tipo de evento desta tela */}
+      <input type="hidden" name="tipo_evento" value={tipoEvento} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div>
           <label htmlFor="condicao_entrada_percentual" className={labelClass}>

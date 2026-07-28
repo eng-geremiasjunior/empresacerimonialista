@@ -8,6 +8,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { TEMAS } from "@/lib/orcamento-temas";
+import { tipoValido } from "@/lib/catalogo";
+import type { EventType } from "@/lib/types";
 
 export type ConteudoInstitucional = {
   id: string;
@@ -69,23 +71,31 @@ export async function salvarSobreNos(
 ): Promise<AcaoResult> {
   const { supabase, empresaId } = await contexto();
   if (!empresaId) return { error: "Empresa não encontrada." };
+  const tipo = tipoValido(String(formData.get("tipo_evento") ?? ""));
+  if (!tipo) return { error: "Tipo de evento inválido." };
 
+  // upsert e não update: um tipo de evento que ela abre pela primeira vez
+  // ainda não tem linha, e um update silencioso não gravaria nada.
   const { error } = await supabase
     .from("empresa_conteudo_institucional")
-    .update({
-      sobre_nos_texto: String(formData.get("sobre_nos_texto") ?? "").trim() || null,
-      stat_anos_experiencia: inteiro(formData.get("stat_anos_experiencia")),
-      stat_eventos_realizados: inteiro(formData.get("stat_eventos_realizados")),
-      stat_dedicacao_percentual: inteiro(formData.get("stat_dedicacao_percentual"), 100),
-      stat_equipe_texto:
-        String(formData.get("stat_equipe_texto") ?? "").trim() ||
-        "Equipe Especializada",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("empresa_id", empresaId);
+    .upsert(
+      {
+        empresa_id: empresaId,
+        tipo_evento: tipo,
+        sobre_nos_texto: String(formData.get("sobre_nos_texto") ?? "").trim() || null,
+        stat_anos_experiencia: inteiro(formData.get("stat_anos_experiencia")),
+        stat_eventos_realizados: inteiro(formData.get("stat_eventos_realizados")),
+        stat_dedicacao_percentual: inteiro(formData.get("stat_dedicacao_percentual"), 100),
+        stat_equipe_texto:
+          String(formData.get("stat_equipe_texto") ?? "").trim() ||
+          "Equipe Especializada",
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "empresa_id,tipo_evento" }
+    );
 
   if (error) return { error: "Não foi possível salvar." };
-  revalidatePath("/configuracoes");
+  revalidatePath(`/catalogo/${tipo}`);
   return { success: true };
 }
 
@@ -96,6 +106,8 @@ export async function salvarCondicoes(
 ): Promise<AcaoResult> {
   const { supabase, empresaId } = await contexto();
   if (!empresaId) return { error: "Empresa não encontrada." };
+  const tipo = tipoValido(String(formData.get("tipo_evento") ?? ""));
+  if (!tipo) return { error: "Tipo de evento inválido." };
 
   const entrada = inteiro(formData.get("condicao_entrada_percentual"), 30) ?? 30;
   const desconto =
@@ -106,34 +118,41 @@ export async function salvarCondicoes(
 
   const { error } = await supabase
     .from("empresa_conteudo_institucional")
-    .update({
-      condicao_entrada_percentual: entrada,
-      condicao_parcelas_maximo:
-        inteiro(formData.get("condicao_parcelas_maximo"), 7) ?? 7,
-      condicao_desconto_a_vista_percentual: desconto,
-      condicao_prazo_parcelas_texto:
-        String(formData.get("condicao_prazo_parcelas_texto") ?? "").trim() ||
-        "até 5 dias antes do evento",
-      whatsapp_contato:
-        String(formData.get("whatsapp_contato") ?? "").trim() || null,
-      email_contato:
-        String(formData.get("email_contato") ?? "").trim() || null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("empresa_id", empresaId);
+    .upsert(
+      {
+        empresa_id: empresaId,
+        tipo_evento: tipo,
+        condicao_entrada_percentual: entrada,
+        condicao_parcelas_maximo:
+          inteiro(formData.get("condicao_parcelas_maximo"), 7) ?? 7,
+        condicao_desconto_a_vista_percentual: desconto,
+        condicao_prazo_parcelas_texto:
+          String(formData.get("condicao_prazo_parcelas_texto") ?? "").trim() ||
+          "até 5 dias antes do evento",
+        whatsapp_contato:
+          String(formData.get("whatsapp_contato") ?? "").trim() || null,
+        email_contato:
+          String(formData.get("email_contato") ?? "").trim() || null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "empresa_id,tipo_evento" }
+    );
 
   if (error) return { error: "Não foi possível salvar." };
-  revalidatePath("/configuracoes");
+  revalidatePath(`/catalogo/${tipo}`);
   return { success: true };
 }
 
 // ---------- Depoimentos ----------
 export async function salvarDepoimentos(
+  tipoEvento: EventType,
   itens: { texto: string; autor: string; contexto: string; ativo: boolean }[]
 ): Promise<AcaoResult> {
   const { supabase, empresaId, cargo } = await contexto();
   if (!empresaId) return { error: "Empresa não encontrada." };
   if (cargo !== "proprietaria") return { error: "Sem permissão." };
+  const tipo = tipoValido(tipoEvento);
+  if (!tipo) return { error: "Tipo de evento inválido." };
 
   // Autor e texto são o mínimo: depoimento sem um dos dois não diz nada.
   const validos = itens.filter((d) => d.texto.trim() && d.autor.trim());
@@ -141,13 +160,15 @@ export async function salvarDepoimentos(
   const { error: delErr } = await supabase
     .from("empresa_depoimentos")
     .delete()
-    .eq("empresa_id", empresaId);
+    .eq("empresa_id", empresaId)
+    .eq("tipo_evento", tipo);
   if (delErr) return { error: "Não foi possível salvar os depoimentos." };
 
   if (validos.length > 0) {
     const { error } = await supabase.from("empresa_depoimentos").insert(
       validos.map((d, i) => ({
         empresa_id: empresaId,
+        tipo_evento: tipo,
         ordem: i + 1,
         texto: d.texto.trim(),
         autor: d.autor.trim(),
@@ -158,7 +179,7 @@ export async function salvarDepoimentos(
     if (error) return { error: "Não foi possível salvar os depoimentos." };
   }
 
-  revalidatePath("/configuracoes");
+  revalidatePath(`/catalogo/${tipo}`);
   return { success: true };
 }
 
@@ -188,10 +209,13 @@ export async function salvarTemplateOrcamento(
 
 // ---------- Etapas do processo ----------
 export async function salvarEtapas(
+  tipoEvento: EventType,
   etapas: { id?: string; titulo: string; descricao: string }[]
 ): Promise<AcaoResult> {
   const { supabase, empresaId } = await contexto();
   if (!empresaId) return { error: "Empresa não encontrada." };
+  const tipo = tipoValido(tipoEvento);
+  if (!tipo) return { error: "Tipo de evento inválido." };
 
   const validas = etapas.filter((e) => e.titulo.trim());
   if (validas.length === 0) return { error: "Cadastre ao menos uma etapa." };
@@ -200,12 +224,14 @@ export async function salvarEtapas(
   const { error: delErr } = await supabase
     .from("empresa_processo_etapas")
     .delete()
-    .eq("empresa_id", empresaId);
+    .eq("empresa_id", empresaId)
+    .eq("tipo_evento", tipo);
   if (delErr) return { error: "Não foi possível salvar as etapas." };
 
   const { error } = await supabase.from("empresa_processo_etapas").insert(
     validas.map((e, i) => ({
       empresa_id: empresaId,
+      tipo_evento: tipo,
       ordem: i + 1,
       titulo: e.titulo.trim(),
       descricao: e.descricao.trim() || null,
@@ -213,29 +239,34 @@ export async function salvarEtapas(
   );
 
   if (error) return { error: "Não foi possível salvar as etapas." };
-  revalidatePath("/configuracoes");
+  revalidatePath(`/catalogo/${tipo}`);
   return { success: true };
 }
 
 // ---------- FAQ ----------
 export async function salvarFaq(
+  tipoEvento: EventType,
   itens: { id?: string; pergunta: string; resposta: string; ativo: boolean }[]
 ): Promise<AcaoResult> {
   const { supabase, empresaId } = await contexto();
   if (!empresaId) return { error: "Empresa não encontrada." };
+  const tipo = tipoValido(tipoEvento);
+  if (!tipo) return { error: "Tipo de evento inválido." };
 
   const validos = itens.filter((f) => f.pergunta.trim() && f.resposta.trim());
 
   const { error: delErr } = await supabase
     .from("empresa_faq")
     .delete()
-    .eq("empresa_id", empresaId);
+    .eq("empresa_id", empresaId)
+    .eq("tipo_evento", tipo);
   if (delErr) return { error: "Não foi possível salvar as perguntas." };
 
   if (validos.length > 0) {
     const { error } = await supabase.from("empresa_faq").insert(
       validos.map((f, i) => ({
         empresa_id: empresaId,
+        tipo_evento: tipo,
         ordem: i + 1,
         pergunta: f.pergunta.trim(),
         resposta: f.resposta.trim(),
@@ -245,6 +276,6 @@ export async function salvarFaq(
     if (error) return { error: "Não foi possível salvar as perguntas." };
   }
 
-  revalidatePath("/configuracoes");
+  revalidatePath(`/catalogo/${tipo}`);
   return { success: true };
 }

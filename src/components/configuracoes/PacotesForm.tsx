@@ -8,6 +8,7 @@
 import { useState, useTransition } from "react";
 import { ChevronDown, ChevronUp, Plus, Star, Trash2 } from "lucide-react";
 import { salvarPacotes, type PacoteEntrada } from "@/lib/proposta-config";
+import type { EventType } from "@/lib/types";
 
 const inputClass =
   "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-500 focus:outline-none";
@@ -18,8 +19,10 @@ let seq = 0;
 const novaKey = () => `pac-${++seq}-${Date.now()}`;
 
 export function PacotesForm({
+  tipoEvento,
   inicial,
 }: {
+  tipoEvento: EventType;
   inicial: {
     nome: string;
     subtitulo: string | null;
@@ -72,6 +75,7 @@ export function PacotesForm({
     setErro(null);
     startTransition(async () => {
       const res = await salvarPacotes(
+        tipoEvento,
         linhas.map(({ key, ...resto }) => resto)
       );
       if ("error" in res) return setErro(res.error);

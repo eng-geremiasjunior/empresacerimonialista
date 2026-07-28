@@ -7,6 +7,7 @@
 import { useState, useTransition } from "react";
 import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 import { salvarEtapas } from "@/lib/conteudo-institucional";
+import type { EventType } from "@/lib/types";
 
 const inputClass =
   "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-500 focus:outline-none";
@@ -17,8 +18,10 @@ let seq = 0;
 const novaKey = () => `etapa-${++seq}-${Date.now()}`;
 
 export function ProcessoEtapasForm({
+  tipoEvento,
   inicial,
 }: {
+  tipoEvento: EventType;
   inicial: { titulo: string; descricao: string | null }[];
 }) {
   const [linhas, setLinhas] = useState<Linha[]>(
@@ -44,6 +47,7 @@ export function ProcessoEtapasForm({
     setErro(null);
     startTransition(async () => {
       const res = await salvarEtapas(
+        tipoEvento,
         linhas.map((l) => ({ titulo: l.titulo, descricao: l.descricao }))
       );
       if ("error" in res) {

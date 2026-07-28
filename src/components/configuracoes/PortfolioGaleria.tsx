@@ -23,12 +23,15 @@ import {
   type PortfolioFoto,
 } from "@/lib/portfolio";
 import { UploadFotosPortfolio } from "./UploadFotosPortfolio";
+import type { EventType } from "@/lib/types";
 
 export function PortfolioGaleria({
   empresaId,
+  tipoEvento,
   inicial,
 }: {
   empresaId: string;
+  tipoEvento: EventType;
   inicial: PortfolioFoto[];
 }) {
   const [fotos, setFotos] = useState<PortfolioFoto[]>(inicial);
@@ -155,6 +158,7 @@ export function PortfolioGaleria({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <UploadFotosPortfolio
           empresaId={empresaId}
+          tipoEvento={tipoEvento}
           proximaOrdem={fotos.length}
           onEnviadas={(novas) => setFotos((prev) => [...prev, ...novas])}
         />
