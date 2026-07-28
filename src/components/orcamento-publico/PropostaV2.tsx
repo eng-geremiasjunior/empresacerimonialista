@@ -780,42 +780,64 @@ export function PropostaV2({
               id={idDe(NAV[6])}
               className="scroll-mt-20 mt-16 bg-[#3C2415] text-white rounded-[28px] p-6 sm:p-10"
             >
-              <p className="text-[11px] tracking-[0.2em] font-semibold text-[#B8935A]">EVENTOS REALIZADOS</p>
-              <h2 className="serif text-[30px] sm:text-[34px] leading-[1.15] font-medium mt-2">
-                Últimos casamentos assinados
-              </h2>
+              {/* Duas colunas 1.1fr/0.9fr como na arte: fotos em retrato à
+                  esquerda, depoimentos empilhados à direita. Em grid de 3
+                  colunas as fotos ficavam achatadas na horizontal. */}
+              <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-10">
+                <div>
+                  <p className="text-[11px] tracking-[0.22em] text-[#B8935A]">
+                    EVENTOS REALIZADOS
+                  </p>
+                  <h2 className="serif text-[30px] sm:text-[36px] leading-[0.95] font-medium mt-2">
+                    Últimos casamentos
+                    <br />
+                    assinados {iniciais}
+                  </h2>
 
-              <div className="grid grid-cols-3 gap-3 mt-6">
-                {[0, 1, 2].map((i) =>
-                  fotos[i] ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      key={i}
-                      src={fotos[i].url}
-                      alt={fotos[i].legenda ?? ""}
-                      loading="lazy"
-                      className="w-full h-[110px] sm:h-[150px] object-cover rounded-[16px]"
-                    />
-                  ) : (
-                    <div key={i} className="w-full h-[110px] sm:h-[150px] rounded-[16px] bg-white/10" />
-                  )
-                )}
-              </div>
+                  <div className="flex flex-wrap gap-3 mt-6">
+                    {[0, 1, 2].map((i) =>
+                      fotos[i] ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          key={i}
+                          src={fotos[i].url}
+                          alt={fotos[i].legenda ?? ""}
+                          loading="lazy"
+                          className="w-[120px] sm:w-[140px] aspect-[3/4] object-cover rounded-[16px] shrink-0"
+                          style={{ filter: "brightness(0.85)" }}
+                        />
+                      ) : (
+                        <div
+                          key={i}
+                          className="w-[120px] sm:w-[140px] aspect-[3/4] rounded-[16px] bg-white/10 shrink-0"
+                        />
+                      )
+                    )}
+                  </div>
+                </div>
 
-              <div id={idDe(NAV[7])} className="scroll-mt-20 mt-10">
-                <p className="text-[11px] tracking-[0.2em] font-semibold text-[#B8935A]">DEPOIMENTOS</p>
-                <div className="grid gap-4 sm:grid-cols-3 mt-4">
-                  {depoimentos.map((d, i) => (
-                    <div key={i} className="bg-white/[0.07] rounded-[18px] p-5">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-[#B8935A] flex items-center justify-center serif font-bold text-[13px]">
+                <div id={idDe(NAV[7])} className="scroll-mt-20">
+                  <p className="text-[11px] tracking-[0.22em] text-[#B8935A]">
+                    DEPOIMENTOS REAIS
+                  </p>
+                  <div className="flex flex-col gap-3 mt-4">
+                    {depoimentos.map((d, i) => (
+                      <div
+                        key={i}
+                        className="flex gap-3 rounded-[16px] border border-white/10 bg-white/[0.05] p-4"
+                      >
+                        <div className="w-8 h-8 shrink-0 rounded-full bg-[#B8935A] flex items-center justify-center serif font-bold text-[12px]">
                           {d.autor.slice(0, 1).toUpperCase()}
                         </div>
-                        <p className="text-[12px] font-semibold truncate">{d.autor}</p>
+                        <div className="min-w-0">
+                          <p className="text-[12px] font-semibold">{d.autor}</p>
+                          <p className="text-[13px] leading-[1.4] mt-1 text-[#F9F5F0]/85">
+                            {d.texto}
+                          </p>
+                        </div>
                       </div>
-                      <p className="serif italic text-[14px] leading-[1.55] text-white/80 mt-3">“{d.texto}”</p>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
             </section>
