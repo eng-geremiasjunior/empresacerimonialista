@@ -79,11 +79,40 @@ export const ETAPAS_PADRAO = [
   },
 ];
 
+// Os 6 cards da arte, na ordem dela. `icone` casa com o mapa de ícones do
+// PropostaV2 — cada card tem o seu, vazado em dourado, em vez do mesmo
+// check repetido seis vezes.
 export const NO_DIA_PADRAO = [
-  { titulo: "Kit emergência", descricao: "Costura, remédio, lencinho e super-bonder" },
-  { titulo: "Coordenação total", descricao: "18 fornecedores sincronizados via rádio" },
-  { titulo: "Recepção VIP", descricao: "Recebemos padrinhos e família" },
-  { titulo: "Kit noiva", descricao: "Tudo que ela precisa, o dia inteiro" },
+  {
+    icone: "camera",
+    titulo: "Coordenação total",
+    descricao: "18 fornecedores sincronizados via rádio",
+  },
+  {
+    icone: "flor",
+    titulo: "Buquê & lapela",
+    descricao: "Conservação e entrega pontual",
+  },
+  {
+    icone: "talheres",
+    titulo: "Degustação final",
+    descricao: "Check de buffet e bar 2h antes",
+  },
+  {
+    icone: "musica",
+    titulo: "Timeline musical",
+    descricao: "Entrada, votos e festa no tempo exato",
+  },
+  {
+    icone: "pessoas",
+    titulo: "Recepção VIP",
+    descricao: "Recebemos padrinhos e família",
+  },
+  {
+    icone: "presente",
+    titulo: "Kit noiva",
+    descricao: "Costura, remédio, lencinho e super-bonder",
+  },
 ];
 
 export const DEPOIMENTOS_PADRAO = [

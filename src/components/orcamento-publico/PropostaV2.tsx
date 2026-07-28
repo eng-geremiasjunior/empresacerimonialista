@@ -31,6 +31,11 @@ import {
   Menu,
   Sparkles,
   X,
+  Camera,
+  Flower2,
+  UtensilsCrossed,
+  Music,
+  Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { criarEventoAPartirDoOrcamento } from "@/lib/orcamento-para-evento";
@@ -60,6 +65,26 @@ const NAV = [
 ];
 const idDe = (label: string) =>
   label.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, "-");
+
+// Ícones dos cards de "No dia do casamento". Vazados (stroke 1.8, sem
+// preenchimento) e em dourado, como na arte — o mesmo check repetido seis
+// vezes não dizia nada sobre cada item.
+const ICONES_DIA: Record<string, typeof Check> = {
+  camera: Camera,
+  flor: Flower2,
+  talheres: UtensilsCrossed,
+  musica: Music,
+  pessoas: Users,
+  presente: Gift,
+};
+const ORDEM_ICONES_DIA = [
+  "camera",
+  "flor",
+  "talheres",
+  "musica",
+  "pessoas",
+  "presente",
+];
 
 const brl = (v: number) =>
   `R$ ${Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -221,6 +246,25 @@ export function PropostaV2({
     <div className="min-h-screen bg-[#F9F5F0] text-[#3C2415]">
       <style>{`
         .serif{font-family:var(--font-titulo),Georgia,serif}
+        /* Contorno dourado em degradê que só aparece no hover. Borda comum
+           não aceita gradiente, então é um overlay mascarado: o gradiente
+           preenche a moldura e a máscara vaza o miolo. */
+        .borda-degrade::after{
+          content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;
+          background:linear-gradient(135deg,#B8935A,#E8CFA0 45%,#B8935A);
+          -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+          -webkit-mask-composite:xor;mask-composite:exclude;
+          opacity:0;transition:opacity .2s ease;pointer-events:none;
+        }
+        .borda-degrade:hover::after{opacity:1}
+        /* 1.15 é o valor da arte; o Tailwind só tem 110 e 125 */
+        .icone-dia{transition:transform .2s ease}
+        .group:hover .icone-dia{transform:scale(1.15)}
+        @media (prefers-reduced-motion:reduce){
+          .borda-degrade::after{transition:none}
+          .icone-dia{transition:none}
+          .group:hover .icone-dia{transform:none}
+        }
         @keyframes pulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.75)}}
         .dot-pulse{animation:pulseDot 1.8s ease-in-out infinite}
         @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
@@ -746,15 +790,29 @@ export function PropostaV2({
               <div className="grid gap-4 lg:grid-cols-[1fr_0.8fr] mt-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {(inst?.responsabilidades_dia_evento?.length
-                    ? inst.responsabilidades_dia_evento.map((t) => ({ titulo: t, descricao: "" }))
+                    ? inst.responsabilidades_dia_evento.map((t, i) => ({
+                        // conteúdo da empresa é só texto: o ícone segue a
+                        // ordem, para os cards não ficarem todos iguais
+                        icone: ORDEM_ICONES_DIA[i % ORDEM_ICONES_DIA.length],
+                        titulo: t,
+                        descricao: "",
+                      }))
                     : NO_DIA_PADRAO
-                  ).map((c, i) => (
-                    <div key={i} className="bg-white border border-[#E8DDD2] rounded-[16px] p-4">
-                      <Check size={18} className="text-[#B8935A]" strokeWidth={2.4} />
-                      <p className="text-[13px] font-semibold mt-2">{c.titulo}</p>
-                      {c.descricao && <p className="text-[11px] text-[#6B5A4B] mt-0.5">{c.descricao}</p>}
-                    </div>
-                  ))}
+                  ).map((c, i) => {
+                    const Icone = ICONES_DIA[c.icone] ?? Check;
+                    return (
+                      <div
+                        key={i}
+                        className="group relative bg-white border border-[#E8DDD2] rounded-[20px] p-4 transition-shadow duration-200 hover:shadow-[0_10px_30px_-18px_rgba(60,36,21,0.35)] borda-degrade"
+                      >
+                        <Icone size={18} className="text-[#B8935A] icone-dia" strokeWidth={1.8} />
+                        <p className="text-[13px] font-semibold mt-2">{c.titulo}</p>
+                        {c.descricao && (
+                          <p className="text-[11px] text-[#6B5A4B] mt-0.5">{c.descricao}</p>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
                 <div className="grid grid-cols-2 lg:grid-cols-1 gap-3">
                   {[0, 1].map((i) =>
