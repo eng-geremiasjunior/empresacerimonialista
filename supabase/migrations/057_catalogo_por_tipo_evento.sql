@@ -451,3 +451,77 @@ revoke all on function public.registrar_aceite_proposta(
   text, uuid, int, uuid[], text, int, text, text, text, text, text) from public;
 grant execute on function public.registrar_aceite_proposta(
   text, uuid, int, uuid[], text, int, text, text, text, text, text) to anon, authenticated;
+
+-- ------------------------------------------------------------
+-- 7) Seed de empresa nova semeia o tipo casamento
+-- ------------------------------------------------------------
+-- semear_conteudo_institucional (047) fazia `on conflict (empresa_id)`, a
+-- constraint que o passo 2 desta migração trocou por (empresa_id,
+-- tipo_evento). Sem esta redefinição o cadastro de QUALQUER empresa nova
+-- passa a falhar com "no unique or exclusion constraint matching the ON
+-- CONFLICT specification" — o seed roda no cadastro.
+--
+-- Semeia casamento: é o tipo que o produto assume por padrão, e os demais
+-- nascem vazios quando ela abrir cada um no Catálogo.
+create or replace function public.semear_conteudo_institucional(p_empresa_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.empresa_conteudo_institucional
+    (empresa_id, tipo_evento, stat_anos_experiencia, stat_eventos_realizados,
+     responsabilidades_dia_evento, pos_evento_cards)
+  values (
+    p_empresa_id, 'casamento', 1, 0,
+    array[
+      'Coordenação da cerimônia e recepção',
+      'Recepção e acomodação dos convidados',
+      'Cronograma e tempo de cada etapa',
+      'Acompanhamento de fornecedores',
+      'Supervisão de montagem e decoração',
+      'Gestão de imprevistos com tranquilidade'
+    ],
+    '[
+      {"titulo":"Relatório completo","descricao":"Registro de tudo o que foi entregue e alinhado."},
+      {"titulo":"Fechamento financeiro","descricao":"Prestação de contas dos fornecedores contratados."},
+      {"titulo":"Suporte contínuo","descricao":"Canal aberto para dúvidas após o grande dia."}
+    ]'::jsonb
+  )
+  on conflict (empresa_id, tipo_evento) do nothing;
+
+  if not exists (
+    select 1 from public.empresa_processo_etapas
+    where empresa_id = p_empresa_id and tipo_evento = 'casamento'
+  ) then
+    insert into public.empresa_processo_etapas
+      (empresa_id, tipo_evento, ordem, titulo, descricao)
+    select p_empresa_id, 'casamento', v.ordem, v.titulo, v.descricao
+    from (values
+      (1, 'Briefing',      'Reunião inicial para entendermos seus sonhos e expectativas.'),
+      (2, 'Planejamento',  'Criamos o budget, cronograma e checklist personalizado.'),
+      (3, 'Contratações',  'Indicação, negociação e acompanhamento dos fornecedores.'),
+      (4, 'Organização',   'Visitas técnicas, degustações, contratos e alinhamentos.'),
+      (5, 'Evento',        'Coordenação completa do dia para vocês só aproveitarem.'),
+      (6, 'Pós-evento',    'Relatório final com detalhes e informações importantes.')
+    ) as v(ordem, titulo, descricao);
+  end if;
+
+  if not exists (
+    select 1 from public.empresa_faq
+    where empresa_id = p_empresa_id and tipo_evento = 'casamento'
+  ) then
+    insert into public.empresa_faq (empresa_id, tipo_evento, ordem, pergunta, resposta)
+    select p_empresa_id, 'casamento', v.ordem, v.pergunta, v.resposta
+    from (values
+      (1, 'Como funciona o pagamento?',
+          'A entrada garante a reserva da data; o restante pode ser parcelado sem juros até 5 dias antes do evento.'),
+      (2, 'Vocês acompanham reuniões com fornecedores?',
+          'Sim, acompanhamos negociações, visitas técnicas e degustações junto com vocês.'),
+      (3, 'Quantas pessoas da equipe ficam no dia do evento?',
+          'A equipe é dimensionada conforme o porte do evento e definida no fechamento do contrato.')
+    ) as v(ordem, pergunta, resposta);
+  end if;
+end;
+$$;
