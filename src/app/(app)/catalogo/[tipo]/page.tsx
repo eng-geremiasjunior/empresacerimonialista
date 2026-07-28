@@ -8,6 +8,7 @@ import { DepoimentosForm } from "@/components/configuracoes/DepoimentosForm";
 import { CondicoesPagamentoForm } from "@/components/configuracoes/CondicoesPagamentoForm";
 import { PortfolioGaleria } from "@/components/configuracoes/PortfolioGaleria";
 import { LandingImagemForm } from "@/components/configuracoes/LandingImagemForm";
+import { VideoTeaserForm } from "@/components/configuracoes/VideoTeaserForm";
 import { PacotesForm } from "@/components/configuracoes/PacotesForm";
 import { ExtrasForm } from "@/components/configuracoes/ExtrasForm";
 import { RegraConvidadosForm } from "@/components/configuracoes/RegraConvidadosForm";
@@ -267,6 +268,16 @@ export default async function CatalogoTipoPage({
                     slot="hero"
                     urlInicial={conteudo.hero_imagem_url}
                     dica="JPG ou PNG · máx. 20 MB (comprimimos antes de enviar)"
+                  />
+                </SubSecao>
+
+                <SubSecao
+                  titulo="Vídeo teaser (opcional)"
+                  descricao="Se preenchido, a capa ganha um botão de play que abre o vídeo."
+                >
+                  <VideoTeaserForm
+                    tipoEvento={tipo}
+                    urlInicial={conteudo.video_url}
                   />
                 </SubSecao>
 

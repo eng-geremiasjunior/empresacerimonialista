@@ -1,0 +1,106 @@
+// Copy autoral do template de debutante, transcrita do handoff em
+// design/template-2 debbut/design_handoff_proposta_karina_dries.
+//
+// Fica fixa pelo mesmo motivo do template de casamento: é o texto do
+// template, não dado da empresa. O que a cerimonialista edita (pacotes,
+// extras, processo, fotos, depoimentos, regra de convidados) vem do banco
+// por tipo de evento e tem prioridade — ver [[proposta-conteudo]].
+
+export const NAV_DEBUTANTE = [
+  { id: "hero", num: "01", label: "APRESENTAÇÃO" },
+  { id: "cuidados", num: "02", label: "COMO CUIDAMOS" },
+  { id: "processo", num: "03", label: "PROCESSO" },
+  { id: "galeria", num: "04", label: "EXCELÊNCIA" },
+  { id: "investimento", num: "05", label: "INVESTIMENTO" },
+  { id: "depoimentos", num: "06", label: "DEPOIMENTOS" },
+];
+
+export const CUIDADOS_PADRAO = [
+  {
+    icone: "📅",
+    titulo: "PLANEJAMENTO",
+    descricao: "Cronograma reverso e controle financeiro milimétrico.",
+  },
+  {
+    icone: "💎",
+    titulo: "FORNECEDORES",
+    descricao: "Só top 5% de GV + contratos blindados.",
+  },
+  {
+    icone: "📋",
+    titulo: "COORDENAÇÃO",
+    descricao: "Roteiro de 8 páginas para que nada falhe.",
+  },
+  {
+    icone: "♡",
+    titulo: "ACOMPANHAMENTO",
+    descricao: "Grupo VIP com resposta em até 2h.",
+  },
+  {
+    icone: "★",
+    titulo: "TRANQUILIDADE",
+    descricao: "Sua única tarefa é brilhar.",
+  },
+];
+
+// Mesmo shape de EtapaPublica: o componente escolhe entre o que veio do
+// banco e este fallback, e os dois precisam ter as mesmas chaves.
+export const PROCESSO_DEBUTANTE_PADRAO: {
+  titulo: string;
+  descricao: string | null;
+  texto_longo?: string | null;
+}[] = [
+  {
+    titulo: "CONEXÃO",
+    descricao:
+      "Primeiro encontro para entender o sonho da debutante e da família.",
+  },
+  {
+    titulo: "PLANEJAMENTO",
+    descricao: "Criamos conceito, orçamento mestre e cronograma reverso.",
+  },
+  {
+    titulo: "PREPARATIVOS",
+    descricao: "Fornecedores, provas de vestido, convites e detalhes.",
+  },
+  { titulo: "ALINHAMENTOS", descricao: "Reuniões finais e ensaio técnico." },
+  { titulo: "O GRANDE DIA", descricao: "Você vive. Nós garantimos a magia." },
+];
+
+export const DEPOIMENTOS_DEBUTANTE_PADRAO = [
+  {
+    texto:
+      "Fornecedores incríveis, decoração de revista. Todo mundo ainda comenta. Valeu cada centavo do Premium.",
+    autor: "Família Andrade",
+    contexto: "Debutante 2023 • 250 convidados",
+  },
+  {
+    texto:
+      "Tranquilidade do início ao fim. A equipe cuidou de tudo e nós só aproveitamos o dia.",
+    autor: "Família Lopes",
+    contexto: "Debutante 2024 • 150 convidados",
+  },
+  {
+    texto:
+      "Organização impecável, cronograma seguido à risca. Recomendo de olhos fechados.",
+    autor: "Família Ferreira",
+    contexto: "Debutante 2022 • 180 convidados",
+  },
+];
+
+export const GARANTIA_DEBUTANTE = {
+  titulo: "SATISFAÇÃO GARANTIDA",
+  texto:
+    "Se não se apaixonar pelo planejamento nos primeiros 15 dias, devolvemos 100% do valor. Sem perguntas.",
+};
+
+export const SELOS_CONFIANCA = [
+  { icone: "🛡️", texto: "Garantia total" },
+  { icone: "🕐", texto: "Suporte 2h" },
+  { icone: "👑", texto: "Top 1% GV" },
+];
+
+export const FECHAMENTO_DEBUTANTE = {
+  linha1: "Os 15 anos acontecem uma vez.",
+  linha2: "Nossa missão é eternizá-los.",
+};

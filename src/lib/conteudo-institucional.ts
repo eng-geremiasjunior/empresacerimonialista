@@ -143,6 +143,43 @@ export async function salvarCondicoes(
   return { success: true };
 }
 
+// ---------- Vídeo teaser do hero ----------
+// Usado hoje pelo template de debutante: com URL preenchida o hero ganha
+// o botão de play; vazio, mostra só a imagem de capa.
+export async function salvarVideoTeaser(
+  _prev: AcaoResult | null,
+  formData: FormData
+): Promise<AcaoResult> {
+  const { supabase, empresaId, cargo } = await contexto();
+  if (!empresaId) return { error: "Empresa não encontrada." };
+  if (cargo !== "proprietaria") return { error: "Sem permissão." };
+  const tipo = tipoValido(String(formData.get("tipo_evento") ?? ""));
+  if (!tipo) return { error: "Tipo de evento inválido." };
+
+  const bruto = String(formData.get("video_url") ?? "").trim();
+  // Só http(s): um javascript: aqui viraria link clicável na página
+  // pública, que é aberta por quem não tem login nenhum.
+  if (bruto !== "" && !/^https?:\/\//i.test(bruto)) {
+    return { error: "Informe um endereço começando com http:// ou https://" };
+  }
+
+  const { error } = await supabase
+    .from("empresa_conteudo_institucional")
+    .upsert(
+      {
+        empresa_id: empresaId,
+        tipo_evento: tipo,
+        video_url: bruto || null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "empresa_id,tipo_evento" }
+    );
+
+  if (error) return { error: "Não foi possível salvar o vídeo." };
+  revalidatePath(`/catalogo/${tipo}`);
+  return { success: true };
+}
+
 // ---------- Depoimentos ----------
 export async function salvarDepoimentos(
   tipoEvento: EventType,

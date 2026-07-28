@@ -71,6 +71,7 @@ export const CONTEUDO_PADRAO = {
   convidados_max: 300,
   hero_imagem_url: null,
   no_dia_evento_imagem_url: null,
+  video_url: null as string | null,
 };
 
 // A rota é /catalogo/[tipo]; qualquer coisa fora da lista vira 404 em vez

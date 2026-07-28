@@ -34,6 +34,8 @@ export type InstitucionalPublico = {
   valor_por_convidado_extra: number;
   convidados_min: number;
   convidados_max: number;
+  // Teaser do hero (template de debutante). null = mostra só a capa.
+  video_url?: string | null;
 };
 
 export type EtapaPublica = {
