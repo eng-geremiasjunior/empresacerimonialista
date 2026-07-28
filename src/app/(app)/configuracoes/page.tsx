@@ -303,7 +303,7 @@ export default async function ConfiguracoesPage() {
                 <>
                   <SubSecao
                     titulo="Imagem de capa (Apresentação)"
-                    descricao="Fundo do topo da proposta. Fotos horizontais e claras funcionam melhor."
+                    descricao="Aparece ao lado do título, no topo da proposta. Fotos horizontais funcionam melhor — o nome do casal entra sobre a parte de baixo."
                   >
                     <LandingImagemForm
                       empresaId={empresa.id}

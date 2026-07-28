@@ -38,6 +38,7 @@ import { FichaCadastroAprovacao } from "@/components/orcamento-publico/FichaCada
 import { AssinaturaCanvas } from "@/components/orcamento-publico/AssinaturaCanvas";
 import { formatDateBR } from "@/lib/orcamentos";
 import { expirado, type OrcamentoPublicoData } from "@/lib/orcamento-publico";
+import { IMAGEM_PADRAO } from "@/lib/landing-imagens";
 import {
   DEPOIMENTOS_PADRAO,
   ETAPAS_PADRAO,
@@ -88,8 +89,8 @@ export function PropostaV2({
   const podeResponder = dados.status === "enviado" && !venceu;
 
   const inst = dados.institucional;
-  const pacotes = dados.pacotes ?? [];
   // useMemo: sem isso o array novo a cada render anula o memo do cálculo.
+  const pacotes = useMemo(() => dados.pacotes ?? [], [dados.pacotes]);
   const extras = useMemo(() => dados.extras ?? [], [dados.extras]);
   const fotos = dados.fotos ?? [];
 
@@ -118,6 +119,9 @@ export function PropostaV2({
   const [parcelas, setParcelas] = useState(Math.min(7, cond.maxParcelas || 7));
 
   const pacote = pacotes.find((p) => p.id === pacoteId) ?? null;
+
+  // Selo da capa: o pacote marcado como recomendado no painel.
+  const pacoteRecomendado = pacotes.find((p) => p.recomendado) ?? null;
 
   // Pacote topo de linha (maior preço entre os não recomendados): recebe o
   // fundo creme/dourado do handoff.
@@ -335,41 +339,87 @@ export function PropostaV2({
           )}
 
           <div className="px-5 sm:px-6 py-10">
-            {/* 4 — HERO */}
-            <section id={idDe(NAV[0])} className="scroll-mt-20">
-              <span className="inline-flex items-center gap-2 bg-white border border-[#E8DDD2] rounded-full px-3.5 py-1.5 text-[10px] tracking-[0.18em] text-[#6B5A4B]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#3CA37A]" />
-                PROPOSTA DE ASSESSORIA COMPLETA • V2.0 INTERATIVA
-              </span>
+            {/* 4 — HERO: texto à esquerda, capa à direita. As proporções são
+                as medidas na referência a 1440px (603/494 + 40 de gap). No
+                mobile vira coluna única com a capa no topo, como o header. */}
+            <section
+              id={idDe(NAV[0])}
+              className="scroll-mt-20 grid gap-8 lg:gap-10 lg:grid-cols-[1.22fr_1fr] lg:items-start"
+            >
+              <div className="order-2 lg:order-1">
+                <span className="inline-flex items-center gap-2 bg-white border border-[#E8DDD2] rounded-full px-3.5 py-1.5 text-[10px] tracking-[0.18em] text-[#6B5A4B]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#3CA37A]" />
+                  PROPOSTA DE ASSESSORIA COMPLETA • V2.0 INTERATIVA
+                </span>
 
-              <h1 className="serif text-[38px] sm:text-[56px] leading-[1.05] font-medium mt-5">
-                Proposta de<br />
-                {dados.nome_contato} <span className="text-[#B8935A]">♥</span><br />
-                <span className="italic text-[#6B5A4B]">assessoria</span>
-              </h1>
+                <h1 className="serif text-[38px] sm:text-[56px] leading-[1.05] font-medium mt-5">
+                  Proposta de<br />
+                  {dados.nome_contato} <span className="text-[#B8935A]">♥</span><br />
+                  <span className="italic text-[#6B5A4B]">assessoria</span>
+                </h1>
 
-              <p className="serif italic text-[19px] leading-[1.5] text-[#6B5A4B] max-w-[520px] mt-5">
-                “Transformamos sonhos em experiências inesquecíveis — com tecnologia, afeto e método.”
-              </p>
+                <p className="serif italic text-[19px] leading-[1.5] text-[#6B5A4B] max-w-[520px] mt-5">
+                  “Transformamos sonhos em experiências inesquecíveis — com tecnologia, afeto e método.”
+                </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-8">
-                <InfoCard rotulo="DATA" valor={dados.data_evento ? formatDateBR(dados.data_evento) : "A definir"} sub="Data do evento" />
-                <InfoCard rotulo="CONVIDADOS" valor={`${convidados} pessoas`} sub="Estimativa" />
-                <InfoCard
-                  rotulo="LOCAL"
-                  valor={dados.local_evento || dados.cidade_evento || "A definir"}
-                  sub={dados.local_evento ? dados.cidade_evento ?? "" : ""}
-                />
+                {/* 3 × 152px na referência: os cards não esticam junto com a coluna. */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-8 max-w-[480px]">
+                  <InfoCard icone="📅" rotulo="DATA" valor={dados.data_evento ? formatDateBR(dados.data_evento) : "A definir"} sub="Data do evento" />
+                  <InfoCard icone="👥" rotulo="CONVIDADOS" valor={`${convidados} pessoas`} sub="Estimativa" />
+                  <InfoCard
+                    icone="📍"
+                    rotulo="LOCAL"
+                    valor={dados.local_evento || dados.cidade_evento || "A definir"}
+                    sub={dados.local_evento ? dados.cidade_evento ?? "" : ""}
+                  />
+                </div>
+
+                <div className="mt-6 bg-white border border-[#E8DDD2] rounded-[20px] p-5 flex flex-wrap items-center gap-4 shadow-[0_10px_40px_-15px_rgba(60,36,21,0.15)]">
+                  <div className="w-11 h-11 rounded-full bg-[#3C2415] text-white flex items-center justify-center serif font-bold shrink-0">
+                    {iniciais}
+                  </div>
+                  <p className="flex-1 min-w-[220px] text-[13px] leading-[1.55] text-[#6B5A4B]">
+                    <strong className="text-[#3C2415]">Olá, {dados.nome_contato}!</strong> Preparamos
+                    esta experiência interativa para vocês montarem a assessoria do jeito que sonharam.
+                  </p>
+                </div>
               </div>
 
-              <div className="mt-6 bg-white border border-[#E8DDD2] rounded-[20px] p-5 flex flex-wrap items-center gap-4 shadow-[0_10px_40px_-15px_rgba(60,36,21,0.15)]">
-                <div className="w-11 h-11 rounded-full bg-[#3C2415] text-white flex items-center justify-center serif font-bold shrink-0">
-                  {iniciais}
+              {/* Capa: a que a cerimonialista subiu em Configurações › Imagens
+                  da proposta, ou o asset de fábrica quando a coluna é null. */}
+              <div className="order-1 lg:order-2 relative rounded-[28px] overflow-hidden h-[260px] sm:h-[340px] lg:h-[420px] bg-[#E8DDD2] shadow-[0_20px_60px_-20px_rgba(60,36,21,0.3)]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={dados.hero_imagem_url || IMAGEM_PADRAO.hero}
+                  alt={`Foto de capa de ${dados.nome_contato}`}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(0,0,0,0.55),rgba(0,0,0,0)_45%)]" />
+
+                <div className="absolute top-4 left-4 right-4 flex flex-wrap items-start justify-between gap-2">
+                  <span className="bg-white/90 text-[#3C2415] rounded-full px-3 py-[5px] text-[10px] tracking-[0.1em]">
+                    ● AO VIVO • V2.0 INTERATIVA
+                  </span>
+                  {pacoteRecomendado && (
+                    <span className="bg-[#B8935A] text-white rounded-full px-3 py-[5px] text-[10px] tracking-[0.1em]">
+                      {pacoteRecomendado.nome.toUpperCase()} • MAIS ESCOLHIDO
+                    </span>
+                  )}
                 </div>
-                <p className="flex-1 min-w-[220px] text-[13px] leading-[1.55] text-[#6B5A4B]">
-                  <strong className="text-[#3C2415]">Olá, {dados.nome_contato}!</strong> Preparamos
-                  esta experiência interativa para vocês montarem a assessoria do jeito que sonharam.
-                </p>
+
+                <div className="absolute bottom-5 left-5 right-5 text-white">
+                  <p className="serif text-[22px] leading-tight font-medium drop-shadow">
+                    {dados.nome_contato}
+                  </p>
+                  <p className="text-[10px] tracking-[0.16em] text-white/80 mt-1 uppercase">
+                    {[
+                      dados.data_evento ? formatDateBR(dados.data_evento) : null,
+                      dados.local_evento || dados.cidade_evento,
+                    ]
+                      .filter(Boolean)
+                      .join(" • ")}
+                  </p>
+                </div>
               </div>
             </section>
 
@@ -900,10 +950,23 @@ export function PropostaV2({
 }
 
 // ---------- peças ----------
-function InfoCard({ rotulo, valor, sub }: { rotulo: string; valor: string; sub: string }) {
+function InfoCard({
+  icone,
+  rotulo,
+  valor,
+  sub,
+}: {
+  icone?: string;
+  rotulo: string;
+  valor: string;
+  sub: string;
+}) {
   return (
     <div className="bg-white border border-[#E8DDD2] rounded-[16px] p-4">
-      <p className="text-[10px] tracking-[0.18em] text-[#8B7355]">{rotulo}</p>
+      <p className="flex items-center gap-1.5 text-[10px] tracking-[0.18em] text-[#8B7355]">
+        {icone && <span aria-hidden>{icone}</span>}
+        {rotulo}
+      </p>
       <p className="serif text-[17px] font-semibold mt-1">{valor}</p>
       {sub && <p className="text-[11px] text-[#8B7355]">{sub}</p>}
     </div>
