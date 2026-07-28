@@ -334,7 +334,7 @@ export function PropostaV2({
             </div>
           )}
 
-          <div className="px-5 sm:px-10 py-10 max-w-[1100px]">
+          <div className="px-5 sm:px-6 py-10">
             {/* 4 — HERO */}
             <section id={idDe(NAV[0])} className="scroll-mt-20">
               <span className="inline-flex items-center gap-2 bg-white border border-[#E8DDD2] rounded-full px-3.5 py-1.5 text-[10px] tracking-[0.18em] text-[#6B5A4B]">
