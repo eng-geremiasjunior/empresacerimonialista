@@ -1,9 +1,12 @@
 import { notFound } from "next/navigation";
-import { Cormorant_Garamond, Playfair_Display, Syne, Inter } from "next/font/google";
+import {
+  Cormorant_Garamond, Playfair_Display, Syne, Great_Vibes, Inter,
+} from "next/font/google";
 import { createClient } from "@/lib/supabase/server";
 import { PropostaV2 } from "@/components/orcamento-publico/PropostaV2";
 import { PropostaDebutante } from "@/components/orcamento-publico/PropostaDebutante";
 import { PropostaDebutanteGlam } from "@/components/orcamento-publico/PropostaDebutanteGlam";
+import { PropostaCasamentoMaison } from "@/components/orcamento-publico/PropostaCasamentoMaison";
 import type { OrcamentoPublicoData } from "@/lib/orcamento-publico";
 import { variaveisDoTema } from "@/lib/orcamento-temas";
 import { TEMPLATE_PADRAO_POR_TIPO } from "@/lib/proposta-templates";
@@ -31,6 +34,13 @@ const syne = Syne({
   subsets: ["latin"],
   weight: ["700", "800"],
   variable: "--font-syne",
+  display: "swap",
+});
+// Cursiva do nome do casal no template Maison.
+const greatVibes = Great_Vibes({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-cursiva",
   display: "swap",
 });
 const inter = Inter({
@@ -78,6 +88,22 @@ export default async function OrcamentoPublicoPage({
         className={`${playfair.variable} ${inter.variable} min-h-screen font-[var(--font-inter)]`}
       >
         <PropostaDebutante hash={params.hash} inicial={proposta} />
+      </div>
+    );
+  }
+
+  // Casamento também tem dois templates desde a 060.
+  const templateCasamento =
+    proposta.template_proposta ??
+    TEMPLATE_PADRAO_POR_TIPO[proposta.tipo_evento as EventType] ??
+    "casamento_v2";
+
+  if (templateCasamento === "casamento_maison") {
+    return (
+      <div
+        className={`${titulo.variable} ${greatVibes.variable} ${inter.variable} min-h-screen`}
+      >
+        <PropostaCasamentoMaison hash={params.hash} inicial={proposta} />
       </div>
     );
   }

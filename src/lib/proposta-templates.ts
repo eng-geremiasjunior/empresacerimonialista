@@ -6,13 +6,29 @@
 
 import type { EventType } from "@/lib/types";
 
-export type TemplateProposta = "debutante_classico" | "debutante_glam";
+export type TemplateProposta =
+  | "debutante_classico"
+  | "debutante_glam"
+  | "casamento_v2"
+  | "casamento_maison";
 
 // Opções mostradas no form de orçamento, por tipo de evento. Um tipo fora
 // deste mapa não mostra seletor — usa o template único do seu tipo.
 export const TEMPLATES_POR_TIPO: Partial<
   Record<EventType, { valor: TemplateProposta; nome: string; descricao: string }[]>
 > = {
+  casamento: [
+    {
+      valor: "casamento_v2",
+      nome: "Clássico",
+      descricao: "Creme e dourado, com calculadora de pacotes",
+    },
+    {
+      valor: "casamento_maison",
+      nome: "Maison Lumière",
+      descricao: "Alta-costura, sóbrio, valor único sem pacotes",
+    },
+  ],
   debutante: [
     {
       valor: "debutante_classico",
@@ -28,9 +44,11 @@ export const TEMPLATES_POR_TIPO: Partial<
 };
 
 // O que a página pública usa quando template_proposta vem null. Mantém o
-// comportamento anterior à 059: debutante caía no clássico.
+// comportamento anterior: casamento caía no V2, debutante no clássico —
+// então nenhuma proposta já enviada muda de aparência.
 export const TEMPLATE_PADRAO_POR_TIPO: Partial<
   Record<EventType, TemplateProposta>
 > = {
+  casamento: "casamento_v2",
   debutante: "debutante_classico",
 };

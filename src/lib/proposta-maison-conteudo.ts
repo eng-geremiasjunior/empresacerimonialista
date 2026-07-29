@@ -1,0 +1,209 @@
+// Copy autoral do template "Maison Lumière" (design/template-5 Casamento),
+// transcrita do handoff. Igual aos outros templates, é o texto do template
+// — o que a empresa edita (pacotes, extras, fotos, depoimentos) vem do
+// Catálogo de casamento e é compartilhado com o template V2.
+// Ver [[proposta-templates]] e [[proposta-conteudo]].
+
+export const NAV_MAISON = [
+  { id: "apresentacao", label: "APRESENTAÇÃO" },
+  { id: "quem-somos", label: "QUEM SOMOS" },
+  { id: "incluso", label: "O QUE ESTÁ INCLUSO" },
+  { id: "como-funciona", label: "COMO FUNCIONA" },
+  { id: "no-dia", label: "NO DIA DO CASAMENTO" },
+  { id: "investimento", label: "INVESTIMENTO" },
+  { id: "eventos", label: "EVENTOS REALIZADOS" },
+  { id: "depoimentos", label: "DEPOIMENTOS" },
+  { id: "proximos", label: "PRÓXIMOS PASSOS" },
+];
+
+export const HERO_MAISON = {
+  badge: "VAGAS LIMITADAS",
+  paragrafo:
+    "Uma celebração pensada como alta-costura: cada detalhe sob medida, equipe exclusiva e curadoria de fornecedores nível maison. Orçamento único, sem pacotes genéricos.",
+  ctaRodape: "Entrada de 30% • 7x sem juros • Contrato em 2h",
+  cardReferencia: {
+    rotulo: "REFERÊNCIA",
+    titulo: "Seu casamento\nnesse padrão",
+    descricao: "Villa, paisagismo suspenso e mesa orgânica curada.",
+  },
+};
+
+export const QUEM_SOMOS_MAISON = {
+  eyebrow: "QUEM SOMOS",
+  titulo: "Ateliê de casamentos\nnível maison",
+  paragrafo:
+    "Não fazemos festas. Desenhamos memórias com obsessão por acabamento. Cada casamento é tratado como desfile: prova, ajuste, luz, tecido e cronometragem cirúrgica.",
+  citacao: "“Detalhe é\nnão negociável.”",
+  citacaoAutor: "DIRETORA CRIATIVA",
+};
+
+export const INCLUSO_MAISON = [
+  {
+    n: "01",
+    titulo: "Direção criativa & projeto",
+    descricao:
+      "Moodboard, paleta, plantas, luz e curadoria de tecidos. 3 apresentações presenciais.",
+  },
+  {
+    n: "02",
+    titulo: "Equipe exclusiva no dia",
+    descricao:
+      "12 profissionais fixos, rádio, cronograma de 15min, kit emergência completo.",
+  },
+  {
+    n: "03",
+    titulo: "Fornecedores curados",
+    descricao:
+      "Lista fechada de 18 parceiros auditados. Sem comissão oculta. Você aprova cada um.",
+  },
+  {
+    n: "04",
+    titulo: "Cerimonial e recepção",
+    descricao:
+      "2 cerimonialistas + 1 hostess bilíngue, controle de convidados e presentes.",
+  },
+  {
+    n: "05",
+    titulo: "Pós-produção",
+    descricao:
+      "Edição de fotos em 20 dias, teaser filme 72h, álbum fine art 60 páginas.",
+  },
+];
+
+export const COMO_FUNCIONA_MAISON = {
+  eyebrow: "COMO FUNCIONA",
+  titulo: "Leveza para vocês,\nrigor para nós",
+  passos: [
+    {
+      quando: "Semana 1",
+      titulo: "Assinatura + imersão",
+      descricao:
+        "Contrato digital, entrada 30%, visita técnica e briefing de 3h no local.",
+    },
+    {
+      quando: "Semana 2-6",
+      titulo: "Projeto & compras",
+      descricao:
+        "Apresentações semanais, provas de mesa, vestido e luz. Tudo aprovado com vocês.",
+    },
+    {
+      quando: "Semana 8",
+      titulo: "Ensaio & checklist",
+      descricao:
+        "Ensaio de luz e som, cronograma final 15/15min, confirmação de convidados.",
+    },
+  ],
+};
+
+export const NO_DIA_MAISON = [
+  {
+    hora: "07:00",
+    titulo: "Montagem cega",
+    descricao:
+      "Equipe entra sem contato com noivos. Checagem de luz, som, climatização e flores.",
+  },
+  {
+    hora: "12:00",
+    titulo: "Prévia fotográfica",
+    descricao:
+      "Making of com luz natural, vestido suspenso, buquê na água e flatlay joias.",
+  },
+  {
+    hora: "16:30",
+    titulo: "Cerimônia",
+    descricao:
+      "Entrada cronometrada, áudio lapela, controle de tempo e emoção com 2 cerimonialistas.",
+  },
+  {
+    hora: "18:00",
+    titulo: "Recepção",
+    descricao:
+      "Mesa posta impecável, serviço 1 garçom/12 convidados, troca de luz para jantar.",
+  },
+  {
+    hora: "22:00",
+    titulo: "Festa",
+    descricao: "Pista com luz cênica, 2 DJs, coordenação de atrações e surpresas.",
+  },
+  {
+    hora: "02:00",
+    titulo: "Encerramento",
+    descricao: "Desmontagem silenciosa, guarda de presentes e entrega de kit no hotel.",
+  },
+];
+
+export const INVESTIMENTO_MAISON = {
+  eyebrow: "INVESTIMENTO ÚNICO • PADRÃO MAISON",
+  titulo: "Um orçamento.\nSem surpresas.",
+  paragrafo:
+    "Valor fechado, sem taxas de fornecedor e sem upsell no dia.",
+  selo: "MAIS ESCOLHIDO",
+  rodape:
+    "Entrada de 30% garante equipe exclusiva • Restante parcelado sem juros",
+  selos: ["✓ Contrato digital", "✓ Cronograma em 2h", "✓ Lista curada"],
+};
+
+export const DEPOIMENTOS_MAISON = [
+  {
+    texto:
+      "Parecia desfile de alta-costura. Cada minuto cronometrado, zero estresse. Nunca vimos tanto cuidado.",
+    autor: "Ana & Rafael",
+    contexto: null,
+  },
+  {
+    texto:
+      "Lista curada salvou nosso casamento. Fornecedores impecáveis, sem pegadinhas. Equipe invisível.",
+    autor: "Juliana & Marcos",
+    contexto: null,
+  },
+  {
+    texto:
+      "Bem investido. Voltaríamos a pagar. Fotos entregues em 18 dias, álbum de museu.",
+    autor: "Camila & Eduardo",
+    contexto: null,
+  },
+];
+
+export const PROXIMOS_MAISON = {
+  eyebrow: "PRÓXIMOS PASSOS",
+  titulo: "Vamos travar\nsua data?",
+  paragrafo:
+    "Assine digitalmente e receba em 2h o contrato + cronograma + lista curada de fornecedores. Entrada de 30% para garantir equipe exclusiva.",
+  cta: "ACEITAR PROPOSTA AGORA",
+  stats: [
+    { valor: "2h", rotulo: "contrato +\ncronograma" },
+    { valor: "18", rotulo: "fornecedores\ncurados" },
+    { valor: "30%", rotulo: "entrada\ntrava equipe" },
+  ],
+  depoisTitulo: "O QUE ACONTECE DEPOIS",
+  depois: [
+    {
+      titulo: "Assinatura digital",
+      descricao: "Nome, CPF, e-mail + assinatura na tela. 2 minutos.",
+    },
+    {
+      titulo: "Recebimento em 2h",
+      descricao:
+        "Contrato, cronograma detalhado e lista curada de fornecedores.",
+    },
+    {
+      titulo: "Entrada 30%",
+      descricao: "PIX ou parcelado sem juros. Trava equipe exclusiva e data.",
+    },
+    {
+      titulo: "Grupo VIP",
+      descricao: "WhatsApp direto com a cerimonialista + cronograma ao vivo.",
+    },
+  ],
+  garantiaTitulo: "GARANTIA MAISON",
+  garantia:
+    "Se não receber em 2h, devolvemos 100% da entrada. Sem perguntas.",
+};
+
+export const MODAL_MAISON = {
+  titulo: "ASSINATURA DIGITAL",
+  subtitulo: "Confirme seus dados para travar a data",
+  dicaAssinatura: "Desenhe acima com o dedo ou mouse",
+  cta: "ASSINAR E TRAVAR DATA →",
+  rodape: "Contrato em 2h • Entrada 30% • parcelado sem juros",
+};
