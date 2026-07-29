@@ -27,6 +27,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { formatDateBR } from "@/lib/orcamentos";
 import { expirado, type OrcamentoPublicoData } from "@/lib/orcamento-publico";
+import { ModalAceiteProposta } from "@/components/orcamento-publico/ModalAceiteProposta";
 import {
   NAV_MAISON, HERO_MAISON, QUEM_SOMOS_MAISON, INCLUSO_MAISON,
   COMO_FUNCIONA_MAISON, NO_DIA_MAISON, INVESTIMENTO_MAISON,
@@ -327,13 +328,21 @@ export function PropostaCasamentoMaison({
       </div>
 
       {modal && (
-        <ModalAssinatura
+        <ModalAceiteProposta
           hash={hash}
-          dados={dados}
-          valor={valor}
-          entradaPct={entradaPct}
+          tema={TEMA_MODAL_MAISON}
+          titulo={MODAL_MAISON.subtitulo}
+          subtitulo={MODAL_MAISON.titulo}
+          resumo={`${brl(valor)} • Entrada ${entradaPct}%`}
+          nomeInicial={dados.nome_contato}
           pacoteId={pacoteBase?.id ?? null}
-          whatsapp={inst?.whatsapp_contato ?? null}
+          convidados={dados.numero_convidados}
+          extrasIds={[]}
+          parcelas={parcelas}
+          tipoEvento={dados.tipo_evento}
+          dataEvento={dados.data_evento}
+          textoBotao={MODAL_MAISON.cta}
+          rodape={MODAL_MAISON.rodape}
           onFechar={() => setModal(false)}
           onAceito={(recibo, total) =>
             setAceite({
@@ -838,285 +847,21 @@ function SecaoProximos({
   );
 }
 
-// MODAL — dados do cliente + assinatura, só depois de "Aceitar".
-// É o fluxo que o handoff especifica: nada de dados pessoais antes do
-// aceite. O aceite grava a assinatura (registrar_aceite_proposta) e, com
-// a proposta já aprovada, a ficha grava nome/CPF/e-mail/telefone.
-function ModalAssinatura({
-  hash, dados, valor, entradaPct, pacoteId, whatsapp, onFechar, onAceito,
-}: {
-  hash: string;
-  dados: OrcamentoPublicoData;
-  valor: number;
-  entradaPct: number;
-  pacoteId: string | null;
-  whatsapp: string | null;
-  onFechar: () => void;
-  onAceito: (recibo: string, total: number) => void;
-}) {
-  const [nome, setNome] = useState(dados.nome_contato ?? "");
-  const [cpf, setCpf] = useState("");
-  const [email, setEmail] = useState("");
-  const [tel, setTel] = useState("");
-  const [dataCasamento, setDataCasamento] = useState(
-    dados.data_evento ? formatDateBR(dados.data_evento) : ""
-  );
-  const [assinou, setAssinou] = useState(false);
-  const [enviando, setEnviando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const jaEnviou = useRef(false);
+// Tema do modal compartilhado: o comportamento e igual em todos os
+// templates, a identidade visual e que muda. Ver [[ModalAceiteProposta]].
+const TEMA_MODAL_MAISON = {
+  fundo: OFF,
+  card: CARD,
+  texto: ESPRESSO,
+  textoSuave: TAUPE,
+  borda: BORDA,
+  acento: CAMEL,
+  botaoFundo: MARROM,
+  botaoTexto: OFF,
+  raio: 20,
+  classeTitulo: "serif font-light",
+};
 
-  // Canvas: devicePixelRatio para o traço não sair borrado, e touchmove
-  // com preventDefault para o dedo desenhar em vez de rolar a página.
-  useEffect(() => {
-    const c = canvasRef.current;
-    if (!c) return;
-    const dpr = window.devicePixelRatio || 1;
-    const larg = c.offsetWidth;
-    const alt = c.offsetHeight;
-    c.width = larg * dpr;
-    c.height = alt * dpr;
-    const ctx = c.getContext("2d");
-    if (!ctx) return;
-    ctx.scale(dpr, dpr);
-    ctx.strokeStyle = ESPRESSO;
-    ctx.lineWidth = 1.6;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-
-    let desenhando = false;
-    const pos = (e: PointerEvent) => {
-      const r = c.getBoundingClientRect();
-      return { x: e.clientX - r.left, y: e.clientY - r.top };
-    };
-    const inicio = (e: PointerEvent) => {
-      desenhando = true;
-      c.setPointerCapture(e.pointerId);
-      const p = pos(e);
-      ctx.beginPath();
-      ctx.moveTo(p.x, p.y);
-    };
-    const move = (e: PointerEvent) => {
-      if (!desenhando) return;
-      const p = pos(e);
-      ctx.lineTo(p.x, p.y);
-      ctx.stroke();
-      setAssinou(true);
-    };
-    const fim = () => { desenhando = false; };
-    const semScroll = (e: TouchEvent) => e.preventDefault();
-
-    c.addEventListener("pointerdown", inicio);
-    c.addEventListener("pointermove", move);
-    c.addEventListener("pointerup", fim);
-    c.addEventListener("pointerleave", fim);
-    c.addEventListener("touchmove", semScroll, { passive: false });
-    return () => {
-      c.removeEventListener("pointerdown", inicio);
-      c.removeEventListener("pointermove", move);
-      c.removeEventListener("pointerup", fim);
-      c.removeEventListener("pointerleave", fim);
-      c.removeEventListener("touchmove", semScroll);
-    };
-  }, []);
-
-  function limpar() {
-    const c = canvasRef.current;
-    const ctx = c?.getContext("2d");
-    if (!c || !ctx) return;
-    ctx.clearRect(0, 0, c.width, c.height);
-    setAssinou(false);
-  }
-
-  const podeAssinar = nome.trim() !== "" && cpf.trim() !== "" && assinou && !enviando;
-
-  async function confirmar() {
-    if (jaEnviou.current || !pacoteId) {
-      if (!pacoteId) setErro("Esta proposta ainda não tem um pacote configurado.");
-      return;
-    }
-    jaEnviou.current = true;
-    setEnviando(true);
-    setErro(null);
-
-    const supabase = createClient();
-    const assinatura = canvasRef.current?.toDataURL("image/png") ?? null;
-
-    const { data, error } = await supabase.rpc("registrar_aceite_proposta", {
-      p_hash: hash,
-      p_pacote_id: pacoteId,
-      p_convidados: dados.numero_convidados,
-      p_extras_ids: [],
-      p_forma_pagamento: "parcelado",
-      p_parcelas: dados.institucional?.condicao_parcelas_maximo ?? 7,
-      p_nome_noiva: nome.trim(),
-      p_nome_noivo: null,
-      p_assinatura_noiva: assinatura,
-      p_assinatura_noivo: null,
-      p_observacoes: null,
-    });
-
-    const falha = error?.message ?? (data as { error?: string })?.error;
-    if (falha) {
-      jaEnviou.current = false;
-      setEnviando(false);
-      return setErro(typeof falha === "string" ? falha : "Não foi possível registrar.");
-    }
-
-    // Com a proposta aprovada, a ficha aceita os dados de cadastro.
-    await supabase.rpc("preencher_ficha_orcamento_aprovado", {
-      p_hash: hash,
-      p_nome: nome.trim(),
-      p_telefone: tel.trim() || "—",
-      p_whatsapp: tel.trim() || null,
-      p_email: email.trim() || null,
-      p_instagram: null,
-      p_cep: null,
-      p_endereco: null,
-      p_cidade: null,
-      p_cpf: cpf.trim() || null,
-    });
-
-    setEnviando(false);
-    const d = data as { recibo: string; valor_total: number };
-    onAceito(d.recibo, Number(d.valor_total));
-  }
-
-  const campo =
-    "mt-1.5 w-full rounded-lg px-3 py-2.5 text-[13.5px] outline-none";
-  const campoStyle = { border: `0.5px solid ${BORDA}`, background: OFF, color: ESPRESSO };
-  const rotulo = "text-[9.5px]";
-  const rotuloStyle = { letterSpacing: "0.16em", color: TAUPE };
-
-  return (
-    <div
-      className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto p-4"
-      style={{ background: "rgba(43,30,22,.55)", backdropFilter: "blur(4px)" }}
-      onClick={onFechar}
-    >
-      <div
-        className="relative my-auto w-full max-w-[520px] rounded-[20px] p-6 sm:p-8"
-        style={{ background: CARD, boxShadow: "0 20px 60px -20px rgba(60,36,21,.35)" }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          aria-label="Fechar"
-          onClick={onFechar}
-          className="absolute right-5 top-5 text-[15px]"
-          style={{ color: TAUPE }}
-        >
-          ✕
-        </button>
-
-        <p className="text-[9.5px]" style={{ letterSpacing: "0.22em", color: CAMEL }}>
-          {MODAL_MAISON.titulo}
-        </p>
-        <h3 className="serif mt-2 text-[24px] font-light leading-tight">
-          {MODAL_MAISON.subtitulo}
-        </h3>
-        <p className="mt-1.5 text-[11.5px]" style={{ color: TAUPE }}>
-          {brl(valor)} • Entrada {entradaPct}%
-        </p>
-
-        <div className="mt-6 grid gap-3.5 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <label className={rotulo} style={rotuloStyle}>NOME COMPLETO *</label>
-            <input value={nome} onChange={(e) => setNome(e.target.value)} className={campo} style={campoStyle} />
-          </div>
-          <div>
-            <label className={rotulo} style={rotuloStyle}>CPF *</label>
-            <input
-              value={cpf}
-              onChange={(e) => setCpf(e.target.value)}
-              placeholder="000.000.000-00"
-              inputMode="numeric"
-              className={campo}
-              style={campoStyle}
-            />
-          </div>
-          <div>
-            <label className={rotulo} style={rotuloStyle}>TELEFONE / WHATSAPP</label>
-            <input
-              value={tel}
-              onChange={(e) => setTel(e.target.value)}
-              placeholder="(00) 90000-0000"
-              inputMode="tel"
-              className={campo}
-              style={campoStyle}
-            />
-          </div>
-          <div>
-            <label className={rotulo} style={rotuloStyle}>E-MAIL</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={campo}
-              style={campoStyle}
-            />
-          </div>
-          <div>
-            <label className={rotulo} style={rotuloStyle}>DATA DO CASAMENTO</label>
-            <input
-              value={dataCasamento}
-              onChange={(e) => setDataCasamento(e.target.value)}
-              placeholder="00/00/0000"
-              className={campo}
-              style={campoStyle}
-            />
-          </div>
-        </div>
-
-        <div className="mt-5">
-          <div className="flex items-center justify-between">
-            <label className={rotulo} style={rotuloStyle}>ASSINATURA DIGITAL *</label>
-            <button onClick={limpar} className="text-[10.5px] underline" style={{ color: TAUPE }}>
-              Limpar
-            </button>
-          </div>
-          <canvas
-            ref={canvasRef}
-            className="mt-1.5 w-full rounded-lg"
-            style={{ height: 120, border: `0.5px solid ${BORDA}`, background: OFF, touchAction: "none" }}
-          />
-          <p className="mt-1.5 text-[10px]" style={{ color: TAUPE }}>
-            {MODAL_MAISON.dicaAssinatura}
-          </p>
-        </div>
-
-        {erro && (
-          <p className="mt-4 rounded-lg p-2.5 text-[12px]" style={{ background: "#FDECEC", color: "#9B2C2C" }}>
-            {erro}
-          </p>
-        )}
-
-        <button
-          onClick={confirmar}
-          disabled={!podeAssinar}
-          className="mt-6 w-full rounded-full py-4 text-[12px] font-medium transition-opacity"
-          style={{
-            background: MARROM,
-            color: OFF,
-            letterSpacing: "0.1em",
-            opacity: podeAssinar ? 1 : 0.4,
-            cursor: podeAssinar ? "pointer" : "not-allowed",
-          }}
-        >
-          {enviando ? "REGISTRANDO…" : MODAL_MAISON.cta}
-        </button>
-        <p className="mt-3 text-center text-[10px]" style={{ color: TAUPE }}>
-          {MODAL_MAISON.rodape}
-        </p>
-        {whatsapp && (
-          <p className="mt-1 text-center text-[10px]" style={{ color: TAUPE }}>
-            Dúvidas? Fale com a gente antes de assinar.
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
 
 // Passo 2 do modal do handoff: recibo com breakdown e botão de WhatsApp.
 function ReciboMaison({

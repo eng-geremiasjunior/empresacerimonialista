@@ -40,7 +40,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { criarEventoAPartirDoOrcamento } from "@/lib/orcamento-para-evento";
 import { FichaCadastroAprovacao } from "@/components/orcamento-publico/FichaCadastroAprovacao";
-import { AssinaturaCanvas } from "@/components/orcamento-publico/AssinaturaCanvas";
+import { ModalAceiteProposta } from "@/components/orcamento-publico/ModalAceiteProposta";
 import { formatDateBR } from "@/lib/orcamentos";
 import { expirado, type OrcamentoPublicoData } from "@/lib/orcamento-publico";
 import { IMAGEM_PADRAO } from "@/lib/landing-imagens";
@@ -997,18 +997,25 @@ export function PropostaV2({
 
       {/* modal: contrato + recibo */}
       {contratoAberto && pacote && (
-        <ModalContrato
+        <ModalAceiteProposta
           hash={hash}
-          pacote={pacote}
+          tema={TEMA_MODAL_V2}
+          titulo="Aceitar proposta"
+          subtitulo="Confirme seus dados e assinem para reservar a data"
+          resumo={`${pacote.nome} • ${convidados} convidados • ${brl(calc.total)}`}
+          nomeInicial={dados.nome_contato}
+          pacoteId={pacote.id}
           convidados={convidados}
           extrasIds={extrasIds}
-          modo={modo}
+          formaPagamento={modo}
           parcelas={parcelas}
-          total={calc.total}
-          entrada={calc.entrada}
-          parcela={calc.parcela}
-          nomeContato={dados.nome_contato}
-          whats={whats}
+          tipoEvento={dados.tipo_evento}
+          dataEvento={dados.data_evento}
+          assinaturaDupla
+          rotuloAssinatura="Assinatura"
+          rotuloAssinatura2="Assinatura (2ª pessoa)"
+          textoBotao="CONFIRMAR E ASSINAR →"
+          rodape="assinatura digital • comprovante imediato"
           onFechar={() => setContratoAberto(false)}
           onAceito={(recibo, valor) =>
             setDados((d) => ({
@@ -1100,173 +1107,17 @@ function Modal({
   );
 }
 
-function ModalContrato({
-  hash,
-  pacote,
-  convidados,
-  extrasIds,
-  modo,
-  parcelas,
-  total,
-  entrada,
-  parcela,
-  nomeContato,
-  whats,
-  onFechar,
-  onAceito,
-}: {
-  hash: string;
-  pacote: { id: string; nome: string };
-  convidados: number;
-  extrasIds: string[];
-  modo: "parcelado" | "vista";
-  parcelas: number;
-  total: number;
-  entrada: number;
-  parcela: number;
-  nomeContato: string;
-  whats: string | null;
-  onFechar: () => void;
-  onAceito: (recibo: string, valor: number) => void;
-}) {
-  const [noiva, setNoiva] = useState(nomeContato);
-  const [noivo, setNoivo] = useState("");
-  const [assA, setAssA] = useState<string | null>(null);
-  const [assB, setAssB] = useState<string | null>(null);
-  const [termos, setTermos] = useState(false);
-  const [enviando, setEnviando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
-  const [recibo, setRecibo] = useState<{ codigo: string; valor: number } | null>(null);
-
-  // handoff: confirmar fica desabilitado até os dois nomes e o aceite dos termos
-  const podeConfirmar = noiva.trim() !== "" && noivo.trim() !== "" && termos && !enviando;
-
-  async function confirmar() {
-    setErro(null);
-    if (!assA) return setErro("A assinatura é obrigatória.");
-    setEnviando(true);
-    const supabase = createClient();
-    const { data, error } = await supabase.rpc("registrar_aceite_proposta", {
-      p_hash: hash,
-      p_pacote_id: pacote.id,
-      p_convidados: convidados,
-      p_extras_ids: extrasIds,
-      p_forma_pagamento: modo,
-      p_parcelas: modo === "vista" ? null : parcelas,
-      p_nome_noiva: noiva.trim(),
-      p_nome_noivo: noivo.trim() || null,
-      p_assinatura_noiva: assA,
-      p_assinatura_noivo: assB,
-      p_observacoes: null,
-    });
-    setEnviando(false);
-    const falha = error?.message ?? (data as { error?: string })?.error;
-    if (falha) return setErro(typeof falha === "string" ? falha : "Não foi possível registrar.");
-    const d = data as { recibo: string; valor_total: number };
-    setRecibo({ codigo: d.recibo, valor: Number(d.valor_total) });
-    onAceito(d.recibo, Number(d.valor_total));
-  }
-
-  const linkWhats =
-    whats && recibo
-      ? `https://wa.me/${whats}?text=${encodeURIComponent(
-          `Olá! Somos ${noiva}${noivo ? ` e ${noivo}` : ""}. Aceitamos a proposta ${pacote.nome} — recibo ${recibo.codigo}, total ${brl(recibo.valor)}.`
-        )}`
-      : null;
-
-  return (
-    <Modal onFechar={onFechar}>
-      {recibo ? (
-        <>
-          <div className="w-12 h-12 rounded-full bg-[#B8935A] flex items-center justify-center">
-            <Check size={24} color="#fff" strokeWidth={2.6} />
-          </div>
-          <h3 className="serif text-[26px] font-semibold mt-4">Proposta aceita!</h3>
-          <div className="bg-[#F9F5F0] border border-[#E8DDD2] rounded-[16px] p-4 mt-4">
-            <p className="text-[10px] tracking-[0.18em] text-[#8B7355]">RECIBO</p>
-            <p className="text-[20px] font-bold text-[#B8935A] tracking-wide">{recibo.codigo}</p>
-            <p className="text-[12.5px] text-[#6B5A4B] mt-1.5">
-              {pacote.nome} · {brl(recibo.valor)}
-            </p>
-            <p className="text-[11px] text-[#8B7355]">
-              Assinado por {noiva}
-              {noivo ? ` e ${noivo}` : ""}
-            </p>
-          </div>
-          {linkWhats && (
-            <a
-              href={linkWhats}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block text-center w-full mt-4 bg-[#25D366] text-white rounded-full py-3.5 text-[11px] tracking-[0.16em] font-semibold"
-            >
-              ENVIAR NO WHATSAPP
-            </a>
-          )}
-          <button
-            onClick={onFechar}
-            className="w-full mt-2.5 border border-[#E8DDD2] rounded-full py-3 text-[11px] tracking-[0.16em]"
-          >
-            FECHAR
-          </button>
-        </>
-      ) : (
-        <>
-          <h3 className="serif text-[26px] font-semibold pr-8">Aceitar e assinar</h3>
-          <p className="text-[12.5px] text-[#6B5A4B] mt-1">
-            {pacote.nome} · {convidados} convidados · <strong className="text-[#3C2415]">{brl(total)}</strong>
-          </p>
-          <p className="text-[11px] text-[#8B7355]">
-            Entrada {brl(entrada)}
-            {modo === "parcelado" ? ` + ${parcelas}x de ${brl(parcela)}` : " · pagamento à vista"}
-          </p>
-
-          <div className="grid gap-3 sm:grid-cols-2 mt-5">
-            <input
-              value={noiva}
-              onChange={(e) => setNoiva(e.target.value)}
-              placeholder="Nome completo"
-              className="bg-white border border-[#E8DDD2] rounded-full px-4 py-2.5 text-[13px]"
-            />
-            <input
-              value={noivo}
-              onChange={(e) => setNoivo(e.target.value)}
-              placeholder="Nome completo do parceiro(a)"
-              className="bg-white border border-[#E8DDD2] rounded-full px-4 py-2.5 text-[13px]"
-            />
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2 mt-4">
-            <AssinaturaCanvas rotulo="Assinatura" onChange={setAssA} />
-            <AssinaturaCanvas rotulo="Assinatura parceiro(a)" onChange={setAssB} />
-          </div>
-
-          <label className="flex items-start gap-2.5 mt-4 text-[11.5px] text-[#6B5A4B] cursor-pointer">
-            <input
-              type="checkbox"
-              checked={termos}
-              onChange={(e) => setTermos(e.target.checked)}
-              className="mt-0.5 accent-[#3C2415]"
-            />
-            Li e aceito as condições da proposta. A reserva da data se confirma com o pagamento da entrada.
-          </label>
-
-          {erro && <p className="text-[12px] text-red-600 mt-3">{erro}</p>}
-
-          <div className="flex flex-col sm:flex-row gap-3 mt-5">
-            <button onClick={onFechar} className="flex-1 border border-[#E8DDD2] rounded-full py-3 text-[11px] tracking-[0.16em]">
-              CANCELAR
-            </button>
-            <button
-              onClick={confirmar}
-              disabled={!podeConfirmar}
-              className="flex-1 bg-[#3C2415] text-white rounded-full py-3 text-[11px] tracking-[0.16em] font-semibold disabled:opacity-40"
-            >
-              {enviando ? "REGISTRANDO…" : "CONFIRMAR E ASSINAR"}
-            </button>
-          </div>
-        </>
-      )}
-    </Modal>
-  );
-}
+// Tema do modal compartilhado: comportamento igual em todos os templates,
+// identidade visual propria de cada um. Ver [[ModalAceiteProposta]].
+const TEMA_MODAL_V2 = {
+  fundo: "#F9F5F0",
+  card: "#FDFCFB",
+  texto: "#3C2415",
+  textoSuave: "#8B7355",
+  borda: "#E8DDD2",
+  acento: "#B8935A",
+  botaoFundo: "#3C2415",
+  botaoTexto: "#F9F5F0",
+  raio: 20,
+  classeTitulo: "serif font-semibold",
+};

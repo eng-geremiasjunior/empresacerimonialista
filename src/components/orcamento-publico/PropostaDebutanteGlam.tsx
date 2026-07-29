@@ -19,8 +19,10 @@
 //  * o nome no topo NÃO é editável pela cliente: vai para o contrato
 //    assinado, e editar abriria divergência com o que ela assinou. O mesmo
 //    critério dos outros templates;
-//  * a assinatura do modal é o nome digitado (input), como no mockup, e é
-//    o que a RPC de aceite grava;
+//  * o modal de aceite é o compartilhado ([[ModalAceiteProposta]]): o
+//    mockup assinava digitando o nome, mas todos os templates passaram a
+//    pedir cadastro + assinatura desenhada, e uma exceção aqui deixaria
+//    esta proposta sem os dados que as outras coletam;
 //  * o countdown usa a validade real do orçamento, não os 10 dias fixos do
 //    mockup.
 
@@ -30,6 +32,7 @@ import {
   Music, Crown, Camera, Zap, Wine,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { ModalAceiteProposta } from "@/components/orcamento-publico/ModalAceiteProposta";
 import { formatDateBR } from "@/lib/orcamentos";
 import { expirado, type OrcamentoPublicoData } from "@/lib/orcamento-publico";
 import { calcularProposta } from "@/lib/proposta";
@@ -285,15 +288,21 @@ export function PropostaDebutanteGlam({
       <FooterGlam dados={dados} nome={nome} onAbrir={abrir} podeResponder={podeResponder} />
 
       {modal && pacote && (
-        <ModalContrato
+        <ModalAceiteProposta
           hash={hash}
-          nome={nome}
-          pacote={pacote}
-          guests={guests}
+          tema={TEMA_MODAL_GLAM}
+          titulo={`Fechar a festa da ${nome}?`}
+          subtitulo="CONTRATO DIGITAL • ASSINATURA"
+          resumo={`${pacote.nome} • ${guests} convidados • R$ ${brl(valores.total)} • em até ${condicoes.parcelasMaximo}x`}
+          nomeInicial={dados.nome_contato}
+          pacoteId={pacote.id}
+          convidados={guests}
           extrasIds={extrasIds}
           parcelas={condicoes.parcelasMaximo}
-          total={valores.total}
-          validadeDias={dados.validade_dias}
+          tipoEvento={dados.tipo_evento}
+          dataEvento={dados.data_evento}
+          textoBotao="ASSINAR E TRAVAR MINHA DATA →"
+          rodape="DOCUMENTO VÁLIDO JURIDICAMENTE • ASSINATURA DIGITAL"
           onFechar={() => setModal(false)}
           onAceito={(recibo, valor) =>
             setAceite({ recibo_codigo: recibo, pacote_nome: pacote.nome, valor_total: valor, created_at: new Date().toISOString() })
@@ -713,119 +722,21 @@ function FooterGlam({
   );
 }
 
-// 9 — MODAL (contrato digital com assinatura digitada)
-function ModalContrato({
-  hash, nome, pacote, guests, extrasIds, parcelas, total, validadeDias, onFechar, onAceito,
-}: {
-  hash: string;
-  nome: string;
-  pacote: Pacotes[number];
-  guests: number;
-  extrasIds: string[];
-  parcelas: number;
-  total: number;
-  validadeDias: number;
-  onFechar: () => void;
-  onAceito: (recibo: string, valor: number) => void;
-}) {
-  const [sig, setSig] = useState("");
-  const [agree, setAgree] = useState(false);
-  const [enviando, setEnviando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
-  const jaEnviou = useRef(false);
+// Tema do modal compartilhado: comportamento igual em todos os templates,
+// identidade visual propria de cada um. Ver [[ModalAceiteProposta]].
+const TEMA_MODAL_GLAM = {
+  fundo: "rgba(255,255,255,.06)",
+  card: INK,
+  texto: "#FFFFFF",
+  textoSuave: "rgba(255,255,255,.55)",
+  borda: "rgba(255,255,255,.15)",
+  acento: OURO,
+  botaoFundo: OURO,
+  botaoTexto: INK,
+  raio: 28,
+  classeTitulo: "display font-black",
+};
 
-  const podeAssinar = sig.trim() !== "" && agree && !enviando;
-
-  async function confirmar() {
-    if (jaEnviou.current) return;
-    jaEnviou.current = true;
-    setEnviando(true);
-    setErro(null);
-    const supabase = createClient();
-    const { data, error } = await supabase.rpc("registrar_aceite_proposta", {
-      p_hash: hash,
-      p_pacote_id: pacote.id,
-      p_convidados: guests,
-      p_extras_ids: extrasIds,
-      p_forma_pagamento: "parcelado",
-      p_parcelas: parcelas,
-      p_nome_noiva: sig.trim(),
-      p_nome_noivo: null,
-      p_assinatura_noiva: sig.trim(),
-      p_assinatura_noivo: null,
-      p_observacoes: null,
-    });
-    setEnviando(false);
-    const falha = error?.message ?? (data as { error?: string })?.error;
-    if (falha) {
-      jaEnviou.current = false;
-      return setErro(typeof falha === "string" ? falha : "Não foi possível registrar.");
-    }
-    const d = data as { recibo: string; valor_total: number };
-    onAceito(d.recibo, Number(d.valor_total));
-  }
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur"
-      onClick={onFechar}
-    >
-      <div
-        className="glam-modal-card relative w-full max-w-[520px] rounded-[28px] bg-[#111] p-6 text-white sm:p-8"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button aria-label="Fechar" onClick={onFechar} className="absolute right-5 top-5 text-white/60 hover:text-white">
-          <X size={22} />
-        </button>
-        <span className="inline-block rounded-full px-3 py-1.5 text-[10px] font-black text-[#111]" style={{ background: OURO }}>
-          CONTRATO DIGITAL • ASSINATURA
-        </span>
-        <h3 className="display mt-4 text-[26px] font-black leading-tight sm:text-[30px]">
-          Fechar a festa da {nome}?
-        </h3>
-
-        <div className="mt-5 space-y-2 rounded-2xl bg-white/5 p-4 text-[13px]">
-          <div className="flex justify-between"><span className="text-white/50">Pacote</span><span className="font-bold">{pacote.nome}</span></div>
-          <div className="flex justify-between"><span className="text-white/50">Convidados</span><span className="font-bold">{guests}</span></div>
-          <div className="flex justify-between border-t border-white/10 pt-2"><span className="text-white/50">Total</span><span className="display text-[18px] font-black">R$ {brl(total)}</span></div>
-          <p className="pt-1 text-[11px] text-white/40">Em até {parcelas}x • Preço travado por {validadeDias} dias</p>
-        </div>
-
-        <label className="mt-5 block text-[11px] font-bold tracking-[0.12em] text-white/50">SUA ASSINATURA (nome completo)</label>
-        <input
-          value={sig}
-          onChange={(e) => setSig(e.target.value)}
-          placeholder="Digite seu nome"
-          className="mt-2 w-full rounded-xl border-2 border-white/15 bg-white px-3.5 py-3 text-[15px] font-semibold text-[#111] outline-none focus:border-[#D4AF37]"
-        />
-        <p className="display mt-2 text-[24px] font-black sm:text-[28px]" style={{ color: sig.trim() ? OURO : "rgba(255,255,255,.25)" }}>
-          {sig.trim() || "Sua assinatura aqui"}
-        </p>
-
-        <label className="mt-4 flex items-start gap-2.5 text-[12.5px]">
-          <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#D4AF37]" />
-          <span className="text-white/70">
-            Li e concordo com os valores e condições desta proposta e autorizo a reserva da data.
-          </span>
-        </label>
-
-        {erro && <p className="mt-3 rounded-lg bg-red-500/15 p-2.5 text-[12.5px] text-red-300">{erro}</p>}
-
-        <button
-          onClick={confirmar}
-          disabled={!podeAssinar}
-          className="mt-5 flex w-full items-center justify-center gap-2 rounded-full py-4 text-[14px] font-black transition-transform hover:scale-[1.01]"
-          style={podeAssinar ? { background: OURO, color: INK } : { background: "rgba(255,255,255,.15)", color: "rgba(255,255,255,.4)" }}
-        >
-          {enviando ? "TRAVANDO…" : "ASSINAR E TRAVAR MINHA DATA →"}
-        </button>
-        <p className="mt-3 text-center text-[10.5px] text-white/35">
-          DOCUMENTO VÁLIDO JURIDICAMENTE • ASSINATURA DIGITAL
-        </p>
-      </div>
-    </div>
-  );
-}
 
 function ReciboGlam({
   aceite, nomeEmpresa, nome,

@@ -24,7 +24,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { AssinaturaCanvas } from "@/components/orcamento-publico/AssinaturaCanvas";
+import { ModalAceiteProposta } from "@/components/orcamento-publico/ModalAceiteProposta";
 import { formatDateBR } from "@/lib/orcamentos";
 import { expirado, type OrcamentoPublicoData } from "@/lib/orcamento-publico";
 import { calcularProposta } from "@/lib/proposta";
@@ -1054,14 +1054,21 @@ export function PropostaDebutante({
       )}
 
       {modalAberto && pacote && (
-        <ModalAceite
+        <ModalAceiteProposta
           hash={hash}
-          pacoteNome={pacote.nome}
+          tema={TEMA_MODAL_DEBUTANTE}
+          titulo="Aceitar proposta"
+          subtitulo="Confirme seus dados e assine para reservar a data"
+          resumo={`Pacote ${pacote.nome} • ${convidados} convidados • ${brl(valores.total)}`}
+          nomeInicial={dados.nome_contato}
           pacoteId={pacote.id}
           convidados={convidados}
           extrasIds={extrasIds}
           parcelas={condicoes.parcelasMaximo}
-          total={valores.total}
+          tipoEvento={dados.tipo_evento}
+          dataEvento={dados.data_evento}
+          textoBotao="CONFIRMAR E ASSINAR →"
+          rodape="assinatura digital • comprovante imediato"
           onFechar={() => setModalAberto(false)}
           onAceito={(recibo, valor) =>
             setAceite({
@@ -1132,136 +1139,21 @@ function Linha({ rotulo, valor }: { rotulo: string; valor: string }) {
   );
 }
 
-function ModalAceite({
-  hash,
-  pacoteId,
-  pacoteNome,
-  convidados,
-  extrasIds,
-  parcelas,
-  total,
-  onFechar,
-  onAceito,
-}: {
-  hash: string;
-  pacoteId: string;
-  pacoteNome: string;
-  convidados: number;
-  extrasIds: string[];
-  parcelas: number;
-  total: number;
-  onFechar: () => void;
-  onAceito: (recibo: string, valor: number) => void;
-}) {
-  const [nome, setNome] = useState("");
-  const [responsavel, setResponsavel] = useState("");
-  const [assinatura, setAssinatura] = useState<string | null>(null);
-  const [termos, setTermos] = useState(false);
-  const [enviando, setEnviando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
-  const jaEnviou = useRef(false);
+// Tema do modal compartilhado: comportamento igual em todos os templates,
+// identidade visual propria de cada um. Ver [[ModalAceiteProposta]].
+const TEMA_MODAL_DEBUTANTE = {
+  fundo: "#FFFEFB",
+  card: "#FFFFFF",
+  texto: INK,
+  textoSuave: "#8A8479",
+  borda: BORDA,
+  acento: OURO,
+  botaoFundo: OURO,
+  botaoTexto: "#FFFFFF",
+  raio: 18,
+  classeTitulo: "playfair font-medium",
+};
 
-  const podeConfirmar =
-    nome.trim() !== "" && assinatura !== null && termos && !enviando;
-
-  async function confirmar() {
-    if (jaEnviou.current) return;
-    jaEnviou.current = true;
-    setEnviando(true);
-    setErro(null);
-
-    const supabase = createClient();
-    const { data, error } = await supabase.rpc("registrar_aceite_proposta", {
-      p_hash: hash,
-      p_pacote_id: pacoteId,
-      p_convidados: convidados,
-      p_extras_ids: extrasIds,
-      p_forma_pagamento: "parcelado",
-      p_parcelas: parcelas,
-      p_nome_noiva: nome.trim(),
-      p_nome_noivo: responsavel.trim() || null,
-      p_assinatura_noiva: assinatura,
-      p_assinatura_noivo: null,
-      p_observacoes: null,
-    });
-
-    setEnviando(false);
-    const falha = error?.message ?? (data as { error?: string })?.error;
-    if (falha) {
-      jaEnviou.current = false;
-      return setErro(
-        typeof falha === "string" ? falha : "Não foi possível registrar."
-      );
-    }
-    const d = data as { recibo: string; valor_total: number };
-    onAceito(d.recibo, Number(d.valor_total));
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="max-h-[92vh] w-full max-w-[560px] overflow-y-auto rounded-[18px] bg-white p-6 sm:p-8">
-        <div className="mb-1 flex items-start justify-between">
-          <h3 className="playfair m-0 text-[24px]">Aceitar proposta</h3>
-          <button aria-label="Fechar" onClick={onFechar} className="text-2xl leading-none">
-            ×
-          </button>
-        </div>
-        <p className="mb-5 text-[12.5px]" style={{ color: "#8A8479" }}>
-          Pacote {pacoteNome} • {convidados} convidados • {brl(total)}
-        </p>
-
-        <label className="mb-1 block text-[11px]" style={{ color: "#8A8479" }}>
-          Nome da debutante
-        </label>
-        <input
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-          className="mb-4 w-full rounded-[10px] px-3 py-2.5 text-[14px]"
-          style={{ border: `1px solid ${BORDA}` }}
-        />
-
-        <label className="mb-1 block text-[11px]" style={{ color: "#8A8479" }}>
-          Responsável (opcional)
-        </label>
-        <input
-          value={responsavel}
-          onChange={(e) => setResponsavel(e.target.value)}
-          className="mb-4 w-full rounded-[10px] px-3 py-2.5 text-[14px]"
-          style={{ border: `1px solid ${BORDA}` }}
-        />
-
-        <AssinaturaCanvas rotulo="Assinatura" onChange={setAssinatura} />
-
-        <label className="mt-4 flex items-start gap-2 text-[12px]">
-          <input
-            type="checkbox"
-            checked={termos}
-            onChange={(e) => setTermos(e.target.checked)}
-            className="mt-0.5"
-          />
-          <span style={{ color: "#6B6560" }}>
-            Li e concordo com os valores e condições desta proposta.
-          </span>
-        </label>
-
-        {erro && (
-          <p className="mt-3 rounded-lg bg-red-50 p-3 text-[12.5px] text-red-700">
-            {erro}
-          </p>
-        )}
-
-        <button
-          onClick={confirmar}
-          disabled={!podeConfirmar}
-          className="mt-5 w-full rounded-full py-[15px] text-[13px] font-semibold text-white disabled:opacity-50"
-          style={{ background: `linear-gradient(90deg, ${OURO}, #E8CFA0)` }}
-        >
-          {enviando ? "REGISTRANDO…" : "CONFIRMAR E ASSINAR →"}
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function Recibo({
   aceite,
