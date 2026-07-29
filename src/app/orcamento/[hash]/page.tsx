@@ -1,14 +1,18 @@
 import { notFound } from "next/navigation";
-import { Cormorant_Garamond, Playfair_Display, Inter } from "next/font/google";
+import { Cormorant_Garamond, Playfair_Display, Syne, Inter } from "next/font/google";
 import { createClient } from "@/lib/supabase/server";
 import { PropostaV2 } from "@/components/orcamento-publico/PropostaV2";
 import { PropostaDebutante } from "@/components/orcamento-publico/PropostaDebutante";
+import { PropostaDebutanteGlam } from "@/components/orcamento-publico/PropostaDebutanteGlam";
 import type { OrcamentoPublicoData } from "@/lib/orcamento-publico";
 import { variaveisDoTema } from "@/lib/orcamento-temas";
+import { TEMPLATE_PADRAO_POR_TIPO } from "@/lib/proposta-templates";
+import type { EventType } from "@/lib/types";
 
 // Tipografia conforme os handoffs: Cormorant Garamond nos títulos do
-// template de casamento, Playfair Display no de debutante, Inter no corpo
-// dos dois. Carregada aqui (não no layout) para não pesar no painel.
+// template de casamento, Playfair Display no debutante clássico, Syne no
+// debutante glam, Inter no corpo de todos. Carregada aqui (não no layout)
+// para não pesar no painel.
 const titulo = Cormorant_Garamond({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -21,6 +25,12 @@ const playfair = Playfair_Display({
   weight: ["400", "500", "600"],
   style: ["normal", "italic"],
   variable: "--font-playfair",
+  display: "swap",
+});
+const syne = Syne({
+  subsets: ["latin"],
+  weight: ["700", "800"],
+  variable: "--font-syne",
   display: "swap",
 });
 const inter = Inter({
@@ -48,9 +58,21 @@ export default async function OrcamentoPublicoPage({
 
   const proposta = data as unknown as OrcamentoPublicoData;
 
-  // O template segue o tipo do evento, igual ao Catálogo: a proposta usa a
-  // arte feita para aquele tipo, sem a cerimonialista escolher nada.
   if (proposta.tipo_evento === "debutante") {
+    // O template vem do orçamento (059); null cai no padrão do tipo.
+    const template =
+      proposta.template_proposta ??
+      TEMPLATE_PADRAO_POR_TIPO[proposta.tipo_evento as EventType] ??
+      "debutante_classico";
+
+    if (template === "debutante_glam") {
+      return (
+        <div className={`${syne.variable} ${inter.variable} min-h-screen`}>
+          <PropostaDebutanteGlam hash={params.hash} inicial={proposta} />
+        </div>
+      );
+    }
+
     return (
       <div
         className={`${playfair.variable} ${inter.variable} min-h-screen font-[var(--font-inter)]`}

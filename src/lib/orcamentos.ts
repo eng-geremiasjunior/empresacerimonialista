@@ -17,6 +17,7 @@ export type Orcamento = {
   contato_telefone: string | null;
   contato_email: string | null;
   tipo_evento: string;
+  template_proposta: string | null;
   data_evento: string | null;
   local_evento: string | null;
   cidade_evento: string | null;

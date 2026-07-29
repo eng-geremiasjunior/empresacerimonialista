@@ -54,6 +54,8 @@ export type DepoimentoPublico = {
 export type OrcamentoPublicoData = {
   nome_contato: string;
   tipo_evento: string;
+  // Template escolhido no orçamento (059). null = padrão do tipo.
+  template_proposta: string | null;
   data_evento: string | null;
   local_evento: string | null;
   cidade_evento: string | null;

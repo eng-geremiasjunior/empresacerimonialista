@@ -14,7 +14,8 @@ import {
 } from "@/app/(app)/orcamentos/actions";
 import { AdicionarItemModal } from "@/components/orcamentos/AdicionarItemModal";
 import { ItemOrcamentoCard } from "@/components/orcamentos/ItemOrcamentoCard";
-import { EVENT_TYPE_LABELS } from "@/lib/types";
+import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
+import { TEMPLATES_POR_TIPO } from "@/lib/proposta-templates";
 import type { ModeloPrecificacao } from "@/lib/modelos-precificacao";
 import {
   VALIDADE_OPCOES,
@@ -70,6 +71,15 @@ export function OrcamentoForm({
     orcamento?.contato_email ?? ""
   );
   const [tipoEvento, setTipoEvento] = useState(orcamento?.tipo_evento ?? "");
+  const [templateProposta, setTemplateProposta] = useState(
+    orcamento?.template_proposta ?? ""
+  );
+  // Opções de template do tipo escolhido (só debutante tem hoje).
+  const templatesDoTipo = TEMPLATES_POR_TIPO[tipoEvento as EventType] ?? null;
+  // Valor efetivo: vazio cai no primeiro (o padrão do tipo), pro select
+  // não ficar sem opção casada nem gravar "" no banco.
+  const templateSelecionado =
+    templateProposta || templatesDoTipo?.[0]?.valor || "";
   const [dataEvento, setDataEvento] = useState(orcamento?.data_evento ?? "");
   const [localEvento, setLocalEvento] = useState(
     orcamento?.local_evento ?? ""
@@ -149,6 +159,7 @@ export function OrcamentoForm({
       contato_telefone: contatoTelefone || null,
       contato_email: contatoEmail || null,
       tipo_evento: tipoEvento,
+      template_proposta: templatesDoTipo ? templateSelecionado : null,
       data_evento: dataEvento || null,
       local_evento: localEvento || null,
       cidade_evento: cidadeEvento || null,
@@ -216,6 +227,22 @@ export function OrcamentoForm({
               ))}
             </select>
           </div>
+          {templatesDoTipo && (
+            <div>
+              <label className={labelClass}>Modelo da proposta</label>
+              <select
+                value={templateSelecionado}
+                onChange={(e) => setTemplateProposta(e.target.value)}
+                className={inputClass}
+              >
+                {templatesDoTipo.map((t) => (
+                  <option key={t.valor} value={t.valor}>
+                    {t.nome} — {t.descricao}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className={labelClass}>
               Data prevista{" "}

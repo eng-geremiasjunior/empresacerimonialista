@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { enviarEmailOrcamento } from "@/lib/email";
+import { TEMPLATES_POR_TIPO } from "@/lib/proposta-templates";
+import type { EventType } from "@/lib/types";
 
 export type SalvarOrcamentoState =
   | { error: string }
@@ -27,6 +29,7 @@ export type OrcamentoPayload = {
   contato_telefone: string | null;
   contato_email: string | null;
   tipo_evento: string;
+  template_proposta: string | null;
   data_evento: string | null;
   local_evento: string | null;
   cidade_evento: string | null;
@@ -79,6 +82,14 @@ export async function salvarOrcamento(
     contato_telefone: payload.contato_telefone?.trim() || null,
     contato_email: payload.contato_email?.trim() || null,
     tipo_evento: payload.tipo_evento,
+    // Só grava o template para os tipos que têm opção (hoje debutante):
+    // para os outros fica null e a página usa o template único do tipo.
+    template_proposta:
+      TEMPLATES_POR_TIPO[payload.tipo_evento as EventType]?.some(
+        (t) => t.valor === payload.template_proposta
+      )
+        ? payload.template_proposta
+        : null,
     data_evento: payload.data_evento || null,
     local_evento: payload.local_evento?.trim() || null,
     cidade_evento: payload.cidade_evento?.trim() || null,
@@ -193,6 +204,7 @@ export async function duplicarOrcamento(
       contato_telefone: orc.contato_telefone,
       contato_email: orc.contato_email,
       tipo_evento: orc.tipo_evento,
+      template_proposta: orc.template_proposta,
       data_evento: orc.data_evento,
       local_evento: orc.local_evento,
       cidade_evento: orc.cidade_evento,
