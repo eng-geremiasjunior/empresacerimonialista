@@ -90,6 +90,11 @@ export function statusGeral(
       responsavel_telefone: null,
       etapa_obrigatoria: false,
       duracao_minutos: null,
+      // O Modo Evento não usa dependência nem atraso em cascata: aqui só
+      // interessa o alerta de atraso, que olha horário e status.
+      depende_de: null,
+      tipo_dependencia: null,
+      time_original: null,
     })),
     nowMinutes
   );

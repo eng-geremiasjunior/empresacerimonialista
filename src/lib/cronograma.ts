@@ -21,6 +21,12 @@ export type CronogramaItem = {
   responsavel_telefone: string | null;
   etapa_obrigatoria: boolean;
   duracao_minutos: number | null;
+  // Execução do evento (062): item que precisa terminar antes deste e a
+  // força desse vínculo. `time_original` só é preenchido quando o item é
+  // adiado, para a tela mostrar o horário combinado riscado.
+  depende_de: string | null;
+  tipo_dependencia: "dura" | "suave" | null;
+  time_original: string | null;
 };
 
 // ---- UI tokens por status (paleta dessaturada) ----

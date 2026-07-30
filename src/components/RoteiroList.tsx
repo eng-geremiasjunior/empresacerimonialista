@@ -17,6 +17,8 @@ import { ItemTimelineExpandido } from "@/components/cronograma/ItemTimelineExpan
 import { HistoricoItemModal } from "@/components/cronograma/HistoricoItemModal";
 import { AtualizarStatusModal } from "@/components/cronograma/AtualizarStatusModal";
 import { PainelLateralCronograma } from "@/components/cronograma/PainelLateralCronograma";
+import { VisaoRaias } from "@/components/cronograma/VisaoRaias";
+import { ModalAtraso } from "@/components/cronograma/ModalAtraso";
 import { createClient } from "@/lib/supabase/client";
 import { formatTime } from "@/lib/format";
 import { proximosItens, timeToMinutes, type CronogramaItem } from "@/lib/cronograma";
@@ -45,6 +47,10 @@ export function RoteiroList({ eventId, eventDate, items: initialItems, suppliers
   });
   const [focusId, setFocusId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  // "raias" mostra o paralelismo do dia; "lista" é a sequência de sempre,
+  // que continua sendo o modo bom no celular.
+  const [visao, setVisao] = useState<"raias" | "lista">("lista");
+  const [atrasando, setAtrasando] = useState<CronogramaItem | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   // Valores dependentes de "agora" só entram após o mount, evitando
@@ -107,10 +113,34 @@ export function RoteiroList({ eventId, eventDate, items: initialItems, suppliers
     <div className="grid grid-cols-1 gap-[22px] lg:grid-cols-[minmax(0,1fr),300px]">
       {/* Coluna principal: timeline */}
       <div className="min-w-0">
-        <div className="mb-6 flex items-center justify-between print:hidden">
-          <h2 className="text-[17px] font-bold text-[#17162A]">
-            Cronograma do dia
-          </h2>
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-[17px] font-bold text-[#17162A]">
+              Execução do evento
+            </h2>
+            {/* seletor de visão */}
+            <div className="flex rounded-[12px] bg-stone-100 p-1">
+              {(
+                [
+                  ["lista", "Lista · sequência"],
+                  ["raias", "Raias · panorama"],
+                ] as const
+              ).map(([v, rotulo]) => (
+                <button
+                  key={v}
+                  onClick={() => setVisao(v)}
+                  aria-pressed={visao === v}
+                  className={`rounded-[9px] px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
+                    visao === v
+                      ? "bg-white text-[#17162A] shadow-sm"
+                      : "text-stone-500 hover:text-stone-700"
+                  }`}
+                >
+                  {rotulo}
+                </button>
+              ))}
+            </div>
+          </div>
           {!adding && (
             <button
               onClick={() => {
@@ -130,6 +160,7 @@ export function RoteiroList({ eventId, eventDate, items: initialItems, suppliers
               action={createRoteiroItem.bind(null, eventId)}
               eventId={eventId}
               suppliers={suppliers}
+              itensDoDia={ordered}
               onClose={() => {
                 setAdding(false);
                 refresh();
@@ -138,7 +169,13 @@ export function RoteiroList({ eventId, eventDate, items: initialItems, suppliers
           </div>
         )}
 
-        {ordered.length === 0 && !adding ? (
+        {visao === "raias" && ordered.length > 0 ? (
+          <VisaoRaias
+            itens={ordered}
+            eventoHoje={eventoHoje}
+            onAtrasar={(i) => setAtrasando(i)}
+          />
+        ) : ordered.length === 0 && !adding ? (
           <div className="rounded-xl border-2 border-dashed border-stone-300 bg-white p-12 text-center">
             <p className="text-stone-600">O roteiro ainda está vazio.</p>
             <button
@@ -158,6 +195,8 @@ export function RoteiroList({ eventId, eventDate, items: initialItems, suppliers
                       action={updateRoteiroItem.bind(null, eventId, item.id)}
                       eventId={eventId}
                       suppliers={suppliers}
+                      itensDoDia={ordered}
+                      itemAtualId={item.id}
                       initial={{
                         time: formatTime(item.time),
                         title: item.title,
@@ -167,6 +206,8 @@ export function RoteiroList({ eventId, eventDate, items: initialItems, suppliers
                         responsavelTelefone: item.responsavel_telefone ?? "",
                         etapaObrigatoria: item.etapa_obrigatoria,
                         duracaoMinutos: item.duracao_minutos,
+                        dependeDe: item.depende_de ?? "",
+                        tipoDependencia: item.tipo_dependencia ?? undefined,
                       }}
                       onClose={() => {
                         setEditingId(null);
@@ -248,6 +289,15 @@ export function RoteiroList({ eventId, eventDate, items: initialItems, suppliers
         />
       </aside>
 
+      {atrasando && (
+        <ModalAtraso
+          eventId={eventId}
+          item={atrasando}
+          itens={ordered}
+          onFechar={() => setAtrasando(null)}
+          onPronto={refresh}
+        />
+      )}
       {historico && (
         <HistoricoItemModal
           itemId={historico.id}

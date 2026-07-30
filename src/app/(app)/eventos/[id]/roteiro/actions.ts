@@ -37,6 +37,13 @@ function readForm(formData: FormData) {
     ).trim(),
     etapaObrigatoria: formData.get("etapa_obrigatoria") === "on",
     duracaoMinutos: duracaoRaw ? Number(duracaoRaw) : null,
+    // Item que precisa terminar antes deste. Só faz sentido com o tipo:
+    // sem dependência escolhida, os dois vão nulos.
+    dependeDe: String(formData.get("depende_de") ?? "") || null,
+    tipoDependencia:
+      String(formData.get("tipo_dependencia") ?? "") === "suave"
+        ? "suave"
+        : "dura",
   };
 }
 
@@ -57,23 +64,11 @@ function normalizeTime(time: string) {
   return time.length === 5 ? `${time}:00` : time;
 }
 
-async function hasDuplicateTime(
-  supabase: ReturnType<typeof createClient>,
-  eventId: string,
-  time: string,
-  excludeItemId?: string
-) {
-  let query = supabase
-    .from("roteiro_items")
-    .select("id")
-    .eq("event_id", eventId)
-    .eq("time", time);
-  if (excludeItemId) {
-    query = query.neq("id", excludeItemId);
-  }
-  const { data } = await query;
-  return (data ?? []).length > 0;
-}
+// Não existe checagem de horário duplicado de propósito: no dia do evento
+// várias equipes trabalham ao mesmo tempo (o som monta enquanto a
+// decoração monta), e recusar o segundo item no mesmo horário obrigava a
+// falsear o cronograma. A visão de raias mostra esses itens em paralelo e
+// avisa quando o MESMO fornecedor fica em dois lugares de uma vez.
 
 export async function createRoteiroItem(
   eventId: string,
@@ -91,9 +86,6 @@ export async function createRoteiroItem(
   if (!user) redirect("/login");
 
   const time = normalizeTime(form.time);
-  if (await hasDuplicateTime(supabase, eventId, time)) {
-    return { error: "Já existe um item nesse horário. Escolha outro horário." };
-  }
 
   const { error } = await supabase.from("roteiro_items").insert({
     event_id: eventId,
@@ -107,6 +99,8 @@ export async function createRoteiroItem(
     responsavel_telefone: form.responsavelTelefone || null,
     etapa_obrigatoria: form.etapaObrigatoria,
     duracao_minutos: form.duracaoMinutos,
+    depende_de: form.dependeDe,
+    tipo_dependencia: form.dependeDe ? form.tipoDependencia : null,
   });
 
   if (error) {
@@ -134,9 +128,6 @@ export async function updateRoteiroItem(
   if (!user) redirect("/login");
 
   const time = normalizeTime(form.time);
-  if (await hasDuplicateTime(supabase, eventId, time, itemId)) {
-    return { error: "Já existe um item nesse horário. Escolha outro horário." };
-  }
 
   // Edição NÃO altera status (isso é feito pelas ações de status, que
   // carimbam horários e registram no log). Só os campos do formulário.
@@ -151,6 +142,10 @@ export async function updateRoteiroItem(
       responsavel_telefone: form.responsavelTelefone || null,
       etapa_obrigatoria: form.etapaObrigatoria,
       duracao_minutos: form.duracaoMinutos,
+      // Um item não pode depender de si mesmo (o banco também barra).
+      depende_de: form.dependeDe === itemId ? null : form.dependeDe,
+      tipo_dependencia:
+        form.dependeDe && form.dependeDe !== itemId ? form.tipoDependencia : null,
     })
     .eq("id", itemId)
     .eq("event_id", eventId);
@@ -160,6 +155,133 @@ export async function updateRoteiroItem(
   }
 
   revalidatePath(`/eventos/${eventId}/roteiro`);
+  return { success: true };
+}
+
+// Atrasa um item e, opcionalmente, a cadeia que depende dele.
+//
+// A cadeia é calculada AQUI, no servidor, a partir dos dados do banco: o
+// cliente manda só o item e se quer empurrar os dependentes. Assim o que
+// é gravado não depende do que a tela tinha em memória.
+//
+// Só dependência DURA empurra. SUAVE é "o ideal é terminar antes", e
+// empurrá-la atrasaria o dia inteiro sem necessidade.
+export async function atrasarItem(
+  eventId: string,
+  itemId: string,
+  minutos: number,
+  emCascata: boolean
+): Promise<{ error: string } | { success: true; afetados: number }> {
+  if (!Number.isFinite(minutos) || minutos === 0 || Math.abs(minutos) > 600) {
+    return { error: "Atraso inválido." };
+  }
+
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: itens, error: erroLeitura } = await supabase
+    .from("roteiro_items")
+    .select("id, time, time_original, depende_de, tipo_dependencia")
+    .eq("event_id", eventId);
+
+  if (erroLeitura || !itens) {
+    return { error: "Não foi possível carregar o cronograma." };
+  }
+
+  type Linha = {
+    id: string;
+    time: string | null;
+    time_original: string | null;
+    depende_de: string | null;
+    tipo_dependencia: string | null;
+  };
+  const lista = itens as Linha[];
+  const alvo = lista.find((i) => i.id === itemId);
+  if (!alvo) return { error: "Item não encontrado." };
+
+  // BFS pelos dependentes duros. O conjunto de visitados também protege
+  // contra ciclo: sem ele, A→B→A rodaria para sempre.
+  const paraAtrasar = new Set<string>([itemId]);
+  if (emCascata) {
+    const fila = [itemId];
+    while (fila.length > 0) {
+      const atual = fila.shift()!;
+      for (const i of lista) {
+        if (
+          i.depende_de === atual &&
+          i.tipo_dependencia === "dura" &&
+          !paraAtrasar.has(i.id)
+        ) {
+          paraAtrasar.add(i.id);
+          fila.push(i.id);
+        }
+      }
+    }
+  }
+
+  const somar = (hhmmss: string, mins: number) => {
+    const [h, m] = hhmmss.split(":").map(Number);
+    const total = Math.max(0, Math.min(24 * 60 - 1, h * 60 + m + mins));
+    return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(
+      total % 60
+    ).padStart(2, "0")}:00`;
+  };
+
+  for (const id of paraAtrasar) {
+    const linha = lista.find((i) => i.id === id);
+    if (!linha?.time) continue;
+    await supabase
+      .from("roteiro_items")
+      .update({
+        time: somar(linha.time, minutos),
+        // Só no primeiro atraso: preserva o horário combinado para a tela
+        // mostrar "era HH:MM" riscado.
+        time_original: linha.time_original ?? linha.time,
+      })
+      .eq("id", id)
+      .eq("event_id", eventId);
+  }
+
+  revalidatePath(`/eventos/${eventId}/roteiro`);
+  revalidatePath(`/eventos/${eventId}`, "layout");
+  return { success: true, afetados: paraAtrasar.size };
+}
+
+// Volta o item ao horário combinado, desfazendo os atrasos aplicados.
+export async function desfazerAtraso(
+  eventId: string,
+  itemId: string
+): Promise<{ error: string } | { success: true }> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: item } = await supabase
+    .from("roteiro_items")
+    .select("time_original")
+    .eq("id", itemId)
+    .eq("event_id", eventId)
+    .maybeSingle();
+
+  const original = (item as { time_original: string | null } | null)
+    ?.time_original;
+  if (!original) return { error: "Este item não foi atrasado." };
+
+  const { error } = await supabase
+    .from("roteiro_items")
+    .update({ time: original, time_original: null })
+    .eq("id", itemId)
+    .eq("event_id", eventId);
+
+  if (error) return { error: "Não foi possível desfazer." };
+
+  revalidatePath(`/eventos/${eventId}/roteiro`);
+  revalidatePath(`/eventos/${eventId}`, "layout");
   return { success: true };
 }
 

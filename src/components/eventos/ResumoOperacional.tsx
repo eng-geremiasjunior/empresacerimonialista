@@ -30,7 +30,7 @@ export function ResumoOperacional({
       href: `${base}/roteiro`,
       icon: CalendarRange,
       cor: "bg-emerald-50 text-emerald-600",
-      titulo: "Cronograma",
+      titulo: "Execução do evento",
       valor: `${op.cronogramaItens}`,
       label: op.cronogramaItens === 1 ? "Item" : "Itens",
     },

@@ -20,6 +20,8 @@ export type RoteiroInitial = {
   responsavelTelefone: string;
   etapaObrigatoria: boolean;
   duracaoMinutos: number | null;
+  dependeDe?: string;
+  tipoDependencia?: "dura" | "suave";
 };
 
 type Props = {
@@ -30,6 +32,10 @@ type Props = {
   eventId: string;
   suppliers: Supplier[]; // fornecedores VINCULADOS ao evento
   initial?: RoteiroInitial;
+  /** Outros itens do dia, para escolher de qual este depende. */
+  itensDoDia?: { id: string; title: string; time: string | null }[];
+  /** Item sendo editado: não pode aparecer como opção de dependência. */
+  itemAtualId?: string;
   onClose: () => void;
 };
 
@@ -51,12 +57,15 @@ export function RoteiroForm({
   eventId,
   suppliers,
   initial,
+  itensDoDia = [],
+  itemAtualId,
   onClose,
 }: Props) {
   const [state, formAction] = useFormState(action, null);
   const [supplierChoice, setSupplierChoice] = useState(
     initial?.supplierId ?? ""
   );
+  const [dependeDe, setDependeDe] = useState(initial?.dependeDe ?? "");
 
   useEffect(() => {
     if (state && "success" in state) {
@@ -166,6 +175,55 @@ export function RoteiroForm({
           />
         </div>
       </div>
+
+      {/* Dependência: usada pelo atraso em cascata. Sem isso, adiar um
+          item não teria como saber quem vem depois. */}
+      {itensDoDia.length > 0 && (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <div>
+            <label htmlFor="depende_de" className={labelClass}>
+              Depende de{" "}
+              <span className="font-normal text-stone-400">(opcional)</span>
+            </label>
+            <select
+              id="depende_de"
+              name="depende_de"
+              value={dependeDe}
+              onChange={(e) => setDependeDe(e.target.value)}
+              className={inputClass}
+            >
+              <option value="">Não depende de outro item</option>
+              {itensDoDia
+                .filter((i) => i.id !== itemAtualId)
+                .map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.time ? `${i.time.slice(0, 5)} · ` : ""}
+                    {i.title}
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="tipo_dependencia" className={labelClass}>
+              Força do vínculo
+            </label>
+            <select
+              id="tipo_dependencia"
+              name="tipo_dependencia"
+              defaultValue={initial?.tipoDependencia ?? "dura"}
+              disabled={!dependeDe}
+              className={`${inputClass} disabled:bg-stone-50 disabled:text-stone-400`}
+            >
+              <option value="dura">Dura — atraso empurra este item</option>
+              <option value="suave">Suave — pode correr em paralelo</option>
+            </select>
+            <p className="mt-1.5 text-xs text-stone-500">
+              Só a dependência dura é empurrada quando o item anterior atrasa.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div>
