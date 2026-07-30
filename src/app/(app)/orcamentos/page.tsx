@@ -1,13 +1,34 @@
 import Link from "next/link";
-import { Plus, SlidersHorizontal } from "lucide-react";
+import { Newsreader } from "next/font/google";
 import { createClient } from "@/lib/supabase/server";
 import { OrcamentosTable } from "@/components/orcamentos/OrcamentosTable";
 import { type Orcamento, validadeVencida } from "@/lib/orcamentos";
+import { CORES } from "@/lib/orcamentos-ui";
+
+// Serif do redesign. Carregada só nesta rota (não no layout) para não
+// pesar no resto do painel, que segue com a tipografia atual.
+const serif = Newsreader({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-serif-orcamentos",
+  display: "swap",
+  // O next/font não tem métricas de fallback para esta família e avisa no
+  // build; declarar a fonte de reserva resolve e evita o salto de layout.
+  fallback: ["Georgia", "Times New Roman", "serif"],
+  adjustFontFallback: false,
+});
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Orçamentos — Vela" };
 
 const PER_PAGE = 20;
+
+// Ordenação vem por URL, não do cliente: a lista é paginada no servidor, e
+// ordenar só a página aberta daria uma ordem errada sobre o total.
+const COLUNA_ORDEM: Record<string, string> = {
+  data: "data_evento",
+  valor: "valor_total",
+};
 
 export default async function OrcamentosPage({
   searchParams,
@@ -17,25 +38,35 @@ export default async function OrcamentosPage({
     status?: string;
     tipo?: string;
     page?: string;
+    ordem?: string;
+    dir?: string;
   };
 }) {
   const supabase = createClient();
   const page = Math.max(1, Number(searchParams.page) || 1);
+  const ordem = COLUNA_ORDEM[searchParams.ordem ?? ""] ? searchParams.ordem! : "data";
+  const asc = searchParams.dir !== "desc";
 
-  // Listagem paginada (server-side) com filtros.
   let query = supabase
     .from("orcamentos")
     .select("*", { count: "exact" })
-    .order("created_at", { ascending: false })
+    .order(COLUNA_ORDEM[ordem], { ascending: asc, nullsFirst: false })
     .range((page - 1) * PER_PAGE, page * PER_PAGE - 1);
 
   if (searchParams.busca) {
-    query = query.ilike("contato_nome", `%${searchParams.busca}%`);
+    // Busca por nome OU telefone: só dígitos no telefone, para casar com o
+    // que a cerimonialista digita com ou sem máscara.
+    const termo = searchParams.busca.trim();
+    const digitos = termo.replace(/\D/g, "");
+    query = digitos
+      ? query.or(
+          `contato_nome.ilike.%${termo}%,contato_telefone.ilike.%${digitos}%`
+        )
+      : query.ilike("contato_nome", `%${termo}%`);
   }
   if (searchParams.status) query = query.eq("status", searchParams.status);
   if (searchParams.tipo) query = query.eq("tipo_evento", searchParams.tipo);
 
-  // Cards de resumo: contagens sobre TODOS os orçamentos visíveis.
   const [{ data, count, error }, { data: todos }] = await Promise.all([
     query,
     supabase.from("orcamentos").select("status, data_validade"),
@@ -46,6 +77,21 @@ export default async function OrcamentosPage({
     Orcamento,
     "status" | "data_validade"
   >[];
+
+  // O pacote fechado só existe depois do aceite; buscamos numa consulta só
+  // para o resumo da linha mostrar dado real em vez de rótulo genérico.
+  const ids = rows.map((o) => o.id);
+  const { data: aceites } = ids.length
+    ? await supabase
+        .from("orcamento_aceites")
+        .select("orcamento_id, pacote_nome")
+        .in("orcamento_id", ids)
+    : { data: [] };
+  const pacotePorOrcamento = Object.fromEntries(
+    ((aceites ?? []) as { orcamento_id: string; pacote_nome: string }[]).map(
+      (a) => [a.orcamento_id, a.pacote_nome]
+    )
+  );
 
   // Enviado com validade vencida conta como expirado no resumo.
   const efetivo = (o: Pick<Orcamento, "status" | "data_validade">) =>
@@ -60,44 +106,90 @@ export default async function OrcamentosPage({
   const conversao =
     decididos === 0 ? null : Math.round((aprovados / decididos) * 100);
 
-  const cards = [
-    { label: "Total de orçamentos", valor: String(total) },
-    { label: "Em aberto (enviados)", valor: String(emAberto) },
-    { label: "Aprovados", valor: String(aprovados) },
+  const hoje = new Intl.DateTimeFormat("pt-BR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(new Date());
+
+  const statusAtual = searchParams.status ?? "";
+
+  const metricas: {
+    chave: string | null;
+    rotulo: string;
+    valor: string;
+    sufixo: string | null;
+  }[] = [
+    { chave: "", rotulo: "Total de orçamentos", valor: String(total), sufixo: null },
+    { chave: "enviado", rotulo: "Em aberto", valor: String(emAberto), sufixo: null },
+    { chave: "aprovado", rotulo: "Aprovados", valor: String(aprovados), sufixo: null },
     {
-      label: "Taxa de conversão",
-      valor: conversao === null ? "—" : `${conversao}%`,
+      chave: null,
+      rotulo: "Taxa de conversão",
+      valor: conversao === null ? "—" : String(conversao),
+      sufixo: conversao === null ? null : "%",
     },
   ];
 
+  const hrefComStatus = (chave: string) => {
+    const p = new URLSearchParams();
+    if (searchParams.busca) p.set("busca", searchParams.busca);
+    if (searchParams.tipo) p.set("tipo", searchParams.tipo);
+    if (searchParams.ordem) p.set("ordem", searchParams.ordem);
+    if (searchParams.dir) p.set("dir", searchParams.dir);
+    // clicar no filtro ativo volta para "todos"
+    const alvo = statusAtual === chave ? "" : chave;
+    if (alvo) p.set("status", alvo);
+    const qs = p.toString();
+    return qs ? `/orcamentos?${qs}` : "/orcamentos";
+  };
+
   return (
-    <div className="mx-auto max-w-6xl">
-      {/* Cabeçalho */}
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+    <div
+      className={`${serif.variable} mx-auto max-w-[1080px]`}
+      style={{ color: CORES.texto }}
+    >
+      {/* topbar: data por extenso */}
+      <p className="text-[12.5px] capitalize" style={{ color: CORES.terciario }}>
+        {hoje}
+      </p>
+
+      {/* cabeçalho */}
+      <div className="mt-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Orçamentos</h1>
-          <p className="mt-0.5 text-sm text-gray-500">
+          <h1
+            className="text-[28px] font-medium leading-tight sm:text-[34px]"
+            style={{
+              fontFamily: "var(--font-serif-orcamentos), Georgia, serif",
+              letterSpacing: "-0.3px",
+            }}
+          >
+            Orçamentos
+          </h1>
+          <p className="mt-1 text-[14px]" style={{ color: CORES.secundario }}>
             Monte propostas e acompanhe aprovações
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link
             href="/orcamentos/modelos"
-            className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 hover:border-gray-400"
+            className="rounded-[9px] border bg-white px-3.5 py-2 text-[13.5px] transition-colors hover:bg-[#F7F7F5]"
+            style={{ borderColor: CORES.borda, color: CORES.texto }}
           >
-            <SlidersHorizontal size={15} /> Modelos de Precificação
+            Modelos de precificação
           </Link>
           <Link
             href="/orcamentos/novo"
-            className="flex items-center gap-1.5 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700"
+            className="rounded-[9px] px-4 py-2 text-[13.5px] transition-colors hover:bg-black"
+            style={{ background: CORES.texto, color: CORES.suave }}
           >
-            <Plus size={16} /> Novo orçamento
+            + Novo orçamento
           </Link>
         </div>
       </div>
 
       {error && (
-        <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
+        <div className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
           Não foi possível carregar os orçamentos. Se o banco ainda não foi
           atualizado, execute{" "}
           <code>supabase/migrations/041_orcamentos_estrutura.sql</code> no SQL
@@ -105,32 +197,70 @@ export default async function OrcamentosPage({
         </div>
       )}
 
-      {/* Cards de resumo */}
-      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {cards.map((c) => (
-          <div
-            key={c.label}
-            className="rounded-xl border border-gray-200 bg-white p-4"
-          >
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
-              {c.label}
-            </p>
-            <p className="mt-1 text-2xl font-semibold text-gray-900">
-              {c.valor}
-            </p>
-          </div>
-        ))}
+      {/* métricas: contêiner único com divisórias. "Em aberto" e
+          "Aprovados" filtram a lista; "Total" limpa o filtro. */}
+      <div
+        className="mt-6 grid grid-cols-2 overflow-hidden rounded-[14px] border lg:grid-cols-4"
+        style={{ borderColor: CORES.borda }}
+      >
+        {metricas.map((m, i) => {
+          const clicavel = m.chave !== null;
+          const ativo = clicavel && m.chave !== "" && m.chave === statusAtual;
+          const estilo = {
+            borderColor: CORES.borda,
+            borderLeftWidth: i === 0 ? 0 : 1,
+            background: ativo ? CORES.tag : undefined,
+          };
+          const conteudo = (
+            <>
+              <p
+                className="text-[10.5px] uppercase"
+                style={{ letterSpacing: "1px", color: CORES.terciario }}
+              >
+                {m.rotulo}
+              </p>
+              <p
+                className="mt-1.5 text-[26px] font-medium leading-none sm:text-[30px]"
+                style={{ fontFamily: "var(--font-serif-orcamentos), Georgia, serif" }}
+              >
+                {m.valor}
+                {m.sufixo && (
+                  <span className="text-[18px]" style={{ color: CORES.enviadoPonto }}>
+                    {m.sufixo}
+                  </span>
+                )}
+              </p>
+            </>
+          );
+          return clicavel ? (
+            <Link
+              key={m.rotulo}
+              href={hrefComStatus(m.chave as string)}
+              className="border-l px-5 py-4 transition-colors hover:bg-[#F7F7F5]"
+              style={estilo}
+            >
+              {conteudo}
+            </Link>
+          ) : (
+            <div key={m.rotulo} className="border-l px-5 py-4" style={estilo}>
+              {conteudo}
+            </div>
+          );
+        })}
       </div>
 
       <OrcamentosTable
         rows={rows}
         total={count ?? 0}
         perPage={PER_PAGE}
+        pacotePorOrcamento={pacotePorOrcamento}
         current={{
           busca: searchParams.busca ?? "",
-          status: searchParams.status ?? "",
+          status: statusAtual,
           tipo: searchParams.tipo ?? "",
           page,
+          ordem,
+          dir: asc ? "asc" : "desc",
         }}
       />
     </div>

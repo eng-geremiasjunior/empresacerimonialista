@@ -29,6 +29,9 @@ export type Orcamento = {
   status: OrcamentoStatus;
   hash_publico: string;
   evento_gerado_id: string | null;
+  // E-mail que o cliente confirmou ao assinar; a lista prefere este ao
+  // contato_email, que é o que a cerimonialista digitou na negociação.
+  ficha_email: string | null;
   ficha_preenchida_em: string | null;
   respondido_em: string | null;
   created_at: string;
