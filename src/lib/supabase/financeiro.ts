@@ -81,16 +81,20 @@ export type FinanceiroEvento = {
 };
 
 export async function getFinanceiroEvento(
-  eventId: string
+  eventId: string,
+  conta: "assessoria" | "fornecedor" = "assessoria"
 ): Promise<FinanceiroEvento> {
   const supabase = createClient();
 
   const [evRes, txRes] = await Promise.all([
     supabase.from("events").select("contract_value").eq("id", eventId).single(),
+    // A aba Assessoria mostra só a conta dela; o que é de fornecedor vive
+    // na outra aba, com a verba alocada ao lado (063).
     supabase
       .from("transactions")
       .select(TX_COLUMNS)
       .eq("event_id", eventId)
+      .eq("conta", conta)
       .order("due_date", { ascending: true, nullsFirst: false }),
   ]);
 

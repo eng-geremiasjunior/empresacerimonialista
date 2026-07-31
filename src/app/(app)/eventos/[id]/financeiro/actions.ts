@@ -65,6 +65,8 @@ export async function gerarParcelas(
       due_date: hoje,
       paid: true,
       paid_at: new Date().toISOString(),
+      // Receita do contrato: sempre da conta assessoria.
+      conta: "assessoria",
     });
   }
 
@@ -82,6 +84,7 @@ export async function gerarParcelas(
       paid: false,
       installment_number: i + 1,
       installment_total: n,
+      conta: "assessoria",
     });
   }
 
@@ -139,6 +142,9 @@ export async function criarTransacao(
     paid,
     paid_at: paid ? new Date().toISOString() : null,
     supplier_id: supplierId || null,
+    // Conta e fornecedor andam juntos (CHECK da 063): com fornecedor o
+    // lançamento é da conta dele; sem, é da assessoria.
+    conta: supplierId ? "fornecedor" : "assessoria",
   });
 
   if (error) {
