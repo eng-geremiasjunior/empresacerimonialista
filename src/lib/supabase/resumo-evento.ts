@@ -10,18 +10,31 @@ import type { EventStatus, EventType } from "@/lib/types";
 const iso = (d: Date) => format(d, "yyyy-MM-dd");
 
 // ------------------------------------------------------------
-// Cabeçalho do evento (layout): saúde + 3 fases do ciclo + contadores,
+// Cabeçalho do evento (layout): saúde + jornada em 3 fases + contadores,
 // tudo numa leva de queries. As fases reaproveitam os MESMOS agregados
 // da Saúde do Evento — nenhum cálculo inventado:
 //   Planejamento → % de tarefas concluídas (checklist)
-//   Operação     → prontidão do dia: fornecedores confirmados + cronograma
-//   Pós-evento   → fechamento financeiro: receitas recebidas
+//   Organização  → fornecedores confirmados + parcelas recebidas
+//   Execução     → itens do roteiro concluídos no dia
+//
+// Cada fase expõe percentual E uma contagem própria, sempre vinda de
+// query real (nunca texto fixo): é o que o stepper mostra embaixo do nó.
 // ------------------------------------------------------------
 
+export type FaseId = "planejamento" | "organizacao" | "execucao";
+
+export type FaseProgresso = {
+  id: FaseId;
+  rotulo: string;
+  pct: number;
+  /** Ex.: "28 tarefas restantes". Vazio quando não há nada pendente. */
+  contagem: string;
+};
+
 export type FasesEvento = {
-  planejamento: number;
-  operacao: number;
-  posEvento: number;
+  lista: FaseProgresso[];
+  /** Primeira fase não concluída — é a que o evento abre por padrão. */
+  sugerida: FaseId;
 };
 
 export type CabecalhoEvento = {
@@ -29,6 +42,9 @@ export type CabecalhoEvento = {
   fases: FasesEvento;
   contadores: EventoContadores;
 };
+
+const plural = (n: number, um: string, muitos: string) =>
+  `${n} ${n === 1 ? um : muitos}`;
 
 export async function getCabecalhoEvento(
   eventId: string
@@ -40,10 +56,10 @@ export async function getCabecalhoEvento(
   const [tasksRes, linksRes, itemsRes, txRes, msgRes] = await Promise.all([
     supabase.from("tasks").select("status").eq("event_id", eventId),
     supabase.from("roteiro_links").select("confirmed").eq("event_id", eventId),
-    supabase
-      .from("roteiro_items")
-      .select("id", { count: "exact", head: true })
-      .eq("event_id", eventId),
+    // status_novo (031) é o estado real do item no dia: planejado,
+    // em_andamento, concluido, problema. A contagem sozinha não diria
+    // quanto da Execução já andou.
+    supabase.from("roteiro_items").select("status_novo").eq("event_id", eventId),
     supabase
       .from("transactions")
       .select("type, paid, due_date")
@@ -63,7 +79,8 @@ export async function getCabecalhoEvento(
     paid: boolean;
     due_date: string | null;
   }[];
-  const cronogramaItens = itemsRes.count ?? 0;
+  const roteiro = (itemsRes.data ?? []) as { status_novo: string | null }[];
+  const cronogramaItens = roteiro.length;
 
   const tarefasTotal = tasks.length;
   const tarefasConcluidas = tasks.filter((t) => t.status === "concluido").length;
@@ -91,20 +108,83 @@ export async function getCabecalhoEvento(
     roteiroItens: cronogramaItens,
   });
 
-  // Fases (0-100)
-  const planejamento =
-    tarefasTotal > 0
-      ? Math.round((tarefasConcluidas / tarefasTotal) * 100)
-      : 100;
-  const fornNorm = fornTotal > 0 ? (fornConfirmados / fornTotal) * 100 : 100;
-  const cronNorm = cronogramaItens > 0 ? 100 : 0;
-  const operacao = Math.round((fornNorm + cronNorm) / 2);
+  // ---- Jornada em 3 fases (0-100 + contagem própria) ----
+  // Fase vazia conta como 100%: sem tarefas cadastradas não há nada
+  // pendente ali, e mostrar 0% faria a fase parecer atrasada.
+
+  // PLANEJAMENTO — o checklist do evento.
+  const planejamentoPct =
+    tarefasTotal > 0 ? Math.round((tarefasConcluidas / tarefasTotal) * 100) : 100;
+  const tarefasRestantes = tarefasTotal - tarefasConcluidas;
+
+  // ORGANIZAÇÃO — fechar fornecedores e receber as parcelas do contrato.
   const receitas = tx.filter((t) => t.type === "receita");
   const receitasPagas = receitas.filter((t) => t.paid).length;
-  const posEvento =
-    receitas.length > 0
-      ? Math.round((receitasPagas / receitas.length) * 100)
+  const parcelasPendentes = receitas.length - receitasPagas;
+  const fornPendentes = fornTotal - fornConfirmados;
+  const organizacaoItens = fornTotal + receitas.length;
+  const organizacaoPct =
+    organizacaoItens > 0
+      ? Math.round(((fornConfirmados + receitasPagas) / organizacaoItens) * 100)
       : 100;
+
+  // EXECUÇÃO — o roteiro do dia, item a item.
+  const roteiroConcluidos = roteiro.filter(
+    (i) => i.status_novo === "concluido"
+  ).length;
+  const execucaoPct =
+    cronogramaItens > 0
+      ? Math.round((roteiroConcluidos / cronogramaItens) * 100)
+      : 0; // sem roteiro montado a Execução não começou
+  const roteiroRestantes = cronogramaItens - roteiroConcluidos;
+
+  const lista: FaseProgresso[] = [
+    {
+      id: "planejamento",
+      rotulo: "Planejamento",
+      pct: planejamentoPct,
+      contagem:
+        tarefasTotal === 0
+          ? "Nenhuma tarefa cadastrada"
+          : tarefasRestantes > 0
+            ? `${plural(tarefasRestantes, "tarefa restante", "tarefas restantes")}`
+            : "Checklist concluído",
+    },
+    {
+      id: "organizacao",
+      rotulo: "Organização",
+      pct: organizacaoPct,
+      contagem:
+        organizacaoItens === 0
+          ? "Sem fornecedores ou parcelas"
+          : [
+              fornPendentes > 0
+                ? plural(fornPendentes, "fornecedor a confirmar", "fornecedores a confirmar")
+                : null,
+              parcelasPendentes > 0
+                ? plural(parcelasPendentes, "parcela pendente", "parcelas pendentes")
+                : null,
+            ]
+              .filter(Boolean)
+              .join(" · ") || "Tudo confirmado",
+    },
+    {
+      id: "execucao",
+      rotulo: "Execução",
+      pct: execucaoPct,
+      contagem:
+        cronogramaItens === 0
+          ? "Roteiro não montado"
+          : roteiroRestantes > 0
+            ? plural(roteiroRestantes, "item do roteiro", "itens do roteiro")
+            : "Roteiro concluído",
+    },
+  ];
+
+  // Fase sugerida: a primeira não concluída. É só o padrão de abertura —
+  // a navegação entre fases é livre.
+  const sugerida: FaseId =
+    lista.find((f) => f.pct < 100)?.id ?? "execucao";
 
   const receberContador = tx.filter(
     (t) => t.type === "receita" && !t.paid && t.due_date && t.due_date <= em7
@@ -112,7 +192,7 @@ export async function getCabecalhoEvento(
 
   return {
     saude,
-    fases: { planejamento, operacao, posEvento },
+    fases: { lista, sugerida },
     contadores: {
       fornecedoresPendentes: fornTotal - fornConfirmados,
       comunicacaoNaoLidas: msgRes.count ?? 0,

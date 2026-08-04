@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { EventTabs } from "@/components/evento/EventTabs";
 import { EventoContainer } from "@/components/evento/EventoContainer";
 import { ProgressoEvento } from "@/components/eventos/ProgressoEvento";
+import { ResumoDaFase } from "@/components/eventos/ResumoDaFase";
 import { getCabecalhoEvento } from "@/lib/supabase/resumo-evento";
 import { formatDate } from "@/lib/format";
 import {
@@ -146,8 +147,9 @@ export default async function EventoLayout({
         </div>
       </div>
 
-      {/* Card de progresso com stepper de 3 fases */}
+      {/* Jornada: stepper clicável + resumo da fase aberta */}
       <ProgressoEvento saude={saude} fases={fases} />
+      <ResumoDaFase saude={saude} fases={fases} eventId={event.id} />
 
       <EventTabs
         eventId={event.id}
