@@ -13,6 +13,7 @@ import {
   ChevronRight,
   ListTree,
   Plus,
+  ShieldCheck,
   Trash2,
 } from "lucide-react";
 import { formatBRL } from "@/lib/orcamentos";
@@ -273,6 +274,18 @@ export function AbaFornecedores({
                 }`
           }
         />
+      </div>
+
+      {/* Política do saldo — decisão fechada: dinheiro nunca é redistribuído
+          em cascata pelo sistema. Texto fixo, não um valor calculado: a
+          verba aqui é a soma das alocações, não há reserva a recalcular. */}
+      <div className="flex items-start gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-xs text-gray-600">
+        <ShieldCheck size={15} className="mt-px shrink-0 text-gray-400" />
+        <span>
+          O saldo é protegido — o Vela nunca o redistribui automaticamente.
+          Ajustes no orçamento (como mudança de convidados) apenas sugerem
+          revisão; você confirma cada realocação.
+        </span>
       </div>
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
