@@ -23,12 +23,17 @@ const iso = (d: Date) => format(d, "yyyy-MM-dd");
 
 export type FaseId = "planejamento" | "organizacao" | "execucao";
 
+/** Selo do Resumo do Copiloto: cálculo por regras, nunca texto genérico. */
+export type SeloCopiloto = { tipo: "ok" | "warn"; texto: string };
+
 export type FaseProgresso = {
   id: FaseId;
   rotulo: string;
   pct: number;
   /** Ex.: "28 tarefas restantes". Vazio quando não há nada pendente. */
   contagem: string;
+  /** Blocos ✔/⚠ do painel da fase. */
+  selos: SeloCopiloto[];
 };
 
 export type FasesEvento = {
@@ -47,14 +52,17 @@ const plural = (n: number, um: string, muitos: string) =>
   `${n} ${n === 1 ? um : muitos}`;
 
 export async function getCabecalhoEvento(
-  eventId: string
+  eventId: string,
+  /** Data do evento (o layout já carregou) — alimenta "Faltam N dias". */
+  dataEvento?: string | null
 ): Promise<CabecalhoEvento> {
   const supabase = createClient();
   const hoje = iso(new Date());
   const em7 = iso(addDays(new Date(), 7));
 
   const [tasksRes, linksRes, itemsRes, txRes, msgRes] = await Promise.all([
-    supabase.from("tasks").select("status").eq("event_id", eventId),
+    // due_date entra para o Copiloto saber o que está vencido.
+    supabase.from("tasks").select("status, due_date").eq("event_id", eventId),
     supabase.from("roteiro_links").select("confirmed").eq("event_id", eventId),
     // status_novo (031) é o estado real do item no dia: planejado,
     // em_andamento, concluido, problema. A contagem sozinha não diria
@@ -72,7 +80,10 @@ export async function getCabecalhoEvento(
       .is("read_at", null),
   ]);
 
-  const tasks = (tasksRes.data ?? []) as { status: string }[];
+  const tasks = (tasksRes.data ?? []) as {
+    status: string;
+    due_date: string | null;
+  }[];
   const links = (linksRes.data ?? []) as { confirmed: boolean }[];
   const tx = (txRes.data ?? []) as {
     type: string;
@@ -109,24 +120,29 @@ export async function getCabecalhoEvento(
   });
 
   // ---- Jornada em 3 fases (0-100 + contagem própria) ----
-  // Fase vazia conta como 100%: sem tarefas cadastradas não há nada
-  // pendente ali, e mostrar 0% faria a fase parecer atrasada.
+  // Fase sem nada montado fica em 0% e o stepper a rotula "A iniciar":
+  // dizer 100% ali seria afirmar que está pronta quando nem começou — e
+  // gerava a contradição de marcar 100% junto de um alerta de pendência.
 
   // PLANEJAMENTO — o checklist do evento.
   const planejamentoPct =
-    tarefasTotal > 0 ? Math.round((tarefasConcluidas / tarefasTotal) * 100) : 100;
+    tarefasTotal > 0 ? Math.round((tarefasConcluidas / tarefasTotal) * 100) : 0;
   const tarefasRestantes = tarefasTotal - tarefasConcluidas;
 
   // ORGANIZAÇÃO — fechar fornecedores e receber as parcelas do contrato.
+  // São duas frentes: uma frente ainda não montada conta como pendente
+  // (peso 1), senão ter só as parcelas em dia marcaria a fase inteira
+  // como concluída sem nenhum fornecedor fechado.
   const receitas = tx.filter((t) => t.type === "receita");
   const receitasPagas = receitas.filter((t) => t.paid).length;
   const parcelasPendentes = receitas.length - receitasPagas;
   const fornPendentes = fornTotal - fornConfirmados;
   const organizacaoItens = fornTotal + receitas.length;
-  const organizacaoPct =
-    organizacaoItens > 0
-      ? Math.round(((fornConfirmados + receitasPagas) / organizacaoItens) * 100)
-      : 100;
+  const unidadesOrganizacao =
+    (fornTotal > 0 ? fornTotal : 1) + (receitas.length > 0 ? receitas.length : 1);
+  const organizacaoPct = Math.round(
+    ((fornConfirmados + receitasPagas) / unidadesOrganizacao) * 100
+  );
 
   // EXECUÇÃO — o roteiro do dia, item a item.
   const roteiroConcluidos = roteiro.filter(
@@ -137,6 +153,112 @@ export async function getCabecalhoEvento(
       ? Math.round((roteiroConcluidos / cronogramaItens) * 100)
       : 0; // sem roteiro montado a Execução não começou
   const roteiroRestantes = cronogramaItens - roteiroConcluidos;
+  const roteiroProblemas = roteiro.filter(
+    (i) => i.status_novo === "problema"
+  ).length;
+
+  // Dias até o evento: é a contagem que a Execução mostra enquanto o dia
+  // não chega ("Faltam 47 dias" no mockup).
+  const diasParaEvento = dataEvento
+    ? differenceInCalendarDays(
+        new Date(`${dataEvento}T00:00:00`),
+        new Date(`${hoje}T00:00:00`)
+      )
+    : null;
+
+  // ---- Selos do Copiloto: ✔/⚠ por regra, sobre o mesmo dado ----
+  const tarefasVencidas = tasks.filter(
+    (t) =>
+      t.status !== "concluido" && t.due_date !== null && t.due_date < hoje
+  ).length;
+
+  const selosPlanejamento: SeloCopiloto[] = [];
+  if (tarefasTotal === 0) {
+    selosPlanejamento.push({
+      tipo: "warn",
+      texto: "Checklist do evento ainda não montado",
+    });
+  } else {
+    selosPlanejamento.push({
+      tipo: tarefasConcluidas === tarefasTotal ? "ok" : "warn",
+      texto: `${tarefasConcluidas} de ${tarefasTotal} ${tarefasTotal === 1 ? "tarefa concluída" : "tarefas concluídas"}`,
+    });
+    if (tarefasVencidas > 0) {
+      selosPlanejamento.push({
+        tipo: "warn",
+        texto: plural(tarefasVencidas, "tarefa vencida", "tarefas vencidas"),
+      });
+    } else if (tarefasRestantes > 0) {
+      selosPlanejamento.push({
+        tipo: "ok",
+        texto: "Nenhuma tarefa vencida",
+      });
+    }
+  }
+
+  const selosOrganizacao: SeloCopiloto[] = [];
+  if (fornTotal === 0) {
+    selosOrganizacao.push({
+      tipo: "warn",
+      texto: "Nenhum fornecedor vinculado ao evento",
+    });
+  } else {
+    selosOrganizacao.push({
+      tipo: fornConfirmados === fornTotal ? "ok" : "warn",
+      texto: `${fornConfirmados} de ${fornTotal} ${fornTotal === 1 ? "fornecedor confirmado" : "fornecedores confirmados"}`,
+    });
+  }
+  if (receitas.length === 0) {
+    selosOrganizacao.push({
+      tipo: "warn",
+      texto: "Contrato sem parcelas lançadas",
+    });
+  } else {
+    selosOrganizacao.push({
+      tipo: receitasPagas === receitas.length ? "ok" : "warn",
+      texto: `${receitasPagas} de ${receitas.length} ${receitas.length === 1 ? "parcela recebida" : "parcelas recebidas"}`,
+    });
+    if (vencidas.length > 0) {
+      selosOrganizacao.push({
+        tipo: "warn",
+        texto: plural(vencidas.length, "parcela vencida", "parcelas vencidas"),
+      });
+    }
+  }
+
+  const selosExecucao: SeloCopiloto[] = [];
+  if (cronogramaItens === 0) {
+    selosExecucao.push({
+      tipo: "warn",
+      texto: "Roteiro do dia ainda não montado",
+    });
+  } else {
+    selosExecucao.push({
+      tipo: roteiroConcluidos === cronogramaItens ? "ok" : "warn",
+      texto: `${roteiroConcluidos} de ${cronogramaItens} ${cronogramaItens === 1 ? "item concluído" : "itens concluídos"}`,
+    });
+    if (roteiroProblemas > 0) {
+      selosExecucao.push({
+        tipo: "warn",
+        texto: plural(
+          roteiroProblemas,
+          "item com problema reportado",
+          "itens com problema reportado"
+        ),
+      });
+    }
+  }
+  if (diasParaEvento !== null) {
+    selosExecucao.push({
+      tipo: "ok",
+      texto:
+        diasParaEvento > 0
+          ? `Faltam ${plural(diasParaEvento, "dia", "dias")} para o evento`
+          : diasParaEvento === 0
+            ? "O evento é hoje"
+            : "Evento já realizado",
+    });
+  }
 
   const lista: FaseProgresso[] = [
     {
@@ -149,6 +271,7 @@ export async function getCabecalhoEvento(
           : tarefasRestantes > 0
             ? `${plural(tarefasRestantes, "tarefa restante", "tarefas restantes")}`
             : "Checklist concluído",
+      selos: selosPlanejamento,
     },
     {
       id: "organizacao",
@@ -167,17 +290,23 @@ export async function getCabecalhoEvento(
             ]
               .filter(Boolean)
               .join(" · ") || "Tudo confirmado",
+      selos: selosOrganizacao,
     },
     {
       id: "execucao",
       rotulo: "Execução",
       pct: execucaoPct,
+      // Enquanto o dia não chega, a contagem útil é o tempo restante —
+      // é o que o mockup mostra ("Faltam 47 dias").
       contagem:
-        cronogramaItens === 0
-          ? "Roteiro não montado"
-          : roteiroRestantes > 0
-            ? plural(roteiroRestantes, "item do roteiro", "itens do roteiro")
-            : "Roteiro concluído",
+        diasParaEvento !== null && diasParaEvento > 0
+          ? `Faltam ${plural(diasParaEvento, "dia", "dias")}`
+          : cronogramaItens === 0
+            ? "Roteiro não montado"
+            : roteiroRestantes > 0
+              ? plural(roteiroRestantes, "item do roteiro", "itens do roteiro")
+              : "Roteiro concluído",
+      selos: selosExecucao,
     },
   ];
 

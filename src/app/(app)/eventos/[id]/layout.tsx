@@ -52,7 +52,10 @@ export default async function EventoLayout({
     clients: { name: string } | null;
   };
 
-  const { saude, fases, contadores } = await getCabecalhoEvento(event.id);
+  const { saude, fases, contadores } = await getCabecalhoEvento(
+    event.id,
+    event.date
+  );
 
   const titulo =
     event.name ||

@@ -1,21 +1,25 @@
 "use client";
 
-// Resumo da fase aberta — a primeira coisa visível ao entrar numa fase,
-// para nenhuma delas começar vazia.
+// Aba Resumo — visão da fase aberta. O primeiro bloco é sempre o "Resumo
+// do Copiloto", para nenhuma fase abrir vazia (handoff: vela-fases-evento).
 //
-// Reaproveita os alertas do Copiloto que já existem (calcularSaudeEvento):
-// aqui eles só são filtrados para o que pertence à fase e promovidos ao
-// topo. Nada de texto estático — se não houver alerta da fase, o painel
-// diz isso e aponta para onde agir.
+// Copiloto por regras, não IA: cada selo ✔/⚠ é contagem determinística
+// sobre tarefas, fornecedores, parcelas e roteiro — calculada em
+// resumo-evento.ts, ao lado do percentual da fase. Nada de texto genérico.
 //
 // É client porque a fase vem da query string, e layout do App Router não
 // recebe searchParams.
 
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, Circle } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { SAUDE_UI, type Saude, type SaudeAba } from "@/lib/saude-evento";
+import type { Saude, SaudeAba } from "@/lib/saude-evento";
 import type { FaseId, FasesEvento } from "@/lib/supabase/resumo-evento";
+
+const TEAL = "#0f9b84";
+const TEAL_TINT = "#e7f4f1";
+const AMBER = "#b07514";
+const AMBER_TINT = "#f8efdd";
 
 const ABA_HREF: Record<SaudeAba, string> = {
   tarefas: "tarefas",
@@ -24,20 +28,58 @@ const ABA_HREF: Record<SaudeAba, string> = {
   roteiro: "roteiro",
 };
 
-// Que abas pertencem a cada fase da jornada. Determinístico, sem IA:
-// é a mesma divisão que o cálculo de progresso usa.
+// Que abas pertencem a cada fase. Determinístico, e é a mesma divisão que
+// o cálculo de progresso usa.
 const ABAS_DA_FASE: Record<FaseId, SaudeAba[]> = {
   planejamento: ["tarefas"],
   organizacao: ["fornecedores", "financeiro"],
   execucao: ["roteiro"],
 };
 
-// Para onde a fase leva quando está tudo em dia.
+// Para onde a fase leva — o próximo passo concreto dela.
 const ATALHO_DA_FASE: Record<FaseId, { rotulo: string; seg: string }> = {
   planejamento: { rotulo: "Abrir tarefas", seg: "tarefas" },
   organizacao: { rotulo: "Abrir fornecedores", seg: "fornecedores" },
   execucao: { rotulo: "Abrir execução do evento", seg: "roteiro" },
 };
+
+function IconeSelo({ tipo }: { tipo: "ok" | "warn" }) {
+  const ok = tipo === "ok";
+  return (
+    <span
+      aria-hidden
+      className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full"
+      style={{ background: ok ? TEAL_TINT : AMBER_TINT }}
+    >
+      {ok ? (
+        <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
+          <path
+            d="M4 8.2 6.6 10.8 12 5"
+            stroke={TEAL}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      ) : (
+        <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
+          <path
+            d="M8 3.6 13 12H3z"
+            stroke={AMBER}
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M8 7v1.8M8 10.3h.01"
+            stroke={AMBER}
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+        </svg>
+      )}
+    </span>
+  );
+}
 
 export function ResumoDaFase({
   saude,
@@ -55,59 +97,60 @@ export function ResumoDaFase({
   const abas = ABAS_DA_FASE[fase.id];
   const alertas = saude.alertas.filter((a) => abas.includes(a.aba));
   const atalho = ATALHO_DA_FASE[fase.id];
-  const ui = SAUDE_UI[saude.nivel];
 
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Circle size={8} className={`${ui.dot} fill-current`} aria-hidden />
-          <h2 className="text-sm font-medium text-gray-700">
-            Resumo · {fase.rotulo}
+    <section className="overflow-hidden rounded-xl border border-[#ececea] bg-white">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#f0f0ee] px-[18px] py-4">
+        <div className="flex items-center gap-[9px]">
+          <span
+            className="h-1.5 w-1.5 rounded-full"
+            style={{ background: TEAL }}
+            aria-hidden
+          />
+          <h2 className="text-[15px] font-bold text-[#1b1c1e]">
+            Resumo do Copiloto
           </h2>
+          <span className="text-[13px] text-[#797e86]">{fase.rotulo}</span>
         </div>
-        <p className="text-sm text-gray-500">
-          <span className="font-semibold text-gray-900 tabular-nums">
-            {fase.pct}%
-          </span>{" "}
-          · {fase.contagem}
-        </p>
+        <span className="text-[11.5px] text-[#a2a6ad]">
+          cálculo por regras · {fase.pct}% · {fase.contagem}
+        </span>
       </div>
 
-      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
-        <div
-          className="h-full rounded-full bg-emerald-500 transition-[width] duration-300"
-          style={{ width: `${fase.pct}%` }}
-        />
+      <div className="flex flex-col gap-[11px] px-[18px] py-4">
+        {fase.selos.map((selo, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-2.5 text-[12.5px] text-[#33373d]"
+          >
+            <IconeSelo tipo={selo.tipo} />
+            {selo.texto}
+          </div>
+        ))}
+
+        {/* Alertas do Copiloto que pertencem a esta fase — clicáveis, levam
+            direto para onde resolver. */}
+        {alertas.map((alerta, i) => (
+          <Link
+            key={`a-${i}`}
+            href={`/eventos/${eventId}/${ABA_HREF[alerta.aba]}`}
+            className="flex items-center gap-2.5 text-[12.5px] text-[#33373d] hover:text-[#1b1c1e]"
+          >
+            <IconeSelo tipo="warn" />
+            {alerta.texto}
+          </Link>
+        ))}
       </div>
 
-      {alertas.length === 0 ? (
-        <p className="mt-3 text-sm text-gray-500">
-          Nada pendente nesta fase.
-        </p>
-      ) : (
-        <ul className="mt-3 space-y-1.5">
-          {alertas.map((alerta, i) => (
-            <li key={i}>
-              <Link
-                href={`/eventos/${eventId}/${ABA_HREF[alerta.aba]}`}
-                className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
-              >
-                <AlertTriangle size={14} className="shrink-0 text-gray-400" />
-                {alerta.texto}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <Link
-        href={`/eventos/${eventId}/${atalho.seg}`}
-        className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-gray-700 hover:text-gray-900"
-      >
-        {atalho.rotulo}
-        <ArrowRight size={14} />
-      </Link>
+      <div className="border-t border-[#f0f0ee] px-[18px] py-3">
+        <Link
+          href={`/eventos/${eventId}/${atalho.seg}`}
+          className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-[#33373d] hover:text-[#1b1c1e]"
+        >
+          {atalho.rotulo}
+          <ArrowRight size={13} />
+        </Link>
+      </div>
     </section>
   );
 }

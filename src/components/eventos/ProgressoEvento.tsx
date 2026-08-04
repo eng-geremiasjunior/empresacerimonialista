@@ -1,68 +1,105 @@
 "use client";
 
-// Stepper da jornada do evento: PLANEJAMENTO → ORGANIZAÇÃO → EXECUÇÃO.
+// Stepper da jornada: PLANEJAMENTO → ORGANIZAÇÃO → EXECUÇÃO.
+// Refinamento visual sobre o handoff (vela-fases-evento.html).
 //
-// Os três nós são clicáveis e a navegação é livre — dá para voltar a
-// Planejamento a qualquer momento. A fase escolhida vai na query string
-// (?fase=), então o link é compartilhável e o botão voltar funciona.
+// Duas leituras ao mesmo tempo, como no mockup:
+//   * o anel parcial de cada nó diz quanto daquela FASE já andou;
+//   * a linha-guia contínua diz quanto da JORNADA INTEIRA já andou.
 //
-// A linha entre dois nós é preenchida proporcionalmente ao progresso da
-// fase à ESQUERDA: é o mesmo indicador parcial do círculo, só estendido
-// para o trecho conector, como pedido.
+// A linha é uma só (não um traço por trecho): ancorada do centro do
+// primeiro nó ao centro do último — daí os 16.667% de cada lado, que é
+// metade de um terço. O preenchimento é a média dos trechos, então
+// 100% + 60% param exatamente a 60% do segundo trecho.
+//
+// Clicável: a fase vai na query string, o link é compartilhável e o botão
+// voltar funciona. Navegação livre — dá para voltar ao Planejamento a
+// qualquer momento.
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Check } from "lucide-react";
 import type { Saude } from "@/lib/saude-evento";
-import type { FaseId, FaseProgresso, FasesEvento } from "@/lib/supabase/resumo-evento";
+import type {
+  FaseId,
+  FaseProgresso,
+  FasesEvento,
+} from "@/lib/supabase/resumo-evento";
+
+const TEAL = "#0f9b84";
+const TRACK = "#e8e8e4";
 
 function No({
   fase,
+  indice,
   ativa,
   onClick,
 }: {
   fase: FaseProgresso;
+  indice: number;
   ativa: boolean;
   onClick: () => void;
 }) {
-  const completa = fase.pct >= 100;
+  const concluida = fase.pct >= 100;
+  const iniciada = fase.pct > 0;
+
   return (
     <button
       onClick={onClick}
       aria-current={ativa ? "step" : undefined}
-      className="group flex flex-1 flex-col items-center text-center"
+      className="flex flex-1 flex-col items-center gap-2 px-1.5 pb-1.5 text-center"
     >
+      {/* Anel: sólido quando concluída, conic parcial quando em andamento,
+          cinza quando não começou. Ring branco separa do trilho atrás. */}
       <div
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold transition-colors ${
-          completa
-            ? "bg-emerald-500 text-white"
-            : fase.pct > 0
-              ? "border-2 border-emerald-500 bg-white text-emerald-600"
-              : "border-2 border-gray-200 bg-white text-gray-400"
-        } ${ativa ? "ring-2 ring-gray-900 ring-offset-2" : ""}`}
+        className="flex h-[34px] w-[34px] items-center justify-center rounded-full"
+        style={{
+          background: concluida
+            ? TEAL
+            : iniciada
+              ? `conic-gradient(${TEAL} 0% ${fase.pct}%, ${TRACK} ${fase.pct}% 100%)`
+              : TRACK,
+          boxShadow: "0 0 0 4px #fff",
+        }}
       >
-        {completa ? <Check size={15} strokeWidth={3} /> : `${fase.pct}%`}
+        {concluida ? (
+          <Check size={15} strokeWidth={2.5} className="text-white" />
+        ) : (
+          <span
+            className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-white text-xs font-bold"
+            style={{ color: iniciada ? TEAL : "#a2a6ad" }}
+          >
+            {indice}
+          </span>
+        )}
       </div>
-      <p
-        className={`mt-2 text-sm ${
-          ativa ? "font-semibold text-gray-900" : "font-medium text-gray-600 group-hover:text-gray-900"
-        }`}
-      >
-        {fase.rotulo}
-      </p>
-      <p className="text-xs text-gray-400">{fase.contagem}</p>
-    </button>
-  );
-}
 
-// Trecho entre dois nós: trilho cinza com preenchimento proporcional.
-function Conector({ pct }: { pct: number }) {
-  return (
-    <div className="mt-4 h-0.5 flex-1 self-start overflow-hidden rounded-full bg-gray-200">
-      <div
-        className="h-full bg-emerald-500 transition-[width] duration-300"
-        style={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
+      <div className="flex items-center gap-[7px]">
+        <span
+          className={`text-sm ${ativa ? "font-bold text-[#1b1c1e]" : "font-semibold text-[#797e86]"}`}
+        >
+          {fase.rotulo}
+        </span>
+        {iniciada ? (
+          <span className="text-xs font-bold" style={{ color: TEAL }}>
+            {fase.pct}%
+          </span>
+        ) : (
+          <span className="text-[11.5px] font-semibold text-[#b3b7bd]">
+            A iniciar
+          </span>
+        )}
+      </div>
+
+      <span className="text-[11.5px] font-semibold text-[#797e86]">
+        {fase.contagem}
+      </span>
+
+      {/* barra que marca a fase aberta */}
+      <span
+        className="mt-0.5 h-[3px] w-16 rounded-full transition-colors"
+        style={{ background: ativa ? TEAL : "transparent" }}
       />
-    </div>
+    </button>
   );
 }
 
@@ -78,7 +115,15 @@ export function ProgressoEvento({
 }) {
   const router = useRouter();
   const params = useSearchParams();
-  const ativa = faseAtiva ?? (params.get("fase") as FaseId | null) ?? fases.sugerida;
+  const ativa =
+    faseAtiva ?? (params.get("fase") as FaseId | null) ?? fases.sugerida;
+
+  // Preenchimento da jornada: média dos trechos. Com 3 fases há 2 trechos,
+  // conduzidos pelas duas primeiras — a última não puxa linha nenhuma.
+  const trechos = fases.lista.slice(0, -1);
+  const preenchimento = trechos.length
+    ? Math.round(trechos.reduce((s, f) => s + f.pct, 0) / trechos.length)
+    : 0;
 
   const cor =
     saude.score >= 80
@@ -111,13 +156,36 @@ export function ProgressoEvento({
         </p>
       </div>
 
-      <div className="flex items-start">
-        {fases.lista.map((fase, i) => (
-          <div key={fase.id} className="flex flex-1 items-start">
-            {i > 0 && <Conector pct={fases.lista[i - 1].pct} />}
-            <No fase={fase} ativa={ativa === fase.id} onClick={() => abrir(fase.id)} />
+      <div>
+        <div className="relative pt-1">
+          {/* linha-guia contínua, de centro a centro dos nós extremos */}
+          <div
+            className="absolute top-[18px] h-[3px] overflow-hidden rounded-full"
+            style={{ left: "16.667%", right: "16.667%", background: TRACK }}
+          >
+            <div
+              className="h-full rounded-full transition-[width] duration-500 ease-out"
+              style={{ width: `${preenchimento}%`, background: TEAL }}
+            />
           </div>
-        ))}
+
+          <div className="relative flex">
+            {fases.lista.map((fase, i) => (
+              <No
+                key={fase.id}
+                fase={fase}
+                indice={i + 1}
+                ativa={ativa === fase.id}
+                onClick={() => abrir(fase.id)}
+              />
+            ))}
+          </div>
+        </div>
+
+        <p className="mt-2 px-0.5 text-[11.5px] text-[#a2a6ad]">
+          Clique em uma fase para navegar — você pode voltar ao Planejamento a
+          qualquer momento sem perder o contexto.
+        </p>
       </div>
     </div>
   );
