@@ -9,6 +9,7 @@
 
 import { useState } from "react";
 import {
+  AlertTriangle,
   ChevronDown,
   ChevronRight,
   ListTree,
@@ -160,19 +161,36 @@ function LinhaFornecedorUI({
             </span>
           </span>
           <span>
-            <span className="block text-[10px] uppercase tracking-wide text-gray-400">
+            <span className="flex items-center justify-end gap-1 text-[10px] uppercase tracking-wide text-gray-400">
               Pago
+              {/* Estouro: pago acima do alocado. Não bloqueia — só alerta. */}
+              {linha.estourou && (
+                <AlertTriangle
+                  size={11}
+                  className="text-red-600"
+                  aria-label="Pago acima do alocado"
+                />
+              )}
             </span>
-            <span className="text-sm font-medium text-emerald-700">
+            <span
+              className={`text-sm font-medium ${linha.estourou ? "text-red-600" : "text-emerald-700"}`}
+            >
               {formatBRL(linha.pago)}
             </span>
+            {linha.estourou && (
+              <span className="block text-[10px] font-medium text-red-600">
+                +{formatBRL(linha.excesso)} do previsto
+              </span>
+            )}
           </span>
           <span>
             <span className="block text-[10px] uppercase tracking-wide text-gray-400">
-              A pagar
+              Estimado inicial
             </span>
-            <span className="text-sm font-medium text-amber-700">
-              {formatBRL(linha.aPagar)}
+            <span className="text-sm font-medium text-gray-500">
+              {linha.valor_estimado_inicial != null
+                ? formatBRL(Number(linha.valor_estimado_inicial))
+                : "—"}
             </span>
           </span>
           <button

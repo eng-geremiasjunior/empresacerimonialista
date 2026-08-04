@@ -33,6 +33,12 @@ export type ParcelaFornecedor = {
 export type LinhaFornecedor = VerbaFornecedor & {
   pago: number;
   aPagar: number;
+  /** Total do fornecedor (itens ou valor alocado). */
+  total: number;
+  /** Pago acima do alocado — não é bloqueio, é alerta. */
+  estourou: boolean;
+  /** Quanto passou do alocado (0 quando não estourou). */
+  excesso: number;
   parcelas: ParcelaFornecedor[];
   /** true quando há detalhamento — a tela só mostra o indicador nesse caso. */
   temDetalhe: boolean;
@@ -58,12 +64,18 @@ export function montarLinhas(
       const minhas = parcelas.filter((p) => p.supplier_id === v.supplier_id);
       const pago = soma(minhas.filter((p) => p.paid).map((p) => Number(p.value)));
       const total = totalDoFornecedor(v);
+      // valor_alocado não é teto rígido: o pagamento pode passar dele. Aqui
+      // só marcamos para a tela sinalizar — nada é bloqueado.
+      const excesso = Math.max(0, pago - total);
       return {
         ...v,
         parcelas: [...minhas].sort((a, b) => a.due_date.localeCompare(b.due_date)),
         pago,
+        total,
+        estourou: excesso > 0,
+        excesso,
         // Nunca negativo: pagar mais que o alocado não vira "a pagar" com
-        // sinal invertido, vira zero (e o total pago denuncia o excesso).
+        // sinal invertido, vira zero (o excesso denuncia o estouro).
         aPagar: Math.max(0, total - pago),
         temDetalhe: v.itens.length > 0,
       };
