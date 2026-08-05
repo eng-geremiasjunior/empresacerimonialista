@@ -12,6 +12,7 @@ export type TabCounters = {
 const TABS: { label: string; seg: string; counter?: keyof TabCounters }[] = [
   { label: "Resumo", seg: "" },
   { label: "Planejamento", seg: "planejamento" },
+  { label: "Organização", seg: "organizacao" },
   { label: "Execução do evento", seg: "roteiro" },
   { label: "Tarefas", seg: "tarefas" },
   { label: "Fornecedores", seg: "fornecedores", counter: "fornecedores" },
