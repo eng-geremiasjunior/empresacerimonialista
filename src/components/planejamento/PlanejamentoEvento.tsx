@@ -460,17 +460,33 @@ function PainelDecisao({
           </div>
         )}
 
-        {/* VÍNCULO com a Organização (geração automática vem na 4C) */}
-        <div className="mb-4 rounded-lg border border-[#eaeae7] bg-white p-3">
-          <p className="mono text-[10px] uppercase tracking-[0.14em] text-[#8a8a86]">
-            Ao decidir, gera na Organização
-          </p>
-          <p className="mt-1.5 text-[12px] text-[#7a7a76]">
-            As tarefas de execução (contrato, parcela, degustação) serão criadas
-            automaticamente na Organização.{" "}
-            <span className="text-[#a8a8a3]">A geração chega na etapa 4C.</span>
-          </p>
-        </div>
+        {/* VÍNCULO com a Organização: nomes reais do blueprint (4C) */}
+        {decisao.gerariaTarefas.length > 0 && (
+          <div className="mb-4 rounded-lg border border-[#eaeae7] bg-white p-3">
+            <p className="mono text-[10px] uppercase tracking-[0.14em] text-[#8a8a86]">
+              {decidida ? "Gerou na Organização" : "Ao decidir, gera na Organização"}
+            </p>
+            <ul className="mt-2 space-y-1">
+              {decisao.gerariaTarefas.map((t, i) => (
+                <li
+                  key={i}
+                  className="flex items-center gap-1.5 text-[12px] text-[#3a3a37]"
+                >
+                  <span
+                    className="h-1 w-1 shrink-0 rounded-full"
+                    style={{ background: decidida ? "#4b7a52" : "#c0c0bb" }}
+                  />
+                  {t}
+                </li>
+              ))}
+            </ul>
+            {decidida && (
+              <p className="mt-2 text-[11px] text-[#8a8a86]">
+                Estas tarefas já existem na Organização, ligadas a esta decisão.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* AÇÕES — "não se aplica" com a MESMA proeminência de "decidida" */}
         <div className="flex flex-col gap-2">

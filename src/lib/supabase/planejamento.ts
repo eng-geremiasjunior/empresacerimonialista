@@ -29,6 +29,9 @@ export type Decisao = {
   estado: EstadoDecisao;
   guias: Guia[];
   guiasMarcados: number;
+  // Nomes reais das tarefas que esta decisão gera na Organização (do
+  // blueprint do método, 4C). Vazio para decisões sem blueprint.
+  gerariaTarefas: string[];
 };
 
 export type Bucket = "agora" | "proximas" | "depois";
@@ -97,7 +100,7 @@ export async function getPlanejamento(
     supabase
       .from("evento_decisao")
       .select(
-        "id, evento_objetivo_id, titulo, descricao, responsavel, offset_ideal_dias, prioridade, ordem, estado"
+        "id, evento_objetivo_id, decisao_template_id, titulo, descricao, responsavel, offset_ideal_dias, prioridade, ordem, estado"
       )
       .eq("event_id", eventId)
       .order("ordem"),
@@ -111,6 +114,29 @@ export async function getPlanejamento(
   const objsRaw = objRes.data ?? [];
   const decsRaw = decRes.data ?? [];
   const guiasRaw = guiaRes.data ?? [];
+
+  // Blueprint (4C): tarefas que cada decisão-modelo gera. Lido pelo
+  // decisao_template_id para mostrar os NOMES REAIS no painel.
+  const templateIds = [
+    ...new Set(
+      decsRaw
+        .map((d) => d.decisao_template_id)
+        .filter((x): x is string => x !== null)
+    ),
+  ];
+  const blueprintPorTemplate = new Map<string, string[]>();
+  if (templateIds.length > 0) {
+    const { data: bp } = await supabase
+      .from("metodo_tarefa")
+      .select("decisao_id, titulo, ordem")
+      .in("decisao_id", templateIds)
+      .order("ordem");
+    for (const t of bp ?? []) {
+      const arr = blueprintPorTemplate.get(t.decisao_id) ?? [];
+      arr.push(t.titulo);
+      blueprintPorTemplate.set(t.decisao_id, arr);
+    }
+  }
 
   const diasAteEvento = dataEvento
     ? differenceInCalendarDays(
@@ -144,6 +170,9 @@ export async function getPlanejamento(
       estado: d.estado,
       guias,
       guiasMarcados: guias.filter((g) => g.marcado).length,
+      gerariaTarefas: d.decisao_template_id
+        ? blueprintPorTemplate.get(d.decisao_template_id) ?? []
+        : [],
     };
     const arr = decsPorObj.get(d.evento_objetivo_id) ?? [];
     arr.push(dec);

@@ -14,6 +14,10 @@ export type Tarefa = {
   status: TarefaStatus;
   priority: string | null;
   category: string | null;
+  responsavel: string | null;
+  // Rastreabilidade (4C): título da decisão que gerou a tarefa. null =
+  // tarefa manual/legada, sem origem no método.
+  origemDecisao: string | null;
 };
 
 // Compromisso já com o shape que a futura tabela deve ter — a tela não

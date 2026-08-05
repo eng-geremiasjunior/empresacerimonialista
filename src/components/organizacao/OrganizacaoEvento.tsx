@@ -234,9 +234,19 @@ function LinhaTarefa({ tarefa }: { tarefa: Tarefa }) {
         >
           {tarefa.titulo}
         </p>
-        {tarefa.category && (
-          <p className="text-[11.5px] text-[#8a8a86]">{tarefa.category}</p>
-        )}
+        <p className="flex flex-wrap items-center gap-x-2 text-[11.5px] text-[#8a8a86]">
+          {tarefa.responsavel && (
+            <span className="capitalize">{tarefa.responsavel}</span>
+          )}
+          {tarefa.origemDecisao && (
+            <span className="text-[#a8a8a3]">
+              gerada por “{tarefa.origemDecisao}”
+            </span>
+          )}
+          {!tarefa.responsavel && !tarefa.origemDecisao && tarefa.category && (
+            <span>{tarefa.category}</span>
+          )}
+        </p>
       </div>
       <span className="mono shrink-0 text-[11px] text-[#8a8a86]">
         {feita ? "concluída" : `vence ${dataBR(tarefa.dueDate)}`}
