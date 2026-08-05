@@ -88,6 +88,49 @@ export async function POST(req: NextRequest) {
     if (msg.type === 'button_reply' && msg.buttonId) {
       const id = msg.buttonId;
 
+      // Compromisso da Agenda: id = compromisso_confirmar_<hash> / _recusar_.
+      // O hash vem do botão; nunca interpretamos texto livre.
+      if (
+        id.startsWith('compromisso_confirmar_') ||
+        id.startsWith('compromisso_recusar_')
+      ) {
+        const confirmou = id.startsWith('compromisso_confirmar_');
+        const hash = id.replace(
+          confirmou ? 'compromisso_confirmar_' : 'compromisso_recusar_',
+          ''
+        );
+        const status = confirmou ? 'confirmado' : 'cancelado';
+
+        const { data, error } = await admin.rpc('responder_compromisso', {
+          p_hash: hash,
+          p_status: status,
+        });
+
+        // Ambiguidade (hash não bate): não adivinhar. Registra e avisa a
+        // cerimonialista para resolução manual.
+        const falha = error?.message ?? (data as { error?: string })?.error;
+        if (falha) {
+          const resultado = await notificarCerimonialistaMensagemNaoProcessada(
+            admin,
+            msg.from,
+            `Botão de compromisso não resolvido (hash ${hash.slice(0, 8)}…): ${falha}`
+          );
+          return finalizar(false, `responder_compromisso falhou: ${falha} — ${resultado}`);
+        }
+
+        await enviarMensagemWhatsapp(
+          msg.from,
+          confirmou
+            ? 'Presença confirmada! Obrigado.'
+            : 'Ok, registramos que não poderá comparecer.'
+        );
+
+        return finalizar(
+          true,
+          `compromisso ${status} via botão (hash ${hash.slice(0, 8)}…)`
+        );
+      }
+
       if (id.startsWith('confirmar_hash_') || id.startsWith('recusar_hash_')) {
         const hash = id.split('_hash_')[1];
         const status = id.startsWith('confirmar_') ? 'confirmado' : 'recusado';

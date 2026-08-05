@@ -20,8 +20,15 @@ export type Tarefa = {
   origemDecisao: string | null;
 };
 
-// Compromisso já com o shape que a futura tabela deve ter — a tela não
-// muda quando o dado real chegar, só para de vir vazio.
+export type CompromissoEstado =
+  | "agendado"
+  | "confirmado"
+  | "cancelado"
+  | "remarcado";
+
+// Um COMPROMISSO é um evento no tempo com hora marcada (comparecer),
+// distinto da tarefa (executar). Pode ter fornecedor vinculado e nasce de
+// uma decisão/tarefa.
 export type Compromisso = {
   id: string;
   titulo: string;
@@ -29,6 +36,13 @@ export type Compromisso = {
   hora: string | null;
   local: string | null;
   responsavel: string | null;
+  estado: CompromissoEstado;
+  observacao: string | null;
+  // fornecedor vinculado (para confirmar por WhatsApp)
+  supplierId: string | null;
+  supplierNome: string | null;
+  supplierWhatsapp: string | null;
+  origemDecisao: string | null; // título da decisão/tarefa de origem
 };
 
 export type ItemCalendario = {

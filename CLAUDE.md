@@ -43,3 +43,13 @@ Todas as tabelas com dados do cerimonialista devem ter RLS (row level security) 
 
 ## Público
 Cerimonialistas solo ou em dupla, especializadas em casamentos e debutantes, sem afinidade técnica.
+
+## Regra de ouro da interface
+O objetivo da interface não é mostrar tudo o que o sistema sabe. É mostrar apenas o necessário para que a cerimonialista tome a próxima decisão com segurança e rapidez. Todo elemento visual deve **reduzir tempo, reduzir erro ou aumentar capacidade operacional** — se não cumprir pelo menos um desses, deve ser removido.
+
+Corolários:
+- **Nada de copy que explica o sistema.** "Ao decidir, gera na Organização", "Desbloqueia…", "O sistema irá…" viram ruído depois de dois dias de uso. Mostrar o resultado (a lista de tarefas), não a mecânica.
+- **Falar em tempo, não em status.** "vence em 4 dias" > "Status: pendente".
+- **Menos caixas.** Antes de envolver algo num card, perguntar: isso precisa de borda ou pode ser só texto? Menos bordas = interface mais leve.
+- **Sem linguagem gamificada.** Nada de "desbloquear", "missão", "meta", "nível", "parabéns", "100%". É software profissional, não app de hábitos.
+- **O Copiloto fala como uma coordenadora experiente** e age como um Radar do evento: "2 eventos precisam de ação hoje", "1 fornecedor crítico ainda não confirmou" — não "23 eventos precisam da sua atenção".

@@ -134,3 +134,59 @@ export async function enviarConfirmacaoWhatsapp(params: {
     },
   });
 }
+
+// Confirmação de um COMPROMISSO da Agenda (reunião, degustação, prova…).
+// Button ids próprios (compromisso_confirmar_/compromisso_recusar_) para o
+// webhook rotear ao compromisso, não ao vínculo de roteiro. O hash do
+// compromisso vai no id — nunca interpretamos texto livre.
+export async function enviarConfirmacaoCompromissoWhatsapp(params: {
+  telefone: string;
+  supplierName: string;
+  titulo: string;
+  eventLabel: string;
+  data: string; // yyyy-MM-dd
+  hora: string | null;
+  local: string | null;
+  hash: string;
+}): Promise<EnvioWhatsapp> {
+  const to = paraFormatoMeta(params.telefone);
+  if (!to) {
+    return { ok: false, configurado: whatsappConfigurado(), error: "telefone inválido" };
+  }
+
+  const [ano, mes, dia] = params.data.split("-");
+  const dataBR = `${dia}/${mes}/${ano}`;
+  const hora = params.hora ? ` às ${params.hora.slice(0, 5)}` : "";
+  const local = params.local ? `\nLocal: ${params.local}` : "";
+
+  return enviar({
+    to,
+    type: "interactive",
+    interactive: {
+      type: "button",
+      body: {
+        text:
+          `Olá, ${params.supplierName}! Confirma presença em "${params.titulo}" ` +
+          `(${params.eventLabel}), dia ${dataBR}${hora}?${local}`,
+      },
+      action: {
+        buttons: [
+          {
+            type: "reply",
+            reply: {
+              id: `compromisso_confirmar_${params.hash}`,
+              title: "Confirmar",
+            },
+          },
+          {
+            type: "reply",
+            reply: {
+              id: `compromisso_recusar_${params.hash}`,
+              title: "Não poderei",
+            },
+          },
+        ],
+      },
+    },
+  });
+}

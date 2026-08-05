@@ -51,6 +51,21 @@ function faltamTexto(dias: number | null): string {
   return `faltam ${dias} dias`;
 }
 
+// Prazo ideal da decisão em linguagem de tempo: a janela fecha quando faltam
+// `offset` dias para o evento, então ela deveria ser decidida daqui a
+// (diasAteEvento - offset) dias.
+function prazoDecisao(
+  diasAteEvento: number | null,
+  offsetIdealDias: number | null
+): string {
+  if (diasAteEvento === null || offsetIdealDias === null)
+    return "sem prazo definido";
+  const gap = diasAteEvento - offsetIdealDias;
+  if (gap <= 0) return "no prazo ideal agora";
+  if (gap === 1) return "ideal decidir até amanhã";
+  return `ideal decidir em ${gap} dias`;
+}
+
 export function PlanejamentoEvento({
   eventId,
   inicial,
@@ -147,11 +162,7 @@ export function PlanejamentoEvento({
         {plano.criticas.length > 0 && (
           <section className="mb-6 rounded-xl border border-[#e6e6e3] bg-[#f7f7f5] p-4">
             <p className="mb-3 text-[13px] font-semibold text-[#2a2a27]">
-              Hoje, estas {plano.criticas.length} decisões críticas
-              <span className="font-normal text-[#7a7a76]">
-                {" "}
-                — resolva estas e o sistema conduz o resto.
-              </span>
+              {plano.criticas.length} decisões pedem atenção primeiro
             </p>
             <div className="grid gap-2.5 sm:grid-cols-3">
               {plano.criticas.map((d, i) => (
@@ -167,7 +178,7 @@ export function PlanejamentoEvento({
                     {d.titulo}
                   </span>
                   <span className="mt-1.5 text-[11.5px] text-[#7a7a76]">
-                    Desbloqueia: tarefas na Organização
+                    {prazoDecisao(plano.diasAteEvento, d.offsetIdealDias)}
                   </span>
                   <span
                     className="mt-2.5 inline-flex w-fit items-center gap-1 rounded-[7px] px-2.5 py-1.5 text-[12px] font-medium text-white"
@@ -464,7 +475,7 @@ function PainelDecisao({
         {decisao.gerariaTarefas.length > 0 && (
           <div className="mb-4 rounded-lg border border-[#eaeae7] bg-white p-3">
             <p className="mono text-[10px] uppercase tracking-[0.14em] text-[#8a8a86]">
-              {decidida ? "Gerou na Organização" : "Ao decidir, gera na Organização"}
+              Próximas tarefas
             </p>
             <ul className="mt-2 space-y-1">
               {decisao.gerariaTarefas.map((t, i) => (
@@ -480,11 +491,6 @@ function PainelDecisao({
                 </li>
               ))}
             </ul>
-            {decidida && (
-              <p className="mt-2 text-[11px] text-[#8a8a86]">
-                Estas tarefas já existem na Organização, ligadas a esta decisão.
-              </p>
-            )}
           </div>
         )}
 

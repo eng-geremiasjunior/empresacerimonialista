@@ -16,7 +16,25 @@ export default async function EventoOrganizacaoPage({
     .eq("id", eventId)
     .single();
 
+  // Fornecedores da empresa (RLS já limita) para vincular ao compromisso.
+  const { data: sups } = await supabase
+    .from("suppliers")
+    .select("id, name, whatsapp, phone")
+    .order("name");
+
+  const fornecedores = (sups ?? []).map((s) => ({
+    id: s.id,
+    nome: s.name,
+    temWhatsapp: Boolean(s.whatsapp || s.phone),
+  }));
+
   const organizacao = await getOrganizacao(eventId, ev?.date ?? null);
 
-  return <OrganizacaoEvento inicial={organizacao} />;
+  return (
+    <OrganizacaoEvento
+      inicial={organizacao}
+      eventId={eventId}
+      fornecedores={fornecedores}
+    />
+  );
 }
