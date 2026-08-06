@@ -11,6 +11,7 @@ import { useMemo, useState, useTransition } from "react";
 import {
   Calendar as CalendarIcon,
   CalendarClock,
+  Check,
   CheckSquare,
   ChevronLeft,
   ChevronRight,
@@ -26,11 +27,13 @@ import {
   type Tarefa,
 } from "@/lib/supabase/organizacao";
 import {
+  alternarTarefa,
   criarCompromisso,
   enviarConfirmacaoCompromisso,
   excluirCompromisso,
   mudarEstadoCompromisso,
 } from "@/app/(app)/eventos/[id]/organizacao/actions";
+import type { TarefaStatus } from "@/lib/supabase/organizacao";
 
 const ACENTO = "oklch(0.5 0.14 285)";
 
@@ -85,9 +88,33 @@ export function OrganizacaoEvento({
   eventId: string;
   fornecedores: Fornecedor[];
 }) {
-  const org = inicial;
   const [vista, setVista] = useState<Vista>("lista");
   const [filtro, setFiltro] = useState<Filtro>("tudo");
+  // Status das tarefas em estado local para o clique refletir na hora (UI
+  // otimista); o servidor sincroniza e revalida em segundo plano.
+  const [statusOverride, setStatusOverride] = useState<
+    Record<string, TarefaStatus>
+  >({});
+
+  const org: Organizacao = {
+    ...inicial,
+    tarefas: inicial.tarefas.map((t) =>
+      statusOverride[t.id] ? { ...t, status: statusOverride[t.id] } : t
+    ),
+  };
+  org.tarefasAbertas = org.tarefas.filter((t) => t.status !== "concluido").length;
+
+  function alternar(taskId: string, concluida: boolean) {
+    const novo: TarefaStatus = concluida ? "concluido" : "pendente";
+    const anterior = org.tarefas.find((t) => t.id === taskId)?.status ?? "pendente";
+    setStatusOverride((m) => ({ ...m, [taskId]: novo }));
+    void alternarTarefa(eventId, taskId, concluida).then((r) => {
+      if ("error" in r) {
+        // reverte se o servidor recusou
+        setStatusOverride((m) => ({ ...m, [taskId]: anterior }));
+      }
+    });
+  }
 
   return (
     <div style={{ fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
@@ -159,6 +186,7 @@ export function OrganizacaoEvento({
             filtro={filtro}
             eventId={eventId}
             fornecedores={fornecedores}
+            onToggle={alternar}
           />
         ) : (
           <VistaCalendario org={org} filtro={filtro} />
@@ -173,11 +201,13 @@ function VistaLista({
   filtro,
   eventId,
   fornecedores,
+  onToggle,
 }: {
   org: Organizacao;
   filtro: Filtro;
   eventId: string;
   fornecedores: Fornecedor[];
+  onToggle: (taskId: string, concluida: boolean) => void;
 }) {
   const abertas = org.tarefas.filter((t) => t.status !== "concluido");
   const concluidas = org.tarefas.filter((t) => t.status === "concluido");
@@ -249,10 +279,10 @@ function VistaLista({
           ) : (
             <div className="space-y-1.5">
               {abertas.map((t) => (
-                <LinhaTarefa key={t.id} tarefa={t} />
+                <LinhaTarefa key={t.id} tarefa={t} onToggle={onToggle} />
               ))}
               {concluidas.map((t) => (
-                <LinhaTarefa key={t.id} tarefa={t} />
+                <LinhaTarefa key={t.id} tarefa={t} onToggle={onToggle} />
               ))}
             </div>
           )}
@@ -472,17 +502,27 @@ function LinhaCompromisso({ c, eventId }: { c: Compromisso; eventId: string }) {
   );
 }
 
-function LinhaTarefa({ tarefa }: { tarefa: Tarefa }) {
+function LinhaTarefa({
+  tarefa,
+  onToggle,
+}: {
+  tarefa: Tarefa;
+  onToggle: (taskId: string, concluida: boolean) => void;
+}) {
   const feita = tarefa.status === "concluido";
   return (
     <div
       className={`flex items-center gap-3 rounded-lg border border-[#eaeae7] bg-white px-4 py-2.5 ${feita ? "opacity-55" : ""}`}
     >
-      <span
-        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${feita ? "border-emerald-500 bg-emerald-500 text-white" : "border-[#c8c8c3]"}`}
+      <button
+        type="button"
+        onClick={() => onToggle(tarefa.id, !feita)}
+        aria-pressed={feita}
+        aria-label={feita ? "Reabrir tarefa" : "Concluir tarefa"}
+        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${feita ? "border-emerald-500 bg-emerald-500 text-white" : "border-[#c8c8c3] hover:border-emerald-400 hover:bg-emerald-50"}`}
       >
-        {feita && "✓"}
-      </span>
+        {feita && <Check size={13} strokeWidth={3} />}
+      </button>
       <div className="min-w-0 flex-1">
         <p
           className={`text-[13.5px] ${feita ? "text-[#a8a8a3] line-through" : "text-[#2a2a27]"}`}

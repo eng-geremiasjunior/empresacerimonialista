@@ -12,6 +12,26 @@ export type AcaoResult = { error: string } | { success: true };
 
 const RESPONSAVEIS = ["noivos", "cerimonialista", "ambos"] as const;
 
+// Concluir/reabrir uma tarefa direto da Organização. Determinística (recebe
+// o estado desejado) para casar com a UI otimista — clicar duas vezes rápido
+// não inverte o resultado. A RLS por evento é a guarda.
+export async function alternarTarefa(
+  eventId: string,
+  taskId: string,
+  concluir: boolean
+): Promise<AcaoResult> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("tasks")
+    .update({ status: concluir ? "concluido" : "pendente" })
+    .eq("id", taskId)
+    .eq("event_id", eventId);
+
+  if (error) return { error: "Não foi possível atualizar a tarefa." };
+  revalidatePath(`/eventos/${eventId}/organizacao`);
+  return { success: true };
+}
+
 export async function criarCompromisso(
   eventId: string,
   form: {
