@@ -68,16 +68,18 @@ end $$;
 
 -- Backfill das tarefas já geradas e ainda não concluídas (não reescreve
 -- data de trabalho já feito). Aplica o mesmo deslocamento.
+-- UPDATE ... FROM: a tabela-alvo (t) não pode ser referenciada num
+-- JOIN ... ON do FROM. Junta por vírgula e liga tudo no WHERE.
 update public.tasks t
 set due_date = greatest(
       current_date,
       least(e.date, (e.date - mt.offset_ideal_dias)
                     + (d.prazo_previsto - (e.date - d.offset_ideal_dias)))
     )
-from public.evento_decisao d
-join public.events e on e.id = d.event_id
-join public.metodo_tarefa mt on mt.id = t.metodo_tarefa_id
+from public.evento_decisao d, public.events e, public.metodo_tarefa mt
 where t.evento_decisao_id = d.id
+  and e.id = d.event_id
+  and mt.id = t.metodo_tarefa_id
   and t.metodo_tarefa_id is not null
   and t.status <> 'concluido'
   and e.date is not null
