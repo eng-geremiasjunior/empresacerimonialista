@@ -7,6 +7,7 @@ import type {
   Compromisso,
   CompromissoEstado,
   Organizacao,
+  PendenciaFinanceira,
   Tarefa,
   TarefaStatus,
 } from "@/lib/supabase/organizacao";
@@ -89,6 +90,22 @@ export async function getOrganizacao(
     };
   });
 
+  // Pendências financeiras abertas pela automação (074). Se a migração
+  // ainda não rodou, degrada para lista vazia em vez de quebrar a tela.
+  const { data: pend } = await supabase
+    .from("financeiro_pendencia")
+    .select("id, titulo, tipo, created_at")
+    .eq("event_id", eventId)
+    .eq("status", "aberta")
+    .order("created_at", { ascending: false });
+
+  const pendencias: PendenciaFinanceira[] = (pend ?? []).map((p) => ({
+    id: p.id,
+    titulo: p.titulo,
+    tipo: p.tipo as "pagamento" | "revisao",
+    criadaEm: p.created_at,
+  }));
+
   const diasAteEvento = dataEvento
     ? Math.round(
         (new Date(`${dataEvento}T00:00:00`).getTime() -
@@ -104,5 +121,6 @@ export async function getOrganizacao(
     tarefasAbertas: tarefas.filter((t) => t.status !== "concluido").length,
     compromissos,
     agendaDisponivel: true,
+    pendencias,
   };
 }

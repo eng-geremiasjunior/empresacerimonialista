@@ -56,6 +56,15 @@ export type ItemCalendario = {
   titulo: string;
 };
 
+// Pendência financeira aberta pela automação ao concluir uma tarefa de
+// dinheiro. É rascunho: só vira lançamento quando a cerimonialista confirma.
+export type PendenciaFinanceira = {
+  id: string;
+  titulo: string;
+  tipo: "pagamento" | "revisao";
+  criadaEm: string;
+};
+
 export type Organizacao = {
   diasAteEvento: number | null;
   dataEvento: string | null;
@@ -64,6 +73,8 @@ export type Organizacao = {
   compromissos: Compromisso[];
   // já pronto para a tabela de compromisso; hoje sempre false.
   agendaDisponivel: boolean;
+  // pendências financeiras abertas (esperando confirmação)
+  pendencias: PendenciaFinanceira[];
 };
 
 // Itens de um mês para a grade do Calendário: compromissos (comparecer) +

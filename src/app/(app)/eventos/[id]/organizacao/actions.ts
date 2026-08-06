@@ -12,6 +12,25 @@ export type AcaoResult = { error: string } | { success: true };
 
 const RESPONSAVEIS = ["noivos", "cerimonialista", "ambos"] as const;
 
+// Pendência financeira: a automação abre o rascunho, a cerimonialista
+// decide. "Descartar" fecha sem lançar nada — dinheiro nunca se move sozinho.
+// Confirmar de fato (com valor/fornecedor) acontece no Financeiro.
+export async function descartarPendencia(
+  eventId: string,
+  pendenciaId: string
+): Promise<AcaoResult> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("financeiro_pendencia")
+    .update({ status: "descartada", resolvida_em: new Date().toISOString() })
+    .eq("id", pendenciaId)
+    .eq("event_id", eventId);
+
+  if (error) return { error: "Não foi possível descartar a pendência." };
+  revalidatePath(`/eventos/${eventId}/organizacao`);
+  return { success: true };
+}
+
 // Concluir/reabrir uma tarefa direto da Organização. Determinística (recebe
 // o estado desejado) para casar com a UI otimista — clicar duas vezes rápido
 // não inverte o resultado. A RLS por evento é a guarda.

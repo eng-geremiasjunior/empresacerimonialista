@@ -26,11 +26,13 @@ import {
   itensDoMes,
   type Compromisso,
   type Organizacao,
+  type PendenciaFinanceira,
   type Tarefa,
 } from "@/lib/supabase/organizacao";
 import {
   alternarTarefa,
   criarCompromisso,
+  descartarPendencia,
   enviarConfirmacaoCompromisso,
   excluirCompromisso,
   mudarEstadoCompromisso,
@@ -138,6 +140,15 @@ export function OrganizacaoEvento({
             perde referência. Mesma ação do Planejamento, resolvida aqui. */}
         {!org.dataEvento && <BannerDataOrg eventId={eventId} />}
 
+        {/* PENDÊNCIAS ABERTAS PELA AUTOMAÇÃO — o lembrete que ela não
+            precisa anotar em outro lugar. Nada foi lançado ainda. */}
+        {org.pendencias.length > 0 && (
+          <PendenciasFinanceiras
+            eventId={eventId}
+            pendencias={org.pendencias}
+          />
+        )}
+
         {/* controles: toggle de vista + filtro */}
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div className="inline-flex rounded-lg border border-[#e0e0dd] bg-white p-0.5">
@@ -200,6 +211,63 @@ export function OrganizacaoEvento({
         )}
       </div>
     </div>
+  );
+}
+
+function PendenciasFinanceiras({
+  eventId,
+  pendencias,
+}: {
+  eventId: string;
+  pendencias: PendenciaFinanceira[];
+}) {
+  const router = useRouter();
+  const [pend, start] = useTransition();
+
+  return (
+    <section className="mb-5 rounded-xl border border-[#e6e6e3] bg-[#fbfbfa] px-4 py-3">
+      <p className="text-[13px] font-semibold text-[#2a2a27]">
+        {pendencias.length === 1
+          ? "1 pendência esperando você no Financeiro"
+          : `${pendencias.length} pendências esperando você no Financeiro`}
+      </p>
+      <p className="mt-0.5 text-[12px] text-[#5f5f5b]">
+        Nada foi lançado — você confirma o valor.
+      </p>
+      <ul className="mt-2 space-y-1.5">
+        {pendencias.map((p) => (
+          <li
+            key={p.id}
+            className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px]"
+          >
+            <span className="text-[#2a2a27]">{p.titulo}</span>
+            <span className="text-[11.5px] text-[#5f5f5b]">
+              {p.tipo === "revisao"
+                ? "revisar custo de buffet e bar"
+                : "lançar o pagamento"}
+            </span>
+            <Link
+              href={`/eventos/${eventId}/financeiro`}
+              className="font-medium text-[oklch(0.5_0.14_285)] hover:underline"
+            >
+              Abrir Financeiro →
+            </Link>
+            <button
+              onClick={() =>
+                start(async () => {
+                  await descartarPendencia(eventId, p.id);
+                  router.refresh();
+                })
+              }
+              disabled={pend}
+              className="text-[11.5px] text-[#5f5f5b] hover:underline disabled:opacity-50"
+            >
+              Descartar
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -564,6 +632,16 @@ const VINCULO_MODULO: Record<
   financeiro: { rota: "financeiro", rotulo: "entra no Financeiro" },
 };
 
+// O que a automação fará ao concluir. Dito ANTES, para a cerimonialista
+// não ser surpreendida — e para saber que será lembrada, sem precisar
+// anotar em outro lugar.
+function avisoAutomacao(tarefa: Tarefa): string | null {
+  if (tarefa.vinculoModulo !== "financeiro") return null;
+  return tarefa.titulo.toLowerCase().startsWith("confirmar quantidade")
+    ? "ao concluir, abre revisão de custo no Financeiro"
+    : "ao concluir, abre lançamento no Financeiro para você confirmar";
+}
+
 function LinhaTarefa({
   tarefa,
   eventId,
@@ -575,6 +653,7 @@ function LinhaTarefa({
 }) {
   const feita = tarefa.status === "concluido";
   const vinc = tarefa.vinculoModulo ? VINCULO_MODULO[tarefa.vinculoModulo] : null;
+  const aviso = feita ? null : avisoAutomacao(tarefa);
   return (
     <div
       className={`flex items-center gap-3 rounded-lg border border-[#eaeae7] bg-white px-4 py-2.5 ${feita ? "opacity-55" : ""}`}
@@ -613,6 +692,9 @@ function LinhaTarefa({
             </Link>
           )}
         </p>
+        {aviso && (
+          <p className="mt-0.5 text-[11.5px] text-[#8a6d3b]">{aviso}</p>
+        )}
       </div>
       <span className="mono shrink-0 text-[11px] text-[#5f5f5b]">
         {feita ? "concluída" : `vence ${prazo(tarefa.dueDate)}`}
