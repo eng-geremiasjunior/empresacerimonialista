@@ -16,6 +16,7 @@ import { Check, ChevronRight, X } from "lucide-react";
 import type {
   Bucket,
   Decisao,
+  EstadoDecisao,
   Objetivo,
   Planejamento,
   Responsavel,
@@ -80,21 +81,69 @@ export function PlanejamentoEvento({
 
   const plano = inicial;
 
-  // decisão do painel lateral (reencontrada no dado fresco a cada refresh)
+  // Overrides otimistas: o clique reflete na hora; o servidor sincroniza
+  // em segundo plano. guiaOverride mata a lentidão (cada tique refazia a
+  // árvore); estadoOverride dá resposta imediata ao decidir.
+  const [guiaOverride, setGuiaOverride] = useState<Record<string, boolean>>({});
+  const [estadoOverride, setEstadoOverride] = useState<
+    Record<string, EstadoDecisao>
+  >({});
+
+  // Árvore com os overrides aplicados — usada no mapa E no painel, para que
+  // o dot da decisão e a contagem de guias mudem imediatamente.
+  const objetivosView: Objetivo[] = useMemo(
+    () =>
+      plano.objetivos.map((o) => ({
+        ...o,
+        decisoes: o.decisoes.map((d) => {
+          const guias = d.guias.map((g) =>
+            g.id in guiaOverride ? { ...g, marcado: guiaOverride[g.id] } : g
+          );
+          return {
+            ...d,
+            estado: estadoOverride[d.id] ?? d.estado,
+            guias,
+            guiasMarcados: guias.filter((g) => g.marcado).length,
+          };
+        }),
+      })),
+    [plano.objetivos, guiaOverride, estadoOverride]
+  );
+
   const decisaoAberta = useMemo(() => {
     if (!aberta) return null;
-    for (const o of plano.objetivos) {
+    for (const o of objetivosView) {
       const d = o.decisoes.find((x) => x.id === aberta);
       if (d) return { objetivo: o, decisao: d };
     }
     return null;
-  }, [aberta, plano.objetivos]);
+  }, [aberta, objetivosView]);
 
   function agir(fn: () => Promise<unknown>) {
     startTransition(async () => {
       await fn();
       router.refresh();
     });
+  }
+
+  // Guia: otimista e SEM refetch (era o clique mais lento). Reverte se falhar.
+  function toggleGuia(guiaId: string, marcado: boolean) {
+    setGuiaOverride((m) => ({ ...m, [guiaId]: marcado }));
+    void alternarGuia(eventId, guiaId, marcado).then((r) => {
+      if (r && "error" in r)
+        setGuiaOverride((m) => ({ ...m, [guiaId]: !marcado }));
+    });
+  }
+
+  // Decisão: marca o estado na hora e refetta em segundo plano (muda fila,
+  // buckets e tarefas geradas).
+  function mudarEstado(
+    decisaoId: string,
+    novo: EstadoDecisao,
+    fn: () => Promise<unknown>
+  ) {
+    setEstadoOverride((m) => ({ ...m, [decisaoId]: novo }));
+    agir(fn);
   }
 
   if (!plano.temArvore) {
@@ -112,11 +161,11 @@ export function PlanejamentoEvento({
   )
     .map((b) => ({
       bucket: b,
-      objetivos: plano.objetivos.filter((o) => o.ativo && o.bucket === b),
+      objetivos: objetivosView.filter((o) => o.ativo && o.bucket === b),
     }))
     .filter((g) => g.objetivos.length > 0);
 
-  const desligados = plano.objetivos.filter(
+  const desligados = objetivosView.filter(
     (o) => o.decisoes.length > 0 && o.decisoes.every((d) => d.estado === "nao_se_aplica")
   );
 
@@ -134,13 +183,13 @@ export function PlanejamentoEvento({
             <h2 className="text-xl font-semibold tracking-tight text-[#1b1b19]">
               Planejamento
             </h2>
-            <p className="mt-0.5 text-[12.5px] text-[#7a7a76]">
+            <p className="mt-0.5 text-[12.5px] text-[#5f5f5b]">
               Construindo o projeto do casamento — nada existe fisicamente ainda.
             </p>
           </div>
           <div className="w-[190px] shrink-0">
             <div className="mb-1.5 flex items-baseline justify-between">
-              <span className={`mono ${mono}`} style={{ color: "#8a8a86" }}>
+              <span className={`mono ${mono}`} style={{ color: "#5f5f5b" }}>
                 Progresso
               </span>
               <span className="mono text-[12px] font-semibold text-[#2a2a27]">
@@ -153,7 +202,7 @@ export function PlanejamentoEvento({
                 style={{ width: `${plano.progressoPct}%`, background: "linear-gradient(90deg,oklch(0.58 0.06 150),oklch(0.62 0.07 155))" }}
               />
             </div>
-            <p className="mt-1 text-right text-[10px] uppercase tracking-wide text-[#a8a8a3]">
+            <p className="mt-1 text-right text-[10px] uppercase tracking-wide text-[#6b6b66]">
               ponderado por importância
             </p>
           </div>
@@ -178,13 +227,13 @@ export function PlanejamentoEvento({
                   onClick={() => setAberta(d.id)}
                   className="flex flex-col rounded-[10px] border border-[#e0e0dd] bg-white p-3 text-left transition-colors hover:border-[#cfcfca]"
                 >
-                  <span className={`mono ${mono}`} style={{ color: "#a8a8a3" }}>
+                  <span className={`mono ${mono}`} style={{ color: "#6b6b66" }}>
                     {d.objetivoNome}
                   </span>
                   <span className="mt-1 text-[14px] font-semibold text-[#1b1b19]">
                     {d.titulo}
                   </span>
-                  <span className="mt-1.5 text-[11.5px] text-[#7a7a76]">
+                  <span className="mt-1.5 text-[11.5px] text-[#5f5f5b]">
                     {prazoPrevistoTexto(d.prazoPrevisto)}
                   </span>
                   <span
@@ -211,7 +260,7 @@ export function PlanejamentoEvento({
           <h3 className="text-[15px] font-semibold text-[#2a2a27]">
             Mapa da jornada
           </h3>
-          <span className="mono text-[11px] text-[#8a8a86]">
+          <span className="mono text-[11px] text-[#5f5f5b]">
             {faltamTexto(plano.diasAteEvento)}
           </span>
         </div>
@@ -219,7 +268,7 @@ export function PlanejamentoEvento({
         <div className="space-y-6">
           {grupos.map((g) => (
             <div key={g.bucket}>
-              <p className={`mono ${mono} mb-2`} style={{ color: "#a8a8a3" }}>
+              <p className={`mono ${mono} mb-2`} style={{ color: "#6b6b66" }}>
                 {BUCKET_LABEL[g.bucket]}
               </p>
               <div className="space-y-2">
@@ -246,7 +295,7 @@ export function PlanejamentoEvento({
                     key={o.id}
                     className="flex items-center justify-between rounded-lg border border-dashed border-[#e6e6e3] bg-transparent px-3 py-2 pl-6"
                   >
-                    <span className="text-[13px] text-[#b0b0ab] line-through">
+                    <span className="text-[13px] text-[#6b6b66] line-through">
                       {o.nome}
                     </span>
                     <button
@@ -258,7 +307,7 @@ export function PlanejamentoEvento({
                         )
                       }
                       disabled={pending}
-                      className="mono text-[11px] uppercase tracking-wide text-[#8a8a86] hover:text-[#2a2a27]"
+                      className="mono text-[11px] uppercase tracking-wide text-[#5f5f5b] hover:text-[#2a2a27]"
                     >
                       reativar
                     </button>
@@ -280,6 +329,8 @@ export function PlanejamentoEvento({
           pending={pending}
           onFechar={() => setAberta(null)}
           onAgir={agir}
+          onToggleGuia={toggleGuia}
+          onEstado={mudarEstado}
         />
       )}
     </div>
@@ -341,18 +392,18 @@ function ObjetivoCard({
       >
         <ChevronRight
           size={15}
-          className={`shrink-0 text-[#b0b0ab] transition-transform ${expandido ? "rotate-90" : ""}`}
+          className={`shrink-0 text-[#6b6b66] transition-transform ${expandido ? "rotate-90" : ""}`}
         />
         <div className="min-w-0 flex-1">
           <p className="text-[14px] font-semibold text-[#1b1b19]">
             {objetivo.nome}
           </p>
-          <p className="text-[11.5px] text-[#8a8a86]">
+          <p className="text-[11.5px] text-[#5f5f5b]">
             Objetivo · {faltamTexto(objetivo.faltamDias)} ·{" "}
             {RESP_LABEL[objetivo.responsavelDominante]}
           </p>
         </div>
-        <span className="mono shrink-0 text-[11px] text-[#8a8a86]">
+        <span className="mono shrink-0 text-[11px] text-[#5f5f5b]">
           decisões {objetivo.decididas}/{objetivo.aplicaveis}
         </span>
       </button>
@@ -403,7 +454,7 @@ function DecisaoLinha({
       </span>
       <span className="flex min-w-0 flex-1 flex-col">
         <span
-          className={`text-[13px] ${na ? "text-[#a8a8a3] line-through" : "text-[#2a2a27]"}`}
+          className={`text-[13px] ${na ? "text-[#6b6b66] line-through" : "text-[#2a2a27]"}`}
         >
           {decisao.titulo}
         </span>
@@ -414,7 +465,7 @@ function DecisaoLinha({
         )}
       </span>
       {na ? (
-        <span className="mono text-[10px] uppercase tracking-wide text-[#b0b0ab]">
+        <span className="mono text-[10px] uppercase tracking-wide text-[#6b6b66]">
           não se aplica
         </span>
       ) : decidida ? (
@@ -422,7 +473,7 @@ function DecisaoLinha({
           decidida
         </span>
       ) : (
-        <span className="mono text-[10px] text-[#a8a8a3]">
+        <span className="mono text-[10px] text-[#6b6b66]">
           {decisao.guias.length > 0
             ? `${decisao.guiasMarcados}/${decisao.guias.length} guia`
             : "pendente"}
@@ -440,6 +491,8 @@ function PainelDecisao({
   pending,
   onFechar,
   onAgir,
+  onToggleGuia,
+  onEstado,
 }: {
   eventId: string;
   objetivoNome: string;
@@ -448,6 +501,12 @@ function PainelDecisao({
   pending: boolean;
   onFechar: () => void;
   onAgir: (fn: () => Promise<unknown>) => void;
+  onToggleGuia: (guiaId: string, marcado: boolean) => void;
+  onEstado: (
+    decisaoId: string,
+    novo: EstadoDecisao,
+    fn: () => Promise<unknown>
+  ) => void;
 }) {
   const na = decisao.estado === "nao_se_aplica";
   const decidida = decisao.estado === "decidida";
@@ -460,14 +519,14 @@ function PainelDecisao({
       <div className="sticky top-4">
         <div className="mb-3 flex items-start justify-between gap-2">
           <div>
-            <p className="mono text-[10px] uppercase tracking-[0.14em] text-[#a8a8a3]">
+            <p className="mono text-[10px] uppercase tracking-[0.14em] text-[#6b6b66]">
               {objetivoNome} · decisão
             </p>
             <h3 className="mt-1 text-[16px] font-semibold leading-tight text-[#1b1b19]">
               {decisao.titulo}
             </h3>
             <div className="mt-1.5 flex items-center gap-2">
-              <span className="mono text-[10px] uppercase tracking-wide text-[#8a8a86]">
+              <span className="mono text-[10px] uppercase tracking-wide text-[#5f5f5b]">
                 {RESP_LABEL[decisao.responsavel]}
               </span>
               <span
@@ -484,7 +543,7 @@ function PainelDecisao({
           <button
             onClick={onFechar}
             aria-label="Fechar"
-            className="rounded p-1 text-[#a8a8a3] hover:bg-[#efefec] hover:text-[#2a2a27]"
+            className="rounded p-1 text-[#6b6b66] hover:bg-[#efefec] hover:text-[#2a2a27]"
           >
             <X size={16} />
           </button>
@@ -524,7 +583,7 @@ function PainelDecisao({
                 }}
                 placeholder="Ex.: Buffet Sabor & Arte — R$ 18.000"
                 disabled={pending}
-                className="mt-1.5 w-full rounded-lg border border-[#c8c8c3] bg-white px-3 py-2 text-[14px] text-[#1b1b19] placeholder:text-[#a8a8a3] outline-none focus:border-[oklch(0.5_0.14_285)]"
+                className="mt-1.5 w-full rounded-lg border border-[#c8c8c3] bg-white px-3 py-2 text-[14px] text-[#1b1b19] placeholder:text-[#6b6b66] outline-none focus:border-[oklch(0.5_0.14_285)]"
               />
             )}
             {ehData && !dataEvento && (
@@ -540,10 +599,10 @@ function PainelDecisao({
         {decisao.guias.length > 0 && (
           <div className="mb-4">
             <div className="mb-2 flex items-center justify-between">
-              <span className="mono text-[10px] uppercase tracking-[0.14em] text-[#8a8a86]">
+              <span className="mono text-[10px] uppercase tracking-[0.14em] text-[#5f5f5b]">
                 Guia da decisão
               </span>
-              <span className="mono text-[11px] text-[#a8a8a3]">
+              <span className="mono text-[11px] text-[#6b6b66]">
                 {decisao.guiasMarcados} / {decisao.guias.length}
               </span>
             </div>
@@ -551,8 +610,7 @@ function PainelDecisao({
               {decisao.guias.map((g) => (
                 <li key={g.id}>
                   <button
-                    onClick={() => onAgir(() => alternarGuia(eventId, g.id, !g.marcado))}
-                    disabled={pending}
+                    onClick={() => onToggleGuia(g.id, !g.marcado)}
                     className="flex w-full items-start gap-2 rounded px-1.5 py-1 text-left hover:bg-[#f2f2ef]"
                   >
                     <span
@@ -561,7 +619,7 @@ function PainelDecisao({
                       {g.marcado && <Check size={9} strokeWidth={3} />}
                     </span>
                     <span
-                      className={`text-[12.5px] ${g.marcado ? "text-[#8a8a86] line-through" : "text-[#3a3a37]"}`}
+                      className={`text-[12.5px] ${g.marcado ? "text-[#5f5f5b] line-through" : "text-[#3a3a37]"}`}
                     >
                       {g.texto}
                     </span>
@@ -575,7 +633,7 @@ function PainelDecisao({
         {/* VÍNCULO com a Organização: nomes reais do blueprint (4C) */}
         {decisao.gerariaTarefas.length > 0 && (
           <div className="mb-4 rounded-lg border border-[#eaeae7] bg-white p-3">
-            <p className="mono text-[10px] uppercase tracking-[0.14em] text-[#8a8a86]">
+            <p className="mono text-[10px] uppercase tracking-[0.14em] text-[#5f5f5b]">
               Próximas tarefas
             </p>
             <ul className="mt-2 space-y-1">
@@ -599,7 +657,11 @@ function PainelDecisao({
         <div className="flex flex-col gap-2">
           {na ? (
             <button
-              onClick={() => onAgir(() => reabrirDecisao(eventId, decisao.id))}
+              onClick={() =>
+                onEstado(decisao.id, "pendente", () =>
+                  reabrirDecisao(eventId, decisao.id)
+                )
+              }
               disabled={pending}
               className="w-full rounded-[7px] border border-[#d0d0cb] py-2 text-[12.5px] font-medium text-[#3a3a37] hover:bg-[#f2f2ef]"
             >
@@ -609,11 +671,13 @@ function PainelDecisao({
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() =>
-                  onAgir(() =>
-                    decidida
-                      ? reabrirDecisao(eventId, decisao.id)
-                      : decidirDecisao(eventId, decisao.id)
-                  )
+                  decidida
+                    ? onEstado(decisao.id, "pendente", () =>
+                        reabrirDecisao(eventId, decisao.id)
+                      )
+                    : onEstado(decisao.id, "decidida", () =>
+                        decidirDecisao(eventId, decisao.id)
+                      )
                 }
                 disabled={pending}
                 className="rounded-[7px] py-2 text-[12.5px] font-medium text-white"
@@ -622,7 +686,11 @@ function PainelDecisao({
                 {decidida ? "Reabrir" : "Marcar como decidida"}
               </button>
               <button
-                onClick={() => onAgir(() => marcarNaoSeAplica(eventId, decisao.id))}
+                onClick={() =>
+                  onEstado(decisao.id, "nao_se_aplica", () =>
+                    marcarNaoSeAplica(eventId, decisao.id)
+                  )
+                }
                 disabled={pending}
                 className="rounded-[7px] border border-[#d0d0cb] py-2 text-[12.5px] font-medium text-[#3a3a37] hover:bg-[#f2f2ef]"
               >

@@ -8,6 +8,7 @@
 // remarca, cancela e pede confirmação por WhatsApp ao fornecedor vinculado.
 
 import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   Calendar as CalendarIcon,
   CalendarClock,
@@ -33,6 +34,7 @@ import {
   excluirCompromisso,
   mudarEstadoCompromisso,
 } from "@/app/(app)/eventos/[id]/organizacao/actions";
+import { definirDataEvento } from "@/app/(app)/eventos/[id]/planejamento/actions";
 import type { TarefaStatus } from "@/lib/supabase/organizacao";
 
 const ACENTO = "oklch(0.5 0.14 285)";
@@ -73,7 +75,7 @@ function prazo(iso: string | null): string {
 }
 
 const ESTADO_ROTULO: Record<Compromisso["estado"], { texto: string; cor: string }> = {
-  agendado: { texto: "aguardando", cor: "#8a8a86" },
+  agendado: { texto: "aguardando", cor: "#5f5f5b" },
   confirmado: { texto: "confirmado", cor: "#0a7a4a" },
   cancelado: { texto: "não virá", cor: "#b0402f" },
   remarcado: { texto: "remarcado", cor: "#8a6d3b" },
@@ -124,12 +126,16 @@ export function OrganizacaoEvento({
           <h2 className="text-xl font-semibold tracking-tight text-[#1b1b19]">
             Organização
           </h2>
-          <p className="mt-0.5 text-[12.5px] text-[#7a7a76]">
+          <p className="mt-0.5 text-[12.5px] text-[#5f5f5b]">
             {org.diasAteEvento !== null && org.diasAteEvento >= 0
               ? `Faltam ${org.diasAteEvento} dias para o evento.`
               : "Data do evento a definir."}
           </p>
         </div>
+
+        {/* DATA FALTANDO — sem data, as tarefas ficam "sem prazo" e a agenda
+            perde referência. Mesma ação do Planejamento, resolvida aqui. */}
+        {!org.dataEvento && <BannerDataOrg eventId={eventId} />}
 
         {/* controles: toggle de vista + filtro */}
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -147,7 +153,7 @@ export function OrganizacaoEvento({
                 style={
                   vista === v
                     ? { background: "#f2f2ef", color: "#1b1b19" }
-                    : { color: "#8a8a86" }
+                    : { color: "#5f5f5b" }
                 }
               >
                 <Ico size={14} />
@@ -171,7 +177,7 @@ export function OrganizacaoEvento({
                 style={
                   filtro === f
                     ? { background: ACENTO, color: "#fff" }
-                    : { background: "#efefec", color: "#7a7a76" }
+                    : { background: "#efefec", color: "#5f5f5b" }
                 }
               >
                 {label}
@@ -192,6 +198,43 @@ export function OrganizacaoEvento({
           <VistaCalendario org={org} filtro={filtro} />
         )}
       </div>
+    </div>
+  );
+}
+
+function BannerDataOrg({ eventId }: { eventId: string }) {
+  const router = useRouter();
+  const [data, setData] = useState("");
+  const [pend, start] = useTransition();
+  return (
+    <div className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
+      <div className="min-w-0 flex-1">
+        <p className="text-[14px] font-semibold text-amber-900">
+          Defina a data do casamento
+        </p>
+        <p className="text-[12.5px] text-amber-800">
+          Sem data, as tarefas ficam sem prazo e a agenda perde referência.
+        </p>
+      </div>
+      <input
+        type="date"
+        value={data}
+        onChange={(e) => setData(e.target.value)}
+        className="rounded-lg border border-amber-300 bg-white px-3 py-2 text-[14px] text-[#1b1b19] outline-none"
+      />
+      <button
+        onClick={() =>
+          data &&
+          start(async () => {
+            await definirDataEvento(eventId, data);
+            router.refresh();
+          })
+        }
+        disabled={!data || pend}
+        className="rounded-lg bg-amber-600 px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-amber-700 disabled:opacity-50"
+      >
+        {pend ? "Definindo…" : "Definir data"}
+      </button>
     </div>
   );
 }
@@ -221,13 +264,13 @@ function VistaLista({
           <div className="mb-2 flex items-baseline gap-2">
             <CalendarClock size={15} style={{ color: ACENTO }} />
             <h3 className="text-[14px] font-semibold text-[#2a2a27]">Agenda</h3>
-            <span className="text-[12px] text-[#8a8a86]">
+            <span className="text-[12px] text-[#5f5f5b]">
               — onde você precisa comparecer
             </span>
             <button
               onClick={() => setCriando((v) => !v)}
               className="ml-auto flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-medium"
-              style={{ background: criando ? "#efefec" : ACENTO, color: criando ? "#7a7a76" : "#fff" }}
+              style={{ background: criando ? "#efefec" : ACENTO, color: criando ? "#5f5f5b" : "#fff" }}
             >
               {criando ? <X size={13} /> : <Plus size={13} />}
               {criando ? "Fechar" : "Novo"}
@@ -244,7 +287,7 @@ function VistaLista({
 
           {org.compromissos.length === 0 ? (
             !criando && (
-              <p className="px-1 py-4 text-[13px] text-[#8a8a86]">
+              <p className="px-1 py-4 text-[13px] text-[#5f5f5b]">
                 Nenhum compromisso marcado.
               </p>
             )
@@ -264,16 +307,16 @@ function VistaLista({
           <div className="mb-2 flex items-baseline gap-2">
             <CheckSquare size={15} className="text-[#5f5f5b]" />
             <h3 className="text-[14px] font-semibold text-[#2a2a27]">Tarefas</h3>
-            <span className="text-[12px] text-[#8a8a86]">
+            <span className="text-[12px] text-[#5f5f5b]">
               — o que você precisa fazer
             </span>
-            <span className="mono ml-auto text-[11px] text-[#a8a8a3]">
+            <span className="mono ml-auto text-[11px] text-[#6b6b66]">
               {abertas.length} abertas
             </span>
           </div>
 
           {org.tarefas.length === 0 ? (
-            <p className="px-1 py-4 text-[13px] text-[#8a8a86]">
+            <p className="px-1 py-4 text-[13px] text-[#5f5f5b]">
               Nenhuma tarefa ainda.
             </p>
           ) : (
@@ -389,7 +432,7 @@ function NovoCompromisso({
         </button>
         <button
           onClick={onPronto}
-          className="rounded-lg px-3 py-1.5 text-[12.5px] font-medium text-[#7a7a76]"
+          className="rounded-lg px-3 py-1.5 text-[12.5px] font-medium text-[#5f5f5b]"
         >
           Cancelar
         </button>
@@ -435,7 +478,7 @@ function LinhaCompromisso({ c, eventId }: { c: Compromisso; eventId: string }) {
       style={{ borderColor: ACENTO, borderTop: "1px solid #eaeae7", borderRight: "1px solid #eaeae7", borderBottom: "1px solid #eaeae7" }}
     >
       <div className="flex items-center gap-3">
-        <div className="mono w-16 shrink-0 text-[11px] text-[#8a8a86]">
+        <div className="mono w-16 shrink-0 text-[11px] text-[#5f5f5b]">
           {dataBR(c.data)}
           <div className="text-[13px] font-semibold text-[#1b1b19]">
             {c.hora ?? "—"}
@@ -443,7 +486,7 @@ function LinhaCompromisso({ c, eventId }: { c: Compromisso; eventId: string }) {
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-[13.5px] font-medium text-[#1b1b19]">{c.titulo}</p>
-          <p className="flex flex-wrap items-center gap-x-2 text-[11.5px] text-[#8a8a86]">
+          <p className="flex flex-wrap items-center gap-x-2 text-[11.5px] text-[#5f5f5b]">
             <span>{prazo(c.data)}</span>
             {c.local && <span>· {c.local}</span>}
             {c.supplierNome && <span>· {c.supplierNome}</span>}
@@ -477,12 +520,12 @@ function LinhaCompromisso({ c, eventId }: { c: Compromisso; eventId: string }) {
           </button>
         )}
         {c.estado !== "cancelado" && (
-          <button onClick={() => mudar("cancelado")} disabled={pend} className="text-[#8a8a86] disabled:opacity-50">
+          <button onClick={() => mudar("cancelado")} disabled={pend} className="text-[#5f5f5b] disabled:opacity-50">
             Cancelar
           </button>
         )}
         {(c.estado === "cancelado" || c.estado === "remarcado") && (
-          <button onClick={() => mudar("agendado")} disabled={pend} className="text-[#8a8a86] disabled:opacity-50">
+          <button onClick={() => mudar("agendado")} disabled={pend} className="text-[#5f5f5b] disabled:opacity-50">
             Reativar
           </button>
         )}
@@ -492,7 +535,7 @@ function LinhaCompromisso({ c, eventId }: { c: Compromisso; eventId: string }) {
       </div>
 
       {c.supplierId && !c.supplierWhatsapp && (
-        <p className="mt-1 pl-[76px] text-[11px] text-[#a8a8a3]">
+        <p className="mt-1 pl-[76px] text-[11px] text-[#6b6b66]">
           {c.supplierNome} não tem WhatsApp cadastrado.
         </p>
       )}
@@ -525,23 +568,23 @@ function LinhaTarefa({
       </button>
       <div className="min-w-0 flex-1">
         <p
-          className={`text-[13.5px] ${feita ? "text-[#a8a8a3] line-through" : "text-[#2a2a27]"}`}
+          className={`text-[13.5px] ${feita ? "text-[#6b6b66] line-through" : "text-[#2a2a27]"}`}
         >
           {tarefa.titulo}
         </p>
-        <p className="flex flex-wrap items-center gap-x-2 text-[11.5px] text-[#8a8a86]">
+        <p className="flex flex-wrap items-center gap-x-2 text-[11.5px] text-[#5f5f5b]">
           {tarefa.responsavel && (
             <span className="capitalize">{tarefa.responsavel}</span>
           )}
           {tarefa.origemDecisao && (
-            <span className="text-[#a8a8a3]">{tarefa.origemDecisao}</span>
+            <span className="text-[#6b6b66]">{tarefa.origemDecisao}</span>
           )}
           {!tarefa.responsavel && !tarefa.origemDecisao && tarefa.category && (
             <span>{tarefa.category}</span>
           )}
         </p>
       </div>
-      <span className="mono shrink-0 text-[11px] text-[#8a8a86]">
+      <span className="mono shrink-0 text-[11px] text-[#5f5f5b]">
         {feita ? "concluída" : `vence ${prazo(tarefa.dueDate)}`}
       </span>
     </div>
@@ -586,7 +629,7 @@ function VistaCalendario({ org, filtro }: { org: Organizacao; filtro: Filtro }) 
           <button
             onClick={() => passo(-1)}
             aria-label="Mês anterior"
-            className="rounded p-1 text-[#8a8a86] hover:bg-[#f2f2ef]"
+            className="rounded p-1 text-[#5f5f5b] hover:bg-[#f2f2ef]"
           >
             <ChevronLeft size={16} />
           </button>
@@ -596,12 +639,12 @@ function VistaCalendario({ org, filtro }: { org: Organizacao; filtro: Filtro }) 
           <button
             onClick={() => passo(1)}
             aria-label="Próximo mês"
-            className="rounded p-1 text-[#8a8a86] hover:bg-[#f2f2ef]"
+            className="rounded p-1 text-[#5f5f5b] hover:bg-[#f2f2ef]"
           >
             <ChevronRight size={16} />
           </button>
         </div>
-        <div className="flex items-center gap-3 text-[11px] text-[#8a8a86]">
+        <div className="flex items-center gap-3 text-[11px] text-[#5f5f5b]">
           <span className="flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-full" style={{ background: ACENTO }} />
             Agenda · comparecer
@@ -615,7 +658,7 @@ function VistaCalendario({ org, filtro }: { org: Organizacao; filtro: Filtro }) 
 
       <div className="grid grid-cols-7 gap-px">
         {DIAS_SEM.map((d) => (
-          <div key={d} className="mono pb-1 text-center text-[10px] text-[#a8a8a3]">
+          <div key={d} className="mono pb-1 text-center text-[10px] text-[#6b6b66]">
             {d}
           </div>
         ))}
@@ -632,7 +675,7 @@ function VistaCalendario({ org, filtro }: { org: Organizacao; filtro: Filtro }) 
               {dia !== null && (
                 <>
                   <div className="mb-1 flex items-center justify-between">
-                    <span className="text-[11px] text-[#7a7a76]">{dia}</span>
+                    <span className="text-[11px] text-[#5f5f5b]">{dia}</span>
                     {ehEvento && (
                       <span className="mono rounded bg-[#1b1b19] px-1 py-0.5 text-[8px] font-semibold uppercase text-white">
                         evento
@@ -656,7 +699,7 @@ function VistaCalendario({ org, filtro }: { org: Organizacao; filtro: Filtro }) 
                       </div>
                     ))}
                     {visiveis.length > 3 && (
-                      <div className="px-1 text-[9px] text-[#a8a8a3]">
+                      <div className="px-1 text-[9px] text-[#6b6b66]">
                         +{visiveis.length - 3}
                       </div>
                     )}
