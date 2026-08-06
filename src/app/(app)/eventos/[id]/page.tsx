@@ -24,6 +24,7 @@ import { ResumoOperacional } from "@/components/eventos/ResumoOperacional";
 import { AcoesRapidas } from "@/components/eventos/AcoesRapidas";
 import { ProximasAtividades } from "@/components/eventos/ProximasAtividades";
 import { NotasRapidas } from "@/components/eventos/NotasRapidas";
+import { AssistenteEvento } from "@/components/eventos/AssistenteEvento";
 import { CARGO_LABELS, type Cargo } from "@/lib/equipe-shared";
 import { EVENT_TYPE_LABELS } from "@/lib/types";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -235,6 +236,7 @@ export default async function ResumoPage({
       {/* Coluna lateral */}
       <div className="space-y-6">
         <AcoesRapidas eventId={eventId} eventLabel={eventLabel} />
+        <AssistenteEvento eventId={eventId} />
         <ProximasAtividades eventId={eventId} proximas={resumo.proximas} />
       </div>
     </div>
