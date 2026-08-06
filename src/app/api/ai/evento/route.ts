@@ -16,7 +16,11 @@ import { montarContextoEvento } from "@/lib/supabase/assistente-evento";
 
 export const dynamic = "force-dynamic";
 
-const MODELO = "llama-3.3-70b-versatile";
+// Provedor e modelo vêm do ambiente (mesmas variáveis do lib/llama.ts), com
+// o padrão atual como fallback. Assim trocar de provedor/modelo é config,
+// não deploy de código.
+const BASE_URL = process.env.LLAMA_BASE_URL || "https://api.groq.com/openai/v1";
+const MODELO = process.env.LLAMA_MODEL || "llama-3.3-70b-versatile";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -50,8 +54,14 @@ export async function POST(req: Request) {
 
   const apiKey = process.env.LLAMA_API_KEY;
   if (!apiKey) {
+    // Erro acionável: quase sempre é a variável faltando no ambiente de
+    // produção (existe no .env.local, não foi criada na Vercel).
+    console.error("LLAMA_API_KEY ausente no ambiente desta implantação");
     return NextResponse.json(
-      { error: "assistente não configurado no servidor" },
+      {
+        error:
+          "assistente indisponível: falta a chave LLAMA_API_KEY nas variáveis de ambiente deste servidor.",
+      },
       { status: 503 }
     );
   }
@@ -76,7 +86,7 @@ export async function POST(req: Request) {
     `=== DADOS DO EVENTO ===\n${contexto.texto}\n=== FIM DOS DADOS ===`;
 
   try {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const res = await fetch(`${BASE_URL}/chat/completions`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -90,8 +100,19 @@ export async function POST(req: Request) {
     });
 
     if (!res.ok) {
+      // O motivo real (chave inválida, modelo inexistente, limite) fica no
+      // log do servidor; a tela mostra algo curto.
+      const detalhe = await res.text().catch(() => "");
+      console.error(
+        `assistente: provedor respondeu ${res.status} — ${detalhe.slice(0, 300)}`
+      );
       return NextResponse.json(
-        { error: "o assistente não respondeu agora. Tente de novo." },
+        {
+          error:
+            res.status === 401
+              ? "chave do assistente rejeitada pelo provedor."
+              : "o assistente não respondeu agora. Tente de novo.",
+        },
         { status: 502 }
       );
     }
