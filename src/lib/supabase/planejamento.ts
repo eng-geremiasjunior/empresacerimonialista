@@ -24,6 +24,9 @@ export type Decisao = {
   descricao: string | null;
   responsavel: Responsavel;
   offsetIdealDias: number | null;
+  // Data recalculada pela compressão (4D). null = sem data do evento ou
+  // nao_se_aplica. É esta data — não o offset cru — que a tela mostra.
+  prazoPrevisto: string | null;
   prioridade: number;
   ordem: number;
   estado: EstadoDecisao;
@@ -64,7 +67,9 @@ export type Planejamento = {
   progressoPct: number;
   criticas: DecisaoCritica[];
   objetivos: Objetivo[];
-  // sinalização de prazo apertado (todas as janelas já venceram)
+  // 4D: densidade da agenda (decisões pendentes ÷ meses até o evento) e o
+  // aviso não bloqueante de ritmo intenso quando o método foi comprimido.
+  densidadeMensal: number;
   ritmoApertado: boolean;
 };
 
@@ -100,7 +105,7 @@ export async function getPlanejamento(
     supabase
       .from("evento_decisao")
       .select(
-        "id, evento_objetivo_id, decisao_template_id, titulo, descricao, responsavel, offset_ideal_dias, prioridade, ordem, estado"
+        "id, evento_objetivo_id, decisao_template_id, titulo, descricao, responsavel, offset_ideal_dias, prazo_previsto, prioridade, ordem, estado"
       )
       .eq("event_id", eventId)
       .order("ordem"),
@@ -165,6 +170,7 @@ export async function getPlanejamento(
       descricao: d.descricao,
       responsavel: d.responsavel,
       offsetIdealDias: d.offset_ideal_dias,
+      prazoPrevisto: d.prazo_previsto,
       prioridade: d.prioridade,
       ordem: d.ordem,
       estado: d.estado,
@@ -185,24 +191,28 @@ export async function getPlanejamento(
     const aplicaveis = decisoes.filter((d) => d.estado !== "nao_se_aplica");
     const decididas = aplicaveis.filter((d) => d.estado === "decidida");
 
-    // janela ideal = maior offset entre as decisões pendentes (a que
-    // precisa começar mais cedo). Sem pendente, cai no maior offset geral.
+    // Janela do objetivo = a decisão pendente com o prazo recalculado mais
+    // próximo (4D). É o "quando começar" real, já comprimido ao prazo do
+    // casal — não o offset cru do método.
     const pendentes = decisoes.filter((d) => d.estado === "pendente");
-    const offsets = (pendentes.length ? pendentes : decisoes)
-      .map((d) => d.offsetIdealDias)
-      .filter((n): n is number => n !== null);
-    const janelaDias = offsets.length ? Math.max(...offsets) : null;
+    const proximoPrazo = pendentes
+      .map((d) => d.prazoPrevisto)
+      .filter((p): p is string => p !== null)
+      .sort()[0] ?? null;
 
-    // Bucket por gap = diasAteEvento - janela. Janela vencida/no ponto →
-    // AGORA; a poucos meses → PRÓXIMAS; longe → DEPOIS.
     let bucket: Bucket = "depois";
-    let faltamDias: number | null = janelaDias;
-    if (diasAteEvento !== null && janelaDias !== null) {
-      const gap = diasAteEvento - janelaDias;
-      bucket = gap <= 0 ? "agora" : gap <= 60 ? "proximas" : "depois";
-      // mostra o menor entre "dias até o evento" e a janela ideal
-      faltamDias = Math.min(diasAteEvento, janelaDias);
+    let faltamDias: number | null = null;
+    let janelaDias: number | null = null;
+    if (proximoPrazo) {
+      faltamDias = differenceInCalendarDays(
+        new Date(`${proximoPrazo}T00:00:00`),
+        new Date(new Date().toDateString())
+      );
+      janelaDias = faltamDias;
+      bucket =
+        faltamDias <= 30 ? "agora" : faltamDias <= 90 ? "proximas" : "depois";
     } else if (diasAteEvento !== null) {
+      // sem prazo recalculado (evento sem data): mantém o dias-até-evento.
       faltamDias = diasAteEvento;
     }
 
@@ -243,17 +253,23 @@ export async function getPlanejamento(
         objetivos.find((o) => o.id === d.objetivoId)?.nome ?? "",
     }));
 
-  // Ritmo apertado: a janela ideal de alguma decisão de alta prioridade já
-  // venceu (offset > dias até o evento). Só sinaliza, não altera dado.
-  const ritmoApertado =
+  // 4D — densidade da agenda: decisões pendentes ÷ meses até o evento.
+  // O aviso de ritmo intenso é não bloqueante e só aparece quando o método
+  // teve de ser comprimido (algum offset estruturante não coube no prazo) E
+  // a densidade ficou alta demais para ser realista.
+  const pendentesAplic = aplic.filter((d) => d.estado === "pendente");
+  const meses =
+    diasAteEvento !== null && diasAteEvento > 0
+      ? Math.max(1, Math.ceil(diasAteEvento / 30))
+      : null;
+  const densidadeMensal =
+    meses !== null ? Math.ceil(pendentesAplic.length / meses) : 0;
+  const metodoComprimido =
     diasAteEvento !== null &&
-    aplic.some(
-      (d) =>
-        d.estado === "pendente" &&
-        d.offsetIdealDias !== null &&
-        d.offsetIdealDias > diasAteEvento &&
-        d.prioridade >= 100
+    pendentesAplic.some(
+      (d) => d.offsetIdealDias !== null && d.offsetIdealDias > diasAteEvento
     );
+  const ritmoApertado = metodoComprimido && densidadeMensal >= 6;
 
   return {
     temArvore: objsRaw.length > 0,
@@ -261,6 +277,7 @@ export async function getPlanejamento(
     progressoPct,
     criticas,
     objetivos,
+    densidadeMensal,
     ritmoApertado,
   };
 }

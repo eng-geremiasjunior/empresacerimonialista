@@ -51,19 +51,18 @@ function faltamTexto(dias: number | null): string {
   return `faltam ${dias} dias`;
 }
 
-// Prazo ideal da decisão em linguagem de tempo: a janela fecha quando faltam
-// `offset` dias para o evento, então ela deveria ser decidida daqui a
-// (diasAteEvento - offset) dias.
-function prazoDecisao(
-  diasAteEvento: number | null,
-  offsetIdealDias: number | null
-): string {
-  if (diasAteEvento === null || offsetIdealDias === null)
-    return "sem prazo definido";
-  const gap = diasAteEvento - offsetIdealDias;
-  if (gap <= 0) return "no prazo ideal agora";
-  if (gap === 1) return "ideal decidir até amanhã";
-  return `ideal decidir em ${gap} dias`;
+// Prazo recalculado (4D) em linguagem de tempo. Recebe a data já comprimida
+// ao prazo do casal (prazo_previsto), não o offset cru do método.
+function prazoPrevistoTexto(iso: string | null): string {
+  if (!iso) return "sem prazo definido";
+  const alvo = new Date(`${iso}T00:00:00`).getTime();
+  const hoje = new Date(new Date().toDateString()).getTime();
+  const dias = Math.round((alvo - hoje) / 86_400_000);
+  if (dias <= 0) return "decidir agora";
+  if (dias === 1) return "decidir até amanhã";
+  if (dias <= 45) return `decidir em ${dias} dias`;
+  const [a, m, d] = iso.split("-");
+  return `decidir até ${d}/${m}/${a.slice(2)}`;
 }
 
 export function PlanejamentoEvento({
@@ -178,7 +177,7 @@ export function PlanejamentoEvento({
                     {d.titulo}
                   </span>
                   <span className="mt-1.5 text-[11.5px] text-[#7a7a76]">
-                    {prazoDecisao(plano.diasAteEvento, d.offsetIdealDias)}
+                    {prazoPrevistoTexto(d.prazoPrevisto)}
                   </span>
                   <span
                     className="mt-2.5 inline-flex w-fit items-center gap-1 rounded-[7px] px-2.5 py-1.5 text-[12px] font-medium text-white"
@@ -190,11 +189,10 @@ export function PlanejamentoEvento({
               ))}
             </div>
             {plano.ritmoApertado && (
-              <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-800">
-                <span>
-                  Ritmo intenso — a janela ideal de decisões estruturantes já
-                  passou; itens seguem ordenados por prioridade.
-                </span>
+              <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-800">
+                Ritmo intenso — casal contratou com pouco tempo, método
+                comprimido. São cerca de {plano.densidadeMensal} decisões por
+                mês; resolva primeiro as do topo da fila.
               </div>
             )}
           </section>
