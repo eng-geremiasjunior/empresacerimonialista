@@ -18,6 +18,9 @@ export type Tarefa = {
   // Rastreabilidade (4C): título da decisão que gerou a tarefa. null =
   // tarefa manual/legada, sem origem no método.
   origemDecisao: string | null;
+  // Vínculo real com outro módulo: esta tarefa alimenta a Execução (roteiro
+  // do dia) ou entra no Financeiro. O selo vira um atalho para lá.
+  vinculoModulo: "execucao" | "financeiro" | null;
 };
 
 export type CompromissoEstado =

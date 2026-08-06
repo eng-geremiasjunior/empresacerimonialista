@@ -9,6 +9,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Calendar as CalendarIcon,
   CalendarClock,
@@ -322,10 +323,20 @@ function VistaLista({
           ) : (
             <div className="space-y-1.5">
               {abertas.map((t) => (
-                <LinhaTarefa key={t.id} tarefa={t} onToggle={onToggle} />
+                <LinhaTarefa
+                  key={t.id}
+                  tarefa={t}
+                  eventId={eventId}
+                  onToggle={onToggle}
+                />
               ))}
               {concluidas.map((t) => (
-                <LinhaTarefa key={t.id} tarefa={t} onToggle={onToggle} />
+                <LinhaTarefa
+                  key={t.id}
+                  tarefa={t}
+                  eventId={eventId}
+                  onToggle={onToggle}
+                />
               ))}
             </div>
           )}
@@ -545,14 +556,25 @@ function LinhaCompromisso({ c, eventId }: { c: Compromisso; eventId: string }) {
   );
 }
 
+const VINCULO_MODULO: Record<
+  "execucao" | "financeiro",
+  { rota: string; rotulo: string }
+> = {
+  execucao: { rota: "roteiro", rotulo: "alimenta a Execução" },
+  financeiro: { rota: "financeiro", rotulo: "entra no Financeiro" },
+};
+
 function LinhaTarefa({
   tarefa,
+  eventId,
   onToggle,
 }: {
   tarefa: Tarefa;
+  eventId: string;
   onToggle: (taskId: string, concluida: boolean) => void;
 }) {
   const feita = tarefa.status === "concluido";
+  const vinc = tarefa.vinculoModulo ? VINCULO_MODULO[tarefa.vinculoModulo] : null;
   return (
     <div
       className={`flex items-center gap-3 rounded-lg border border-[#eaeae7] bg-white px-4 py-2.5 ${feita ? "opacity-55" : ""}`}
@@ -581,6 +603,14 @@ function LinhaTarefa({
           )}
           {!tarefa.responsavel && !tarefa.origemDecisao && tarefa.category && (
             <span>{tarefa.category}</span>
+          )}
+          {vinc && (
+            <Link
+              href={`/eventos/${eventId}/${vinc.rota}`}
+              className="inline-flex items-center gap-0.5 rounded-full bg-[oklch(0.95_0.03_285)] px-2 py-0.5 font-medium text-[oklch(0.5_0.14_285)] hover:underline"
+            >
+              {vinc.rotulo} →
+            </Link>
           )}
         </p>
       </div>

@@ -20,7 +20,7 @@ export async function getOrganizacao(
   const { data: tasks } = await supabase
     .from("tasks")
     .select(
-      "id, title, description, due_date, due_time, status, priority, category, responsavel, evento_decisao(titulo)"
+      "id, title, description, due_date, due_time, status, priority, category, responsavel, vinculo_modulo, evento_decisao(titulo)"
     )
     .eq("event_id", eventId)
     .order("due_date", { ascending: true, nullsFirst: false })
@@ -45,6 +45,8 @@ export async function getOrganizacao(
       category: t.category,
       responsavel: t.responsavel,
       origemDecisao: decisao?.titulo ?? null,
+      vinculoModulo:
+        (t.vinculo_modulo as "execucao" | "financeiro" | null) ?? null,
     };
   });
 
