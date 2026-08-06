@@ -23,8 +23,10 @@ import type {
 import {
   alternarGuia,
   decidirDecisao,
+  definirDataEvento,
   marcarNaoSeAplica,
   reabrirDecisao,
+  registrarResultado,
 } from "@/app/(app)/eventos/[id]/planejamento/actions";
 
 const ACENTO = "oklch(0.5 0.14 285)";
@@ -157,6 +159,12 @@ export function PlanejamentoEvento({
           </div>
         </div>
 
+        {/* DATA FALTANDO — sem data, prazos/compressão/timeline são nulos.
+            É a primeira ação operacional; resolve aqui em um passo. */}
+        {!plano.dataEvento && (
+          <BannerData eventId={eventId} onAgir={agir} />
+        )}
+
         {/* FILA INTELIGENTE */}
         {plano.criticas.length > 0 && (
           <section className="mb-6 rounded-xl border border-[#e6e6e3] bg-[#f7f7f5] p-4">
@@ -268,11 +276,48 @@ export function PlanejamentoEvento({
           eventId={eventId}
           objetivoNome={decisaoAberta.objetivo.nome}
           decisao={decisaoAberta.decisao}
+          dataEvento={plano.dataEvento}
           pending={pending}
           onFechar={() => setAberta(null)}
           onAgir={agir}
         />
       )}
+    </div>
+  );
+}
+
+function BannerData({
+  eventId,
+  onAgir,
+}: {
+  eventId: string;
+  onAgir: (fn: () => Promise<unknown>) => void;
+}) {
+  const [data, setData] = useState("");
+  return (
+    <div className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
+      <div className="min-w-0 flex-1">
+        <p className="text-[14px] font-semibold text-amber-900">
+          Defina a data do casamento
+        </p>
+        <p className="text-[12.5px] text-amber-800">
+          Sem data, prazos, compressão e agenda ficam sem referência. É a
+          primeira coisa a resolver.
+        </p>
+      </div>
+      <input
+        type="date"
+        value={data}
+        onChange={(e) => setData(e.target.value)}
+        className="rounded-lg border border-amber-300 bg-white px-3 py-2 text-[14px] text-[#1b1b19] outline-none"
+      />
+      <button
+        onClick={() => data && onAgir(() => definirDataEvento(eventId, data))}
+        disabled={!data}
+        className="rounded-lg bg-amber-600 px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-amber-700 disabled:opacity-50"
+      >
+        Definir data
+      </button>
     </div>
   );
 }
@@ -356,10 +401,17 @@ function DecisaoLinha({
       >
         {decidida && <Check size={11} strokeWidth={3} />}
       </span>
-      <span
-        className={`flex-1 text-[13px] ${na ? "text-[#a8a8a3] line-through" : "text-[#2a2a27]"}`}
-      >
-        {decisao.titulo}
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span
+          className={`text-[13px] ${na ? "text-[#a8a8a3] line-through" : "text-[#2a2a27]"}`}
+        >
+          {decisao.titulo}
+        </span>
+        {decisao.resultado && !na && (
+          <span className="truncate text-[12px] text-[#6b6b66]">
+            {decisao.resultado}
+          </span>
+        )}
       </span>
       {na ? (
         <span className="mono text-[10px] uppercase tracking-wide text-[#b0b0ab]">
@@ -384,6 +436,7 @@ function PainelDecisao({
   eventId,
   objetivoNome,
   decisao,
+  dataEvento,
   pending,
   onFechar,
   onAgir,
@@ -391,12 +444,16 @@ function PainelDecisao({
   eventId: string;
   objetivoNome: string;
   decisao: Decisao;
+  dataEvento: string | null;
   pending: boolean;
   onFechar: () => void;
   onAgir: (fn: () => Promise<unknown>) => void;
 }) {
   const na = decisao.estado === "nao_se_aplica";
   const decidida = decisao.estado === "decidida";
+  // Esta decisão É a data do casamento? Então o "valor" dela é events.date.
+  const ehData = decisao.codigo === "data";
+  const [resultado, setResultado] = useState(decisao.resultado ?? "");
 
   return (
     <aside className="w-[340px] shrink-0 border-l border-[#e6e6e3] bg-[#fbfbfa] pl-5">
@@ -432,6 +489,52 @@ function PainelDecisao({
             <X size={16} />
           </button>
         </div>
+
+        {/* CAPTURAR O RESULTADO — "definir" ganha onde acontecer. A data é
+            campo do evento; as demais decisões guardam um texto livre. */}
+        {!na && (
+          <div className="mb-4">
+            <label className="mono text-[11px] uppercase tracking-[0.14em] text-[#6b6b66]">
+              {ehData ? "Data do casamento" : "O que foi decidido"}
+            </label>
+            {ehData ? (
+              <input
+                type="date"
+                defaultValue={dataEvento ?? ""}
+                onChange={(e) =>
+                  e.target.value &&
+                  onAgir(() => definirDataEvento(eventId, e.target.value))
+                }
+                disabled={pending}
+                className="mt-1.5 w-full rounded-lg border border-[#c8c8c3] bg-white px-3 py-2 text-[14px] text-[#1b1b19] outline-none focus:border-[oklch(0.5_0.14_285)]"
+              />
+            ) : (
+              <input
+                type="text"
+                value={resultado}
+                onChange={(e) => setResultado(e.target.value)}
+                onBlur={() => {
+                  if ((decisao.resultado ?? "") !== resultado.trim())
+                    onAgir(() =>
+                      registrarResultado(eventId, decisao.id, resultado)
+                    );
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                }}
+                placeholder="Ex.: Buffet Sabor & Arte — R$ 18.000"
+                disabled={pending}
+                className="mt-1.5 w-full rounded-lg border border-[#c8c8c3] bg-white px-3 py-2 text-[14px] text-[#1b1b19] placeholder:text-[#a8a8a3] outline-none focus:border-[oklch(0.5_0.14_285)]"
+              />
+            )}
+            {ehData && !dataEvento && (
+              <p className="mt-1 text-[12px] text-[#8a6d3b]">
+                Sem data, os prazos e a agenda ficam soltos. Defina para o
+                método se ajustar ao tempo real.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* GUIA DA DECISÃO */}
         {decisao.guias.length > 0 && (

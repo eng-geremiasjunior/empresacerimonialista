@@ -48,6 +48,46 @@ export async function reabrirDecisao(eventId: string, decisaoId: string) {
   return mudarEstado(eventId, decisaoId, "pendente");
 }
 
+// Registra O QUE foi decidido (buffet, valor, formato…). Texto livre; a
+// data do casamento não passa por aqui — é events.date (ver definirDataEvento).
+export async function registrarResultado(
+  eventId: string,
+  decisaoId: string,
+  resultado: string
+): Promise<AcaoResult> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("evento_decisao")
+    .update({ resultado: resultado.trim() || null, updated_at: new Date().toISOString() })
+    .eq("id", decisaoId)
+    .eq("event_id", eventId);
+
+  if (error) return { error: "Não foi possível salvar o resultado." };
+  revalidatePath(`/eventos/${eventId}/planejamento`);
+  return { success: true };
+}
+
+// A data do casamento é campo de primeira classe do evento. Gravar aqui
+// dispara o recálculo da compressão (4D, gatilho em events.date) e alimenta
+// prazos, timeline e Organização.
+export async function definirDataEvento(
+  eventId: string,
+  data: string // yyyy-mm-dd
+): Promise<AcaoResult> {
+  if (!data) return { error: "Escolha uma data." };
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("events")
+    .update({ date: data })
+    .eq("id", eventId);
+
+  if (error) return { error: "Não foi possível definir a data." };
+  revalidatePath(`/eventos/${eventId}/planejamento`);
+  revalidatePath(`/eventos/${eventId}/organizacao`);
+  revalidatePath(`/eventos/${eventId}`);
+  return { success: true };
+}
+
 // Tique no checklist-guia: ajuda a pensar, então é só um marcado por item.
 export async function alternarGuia(
   eventId: string,

@@ -20,9 +20,14 @@ export type Guia = {
 export type Decisao = {
   id: string;
   objetivoId: string;
+  // código do template (ex.: 'data' = a decisão que é a data do casamento).
+  codigo: string | null;
   titulo: string;
   descricao: string | null;
   responsavel: Responsavel;
+  // o que foi decidido (buffet, valor, formato…). A data do casamento não
+  // usa isto — vive em events.date.
+  resultado: string | null;
   offsetIdealDias: number | null;
   // Data recalculada pela compressão (4D). null = sem data do evento ou
   // nao_se_aplica. É esta data — não o offset cru — que a tela mostra.
@@ -62,6 +67,7 @@ export type DecisaoCritica = Decisao & {
 
 export type Planejamento = {
   temArvore: boolean;
+  dataEvento: string | null;
   diasAteEvento: number | null;
   // progresso PONDERADO por prioridade (não por quantidade)
   progressoPct: number;
@@ -105,7 +111,7 @@ export async function getPlanejamento(
     supabase
       .from("evento_decisao")
       .select(
-        "id, evento_objetivo_id, decisao_template_id, titulo, descricao, responsavel, offset_ideal_dias, prazo_previsto, prioridade, ordem, estado"
+        "id, evento_objetivo_id, decisao_template_id, titulo, descricao, responsavel, resultado, offset_ideal_dias, prazo_previsto, prioridade, ordem, estado"
       )
       .eq("event_id", eventId)
       .order("ordem"),
@@ -130,17 +136,25 @@ export async function getPlanejamento(
     ),
   ];
   const blueprintPorTemplate = new Map<string, string[]>();
+  const codigoPorTemplate = new Map<string, string>();
   if (templateIds.length > 0) {
-    const { data: bp } = await supabase
-      .from("metodo_tarefa")
-      .select("decisao_id, titulo, ordem")
-      .in("decisao_id", templateIds)
-      .order("ordem");
-    for (const t of bp ?? []) {
+    const [bpRes, codRes] = await Promise.all([
+      supabase
+        .from("metodo_tarefa")
+        .select("decisao_id, titulo, ordem")
+        .in("decisao_id", templateIds)
+        .order("ordem"),
+      supabase
+        .from("metodo_decisao")
+        .select("id, codigo")
+        .in("id", templateIds),
+    ]);
+    for (const t of bpRes.data ?? []) {
       const arr = blueprintPorTemplate.get(t.decisao_id) ?? [];
       arr.push(t.titulo);
       blueprintPorTemplate.set(t.decisao_id, arr);
     }
+    for (const c of codRes.data ?? []) codigoPorTemplate.set(c.id, c.codigo);
   }
 
   const diasAteEvento = dataEvento
@@ -166,9 +180,13 @@ export async function getPlanejamento(
     const dec: Decisao = {
       id: d.id,
       objetivoId: d.evento_objetivo_id,
+      codigo: d.decisao_template_id
+        ? codigoPorTemplate.get(d.decisao_template_id) ?? null
+        : null,
       titulo: d.titulo,
       descricao: d.descricao,
       responsavel: d.responsavel,
+      resultado: d.resultado,
       offsetIdealDias: d.offset_ideal_dias,
       prazoPrevisto: d.prazo_previsto,
       prioridade: d.prioridade,
@@ -273,6 +291,7 @@ export async function getPlanejamento(
 
   return {
     temArvore: objsRaw.length > 0,
+    dataEvento,
     diasAteEvento,
     progressoPct,
     criticas,
