@@ -51,6 +51,7 @@ export default async function EventoFornecedoresPage({
   // Confirmações por fornecedor + configuração de antecedência
   const confirmacoes = new Map<string, ConfirmacaoInfo>();
   let diasAntes = 7;
+  let whatsappAuto = true;
 
   if (!migrationPendente) {
     const [confRes, evRes] = await Promise.all([
@@ -60,7 +61,7 @@ export default async function EventoFornecedoresPage({
         .eq("event_id", eventId),
       supabase
         .from("events")
-        .select("confirmation_days_before")
+        .select("confirmation_days_before, whatsapp_auto")
         .eq("id", eventId)
         .single(),
     ]);
@@ -79,6 +80,7 @@ export default async function EventoFornecedoresPage({
         });
       }
       diasAntes = evRes.data?.confirmation_days_before ?? 7;
+      whatsappAuto = evRes.data?.whatsapp_auto ?? true;
     }
   }
 
@@ -111,7 +113,11 @@ export default async function EventoFornecedoresPage({
       )}
 
       {!migrationPendente && links.length > 0 && (
-        <ConfigAntecedencia eventId={eventId} diasAtual={diasAntes} />
+        <ConfigAntecedencia
+          eventId={eventId}
+          diasAtual={diasAntes}
+          whatsappAtivo={whatsappAuto}
+        />
       )}
 
       {links.length === 0 ? (

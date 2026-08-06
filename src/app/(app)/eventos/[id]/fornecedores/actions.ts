@@ -179,6 +179,25 @@ export async function salvarDiasAntecedencia(
   return {};
 }
 
+// Canal WhatsApp da confirmação automática (075). O e-mail é sempre
+// enviado; o WhatsApp é opcional por evento — alguns fornecedores só
+// respondem por lá, outros preferem não receber.
+export async function salvarWhatsappAuto(
+  eventId: string,
+  ativo: boolean
+): Promise<{ error?: string }> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("events")
+    .update({ whatsapp_auto: ativo })
+    .eq("id", eventId);
+
+  if (error) return { error: "Não foi possível salvar" };
+
+  revalidatePath(`/eventos/${eventId}/fornecedores`);
+  return {};
+}
+
 export async function enviarConfirmacaoAgora(
   eventId: string,
   supplierId: string
@@ -187,7 +206,7 @@ export async function enviarConfirmacaoAgora(
 
   const { data: ev } = await supabase
     .from("events")
-    .select("id, type, date, time, location, clients(name)")
+    .select("id, type, date, time, location, whatsapp_auto, clients(name)")
     .eq("id", eventId)
     .single();
 
@@ -195,7 +214,7 @@ export async function enviarConfirmacaoAgora(
 
   const { data: sup } = await supabase
     .from("suppliers")
-    .select("id, name, email")
+    .select("id, name, email, whatsapp")
     .eq("id", supplierId)
     .single();
 
@@ -209,6 +228,7 @@ export async function enviarConfirmacaoAgora(
     location: ev.location,
     client_name:
       (ev.clients as unknown as { name: string } | null)?.name ?? null,
+    whatsapp_auto: ev.whatsapp_auto ?? true,
   };
 
   const resultado = await enviarConfirmacaoFornecedor(supabase, evento, sup);

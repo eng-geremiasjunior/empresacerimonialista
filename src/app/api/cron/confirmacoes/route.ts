@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
   const { data: eventos, error } = await supabase
     .from("events")
     .select(
-      "id, type, date, time, location, confirmation_days_before, clients(name)"
+      "id, type, date, time, location, confirmation_days_before, whatsapp_auto, clients(name)"
     )
     .eq("status", "confirmado")
     .is("confirmation_sent_at", null)
@@ -92,6 +92,7 @@ export async function GET(request: NextRequest) {
       time: string | null;
       location: string | null;
       confirmation_days_before: number | null;
+      whatsapp_auto: boolean | null;
       clients: { name: string } | null;
     };
 
@@ -109,6 +110,7 @@ export async function GET(request: NextRequest) {
       time: ev.time,
       location: ev.location,
       client_name: ev.clients?.name ?? null,
+      whatsapp_auto: ev.whatsapp_auto ?? true,
     };
 
     const fornecedores = await fornecedoresDoEvento(supabase, ev.id);

@@ -17,6 +17,9 @@ export type EventoParaConfirmar = {
   time: string | null;
   location: string | null;
   client_name: string | null;
+  // Preferência de canal do evento (075). undefined = ligado, que é o
+  // comportamento histórico; só desliga quando explicitamente false.
+  whatsapp_auto?: boolean;
 };
 
 export type ResultadoEnvio = {
@@ -103,9 +106,10 @@ export async function enviarConfirmacaoFornecedor(
     else falhas.push(`e-mail: ${envio.error}`);
   }
 
-  // WhatsApp com botões (mesmo hash do e-mail). Só tenta se as credenciais
-  // existirem — sem elas o envio é pulado, sem quebrar o fluxo do e-mail.
-  if (telefone && whatsappConfigurado()) {
+  // WhatsApp com botões (mesmo hash do e-mail). Respeita a preferência do
+  // evento e as credenciais — sem qualquer um dos dois, pula sem quebrar o
+  // fluxo do e-mail.
+  if (telefone && evento.whatsapp_auto !== false && whatsappConfigurado()) {
     const zap = await enviarConfirmacaoWhatsapp({
       telefone,
       supplierName: supplier.name,
