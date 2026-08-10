@@ -88,6 +88,49 @@ export async function POST(req: NextRequest) {
     if (msg.type === 'button_reply' && msg.buttonId) {
       const id = msg.buttonId;
 
+      // Escolha de horário do Secretário: id = agsl_<hash64>_<slotId>.
+      // O hash tem exatamente 64 hex; o resto é o id do slot. A RPC
+      // revalida a vaga na hora (a Agenda pode ter mudado desde o envio).
+      if (id.startsWith('agsl_')) {
+        const resto = id.slice(5);
+        const hash = resto.slice(0, 64);
+        const slotId = resto.slice(65);
+
+        const { data, error } = await admin.rpc('escolher_horario_convite', {
+          p_hash: hash,
+          p_slot_id: slotId,
+        });
+
+        const resp = data as {
+          success?: boolean;
+          error?: string;
+          data?: string;
+          hora?: string;
+        } | null;
+        const falha = error?.message ?? resp?.error;
+
+        if (falha) {
+          // Sem adivinhar: devolve o motivo ao fornecedor e, se o convite
+          // não foi resolvível, avisa a cerimonialista.
+          await enviarMensagemWhatsapp(msg.from, `Não deu certo: ${falha}`);
+          if (error) {
+            await notificarCerimonialistaMensagemNaoProcessada(
+              admin,
+              msg.from,
+              `Escolha de horário não processada (hash ${hash.slice(0, 8)}…): ${falha}`
+            );
+          }
+          return finalizar(false, `escolha de horário falhou: ${falha}`);
+        }
+
+        const [a, m, d] = String(resp?.data ?? '').split('-');
+        await enviarMensagemWhatsapp(
+          msg.from,
+          `Agendado! ${d}/${m}/${a} às ${String(resp?.hora ?? '').slice(0, 5)}. Obrigado!`
+        );
+        return finalizar(true, `horário escolhido via lista (hash ${hash.slice(0, 8)}…)`);
+      }
+
       // Compromisso da Agenda: id = compromisso_confirmar_<hash> / _recusar_.
       // O hash vem do botão; nunca interpretamos texto livre.
       if (

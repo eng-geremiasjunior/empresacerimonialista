@@ -2,6 +2,10 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileSection } from "@/components/configuracoes/ProfileSection";
 import { EmpresaSection } from "@/components/configuracoes/EmpresaSection";
+import {
+  DisponibilidadeSection,
+  type JanelaDisponibilidade,
+} from "@/components/configuracoes/DisponibilidadeSection";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +46,19 @@ export default async function ConfiguracoesPage() {
     empresa = data;
   }
 
+  // Grade de disponibilidade (Secretário). Degrada para vazio se a 077
+  // ainda não rodou.
+  let grade: JanelaDisponibilidade[] = [];
+  if (user) {
+    const { data } = await supabase
+      .from("disponibilidade")
+      .select("id, dia_semana, hora_inicio, hora_fim")
+      .eq("user_id", user.id)
+      .order("dia_semana")
+      .order("hora_inicio");
+    grade = (data ?? []) as JanelaDisponibilidade[];
+  }
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
@@ -65,6 +82,8 @@ export default async function ConfiguracoesPage() {
           initialLogoUrl={empresa.logo_url}
         />
       )}
+
+      {user && <DisponibilidadeSection userId={user.id} inicial={grade} />}
 
       {proprietaria && (
         <section className="rounded-xl border border-gray-200 bg-white px-6 py-5">

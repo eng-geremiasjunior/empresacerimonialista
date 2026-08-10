@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import type {
   Compromisso,
+  Disparo,
   Organizacao,
   PendenciaFinanceira,
   Tarefa,
@@ -41,6 +42,7 @@ import {
   criarCompromisso,
   criarTarefa,
   descartarPendencia,
+  dispararConvite,
   enviarConfirmacaoCompromisso,
   excluirCompromisso,
   excluirTarefa,
@@ -302,6 +304,12 @@ export function OrganizacaoEvento({
       )}
       {vista === "agenda" && (
         <VistaAgenda org={org} eventId={eventId} fornecedores={fornecedores} />
+      )}
+
+      {/* CENTRAL DE DISPAROS — só aparece quando o Secretário tem trabalho
+          real (convite programado ou enviado). Sem caixa vazia prometendo. */}
+      {vista !== "agenda" && org.disparos.length > 0 && (
+        <CentralDisparos disparos={org.disparos} onAbrir={setSel} />
       )}
 
       {/* drawer */}
@@ -616,6 +624,104 @@ function VistaAgenda({
   );
 }
 
+/* ================================================ CENTRAL DE DISPAROS */
+
+const DISPARO_META: Record<Disparo["status"], { label: string; tone: BadgeTone }> = {
+  agendado: { label: "Agendado", tone: "sage" },
+  enviado: { label: "Enviado", tone: "wait" },
+  reenviado: { label: "Reenviado", tone: "wait" },
+  respondido: { label: "Respondido", tone: "ok" },
+  expirado: { label: "Expirado", tone: "late" },
+};
+
+function CentralDisparos({
+  disparos,
+  onAbrir,
+}: {
+  disparos: Disparo[];
+  onAbrir: (taskId: string) => void;
+}) {
+  return (
+    <section style={{ marginTop: 34 }}>
+      <div
+        style={{
+          display: "flex", alignItems: "center", gap: 12,
+          background: "var(--surface-card)", border: "1px solid var(--border-hairline)",
+          borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-sm)",
+          padding: "14px 18px", marginBottom: 11,
+        }}
+      >
+        <span style={{ width: 42, height: 42, borderRadius: "var(--r-md)", background: "var(--salvia-50)", color: "var(--salvia-600)", display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto" }}>
+          <Send size={19} />
+        </span>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <p style={{ margin: 0, fontFamily: "var(--font-title)", fontWeight: 600, fontSize: 15 }}>
+            Central de Disparos
+          </p>
+          <p style={{ margin: "1px 0 0", fontSize: 12.5, color: "var(--text-muted)" }}>
+            {disparos.filter((d) => d.status === "agendado").length} programados ·{" "}
+            {disparos.filter((d) => d.status === "enviado" || d.status === "reenviado").length} aguardando resposta
+          </p>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+        {disparos.map((d) => {
+          const meta = DISPARO_META[d.status];
+          const [a, m, dia] = d.data ? d.data.split("-") : [null, null, null];
+          return (
+            <button
+              key={d.id}
+              onClick={() => onAbrir(d.taskId)}
+              style={{
+                display: "flex", alignItems: "center", gap: 14, textAlign: "left",
+                background: "var(--surface-card)", border: "1px solid var(--border-hairline)",
+                borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-sm)",
+                padding: "11px 16px", cursor: "pointer", width: "100%",
+              }}
+            >
+              <div style={{ width: 46, flex: "0 0 46px", textAlign: "center", borderRadius: "var(--r-md)", background: "var(--surface-sunken)", padding: "6px 2px" }}>
+                {d.data ? (
+                  <>
+                    <div className="mono" style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 600, color: "var(--text-muted)" }}>
+                      {MES_ABREV[Number(m) - 1]}
+                    </div>
+                    <div style={{ fontFamily: "var(--font-title)", fontWeight: 700, fontSize: 16, color: "var(--text-strong)" }}>
+                      {Number(dia)}
+                    </div>
+                  </>
+                ) : (
+                  <div className="mono" style={{ fontFamily: "var(--font-mono)", fontSize: 9.5, color: "var(--text-muted)" }}>
+                    sem
+                    <br />
+                    data
+                  </div>
+                )}
+                <span style={{ display: "none" }}>{a}</span>
+              </div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <p style={{ margin: 0, fontSize: 13.5, fontWeight: 600, color: "var(--text-strong)" }}>
+                  {d.status === "agendado" ? "Enviar convite: " : "Convite: "}
+                  {d.tarefa}
+                </p>
+                <p className="mono" style={{ margin: "2px 0 0", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text-muted)" }}>
+                  {d.fornecedor ?? "—"} · via WhatsApp
+                </p>
+              </div>
+              <Badge tone={meta.tone}>{meta.label}</Badge>
+            </button>
+          );
+        })}
+      </div>
+
+      <p className="mono" style={{ margin: "9px 0 0", fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--text-faint)" }}>
+        disparos via WhatsApp · verificação diária às 09:00 · sem resposta em 5
+        dias, volta pro manual
+      </p>
+    </section>
+  );
+}
+
 /* =========================================================== DRAWER */
 
 function TarefaDrawer({
@@ -648,6 +754,9 @@ function TarefaDrawer({
   const [categoria, setCategoria] = useState(tarefa?.category ?? "geral");
   const [descricao, setDescricao] = useState(tarefa?.descricao ?? "");
   const [conviteData, setConviteData] = useState(tarefa?.conviteData ?? "");
+  const [autoAgendar, setAutoAgendar] = useState(tarefa?.autoAgendar ?? false);
+  const [duracaoMin, setDuracaoMin] = useState(tarefa?.duracaoMin ?? 60);
+  const [avisoDisparo, setAvisoDisparo] = useState<string | null>(null);
   const [novoPasso, setNovoPasso] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [pend, start] = useTransition();
@@ -674,6 +783,8 @@ function TarefaDrawer({
       valor: valor.trim() === "" ? null : Number(valor.replace(/\./g, "").replace(",", ".")),
       conviteData: conviteData || null,
       categoria: categoria || "geral",
+      autoAgendar,
+      duracaoMin,
     };
     start(async () => {
       const r = nova
@@ -877,7 +988,9 @@ function TarefaDrawer({
             </div>
           </div>
 
-          {/* A SEGUNDA DATA — convite ao fornecedor (Secretário, etapa B) */}
+          {/* SECRETÁRIO — agendamento automático com o fornecedor. Opt-in
+              explícito, só com fornecedor vinculado (tarefa de relacionamento
+              com os noivos não tem fornecedor, logo nunca entra aqui). */}
           {supplierId && (
             <div style={{ border: "1px solid var(--border-hairline)", borderRadius: "var(--r-lg)", overflow: "hidden" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", background: "var(--surface-sunken)" }}>
@@ -885,19 +998,90 @@ function TarefaDrawer({
                   <Send size={15} />
                 </span>
                 <div style={{ flex: 1 }}>
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Convite ao fornecedor</p>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>
+                    Agendamento automático com fornecedor
+                  </p>
                   <p style={{ margin: "1px 0 0", fontSize: 11.5, color: "var(--text-muted)" }}>
-                    quando chamar — antes do vencimento, para garantir a agenda dele
+                    envia os seus horários livres por WhatsApp; ele escolhe, a Agenda registra
                   </p>
                 </div>
+                <Switch
+                  checked={autoAgendar}
+                  onChange={setAutoAgendar}
+                  label="Agendamento automático"
+                />
               </div>
-              <div style={{ padding: "12px 14px" }}>
-                <TextField label="Data do convite" type="date" mono value={conviteData} onChange={(e) => setConviteData(e.target.value)} />
+              <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <TextField
+                    label="Data do convite"
+                    type="date"
+                    mono
+                    value={conviteData}
+                    onChange={(e) => setConviteData(e.target.value)}
+                  />
+                  <Select
+                    label="Duração"
+                    value={String(duracaoMin)}
+                    onChange={(e) => setDuracaoMin(Number(e.target.value))}
+                  >
+                    {[30, 45, 60, 90, 120].map((d) => (
+                      <option key={d} value={d}>{d} min</option>
+                    ))}
+                  </Select>
+                </div>
                 {dueDate && conviteData && conviteData >= dueDate && (
-                  <p style={{ margin: "6px 0 0", fontSize: 11.5, color: "var(--state-wait)" }}>
+                  <p style={{ margin: 0, fontSize: 11.5, color: "var(--state-wait)" }}>
                     O convite está no dia do vencimento ou depois — o normal é sair antes.
                   </p>
                 )}
+                <p style={{ margin: 0, fontSize: 12.5, color: "var(--text-body)" }}>
+                  Prazo pro fornecedor: <b className="mono" style={{ fontFamily: "var(--font-mono)" }}>5</b> dias
+                  · reenvio em <b className="mono" style={{ fontFamily: "var(--font-mono)" }}>48h</b>
+                  · sem resposta, volta pro manual e você é avisada
+                </p>
+
+                {!nova && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={pend || tarefa?.convite?.status === "respondido"}
+                      onClick={() => {
+                        setAvisoDisparo(null);
+                        start(async () => {
+                          const r = await dispararConvite(eventId, tarefa!.id);
+                          if ("error" in r) setAvisoDisparo(r.error);
+                          else {
+                            setAvisoDisparo("Convite enviado no WhatsApp.");
+                            router.refresh();
+                          }
+                        });
+                      }}
+                    >
+                      ⚡ Disparar agora manualmente
+                    </Button>
+                    {tarefa?.convite && (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: tarefa.convite.status === "respondido" ? "var(--salvia-600)" : tarefa.convite.status === "expirado" ? "var(--state-late)" : "var(--state-wait)" }}>
+                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor" }} />
+                        {tarefa.convite.status === "respondido"
+                          ? "horário escolhido — está na Agenda"
+                          : tarefa.convite.status === "expirado"
+                            ? "expirou sem resposta"
+                            : `aguardando resposta (${tarefa.convite.status === "reenviado" ? "reenviado" : "enviado"})`}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {avisoDisparo && (
+                  <p style={{ margin: 0, fontSize: 12, color: avisoDisparo.startsWith("Convite") ? "var(--state-ok)" : "var(--state-late)" }}>
+                    {avisoDisparo}
+                  </p>
+                )}
+                <p className="mono" style={{ margin: 0, fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--text-faint)", background: "var(--surface-sunken)", borderRadius: "var(--r-md)", padding: "7px 9px" }}>
+                  os horários oferecidos = sua grade de disponibilidade menos o
+                  que já está na Agenda; a vaga é conferida de novo na escolha.
+                </p>
               </div>
             </div>
           )}

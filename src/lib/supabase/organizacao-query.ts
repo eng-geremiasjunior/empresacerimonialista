@@ -7,6 +7,7 @@ import type {
   ChecklistItem,
   Compromisso,
   CompromissoEstado,
+  Disparo,
   Organizacao,
   PendenciaFinanceira,
   Tarefa,
@@ -33,7 +34,12 @@ type TaskRow = {
   local: string | null;
   valor: number | string | null;
   convite_data: string | null;
+  auto_agendar: boolean | null;
+  duracao_min: number | null;
   created_at: string | null;
+  agendamento_convite:
+    | { status: string; enviado_em: string; prazo_ate: string; created_at: string }[]
+    | null;
   suppliers: { name: string } | { name: string }[] | null;
   evento_decisao:
     | { id: string; titulo: string; evento_objetivo: { nome: string } | { nome: string }[] | null }
@@ -51,10 +57,11 @@ export async function getOrganizacao(
   const { data: tasks } = await supabase
     .from("tasks")
     .select(
-      "id, title, description, due_date, due_time, status, priority, category, responsavel, vinculo_modulo, supplier_id, local, valor, convite_data, created_at, " +
+      "id, title, description, due_date, due_time, status, priority, category, responsavel, vinculo_modulo, supplier_id, local, valor, convite_data, auto_agendar, duracao_min, created_at, " +
         "suppliers(name), " +
         "evento_decisao(id, titulo, evento_objetivo(nome)), " +
-        "task_checklist(id, texto, feito, ordem)"
+        "task_checklist(id, texto, feito, ordem), " +
+        "agendamento_convite(status, enviado_em, prazo_ate, created_at)"
     )
     .eq("event_id", eventId)
     .order("due_date", { ascending: true, nullsFirst: false })
@@ -88,10 +95,50 @@ export async function getOrganizacao(
       local: t.local,
       valor: t.valor === null || t.valor === undefined ? null : Number(t.valor),
       conviteData: t.convite_data,
+      autoAgendar: t.auto_agendar ?? false,
+      duracaoMin: t.duracao_min ?? 60,
+      convite: (() => {
+        const c = (t.agendamento_convite ?? [])
+          .slice()
+          .sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+        return c
+          ? {
+              status: c.status as NonNullable<Tarefa["convite"]>["status"],
+              enviadoEm: c.enviado_em,
+              prazoAte: c.prazo_ate,
+            }
+          : null;
+      })(),
       checklist,
       criadaEm: t.created_at,
     };
   });
+
+  // Central de Disparos: programados (auto ligado, convite futuro/sem envio)
+  // + convites já disparados, num feed único ordenado por data.
+  const disparos: Disparo[] = [];
+  for (const t of tarefas) {
+    if (t.convite) {
+      disparos.push({
+        id: `c-${t.id}`,
+        tarefa: t.titulo,
+        taskId: t.id,
+        fornecedor: t.supplierNome,
+        status: t.convite.status === "cancelado" ? "expirado" : t.convite.status,
+        data: t.convite.enviadoEm.slice(0, 10),
+      });
+    } else if (t.autoAgendar && t.supplierId && t.status !== "concluido") {
+      disparos.push({
+        id: `p-${t.id}`,
+        tarefa: t.titulo,
+        taskId: t.id,
+        fornecedor: t.supplierNome,
+        status: "agendado",
+        data: t.conviteData ?? "",
+      });
+    }
+  }
+  disparos.sort((a, b) => a.data.localeCompare(b.data));
 
   // COMPROMISSO (Agenda): evento no tempo com fornecedor e origem opcionais.
   const { data: comps } = await supabase
@@ -161,5 +208,6 @@ export async function getOrganizacao(
     compromissos,
     agendaDisponivel: true,
     pendencias,
+    disparos,
   };
 }

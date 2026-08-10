@@ -36,10 +36,29 @@ export type Tarefa = {
   supplierNome: string | null;
   local: string | null;
   valor: number | null;
-  // A SEGUNDA data: quando o convite ao fornecedor sai (Secretário, etapa B)
+  // A SEGUNDA data: quando o convite ao fornecedor sai (Secretário)
   conviteData: string | null;
+  autoAgendar: boolean;
+  duracaoMin: number;
+  // convite mais recente (se houver): estado do disparo
+  convite: {
+    status: "enviado" | "reenviado" | "respondido" | "expirado" | "cancelado";
+    enviadoEm: string;
+    prazoAte: string;
+  } | null;
   checklist: ChecklistItem[];
   criadaEm: string | null;
+};
+
+// Linha da Central de Disparos: o que o Secretário fez/vai fazer.
+export type Disparo = {
+  id: string;
+  tarefa: string;
+  taskId: string;
+  fornecedor: string | null;
+  status: "agendado" | "enviado" | "reenviado" | "respondido" | "expirado";
+  // data de referência: convite_data (agendado) ou enviado_em (demais)
+  data: string;
 };
 
 export type CompromissoEstado =
@@ -82,10 +101,11 @@ export type Organizacao = {
   tarefas: Tarefa[];
   tarefasAbertas: number;
   compromissos: Compromisso[];
-  // já pronto para a tabela de compromisso; hoje sempre false.
   agendaDisponivel: boolean;
   // pendências financeiras abertas (esperando confirmação)
   pendencias: PendenciaFinanceira[];
+  // Central de Disparos (Secretário): convites programados e enviados
+  disparos: Disparo[];
 };
 
 // Marco temporal derivado das datas ("3M antes", "D-7", "vencida") — puro,

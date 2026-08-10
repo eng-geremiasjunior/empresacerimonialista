@@ -135,6 +135,60 @@ export async function enviarConfirmacaoWhatsapp(params: {
   });
 }
 
+// Convite de AGENDAMENTO (Secretário Executivo): lista interativa com os
+// horários livres da cerimonialista. O id de cada linha carrega
+// agsl_<hash>_<slotId> — resposta estruturada, nunca texto livre. O link
+// público vai no corpo para quem preferir escolher pelo navegador.
+export async function enviarConviteAgendamentoWhatsapp(params: {
+  telefone: string;
+  supplierName: string;
+  tarefa: string;
+  eventLabel: string;
+  duracaoMin: number;
+  hash: string;
+  prazoDias: number;
+  slots: { id: string; data: string; hora: string }[];
+}): Promise<EnvioWhatsapp> {
+  const to = paraFormatoMeta(params.telefone);
+  if (!to) {
+    return { ok: false, configurado: whatsappConfigurado(), error: "telefone inválido" };
+  }
+
+  const DIAS = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
+  const rows = params.slots.slice(0, 10).map((s) => {
+    const [a, m, d] = s.data.split("-");
+    const dia = DIAS[new Date(`${s.data}T00:00:00`).getDay()];
+    void a;
+    return {
+      id: `agsl_${params.hash}_${s.id}`,
+      // título de linha tem limite de 24 caracteres na API da Meta
+      title: `${dia} ${d}/${m} · ${s.hora}`,
+      description: `${params.duracaoMin} min`,
+    };
+  });
+
+  const link = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/agendar/${params.hash}`;
+
+  return enviar({
+    to,
+    type: "interactive",
+    interactive: {
+      type: "list",
+      body: {
+        text:
+          `Olá, ${params.supplierName}! Para "${params.tarefa}" (${params.eventLabel}), ` +
+          `escolha um horário com a cerimonialista (${params.duracaoMin} min).\n` +
+          `Se preferir, escolha pelo link: ${link}\n` +
+          `Válido por ${params.prazoDias} dias.`,
+      },
+      action: {
+        button: "Escolher horário",
+        sections: [{ title: "Horários livres", rows }],
+      },
+    },
+  });
+}
+
 // Confirmação de um COMPROMISSO da Agenda (reunião, degustação, prova…).
 // Button ids próprios (compromisso_confirmar_/compromisso_recusar_) para o
 // webhook rotear ao compromisso, não ao vínculo de roteiro. O hash do

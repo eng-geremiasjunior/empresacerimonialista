@@ -7,6 +7,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { enviarConfirmacaoCompromissoWhatsapp } from "@/lib/whatsapp";
+import { enviarConviteAgendamento } from "@/lib/agendamento";
 
 export type AcaoResult = { error: string } | { success: true };
 
@@ -68,6 +69,8 @@ export type TarefaForm = {
   valor?: number | null;
   conviteData?: string | null;
   categoria?: string | null;
+  autoAgendar?: boolean;
+  duracaoMin?: number;
 };
 
 function tarefaRow(form: TarefaForm) {
@@ -90,6 +93,9 @@ function tarefaRow(form: TarefaForm) {
     row.valor = form.valor === null || Number.isNaN(form.valor) ? null : form.valor;
   if (form.conviteData !== undefined) row.convite_data = form.conviteData || null;
   if (form.categoria !== undefined) row.category = form.categoria || "geral";
+  if (form.autoAgendar !== undefined) row.auto_agendar = form.autoAgendar;
+  if (form.duracaoMin !== undefined && Number.isFinite(form.duracaoMin))
+    row.duracao_min = form.duracaoMin;
   return row;
 }
 
@@ -154,6 +160,30 @@ export async function excluirTarefa(
     .eq("event_id", eventId);
 
   if (error) return { error: "Não foi possível excluir a tarefa." };
+  revalidatePath(`/eventos/${eventId}/organizacao`);
+  return { success: true };
+}
+
+// Disparo MANUAL do convite de agendamento ("Disparar agora"). Mesmo núcleo
+// do cron; a RLS da sessão limita ao que a cerimonialista pode editar.
+export async function dispararConvite(
+  eventId: string,
+  taskId: string
+): Promise<AcaoResult> {
+  const supabase = createClient();
+
+  // guarda de escopo: a tarefa precisa ser deste evento
+  const { data: t } = await supabase
+    .from("tasks")
+    .select("id")
+    .eq("id", taskId)
+    .eq("event_id", eventId)
+    .maybeSingle();
+  if (!t) return { error: "Tarefa não encontrada." };
+
+  const r = await enviarConviteAgendamento(supabase, taskId);
+  if (!r.ok) return { error: r.motivo };
+
   revalidatePath(`/eventos/${eventId}/organizacao`);
   return { success: true };
 }
