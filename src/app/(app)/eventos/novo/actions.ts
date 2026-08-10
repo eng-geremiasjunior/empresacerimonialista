@@ -56,12 +56,10 @@ export async function criarEventoCompleto(
     ? gerarTimelineSugerida(arquetipo, payload.respostas)
     : [];
 
-  // Tasks vindas da revisão (já filtradas pelo usuário).
-  const tasks = payload.tasks.map((t) => ({
-    title: t.title,
-    category: "geral",
-    priority: t.group === "evento" ? "media" : "alta",
-  }));
+  // Checklist plano APOSENTADO (076): tarefa nasce da decisão do método
+  // (trigger na criação do evento), não de lista de títulos sem prazo nem
+  // responsável. p_tasks vai vazio — mesmo padrão de orcamento-para-evento.
+  const tasks: { title: string; category: string; priority: string }[] = [];
 
   const supabase = createClient();
   const args = {

@@ -89,7 +89,10 @@ export function ConsolidatedTasks({ tasks, todayIso, tomorrowIso }: Props) {
               <li key={task.id}>
                 <button
                   onClick={() =>
-                    router.push(`/eventos/${task.event_id}/tarefas`)
+                    // fonte única: abre a tarefa no drawer da Organização
+                    router.push(
+                      `/eventos/${task.event_id}/organizacao?tarefa=${task.id}`
+                    )
                   }
                   className={`flex w-full items-start justify-between gap-3 rounded-xl border border-stone-200 border-l-4 ${STATUS_STYLES[task.status]} bg-white p-4 text-left shadow-sm transition hover:border-stone-400`}
                 >

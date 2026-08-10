@@ -51,6 +51,168 @@ export async function alternarTarefa(
   return { success: true };
 }
 
+// ------------------------------------------------------------
+// Tarefa como fonte única (076): CRUD do drawer
+// ------------------------------------------------------------
+
+export type TarefaForm = {
+  titulo?: string;
+  descricao?: string | null;
+  status?: string;
+  priority?: string | null;
+  dueDate?: string | null; // yyyy-mm-dd
+  dueTime?: string | null; // HH:mm
+  responsavel?: string | null;
+  supplierId?: string | null;
+  local?: string | null;
+  valor?: number | null;
+  conviteData?: string | null;
+  categoria?: string | null;
+};
+
+function tarefaRow(form: TarefaForm) {
+  // Monta só os campos presentes — o drawer salva parcial sem apagar o resto.
+  const row: Record<string, unknown> = {};
+  if (form.titulo !== undefined) row.title = form.titulo.trim();
+  if (form.descricao !== undefined) row.description = form.descricao?.trim() || null;
+  if (form.status !== undefined) row.status = form.status;
+  if (form.priority !== undefined) row.priority = form.priority || null;
+  if (form.dueDate !== undefined) row.due_date = form.dueDate || null;
+  if (form.dueTime !== undefined) row.due_time = form.dueTime || null;
+  if (form.responsavel !== undefined)
+    row.responsavel =
+      form.responsavel && RESPONSAVEIS.includes(form.responsavel as never)
+        ? form.responsavel
+        : null;
+  if (form.supplierId !== undefined) row.supplier_id = form.supplierId || null;
+  if (form.local !== undefined) row.local = form.local?.trim() || null;
+  if (form.valor !== undefined)
+    row.valor = form.valor === null || Number.isNaN(form.valor) ? null : form.valor;
+  if (form.conviteData !== undefined) row.convite_data = form.conviteData || null;
+  if (form.categoria !== undefined) row.category = form.categoria || "geral";
+  return row;
+}
+
+export async function criarTarefa(
+  eventId: string,
+  form: TarefaForm
+): Promise<AcaoResult & { id?: string }> {
+  const titulo = form.titulo?.trim();
+  if (!titulo) return { error: "Dê um título à tarefa." };
+
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("tasks")
+    .insert({
+      event_id: eventId,
+      status: "pendente",
+      category: "geral",
+      priority: "media",
+      ...tarefaRow(form),
+      title: titulo,
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) return { error: "Não foi possível criar a tarefa." };
+  revalidatePath(`/eventos/${eventId}/organizacao`);
+  return { success: true, id: data.id };
+}
+
+export async function atualizarTarefa(
+  eventId: string,
+  taskId: string,
+  form: TarefaForm
+): Promise<AcaoResult> {
+  if (form.titulo !== undefined && !form.titulo.trim()) {
+    return { error: "O título não pode ficar vazio." };
+  }
+  const row = tarefaRow(form);
+  if (Object.keys(row).length === 0) return { success: true };
+
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("tasks")
+    .update(row)
+    .eq("id", taskId)
+    .eq("event_id", eventId);
+
+  if (error) return { error: "Não foi possível salvar a tarefa." };
+  revalidatePath(`/eventos/${eventId}/organizacao`);
+  return { success: true };
+}
+
+export async function excluirTarefa(
+  eventId: string,
+  taskId: string
+): Promise<AcaoResult> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("tasks")
+    .delete()
+    .eq("id", taskId)
+    .eq("event_id", eventId);
+
+  if (error) return { error: "Não foi possível excluir a tarefa." };
+  revalidatePath(`/eventos/${eventId}/organizacao`);
+  return { success: true };
+}
+
+// Sub-checklist: passos dentro da tarefa. Determinístico (recebe o estado).
+export async function alternarChecklist(
+  eventId: string,
+  itemId: string,
+  feito: boolean
+): Promise<AcaoResult> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("task_checklist")
+    .update({ feito })
+    .eq("id", itemId)
+    .eq("event_id", eventId);
+
+  if (error) return { error: "Não foi possível atualizar o item." };
+  revalidatePath(`/eventos/${eventId}/organizacao`);
+  return { success: true };
+}
+
+export async function adicionarChecklistItem(
+  eventId: string,
+  taskId: string,
+  texto: string,
+  ordem: number
+): Promise<AcaoResult & { id?: string }> {
+  const t = texto.trim();
+  if (!t) return { error: "Escreva o passo." };
+
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("task_checklist")
+    .insert({ event_id: eventId, task_id: taskId, texto: t, ordem })
+    .select("id")
+    .single();
+
+  if (error || !data) return { error: "Não foi possível adicionar o item." };
+  revalidatePath(`/eventos/${eventId}/organizacao`);
+  return { success: true, id: data.id };
+}
+
+export async function removerChecklistItem(
+  eventId: string,
+  itemId: string
+): Promise<AcaoResult> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("task_checklist")
+    .delete()
+    .eq("id", itemId)
+    .eq("event_id", eventId);
+
+  if (error) return { error: "Não foi possível remover o item." };
+  revalidatePath(`/eventos/${eventId}/organizacao`);
+  return { success: true };
+}
+
 export async function criarCompromisso(
   eventId: string,
   form: {

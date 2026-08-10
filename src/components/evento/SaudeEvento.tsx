@@ -3,7 +3,7 @@ import { AlertTriangle, Circle } from "lucide-react";
 import { SAUDE_UI, type Saude, type SaudeAba } from "@/lib/saude-evento";
 
 const ABA_HREF: Record<SaudeAba, string> = {
-  tarefas: "tarefas",
+  tarefas: "organizacao",
   fornecedores: "fornecedores",
   financeiro: "financeiro",
   roteiro: "roteiro",

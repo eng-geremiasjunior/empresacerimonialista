@@ -1,3 +1,63 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ============================================================
+   Celebra Pro Design System — tokens (fonte: handoff do wireframe)
+   As fontes (--font-title/--font-ui/--font-mono) são injetadas pelo
+   next/font no layout raiz.
+   ============================================================ */
+:root {
+  /* paleta bruta */
+  --marfim: #faf8f5;
+  --papel: #ffffff;
+  --nevoa: #f2eee9;
+  --linha: #e6e0d8;
+  --tinta: #221e1b;
+  --cinza: #928a81;
+  --cinza-2: #b4ada4;
+  --cinza-3: #6b6259;
+  --ameixa-50: #f3ebf0;
+  --ameixa-300: #b98fac;
+  --ameixa-600: #6e3f5f;
+  --ameixa-800: #4a2a40;
+  --salvia-50: #edf0ea;
+  --salvia-300: #9aab8e;
+  --salvia-600: #6e7f63;
+  --salvia-800: #4f6147;
+
+  /* papéis semânticos */
+  --surface-app: var(--marfim);
+  --surface-card: var(--papel);
+  --surface-sunken: var(--nevoa);
+  --border-hairline: var(--linha);
+  --border-strong: var(--cinza-2);
+  --text-strong: var(--tinta);
+  --text-body: #3d3835;
+  --text-muted: var(--cinza);
+  --text-faint: var(--cinza-2);
+  --accent: var(--ameixa-600);
+  --accent-hover: var(--ameixa-800);
+  --accent-tint: var(--ameixa-50);
+  --accent-quiet: var(--ameixa-300);
+
+  /* estados */
+  --state-ok: #5e7355;
+  --state-ok-bg: #e9efe5;
+  --state-wait: #a5813c;
+  --state-wait-bg: #f5ecd9;
+  --state-late: #a5544b;
+  --state-late-bg: #f6e4e1;
+
+  /* raios, sombras, foco */
+  --r-xs: 6px;
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+  --r-pill: 999px;
+  --shadow-sm: 0 1px 3px rgba(34, 30, 27, 0.05), 0 1px 2px rgba(34, 30, 27, 0.03);
+  --shadow-md: 0 4px 16px rgba(34, 30, 27, 0.07);
+  --shadow-lg: 0 12px 40px rgba(34, 30, 27, 0.1);
+  --ring-focus: 0 0 0 3px rgba(110, 63, 95, 0.16);
+}

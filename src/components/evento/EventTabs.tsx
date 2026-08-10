@@ -14,7 +14,6 @@ const TABS: { label: string; seg: string; counter?: keyof TabCounters }[] = [
   { label: "Planejamento", seg: "planejamento" },
   { label: "Organização", seg: "organizacao" },
   { label: "Execução do evento", seg: "roteiro" },
-  { label: "Tarefas", seg: "tarefas" },
   { label: "Fornecedores", seg: "fornecedores", counter: "fornecedores" },
   { label: "Comunicação", seg: "comunicacao", counter: "comunicacao" },
   { label: "Financeiro", seg: "financeiro", counter: "financeiro" },

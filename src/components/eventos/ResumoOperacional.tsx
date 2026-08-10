@@ -19,7 +19,7 @@ export function ResumoOperacional({
   const base = `/eventos/${eventId}`;
   const cards = [
     {
-      href: `${base}/tarefas`,
+      href: `${base}/organizacao`,
       icon: ListChecks,
       cor: "bg-indigo-50 text-indigo-600",
       titulo: "Tarefas",

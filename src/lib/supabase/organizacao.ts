@@ -3,7 +3,15 @@
 // organizacao-query.ts, para o componente client poder usar itensDoMes()
 // sem arrastar código server-only para o bundle.
 
-export type TarefaStatus = "pendente" | "em_andamento" | "concluido";
+// Valores do CHECK real (003): em_progresso, não "em_andamento".
+export type TarefaStatus = "pendente" | "em_progresso" | "concluido";
+
+export type ChecklistItem = {
+  id: string;
+  texto: string;
+  feito: boolean;
+  ordem: number;
+};
 
 export type Tarefa = {
   id: string;
@@ -15,12 +23,23 @@ export type Tarefa = {
   priority: string | null;
   category: string | null;
   responsavel: string | null;
-  // Rastreabilidade (4C): título da decisão que gerou a tarefa. null =
-  // tarefa manual/legada, sem origem no método.
+  // Rastreabilidade (4C): a cadeia Objetivo → Decisão que gerou a tarefa.
+  // null = tarefa manual, sem origem no método.
   origemDecisao: string | null;
+  origemObjetivo: string | null;
+  decisaoId: string | null;
   // Vínculo real com outro módulo: esta tarefa alimenta a Execução (roteiro
   // do dia) ou entra no Financeiro. O selo vira um atalho para lá.
   vinculoModulo: "execucao" | "financeiro" | null;
+  // Campos operacionais (076)
+  supplierId: string | null;
+  supplierNome: string | null;
+  local: string | null;
+  valor: number | null;
+  // A SEGUNDA data: quando o convite ao fornecedor sai (Secretário, etapa B)
+  conviteData: string | null;
+  checklist: ChecklistItem[];
+  criadaEm: string | null;
 };
 
 export type CompromissoEstado =
@@ -48,14 +67,6 @@ export type Compromisso = {
   origemDecisao: string | null; // título da decisão/tarefa de origem
 };
 
-export type ItemCalendario = {
-  tipo: "tarefa" | "compromisso";
-  id: string;
-  data: string;
-  hora: string | null;
-  titulo: string;
-};
-
 // Pendência financeira aberta pela automação ao concluir uma tarefa de
 // dinheiro. É rascunho: só vira lançamento quando a cerimonialista confirma.
 export type PendenciaFinanceira = {
@@ -77,44 +88,23 @@ export type Organizacao = {
   pendencias: PendenciaFinanceira[];
 };
 
-// Itens de um mês para a grade do Calendário: compromissos (comparecer) +
-// tarefas com vencimento (fazer). Puro, testável à parte.
-export function itensDoMes(
-  org: Organizacao,
-  ano: number,
-  mes: number // 0-11
-): Map<number, ItemCalendario[]> {
-  const mapa = new Map<number, ItemCalendario[]>();
-  const push = (dia: number, item: ItemCalendario) => {
-    const arr = mapa.get(dia) ?? [];
-    arr.push(item);
-    mapa.set(dia, arr);
-  };
-
-  for (const c of org.compromissos) {
-    const d = new Date(`${c.data}T00:00:00`);
-    if (d.getFullYear() === ano && d.getMonth() === mes) {
-      push(d.getDate(), {
-        tipo: "compromisso",
-        id: c.id,
-        data: c.data,
-        hora: c.hora,
-        titulo: c.titulo,
-      });
-    }
-  }
-  for (const t of org.tarefas) {
-    if (!t.dueDate) continue;
-    const d = new Date(`${t.dueDate}T00:00:00`);
-    if (d.getFullYear() === ano && d.getMonth() === mes) {
-      push(d.getDate(), {
-        tipo: "tarefa",
-        id: t.id,
-        data: t.dueDate,
-        hora: t.dueTime,
-        titulo: t.titulo,
-      });
-    }
-  }
-  return mapa;
+// Marco temporal derivado das datas ("3M antes", "D-7", "vencida") — puro,
+// calculado na leitura; não é coluna (seria redundância que dessincroniza).
+export function marcoTemporal(
+  dueDate: string | null,
+  dataEvento: string | null,
+  concluida: boolean
+): { label: string; vencida: boolean } {
+  if (!dueDate) return { label: "sem prazo", vencida: false };
+  const due = new Date(`${dueDate}T00:00:00`).getTime();
+  const hoje = new Date(new Date().toDateString()).getTime();
+  if (!concluida && due < hoje) return { label: "vencida", vencida: true };
+  if (!dataEvento) return { label: "no prazo", vencida: false };
+  const evento = new Date(`${dataEvento}T00:00:00`).getTime();
+  const diasAntesEvento = Math.round((evento - due) / 86_400_000);
+  if (diasAntesEvento <= 0) return { label: "dia do evento", vencida: false };
+  if (diasAntesEvento <= 7) return { label: `D-${diasAntesEvento}`, vencida: false };
+  if (diasAntesEvento <= 45)
+    return { label: `${Math.ceil(diasAntesEvento / 7)}S antes`, vencida: false };
+  return { label: `${Math.round(diasAntesEvento / 30)}M antes`, vencida: false };
 }

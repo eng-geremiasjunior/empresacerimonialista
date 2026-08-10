@@ -22,7 +22,7 @@ const AMBER = "#b07514";
 const AMBER_TINT = "#f8efdd";
 
 const ABA_HREF: Record<SaudeAba, string> = {
-  tarefas: "tarefas",
+  tarefas: "organizacao",
   fornecedores: "fornecedores",
   financeiro: "financeiro",
   roteiro: "roteiro",
@@ -38,7 +38,7 @@ const ABAS_DA_FASE: Record<FaseId, SaudeAba[]> = {
 
 // Para onde a fase leva — o próximo passo concreto dela.
 const ATALHO_DA_FASE: Record<FaseId, { rotulo: string; seg: string }> = {
-  planejamento: { rotulo: "Abrir tarefas", seg: "tarefas" },
+  planejamento: { rotulo: "Abrir tarefas", seg: "organizacao" },
   organizacao: { rotulo: "Abrir fornecedores", seg: "fornecedores" },
   execucao: { rotulo: "Abrir execução do evento", seg: "roteiro" },
 };

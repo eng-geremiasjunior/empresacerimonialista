@@ -4,8 +4,10 @@ import { PlanejamentoEvento } from "@/components/planejamento/PlanejamentoEvento
 
 export default async function EventoPlanejamentoPage({
   params,
+  searchParams,
 }: {
   params: { id: string };
+  searchParams?: { decisao?: string };
 }) {
   const supabase = createClient();
   const eventId = params.id;
@@ -19,6 +21,10 @@ export default async function EventoPlanejamentoPage({
   const planejamento = await getPlanejamento(eventId, ev?.date ?? null);
 
   return (
-    <PlanejamentoEvento eventId={eventId} inicial={planejamento} />
+    <PlanejamentoEvento
+      eventId={eventId}
+      inicial={planejamento}
+      decisaoInicial={searchParams?.decisao ?? null}
+    />
   );
 }

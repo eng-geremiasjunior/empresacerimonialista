@@ -1,56 +1,70 @@
 "use client";
 
-// Tela de Organização — dois objetos visualmente distintos e nunca
-// intercalados: COMPROMISSO (Agenda — onde comparecer) e TAREFA (o que
-// fazer). Toggle Lista ↔ Calendário e filtro Tudo / Agenda / Tarefas.
+// Tarefas da Organização — fonte única (wireframe Celebra Pro).
 //
-// Compromissos vêm da tabela `compromisso` (069). A cerimonialista cria,
-// remarca, cancela e pede confirmação por WhatsApp ao fornecedor vinculado.
+// Três visões: LISTA (linhas com chip de data), TIMELINE (eixo vertical por
+// data) e AGENDA (compromissos — comparecer, não executar). Toda tarefa
+// nasce de uma decisão (4C); o drawer mostra a cadeia Objetivo → Decisão →
+// Tarefa com link para a decisão de origem. Tarefa manual é permitida, mas
+// sempre com substância (título + prazo).
+//
+// Tokens do Celebra Pro em globals.css; primitivos em ui/celebra.
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Calendar as CalendarIcon,
   CalendarClock,
   Check,
-  CheckSquare,
-  ChevronLeft,
-  ChevronRight,
-  List,
+  GitBranch,
+  GitMerge,
+  ListChecks,
   Plus,
+  Search,
   Send,
+  Trash2,
   X,
 } from "lucide-react";
-import {
-  itensDoMes,
-  type Compromisso,
-  type Organizacao,
-  type PendenciaFinanceira,
-  type Tarefa,
+import type {
+  Compromisso,
+  Organizacao,
+  PendenciaFinanceira,
+  Tarefa,
+  TarefaStatus,
 } from "@/lib/supabase/organizacao";
+import { marcoTemporal } from "@/lib/supabase/organizacao";
 import {
+  adicionarChecklistItem,
+  alternarChecklist,
   alternarTarefa,
+  atualizarTarefa,
   criarCompromisso,
+  criarTarefa,
   descartarPendencia,
   enviarConfirmacaoCompromisso,
   excluirCompromisso,
+  excluirTarefa,
   mudarEstadoCompromisso,
+  removerChecklistItem,
+  type TarefaForm,
 } from "@/app/(app)/eventos/[id]/organizacao/actions";
 import { definirDataEvento } from "@/app/(app)/eventos/[id]/planejamento/actions";
-import type { TarefaStatus } from "@/lib/supabase/organizacao";
+import {
+  Badge,
+  Button,
+  FieldLabel,
+  SegmentedControl,
+  Select,
+  Switch,
+  TextField,
+  type BadgeTone,
+} from "@/components/ui/celebra";
 
-const ACENTO = "oklch(0.5 0.14 285)";
-
-type Vista = "lista" | "calendario";
-type Filtro = "tudo" | "agenda" | "tarefas";
+type Vista = "lista" | "timeline" | "agenda";
+type Filtro = "todas" | "atrasadas" | "andamento" | "concluidas";
 type Fornecedor = { id: string; nome: string; temWhatsapp: boolean };
 
-const MESES = [
-  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
-];
-const DIAS_SEM = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
+const MES_ABREV = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
 
 function dataBR(iso: string | null): string {
   if (!iso) return "sem prazo";
@@ -58,18 +72,11 @@ function dataBR(iso: string | null): string {
   return `${d}/${m}/${a.slice(2)}`;
 }
 
-// Quantos dias até uma data ISO (negativo = passou).
-function diasAte(iso: string | null): number | null {
-  if (!iso) return null;
+function prazo(iso: string | null): string {
+  if (!iso) return "sem data";
   const alvo = new Date(`${iso}T00:00:00`).getTime();
   const hoje = new Date(new Date().toDateString()).getTime();
-  return Math.round((alvo - hoje) / 86_400_000);
-}
-
-// Prazo em linguagem de tempo — "hoje", "amanhã", "em 4 dias", "há 2 dias".
-function prazo(iso: string | null): string {
-  const d = diasAte(iso);
-  if (d === null) return "sem data";
+  const d = Math.round((alvo - hoje) / 86_400_000);
   if (d === 0) return "hoje";
   if (d === 1) return "amanhã";
   if (d === -1) return "ontem";
@@ -77,29 +84,53 @@ function prazo(iso: string | null): string {
   return `há ${-d} dias`;
 }
 
-const ESTADO_ROTULO: Record<Compromisso["estado"], { texto: string; cor: string }> = {
-  agendado: { texto: "aguardando", cor: "#5f5f5b" },
-  confirmado: { texto: "confirmado", cor: "#0a7a4a" },
-  cancelado: { texto: "não virá", cor: "#b0402f" },
-  remarcado: { texto: "remarcado", cor: "#8a6d3b" },
+const STATUS_META: Record<TarefaStatus, { label: string; tone: BadgeTone; dot: string }> = {
+  pendente: { label: "Pendente", tone: "wait", dot: "var(--state-wait)" },
+  em_progresso: { label: "Em progresso", tone: "wait", dot: "var(--state-wait)" },
+  concluido: { label: "Concluída", tone: "ok", dot: "var(--state-ok)" },
 };
+
+const PRIO_LABEL: Record<string, string> = { alta: "Alta", media: "Média", baixa: "Baixa" };
+
+const ESTADO_ROTULO: Record<Compromisso["estado"], { texto: string; cor: string }> = {
+  agendado: { texto: "aguardando", cor: "var(--text-muted)" },
+  confirmado: { texto: "confirmado", cor: "var(--state-ok)" },
+  cancelado: { texto: "não virá", cor: "var(--state-late)" },
+  remarcado: { texto: "remarcado", cor: "var(--state-wait)" },
+};
+
+const VINCULO_MODULO: Record<"execucao" | "financeiro", { rota: string; rotulo: string }> = {
+  execucao: { rota: "roteiro", rotulo: "alimenta a Execução" },
+  financeiro: { rota: "financeiro", rotulo: "entra no Financeiro" },
+};
+
+const CATEGORIAS = [
+  "geral", "buffet", "decoracao", "som", "fotografia", "bolo",
+  "cerimonia", "transporte", "presente", "vestiario",
+];
+
+/* ================================================================ */
 
 export function OrganizacaoEvento({
   inicial,
   eventId,
   fornecedores,
+  tarefaInicial,
 }: {
   inicial: Organizacao;
   eventId: string;
   fornecedores: Fornecedor[];
+  tarefaInicial?: string | null;
 }) {
   const [vista, setVista] = useState<Vista>("lista");
-  const [filtro, setFiltro] = useState<Filtro>("tudo");
-  // Status das tarefas em estado local para o clique refletir na hora (UI
-  // otimista); o servidor sincroniza e revalida em segundo plano.
-  const [statusOverride, setStatusOverride] = useState<
-    Record<string, TarefaStatus>
-  >({});
+  const [filtro, setFiltro] = useState<Filtro>("todas");
+  const [prox7, setProx7] = useState(false);
+  const [busca, setBusca] = useState("");
+  // Drawer: id da tarefa aberta, "nova" para criação, null fechado.
+  const [sel, setSel] = useState<string | null>(tarefaInicial ?? null);
+
+  // Status otimista (o clique reflete na hora; o servidor sincroniza).
+  const [statusOverride, setStatusOverride] = useState<Record<string, TarefaStatus>>({});
 
   const org: Organizacao = {
     ...inicial,
@@ -107,112 +138,909 @@ export function OrganizacaoEvento({
       statusOverride[t.id] ? { ...t, status: statusOverride[t.id] } : t
     ),
   };
-  org.tarefasAbertas = org.tarefas.filter((t) => t.status !== "concluido").length;
 
   function alternar(taskId: string, concluida: boolean) {
     const novo: TarefaStatus = concluida ? "concluido" : "pendente";
     const anterior = org.tarefas.find((t) => t.id === taskId)?.status ?? "pendente";
     setStatusOverride((m) => ({ ...m, [taskId]: novo }));
     void alternarTarefa(eventId, taskId, concluida).then((r) => {
-      if ("error" in r) {
-        // reverte se o servidor recusou
-        setStatusOverride((m) => ({ ...m, [taskId]: anterior }));
-      }
+      if ("error" in r) setStatusOverride((m) => ({ ...m, [taskId]: anterior }));
     });
   }
 
+  // Filtros aplicados (busca + chip + próximos 7 dias)
+  const tarefasVisiveis = useMemo(() => {
+    const hoje = new Date(new Date().toDateString()).getTime();
+    const seteDias = hoje + 7 * 86_400_000;
+    const q = busca.trim().toLowerCase();
+    return org.tarefas.filter((t) => {
+      if (q) {
+        const alvo = `${t.titulo} ${t.supplierNome ?? ""} ${t.local ?? ""}`.toLowerCase();
+        if (!alvo.includes(q)) return false;
+      }
+      if (filtro === "concluidas" && t.status !== "concluido") return false;
+      if (filtro === "andamento" && t.status === "concluido") return false;
+      if (filtro === "atrasadas") {
+        if (t.status === "concluido" || !t.dueDate) return false;
+        if (new Date(`${t.dueDate}T00:00:00`).getTime() >= hoje) return false;
+      }
+      if (prox7) {
+        if (!t.dueDate) return false;
+        const d = new Date(`${t.dueDate}T00:00:00`).getTime();
+        if (d < hoje || d > seteDias) return false;
+      }
+      return true;
+    });
+  }, [org.tarefas, filtro, prox7, busca]);
+
+  const tarefaSel = sel && sel !== "nova" ? org.tarefas.find((t) => t.id === sel) ?? null : null;
+  const abertas = org.tarefas.filter((t) => t.status !== "concluido").length;
+
   return (
-    <div style={{ fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
-      <style>{`.org .mono{font-family:'IBM Plex Mono',ui-monospace,monospace}`}</style>
-      <div className="org">
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold tracking-tight text-[#1b1b19]">
-            Organização
+    <div style={{ fontFamily: "var(--font-ui)", color: "var(--text-strong)" }}>
+      {!org.dataEvento && <BannerDataOrg eventId={eventId} />}
+      {org.pendencias.length > 0 && (
+        <PendenciasFinanceiras eventId={eventId} pendencias={org.pendencias} />
+      )}
+
+      {/* cabeçalho da seção */}
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
+        <div>
+          <h2
+            style={{
+              margin: 0,
+              fontFamily: "var(--font-title)",
+              fontWeight: 700,
+              fontSize: 19,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            Tarefas da Organização
           </h2>
-          <p className="mt-0.5 text-[12.5px] text-[#5f5f5b]">
-            {org.diasAteEvento !== null && org.diasAteEvento >= 0
-              ? `Faltam ${org.diasAteEvento} dias para o evento.`
-              : "Data do evento a definir."}
+          <p style={{ margin: "3px 0 0", display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--text-muted)" }}>
+            <GitMerge size={13} style={{ color: "var(--accent)" }} />
+            Fonte única — cada tarefa nasce de uma decisão e aparece só aqui.
           </p>
         </div>
+        <Button onClick={() => setSel("nova")}>
+          <Plus size={15} />
+          Nova tarefa
+        </Button>
+      </div>
 
-        {/* DATA FALTANDO — sem data, as tarefas ficam "sem prazo" e a agenda
-            perde referência. Mesma ação do Planejamento, resolvida aqui. */}
-        {!org.dataEvento && <BannerDataOrg eventId={eventId} />}
+      {/* toolbar */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
+        <SegmentedControl<Vista>
+          value={vista}
+          onChange={setVista}
+          options={[
+            { value: "lista", label: "Lista" },
+            { value: "timeline", label: "Timeline" },
+            { value: "agenda", label: <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><CalendarClock size={13} />Agenda</span> },
+          ]}
+        />
 
-        {/* PENDÊNCIAS ABERTAS PELA AUTOMAÇÃO — o lembrete que ela não
-            precisa anotar em outro lugar. Nada foi lançado ainda. */}
-        {org.pendencias.length > 0 && (
-          <PendenciasFinanceiras
-            eventId={eventId}
-            pendencias={org.pendencias}
-          />
+        {vista !== "agenda" && (
+          <>
+            <div style={{ display: "inline-flex", gap: 6 }}>
+              {(
+                [
+                  ["todas", "Todas"],
+                  ["atrasadas", "Atrasadas"],
+                  ["andamento", "Em andamento"],
+                  ["concluidas", "Concluídas"],
+                ] as const
+              ).map(([f, label]) => {
+                const ativo = filtro === f;
+                return (
+                  <button
+                    key={f}
+                    onClick={() => setFiltro(f)}
+                    style={{
+                      height: 32,
+                      padding: "0 13px",
+                      borderRadius: "var(--r-pill)",
+                      fontFamily: "var(--font-ui)",
+                      fontSize: 12.5,
+                      fontWeight: ativo ? 600 : 500,
+                      cursor: "pointer",
+                      background: ativo ? "var(--text-strong)" : "var(--surface-card)",
+                      color: ativo ? "#fff" : "var(--text-muted)",
+                      border: ativo ? "1px solid var(--text-strong)" : "1px solid var(--border-hairline)",
+                      transition: "background 120ms ease",
+                    }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
+              <div
+                style={{
+                  display: "flex", alignItems: "center", gap: 7, height: 34, padding: "0 10px",
+                  background: "var(--surface-card)", border: "1px solid var(--border-hairline)",
+                  borderRadius: "var(--r-md)", width: 210,
+                }}
+              >
+                <Search size={14} style={{ color: "var(--text-muted)", flex: "0 0 auto" }} />
+                <input
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  placeholder="Buscar tarefa, fornecedor…"
+                  style={{ border: "none", outline: "none", background: "transparent", flex: 1, minWidth: 0, fontSize: 12.5, fontFamily: "var(--font-ui)", color: "var(--text-strong)" }}
+                />
+              </div>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "var(--text-muted)", cursor: "pointer" }}>
+                Próximos 7 dias
+                <Switch checked={prox7} onChange={setProx7} label="Próximos 7 dias" />
+              </label>
+            </div>
+          </>
         )}
 
-        {/* controles: toggle de vista + filtro */}
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <div className="inline-flex rounded-lg border border-[#e0e0dd] bg-white p-0.5">
-            {(
-              [
-                ["lista", "Lista", List],
-                ["calendario", "Calendário", CalendarIcon],
-              ] as const
-            ).map(([v, label, Ico]) => (
-              <button
-                key={v}
-                onClick={() => setVista(v)}
-                className="flex items-center gap-1.5 rounded-[7px] px-3 py-1.5 text-[12.5px] font-medium transition-colors"
-                style={
-                  vista === v
-                    ? { background: "#f2f2ef", color: "#1b1b19" }
-                    : { color: "#5f5f5b" }
-                }
-              >
-                <Ico size={14} />
-                {label}
-              </button>
-            ))}
-          </div>
+        {vista === "agenda" && (
+          <span className="mono" style={{ marginLeft: "auto", fontFamily: "var(--font-mono)", fontSize: 11.5, color: "var(--text-muted)" }}>
+            {org.compromissos.length} compromissos · {abertas} tarefas abertas
+          </span>
+        )}
+      </div>
 
-          <div className="inline-flex gap-1">
-            {(
-              [
-                ["tudo", "Tudo"],
-                ["agenda", "Agenda"],
-                ["tarefas", "Tarefas"],
-              ] as const
-            ).map(([f, label]) => (
-              <button
-                key={f}
-                onClick={() => setFiltro(f)}
-                className="rounded-full px-3 py-1 text-[12px] font-medium transition-colors"
-                style={
-                  filtro === f
-                    ? { background: ACENTO, color: "#fff" }
-                    : { background: "#efefec", color: "#5f5f5b" }
-                }
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+      {/* visões */}
+      {vista === "lista" && (
+        <VistaLista
+          tarefas={tarefasVisiveis}
+          dataEvento={org.dataEvento}
+          eventId={eventId}
+          onAbrir={setSel}
+          onToggle={alternar}
+        />
+      )}
+      {vista === "timeline" && (
+        <VistaTimeline tarefas={tarefasVisiveis} onAbrir={setSel} />
+      )}
+      {vista === "agenda" && (
+        <VistaAgenda org={org} eventId={eventId} fornecedores={fornecedores} />
+      )}
+
+      {/* drawer */}
+      {(tarefaSel || sel === "nova") && (
+        <TarefaDrawer
+          key={sel}
+          eventId={eventId}
+          tarefa={tarefaSel}
+          dataEvento={org.dataEvento}
+          fornecedores={fornecedores}
+          onFechar={() => setSel(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ============================================================ LISTA */
+
+function VistaLista({
+  tarefas,
+  dataEvento,
+  eventId,
+  onAbrir,
+  onToggle,
+}: {
+  tarefas: Tarefa[];
+  dataEvento: string | null;
+  eventId: string;
+  onAbrir: (id: string) => void;
+  onToggle: (id: string, concluida: boolean) => void;
+}) {
+  if (tarefas.length === 0) {
+    return (
+      <p style={{ padding: "28px 4px", fontSize: 13.5, color: "var(--text-muted)" }}>
+        Nenhuma tarefa aqui. Elas nascem quando você decide no Planejamento — ou crie uma com “Nova tarefa”.
+      </p>
+    );
+  }
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+      {tarefas.map((t) => (
+        <LinhaTarefa
+          key={t.id}
+          t={t}
+          dataEvento={dataEvento}
+          eventId={eventId}
+          onAbrir={onAbrir}
+          onToggle={onToggle}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ChipData({ iso, hora }: { iso: string | null; hora: string | null }) {
+  if (!iso) {
+    return (
+      <div
+        style={{
+          width: 64, flex: "0 0 64px", borderRadius: "var(--r-md)",
+          background: "var(--surface-sunken)", padding: "10px 6px", textAlign: "center",
+        }}
+      >
+        <div className="mono" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text-muted)" }}>
+          SEM
+          <br />
+          PRAZO
         </div>
+      </div>
+    );
+  }
+  const [a, m, d] = iso.split("-");
+  return (
+    <div
+      style={{
+        width: 64, flex: "0 0 64px", borderRadius: "var(--r-md)",
+        background: "var(--accent-tint)", padding: "8px 6px", textAlign: "center",
+      }}
+    >
+      <div style={{ fontFamily: "var(--font-title)", fontWeight: 700, fontSize: 20, lineHeight: 1.1, color: "var(--accent)" }}>
+        {Number(d)}
+      </div>
+      <div className="mono" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: "var(--accent)" }}>
+        {m}/{a}
+      </div>
+      {hora && (
+        <div className="mono" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--accent)", opacity: 0.75 }}>
+          {hora}
+        </div>
+      )}
+    </div>
+  );
+}
 
-        {vista === "lista" ? (
-          <VistaLista
-            org={org}
-            filtro={filtro}
-            eventId={eventId}
-            fornecedores={fornecedores}
-            onToggle={alternar}
-          />
-        ) : (
-          <VistaCalendario org={org} filtro={filtro} />
-        )}
+function LinhaTarefa({
+  t,
+  dataEvento,
+  eventId,
+  onAbrir,
+  onToggle,
+}: {
+  t: Tarefa;
+  dataEvento: string | null;
+  eventId: string;
+  onAbrir: (id: string) => void;
+  onToggle: (id: string, concluida: boolean) => void;
+}) {
+  const feita = t.status === "concluido";
+  const marco = marcoTemporal(t.dueDate, dataEvento, feita);
+  const st = STATUS_META[t.status];
+  const vinc = t.vinculoModulo ? VINCULO_MODULO[t.vinculoModulo] : null;
+
+  return (
+    <div
+      onClick={() => onAbrir(t.id)}
+      style={{
+        display: "flex", alignItems: "center", gap: 16,
+        background: "var(--surface-card)", border: "1px solid var(--border-hairline)",
+        borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-sm)",
+        padding: "14px 18px", cursor: "pointer", opacity: feita ? 0.62 : 1,
+      }}
+    >
+      <ChipData iso={t.dueDate} hora={t.dueTime} />
+
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <p
+          style={{
+            margin: 0, fontFamily: "var(--font-title)", fontWeight: 600, fontSize: 16,
+            letterSpacing: "-0.01em", textDecoration: feita ? "line-through" : "none",
+            color: feita ? "var(--text-muted)" : "var(--text-strong)",
+          }}
+        >
+          {t.titulo}
+        </p>
+        <p className="mono" style={{ margin: "3px 0 0", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          ID #{t.id.slice(0, 4)}
+          {t.supplierNome ? ` · ${t.supplierNome}` : ""}
+          {t.local ? ` · ${t.local}` : ""}
+          {!t.supplierNome && !t.local && t.origemDecisao ? ` · ${t.origemDecisao}` : ""}
+        </p>
+        <div style={{ display: "flex", gap: 6, marginTop: 7, flexWrap: "wrap", alignItems: "center" }}>
+          <Badge tone={marco.vencida && !feita ? "late" : st.tone}>
+            {marco.vencida && !feita ? "Atrasada" : st.label}
+          </Badge>
+          {t.priority && <Badge tone="plum">{PRIO_LABEL[t.priority] ?? t.priority}</Badge>}
+          <Badge tone={marco.vencida ? "late" : "neutral"}>{marco.label}</Badge>
+          {t.checklist.length > 0 && (
+            <span className="mono" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text-muted)", display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <ListChecks size={12} />
+              {t.checklist.filter((c) => c.feito).length}/{t.checklist.length}
+            </span>
+          )}
+          {vinc && (
+            <Link
+              href={`/eventos/${eventId}/${vinc.rota}`}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 3,
+                background: "var(--accent-tint)", color: "var(--accent)",
+                borderRadius: "var(--r-pill)", padding: "3px 9px",
+                fontSize: 11, fontWeight: 600, textDecoration: "none",
+              }}
+            >
+              {vinc.rotulo} →
+            </Link>
+          )}
+        </div>
+      </div>
+
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggle(t.id, !feita);
+        }}
+        aria-label={feita ? "Reabrir tarefa" : "Concluir tarefa"}
+        style={{
+          width: 24, height: 24, flex: "0 0 auto", borderRadius: "50%",
+          border: feita ? "none" : "1.5px solid var(--border-strong)",
+          background: feita ? "var(--state-ok)" : "var(--surface-card)",
+          color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+          cursor: "pointer",
+        }}
+      >
+        {feita && <Check size={14} strokeWidth={3} />}
+      </button>
+    </div>
+  );
+}
+
+/* ========================================================= TIMELINE */
+
+function VistaTimeline({
+  tarefas,
+  onAbrir,
+}: {
+  tarefas: Tarefa[];
+  onAbrir: (id: string) => void;
+}) {
+  const ordenadas = useMemo(() => {
+    const comData = tarefas.filter((t) => t.dueDate).slice()
+      .sort((a, b) => (a.dueDate! + (a.dueTime ?? "")).localeCompare(b.dueDate! + (b.dueTime ?? "")));
+    const semData = tarefas.filter((t) => !t.dueDate);
+    return [...comData, ...semData];
+  }, [tarefas]);
+
+  if (ordenadas.length === 0) {
+    return (
+      <p style={{ padding: "28px 4px", fontSize: 13.5, color: "var(--text-muted)" }}>
+        Nada na linha do tempo com os filtros atuais.
+      </p>
+    );
+  }
+
+  return (
+    <div style={{ position: "relative", paddingLeft: 26 }}>
+      <div style={{ position: "absolute", left: 8, top: 6, bottom: 6, width: 2, background: "var(--border-hairline)" }} />
+      <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+        {ordenadas.map((t) => {
+          const st = STATUS_META[t.status];
+          const [a, m, d] = t.dueDate ? t.dueDate.split("-") : [null, null, null];
+          return (
+            <div key={t.id} style={{ position: "relative" }}>
+              <span
+                style={{
+                  position: "absolute", left: -24, top: 20, width: 10, height: 10,
+                  borderRadius: "50%", background: st.dot, boxShadow: "0 0 0 3px var(--surface-app)",
+                }}
+              />
+              <div
+                onClick={() => onAbrir(t.id)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 14,
+                  background: "var(--surface-card)", border: "1px solid var(--border-hairline)",
+                  borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-sm)",
+                  padding: "12px 16px", cursor: "pointer",
+                }}
+              >
+                <div className="mono" style={{ fontFamily: "var(--font-mono)", fontSize: 11.5, color: "var(--text-muted)", width: 74, flex: "0 0 74px" }}>
+                  {t.dueDate ? (
+                    <>
+                      {d}/{m}/{a!.slice(2)}
+                      <br />
+                      {t.dueTime ?? "—"}
+                    </>
+                  ) : (
+                    "sem prazo"
+                  )}
+                </div>
+                <div style={{ width: 1, alignSelf: "stretch", background: "var(--border-hairline)" }} />
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <p style={{ margin: 0, fontFamily: "var(--font-title)", fontWeight: 600, fontSize: 14.5, color: "var(--text-strong)" }}>
+                    {t.titulo}
+                  </p>
+                  <p className="mono" style={{ margin: "2px 0 0", fontFamily: "var(--font-mono)", fontSize: 11.5, color: "var(--text-muted)" }}>
+                    {t.supplierNome ?? t.origemDecisao ?? "—"}
+                  </p>
+                </div>
+                <Badge tone={st.tone}>{st.label}</Badge>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
+
+/* =========================================================== AGENDA */
+
+function VistaAgenda({
+  org,
+  eventId,
+  fornecedores,
+}: {
+  org: Organizacao;
+  eventId: string;
+  fornecedores: Fornecedor[];
+}) {
+  const [criando, setCriando] = useState(false);
+  return (
+    <section>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 10 }}>
+        <h3 style={{ margin: 0, fontFamily: "var(--font-title)", fontWeight: 600, fontSize: 14.5 }}>Agenda</h3>
+        <span style={{ fontSize: 12, color: "var(--text-muted)" }}>— onde você precisa comparecer</span>
+        <span style={{ marginLeft: "auto" }}>
+          <Button size="sm" variant={criando ? "secondary" : "primary"} onClick={() => setCriando((v) => !v)}>
+            {criando ? <X size={13} /> : <Plus size={13} />}
+            {criando ? "Fechar" : "Novo"}
+          </Button>
+        </span>
+      </div>
+
+      {criando && (
+        <NovoCompromisso eventId={eventId} fornecedores={fornecedores} onPronto={() => setCriando(false)} />
+      )}
+
+      {org.compromissos.length === 0 ? (
+        !criando && (
+          <p style={{ padding: "16px 4px", fontSize: 13, color: "var(--text-muted)" }}>
+            Nenhum compromisso marcado.
+          </p>
+        )
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+          {org.compromissos.map((c) => (
+            <LinhaCompromisso key={c.id} c={c} eventId={eventId} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+/* =========================================================== DRAWER */
+
+function TarefaDrawer({
+  eventId,
+  tarefa,
+  dataEvento,
+  fornecedores,
+  onFechar,
+}: {
+  eventId: string;
+  tarefa: Tarefa | null; // null = nova
+  dataEvento: string | null;
+  fornecedores: Fornecedor[];
+  onFechar: () => void;
+}) {
+  const router = useRouter();
+  const nova = tarefa === null;
+
+  const [titulo, setTitulo] = useState(tarefa?.titulo ?? "");
+  const [status, setStatus] = useState<TarefaStatus>(tarefa?.status ?? "pendente");
+  const [priority, setPriority] = useState(tarefa?.priority ?? "media");
+  const [dueDate, setDueDate] = useState(tarefa?.dueDate ?? "");
+  const [dueTime, setDueTime] = useState(tarefa?.dueTime ?? "");
+  const [supplierId, setSupplierId] = useState(tarefa?.supplierId ?? "");
+  const [responsavel, setResponsavel] = useState(tarefa?.responsavel ?? "cerimonialista");
+  const [valor, setValor] = useState(
+    tarefa?.valor !== null && tarefa?.valor !== undefined ? String(tarefa.valor) : ""
+  );
+  const [local, setLocal] = useState(tarefa?.local ?? "");
+  const [categoria, setCategoria] = useState(tarefa?.category ?? "geral");
+  const [descricao, setDescricao] = useState(tarefa?.descricao ?? "");
+  const [conviteData, setConviteData] = useState(tarefa?.conviteData ?? "");
+  const [novoPasso, setNovoPasso] = useState("");
+  const [erro, setErro] = useState<string | null>(null);
+  const [pend, start] = useTransition();
+
+  // checklist otimista
+  const [checklist, setChecklist] = useState(tarefa?.checklist ?? []);
+  const feitosCk = checklist.filter((c) => c.feito).length;
+  const pctCk = checklist.length ? Math.round((feitosCk / checklist.length) * 100) : 0;
+
+  const marco = tarefa ? marcoTemporal(tarefa.dueDate, dataEvento, tarefa.status === "concluido") : null;
+
+  function salvar() {
+    setErro(null);
+    const form: TarefaForm = {
+      titulo,
+      descricao,
+      status,
+      priority,
+      dueDate: dueDate || null,
+      dueTime: dueTime || null,
+      responsavel,
+      supplierId: supplierId || null,
+      local,
+      valor: valor.trim() === "" ? null : Number(valor.replace(/\./g, "").replace(",", ".")),
+      conviteData: conviteData || null,
+      categoria: categoria || "geral",
+    };
+    start(async () => {
+      const r = nova
+        ? await criarTarefa(eventId, form)
+        : await atualizarTarefa(eventId, tarefa!.id, form);
+      if ("error" in r) setErro(r.error);
+      else {
+        router.refresh();
+        onFechar();
+      }
+    });
+  }
+
+  function excluir() {
+    if (nova) return;
+    start(async () => {
+      const r = await excluirTarefa(eventId, tarefa!.id);
+      if ("error" in r) setErro(r.error);
+      else {
+        router.refresh();
+        onFechar();
+      }
+    });
+  }
+
+  function togglePasso(id: string, feito: boolean) {
+    setChecklist((l) => l.map((c) => (c.id === id ? { ...c, feito } : c)));
+    void alternarChecklist(eventId, id, feito).then((r) => {
+      if ("error" in r) setChecklist((l) => l.map((c) => (c.id === id ? { ...c, feito: !feito } : c)));
+    });
+  }
+
+  function addPasso() {
+    const texto = novoPasso.trim();
+    if (!texto || nova) return;
+    setNovoPasso("");
+    void adicionarChecklistItem(eventId, tarefa!.id, texto, checklist.length).then((r) => {
+      if ("id" in r && r.id) {
+        setChecklist((l) => [...l, { id: r.id!, texto, feito: false, ordem: l.length }]);
+      }
+    });
+  }
+
+  function delPasso(id: string) {
+    setChecklist((l) => l.filter((c) => c.id !== id));
+    void removerChecklistItem(eventId, id);
+  }
+
+  const st = STATUS_META[status];
+
+  return (
+    <>
+      {/* scrim */}
+      <div
+        onClick={onFechar}
+        style={{
+          position: "fixed", inset: 0, background: "rgba(34,30,27,0.28)",
+          zIndex: 40, animation: "celebraFade 150ms ease",
+        }}
+      />
+      <style>{`
+        @keyframes celebraFade{from{opacity:0}to{opacity:1}}
+        @keyframes celebraDrawerIn{from{transform:translateX(30px);opacity:0}to{transform:translateX(0);opacity:1}}
+      `}</style>
+
+      {/* painel */}
+      <aside
+        style={{
+          position: "fixed", top: 0, right: 0, bottom: 0, width: 472, maxWidth: "100vw",
+          background: "var(--surface-card)", borderLeft: "1px solid var(--border-hairline)",
+          boxShadow: "var(--shadow-lg)", zIndex: 41, display: "flex", flexDirection: "column",
+          animation: "celebraDrawerIn 160ms ease", fontFamily: "var(--font-ui)",
+        }}
+      >
+        {/* header */}
+        <div style={{ padding: "16px 22px 12px", borderBottom: "1px solid var(--border-hairline)" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <p className="mono" style={{ margin: 0, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text-muted)" }}>
+                {nova
+                  ? "nova tarefa"
+                  : `ID #${tarefa!.id.slice(0, 4)} · ${tarefa!.decisaoId ? "gerada automaticamente" : "criada manualmente"}`}
+              </p>
+              <input
+                value={titulo}
+                onChange={(e) => setTitulo(e.target.value)}
+                placeholder="Título da tarefa"
+                style={{
+                  width: "100%", border: "none", outline: "none", background: "transparent",
+                  fontFamily: "var(--font-title)", fontWeight: 700, fontSize: 19,
+                  letterSpacing: "-0.015em", color: "var(--text-strong)", marginTop: 3, padding: 0,
+                }}
+              />
+            </div>
+            <button
+              onClick={onFechar}
+              aria-label="Fechar"
+              style={{ border: "none", background: "transparent", color: "var(--text-muted)", cursor: "pointer", padding: 4 }}
+            >
+              <X size={17} />
+            </button>
+          </div>
+          {!nova && (
+            <div style={{ display: "flex", gap: 6, marginTop: 9, flexWrap: "wrap" }}>
+              <Badge tone={st.tone}>{st.label}</Badge>
+              {priority && <Badge tone="plum">{PRIO_LABEL[priority] ?? priority}</Badge>}
+              {marco && <Badge tone={marco.vencida ? "late" : "neutral"}>{marco.label}</Badge>}
+            </div>
+          )}
+        </div>
+
+        {/* corpo */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "16px 22px", display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* ORIGEM — cadeia real Objetivo → Decisão → Tarefa (4C) */}
+          {tarefa?.decisaoId && (
+            <div
+              style={{
+                background: "var(--surface-sunken)", border: "1px solid var(--border-hairline)",
+                borderRadius: "var(--r-md)", padding: "14px 16px",
+              }}
+            >
+              <p style={{ margin: 0, display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--accent)" }}>
+                <GitBranch size={13} />
+                Origem da tarefa
+              </p>
+              <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 0 }}>
+                <NoOrigem
+                  rotulo="objetivo"
+                  anel
+                  ultimo={false}
+                  texto={<span style={{ fontSize: 13.5, fontWeight: 500 }}>{tarefa.origemObjetivo ?? "—"}</span>}
+                />
+                <NoOrigem
+                  rotulo="decisão"
+                  anel={false}
+                  ultimo={false}
+                  texto={
+                    <span style={{ fontSize: 13.5, fontWeight: 600 }}>
+                      «{tarefa.origemDecisao}»{" "}
+                      <Link
+                        href={`/eventos/${eventId}/planejamento?decisao=${tarefa.decisaoId}`}
+                        style={{ fontSize: 12, fontWeight: 500, color: "var(--accent)" }}
+                      >
+                        ver decisão ↗
+                      </Link>
+                    </span>
+                  }
+                />
+                <NoOrigem
+                  rotulo="tarefa"
+                  anel={false}
+                  ultimo
+                  texto={<span style={{ fontSize: 13, color: "var(--text-faint)" }}>esta tarefa</span>}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* grade de campos */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <Select label="Status" value={status} onChange={(e) => setStatus(e.target.value as TarefaStatus)}>
+              <option value="pendente">Pendente</option>
+              <option value="em_progresso">Em progresso</option>
+              <option value="concluido">Concluída</option>
+            </Select>
+            <Select label="Prioridade" value={priority ?? "media"} onChange={(e) => setPriority(e.target.value)}>
+              <option value="alta">Alta</option>
+              <option value="media">Média</option>
+              <option value="baixa">Baixa</option>
+            </Select>
+            <TextField label="Vencimento" type="date" mono value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+            <TextField label="Horário" type="time" mono value={dueTime} onChange={(e) => setDueTime(e.target.value)} />
+            <div style={{ gridColumn: "1 / -1" }}>
+              <Select label="Fornecedor" value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
+                <option value="">Sem fornecedor</option>
+                {fornecedores.map((f) => (
+                  <option key={f.id} value={f.id}>{f.nome}</option>
+                ))}
+              </Select>
+            </div>
+            <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: 5 }}>
+              <FieldLabel>Responsável</FieldLabel>
+              <SegmentedControl
+                value={responsavel ?? "cerimonialista"}
+                onChange={setResponsavel}
+                options={[
+                  { value: "cerimonialista", label: "Cerimonial" },
+                  { value: "noivos", label: "Noivos" },
+                  { value: "ambos", label: "Ambos" },
+                ]}
+              />
+            </div>
+            <TextField label="Valor" mono inputMode="decimal" placeholder="R$ 0,00" value={valor} onChange={(e) => setValor(e.target.value)} />
+            <TextField label="Local" value={local} onChange={(e) => setLocal(e.target.value)} placeholder="Onde acontece" />
+            <div style={{ gridColumn: "1 / -1" }}>
+              <Select label="Categoria" value={categoria ?? "geral"} onChange={(e) => setCategoria(e.target.value)}>
+                {CATEGORIAS.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </Select>
+            </div>
+          </div>
+
+          {/* A SEGUNDA DATA — convite ao fornecedor (Secretário, etapa B) */}
+          {supplierId && (
+            <div style={{ border: "1px solid var(--border-hairline)", borderRadius: "var(--r-lg)", overflow: "hidden" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", background: "var(--surface-sunken)" }}>
+                <span style={{ width: 30, height: 30, borderRadius: "var(--r-md)", background: "var(--salvia-50)", color: "var(--salvia-600)", display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto" }}>
+                  <Send size={15} />
+                </span>
+                <div style={{ flex: 1 }}>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Convite ao fornecedor</p>
+                  <p style={{ margin: "1px 0 0", fontSize: 11.5, color: "var(--text-muted)" }}>
+                    quando chamar — antes do vencimento, para garantir a agenda dele
+                  </p>
+                </div>
+              </div>
+              <div style={{ padding: "12px 14px" }}>
+                <TextField label="Data do convite" type="date" mono value={conviteData} onChange={(e) => setConviteData(e.target.value)} />
+                {dueDate && conviteData && conviteData >= dueDate && (
+                  <p style={{ margin: "6px 0 0", fontSize: 11.5, color: "var(--state-wait)" }}>
+                    O convite está no dia do vencimento ou depois — o normal é sair antes.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* descrição */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            <FieldLabel>Descrição detalhada</FieldLabel>
+            <textarea
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+              rows={3}
+              placeholder="Contexto, combinados, observações…"
+              style={{
+                borderRadius: "var(--r-md)", border: "1px solid var(--border-hairline)",
+                background: "var(--surface-card)", padding: "9px 11px",
+                fontFamily: "var(--font-ui)", fontSize: 13.5, color: "var(--text-strong)",
+                outline: "none", resize: "vertical",
+              }}
+            />
+          </div>
+
+          {/* sub-checklist */}
+          {!nova && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <FieldLabel>Sub-checklist</FieldLabel>
+                {checklist.length > 0 && (
+                  <>
+                    <span className="mono" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text-muted)" }}>
+                      {feitosCk}/{checklist.length}
+                    </span>
+                    <div style={{ flex: 1, height: 4, borderRadius: 4, background: "var(--surface-sunken)", overflow: "hidden" }}>
+                      <div style={{ width: `${pctCk}%`, height: "100%", background: "var(--salvia-600)", transition: "width 160ms ease" }} />
+                    </div>
+                    <span className="mono" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text-muted)" }}>{pctCk}%</span>
+                  </>
+                )}
+              </div>
+              {checklist.map((c) => (
+                <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                  <button
+                    onClick={() => togglePasso(c.id, !c.feito)}
+                    aria-label={c.feito ? "Desmarcar passo" : "Marcar passo"}
+                    style={{
+                      width: 17, height: 17, borderRadius: 5, flex: "0 0 auto",
+                      border: c.feito ? "none" : "1.5px solid var(--border-strong)",
+                      background: c.feito ? "var(--salvia-600)" : "var(--surface-card)",
+                      color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
+                    }}
+                  >
+                    {c.feito && <Check size={11} strokeWidth={3} />}
+                  </button>
+                  <span style={{ flex: 1, fontSize: 13, color: c.feito ? "var(--text-muted)" : "var(--text-body)", textDecoration: c.feito ? "line-through" : "none" }}>
+                    {c.texto}
+                  </span>
+                  <button
+                    onClick={() => delPasso(c.id)}
+                    aria-label="Remover passo"
+                    style={{ border: "none", background: "transparent", color: "var(--text-faint)", cursor: "pointer", padding: 2 }}
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+              ))}
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  value={novoPasso}
+                  onChange={(e) => setNovoPasso(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addPasso()}
+                  placeholder="Adicionar passo…"
+                  style={{
+                    flex: 1, height: 32, borderRadius: "var(--r-md)",
+                    border: "1px dashed var(--border-hairline)", background: "transparent",
+                    padding: "0 10px", fontFamily: "var(--font-ui)", fontSize: 12.5,
+                    color: "var(--text-strong)", outline: "none",
+                  }}
+                />
+                <Button size="sm" variant="secondary" onClick={addPasso}>
+                  <Plus size={13} />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {erro && <p style={{ margin: 0, fontSize: 12.5, color: "var(--state-late)" }}>{erro}</p>}
+        </div>
+
+        {/* footer */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 22px", borderTop: "1px solid var(--border-hairline)" }}>
+          {!nova && (
+            <Button variant="ghost" size="sm" onClick={excluir} disabled={pend} style={{ color: "var(--state-late)" }}>
+              <Trash2 size={14} />
+              Excluir
+            </Button>
+          )}
+          <div style={{ flex: 1 }} />
+          <Button variant="secondary" onClick={onFechar} disabled={pend}>
+            Cancelar
+          </Button>
+          <Button onClick={salvar} disabled={pend || !titulo.trim()}>
+            {pend ? "Salvando…" : "Salvar tarefa"}
+          </Button>
+        </div>
+      </aside>
+    </>
+  );
+}
+
+function NoOrigem({
+  rotulo,
+  texto,
+  anel,
+  ultimo,
+}: {
+  rotulo: string;
+  texto: React.ReactNode;
+  anel: boolean;
+  ultimo: boolean;
+}) {
+  return (
+    <div style={{ display: "flex", gap: 10 }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 12, flex: "0 0 12px" }}>
+        <span
+          style={{
+            width: 9, height: 9, borderRadius: "50%", marginTop: 4,
+            background: anel ? "transparent" : "var(--accent)",
+            border: anel ? "2px solid var(--accent-quiet)" : "none",
+            flex: "0 0 auto",
+          }}
+        />
+        {!ultimo && <span style={{ width: 2, flex: 1, background: "var(--border-hairline)", marginTop: 2 }} />}
+      </div>
+      <div style={{ paddingBottom: ultimo ? 0 : 10, minWidth: 0 }}>
+        <p className="mono" style={{ margin: 0, fontFamily: "var(--font-mono)", fontSize: 9.5, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-faint)" }}>
+          {rotulo}
+        </p>
+        <div style={{ marginTop: 1 }}>{texto}</div>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================== blocos mantidos */
 
 function PendenciasFinanceiras({
   eventId,
@@ -225,31 +1053,29 @@ function PendenciasFinanceiras({
   const [pend, start] = useTransition();
 
   return (
-    <section className="mb-5 rounded-xl border border-[#e6e6e3] bg-[#fbfbfa] px-4 py-3">
-      <p className="text-[13px] font-semibold text-[#2a2a27]">
+    <section
+      style={{
+        marginBottom: 16, background: "var(--surface-card)",
+        border: "1px solid var(--border-hairline)", borderRadius: "var(--r-lg)",
+        boxShadow: "var(--shadow-sm)", padding: "13px 16px",
+      }}
+    >
+      <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--text-strong)" }}>
         {pendencias.length === 1
           ? "1 pendência esperando você no Financeiro"
           : `${pendencias.length} pendências esperando você no Financeiro`}
       </p>
-      <p className="mt-0.5 text-[12px] text-[#5f5f5b]">
+      <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--text-muted)" }}>
         Nada foi lançado — você confirma o valor.
       </p>
-      <ul className="mt-2 space-y-1.5">
+      <ul style={{ margin: "8px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 6 }}>
         {pendencias.map((p) => (
-          <li
-            key={p.id}
-            className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px]"
-          >
-            <span className="text-[#2a2a27]">{p.titulo}</span>
-            <span className="text-[11.5px] text-[#5f5f5b]">
-              {p.tipo === "revisao"
-                ? "revisar custo de buffet e bar"
-                : "lançar o pagamento"}
+          <li key={p.id} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 12px", fontSize: 12.5 }}>
+            <span style={{ color: "var(--text-strong)" }}>{p.titulo}</span>
+            <span style={{ fontSize: 11.5, color: "var(--text-muted)" }}>
+              {p.tipo === "revisao" ? "revisar custo de buffet e bar" : "lançar o pagamento"}
             </span>
-            <Link
-              href={`/eventos/${eventId}/financeiro`}
-              className="font-medium text-[oklch(0.5_0.14_285)] hover:underline"
-            >
+            <Link href={`/eventos/${eventId}/financeiro`} style={{ fontWeight: 600, color: "var(--accent)", fontSize: 12.5 }}>
               Abrir Financeiro →
             </Link>
             <button
@@ -260,7 +1086,7 @@ function PendenciasFinanceiras({
                 })
               }
               disabled={pend}
-              className="text-[11.5px] text-[#5f5f5b] hover:underline disabled:opacity-50"
+              style={{ border: "none", background: "transparent", fontSize: 11.5, color: "var(--text-muted)", cursor: "pointer", textDecoration: "underline" }}
             >
               Descartar
             </button>
@@ -276,12 +1102,18 @@ function BannerDataOrg({ eventId }: { eventId: string }) {
   const [data, setData] = useState("");
   const [pend, start] = useTransition();
   return (
-    <div className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
-      <div className="min-w-0 flex-1">
-        <p className="text-[14px] font-semibold text-amber-900">
+    <div
+      style={{
+        marginBottom: 16, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12,
+        border: "1px solid var(--state-wait)", background: "var(--state-wait-bg)",
+        borderRadius: "var(--r-lg)", padding: "12px 16px",
+      }}
+    >
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "var(--text-strong)" }}>
           Defina a data do casamento
         </p>
-        <p className="text-[12.5px] text-amber-800">
+        <p style={{ margin: "1px 0 0", fontSize: 12.5, color: "var(--text-body)" }}>
           Sem data, as tarefas ficam sem prazo e a agenda perde referência.
         </p>
       </div>
@@ -289,9 +1121,13 @@ function BannerDataOrg({ eventId }: { eventId: string }) {
         type="date"
         value={data}
         onChange={(e) => setData(e.target.value)}
-        className="rounded-lg border border-amber-300 bg-white px-3 py-2 text-[14px] text-[#1b1b19] outline-none"
+        style={{
+          borderRadius: "var(--r-md)", border: "1px solid var(--border-hairline)",
+          background: "var(--surface-card)", padding: "8px 11px", fontSize: 13.5,
+          fontFamily: "var(--font-mono)", color: "var(--text-strong)", outline: "none",
+        }}
       />
-      <button
+      <Button
         onClick={() =>
           data &&
           start(async () => {
@@ -300,116 +1136,9 @@ function BannerDataOrg({ eventId }: { eventId: string }) {
           })
         }
         disabled={!data || pend}
-        className="rounded-lg bg-amber-600 px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-amber-700 disabled:opacity-50"
       >
         {pend ? "Definindo…" : "Definir data"}
-      </button>
-    </div>
-  );
-}
-
-function VistaLista({
-  org,
-  filtro,
-  eventId,
-  fornecedores,
-  onToggle,
-}: {
-  org: Organizacao;
-  filtro: Filtro;
-  eventId: string;
-  fornecedores: Fornecedor[];
-  onToggle: (taskId: string, concluida: boolean) => void;
-}) {
-  const abertas = org.tarefas.filter((t) => t.status !== "concluido");
-  const concluidas = org.tarefas.filter((t) => t.status === "concluido");
-  const [criando, setCriando] = useState(false);
-
-  return (
-    <div className="space-y-6">
-      {/* AGENDA — compromissos (comparecer) */}
-      {filtro !== "tarefas" && (
-        <section>
-          <div className="mb-2 flex items-baseline gap-2">
-            <CalendarClock size={15} style={{ color: ACENTO }} />
-            <h3 className="text-[14px] font-semibold text-[#2a2a27]">Agenda</h3>
-            <span className="text-[12px] text-[#5f5f5b]">
-              — onde você precisa comparecer
-            </span>
-            <button
-              onClick={() => setCriando((v) => !v)}
-              className="ml-auto flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-medium"
-              style={{ background: criando ? "#efefec" : ACENTO, color: criando ? "#5f5f5b" : "#fff" }}
-            >
-              {criando ? <X size={13} /> : <Plus size={13} />}
-              {criando ? "Fechar" : "Novo"}
-            </button>
-          </div>
-
-          {criando && (
-            <NovoCompromisso
-              eventId={eventId}
-              fornecedores={fornecedores}
-              onPronto={() => setCriando(false)}
-            />
-          )}
-
-          {org.compromissos.length === 0 ? (
-            !criando && (
-              <p className="px-1 py-4 text-[13px] text-[#5f5f5b]">
-                Nenhum compromisso marcado.
-              </p>
-            )
-          ) : (
-            <div className="space-y-2">
-              {org.compromissos.map((c) => (
-                <LinhaCompromisso key={c.id} c={c} eventId={eventId} />
-              ))}
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* TAREFAS — o que fazer */}
-      {filtro !== "agenda" && (
-        <section>
-          <div className="mb-2 flex items-baseline gap-2">
-            <CheckSquare size={15} className="text-[#5f5f5b]" />
-            <h3 className="text-[14px] font-semibold text-[#2a2a27]">Tarefas</h3>
-            <span className="text-[12px] text-[#5f5f5b]">
-              — o que você precisa fazer
-            </span>
-            <span className="mono ml-auto text-[11px] text-[#6b6b66]">
-              {abertas.length} abertas
-            </span>
-          </div>
-
-          {org.tarefas.length === 0 ? (
-            <p className="px-1 py-4 text-[13px] text-[#5f5f5b]">
-              Nenhuma tarefa ainda.
-            </p>
-          ) : (
-            <div className="space-y-1.5">
-              {abertas.map((t) => (
-                <LinhaTarefa
-                  key={t.id}
-                  tarefa={t}
-                  eventId={eventId}
-                  onToggle={onToggle}
-                />
-              ))}
-              {concluidas.map((t) => (
-                <LinhaTarefa
-                  key={t.id}
-                  tarefa={t}
-                  eventId={eventId}
-                  onToggle={onToggle}
-                />
-              ))}
-            </div>
-          )}
-        </section>
-      )}
+      </Button>
     </div>
   );
 }
@@ -433,9 +1162,6 @@ function NovoCompromisso({
   const [erro, setErro] = useState<string | null>(null);
   const [pend, start] = useTransition();
 
-  const input =
-    "w-full rounded-lg border border-[#e0e0dd] bg-white px-3 py-2 text-[13px] text-[#1b1b19] outline-none focus:border-[#c0c0bb]";
-
   function salvar() {
     setErro(null);
     start(async () => {
@@ -454,67 +1180,55 @@ function NovoCompromisso({
   }
 
   return (
-    <div className="mb-3 rounded-xl border border-[#e6e6e3] bg-[#fbfbfa] p-3">
-      <div className="grid gap-2 sm:grid-cols-2">
-        <input
-          className={`${input} sm:col-span-2`}
-          placeholder="Ex.: Reunião final, prova de vestido, degustação"
-          value={titulo}
-          onChange={(e) => setTitulo(e.target.value)}
-          autoFocus
-        />
-        <input className={input} type="date" value={data} onChange={(e) => setData(e.target.value)} />
-        <input className={input} type="time" value={hora} onChange={(e) => setHora(e.target.value)} />
-        <input
-          className={input}
-          placeholder="Local (opcional)"
-          value={local}
-          onChange={(e) => setLocal(e.target.value)}
-        />
-        <select className={input} value={responsavel} onChange={(e) => setResponsavel(e.target.value)}>
+    <div
+      style={{
+        marginBottom: 12, background: "var(--surface-sunken)",
+        border: "1px solid var(--border-hairline)", borderRadius: "var(--r-lg)", padding: 14,
+      }}
+    >
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div style={{ gridColumn: "1 / -1" }}>
+          <TextField
+            placeholder="Ex.: Reunião final, prova de vestido, degustação"
+            value={titulo}
+            onChange={(e) => setTitulo(e.target.value)}
+            autoFocus
+          />
+        </div>
+        <TextField type="date" mono value={data} onChange={(e) => setData(e.target.value)} />
+        <TextField type="time" mono value={hora} onChange={(e) => setHora(e.target.value)} />
+        <TextField placeholder="Local (opcional)" value={local} onChange={(e) => setLocal(e.target.value)} />
+        <Select value={responsavel} onChange={(e) => setResponsavel(e.target.value)}>
           <option value="">Quem comparece?</option>
           <option value="noivos">Noivos</option>
           <option value="cerimonialista">Cerimonialista</option>
           <option value="ambos">Ambos</option>
-        </select>
-        <select
-          className={`${input} sm:col-span-2`}
-          value={supplierId}
-          onChange={(e) => setSupplierId(e.target.value)}
-        >
-          <option value="">Sem fornecedor</option>
-          {fornecedores.map((f) => (
-            <option key={f.id} value={f.id}>
-              {f.nome}
-              {f.temWhatsapp ? "" : " (sem WhatsApp)"}
-            </option>
-          ))}
-        </select>
-        <input
-          className={`${input} sm:col-span-2`}
-          placeholder="Observação (opcional)"
-          value={observacao}
-          onChange={(e) => setObservacao(e.target.value)}
-        />
+        </Select>
+        <div style={{ gridColumn: "1 / -1" }}>
+          <Select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
+            <option value="">Sem fornecedor</option>
+            {fornecedores.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.nome}
+                {f.temWhatsapp ? "" : " (sem WhatsApp)"}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <div style={{ gridColumn: "1 / -1" }}>
+          <TextField placeholder="Observação (opcional)" value={observacao} onChange={(e) => setObservacao(e.target.value)} />
+        </div>
       </div>
 
-      {erro && <p className="mt-2 text-[12px] text-[#b0402f]">{erro}</p>}
+      {erro && <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--state-late)" }}>{erro}</p>}
 
-      <div className="mt-2.5 flex items-center gap-2">
-        <button
-          onClick={salvar}
-          disabled={pend}
-          className="rounded-lg px-3.5 py-1.5 text-[12.5px] font-medium text-white disabled:opacity-60"
-          style={{ background: ACENTO }}
-        >
+      <div style={{ marginTop: 11, display: "flex", gap: 8 }}>
+        <Button size="sm" onClick={salvar} disabled={pend}>
           {pend ? "Salvando…" : "Salvar compromisso"}
-        </button>
-        <button
-          onClick={onPronto}
-          className="rounded-lg px-3 py-1.5 text-[12.5px] font-medium text-[#5f5f5b]"
-        >
+        </Button>
+        <Button size="sm" variant="ghost" onClick={onPronto}>
           Cancelar
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -526,6 +1240,7 @@ function LinhaCompromisso({ c, eventId }: { c: Compromisso; eventId: string }) {
   const [pend, start] = useTransition();
   const estado = ESTADO_ROTULO[c.estado];
   const podeConfirmar = Boolean(c.supplierId && c.supplierWhatsapp);
+  const [a, m, d] = c.data.split("-");
 
   function pedirConfirmacao() {
     setErro(null);
@@ -551,277 +1266,89 @@ function LinhaCompromisso({ c, eventId }: { c: Compromisso; eventId: string }) {
     });
   }
 
+  const acao: React.CSSProperties = {
+    border: "none", background: "transparent", cursor: "pointer",
+    fontSize: 11.5, padding: 0, fontFamily: "var(--font-ui)",
+  };
+
   return (
     <div
-      className="rounded-xl border-l-2 bg-white px-4 py-3"
-      style={{ borderColor: ACENTO, borderTop: "1px solid #eaeae7", borderRight: "1px solid #eaeae7", borderBottom: "1px solid #eaeae7" }}
+      style={{
+        background: "var(--surface-card)", border: "1px solid var(--border-hairline)",
+        borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-sm)", padding: "12px 16px",
+      }}
     >
-      <div className="flex items-center gap-3">
-        <div className="mono w-16 shrink-0 text-[11px] text-[#5f5f5b]">
-          {dataBR(c.data)}
-          <div className="text-[13px] font-semibold text-[#1b1b19]">
+      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <div
+          style={{
+            width: 52, flex: "0 0 52px", borderRadius: "var(--r-md)",
+            background: "var(--salvia-50)", padding: "7px 4px", textAlign: "center",
+          }}
+        >
+          <div className="mono" style={{ fontFamily: "var(--font-mono)", fontSize: 9.5, fontWeight: 600, color: "var(--salvia-600)" }}>
+            {MES_ABREV[Number(m) - 1]}
+          </div>
+          <div style={{ fontFamily: "var(--font-title)", fontWeight: 700, fontSize: 17, lineHeight: 1.15, color: "var(--salvia-800)" }}>
+            {Number(d)}
+          </div>
+          <div className="mono" style={{ fontFamily: "var(--font-mono)", fontSize: 9.5, color: "var(--salvia-600)" }}>
             {c.hora ?? "—"}
           </div>
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-[13.5px] font-medium text-[#1b1b19]">{c.titulo}</p>
-          <p className="flex flex-wrap items-center gap-x-2 text-[11.5px] text-[#5f5f5b]">
+
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <p style={{ margin: 0, fontFamily: "var(--font-title)", fontWeight: 600, fontSize: 14.5, color: "var(--text-strong)" }}>
+            {c.titulo}
+          </p>
+          <p style={{ margin: "2px 0 0", display: "flex", flexWrap: "wrap", gap: "0 8px", fontSize: 11.5, color: "var(--text-muted)" }}>
             <span>{prazo(c.data)}</span>
             {c.local && <span>· {c.local}</span>}
             {c.supplierNome && <span>· {c.supplierNome}</span>}
-            {c.responsavel && <span className="capitalize">· {c.responsavel}</span>}
+            {c.responsavel && <span style={{ textTransform: "capitalize" }}>· {c.responsavel}</span>}
+            <span className="mono" style={{ fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--text-faint)" }}>
+              {a}
+            </span>
           </p>
         </div>
-        <span
-          className="mono shrink-0 text-[11px] font-medium"
-          style={{ color: estado.cor }}
-        >
+        <span className="mono" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: estado.cor, flex: "0 0 auto" }}>
           {estado.texto}
         </span>
       </div>
 
-      {/* ações — texto simples, sem caixas */}
-      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 pl-[76px] text-[11.5px]">
+      <div style={{ marginTop: 8, paddingLeft: 66, display: "flex", flexWrap: "wrap", gap: "4px 16px" }}>
         {podeConfirmar && c.estado !== "confirmado" && (
-          <button
-            onClick={pedirConfirmacao}
-            disabled={pend}
-            className="flex items-center gap-1 font-medium disabled:opacity-50"
-            style={{ color: ACENTO }}
-          >
+          <button onClick={pedirConfirmacao} disabled={pend} style={{ ...acao, color: "var(--accent)", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
             <Send size={12} />
             Pedir confirmação
           </button>
         )}
         {c.estado !== "remarcado" && (
-          <button onClick={() => mudar("remarcado")} disabled={pend} className="text-[#8a6d3b] disabled:opacity-50">
+          <button onClick={() => mudar("remarcado")} disabled={pend} style={{ ...acao, color: "var(--state-wait)" }}>
             Remarcar
           </button>
         )}
         {c.estado !== "cancelado" && (
-          <button onClick={() => mudar("cancelado")} disabled={pend} className="text-[#5f5f5b] disabled:opacity-50">
+          <button onClick={() => mudar("cancelado")} disabled={pend} style={{ ...acao, color: "var(--text-muted)" }}>
             Cancelar
           </button>
         )}
         {(c.estado === "cancelado" || c.estado === "remarcado") && (
-          <button onClick={() => mudar("agendado")} disabled={pend} className="text-[#5f5f5b] disabled:opacity-50">
+          <button onClick={() => mudar("agendado")} disabled={pend} style={{ ...acao, color: "var(--text-muted)" }}>
             Reativar
           </button>
         )}
-        <button onClick={excluir} disabled={pend} className="text-[#b0402f] disabled:opacity-50">
+        <button onClick={excluir} disabled={pend} style={{ ...acao, color: "var(--state-late)" }}>
           Excluir
         </button>
       </div>
 
       {c.supplierId && !c.supplierWhatsapp && (
-        <p className="mt-1 pl-[76px] text-[11px] text-[#6b6b66]">
+        <p style={{ margin: "4px 0 0", paddingLeft: 66, fontSize: 11, color: "var(--text-faint)" }}>
           {c.supplierNome} não tem WhatsApp cadastrado.
         </p>
       )}
-      {aviso && <p className="mt-1 pl-[76px] text-[11px] text-[#0a7a4a]">{aviso}</p>}
-      {erro && <p className="mt-1 pl-[76px] text-[11px] text-[#b0402f]">{erro}</p>}
-    </div>
-  );
-}
-
-const VINCULO_MODULO: Record<
-  "execucao" | "financeiro",
-  { rota: string; rotulo: string }
-> = {
-  execucao: { rota: "roteiro", rotulo: "alimenta a Execução" },
-  financeiro: { rota: "financeiro", rotulo: "entra no Financeiro" },
-};
-
-// O que a automação fará ao concluir. Dito ANTES, para a cerimonialista
-// não ser surpreendida — e para saber que será lembrada, sem precisar
-// anotar em outro lugar.
-function avisoAutomacao(tarefa: Tarefa): string | null {
-  if (tarefa.vinculoModulo !== "financeiro") return null;
-  return tarefa.titulo.toLowerCase().startsWith("confirmar quantidade")
-    ? "ao concluir, abre revisão de custo no Financeiro"
-    : "ao concluir, abre lançamento no Financeiro para você confirmar";
-}
-
-function LinhaTarefa({
-  tarefa,
-  eventId,
-  onToggle,
-}: {
-  tarefa: Tarefa;
-  eventId: string;
-  onToggle: (taskId: string, concluida: boolean) => void;
-}) {
-  const feita = tarefa.status === "concluido";
-  const vinc = tarefa.vinculoModulo ? VINCULO_MODULO[tarefa.vinculoModulo] : null;
-  const aviso = feita ? null : avisoAutomacao(tarefa);
-  return (
-    <div
-      className={`flex items-center gap-3 rounded-lg border border-[#eaeae7] bg-white px-4 py-2.5 ${feita ? "opacity-55" : ""}`}
-    >
-      <button
-        type="button"
-        onClick={() => onToggle(tarefa.id, !feita)}
-        aria-pressed={feita}
-        aria-label={feita ? "Reabrir tarefa" : "Concluir tarefa"}
-        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${feita ? "border-emerald-500 bg-emerald-500 text-white" : "border-[#c8c8c3] hover:border-emerald-400 hover:bg-emerald-50"}`}
-      >
-        {feita && <Check size={13} strokeWidth={3} />}
-      </button>
-      <div className="min-w-0 flex-1">
-        <p
-          className={`text-[13.5px] ${feita ? "text-[#6b6b66] line-through" : "text-[#2a2a27]"}`}
-        >
-          {tarefa.titulo}
-        </p>
-        <p className="flex flex-wrap items-center gap-x-2 text-[11.5px] text-[#5f5f5b]">
-          {tarefa.responsavel && (
-            <span className="capitalize">{tarefa.responsavel}</span>
-          )}
-          {tarefa.origemDecisao && (
-            <span className="text-[#6b6b66]">{tarefa.origemDecisao}</span>
-          )}
-          {!tarefa.responsavel && !tarefa.origemDecisao && tarefa.category && (
-            <span>{tarefa.category}</span>
-          )}
-          {vinc && (
-            <Link
-              href={`/eventos/${eventId}/${vinc.rota}`}
-              className="inline-flex items-center gap-0.5 rounded-full bg-[oklch(0.95_0.03_285)] px-2 py-0.5 font-medium text-[oklch(0.5_0.14_285)] hover:underline"
-            >
-              {vinc.rotulo} →
-            </Link>
-          )}
-        </p>
-        {aviso && (
-          <p className="mt-0.5 text-[11.5px] text-[#8a6d3b]">{aviso}</p>
-        )}
-      </div>
-      <span className="mono shrink-0 text-[11px] text-[#5f5f5b]">
-        {feita ? "concluída" : `vence ${prazo(tarefa.dueDate)}`}
-      </span>
-    </div>
-  );
-}
-
-function VistaCalendario({ org, filtro }: { org: Organizacao; filtro: Filtro }) {
-  const base = org.dataEvento
-    ? new Date(`${org.dataEvento}T00:00:00`)
-    : new Date();
-  const [ano, setAno] = useState(base.getFullYear());
-  const [mes, setMes] = useState(base.getMonth());
-
-  const itens = useMemo(() => itensDoMes(org, ano, mes), [org, ano, mes]);
-
-  const primeiroDiaSemana = new Date(ano, mes, 1).getDay();
-  const diasNoMes = new Date(ano, mes + 1, 0).getDate();
-  const celulas: (number | null)[] = [
-    ...Array(primeiroDiaSemana).fill(null),
-    ...Array.from({ length: diasNoMes }, (_, i) => i + 1),
-  ];
-  while (celulas.length % 7 !== 0) celulas.push(null);
-
-  function passo(delta: number) {
-    let m = mes + delta;
-    let a = ano;
-    if (m < 0) { m = 11; a--; }
-    if (m > 11) { m = 0; a++; }
-    setMes(m);
-    setAno(a);
-  }
-
-  const mostra = (tipo: "tarefa" | "compromisso") =>
-    filtro === "tudo" ||
-    (filtro === "agenda" && tipo === "compromisso") ||
-    (filtro === "tarefas" && tipo === "tarefa");
-
-  return (
-    <div className="rounded-xl border border-[#e6e6e3] bg-white p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => passo(-1)}
-            aria-label="Mês anterior"
-            className="rounded p-1 text-[#5f5f5b] hover:bg-[#f2f2ef]"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <span className="text-[14px] font-semibold text-[#1b1b19]">
-            {MESES[mes]} {ano}
-          </span>
-          <button
-            onClick={() => passo(1)}
-            aria-label="Próximo mês"
-            className="rounded p-1 text-[#5f5f5b] hover:bg-[#f2f2ef]"
-          >
-            <ChevronRight size={16} />
-          </button>
-        </div>
-        <div className="flex items-center gap-3 text-[11px] text-[#5f5f5b]">
-          <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full" style={{ background: ACENTO }} />
-            Agenda · comparecer
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-[#9a9a95]" />
-            Tarefa · fazer
-          </span>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-7 gap-px">
-        {DIAS_SEM.map((d) => (
-          <div key={d} className="mono pb-1 text-center text-[10px] text-[#6b6b66]">
-            {d}
-          </div>
-        ))}
-        {celulas.map((dia, i) => {
-          const doDia = dia !== null ? itens.get(dia) ?? [] : [];
-          const visiveis = doDia.filter((it) => mostra(it.tipo));
-          const ehEvento =
-            org.dataEvento === `${ano}-${String(mes + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
-          return (
-            <div
-              key={i}
-              className={`min-h-[76px] rounded-md border p-1.5 ${dia === null ? "border-transparent" : "border-[#f0f0ee] bg-[#fbfbfa]"}`}
-            >
-              {dia !== null && (
-                <>
-                  <div className="mb-1 flex items-center justify-between">
-                    <span className="text-[11px] text-[#5f5f5b]">{dia}</span>
-                    {ehEvento && (
-                      <span className="mono rounded bg-[#1b1b19] px-1 py-0.5 text-[8px] font-semibold uppercase text-white">
-                        evento
-                      </span>
-                    )}
-                  </div>
-                  <div className="space-y-0.5">
-                    {visiveis.slice(0, 3).map((it) => (
-                      <div
-                        key={it.id}
-                        className="truncate rounded px-1 py-0.5 text-[10px] leading-tight"
-                        style={
-                          it.tipo === "compromisso"
-                            ? { background: "oklch(0.95 0.03 285)", color: ACENTO }
-                            : { background: "#efefec", color: "#5f5f5b" }
-                        }
-                        title={it.titulo}
-                      >
-                        {it.hora ? `${it.hora} ` : ""}
-                        {it.titulo}
-                      </div>
-                    ))}
-                    {visiveis.length > 3 && (
-                      <div className="px-1 text-[9px] text-[#6b6b66]">
-                        +{visiveis.length - 3}
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      {aviso && <p style={{ margin: "4px 0 0", paddingLeft: 66, fontSize: 11, color: "var(--state-ok)" }}>{aviso}</p>}
+      {erro && <p style={{ margin: "4px 0 0", paddingLeft: 66, fontSize: 11, color: "var(--state-late)" }}>{erro}</p>}
     </div>
   );
 }

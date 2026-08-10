@@ -96,7 +96,7 @@ export function ProximasAtividades({
           Próximas atividades
         </h3>
         <Link
-          href={`/eventos/${eventId}/tarefas`}
+          href={`/eventos/${eventId}/organizacao`}
           className="text-xs font-medium text-gray-500 hover:text-gray-900"
         >
           Ver todas
@@ -115,7 +115,7 @@ export function ProximasAtividades({
               dateIso={t.due_date}
               titulo={t.title}
               subtitulo={subtitulo(t)}
-              href={`/eventos/${eventId}/tarefas`}
+              href={`/eventos/${eventId}/organizacao`}
             />
           ))}
           {proximas.confirmacaoAgendada && (

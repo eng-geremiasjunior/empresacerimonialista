@@ -71,13 +71,16 @@ function prazoPrevistoTexto(iso: string | null): string {
 export function PlanejamentoEvento({
   eventId,
   inicial,
+  decisaoInicial,
 }: {
   eventId: string;
   inicial: Planejamento;
+  // deep-link vindo da Organização ("ver decisão ↗" na origem da tarefa)
+  decisaoInicial?: string | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [aberta, setAberta] = useState<string | null>(null);
+  const [aberta, setAberta] = useState<string | null>(decisaoInicial ?? null);
 
   const plano = inicial;
 

@@ -4,8 +4,10 @@ import { OrganizacaoEvento } from "@/components/organizacao/OrganizacaoEvento";
 
 export default async function EventoOrganizacaoPage({
   params,
+  searchParams,
 }: {
   params: { id: string };
+  searchParams?: { tarefa?: string };
 }) {
   const supabase = createClient();
   const eventId = params.id;
@@ -35,6 +37,7 @@ export default async function EventoOrganizacaoPage({
       inicial={organizacao}
       eventId={eventId}
       fornecedores={fornecedores}
+      tarefaInicial={searchParams?.tarefa ?? null}
     />
   );
 }
