@@ -92,13 +92,26 @@ export async function montarContextoEvento(
       )
     : null;
 
+  // Tempo em linguagem humana: "faltam -21 dias" faria o modelo repetir o
+  // absurdo. Evento passado é passado.
+  const tempo =
+    diasAte === null
+      ? null
+      : diasAte > 1
+        ? `faltam ${diasAte} dias`
+        : diasAte === 1
+          ? "é amanhã"
+          : diasAte === 0
+            ? "é hoje"
+            : `já aconteceu há ${Math.abs(diasAte)} dias`;
+
   const partes: string[] = [];
 
   partes.push(
     `EVENTO: ${ev.type}${cliente ? ` de ${cliente.name}` : ""}\n` +
       linha(
         `data ${dataBR(ev.date)}`,
-        diasAte !== null ? `faltam ${diasAte} dias` : null,
+        tempo,
         ev.time ? `início ${String(ev.time).slice(0, 5)}` : null,
         ev.location || ev.city,
         ev.guests ? `${ev.guests} convidados` : null,
