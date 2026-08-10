@@ -6,6 +6,10 @@ import { SecaoReceitas } from "@/components/financeiro/SecaoReceitas";
 import { ListaDespesas } from "@/components/financeiro/ListaDespesas";
 import { FinanceiroTabs } from "@/components/financeiro/FinanceiroTabs";
 import {
+  PendenciasFinanceiras,
+  type Pendencia,
+} from "@/components/financeiro/PendenciasFinanceiras";
+import {
   ItensOrcamentoOriginal,
   type ItemOrcamentoOriginal,
 } from "@/components/financeiro/ItensOrcamentoOriginal";
@@ -23,7 +27,8 @@ export default async function EventoFinanceiroPage({
   const supabase = createClient();
   const todayIso = format(new Date(), "yyyy-MM-dd");
 
-  const [fin, linksRes, orcRes, verbasRes, parcelasRes] = await Promise.all([
+  const [fin, linksRes, orcRes, verbasRes, parcelasRes, pendRes] =
+    await Promise.all([
     // Aba Assessoria: a mesma tela de sempre, só com a conta dela.
     getFinanceiroEvento(eventId, "assessoria"),
     supabase
@@ -51,7 +56,22 @@ export default async function EventoFinanceiroPage({
       .eq("event_id", eventId)
       .eq("conta", "fornecedor")
       .order("due_date", { ascending: true }),
+    // Pendências abertas pela automação (074). Degrada em silêncio se a
+    // migração ainda não rodou.
+    supabase
+      .from("financeiro_pendencia")
+      .select("id, titulo, tipo, created_at")
+      .eq("event_id", eventId)
+      .eq("status", "aberta")
+      .order("created_at", { ascending: true }),
   ]);
+
+  const pendencias: Pendencia[] = (pendRes.data ?? []).map((p) => ({
+    id: p.id,
+    titulo: p.titulo,
+    tipo: p.tipo as Pendencia["tipo"],
+    criadaEm: p.created_at,
+  }));
 
   const orcamento = orcRes.data as {
     id: string;
@@ -114,6 +134,14 @@ export default async function EventoFinanceiroPage({
       migracaoPendente={migracaoPendente}
       assessoria={
         <div className="space-y-6">
+          {/* O que a automação deixou aqui, antes de tudo: é a ação que a
+              cerimonialista precisa resolver agora. */}
+          <PendenciasFinanceiras
+            eventId={eventId}
+            pendencias={pendencias}
+            fornecedores={suppliers}
+          />
+
           {fin.migrationPendente && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
               O módulo Financeiro precisa da migração{" "}

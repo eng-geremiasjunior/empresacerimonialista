@@ -204,3 +204,92 @@ export async function excluirTransacao(eventId: string, transactionId: string) {
     .eq("event_id", eventId);
   revalidate(eventId);
 }
+
+// ------------------------------------------------------------
+// Pendências financeiras (074): fechar o ciclo da automação
+// ------------------------------------------------------------
+// A tarefa concluída abriu um rascunho; aqui ele vira lançamento real, ou
+// é dado por revisado/descartado. Valor, fornecedor e data vêm da
+// cerimonialista — a automação nunca inventa dinheiro.
+
+export async function resolverPendenciaComLancamento(
+  eventId: string,
+  pendenciaId: string,
+  _prev: FinanceiroFormState,
+  formData: FormData
+): Promise<FinanceiroFormState> {
+  const description = String(formData.get("description") ?? "").trim();
+  const value = Number(String(formData.get("value") ?? "").replace(",", "."));
+  const dueDate = String(formData.get("due_date") ?? "");
+  const supplierId = String(formData.get("supplier_id") ?? "");
+  const paid = String(formData.get("paid") ?? "") === "true";
+
+  if (!description) return { error: "Informe a descrição." };
+  if (!Number.isFinite(value) || value <= 0) {
+    return { error: "Informe um valor válido." };
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) {
+    return { error: "Informe a data de vencimento." };
+  }
+
+  const supabase = createClient();
+
+  const { data: criada, error: erroTx } = await supabase
+    .from("transactions")
+    .insert({
+      event_id: eventId,
+      type: "despesa",
+      description,
+      category: "outro",
+      value,
+      due_date: dueDate,
+      paid,
+      paid_at: paid ? new Date().toISOString() : null,
+      supplier_id: supplierId || null,
+      // Mesma regra da 063: com fornecedor é conta dele; sem, assessoria.
+      conta: supplierId ? "fornecedor" : "assessoria",
+    })
+    .select("id")
+    .single();
+
+  if (erroTx || !criada) {
+    return { error: "Não foi possível lançar. Tente novamente." };
+  }
+
+  // Fecha o ciclo: a pendência aponta para o lançamento que a resolveu.
+  const { error: erroPend } = await supabase
+    .from("financeiro_pendencia")
+    .update({
+      status: "resolvida",
+      transaction_id: criada.id,
+      resolvida_em: new Date().toISOString(),
+    })
+    .eq("id", pendenciaId)
+    .eq("event_id", eventId);
+
+  if (erroPend) {
+    return { error: "Lançamento criado, mas a pendência não fechou." };
+  }
+
+  revalidate(eventId);
+  return { ok: true };
+}
+
+// Revisão de custo não gera lançamento: a cerimonialista confere e dá por
+// resolvida. Descartar serve para o que não se aplica.
+export async function fecharPendencia(
+  eventId: string,
+  pendenciaId: string,
+  status: "resolvida" | "descartada"
+): Promise<{ error?: string }> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("financeiro_pendencia")
+    .update({ status, resolvida_em: new Date().toISOString() })
+    .eq("id", pendenciaId)
+    .eq("event_id", eventId);
+
+  if (error) return { error: "Não foi possível atualizar a pendência." };
+  revalidate(eventId);
+  return {};
+}
