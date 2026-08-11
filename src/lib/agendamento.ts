@@ -9,6 +9,9 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { enviarConviteAgendamentoWhatsapp } from "@/lib/whatsapp";
+import { enviarConviteAgendamentoEmail } from "@/lib/email";
+
+export type CanalConvite = "whatsapp" | "email";
 
 export type SlotLivre = { data: string; hora: string };
 
@@ -145,10 +148,17 @@ async function criarEDisparar(
     userId: string;
     taskId?: string | null;
     supplierNome: string;
-    telefone: string;
+    canal: CanalConvite;
+    telefone: string | null;
+    email: string | null;
     eventLabel: string;
   }
 ): Promise<ResultadoConvite> {
+  // Valida o canal escolhido tem para onde mandar.
+  if (p.canal === "whatsapp" && !p.telefone)
+    return { ok: false, motivo: `${p.supplierNome} não tem WhatsApp cadastrado` };
+  if (p.canal === "email" && !p.email)
+    return { ok: false, motivo: `${p.supplierNome} não tem e-mail cadastrado` };
   const slots = await gerarSlotsLivres(supabase, {
     userId: p.userId,
     duracaoMin: p.duracaoMin,
@@ -172,6 +182,7 @@ async function criarEDisparar(
       event_id: p.eventId,
       supplier_id: p.supplierId,
       duracao_min: p.duracaoMin,
+      canal: p.canal,
       prazo_ate: prazoAte,
     })
     .select("id, hash")
@@ -195,33 +206,50 @@ async function criarEDisparar(
     return { ok: false, motivo: "falha ao gravar os horários" };
   }
 
-  const envio = await enviarConviteAgendamentoWhatsapp({
-    telefone: p.telefone,
-    supplierName: p.supplierNome,
-    tarefa: p.titulo,
-    eventLabel: p.eventLabel,
-    duracaoMin: p.duracaoMin,
-    hash: convite.hash,
-    prazoDias: p.prazoDias,
-    slots: slotRows.map((s) => ({
-      id: s.id,
-      data: s.data,
-      hora: String(s.hora).slice(0, 5),
-    })),
-  });
+  const slotsPayload = slotRows.map((s) => ({
+    id: s.id,
+    data: s.data,
+    hora: String(s.hora).slice(0, 5),
+  }));
+
+  const envio =
+    p.canal === "email"
+      ? await enviarConviteAgendamentoEmail({
+          to: p.email!,
+          supplierName: p.supplierNome,
+          tarefa: p.titulo,
+          eventLabel: p.eventLabel,
+          duracaoMin: p.duracaoMin,
+          hash: convite.hash,
+          prazoDias: p.prazoDias,
+          slots: slotsPayload,
+        })
+      : await enviarConviteAgendamentoWhatsapp({
+          telefone: p.telefone!,
+          supplierName: p.supplierNome,
+          tarefa: p.titulo,
+          eventLabel: p.eventLabel,
+          duracaoMin: p.duracaoMin,
+          hash: convite.hash,
+          prazoDias: p.prazoDias,
+          slots: slotsPayload,
+        });
 
   if (!envio.ok) {
     // sem entrega não há convite: desfaz para não deixar fantasma
     await supabase.from("agendamento_convite").delete().eq("id", convite.id);
-    return { ok: false, motivo: envio.error ?? "falha no envio do WhatsApp" };
+    return {
+      ok: false,
+      motivo: envio.error ?? `falha no envio por ${p.canal}`,
+    };
   }
 
-  // Registra no sino e no Histórico do evento (081): o envio era mudo e
-  // a informação ficava perdida.
+  // Registra no sino e no Histórico do evento (081).
+  const canalLabel = p.canal === "email" ? "e-mail" : "WhatsApp";
   await supabase.rpc("registrar_agendamento_evento", {
     p_event_id: p.eventId,
     p_tipo: "convite_enviado",
-    p_titulo: `Convite enviado a ${p.supplierNome}`,
+    p_titulo: `Convite enviado a ${p.supplierNome} (${canalLabel})`,
     p_mensagem: `${p.titulo} · ${slotRows.length} horários oferecidos · resposta em até ${p.prazoDias} dias`,
     p_link: p.taskId
       ? `/eventos/${p.eventId}/organizacao?tarefa=${p.taskId}`
@@ -242,13 +270,14 @@ export async function enviarConviteAvulso(
     titulo: string;
     duracaoMin: number;
     prazoDias: number;
+    canal: CanalConvite;
     ateData?: string | null;
   }
 ): Promise<ResultadoConvite> {
   const [{ data: sup }, { data: ev }] = await Promise.all([
     supabase
       .from("suppliers")
-      .select("name, whatsapp, phone")
+      .select("name, whatsapp, phone, email")
       .eq("id", p.supplierId)
       .single(),
     supabase
@@ -258,9 +287,7 @@ export async function enviarConviteAvulso(
       .single(),
   ]);
 
-  const telefone = sup?.whatsapp || sup?.phone;
-  if (!telefone)
-    return { ok: false, motivo: `${sup?.name ?? "o fornecedor"} não tem WhatsApp cadastrado` };
+  if (!sup) return { ok: false, motivo: "fornecedor não encontrado" };
   if (!ev?.cerimonialista_id)
     return { ok: false, motivo: "evento sem responsável definido" };
 
@@ -275,8 +302,10 @@ export async function enviarConviteAvulso(
     ateData: p.ateData ?? ev.date ?? null,
     userId: ev.cerimonialista_id,
     taskId: null,
-    supplierNome: sup!.name,
-    telefone,
+    supplierNome: sup.name,
+    canal: p.canal,
+    telefone: sup.whatsapp || sup.phone || null,
+    email: sup.email || null,
     eventLabel: cli?.name ? `casamento de ${cli.name}` : "o evento",
   });
 }
@@ -290,7 +319,7 @@ export async function enviarConviteAgendamento(
   const { data: task } = await supabase
     .from("tasks")
     .select(
-      "id, event_id, title, status, due_date, duracao_min, prazo_resposta_dias, supplier_id, local, suppliers(name, whatsapp, phone), events(date, cerimonialista_id, type, client_id, clients(name))"
+      "id, event_id, title, status, due_date, duracao_min, prazo_resposta_dias, canal_convite, supplier_id, local, suppliers(name, whatsapp, phone, email), events(date, cerimonialista_id, type, client_id, clients(name))"
     )
     .eq("id", taskId)
     .single();
@@ -303,9 +332,6 @@ export async function enviarConviteAgendamento(
 
   const sup = Array.isArray(task.suppliers) ? task.suppliers[0] : task.suppliers;
   const ev = Array.isArray(task.events) ? task.events[0] : task.events;
-  const telefone = sup?.whatsapp || sup?.phone;
-  if (!telefone)
-    return { ok: false, motivo: `${sup?.name ?? "o fornecedor"} não tem WhatsApp cadastrado` };
   if (!ev?.cerimonialista_id)
     return { ok: false, motivo: "evento sem responsável definido" };
 
@@ -340,8 +366,10 @@ export async function enviarConviteAgendamento(
     ateData: task.due_date ?? ev.date ?? null,
     userId: ev.cerimonialista_id,
     taskId,
-    supplierNome: sup!.name,
-    telefone,
+    supplierNome: sup?.name ?? "fornecedor",
+    canal: (task.canal_convite as CanalConvite) ?? "whatsapp",
+    telefone: sup?.whatsapp || sup?.phone || null,
+    email: sup?.email || null,
     eventLabel: cli?.name ? `casamento de ${cli.name}` : "o evento",
   });
 }

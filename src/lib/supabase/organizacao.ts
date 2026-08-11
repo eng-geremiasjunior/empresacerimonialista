@@ -44,6 +44,7 @@ export type Tarefa = {
   reenvioHoras: number;
   autoAgendar: boolean;
   duracaoMin: number;
+  canalConvite: "whatsapp" | "email";
   // convite mais recente (se houver): estado do disparo
   convite: {
     id: string;

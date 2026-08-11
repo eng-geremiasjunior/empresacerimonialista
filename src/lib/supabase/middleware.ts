@@ -17,7 +17,8 @@ export async function updateSession(request: NextRequest) {
       request.nextUrl.pathname.includes("/roteiro/publico/") ||
       request.nextUrl.pathname.startsWith("/confirmacao/") ||
       request.nextUrl.pathname.startsWith("/orcamento/") ||
-      request.nextUrl.pathname.startsWith("/agendar/")
+      request.nextUrl.pathname.startsWith("/agendar/") ||
+      request.nextUrl.pathname === "/privacidade"
     ) {
       return supabaseResponse;
     }
@@ -57,6 +58,8 @@ export async function updateSession(request: NextRequest) {
   const isPublicConfirmacao = pathname.startsWith("/confirmacao/");
   // Convite de agendamento (Secretário) — fornecedor escolhe horário sem login
   const isPublicAgendar = pathname.startsWith("/agendar/");
+  // Política de privacidade — pública (exigida pela Meta)
+  const isPublicPrivacidade = pathname === "/privacidade";
   // Link público do orçamento (cliente aprova/recusa) — acessível sem login
   const isPublicOrcamento = pathname.startsWith("/orcamento/");
   // Rotas de cron protegem-se sozinhas com Bearer CRON_SECRET
@@ -68,6 +71,7 @@ export async function updateSession(request: NextRequest) {
     !isPublicRoteiro &&
     !isPublicConfirmacao &&
     !isPublicAgendar &&
+    !isPublicPrivacidade &&
     !isPublicOrcamento &&
     !isCron
   ) {

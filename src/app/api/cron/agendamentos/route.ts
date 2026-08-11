@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { enviarConviteAgendamento } from "@/lib/agendamento";
 import { enviarConviteAgendamentoWhatsapp } from "@/lib/whatsapp";
+import { enviarConviteAgendamentoEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -113,7 +114,7 @@ export async function GET(request: NextRequest) {
   const { data: paraReenviar } = await supabase
     .from("agendamento_convite")
     .select(
-      "id, hash, task_id, event_id, duracao_min, prazo_ate, enviado_em, supplier_id, tasks(title, due_date, reenvio_horas), suppliers(name, whatsapp, phone), events(date, cerimonialista_id, clients(name))"
+      "id, hash, task_id, event_id, duracao_min, canal, prazo_ate, enviado_em, supplier_id, tasks(title, due_date, reenvio_horas), suppliers(name, whatsapp, phone, email), events(date, cerimonialista_id, clients(name))"
     )
     .eq("status", "enviado")
     .gt("prazo_ate", agora);
@@ -127,8 +128,10 @@ export async function GET(request: NextRequest) {
 
     const sup = Array.isArray(c.suppliers) ? c.suppliers[0] : c.suppliers;
     const ev = Array.isArray(c.events) ? c.events[0] : c.events;
-    const telefone = sup?.whatsapp || sup?.phone;
-    if (!telefone || !ev?.cerimonialista_id) continue;
+    if (!ev?.cerimonialista_id) continue;
+    const canal = (c.canal as "whatsapp" | "email") ?? "whatsapp";
+    const destino = canal === "email" ? sup?.email : sup?.whatsapp || sup?.phone;
+    if (!destino) continue;
 
     // Reenvia só o que AINDA está livre — a Agenda pode ter mudado.
     const { data: slots } = await supabase
@@ -166,8 +169,7 @@ export async function GET(request: NextRequest) {
     }
 
     const cli = ev ? (Array.isArray(ev.clients) ? ev.clients[0] : ev.clients) : null;
-    const envio = await enviarConviteAgendamentoWhatsapp({
-      telefone,
+    const conviteArgs = {
       supplierName: sup!.name,
       tarefa: task?.title ?? "agendamento",
       eventLabel: cli?.name ? `casamento de ${cli.name}` : "o evento",
@@ -178,7 +180,11 @@ export async function GET(request: NextRequest) {
         Math.ceil((new Date(c.prazo_ate).getTime() - Date.now()) / 86_400_000)
       ),
       slots: livres,
-    });
+    };
+    const envio =
+      canal === "email"
+        ? await enviarConviteAgendamentoEmail({ to: destino, ...conviteArgs })
+        : await enviarConviteAgendamentoWhatsapp({ telefone: destino, ...conviteArgs });
 
     if (envio.ok) {
       await supabase

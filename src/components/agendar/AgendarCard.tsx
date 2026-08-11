@@ -137,7 +137,7 @@ export function AgendarCard({
             <p className="mt-1 text-sm text-amber-700">
               {dataLonga(dados.sugestao.data)} às{" "}
               {String(dados.sugestao.hora).slice(0, 5)} — aguardando a
-              cerimonialista aprovar. Você recebe a resposta no WhatsApp.
+              cerimonialista aprovar. Ela entra em contato para confirmar.
             </p>
           </div>
         ) : expirado ? (

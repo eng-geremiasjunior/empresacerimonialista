@@ -82,6 +82,7 @@ export type TarefaForm = {
   categoria?: string | null;
   autoAgendar?: boolean;
   duracaoMin?: number;
+  canalConvite?: "whatsapp" | "email";
 };
 
 function tarefaRow(form: TarefaForm) {
@@ -114,6 +115,7 @@ function tarefaRow(form: TarefaForm) {
     row.reenvio_horas = Math.min(168, Math.max(1, form.reenvioHoras));
   if (form.categoria !== undefined) row.category = form.categoria || "geral";
   if (form.autoAgendar !== undefined) row.auto_agendar = form.autoAgendar;
+  if (form.canalConvite !== undefined) row.canal_convite = form.canalConvite;
   if (form.duracaoMin !== undefined && Number.isFinite(form.duracaoMin))
     row.duracao_min = form.duracaoMin;
   return row;
@@ -408,6 +410,7 @@ export async function criarCompromisso(
     agendarAutomatico?: boolean;
     duracaoMin?: number;
     prazoRespostaDias?: number;
+    canal?: "whatsapp" | "email";
   }
 ): Promise<AcaoResult> {
   const titulo = form.titulo?.trim();
@@ -425,6 +428,7 @@ export async function criarCompromisso(
       titulo,
       duracaoMin: form.duracaoMin ?? 60,
       prazoDias: form.prazoRespostaDias ?? 5,
+      canal: form.canal ?? "whatsapp",
       ateData: form.data || null,
     });
     if (!r.ok) return { error: r.motivo };

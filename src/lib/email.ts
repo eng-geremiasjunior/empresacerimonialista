@@ -78,6 +78,78 @@ export async function enviarEmailConfirmacao(
   return { ok: true };
 }
 
+// Convite de agendamento por e-mail (Secretário). Abre a MESMA página
+// pública /agendar/<hash> — não depende do webhook da Meta, então é o
+// canal mais robusto enquanto o WhatsApp de produção não está liberado.
+export type EmailConviteAgendamento = {
+  to: string;
+  supplierName: string;
+  tarefa: string;
+  eventLabel: string;
+  duracaoMin: number;
+  hash: string;
+  prazoDias: number;
+  slots: { data: string; hora: string }[];
+};
+
+export async function enviarConviteAgendamentoEmail(
+  dados: EmailConviteAgendamento
+): Promise<{ ok: boolean; error?: string }> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    return { ok: false, error: "RESEND_API_KEY não configurada no .env.local" };
+  }
+
+  const link = `${appUrl()}/agendar/${dados.hash}`;
+  const DIAS = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
+  const previa = dados.slots
+    .slice(0, 4)
+    .map((s) => {
+      const [, m, d] = s.data.split("-");
+      const dia = DIAS[new Date(`${s.data}T00:00:00`).getDay()];
+      return `${dia} ${d}/${m} · ${s.hora}`;
+    })
+    .join(" &nbsp;·&nbsp; ");
+
+  const html = `
+  <div style="font-family:system-ui,-apple-system,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#111827">
+    <h2 style="font-size:18px;margin:0 0 4px">Escolha um horário</h2>
+    <p style="color:#6b7280;margin:0 0 20px">Vela — agendamento de reunião</p>
+    <p>Olá, <strong>${dados.supplierName}</strong>!</p>
+    <p>Para <strong>${dados.tarefa}</strong> (${dados.eventLabel}), escolha um horário com a cerimonialista — reunião de ${dados.duracaoMin} minutos.</p>
+    <div style="border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;margin:16px 0;color:#374151">
+      ${previa}${dados.slots.length > 4 ? " &nbsp;e mais…" : ""}
+    </div>
+    <p style="margin:22px 0">
+      <a href="${link}"
+         style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600">
+        Escolher horário
+      </a>
+    </p>
+    <p style="color:#9ca3af;font-size:12px">Válido por ${dados.prazoDias} dias. Se o botão não funcionar, copie e cole:<br/>${link}</p>
+  </div>`;
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: process.env.EMAIL_FROM ?? "Vela <onboarding@resend.dev>",
+      to: [dados.to],
+      subject: `Escolha um horário — ${dados.tarefa}`,
+      html,
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    return { ok: false, error: `Resend ${res.status}: ${body.slice(0, 200)}` };
+  }
+  return { ok: true };
+}
+
 export type EmailOrcamento = {
   to: string;
   contatoNome: string;

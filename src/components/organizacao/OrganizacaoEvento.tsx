@@ -796,6 +796,9 @@ function TarefaDrawer({
   );
   const [autoAgendar, setAutoAgendar] = useState(tarefa?.autoAgendar ?? false);
   const [duracaoMin, setDuracaoMin] = useState(tarefa?.duracaoMin ?? 60);
+  const [canalConvite, setCanalConvite] = useState<"whatsapp" | "email">(
+    tarefa?.canalConvite ?? "whatsapp"
+  );
   const [avisoDisparo, setAvisoDisparo] = useState<string | null>(null);
 
   // data calculada = data do evento − offset (nunca no passado)
@@ -847,6 +850,7 @@ function TarefaDrawer({
       categoria: categoria || "geral",
       autoAgendar,
       duracaoMin,
+      canalConvite,
     };
     start(async () => {
       const r = nova
@@ -1256,7 +1260,7 @@ function TarefaDrawer({
                     <span>h</span>
                   </div>
 
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 12, flexWrap: "wrap" }}>
                     <Select
                       label="Duração da reunião"
                       value={String(duracaoMin)}
@@ -1267,6 +1271,17 @@ function TarefaDrawer({
                         <option key={d} value={d}>{d} min</option>
                       ))}
                     </Select>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                      <FieldLabel>Enviar por</FieldLabel>
+                      <SegmentedControl<"whatsapp" | "email">
+                        value={canalConvite}
+                        onChange={setCanalConvite}
+                        options={[
+                          { value: "whatsapp", label: "WhatsApp" },
+                          { value: "email", label: "E-mail" },
+                        ]}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -1621,6 +1636,7 @@ function NovoCompromisso({
   const [auto, setAuto] = useState(false);
   const [duracaoMin, setDuracaoMin] = useState(60);
   const [prazoDias, setPrazoDias] = useState(5);
+  const [canalNovo, setCanalNovo] = useState<"whatsapp" | "email">("whatsapp");
   const [erro, setErro] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [pend, start] = useTransition();
@@ -1640,6 +1656,7 @@ function NovoCompromisso({
         agendarAutomatico: auto,
         duracaoMin,
         prazoRespostaDias: prazoDias,
+        canal: canalNovo,
       });
       if ("error" in r) setErro(r.error);
       else if (auto) {
@@ -1740,22 +1757,35 @@ function NovoCompromisso({
           />
         </div>
         {auto && supplierId && (
-          <div style={{ padding: "10px 13px", borderTop: "1px solid var(--border-hairline)", background: "var(--surface-sunken)", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 12.5 }}>
-            <span>Prazo pra responder:</span>
-            <input
-              type="number"
-              min={1}
-              max={30}
-              value={prazoDias}
-              onChange={(e) => setPrazoDias(Number(e.target.value))}
-              style={{
-                width: 46, textAlign: "center",
-                border: "1px solid var(--border-hairline)", borderRadius: "var(--r-sm)",
-                padding: "4px", fontFamily: "var(--font-mono)", fontSize: 12.5,
-                background: "var(--surface-card)", outline: "none",
-              }}
-            />
-            <span>dias · sem resposta, você é avisada e combina direto</span>
+          <div style={{ padding: "10px 13px", borderTop: "1px solid var(--border-hairline)", background: "var(--surface-sunken)", display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 12.5 }}>Enviar por</span>
+              <SegmentedControl<"whatsapp" | "email">
+                value={canalNovo}
+                onChange={setCanalNovo}
+                options={[
+                  { value: "whatsapp", label: "WhatsApp" },
+                  { value: "email", label: "E-mail" },
+                ]}
+              />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 12.5 }}>
+              <span>Prazo pra responder:</span>
+              <input
+                type="number"
+                min={1}
+                max={30}
+                value={prazoDias}
+                onChange={(e) => setPrazoDias(Number(e.target.value))}
+                style={{
+                  width: 46, textAlign: "center",
+                  border: "1px solid var(--border-hairline)", borderRadius: "var(--r-sm)",
+                  padding: "4px", fontFamily: "var(--font-mono)", fontSize: 12.5,
+                  background: "var(--surface-card)", outline: "none",
+                }}
+              />
+              <span>dias · sem resposta, você é avisada e combina direto</span>
+            </div>
           </div>
         )}
       </div>

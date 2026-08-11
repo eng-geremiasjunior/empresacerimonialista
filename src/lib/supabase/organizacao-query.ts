@@ -38,6 +38,7 @@ type TaskRow = {
   prazo_resposta_dias: number | null;
   reenvio_horas: number | null;
   auto_agendar: boolean | null;
+  canal_convite: string | null;
   duracao_min: number | null;
   created_at: string | null;
   agendamento_convite:
@@ -68,7 +69,7 @@ export async function getOrganizacao(
   const { data: tasks } = await supabase
     .from("tasks")
     .select(
-      "id, title, description, due_date, due_time, status, priority, category, responsavel, vinculo_modulo, supplier_id, local, valor, convite_data, convite_offset_dias, prazo_resposta_dias, reenvio_horas, auto_agendar, duracao_min, created_at, " +
+      "id, title, description, due_date, due_time, status, priority, category, responsavel, vinculo_modulo, supplier_id, local, valor, convite_data, convite_offset_dias, prazo_resposta_dias, reenvio_horas, auto_agendar, duracao_min, canal_convite, created_at, " +
         "suppliers(name), " +
         "evento_decisao(id, titulo, evento_objetivo(nome)), " +
         "task_checklist(id, texto, feito, ordem), " +
@@ -111,6 +112,7 @@ export async function getOrganizacao(
       reenvioHoras: t.reenvio_horas ?? 48,
       autoAgendar: t.auto_agendar ?? false,
       duracaoMin: t.duracao_min ?? 60,
+      canalConvite: (t.canal_convite as "whatsapp" | "email") ?? "whatsapp",
       convite: (() => {
         const c = (t.agendamento_convite ?? [])
           .slice()
