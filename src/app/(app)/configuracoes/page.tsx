@@ -2,10 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileSection } from "@/components/configuracoes/ProfileSection";
 import { EmpresaSection } from "@/components/configuracoes/EmpresaSection";
-import {
-  DisponibilidadeSection,
-  type JanelaDisponibilidade,
-} from "@/components/configuracoes/DisponibilidadeSection";
+import { CalendarClock } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -46,18 +43,6 @@ export default async function ConfiguracoesPage() {
     empresa = data;
   }
 
-  // Grade de disponibilidade (Secretário). Degrada para vazio se a 077
-  // ainda não rodou.
-  let grade: JanelaDisponibilidade[] = [];
-  if (user) {
-    const { data } = await supabase
-      .from("disponibilidade")
-      .select("id, dia_semana, hora_inicio, hora_fim")
-      .eq("user_id", user.id)
-      .order("dia_semana")
-      .order("hora_inicio");
-    grade = (data ?? []) as JanelaDisponibilidade[];
-  }
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -83,7 +68,24 @@ export default async function ConfiguracoesPage() {
         />
       )}
 
-      {user && <DisponibilidadeSection userId={user.id} inicial={grade} />}
+      {/* A grade completa (dias, slots, buffer, exceções) foi promovida
+          para a Agenda de Fornecedores; aqui fica só o atalho. */}
+      <section className="rounded-xl border border-gray-200 bg-white px-6 py-5">
+        <h2 className="flex items-center gap-1.5 text-sm font-semibold text-gray-900">
+          <CalendarClock size={15} className="text-gray-500" />
+          Grade de horários
+        </h2>
+        <p className="mt-0.5 text-xs text-gray-500">
+          Seus dias de atendimento a fornecedores, duração das reuniões e
+          exceções agora vivem na Agenda de Fornecedores.
+        </p>
+        <Link
+          href="/agenda?tab=grade"
+          className="mt-3 inline-block rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+        >
+          Abrir minha grade →
+        </Link>
+      </section>
 
       {proprietaria && (
         <section className="rounded-xl border border-gray-200 bg-white px-6 py-5">

@@ -714,9 +714,15 @@ function CentralDisparos({
         })}
       </div>
 
-      <p className="mono" style={{ margin: "9px 0 0", fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--text-faint)" }}>
+      <p className="mono" style={{ margin: "9px 0 0", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--text-faint)" }}>
         disparos via WhatsApp · verificação diária às 09:00 · sem resposta em 5
         dias, volta pro manual
+        <Link
+          href="/agenda?tab=grade"
+          style={{ color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}
+        >
+          Editar minha grade →
+        </Link>
       </p>
     </section>
   );

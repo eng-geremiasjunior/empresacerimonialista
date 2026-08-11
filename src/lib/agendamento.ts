@@ -37,19 +37,40 @@ export async function gerarSlotsLivres(
     duracaoMin: number;
     // não oferecer depois desta data (vencimento da tarefa ou data do evento)
     ateData?: string | null;
+    // overrides p/ telas (o convite usa os defaults)
+    maxSlots?: number;
+    horizonteDias?: number;
   }
 ): Promise<SlotLivre[]> {
-  const { data: grade } = await supabase
-    .from("disponibilidade")
-    .select("dia_semana, hora_inicio, hora_fim")
-    .eq("user_id", params.userId);
+  const MAXS = params.maxSlots ?? MAX_SLOTS;
+  const HORIZ = params.horizonteDias ?? HORIZONTE_DIAS;
+  const [{ data: grade }, { data: config }, { data: excecoes }] =
+    await Promise.all([
+      supabase
+        .from("disponibilidade")
+        .select("dia_semana, hora_inicio, hora_fim")
+        .eq("user_id", params.userId),
+      supabase
+        .from("agenda_config")
+        .select("buffer_min")
+        .eq("user_id", params.userId)
+        .maybeSingle(),
+      supabase
+        .from("disponibilidade_excecao")
+        .select("data")
+        .eq("user_id", params.userId),
+    ]);
 
   if (!grade || grade.length === 0) return [];
+
+  // Buffer entre reuniões (078): os slots andam de (duração + buffer).
+  const buffer = config?.buffer_min ?? 15;
+  const diasBloqueados = new Set((excecoes ?? []).map((e) => e.data));
 
   const inicio = new Date(new Date().toDateString());
   inicio.setDate(inicio.getDate() + 1); // a partir de amanhã
   const fim = new Date(inicio);
-  fim.setDate(fim.getDate() + HORIZONTE_DIAS);
+  fim.setDate(fim.getDate() + HORIZ);
   if (params.ateData) {
     const limite = new Date(`${params.ateData}T00:00:00`);
     if (limite < fim) fim.setTime(limite.getTime());
@@ -79,18 +100,25 @@ export async function gerarSlotsLivres(
 
   for (
     let d = new Date(inicio);
-    d <= fim && slots.length < MAX_SLOTS;
+    d <= fim && slots.length < MAXS;
     d.setDate(d.getDate() + 1)
   ) {
     const dia = iso(d);
+    if (diasBloqueados.has(dia)) continue; // exceção: férias etc.
     const janelas = grade.filter((g) => g.dia_semana === d.getDay());
     const blocos = ocupadosPorDia.get(dia) ?? [];
 
     for (const j of janelas) {
       const ini = minutos(String(j.hora_inicio).slice(0, 5));
       const fimJ = minutos(String(j.hora_fim).slice(0, 5));
-      for (let t = ini; t + dur <= fimJ && slots.length < MAX_SLOTS; t += dur) {
-        const livre = !blocos.some((b) => b.ini < t + dur && t < b.fim);
+      // passo = duração + buffer; a reunião em si só precisa caber (dur)
+      for (
+        let t = ini;
+        t + dur <= fimJ && slots.length < MAXS;
+        t += dur + buffer
+      ) {
+        // ocupação considera o buffer depois da reunião: nada encosta
+        const livre = !blocos.some((b) => b.ini < t + dur + buffer && t < b.fim + buffer);
         if (livre) slots.push({ data: dia, hora: hhmm(t) });
       }
     }
