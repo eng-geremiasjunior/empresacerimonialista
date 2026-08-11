@@ -32,25 +32,22 @@ function serviceClient() {
 
 type Sb = NonNullable<ReturnType<typeof serviceClient>>;
 
+// Sino + Histórico do evento pelo mesmo helper (081): a cerimonialista
+// não deve precisar caçar o que o Secretário fez.
 async function notificar(
   supabase: Sb,
   eventId: string,
   titulo: string,
   mensagem: string,
-  taskId?: string
+  taskId?: string,
+  tipo: "convite_enviado" | "fornecedor_cancelado" = "fornecedor_cancelado"
 ) {
-  const { data: ev } = await supabase
-    .from("events")
-    .select("cerimonialista_id")
-    .eq("id", eventId)
-    .single();
-  if (!ev?.cerimonialista_id) return;
-  await supabase.from("notifications").insert({
-    cerimonialista_id: ev.cerimonialista_id,
-    type: "compromisso",
-    title: titulo,
-    message: mensagem,
-    link: `/eventos/${eventId}/organizacao${taskId ? `?tarefa=${taskId}` : ""}`,
+  await supabase.rpc("registrar_agendamento_evento", {
+    p_event_id: eventId,
+    p_tipo: tipo,
+    p_titulo: titulo,
+    p_mensagem: mensagem,
+    p_link: `/eventos/${eventId}/organizacao${taskId ? `?tarefa=${taskId}` : ""}`,
   });
 }
 
@@ -188,6 +185,14 @@ export async function GET(request: NextRequest) {
         .from("agendamento_convite")
         .update({ status: "reenviado", reenviado_em: new Date().toISOString() })
         .eq("id", c.id);
+      await notificar(
+        supabase,
+        c.event_id,
+        `Convite reenviado a ${sup!.name}`,
+        `${task?.title ?? "agendamento"} · ainda sem resposta · ${livres.length} horários`,
+        c.task_id ?? undefined,
+        "convite_enviado"
+      );
       reenvios.push({ conviteId: c.id, ok: true });
     }
   }

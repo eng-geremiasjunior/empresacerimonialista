@@ -216,6 +216,18 @@ async function criarEDisparar(
     return { ok: false, motivo: envio.error ?? "falha no envio do WhatsApp" };
   }
 
+  // Registra no sino e no Histórico do evento (081): o envio era mudo e
+  // a informação ficava perdida.
+  await supabase.rpc("registrar_agendamento_evento", {
+    p_event_id: p.eventId,
+    p_tipo: "convite_enviado",
+    p_titulo: `Convite enviado a ${p.supplierNome}`,
+    p_mensagem: `${p.titulo} · ${slotRows.length} horários oferecidos · resposta em até ${p.prazoDias} dias`,
+    p_link: p.taskId
+      ? `/eventos/${p.eventId}/organizacao?tarefa=${p.taskId}`
+      : `/eventos/${p.eventId}/organizacao`,
+  });
+
   return { ok: true, conviteId: convite.id, slots: slotRows.length };
 }
 

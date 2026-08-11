@@ -272,13 +272,22 @@ export async function aprovarSugestao(
 
   // avisa o fornecedor no canal que ele já usou
   const tel = sup?.whatsapp || sup?.phone;
+  const [a, m, d] = conv.sugestao_data.split("-");
   if (tel) {
-    const [a, m, d] = conv.sugestao_data.split("-");
     await enviarMensagemWhatsapp(
       tel,
       `Confirmado! ${d}/${m}/${a} às ${String(conv.sugestao_hora).slice(0, 5)}. Obrigado!`
     );
   }
+
+  // registra no sino e no Histórico do evento (081)
+  await supabase.rpc("registrar_agendamento_evento", {
+    p_event_id: eventId,
+    p_tipo: "fornecedor_confirmado",
+    p_titulo: `Sugestão aprovada: ${task?.title ?? "reunião"}`,
+    p_mensagem: `${sup?.name ?? "Fornecedor"} · ${d}/${m} às ${String(conv.sugestao_hora).slice(0, 5)}`,
+    p_link: `/eventos/${eventId}/organizacao`,
+  });
 
   revalidatePath(`/eventos/${eventId}/organizacao`);
   revalidatePath("/agenda");
@@ -315,6 +324,14 @@ export async function recusarSugestao(
       "Esse horário não vai dar. A cerimonialista entra em contato para combinar."
     );
   }
+
+  await supabase.rpc("registrar_agendamento_evento", {
+    p_event_id: eventId,
+    p_tipo: "fornecedor_cancelado",
+    p_titulo: `Sugestão recusada — combine direto com ${sup?.name ?? "o fornecedor"}`,
+    p_mensagem: "O fornecedor foi avisado de que o horário não serve.",
+    p_link: `/eventos/${eventId}/organizacao`,
+  });
 
   revalidatePath(`/eventos/${eventId}/organizacao`);
   revalidatePath("/agenda");
