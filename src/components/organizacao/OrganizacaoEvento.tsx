@@ -10,7 +10,7 @@
 //
 // Tokens do Celebra Pro em globals.css; primitivos em ui/celebra.
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -809,6 +809,7 @@ function TarefaDrawer({
   const [novoPasso, setNovoPasso] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [pend, start] = useTransition();
+  const tituloRef = useRef<HTMLInputElement>(null);
 
   // checklist otimista
   const [checklist, setChecklist] = useState(tarefa?.checklist ?? []);
@@ -819,6 +820,13 @@ function TarefaDrawer({
 
   function salvar() {
     setErro(null);
+    // Validação com destino: diz o que falta e leva o foco até o campo.
+    if (!titulo.trim()) {
+      setErro("Escreva o título da tarefa — é o único campo obrigatório.");
+      tituloRef.current?.focus();
+      tituloRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
     const form: TarefaForm = {
       titulo,
       descricao,
@@ -920,14 +928,23 @@ function TarefaDrawer({
                   ? "nova tarefa"
                   : `ID #${tarefa!.id.slice(0, 4)} · ${tarefa!.decisaoId ? "gerada automaticamente" : "criada manualmente"}`}
               </p>
+              {/* Vazio, o título precisa PARECER campo (antes lia como
+                  cabeçalho e a pessoa não sabia que faltava preencher). */}
               <input
+                ref={tituloRef}
                 value={titulo}
                 onChange={(e) => setTitulo(e.target.value)}
-                placeholder="Título da tarefa"
+                placeholder={nova ? "Escreva o título da tarefa" : "Título da tarefa"}
+                autoFocus={nova}
                 style={{
-                  width: "100%", border: "none", outline: "none", background: "transparent",
+                  width: "100%", outline: "none",
+                  border: titulo.trim() ? "1px solid transparent" : "1px dashed var(--border-strong)",
+                  background: titulo.trim() ? "transparent" : "var(--surface-sunken)",
+                  borderRadius: "var(--r-sm)",
                   fontFamily: "var(--font-title)", fontWeight: 700, fontSize: 19,
-                  letterSpacing: "-0.015em", color: "var(--text-strong)", marginTop: 3, padding: 0,
+                  letterSpacing: "-0.015em", color: "var(--text-strong)",
+                  marginTop: 3, padding: titulo.trim() ? "1px 0" : "3px 8px",
+                  transition: "background 140ms ease, border-color 140ms ease",
                 }}
               />
             </div>
@@ -1304,17 +1321,31 @@ function TarefaDrawer({
                   </p>
                 )}
 
-                {/* nota D-x (anexo 1) */}
-                {dataEvento && dueDate && (
-                  <p className="mono" style={{ margin: 0, fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--text-faint)", background: "var(--surface-sunken)", borderRadius: "var(--r-md)", padding: "7px 9px" }}>
-                    Tarefa será realizada em D-{diasEntre(dueDate, dataEvento)}, mas
-                    convite sai em D-
-                    {modoDataManual && conviteData
+                {/* nota D-x (anexo 1) — e alerta quando está invertido */}
+                {dataEvento && dueDate && (() => {
+                  const dTarefa = diasEntre(dueDate, dataEvento);
+                  const dConvite =
+                    modoDataManual && conviteData
                       ? diasEntre(conviteData, dataEvento)
-                      : conviteOffset}{" "}
-                    para garantir agenda do fornecedor.
-                  </p>
-                )}
+                      : conviteOffset;
+                  // convite tem que sair ANTES do vencimento: D maior = mais cedo
+                  const invertido = dConvite <= dTarefa;
+                  return (
+                    <p
+                      className="mono"
+                      style={{
+                        margin: 0, fontFamily: "var(--font-mono)", fontSize: 10.5,
+                        color: invertido ? "var(--state-wait)" : "var(--text-faint)",
+                        background: invertido ? "var(--state-wait-bg)" : "var(--surface-sunken)",
+                        borderRadius: "var(--r-md)", padding: "7px 9px",
+                      }}
+                    >
+                      {invertido
+                        ? `O convite sairia em D-${dConvite}, no dia do vencimento (D-${dTarefa}) ou depois — o fornecedor precisa ser chamado antes. Aumente os dias.`
+                        : `Tarefa será realizada em D-${dTarefa}, mas convite sai em D-${dConvite} para garantir agenda do fornecedor.`}
+                    </p>
+                  );
+                })()}
               </div>
             </div>
             {!supplierId && (
@@ -1419,7 +1450,9 @@ function TarefaDrawer({
           <Button variant="secondary" onClick={onFechar} disabled={pend}>
             Cancelar
           </Button>
-          <Button onClick={salvar} disabled={pend || !titulo.trim()}>
+          {/* Nunca desabilitar por campo vazio: o clique explica o que falta
+              e leva o foco até lá. Botão morto sem motivo trava a pessoa. */}
+          <Button onClick={salvar} disabled={pend}>
             {pend ? "Salvando…" : "Salvar tarefa"}
           </Button>
         </div>
