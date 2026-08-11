@@ -159,14 +159,23 @@ export async function enviarConviteAgendamento(
   if (!ev?.cerimonialista_id)
     return { ok: false, motivo: "evento sem responsável definido" };
 
-  // já existe convite ativo?
+  // já existe convite ativo? ('sugerido' também trava: a bola está com a
+  // cerimonialista — aprovar/recusar antes de disparar de novo)
   const { data: ativo } = await supabase
     .from("agendamento_convite")
-    .select("id")
+    .select("id, status")
     .eq("task_id", taskId)
-    .in("status", ["enviado", "reenviado"])
+    .in("status", ["enviado", "reenviado", "sugerido"])
     .maybeSingle();
-  if (ativo) return { ok: false, motivo: "já existe um convite aguardando resposta" };
+  if (ativo) {
+    return {
+      ok: false,
+      motivo:
+        ativo.status === "sugerido"
+          ? "há uma sugestão de horário aguardando sua aprovação"
+          : "já existe um convite aguardando resposta",
+    };
+  }
 
   const slots = await gerarSlotsLivres(supabase, {
     userId: ev.cerimonialista_id,

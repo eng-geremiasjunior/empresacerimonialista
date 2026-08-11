@@ -34,11 +34,22 @@ type TaskRow = {
   local: string | null;
   valor: number | string | null;
   convite_data: string | null;
+  convite_offset_dias: number | null;
+  prazo_resposta_dias: number | null;
+  reenvio_horas: number | null;
   auto_agendar: boolean | null;
   duracao_min: number | null;
   created_at: string | null;
   agendamento_convite:
-    | { status: string; enviado_em: string; prazo_ate: string; created_at: string }[]
+    | {
+        id: string;
+        status: string;
+        enviado_em: string;
+        prazo_ate: string;
+        created_at: string;
+        sugestao_data: string | null;
+        sugestao_hora: string | null;
+      }[]
     | null;
   suppliers: { name: string } | { name: string }[] | null;
   evento_decisao:
@@ -57,11 +68,11 @@ export async function getOrganizacao(
   const { data: tasks } = await supabase
     .from("tasks")
     .select(
-      "id, title, description, due_date, due_time, status, priority, category, responsavel, vinculo_modulo, supplier_id, local, valor, convite_data, auto_agendar, duracao_min, created_at, " +
+      "id, title, description, due_date, due_time, status, priority, category, responsavel, vinculo_modulo, supplier_id, local, valor, convite_data, convite_offset_dias, prazo_resposta_dias, reenvio_horas, auto_agendar, duracao_min, created_at, " +
         "suppliers(name), " +
         "evento_decisao(id, titulo, evento_objetivo(nome)), " +
         "task_checklist(id, texto, feito, ordem), " +
-        "agendamento_convite(status, enviado_em, prazo_ate, created_at)"
+        "agendamento_convite(id, status, enviado_em, prazo_ate, created_at, sugestao_data, sugestao_hora)"
     )
     .eq("event_id", eventId)
     .order("due_date", { ascending: true, nullsFirst: false })
@@ -95,6 +106,9 @@ export async function getOrganizacao(
       local: t.local,
       valor: t.valor === null || t.valor === undefined ? null : Number(t.valor),
       conviteData: t.convite_data,
+      conviteOffsetDias: t.convite_offset_dias,
+      prazoRespostaDias: t.prazo_resposta_dias ?? 5,
+      reenvioHoras: t.reenvio_horas ?? 48,
       autoAgendar: t.auto_agendar ?? false,
       duracaoMin: t.duracao_min ?? 60,
       convite: (() => {
@@ -103,9 +117,14 @@ export async function getOrganizacao(
           .sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
         return c
           ? {
+              id: c.id,
               status: c.status as NonNullable<Tarefa["convite"]>["status"],
               enviadoEm: c.enviado_em,
               prazoAte: c.prazo_ate,
+              sugestaoData: c.sugestao_data,
+              sugestaoHora: c.sugestao_hora
+                ? String(c.sugestao_hora).slice(0, 5)
+                : null,
             }
           : null;
       })(),

@@ -38,6 +38,7 @@ import {
   adicionarChecklistItem,
   alternarChecklist,
   alternarTarefa,
+  aprovarSugestao,
   atualizarTarefa,
   criarCompromisso,
   criarTarefa,
@@ -47,6 +48,7 @@ import {
   excluirCompromisso,
   excluirTarefa,
   mudarEstadoCompromisso,
+  recusarSugestao,
   removerChecklistItem,
   type TarefaForm,
 } from "@/app/(app)/eventos/[id]/organizacao/actions";
@@ -72,6 +74,14 @@ function dataBR(iso: string | null): string {
   if (!iso) return "sem prazo";
   const [a, m, d] = iso.split("-");
   return `${d}/${m}/${a.slice(2)}`;
+}
+
+// Dias entre duas datas ISO (b − a), para as notas D-x.
+function diasEntre(a: string, b: string): number {
+  return Math.round(
+    (new Date(`${b}T00:00:00`).getTime() - new Date(`${a}T00:00:00`).getTime()) /
+      86_400_000
+  );
 }
 
 function prazo(iso: string | null): string {
@@ -455,6 +465,13 @@ function LinhaTarefa({
           <Badge tone={marco.vencida && !feita ? "late" : st.tone}>
             {marco.vencida && !feita ? "Atrasada" : st.label}
           </Badge>
+          {/* Selo do Secretário: reunião marcada pelo convite */}
+          {t.convite?.status === "respondido" && !feita && (
+            <Badge tone="sage">Agendada</Badge>
+          )}
+          {t.convite?.status === "sugerido" && (
+            <Badge tone="wait">Sugestão p/ aprovar</Badge>
+          )}
           {t.priority && <Badge tone="plum">{PRIO_LABEL[t.priority] ?? t.priority}</Badge>}
           <Badge tone={marco.vencida ? "late" : "neutral"}>{marco.label}</Badge>
           {t.checklist.length > 0 && (
@@ -632,6 +649,7 @@ const DISPARO_META: Record<Disparo["status"], { label: string; tone: BadgeTone }
   reenviado: { label: "Reenviado", tone: "wait" },
   respondido: { label: "Respondido", tone: "ok" },
   expirado: { label: "Expirado", tone: "late" },
+  sugerido: { label: "Sugestão p/ aprovar", tone: "wait" },
 };
 
 function CentralDisparos({
@@ -759,10 +777,35 @@ function TarefaDrawer({
   const [local, setLocal] = useState(tarefa?.local ?? "");
   const [categoria, setCategoria] = useState(tarefa?.category ?? "geral");
   const [descricao, setDescricao] = useState(tarefa?.descricao ?? "");
+  // Gatilho do convite (anexo 1): offset em dias antes do EVENTO com data
+  // calculada; "Editar data" troca para data manual (offset vira null).
   const [conviteData, setConviteData] = useState(tarefa?.conviteData ?? "");
+  const [conviteOffset, setConviteOffset] = useState<number>(
+    tarefa?.conviteOffsetDias ?? 21
+  );
+  const [modoDataManual, setModoDataManual] = useState<boolean>(
+    Boolean(tarefa && tarefa.conviteOffsetDias === null && tarefa.conviteData)
+  );
+  const [prazoDias, setPrazoDias] = useState<number>(
+    tarefa?.prazoRespostaDias ?? 5
+  );
+  const [reenvioHoras, setReenvioHoras] = useState<number>(
+    tarefa?.reenvioHoras ?? 48
+  );
   const [autoAgendar, setAutoAgendar] = useState(tarefa?.autoAgendar ?? false);
   const [duracaoMin, setDuracaoMin] = useState(tarefa?.duracaoMin ?? 60);
   const [avisoDisparo, setAvisoDisparo] = useState<string | null>(null);
+
+  // data calculada = data do evento − offset (nunca no passado)
+  const conviteCalculada = (() => {
+    if (!dataEvento || !Number.isFinite(conviteOffset)) return null;
+    const d = new Date(`${dataEvento}T00:00:00`);
+    d.setDate(d.getDate() - conviteOffset);
+    const hoje = new Date(new Date().toDateString());
+    const alvo = d < hoje ? hoje : d;
+    return `${alvo.getFullYear()}-${String(alvo.getMonth() + 1).padStart(2, "0")}-${String(alvo.getDate()).padStart(2, "0")}`;
+  })();
+  const conviteEfetiva = modoDataManual ? conviteData || null : conviteCalculada;
   const [novoPasso, setNovoPasso] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [pend, start] = useTransition();
@@ -787,7 +830,10 @@ function TarefaDrawer({
       supplierId: supplierId || null,
       local,
       valor: valor.trim() === "" ? null : Number(valor.replace(/\./g, "").replace(",", ".")),
-      conviteData: conviteData || null,
+      conviteData: conviteEfetiva,
+      conviteOffsetDias: modoDataManual ? null : conviteOffset,
+      prazoRespostaDias: prazoDias,
+      reenvioHoras,
       categoria: categoria || "geral",
       autoAgendar,
       duracaoMin,
@@ -1017,42 +1063,201 @@ function TarefaDrawer({
                   label="Agendamento automático"
                 />
               </div>
-              <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <TextField
-                    label="Data do convite"
-                    type="date"
-                    mono
-                    value={conviteData}
-                    onChange={(e) => setConviteData(e.target.value)}
-                  />
-                  <Select
-                    label="Duração"
-                    value={String(duracaoMin)}
-                    onChange={(e) => setDuracaoMin(Number(e.target.value))}
+              <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 12 }}>
+                {/* SUGESTÃO PENDENTE — a bola está com você */}
+                {tarefa?.convite?.status === "sugerido" && tarefa.convite.sugestaoData && (
+                  <div
+                    style={{
+                      border: "1px solid var(--state-wait)", background: "var(--state-wait-bg)",
+                      borderRadius: "var(--r-md)", padding: "10px 12px",
+                    }}
                   >
-                    {[30, 45, 60, 90, 120].map((d) => (
-                      <option key={d} value={d}>{d} min</option>
-                    ))}
-                  </Select>
-                </div>
-                {dueDate && conviteData && conviteData >= dueDate && (
-                  <p style={{ margin: 0, fontSize: 11.5, color: "var(--state-wait)" }}>
-                    O convite está no dia do vencimento ou depois — o normal é sair antes.
-                  </p>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--text-strong)" }}>
+                      {tarefa.supplierNome ?? "Fornecedor"} sugeriu outro horário
+                    </p>
+                    <p className="mono" style={{ margin: "3px 0 0", fontFamily: "var(--font-mono)", fontSize: 12.5, color: "var(--text-body)" }}>
+                      {dataBR(tarefa.convite.sugestaoData)} às {tarefa.convite.sugestaoHora}
+                    </p>
+                    <div style={{ display: "flex", gap: 8, marginTop: 9 }}>
+                      <Button
+                        size="sm"
+                        disabled={pend}
+                        onClick={() => {
+                          setAvisoDisparo(null);
+                          start(async () => {
+                            const r = await aprovarSugestao(eventId, tarefa.convite!.id);
+                            if ("error" in r) setAvisoDisparo(r.error);
+                            else {
+                              setAvisoDisparo("Aprovado — está na Agenda e o fornecedor foi avisado.");
+                              router.refresh();
+                            }
+                          });
+                        }}
+                      >
+                        Aprovar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={pend}
+                        onClick={() => {
+                          setAvisoDisparo(null);
+                          start(async () => {
+                            const r = await recusarSugestao(eventId, tarefa.convite!.id);
+                            if ("error" in r) setAvisoDisparo(r.error);
+                            else {
+                              setAvisoDisparo("Recusado — o fornecedor foi avisado; combine direto com ele.");
+                              router.refresh();
+                            }
+                          });
+                        }}
+                      >
+                        Recusar
+                      </Button>
+                    </div>
+                  </div>
                 )}
-                <p style={{ margin: 0, fontSize: 12.5, color: "var(--text-body)" }}>
-                  Prazo pro fornecedor: <b className="mono" style={{ fontFamily: "var(--font-mono)" }}>5</b> dias
-                  · reenvio em <b className="mono" style={{ fontFamily: "var(--font-mono)" }}>48h</b>
-                  · sem resposta, volta pro manual e você é avisada
-                </p>
 
+                {/* QUANDO DISPARAR O CONVITE (anexo 1) */}
+                <div
+                  style={{
+                    borderLeft: "3px solid var(--accent)", background: "var(--surface-sunken)",
+                    borderRadius: "var(--r-md)", padding: "11px 13px",
+                    display: "flex", flexDirection: "column", gap: 10,
+                  }}
+                >
+                  <p className="mono" style={{ margin: 0, fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                    Quando disparar o convite
+                  </p>
+
+                  {modoDataManual ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", fontSize: 13 }}>
+                      <span>Data do convite:</span>
+                      <input
+                        type="date"
+                        value={conviteData}
+                        onChange={(e) => setConviteData(e.target.value)}
+                        style={{
+                          border: "1px solid var(--border-hairline)", borderRadius: "var(--r-sm)",
+                          padding: "5px 8px", fontFamily: "var(--font-mono)", fontSize: 12.5,
+                          background: "var(--surface-card)", outline: "none",
+                        }}
+                      />
+                      <button
+                        onClick={() => setModoDataManual(false)}
+                        style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--accent)", fontSize: 12, fontWeight: 600, padding: 0 }}
+                      >
+                        Usar dias antes do evento
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 13 }}>
+                      <span>Quando disparar convite:</span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={365}
+                        value={conviteOffset}
+                        onChange={(e) => setConviteOffset(Number(e.target.value))}
+                        style={{
+                          width: 58, textAlign: "center",
+                          border: "1px solid var(--border-hairline)", borderRadius: "var(--r-sm)",
+                          padding: "5px 4px", fontFamily: "var(--font-mono)", fontSize: 12.5,
+                          background: "var(--surface-card)", outline: "none",
+                        }}
+                      />
+                      <span>dias antes do evento →</span>
+                      {conviteCalculada ? (
+                        <>
+                          <b className="mono" style={{ fontFamily: "var(--font-mono)", fontSize: 12.5, color: "var(--accent)" }}>
+                            Calculado: {dataBR(conviteCalculada)}
+                          </b>
+                          {dataEvento && (
+                            <span className="mono" style={{ fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--text-faint)" }}>
+                              (base {dataBR(dataEvento)})
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span style={{ fontSize: 12, color: "var(--state-wait)" }}>
+                          defina a data do evento
+                        </span>
+                      )}
+                      <button
+                        onClick={() => {
+                          setConviteData(conviteCalculada ?? "");
+                          setModoDataManual(true);
+                        }}
+                        style={{
+                          border: "none", cursor: "pointer", borderRadius: "var(--r-pill)",
+                          background: "var(--text-strong)", color: "#fff",
+                          fontSize: 11, fontWeight: 600, padding: "4px 10px",
+                        }}
+                      >
+                        Editar data
+                      </button>
+                    </div>
+                  )}
+
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 13 }}>
+                    <span>Prazo pro fornecedor escolher:</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={30}
+                      value={prazoDias}
+                      onChange={(e) => setPrazoDias(Number(e.target.value))}
+                      style={{
+                        width: 48, textAlign: "center",
+                        border: "1px solid var(--border-hairline)", borderRadius: "var(--r-sm)",
+                        padding: "5px 4px", fontFamily: "var(--font-mono)", fontSize: 12.5,
+                        background: "var(--surface-card)", outline: "none",
+                      }}
+                    />
+                    <span>dias</span>
+                    <span style={{ color: "var(--text-faint)" }}>·</span>
+                    <span>Se não responder, reenviar em:</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={168}
+                      value={reenvioHoras}
+                      onChange={(e) => setReenvioHoras(Number(e.target.value))}
+                      style={{
+                        width: 48, textAlign: "center",
+                        border: "1px solid var(--border-hairline)", borderRadius: "var(--r-sm)",
+                        padding: "5px 4px", fontFamily: "var(--font-mono)", fontSize: 12.5,
+                        background: "var(--surface-card)", outline: "none",
+                      }}
+                    />
+                    <span>h</span>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <Select
+                      label="Duração da reunião"
+                      value={String(duracaoMin)}
+                      onChange={(e) => setDuracaoMin(Number(e.target.value))}
+                      style={{ height: 32, fontSize: 12.5, width: 110 }}
+                    >
+                      {[30, 45, 60, 90, 120].map((d) => (
+                        <option key={d} value={d}>{d} min</option>
+                      ))}
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Disparar agora + status */}
                 {!nova && (
                   <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                     <Button
-                      variant="ghost"
+                      variant="secondary"
                       size="sm"
-                      disabled={pend || tarefa?.convite?.status === "respondido"}
+                      disabled={
+                        pend ||
+                        tarefa?.convite?.status === "respondido" ||
+                        tarefa?.convite?.status === "sugerido"
+                      }
                       onClick={() => {
                         setAvisoDisparo(null);
                         start(async () => {
@@ -1067,27 +1272,45 @@ function TarefaDrawer({
                     >
                       ⚡ Disparar agora manualmente
                     </Button>
-                    {tarefa?.convite && (
+                    {tarefa?.convite ? (
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: tarefa.convite.status === "respondido" ? "var(--salvia-600)" : tarefa.convite.status === "expirado" ? "var(--state-late)" : "var(--state-wait)" }}>
                         <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor" }} />
                         {tarefa.convite.status === "respondido"
                           ? "horário escolhido — está na Agenda"
-                          : tarefa.convite.status === "expirado"
-                            ? "expirou sem resposta"
-                            : `aguardando resposta (${tarefa.convite.status === "reenviado" ? "reenviado" : "enviado"})`}
+                          : tarefa.convite.status === "sugerido"
+                            ? "sugestão aguardando você"
+                            : tarefa.convite.status === "expirado"
+                              ? "expirou sem resposta — agende manualmente"
+                              : `aguardando resposta (${tarefa.convite.status === "reenviado" ? "reenviado" : "enviado"})`}
                       </span>
+                    ) : (
+                      autoAgendar &&
+                      conviteEfetiva && (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--salvia-600)" }}>
+                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor" }} />
+                          Status: Agendado para {dataBR(conviteEfetiva)}
+                        </span>
+                      )
                     )}
                   </div>
                 )}
                 {avisoDisparo && (
-                  <p style={{ margin: 0, fontSize: 12, color: avisoDisparo.startsWith("Convite") ? "var(--state-ok)" : "var(--state-late)" }}>
+                  <p style={{ margin: 0, fontSize: 12, color: /enviado|Aprovado|Recusado/.test(avisoDisparo) ? "var(--state-ok)" : "var(--state-late)" }}>
                     {avisoDisparo}
                   </p>
                 )}
-                <p className="mono" style={{ margin: 0, fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--text-faint)", background: "var(--surface-sunken)", borderRadius: "var(--r-md)", padding: "7px 9px" }}>
-                  os horários oferecidos = sua grade de disponibilidade menos o
-                  que já está na Agenda; a vaga é conferida de novo na escolha.
-                </p>
+
+                {/* nota D-x (anexo 1) */}
+                {dataEvento && dueDate && (
+                  <p className="mono" style={{ margin: 0, fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--text-faint)", background: "var(--surface-sunken)", borderRadius: "var(--r-md)", padding: "7px 9px" }}>
+                    Tarefa será realizada em D-{diasEntre(dueDate, dataEvento)}, mas
+                    convite sai em D-
+                    {modoDataManual && conviteData
+                      ? diasEntre(conviteData, dataEvento)
+                      : conviteOffset}{" "}
+                    para garantir agenda do fornecedor.
+                  </p>
+                )}
               </div>
             </div>
           )}

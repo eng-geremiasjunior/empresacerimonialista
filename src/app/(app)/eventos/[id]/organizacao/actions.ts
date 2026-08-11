@@ -6,7 +6,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { enviarConfirmacaoCompromissoWhatsapp } from "@/lib/whatsapp";
+import {
+  enviarConfirmacaoCompromissoWhatsapp,
+  enviarMensagemWhatsapp,
+} from "@/lib/whatsapp";
 import { enviarConviteAgendamento } from "@/lib/agendamento";
 
 export type AcaoResult = { error: string } | { success: true };
@@ -68,6 +71,11 @@ export type TarefaForm = {
   local?: string | null;
   valor?: number | null;
   conviteData?: string | null;
+  // offset em dias antes do EVENTO (anexo 1: "disparar [21] dias antes");
+  // null = data manual ("Editar data"), que segue conviteData.
+  conviteOffsetDias?: number | null;
+  prazoRespostaDias?: number;
+  reenvioHoras?: number;
   categoria?: string | null;
   autoAgendar?: boolean;
   duracaoMin?: number;
@@ -92,6 +100,15 @@ function tarefaRow(form: TarefaForm) {
   if (form.valor !== undefined)
     row.valor = form.valor === null || Number.isNaN(form.valor) ? null : form.valor;
   if (form.conviteData !== undefined) row.convite_data = form.conviteData || null;
+  if (form.conviteOffsetDias !== undefined)
+    row.convite_offset_dias =
+      form.conviteOffsetDias === null || Number.isNaN(form.conviteOffsetDias)
+        ? null
+        : form.conviteOffsetDias;
+  if (form.prazoRespostaDias !== undefined && Number.isFinite(form.prazoRespostaDias))
+    row.prazo_resposta_dias = Math.min(30, Math.max(1, form.prazoRespostaDias));
+  if (form.reenvioHoras !== undefined && Number.isFinite(form.reenvioHoras))
+    row.reenvio_horas = Math.min(168, Math.max(1, form.reenvioHoras));
   if (form.categoria !== undefined) row.category = form.categoria || "geral";
   if (form.autoAgendar !== undefined) row.auto_agendar = form.autoAgendar;
   if (form.duracaoMin !== undefined && Number.isFinite(form.duracaoMin))
@@ -185,6 +202,119 @@ export async function dispararConvite(
   if (!r.ok) return { error: r.motivo };
 
   revalidatePath(`/eventos/${eventId}/organizacao`);
+  return { success: true };
+}
+
+// Sugestão de horário do fornecedor ("nenhum serve"): a cerimonialista
+// aprova (vira compromisso confirmado, com a vaga revalidada) ou recusa
+// (convite encerra e o fornecedor é avisado — ela combina manualmente).
+export async function aprovarSugestao(
+  eventId: string,
+  conviteId: string
+): Promise<AcaoResult> {
+  const supabase = createClient();
+
+  const { data: conv } = await supabase
+    .from("agendamento_convite")
+    .select(
+      "id, status, sugestao_data, sugestao_hora, duracao_min, task_id, supplier_id, tasks(title, local, evento_decisao_id), suppliers(name, whatsapp, phone), events!inner(cerimonialista_id)"
+    )
+    .eq("id", conviteId)
+    .eq("event_id", eventId)
+    .single();
+
+  if (!conv || conv.status !== "sugerido" || !conv.sugestao_data || !conv.sugestao_hora) {
+    return { error: "Não há sugestão pendente neste convite." };
+  }
+
+  const ev = Array.isArray(conv.events) ? conv.events[0] : conv.events;
+  const task = Array.isArray(conv.tasks) ? conv.tasks[0] : conv.tasks;
+  const sup = Array.isArray(conv.suppliers) ? conv.suppliers[0] : conv.suppliers;
+
+  // Vaga revalidada também aqui: a sugestão pode colidir com a Agenda.
+  const { data: ocupado } = await supabase.rpc("horario_ocupado", {
+    p_user_id: ev!.cerimonialista_id,
+    p_data: conv.sugestao_data,
+    p_hora: conv.sugestao_hora,
+    p_duracao_min: conv.duracao_min,
+  });
+  if (ocupado) {
+    return { error: "Esse horário colide com um compromisso seu. Recuse e combine outro." };
+  }
+
+  const { data: comp, error: eComp } = await supabase
+    .from("compromisso")
+    .insert({
+      event_id: eventId,
+      titulo: task?.title ?? "Reunião com fornecedor",
+      data: conv.sugestao_data,
+      hora: conv.sugestao_hora,
+      local: task?.local ?? null,
+      supplier_id: conv.supplier_id,
+      task_id: conv.task_id,
+      evento_decisao_id: task?.evento_decisao_id ?? null,
+      estado: "confirmado",
+      duracao_min: conv.duracao_min,
+      confirmado_em: new Date().toISOString(),
+    })
+    .select("id")
+    .single();
+  if (eComp || !comp) return { error: "Não foi possível criar o compromisso." };
+
+  const { error: eConv } = await supabase
+    .from("agendamento_convite")
+    .update({ status: "respondido", compromisso_id: comp.id })
+    .eq("id", conviteId);
+  if (eConv) return { error: "Compromisso criado, mas o convite não fechou." };
+
+  // avisa o fornecedor no canal que ele já usou
+  const tel = sup?.whatsapp || sup?.phone;
+  if (tel) {
+    const [a, m, d] = conv.sugestao_data.split("-");
+    await enviarMensagemWhatsapp(
+      tel,
+      `Confirmado! ${d}/${m}/${a} às ${String(conv.sugestao_hora).slice(0, 5)}. Obrigado!`
+    );
+  }
+
+  revalidatePath(`/eventos/${eventId}/organizacao`);
+  revalidatePath("/agenda");
+  return { success: true };
+}
+
+export async function recusarSugestao(
+  eventId: string,
+  conviteId: string
+): Promise<AcaoResult> {
+  const supabase = createClient();
+
+  const { data: conv } = await supabase
+    .from("agendamento_convite")
+    .select("id, status, suppliers(name, whatsapp, phone)")
+    .eq("id", conviteId)
+    .eq("event_id", eventId)
+    .single();
+  if (!conv || conv.status !== "sugerido") {
+    return { error: "Não há sugestão pendente neste convite." };
+  }
+
+  const { error } = await supabase
+    .from("agendamento_convite")
+    .update({ status: "cancelado" })
+    .eq("id", conviteId);
+  if (error) return { error: "Não foi possível recusar." };
+
+  const sup = Array.isArray(conv.suppliers) ? conv.suppliers[0] : conv.suppliers;
+  const tel = sup?.whatsapp || sup?.phone;
+  if (tel) {
+    await enviarMensagemWhatsapp(
+      tel,
+      "Esse horário não vai dar. A cerimonialista entra em contato para combinar."
+    );
+  }
+
+  revalidatePath(`/eventos/${eventId}/organizacao`);
+  revalidatePath("/agenda");
   return { success: true };
 }
 

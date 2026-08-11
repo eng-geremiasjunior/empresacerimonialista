@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
       .from("agendamento_convite")
       .select("id, status")
       .eq("task_id", t.id)
-      .in("status", ["enviado", "reenviado", "respondido"])
+      .in("status", ["enviado", "reenviado", "respondido", "sugerido"])
       .maybeSingle();
     if (existente) continue;
 

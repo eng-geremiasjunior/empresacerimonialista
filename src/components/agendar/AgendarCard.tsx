@@ -27,12 +27,39 @@ export function AgendarCard({
   const [dados, setDados] = useState(initial);
   const [escolhendo, setEscolhendo] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  // "nenhum horário serve": sugestão estruturada (dia + hora)
+  const [sugerindo, setSugerindo] = useState(false);
+  const [sugData, setSugData] = useState("");
+  const [sugHora, setSugHora] = useState("");
+  const [enviandoSug, setEnviandoSug] = useState(false);
 
   const expirado =
     dados.status === "expirado" ||
     dados.status === "cancelado" ||
-    new Date(dados.prazo_ate).getTime() < Date.now();
+    (dados.status !== "respondido" &&
+      dados.status !== "sugerido" &&
+      new Date(dados.prazo_ate).getTime() < Date.now());
   const respondido = dados.status === "respondido";
+  const sugerido = dados.status === "sugerido";
+
+  async function sugerir() {
+    if (!sugData || !sugHora) return;
+    setEnviandoSug(true);
+    setErro(null);
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc("sugerir_horario_convite", {
+      p_hash: hash,
+      p_data: sugData,
+      p_hora: sugHora,
+    });
+    setEnviandoSug(false);
+    const resp = data as { success?: boolean; error?: string } | null;
+    if (error || resp?.error) {
+      setErro(resp?.error ?? "não foi possível enviar a sugestão.");
+      return;
+    }
+    setDados({ ...dados, status: "sugerido", sugestao: { data: sugData, hora: sugHora } });
+  }
 
   async function escolher(slotId: string) {
     setEscolhendo(slotId);
@@ -104,6 +131,15 @@ export function AgendarCard({
               A cerimonialista já foi avisada. Até lá!
             </p>
           </div>
+        ) : sugerido && dados.sugestao ? (
+          <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-center">
+            <p className="font-semibold text-amber-800">Sugestão enviada</p>
+            <p className="mt-1 text-sm text-amber-700">
+              {dataLonga(dados.sugestao.data)} às{" "}
+              {String(dados.sugestao.hora).slice(0, 5)} — aguardando a
+              cerimonialista aprovar. Você recebe a resposta no WhatsApp.
+            </p>
+          </div>
         ) : expirado ? (
           <div className="mt-6 rounded-xl border border-stone-200 bg-stone-50 p-4 text-center">
             <p className="font-medium text-stone-700">Este convite expirou</p>
@@ -141,6 +177,54 @@ export function AgendarCard({
                   </button>
                 ))}
               </div>
+            )}
+
+            {/* nenhum horário serve → sugestão estruturada (dia + hora) */}
+            {sugerindo ? (
+              <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wider text-stone-500">
+                  Sugerir outro horário
+                </p>
+                <div className="mt-2 flex gap-2">
+                  <input
+                    type="date"
+                    value={sugData}
+                    onChange={(e) => setSugData(e.target.value)}
+                    className="min-w-0 flex-1 rounded-lg border border-stone-300 px-2 py-2 font-mono text-sm"
+                  />
+                  <input
+                    type="time"
+                    value={sugHora}
+                    onChange={(e) => setSugHora(e.target.value)}
+                    className="rounded-lg border border-stone-300 px-2 py-2 font-mono text-sm"
+                  />
+                </div>
+                <div className="mt-2 flex gap-2">
+                  <button
+                    onClick={sugerir}
+                    disabled={enviandoSug || !sugData || !sugHora}
+                    className="flex-1 rounded-lg bg-stone-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                  >
+                    {enviandoSug ? "Enviando…" : "Enviar sugestão"}
+                  </button>
+                  <button
+                    onClick={() => setSugerindo(false)}
+                    className="rounded-lg px-3 py-2 text-sm text-stone-500"
+                  >
+                    Voltar
+                  </button>
+                </div>
+                <p className="mt-2 text-[11px] text-stone-400">
+                  A cerimonialista aprova ou combina outro com você.
+                </p>
+              </div>
+            ) : (
+              <button
+                onClick={() => setSugerindo(true)}
+                className="mt-4 w-full rounded-lg border border-dashed border-stone-300 px-3 py-2 text-sm text-stone-500 hover:bg-stone-50"
+              >
+                Nenhum horário serve? Sugerir outro
+              </button>
             )}
 
             {erro && (

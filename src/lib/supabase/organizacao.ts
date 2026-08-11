@@ -36,15 +36,28 @@ export type Tarefa = {
   supplierNome: string | null;
   local: string | null;
   valor: number | null;
-  // A SEGUNDA data: quando o convite ao fornecedor sai (Secretário)
+  // A SEGUNDA data: quando o convite ao fornecedor sai (Secretário).
+  // offset = "N dias antes do evento"; null = data manual (Editar data).
   conviteData: string | null;
+  conviteOffsetDias: number | null;
+  prazoRespostaDias: number;
+  reenvioHoras: number;
   autoAgendar: boolean;
   duracaoMin: number;
   // convite mais recente (se houver): estado do disparo
   convite: {
-    status: "enviado" | "reenviado" | "respondido" | "expirado" | "cancelado";
+    id: string;
+    status:
+      | "enviado"
+      | "reenviado"
+      | "respondido"
+      | "expirado"
+      | "cancelado"
+      | "sugerido";
     enviadoEm: string;
     prazoAte: string;
+    sugestaoData: string | null;
+    sugestaoHora: string | null;
   } | null;
   checklist: ChecklistItem[];
   criadaEm: string | null;
@@ -56,7 +69,13 @@ export type Disparo = {
   tarefa: string;
   taskId: string;
   fornecedor: string | null;
-  status: "agendado" | "enviado" | "reenviado" | "respondido" | "expirado";
+  status:
+    | "agendado"
+    | "enviado"
+    | "reenviado"
+    | "respondido"
+    | "expirado"
+    | "sugerido";
   // data de referência: convite_data (agendado) ou enviado_em (demais)
   data: string;
 };

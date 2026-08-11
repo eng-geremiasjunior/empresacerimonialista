@@ -8,13 +8,20 @@ import { AgendarCard } from "@/components/agendar/AgendarCard";
 export const dynamic = "force-dynamic";
 
 export type ConviteData = {
-  status: "enviado" | "reenviado" | "respondido" | "expirado" | "cancelado";
+  status:
+    | "enviado"
+    | "reenviado"
+    | "respondido"
+    | "expirado"
+    | "cancelado"
+    | "sugerido";
   tarefa: string;
   duracao_min: number;
   supplier_name: string;
   event_label: string;
   event_date: string | null;
   prazo_ate: string;
+  sugestao: { data: string; hora: string } | null;
   compromisso: { data: string; hora: string; local: string | null } | null;
   slots: { id: string; data: string; hora: string }[];
 };
