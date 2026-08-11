@@ -187,7 +187,7 @@ export async function sugerirDistribuicao(
     ? Number(verbaRes.data.valor_numero)
     : null;
   if (!verba || verba <= 0) {
-    return { error: "Preencha a verba total (em Levantar o budget) antes." };
+    return { error: "Informe a verba total primeiro." };
   }
 
   // Reserva de imprevistos: se ainda não definida, a sugestão propõe 10%

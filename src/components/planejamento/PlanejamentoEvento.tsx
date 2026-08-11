@@ -138,6 +138,30 @@ export function PlanejamentoEvento({
     refresh();
   }
 
+  // Grava um campo tipado achando-o pelo código na árvore (verba_total,
+  // reserva_pct, escala, cenario) — a faixa de contexto edita esses valores
+  // sem a cerimonialista ter de abrir a decisão de origem.
+  const campoPorCodigo = useCallback(
+    (codigo: string) =>
+      plano.objetivos
+        .flatMap((o) => o.decisoes)
+        .flatMap((d) => d.campos)
+        .find((c) => c.codigo === codigo) ?? null,
+    [plano.objetivos]
+  );
+
+  function salvarCampoPorCodigo(
+    codigo: string,
+    valor: string | number | boolean | null
+  ) {
+    const campo = campoPorCodigo(codigo);
+    if (!campo) return;
+    startTransition(async () => {
+      await salvarCampo(eventId, campo.id, campo.tipo, campo.codigo, valor);
+      router.refresh();
+    });
+  }
+
   function irParaObjetivo(objetivoId: string) {
     setMapaAberto(false);
     trocarModo("foco");
@@ -261,18 +285,11 @@ export function PlanejamentoEvento({
         onArquetipo={(eixo, valor) => {
           // grava pelo campo tipado da decisão de estrutura — o action
           // reflete em events e o banco aplica os deltas
-          const campo = plano.objetivos
-            .flatMap((o) => o.decisoes)
-            .flatMap((d) => d.campos)
-            .find((c) => c.codigo === eixo);
-          if (campo) {
-            startTransition(async () => {
-              await salvarCampo(eventId, campo.id, "escolha", eixo, valor);
-              setAvisoFechado(false);
-              router.refresh();
-            });
-          }
+          setAvisoFechado(false);
+          salvarCampoPorCodigo(eixo, valor);
         }}
+        onSalvarVerba={(valor) => salvarCampoPorCodigo("verba_total", valor)}
+        onSalvarReserva={(pct) => salvarCampoPorCodigo("reserva_pct", pct)}
         onSugerir={() => {
           setSugerindo(true);
           setErroSugerir(null);

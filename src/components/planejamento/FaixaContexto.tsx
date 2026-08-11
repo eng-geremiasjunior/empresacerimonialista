@@ -125,6 +125,190 @@ function ChipArquetipo({
 }
 
 // ------------------------------------------------------------------
+// Verba total editável no lugar (é a cerimonialista quem informa; o
+// portal da cliente entra depois). Sem copy explicando de onde vem: o
+// número é o próprio controle.
+// ------------------------------------------------------------------
+
+function VerbaEditavel({
+  total,
+  onSalvar,
+  compacta,
+}: {
+  total: number | null;
+  onSalvar: (valor: number | null) => void;
+  compacta?: boolean;
+}) {
+  const [editando, setEditando] = useState(false);
+  const [v, setV] = useState(total !== null ? String(total) : "");
+  useEffect(() => setV(total !== null ? String(total) : ""), [total]);
+
+  function confirmar() {
+    setEditando(false);
+    const num = v.trim() === "" ? null : Number(v.replace(/\./g, "").replace(",", "."));
+    const novo = num !== null && !Number.isNaN(num) ? num : null;
+    if (novo !== total) onSalvar(novo);
+  }
+
+  if (editando) {
+    return (
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+        <span style={monoLabel}>verba · R$</span>
+        <input
+          autoFocus
+          type="text"
+          inputMode="numeric"
+          value={v}
+          onChange={(e) => setV(e.target.value.replace(/[^\d.,]/g, ""))}
+          onBlur={confirmar}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+            if (e.key === "Escape") {
+              setV(total !== null ? String(total) : "");
+              setEditando(false);
+            }
+          }}
+          placeholder="0"
+          style={{
+            width: 120,
+            height: 26,
+            border: `1.5px solid ${C.ameixa}`,
+            borderRadius: 6,
+            padding: "0 8px",
+            fontFamily: F_MONO,
+            fontSize: 12,
+            color: C.tinta,
+            outline: "none",
+            boxShadow: "0 0 0 3px rgba(110,63,95,.18)",
+          }}
+        />
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setEditando(true)}
+      title="Editar a verba total"
+      style={{
+        border: "none",
+        background: "none",
+        padding: 0,
+        cursor: "pointer",
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+      }}
+    >
+      <span style={monoLabel}>
+        verba{total !== null ? ` · ${brl(total)}` : ""}
+      </span>
+      {total === null && (
+        <span
+          style={{
+            fontFamily: F_UI,
+            fontSize: compacta ? 12 : 13,
+            color: C.ameixa,
+            textDecoration: "underline",
+            textUnderlineOffset: 2,
+          }}
+        >
+          informar verba
+        </span>
+      )}
+      {total !== null && (
+        <span style={{ fontFamily: F_MONO, fontSize: 10, color: C.fantasma }}>
+          editar
+        </span>
+      )}
+    </button>
+  );
+}
+
+const valorGrande: React.CSSProperties = {
+  fontFamily: F_TITLE,
+  fontWeight: 600,
+  fontSize: 18,
+  lineHeight: "24px",
+  letterSpacing: "-0.02em",
+  color: C.tinta,
+};
+
+// A reserva de imprevistos é um % da verba (não é objetivo — é a fatia que
+// evita o efeito cascata). Editável no mesmo lugar em que é lida.
+function ReservaEditavel({
+  pct,
+  valor,
+  onSalvar,
+}: {
+  pct: number | null;
+  valor: number;
+  onSalvar: (pct: number | null) => void;
+}) {
+  const [editando, setEditando] = useState(false);
+  const [v, setV] = useState(pct !== null ? String(pct) : "");
+  useEffect(() => setV(pct !== null ? String(pct) : ""), [pct]);
+
+  if (editando) {
+    return (
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+        <input
+          autoFocus
+          type="text"
+          inputMode="numeric"
+          value={v}
+          onChange={(e) => setV(e.target.value.replace(/[^\d]/g, ""))}
+          onBlur={() => {
+            setEditando(false);
+            const n = v.trim() === "" ? null : Number(v);
+            const novo = n !== null && !Number.isNaN(n) ? Math.min(100, n) : null;
+            if (novo !== pct) onSalvar(novo);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+            if (e.key === "Escape") {
+              setV(pct !== null ? String(pct) : "");
+              setEditando(false);
+            }
+          }}
+          style={{
+            width: 54,
+            height: 26,
+            border: `1.5px solid ${C.ameixa}`,
+            borderRadius: 6,
+            padding: "0 8px",
+            fontFamily: F_MONO,
+            fontSize: 12,
+            color: C.tinta,
+            outline: "none",
+            boxShadow: "0 0 0 3px rgba(110,63,95,.18)",
+          }}
+        />
+        <span style={{ fontFamily: F_MONO, fontSize: 12, color: C.meta }}>%</span>
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setEditando(true)}
+      title="Editar a reserva para imprevistos"
+      style={{
+        border: "none",
+        background: "none",
+        padding: 0,
+        cursor: "pointer",
+        textAlign: "left",
+      }}
+    >
+      <span style={valorGrande}>{brl(valor)}</span>
+    </button>
+  );
+}
+
+// ------------------------------------------------------------------
 // Barra segmentada da verba: previsto (ameixa) + reserva (ameixa clara)
 // sobre o fundo (saldo livre)
 // ------------------------------------------------------------------
@@ -326,6 +510,8 @@ export function FaixaContexto({
   compacta,
   avisoVisivel,
   onArquetipo,
+  onSalvarVerba,
+  onSalvarReserva,
   onSugerir,
   sugerindo,
   erroSugerir,
@@ -341,6 +527,9 @@ export function FaixaContexto({
   compacta: boolean;
   avisoVisivel: boolean;
   onArquetipo: (eixo: "escala" | "cenario", valor: string) => void;
+  /** A cerimonialista informa a verba aqui mesmo. */
+  onSalvarVerba: (valor: number | null) => void;
+  onSalvarReserva: (pct: number | null) => void;
   onSugerir: () => void;
   sugerindo: boolean;
   erroSugerir: string | null;
@@ -473,7 +662,7 @@ export function FaixaContexto({
             flexWrap: "wrap",
           }}
         >
-          <span style={monoLabel}>verba</span>
+          <VerbaEditavel total={verba.total} onSalvar={onSalvarVerba} compacta />
           <BarraVerba verba={verba} altura={10} largura={190} />
           <span
             style={{
@@ -542,49 +731,39 @@ export function FaixaContexto({
             gap: 11,
           }}
         >
-          <span style={monoLabel}>
-            verba{verba.total !== null ? ` · ${brl(verba.total)}` : ""}
-          </span>
+          <VerbaEditavel total={verba.total} onSalvar={onSalvarVerba} />
           <BarraVerba verba={verba} altura={14} />
           <div style={{ display: "flex", gap: 26, flexWrap: "wrap" }}>
-            {[
-              { r: "previsto", v: previstoSemReserva },
-              { r: "reserva", v: verba.reservaValor },
-              {
-                r: "saldo livre",
-                v: verba.saldo,
-              },
-            ].map((n) => (
-              <div key={n.r}>
-                <div style={{ ...monoLabel, color: C.meta }}>{n.r}</div>
-                <div
-                  style={{
-                    fontFamily: F_TITLE,
-                    fontWeight: 600,
-                    fontSize: 18,
-                    lineHeight: "24px",
-                    letterSpacing: "-0.02em",
-                    color: C.tinta,
-                  }}
-                >
-                  {n.v !== null ? brl(n.v) : "—"}
-                </div>
+            <div>
+              <div style={{ ...monoLabel, color: C.meta }}>previsto</div>
+              <div style={valorGrande}>{brl(previstoSemReserva)}</div>
+            </div>
+            <div>
+              <div style={{ ...monoLabel, color: C.meta }}>
+                reserva
+                {verba.reservaPct !== null ? ` · ${verba.reservaPct}%` : ""}
               </div>
-            ))}
+              <ReservaEditavel
+                pct={verba.reservaPct}
+                valor={verba.reservaValor}
+                onSalvar={onSalvarReserva}
+              />
+            </div>
+            <div>
+              <div style={{ ...monoLabel, color: C.meta }}>saldo livre</div>
+              <div
+                style={{
+                  ...valorGrande,
+                  color:
+                    verba.saldo !== null && verba.saldo < 0
+                      ? C.atrasadaFg
+                      : C.tinta,
+                }}
+              >
+                {verba.saldo !== null ? brl(verba.saldo) : "—"}
+              </div>
+            </div>
           </div>
-          {verba.total === null && (
-            <p
-              style={{
-                fontFamily: F_UI,
-                fontSize: 12,
-                lineHeight: "17px",
-                color: C.meta,
-              }}
-            >
-              A verba total vem da decisão “Levantar o budget”, em Estrutura e
-              datas.
-            </p>
-          )}
         </div>
 
         <div
