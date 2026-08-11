@@ -25,8 +25,10 @@ import type {
   FasesEvento,
 } from "@/lib/supabase/resumo-evento";
 
-const TEAL = "#0f9b84";
-const TRACK = "#e8e8e4";
+// Tokens do chrome do evento: no tema padrão é o teal de hoje; no tema
+// neutro do Planejamento vira a ameixa (um único destaque).
+const TEAL = "var(--ev-accent, #0f9b84)";
+const TRACK = "var(--ev-track, #e8e8e4)";
 
 function No({
   fase,
@@ -66,7 +68,7 @@ function No({
         ) : (
           <span
             className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-white text-xs font-bold"
-            style={{ color: iniciada ? TEAL : "#a2a6ad" }}
+            style={{ color: iniciada ? TEAL : "var(--ev-text-faint, #a2a6ad)" }}
           >
             {indice}
           </span>
@@ -75,7 +77,7 @@ function No({
 
       <div className="flex items-center gap-[7px]">
         <span
-          className={`text-sm ${ativa ? "font-bold text-[#1b1c1e]" : "font-semibold text-[#797e86]"}`}
+          className={`text-sm ${ativa ? "font-bold text-[color:var(--ev-text-strong)]" : "font-semibold text-[color:var(--ev-text-muted)]"}`}
         >
           {fase.rotulo}
         </span>
@@ -84,13 +86,13 @@ function No({
             {fase.pct}%
           </span>
         ) : (
-          <span className="text-[11.5px] font-semibold text-[#b3b7bd]">
+          <span className="text-[11.5px] font-semibold text-[color:var(--ev-text-faint)]">
             A iniciar
           </span>
         )}
       </div>
 
-      <span className="text-[11.5px] font-semibold text-[#797e86]">
+      <span className="text-[11.5px] font-semibold text-[color:var(--ev-text-muted)]">
         {fase.contagem}
       </span>
 
@@ -127,10 +129,10 @@ export function ProgressoEvento({
 
   const cor =
     saude.score >= 80
-      ? "text-emerald-600"
+      ? "var(--ev-ok, #059669)"
       : saude.score >= 50
-        ? "text-amber-600"
-        : "text-red-600";
+        ? "var(--ev-warn, #d97706)"
+        : "var(--ev-late, #dc2626)";
 
   function abrir(id: FaseId) {
     const q = new URLSearchParams(Array.from(params.entries()));
@@ -139,13 +141,16 @@ export function ProgressoEvento({
   }
 
   return (
-    <div className="grid gap-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:grid-cols-[auto,1fr] sm:items-center">
-      <div className="sm:border-r sm:border-gray-100 sm:pr-6">
-        <p className="text-sm text-gray-500">Progresso geral</p>
-        <p className={`text-4xl font-semibold tracking-tight ${cor}`}>
+    <div className="grid gap-6 rounded-2xl border border-[color:var(--ev-card-border-soft)] bg-[color:var(--ev-card-bg)] p-6 shadow-sm sm:grid-cols-[auto,1fr] sm:items-center">
+      <div className="sm:border-r sm:border-[color:var(--ev-card-border-soft)] sm:pr-6">
+        <p className="text-sm text-[color:var(--ev-text-muted)]">Progresso geral</p>
+        <p
+          className="text-4xl font-semibold tracking-tight"
+          style={{ color: cor }}
+        >
           {saude.score}%
         </p>
-        <p className="mt-0.5 text-sm text-gray-500">
+        <p className="mt-0.5 text-sm text-[color:var(--ev-text-muted)]">
           {saude.score >= 100
             ? "Todo em dia"
             : saude.score >= 80
@@ -182,7 +187,7 @@ export function ProgressoEvento({
           </div>
         </div>
 
-        <p className="mt-2 px-0.5 text-[11.5px] text-[#a2a6ad]">
+        <p className="mt-2 px-0.5 text-[11.5px] text-[color:var(--ev-text-faint)]">
           Clique em uma fase para navegar — você pode voltar ao Planejamento a
           qualquer momento sem perder o contexto.
         </p>

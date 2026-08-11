@@ -60,4 +60,73 @@
   --shadow-md: 0 4px 16px rgba(34, 30, 27, 0.07);
   --shadow-lg: 0 12px 40px rgba(34, 30, 27, 0.1);
   --ring-focus: 0 0 0 3px rgba(110, 63, 95, 0.16);
+
+  /* ============================================================
+     Chrome do evento (header, stepper, abas, Resumo do Copiloto).
+     Defaults = as cores de hoje — nada muda fora do tema neutro.
+     Sob body[data-tema="neutro"] (tela de Planejamento) os mesmos
+     componentes falam a língua neutra do handoff, sem reconstrução.
+     ============================================================ */
+  --ev-accent: #0f9b84;
+  --ev-accent-tint: #e7f4f1;
+  --ev-warn: #b07514;
+  --ev-warn-tint: #f8efdd;
+  --ev-track: #e8e8e4;
+  --ev-card-bg: #ffffff;
+  --ev-card-border: #e5e7eb;
+  --ev-card-border-soft: #f0f0ee;
+  --ev-text-strong: #1b1c1e;
+  --ev-text-body: #33373d;
+  --ev-text-muted: #797e86;
+  --ev-text-faint: #a2a6ad;
+  --ev-ok: #059669;
+  --ev-late: #dc2626;
+  /* CTA "Modo Evento" no dia do evento (hoje: indigo; neutro: ameixa) */
+  --ev-cta: #4f46e5;
+  --ev-cta-ring: #c7d2fe;
+  /* pílula de status do evento (orçamento/confirmado/concluído/cancelado) */
+  --ev-st-orcamento-bg: #fffbeb;
+  --ev-st-orcamento-fg: #b45309;
+  --ev-st-confirmado-bg: #ecfdf5;
+  --ev-st-confirmado-fg: #047857;
+  --ev-st-concluido-bg: #f0f9ff;
+  --ev-st-concluido-fg: #0369a1;
+  --ev-st-cancelado-bg: #fff1f2;
+  --ev-st-cancelado-fg: #be123c;
+}
+
+/* ============================================================
+   Tema neutro (Celebra Pro / handoff do Planejamento).
+   Profundidade em NEUTROS, não em matiz: canvas recuado #E4E5E7,
+   cartões brancos flutuando, um único destaque (ameixa). Cor só
+   com função semântica, no menor volume possível.
+   ============================================================ */
+body[data-tema="neutro"] {
+  background-color: #e4e5e7;
+
+  --ev-accent: #6e3f5f;
+  --ev-accent-tint: #f2f0f2;
+  --ev-warn: #8a7448;
+  --ev-warn-tint: #f1eee6;
+  --ev-track: #e4e6e8;
+  --ev-card-bg: #ffffff;
+  --ev-card-border: #a9aeb3;
+  --ev-card-border-soft: #dcdfe1;
+  --ev-text-strong: #23262a;
+  --ev-text-body: #3c4145;
+  --ev-text-muted: #5b6167;
+  --ev-text-faint: #8a9096;
+  --ev-ok: #6e7f63;
+  --ev-late: #96605a;
+  --ev-cta: #6e3f5f;
+  --ev-cta-ring: rgba(110, 63, 95, 0.25);
+  /* estados sem comemoração: decidido/concluído é neutro de propósito */
+  --ev-st-orcamento-bg: #f1eee6;
+  --ev-st-orcamento-fg: #8a7448;
+  --ev-st-confirmado-bg: #eff0f1;
+  --ev-st-confirmado-fg: #5b6167;
+  --ev-st-concluido-bg: #eff0f1;
+  --ev-st-concluido-fg: #5b6167;
+  --ev-st-cancelado-bg: #f1eae8;
+  --ev-st-cancelado-fg: #96605a;
 }

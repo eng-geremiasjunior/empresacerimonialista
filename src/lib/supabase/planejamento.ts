@@ -8,54 +8,20 @@
 import { differenceInCalendarDays } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 
+import {
+  valorDoCampo,
+  type Campo,
+  type TipoCampo,
+} from "@/lib/planejamento-shared";
+
+// Parte pura (tipos do campo + valorDoCampo) vive em planejamento-shared,
+// importável por componentes client. Re-exportada aqui para os consumidores
+// de servidor continuarem com um import só.
+export { valorDoCampo };
+export type { Campo, TipoCampo };
+
 export type EstadoDecisao = "pendente" | "decidida" | "nao_se_aplica";
 export type Responsavel = "noivos" | "cerimonialista" | "ambos";
-
-export type TipoCampo =
-  | "texto"
-  | "numero"
-  | "moeda"
-  | "sim_nao"
-  | "escolha"
-  | "data"
-  | "anexo"
-  | "fornecedor";
-
-export type Campo = {
-  id: string;
-  codigo: string;
-  label: string;
-  tipo: TipoCampo;
-  opcoes: string[] | null;
-  unidade: string | null;
-  ordem: number;
-  valorTexto: string | null;
-  valorNumero: number | null;
-  valorBool: boolean | null;
-  valorData: string | null;
-  valorOpcao: string | null;
-  valorSupplierId: string | null;
-};
-
-// O valor canônico do campo, pelo tipo. null = ainda não respondido.
-export function valorDoCampo(c: Campo): string | number | boolean | null {
-  switch (c.tipo) {
-    case "numero":
-    case "moeda":
-      return c.valorNumero;
-    case "sim_nao":
-      return c.valorBool;
-    case "data":
-      return c.valorData;
-    case "escolha":
-      return c.valorOpcao;
-    case "fornecedor":
-      return c.valorSupplierId;
-    default:
-      // texto e anexo (anexo guarda o caminho do Storage em valor_texto)
-      return c.valorTexto;
-  }
-}
 
 export type Decisao = {
   id: string;

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getPlanejamento } from "@/lib/supabase/planejamento";
 import { PlanejamentoEvento } from "@/components/planejamento/PlanejamentoEvento";
+import { TemaNeutro } from "@/components/planejamento/TemaNeutro";
 
 export default async function EventoPlanejamentoPage({
   params,
@@ -13,19 +14,36 @@ export default async function EventoPlanejamentoPage({
   const eventId = params.id;
 
   const [{ data: ev }, { data: sups }] = await Promise.all([
-    supabase.from("events").select("date").eq("id", eventId).single(),
+    // escala/cenario = arquétipo do evento (chips editáveis da faixa de
+    // contexto); a data alimenta os prazos relativos.
+    supabase
+      .from("events")
+      .select("date, escala, cenario, location, city, clients(name)")
+      .eq("id", eventId)
+      .single(),
     // para os campos tipo "fornecedor" das decisões de contratar
     supabase.from("suppliers").select("id, name").order("name"),
   ]);
 
   const planejamento = await getPlanejamento(eventId, ev?.date ?? null);
 
+  const cliente = (
+    ev as unknown as { clients: { name: string } | null } | null
+  )?.clients;
+
   return (
-    <PlanejamentoEvento
-      eventId={eventId}
-      inicial={planejamento}
-      suppliers={sups ?? []}
-      decisaoInicial={searchParams?.decisao ?? null}
-    />
+    <>
+      <TemaNeutro />
+      <PlanejamentoEvento
+        eventId={eventId}
+        inicial={planejamento}
+        suppliers={sups ?? []}
+        decisaoInicial={searchParams?.decisao ?? null}
+        escala={ev?.escala ?? null}
+        cenario={ev?.cenario ?? null}
+        clienteNome={cliente?.name ?? null}
+        localEvento={ev?.location ?? ev?.city ?? null}
+      />
+    </>
   );
 }

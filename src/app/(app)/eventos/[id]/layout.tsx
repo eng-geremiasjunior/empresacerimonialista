@@ -16,12 +16,14 @@ import {
   type EventType,
 } from "@/lib/types";
 
-// Pílula de status: bolinha colorida + rótulo, fundo bem sutil.
-const STATUS_STYLES: Record<EventStatus, { pill: string; dot: string }> = {
-  orcamento: { pill: "bg-amber-50 text-amber-700", dot: "bg-amber-500" },
-  confirmado: { pill: "bg-emerald-50 text-emerald-700", dot: "bg-emerald-500" },
-  concluido: { pill: "bg-sky-50 text-sky-700", dot: "bg-sky-500" },
-  cancelado: { pill: "bg-rose-50 text-rose-700", dot: "bg-rose-500" },
+// Pílula de status: bolinha + rótulo, fundo bem sutil. As cores vêm dos
+// tokens --ev-st-* (default = as de hoje; no tema neutro do Planejamento
+// viram os estados do handoff — decidido não comemora).
+const STATUS_VARS: Record<EventStatus, string> = {
+  orcamento: "orcamento",
+  confirmado: "confirmado",
+  concluido: "concluido",
+  cancelado: "cancelado",
 };
 
 export default async function EventoLayout({
@@ -84,7 +86,7 @@ export default async function EventoLayout({
       <div>
         <Link
           href="/eventos"
-          className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900"
+          className="inline-flex items-center gap-1.5 text-sm text-[color:var(--ev-text-muted)] hover:text-[color:var(--ev-text-strong)]"
         >
           <ArrowLeft size={15} />
           Voltar para eventos
@@ -92,33 +94,42 @@ export default async function EventoLayout({
 
         {/* Status em pílula com bolinha */}
         <span
-          className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[event.status].pill}`}
+          className="mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
+          style={{
+            background: `var(--ev-st-${STATUS_VARS[event.status]}-bg)`,
+            color: `var(--ev-st-${STATUS_VARS[event.status]}-fg)`,
+          }}
         >
-          <span className={`h-1.5 w-1.5 rounded-full ${STATUS_STYLES[event.status].dot}`} />
+          <span
+            className="h-1.5 w-1.5 rounded-full"
+            style={{ background: "currentColor" }}
+          />
           {EVENT_STATUS_LABELS[event.status]}
         </span>
 
         <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
+              <h1 className="text-2xl font-semibold tracking-tight text-[color:var(--ev-text-strong)]">
                 {titulo}
               </h1>
               <Link
                 href={`/eventos/${event.id}/editar`}
                 aria-label="Editar dados do evento"
-                className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                className="rounded p-1 text-[color:var(--ev-text-faint)] hover:bg-black/5 hover:text-[color:var(--ev-text-body)]"
               >
                 <Pencil size={16} />
               </Link>
             </div>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-[color:var(--ev-text-muted)]">
               {formatDate(event.date)}
               {local ? ` · ${local}` : ""}
               {" · "}
               <span
                 className={
-                  dias >= 0 && dias <= 7 ? "font-medium text-gray-700" : ""
+                  dias >= 0 && dias <= 7
+                    ? "font-medium text-[color:var(--ev-text-body)]"
+                    : ""
                 }
               >
                 {proximidade}
@@ -129,7 +140,7 @@ export default async function EventoLayout({
           {/* Modo Evento — condicional por proximidade (item 2) */}
           <div className="shrink-0">
             {modoDestaque && !modoHoje && (
-              <p className="mb-1 text-right text-xs font-medium text-gray-500">
+              <p className="mb-1 text-right text-xs font-medium text-[color:var(--ev-text-muted)]">
                 {proximidade}
               </p>
             )}
@@ -137,10 +148,10 @@ export default async function EventoLayout({
               href={`/eventos/${event.id}/modo-evento`}
               className={
                 modoHoje
-                  ? "flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white ring-2 ring-indigo-200 transition-colors hover:bg-indigo-700"
+                  ? "flex items-center justify-center gap-2 rounded-xl bg-[color:var(--ev-cta)] px-4 py-2.5 text-sm font-semibold text-white ring-2 ring-[color:var(--ev-cta-ring)] transition-opacity hover:opacity-90"
                   : modoDestaque
-                    ? "flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-gray-800"
-                    : "inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-gray-400"
+                    ? "flex items-center justify-center gap-2 rounded-xl bg-[color:var(--ev-text-strong)] px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                    : "inline-flex items-center gap-2 rounded-lg border border-[color:var(--ev-card-border)] bg-[color:var(--ev-card-bg)] px-3.5 py-2 text-sm font-medium text-[color:var(--ev-text-body)] transition-colors hover:border-[color:var(--ev-text-faint)]"
               }
             >
               <Play size={modoDestaque ? 16 : 14} strokeWidth={2} />

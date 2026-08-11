@@ -48,7 +48,9 @@ export const TIPO_OPERACIONAL_BADGE: Record<TipoOperacional, string> = {
 export const STATUS_LABELS: Record<StatusFornecedor, string> = {
   ativo: "Ativo",
   inativo: "Inativo",
-  bloqueado: "Bloqueado",
+  // Valor interno continua 'bloqueado' (banco não muda); o produto fala em
+  // ação, não em bloqueio — o sistema sugere, nunca trava.
+  bloqueado: "Não contratar",
   favorito: "Favorito",
   parceiro_premium: "Parceiro Premium",
 };
@@ -56,7 +58,7 @@ export const STATUS_LABELS: Record<StatusFornecedor, string> = {
 export const STATUS_BADGE: Record<StatusFornecedor, string> = {
   ativo: "bg-emerald-50 text-emerald-700",
   inativo: "bg-gray-100 text-gray-600",
-  bloqueado: "bg-red-50 text-red-700",
+  bloqueado: "bg-stone-200 text-stone-700",
   favorito: "bg-amber-50 text-amber-700",
   parceiro_premium: "bg-violet-50 text-violet-700",
 };

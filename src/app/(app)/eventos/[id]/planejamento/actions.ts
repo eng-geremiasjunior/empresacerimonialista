@@ -232,3 +232,164 @@ export async function sugerirDistribuicao(
   revalidatePath(`/eventos/${eventId}/planejamento`);
   return { success: true };
 }
+
+// "Não se aplica" no nível do OBJETIVO: desligar um assunto inteiro
+// (evento_objetivo.ativo, 064). Não é delete — reativável a qualquer
+// momento, e o desligado sai do progresso e da distribuição.
+export async function alternarObjetivoAtivo(
+  eventId: string,
+  objetivoId: string,
+  ativo: boolean
+): Promise<AcaoResult> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("evento_objetivo")
+    .update({ ativo, updated_at: new Date().toISOString() })
+    .eq("id", objetivoId)
+    .eq("event_id", eventId);
+
+  if (error) return { error: "Não foi possível atualizar o objetivo." };
+  revalidatePath(`/eventos/${eventId}/planejamento`);
+  return { success: true };
+}
+
+// ------------------------------------------------------------------
+// Liberdade (handoff §2.7): objetivos, decisões e campos PRÓPRIOS, fora
+// do método. template_id nulo = origem própria — o schema (083) já
+// aceita; nenhum selo chamativo na lista.
+// ------------------------------------------------------------------
+
+// Slug curto para o codigo do campo próprio. Prefixado para nunca colidir
+// com códigos especiais do método (escala/cenario/verba_total/...).
+function slugCampo(label: string): string {
+  const s = label
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 40);
+  return `proprio_${s || "campo"}`;
+}
+
+export async function criarObjetivoProprio(
+  eventId: string,
+  nome: string
+): Promise<AcaoResult & { id?: string }> {
+  const limpo = nome.trim();
+  if (!limpo) return { error: "Dê um nome ao objetivo." };
+  const supabase = createClient();
+
+  const { data: max } = await supabase
+    .from("evento_objetivo")
+    .select("ordem")
+    .eq("event_id", eventId)
+    .order("ordem", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const { data, error } = await supabase
+    .from("evento_objetivo")
+    .insert({
+      event_id: eventId,
+      nome: limpo,
+      ativo: true,
+      ordem: (max?.ordem ?? 0) + 1,
+    })
+    .select("id")
+    .single();
+
+  if (error) return { error: "Não foi possível criar o objetivo." };
+  revalidatePath(`/eventos/${eventId}/planejamento`);
+  return { success: true, id: data.id };
+}
+
+export async function criarDecisaoPropria(
+  eventId: string,
+  objetivoId: string,
+  titulo: string
+): Promise<AcaoResult & { id?: string }> {
+  const limpo = titulo.trim();
+  if (!limpo) return { error: "Dê um título à decisão." };
+  const supabase = createClient();
+
+  const { data: max } = await supabase
+    .from("evento_decisao")
+    .select("ordem")
+    .eq("evento_objetivo_id", objetivoId)
+    .order("ordem", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const { data, error } = await supabase
+    .from("evento_decisao")
+    .insert({
+      evento_objetivo_id: objetivoId,
+      event_id: eventId,
+      titulo: limpo,
+      responsavel: "ambos",
+      estado: "pendente",
+      // peso médio: decisão própria conta no progresso ponderado sem
+      // atropelar as estruturantes do método (~80-100).
+      prioridade: 50,
+      ordem: (max?.ordem ?? 0) + 1,
+    })
+    .select("id")
+    .single();
+
+  if (error) return { error: "Não foi possível criar a decisão." };
+  revalidatePath(`/eventos/${eventId}/planejamento`);
+  return { success: true, id: data.id };
+}
+
+const TIPOS_CAMPO: TipoCampo[] = [
+  "texto",
+  "numero",
+  "moeda",
+  "sim_nao",
+  "escolha",
+  "data",
+  "anexo",
+  "fornecedor",
+];
+
+export async function criarCampoProprio(
+  eventId: string,
+  decisaoId: string,
+  label: string,
+  tipo: TipoCampo,
+  opcoes?: string[]
+): Promise<AcaoResult & { id?: string }> {
+  const limpo = label.trim();
+  if (!limpo) return { error: "Dê um nome ao campo." };
+  if (!TIPOS_CAMPO.includes(tipo)) return { error: "Tipo de campo inválido." };
+  const supabase = createClient();
+
+  const { data: max } = await supabase
+    .from("evento_campo_valor")
+    .select("ordem")
+    .eq("evento_decisao_id", decisaoId)
+    .order("ordem", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const { data, error } = await supabase
+    .from("evento_campo_valor")
+    .insert({
+      evento_decisao_id: decisaoId,
+      event_id: eventId,
+      codigo: slugCampo(limpo),
+      label: limpo,
+      tipo,
+      opcoes:
+        tipo === "escolha" && opcoes && opcoes.length > 0 ? opcoes : null,
+      ordem: (max?.ordem ?? 0) + 1,
+    })
+    .select("id")
+    .single();
+
+  if (error) return { error: "Não foi possível criar o campo." };
+  revalidatePath(`/eventos/${eventId}/planejamento`);
+  return { success: true, id: data.id };
+}

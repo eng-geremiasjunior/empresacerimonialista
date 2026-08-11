@@ -16,10 +16,11 @@ import { useSearchParams } from "next/navigation";
 import type { Saude, SaudeAba } from "@/lib/saude-evento";
 import type { FaseId, FasesEvento } from "@/lib/supabase/resumo-evento";
 
-const TEAL = "#0f9b84";
-const TEAL_TINT = "#e7f4f1";
-const AMBER = "#b07514";
-const AMBER_TINT = "#f8efdd";
+// Tokens do chrome do evento (default = cores de hoje; tema neutro remapeia).
+const TEAL = "var(--ev-accent, #0f9b84)";
+const TEAL_TINT = "var(--ev-accent-tint, #e7f4f1)";
+const AMBER = "var(--ev-warn, #b07514)";
+const AMBER_TINT = "var(--ev-warn-tint, #f8efdd)";
 
 const ABA_HREF: Record<SaudeAba, string> = {
   tarefas: "organizacao",
@@ -55,7 +56,7 @@ function IconeSelo({ tipo }: { tipo: "ok" | "warn" }) {
         <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
           <path
             d="M4 8.2 6.6 10.8 12 5"
-            stroke={TEAL}
+            style={{ stroke: TEAL }}
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -65,13 +66,13 @@ function IconeSelo({ tipo }: { tipo: "ok" | "warn" }) {
         <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
           <path
             d="M8 3.6 13 12H3z"
-            stroke={AMBER}
+            style={{ stroke: AMBER }}
             strokeWidth="1.6"
             strokeLinejoin="round"
           />
           <path
             d="M8 7v1.8M8 10.3h.01"
-            stroke={AMBER}
+            style={{ stroke: AMBER }}
             strokeWidth="1.6"
             strokeLinecap="round"
           />
@@ -99,20 +100,20 @@ export function ResumoDaFase({
   const atalho = ATALHO_DA_FASE[fase.id];
 
   return (
-    <section className="overflow-hidden rounded-xl border border-[#ececea] bg-white">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#f0f0ee] px-[18px] py-4">
+    <section className="overflow-hidden rounded-xl border border-[color:var(--ev-card-border-soft)] bg-[color:var(--ev-card-bg)]">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[color:var(--ev-card-border-soft)] px-[18px] py-4">
         <div className="flex items-center gap-[9px]">
           <span
             className="h-1.5 w-1.5 rounded-full"
             style={{ background: TEAL }}
             aria-hidden
           />
-          <h2 className="text-[15px] font-bold text-[#1b1c1e]">
+          <h2 className="text-[15px] font-bold text-[color:var(--ev-text-strong)]">
             Resumo do Copiloto
           </h2>
-          <span className="text-[13px] text-[#797e86]">{fase.rotulo}</span>
+          <span className="text-[13px] text-[color:var(--ev-text-muted)]">{fase.rotulo}</span>
         </div>
-        <span className="text-[11.5px] text-[#a2a6ad]">
+        <span className="text-[11.5px] text-[color:var(--ev-text-faint)]">
           cálculo por regras · {fase.pct}% · {fase.contagem}
         </span>
       </div>
@@ -121,7 +122,7 @@ export function ResumoDaFase({
         {fase.selos.map((selo, i) => (
           <div
             key={i}
-            className="flex items-center gap-2.5 text-[12.5px] text-[#33373d]"
+            className="flex items-center gap-2.5 text-[12.5px] text-[color:var(--ev-text-body)]"
           >
             <IconeSelo tipo={selo.tipo} />
             {selo.texto}
@@ -134,7 +135,7 @@ export function ResumoDaFase({
           <Link
             key={`a-${i}`}
             href={`/eventos/${eventId}/${ABA_HREF[alerta.aba]}`}
-            className="flex items-center gap-2.5 text-[12.5px] text-[#33373d] hover:text-[#1b1c1e]"
+            className="flex items-center gap-2.5 text-[12.5px] text-[color:var(--ev-text-body)] hover:text-[color:var(--ev-text-strong)]"
           >
             <IconeSelo tipo="warn" />
             {alerta.texto}
@@ -142,10 +143,10 @@ export function ResumoDaFase({
         ))}
       </div>
 
-      <div className="border-t border-[#f0f0ee] px-[18px] py-3">
+      <div className="border-t border-[color:var(--ev-card-border-soft)] px-[18px] py-3">
         <Link
           href={`/eventos/${eventId}/${atalho.seg}`}
-          className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-[#33373d] hover:text-[#1b1c1e]"
+          className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-[color:var(--ev-text-body)] hover:text-[color:var(--ev-text-strong)]"
         >
           {atalho.rotulo}
           <ArrowRight size={13} />
