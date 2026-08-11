@@ -316,9 +316,9 @@ export function OrganizacaoEvento({
         <VistaAgenda org={org} eventId={eventId} fornecedores={fornecedores} />
       )}
 
-      {/* CENTRAL DE DISPAROS — só aparece quando o Secretário tem trabalho
-          real (convite programado ou enviado). Sem caixa vazia prometendo. */}
-      {vista !== "agenda" && org.disparos.length > 0 && (
+      {/* CENTRAL DE DISPAROS — vive na Agenda: é lá que se marca reunião
+          com fornecedor. Só aparece com trabalho real (nada de caixa vazia). */}
+      {vista === "agenda" && org.disparos.length > 0 && (
         <CentralDisparos disparos={org.disparos} onAbrir={setSel} />
       )}
 
@@ -690,12 +690,14 @@ function CentralDisparos({
           return (
             <button
               key={d.id}
-              onClick={() => onAbrir(d.taskId)}
+              // convite avulso não tem tarefa para abrir
+              onClick={() => d.taskId && onAbrir(d.taskId)}
               style={{
                 display: "flex", alignItems: "center", gap: 14, textAlign: "left",
                 background: "var(--surface-card)", border: "1px solid var(--border-hairline)",
                 borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-sm)",
-                padding: "11px 16px", cursor: "pointer", width: "100%",
+                padding: "11px 16px", width: "100%",
+                cursor: d.taskId ? "pointer" : "default",
               }}
             >
               <div style={{ width: 46, flex: "0 0 46px", textAlign: "center", borderRadius: "var(--r-md)", background: "var(--surface-sunken)", padding: "6px 2px" }}>
@@ -1614,11 +1616,18 @@ function NovoCompromisso({
   const [responsavel, setResponsavel] = useState("");
   const [supplierId, setSupplierId] = useState("");
   const [observacao, setObservacao] = useState("");
+  // Secretário direto na Agenda (080): em vez de escolher o horário, o
+  // sistema oferece a sua grade ao fornecedor e ele escolhe.
+  const [auto, setAuto] = useState(false);
+  const [duracaoMin, setDuracaoMin] = useState(60);
+  const [prazoDias, setPrazoDias] = useState(5);
   const [erro, setErro] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
   const [pend, start] = useTransition();
 
   function salvar() {
     setErro(null);
+    setAviso(null);
     start(async () => {
       const r = await criarCompromisso(eventId, {
         titulo,
@@ -1628,9 +1637,15 @@ function NovoCompromisso({
         responsavel: responsavel || null,
         observacao: observacao || null,
         supplierId: supplierId || null,
+        agendarAutomatico: auto,
+        duracaoMin,
+        prazoRespostaDias: prazoDias,
       });
       if ("error" in r) setErro(r.error);
-      else onPronto();
+      else if (auto) {
+        setAviso("Convite enviado — o fornecedor escolhe o horário.");
+        setTimeout(onPronto, 1200);
+      } else onPronto();
     });
   }
 
@@ -1650,8 +1665,28 @@ function NovoCompromisso({
             autoFocus
           />
         </div>
-        <TextField type="date" mono value={data} onChange={(e) => setData(e.target.value)} />
-        <TextField type="time" mono value={hora} onChange={(e) => setHora(e.target.value)} />
+        {/* Com agendamento automático o horário é do fornecedor: a data
+            vira apenas o limite ("até quando"), e a hora some. */}
+        <TextField
+          type="date"
+          mono
+          value={data}
+          onChange={(e) => setData(e.target.value)}
+          label={auto ? "Marcar até (opcional)" : undefined}
+        />
+        {auto ? (
+          <Select
+            label="Duração"
+            value={String(duracaoMin)}
+            onChange={(e) => setDuracaoMin(Number(e.target.value))}
+          >
+            {[30, 45, 60, 90, 120].map((d) => (
+              <option key={d} value={d}>{d} min</option>
+            ))}
+          </Select>
+        ) : (
+          <TextField type="time" mono value={hora} onChange={(e) => setHora(e.target.value)} />
+        )}
         <TextField placeholder="Local (opcional)" value={local} onChange={(e) => setLocal(e.target.value)} />
         <Select value={responsavel} onChange={(e) => setResponsavel(e.target.value)}>
           <option value="">Quem comparece?</option>
@@ -1675,11 +1710,68 @@ function NovoCompromisso({
         </div>
       </div>
 
+      {/* SECRETÁRIO — é aqui que ele mais faz sentido: você quer a reunião,
+          não quer escolher o horário nem perguntar. */}
+      <div
+        style={{
+          marginTop: 12, border: "1px solid var(--border-hairline)",
+          borderRadius: "var(--r-lg)", overflow: "hidden", background: "var(--surface-card)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 13px" }}>
+          <span style={{ width: 28, height: 28, borderRadius: "var(--r-md)", background: "var(--salvia-50)", color: "var(--salvia-600)", display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto" }}>
+            <Send size={14} />
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: 12.5, fontWeight: 600 }}>
+              Deixar o fornecedor escolher o horário
+            </p>
+            <p style={{ margin: "1px 0 0", fontSize: 11, color: "var(--text-muted)" }}>
+              {supplierId
+                ? "manda sua grade por WhatsApp; quando ele escolher, entra aqui na Agenda"
+                : "escolha o fornecedor acima para ligar"}
+            </p>
+          </div>
+          <Switch
+            checked={auto && Boolean(supplierId)}
+            onChange={setAuto}
+            disabled={!supplierId}
+            label="Deixar o fornecedor escolher"
+          />
+        </div>
+        {auto && supplierId && (
+          <div style={{ padding: "10px 13px", borderTop: "1px solid var(--border-hairline)", background: "var(--surface-sunken)", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 12.5 }}>
+            <span>Prazo pra responder:</span>
+            <input
+              type="number"
+              min={1}
+              max={30}
+              value={prazoDias}
+              onChange={(e) => setPrazoDias(Number(e.target.value))}
+              style={{
+                width: 46, textAlign: "center",
+                border: "1px solid var(--border-hairline)", borderRadius: "var(--r-sm)",
+                padding: "4px", fontFamily: "var(--font-mono)", fontSize: 12.5,
+                background: "var(--surface-card)", outline: "none",
+              }}
+            />
+            <span>dias · sem resposta, você é avisada e combina direto</span>
+          </div>
+        )}
+      </div>
+
       {erro && <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--state-late)" }}>{erro}</p>}
+      {aviso && <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--state-ok)" }}>{aviso}</p>}
 
       <div style={{ marginTop: 11, display: "flex", gap: 8 }}>
         <Button size="sm" onClick={salvar} disabled={pend}>
-          {pend ? "Salvando…" : "Salvar compromisso"}
+          {pend
+            ? auto
+              ? "Enviando convite…"
+              : "Salvando…"
+            : auto
+              ? "Enviar convite ao fornecedor"
+              : "Salvar compromisso"}
         </Button>
         <Button size="sm" variant="ghost" onClick={onPronto}>
           Cancelar

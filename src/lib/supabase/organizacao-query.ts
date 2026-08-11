@@ -157,6 +157,28 @@ export async function getOrganizacao(
       });
     }
   }
+  // Convites AVULSOS (080): nascem na Agenda, sem tarefa por trás — não
+  // apareceriam no laço acima, que percorre tarefas.
+  const { data: avulsos } = await supabase
+    .from("agendamento_convite")
+    .select("id, titulo, status, enviado_em, suppliers(name)")
+    .eq("event_id", eventId)
+    .is("task_id", null)
+    .in("status", ["enviado", "reenviado", "sugerido", "respondido"])
+    .order("enviado_em", { ascending: true });
+
+  for (const c of avulsos ?? []) {
+    const s = umObjeto(c.suppliers as { name: string } | { name: string }[] | null);
+    disparos.push({
+      id: `a-${c.id}`,
+      tarefa: c.titulo ?? "Reunião",
+      taskId: "",
+      fornecedor: s?.name ?? null,
+      status: c.status as Disparo["status"],
+      data: c.enviado_em.slice(0, 10),
+    });
+  }
+
   disparos.sort((a, b) => a.data.localeCompare(b.data));
 
   // COMPROMISSO (Agenda): evento no tempo com fornecedor e origem opcionais.

@@ -131,6 +131,144 @@ export type ResultadoConvite =
   | { ok: true; conviteId: string; slots: number }
   | { ok: false; motivo: string };
 
+// Cria o convite + slots e dispara o WhatsApp. Serve aos DOIS caminhos:
+// a partir de uma tarefa (taskId) ou avulso, direto da Agenda (080).
+async function criarEDisparar(
+  supabase: SupabaseClient,
+  p: {
+    eventId: string;
+    supplierId: string;
+    titulo: string;
+    duracaoMin: number;
+    prazoDias: number;
+    ateData: string | null;
+    userId: string;
+    taskId?: string | null;
+    supplierNome: string;
+    telefone: string;
+    eventLabel: string;
+  }
+): Promise<ResultadoConvite> {
+  const slots = await gerarSlotsLivres(supabase, {
+    userId: p.userId,
+    duracaoMin: p.duracaoMin,
+    ateData: p.ateData,
+  });
+  if (slots.length === 0) {
+    return {
+      ok: false,
+      motivo:
+        "sem horários livres na sua grade até essa data — confira a Agenda de Fornecedores",
+    };
+  }
+
+  const prazoAte = new Date(Date.now() + p.prazoDias * 86_400_000).toISOString();
+
+  const { data: convite, error: errConv } = await supabase
+    .from("agendamento_convite")
+    .insert({
+      task_id: p.taskId ?? null,
+      titulo: p.titulo,
+      event_id: p.eventId,
+      supplier_id: p.supplierId,
+      duracao_min: p.duracaoMin,
+      prazo_ate: prazoAte,
+    })
+    .select("id, hash")
+    .single();
+  if (errConv || !convite)
+    return { ok: false, motivo: `falha ao criar o convite: ${errConv?.message}` };
+
+  const { data: slotRows, error: errSlots } = await supabase
+    .from("agendamento_slot")
+    .insert(
+      slots.map((s) => ({
+        convite_id: convite.id,
+        event_id: p.eventId,
+        data: s.data,
+        hora: s.hora,
+      }))
+    )
+    .select("id, data, hora");
+  if (errSlots || !slotRows?.length) {
+    await supabase.from("agendamento_convite").delete().eq("id", convite.id);
+    return { ok: false, motivo: "falha ao gravar os horários" };
+  }
+
+  const envio = await enviarConviteAgendamentoWhatsapp({
+    telefone: p.telefone,
+    supplierName: p.supplierNome,
+    tarefa: p.titulo,
+    eventLabel: p.eventLabel,
+    duracaoMin: p.duracaoMin,
+    hash: convite.hash,
+    prazoDias: p.prazoDias,
+    slots: slotRows.map((s) => ({
+      id: s.id,
+      data: s.data,
+      hora: String(s.hora).slice(0, 5),
+    })),
+  });
+
+  if (!envio.ok) {
+    // sem entrega não há convite: desfaz para não deixar fantasma
+    await supabase.from("agendamento_convite").delete().eq("id", convite.id);
+    return { ok: false, motivo: envio.error ?? "falha no envio do WhatsApp" };
+  }
+
+  return { ok: true, conviteId: convite.id, slots: slotRows.length };
+}
+
+// Convite AVULSO — nasce na Agenda ("+ Novo" com agendamento automático),
+// sem tarefa por trás. A reunião só vira compromisso quando o fornecedor
+// escolhe o horário.
+export async function enviarConviteAvulso(
+  supabase: SupabaseClient,
+  p: {
+    eventId: string;
+    supplierId: string;
+    titulo: string;
+    duracaoMin: number;
+    prazoDias: number;
+    ateData?: string | null;
+  }
+): Promise<ResultadoConvite> {
+  const [{ data: sup }, { data: ev }] = await Promise.all([
+    supabase
+      .from("suppliers")
+      .select("name, whatsapp, phone")
+      .eq("id", p.supplierId)
+      .single(),
+    supabase
+      .from("events")
+      .select("date, cerimonialista_id, clients(name)")
+      .eq("id", p.eventId)
+      .single(),
+  ]);
+
+  const telefone = sup?.whatsapp || sup?.phone;
+  if (!telefone)
+    return { ok: false, motivo: `${sup?.name ?? "o fornecedor"} não tem WhatsApp cadastrado` };
+  if (!ev?.cerimonialista_id)
+    return { ok: false, motivo: "evento sem responsável definido" };
+
+  const cli = Array.isArray(ev.clients) ? ev.clients[0] : ev.clients;
+
+  return criarEDisparar(supabase, {
+    eventId: p.eventId,
+    supplierId: p.supplierId,
+    titulo: p.titulo,
+    duracaoMin: p.duracaoMin,
+    prazoDias: p.prazoDias,
+    ateData: p.ateData ?? ev.date ?? null,
+    userId: ev.cerimonialista_id,
+    taskId: null,
+    supplierNome: sup!.name,
+    telefone,
+    eventLabel: cli?.name ? `casamento de ${cli.name}` : "o evento",
+  });
+}
+
 // Cria o convite + slots e dispara o WhatsApp com a lista de horários.
 // Idempotente por tarefa: convite ativo existente barra novo envio.
 export async function enviarConviteAgendamento(
@@ -177,76 +315,21 @@ export async function enviarConviteAgendamento(
     };
   }
 
-  const slots = await gerarSlotsLivres(supabase, {
-    userId: ev.cerimonialista_id,
-    duracaoMin: task.duracao_min ?? 60,
-    ateData: task.due_date ?? ev.date ?? null,
-  });
-  if (slots.length === 0) {
-    return {
-      ok: false,
-      motivo: "sem horários livres na sua grade até o vencimento — confira sua disponibilidade em Configurações",
-    };
-  }
-
-  const prazoDias = task.prazo_resposta_dias ?? 5;
-  const prazoAte = new Date(Date.now() + prazoDias * 86_400_000).toISOString();
-
-  const { data: convite, error: errConv } = await supabase
-    .from("agendamento_convite")
-    .insert({
-      task_id: taskId,
-      event_id: task.event_id,
-      supplier_id: task.supplier_id,
-      duracao_min: task.duracao_min ?? 60,
-      prazo_ate: prazoAte,
-    })
-    .select("id, hash")
-    .single();
-  if (errConv || !convite)
-    return { ok: false, motivo: `falha ao criar o convite: ${errConv?.message}` };
-
-  const { data: slotRows, error: errSlots } = await supabase
-    .from("agendamento_slot")
-    .insert(
-      slots.map((s) => ({
-        convite_id: convite.id,
-        event_id: task.event_id,
-        data: s.data,
-        hora: s.hora,
-      }))
-    )
-    .select("id, data, hora");
-  if (errSlots || !slotRows?.length) {
-    await supabase.from("agendamento_convite").delete().eq("id", convite.id);
-    return { ok: false, motivo: "falha ao gravar os horários" };
-  }
-
   const cli = ev
     ? (Array.isArray(ev.clients) ? ev.clients[0] : ev.clients)
     : null;
-  const eventLabel = cli?.name ? `casamento de ${cli.name}` : "o evento";
 
-  const envio = await enviarConviteAgendamentoWhatsapp({
-    telefone,
-    supplierName: sup!.name,
-    tarefa: task.title,
-    eventLabel,
+  return criarEDisparar(supabase, {
+    eventId: task.event_id,
+    supplierId: task.supplier_id,
+    titulo: task.title,
     duracaoMin: task.duracao_min ?? 60,
-    hash: convite.hash,
-    prazoDias,
-    slots: slotRows.map((s) => ({
-      id: s.id,
-      data: s.data,
-      hora: String(s.hora).slice(0, 5),
-    })),
+    prazoDias: task.prazo_resposta_dias ?? 5,
+    ateData: task.due_date ?? ev.date ?? null,
+    userId: ev.cerimonialista_id,
+    taskId,
+    supplierNome: sup!.name,
+    telefone,
+    eventLabel: cli?.name ? `casamento de ${cli.name}` : "o evento",
   });
-
-  if (!envio.ok) {
-    // sem entrega não há convite: desfaz para o cron tentar de novo amanhã
-    await supabase.from("agendamento_convite").delete().eq("id", convite.id);
-    return { ok: false, motivo: envio.error ?? "falha no envio do WhatsApp" };
-  }
-
-  return { ok: true, conviteId: convite.id, slots: slotRows.length };
 }

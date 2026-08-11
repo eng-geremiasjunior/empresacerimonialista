@@ -10,7 +10,10 @@ import {
   enviarConfirmacaoCompromissoWhatsapp,
   enviarMensagemWhatsapp,
 } from "@/lib/whatsapp";
-import { enviarConviteAgendamento } from "@/lib/agendamento";
+import {
+  enviarConviteAgendamento,
+  enviarConviteAvulso,
+} from "@/lib/agendamento";
 
 export type AcaoResult = { error: string } | { success: true };
 
@@ -383,10 +386,36 @@ export async function criarCompromisso(
     responsavel?: string | null;
     observacao?: string | null;
     supplierId?: string | null;
+    // Secretário na Agenda (080): em vez de marcar o horário, manda o
+    // fornecedor escolher. Sem data — a reunião nasce quando ele responde.
+    agendarAutomatico?: boolean;
+    duracaoMin?: number;
+    prazoRespostaDias?: number;
   }
 ): Promise<AcaoResult> {
   const titulo = form.titulo?.trim();
   if (!titulo) return { error: "Dê um título ao compromisso." };
+
+  // Caminho do agendamento automático: dispara o convite e sai.
+  if (form.agendarAutomatico) {
+    if (!form.supplierId) {
+      return { error: "Escolha o fornecedor para o sistema agendar com ele." };
+    }
+    const supabase = createClient();
+    const r = await enviarConviteAvulso(supabase, {
+      eventId,
+      supplierId: form.supplierId,
+      titulo,
+      duracaoMin: form.duracaoMin ?? 60,
+      prazoDias: form.prazoRespostaDias ?? 5,
+      ateData: form.data || null,
+    });
+    if (!r.ok) return { error: r.motivo };
+    revalidatePath(`/eventos/${eventId}/organizacao`);
+    revalidatePath("/agenda");
+    return { success: true };
+  }
+
   if (!form.data) return { error: "Escolha a data." };
 
   const responsavel =
