@@ -1040,10 +1040,11 @@ function TarefaDrawer({
             </div>
           </div>
 
-          {/* SECRETÁRIO — agendamento automático com o fornecedor. Opt-in
-              explícito, só com fornecedor vinculado (tarefa de relacionamento
-              com os noivos não tem fornecedor, logo nunca entra aqui). */}
-          {supplierId && (
+          {/* SECRETÁRIO — seção sempre visível (é onde se descobre que a
+              automação existe). Sem fornecedor vinculado ela aparece
+              travada, explicando o que falta: nunca some da tela. */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+            <FieldLabel>Disparo automático</FieldLabel>
             <div style={{ border: "1px solid var(--border-hairline)", borderRadius: "var(--r-lg)", overflow: "hidden" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", background: "var(--surface-sunken)" }}>
                 <span style={{ width: 30, height: 30, borderRadius: "var(--r-md)", background: "var(--salvia-50)", color: "var(--salvia-600)", display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto" }}>
@@ -1054,16 +1055,19 @@ function TarefaDrawer({
                     Agendamento automático com fornecedor
                   </p>
                   <p style={{ margin: "1px 0 0", fontSize: 11.5, color: "var(--text-muted)" }}>
-                    envia os seus horários livres por WhatsApp; ele escolhe, a Agenda registra
+                    {supplierId
+                      ? "envia os seus horários livres por WhatsApp; ele escolhe, a Agenda registra"
+                      : "escolha um fornecedor acima para ligar"}
                   </p>
                 </div>
                 <Switch
-                  checked={autoAgendar}
+                  checked={autoAgendar && Boolean(supplierId)}
                   onChange={setAutoAgendar}
+                  disabled={!supplierId}
                   label="Agendamento automático"
                 />
               </div>
-              <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 12, opacity: supplierId ? 1 : 0.5, pointerEvents: supplierId ? "auto" : "none" }}>
                 {/* SUGESTÃO PENDENTE — a bola está com você */}
                 {tarefa?.convite?.status === "sugerido" && tarefa.convite.sugestaoData && (
                   <div
@@ -1313,7 +1317,12 @@ function TarefaDrawer({
                 )}
               </div>
             </div>
-          )}
+            {!supplierId && (
+              <p style={{ margin: 0, fontSize: 11.5, color: "var(--text-muted)" }}>
+                Escolha o fornecedor no campo acima para liberar o disparo.
+              </p>
+            )}
+          </div>
 
           {/* descrição */}
           <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
