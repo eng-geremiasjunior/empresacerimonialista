@@ -1,20 +1,19 @@
 "use client";
 
-// Tela de Planejamento (4B) — fiel ao design 2a.
+// Tela de Planejamento (4B/5A) — adaptação funcional ao modelo de campos
+// tipados (a UI final vem depois, no redesign).
 //
 // Duas camadas: a FILA das 3 decisões mais críticas no topo (o que fazer
 // agora) e o MAPA temporal por objetivo abaixo (o todo, nunca escondido).
-// A decisão abre em PAINEL LATERAL (não inline, que empurraria o mapa).
-//
-// Tokens do handoff: IBM Plex Sans/Mono, acento violeta oklch(0.5 0.14
-// 285), cards raio 10, tom interno Linear/Notion. O objeto dominante é a
-// DECISÃO, dentro de OBJETIVOS.
+// A decisão abre em PAINEL LATERAL — e ela é um FORMULÁRIO: os campos
+// vazios são o roteiro de conversa com os noivos (o antigo guia virou isto).
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, ChevronRight, X } from "lucide-react";
 import type {
   Bucket,
+  Campo,
   Decisao,
   EstadoDecisao,
   Objetivo,
@@ -22,12 +21,13 @@ import type {
   Responsavel,
 } from "@/lib/supabase/planejamento";
 import {
-  alternarGuia,
   decidirDecisao,
   definirDataEvento,
   marcarNaoSeAplica,
   reabrirDecisao,
-  registrarResultado,
+  salvarCampo,
+  salvarValorPrevisto,
+  sugerirDistribuicao,
 } from "@/app/(app)/eventos/[id]/planejamento/actions";
 
 const ACENTO = "oklch(0.5 0.14 285)";
@@ -46,6 +46,40 @@ const BUCKET_LABEL: Record<Bucket, string> = {
 };
 
 const mono = "font-mono text-[11px] uppercase tracking-[0.12em]";
+
+type SupplierOpcao = { id: string; name: string };
+
+// O valor canônico do campo, pelo tipo (espelho client-safe do data lib —
+// que é server-only por importar o client de servidor).
+function valorCampo(c: Campo): string | number | boolean | null {
+  switch (c.tipo) {
+    case "numero":
+    case "moeda":
+      return c.valorNumero;
+    case "sim_nao":
+      return c.valorBool;
+    case "data":
+      return c.valorData;
+    case "escolha":
+      return c.valorOpcao;
+    case "fornecedor":
+      return c.valorSupplierId;
+    default:
+      return c.valorTexto;
+  }
+}
+
+function fmtBRL(n: number): string {
+  return n.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 0,
+  });
+}
+
+function opcaoLabel(v: string): string {
+  return v.replaceAll("_", " ");
+}
 
 function faltamTexto(dias: number | null): string {
   if (dias === null) return "sem data";
@@ -71,10 +105,12 @@ function prazoPrevistoTexto(iso: string | null): string {
 export function PlanejamentoEvento({
   eventId,
   inicial,
+  suppliers,
   decisaoInicial,
 }: {
   eventId: string;
   inicial: Planejamento;
+  suppliers: SupplierOpcao[];
   // deep-link vindo da Organização ("ver decisão ↗" na origem da tarefa)
   decisaoInicial?: string | null;
 }) {
@@ -84,33 +120,22 @@ export function PlanejamentoEvento({
 
   const plano = inicial;
 
-  // Overrides otimistas: o clique reflete na hora; o servidor sincroniza
-  // em segundo plano. guiaOverride mata a lentidão (cada tique refazia a
-  // árvore); estadoOverride dá resposta imediata ao decidir.
-  const [guiaOverride, setGuiaOverride] = useState<Record<string, boolean>>({});
+  // Override otimista de estado: o clique reflete na hora; o servidor
+  // sincroniza em segundo plano. (Campos salvam no blur — sem override.)
   const [estadoOverride, setEstadoOverride] = useState<
     Record<string, EstadoDecisao>
   >({});
 
-  // Árvore com os overrides aplicados — usada no mapa E no painel, para que
-  // o dot da decisão e a contagem de guias mudem imediatamente.
   const objetivosView: Objetivo[] = useMemo(
     () =>
       plano.objetivos.map((o) => ({
         ...o,
-        decisoes: o.decisoes.map((d) => {
-          const guias = d.guias.map((g) =>
-            g.id in guiaOverride ? { ...g, marcado: guiaOverride[g.id] } : g
-          );
-          return {
-            ...d,
-            estado: estadoOverride[d.id] ?? d.estado,
-            guias,
-            guiasMarcados: guias.filter((g) => g.marcado).length,
-          };
-        }),
+        decisoes: o.decisoes.map((d) => ({
+          ...d,
+          estado: estadoOverride[d.id] ?? d.estado,
+        })),
       })),
-    [plano.objetivos, guiaOverride, estadoOverride]
+    [plano.objetivos, estadoOverride]
   );
 
   const decisaoAberta = useMemo(() => {
@@ -126,15 +151,6 @@ export function PlanejamentoEvento({
     startTransition(async () => {
       await fn();
       router.refresh();
-    });
-  }
-
-  // Guia: otimista e SEM refetch (era o clique mais lento). Reverte se falhar.
-  function toggleGuia(guiaId: string, marcado: boolean) {
-    setGuiaOverride((m) => ({ ...m, [guiaId]: marcado }));
-    void alternarGuia(eventId, guiaId, marcado).then((r) => {
-      if (r && "error" in r)
-        setGuiaOverride((m) => ({ ...m, [guiaId]: !marcado }));
     });
   }
 
@@ -169,7 +185,10 @@ export function PlanejamentoEvento({
     .filter((g) => g.objetivos.length > 0);
 
   const desligados = objetivosView.filter(
-    (o) => o.decisoes.length > 0 && o.decisoes.every((d) => d.estado === "nao_se_aplica")
+    (o) =>
+      !o.ativo ||
+      (o.decisoes.length > 0 &&
+        o.decisoes.every((d) => d.estado === "nao_se_aplica"))
   );
 
   return (
@@ -216,6 +235,15 @@ export function PlanejamentoEvento({
         {!plano.dataEvento && (
           <BannerData eventId={eventId} onAgir={agir} />
         )}
+
+        {/* TERMÔMETRO DA VERBA (5C) — só o macro; o detalhe fica na
+            Organização. A sugestão é por botão, nunca automática. */}
+        <TermometroVerba
+          eventId={eventId}
+          plano={plano}
+          pending={pending}
+          onAgir={agir}
+        />
 
         {/* FILA INTELIGENTE */}
         {plano.criticas.length > 0 && (
@@ -278,9 +306,12 @@ export function PlanejamentoEvento({
                 {g.objetivos.map((o) => (
                   <ObjetivoCard
                     key={o.id}
+                    eventId={eventId}
                     objetivo={o}
                     aberta={aberta}
+                    pending={pending}
                     onAbrir={setAberta}
+                    onAgir={agir}
                   />
                 ))}
               </div>
@@ -305,7 +336,9 @@ export function PlanejamentoEvento({
                       onClick={() =>
                         agir(() =>
                           Promise.all(
-                            o.decisoes.map((d) => reabrirDecisao(eventId, d.id))
+                            o.decisoes
+                              .filter((d) => d.estado === "nao_se_aplica")
+                              .map((d) => reabrirDecisao(eventId, d.id))
                           )
                         )
                       }
@@ -329,10 +362,10 @@ export function PlanejamentoEvento({
           objetivoNome={decisaoAberta.objetivo.nome}
           decisao={decisaoAberta.decisao}
           dataEvento={plano.dataEvento}
+          suppliers={suppliers}
           pending={pending}
           onFechar={() => setAberta(null)}
           onAgir={agir}
-          onToggleGuia={toggleGuia}
           onEstado={mudarEstado}
         />
       )}
@@ -376,16 +409,150 @@ function BannerData({
   );
 }
 
+// Verba / comprometido / saldo + sugerir distribuição (5C).
+function TermometroVerba({
+  eventId,
+  plano,
+  pending,
+  onAgir,
+}: {
+  eventId: string;
+  plano: Planejamento;
+  pending: boolean;
+  onAgir: (fn: () => Promise<unknown>) => void;
+}) {
+  const v = plano.verba;
+  const [erro, setErro] = useState<string | null>(null);
+
+  function sugerir() {
+    setErro(null);
+    onAgir(async () => {
+      const r = await sugerirDistribuicao(eventId);
+      if (r && "error" in r) setErro(r.error);
+    });
+  }
+
+  // Sem verba definida ainda: uma linha discreta apontando o caminho.
+  if (v.total === null) {
+    return (
+      <div className="mb-6 flex items-center justify-between rounded-xl border border-[#e6e6e3] bg-white px-4 py-3">
+        <p className="text-[12.5px] text-[#5f5f5b]">
+          Verba ainda não levantada — preencha em{" "}
+          <span className="font-medium text-[#2a2a27]">Levantar o budget</span>{" "}
+          para acompanhar comprometido e saldo.
+        </p>
+      </div>
+    );
+  }
+
+  const estourou = v.saldo !== null && v.saldo < 0;
+
+  return (
+    <div className="mb-6 rounded-xl border border-[#e6e6e3] bg-white p-4">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <div>
+          <p className={`mono ${mono}`} style={{ color: "#6b6b66" }}>Verba</p>
+          <p className="mono text-[15px] font-semibold text-[#1b1b19]">
+            {fmtBRL(v.total)}
+          </p>
+        </div>
+        <div>
+          <p className={`mono ${mono}`} style={{ color: "#6b6b66" }}>
+            Comprometido
+          </p>
+          <p className="mono text-[15px] font-semibold text-[#1b1b19]">
+            {fmtBRL(v.comprometido)}
+          </p>
+        </div>
+        {v.reservaPct !== null && (
+          <div>
+            <p className={`mono ${mono}`} style={{ color: "#6b6b66" }}>
+              Reserva ({v.reservaPct}%)
+            </p>
+            <p className="mono text-[15px] font-semibold text-[#1b1b19]">
+              {fmtBRL(v.reservaValor)}
+            </p>
+          </div>
+        )}
+        <div>
+          <p className={`mono ${mono}`} style={{ color: "#6b6b66" }}>Saldo</p>
+          <p
+            className="mono text-[15px] font-semibold"
+            style={{ color: estourou ? "#A5544B" : "#2e7d46" }}
+          >
+            {v.saldo !== null ? fmtBRL(v.saldo) : "—"}
+          </p>
+        </div>
+        <div className="ml-auto">
+          <button
+            onClick={sugerir}
+            disabled={pending}
+            className="rounded-[7px] border border-[#d0d0cb] px-3 py-1.5 text-[12.5px] font-medium text-[#3a3a37] hover:bg-[#f2f2ef] disabled:opacity-50"
+          >
+            Sugerir distribuição
+          </button>
+        </div>
+      </div>
+      {/* barra: comprometido sobre a verba */}
+      <div className="mt-3 h-1.5 overflow-hidden rounded bg-[#eaeae7]">
+        <div
+          className="h-full rounded"
+          style={{
+            width: `${Math.min(100, Math.round((v.comprometido / v.total) * 100))}%`,
+            background: estourou ? "#A5544B" : ACENTO,
+          }}
+        />
+      </div>
+      {v.distribuicaoDesatualizada && (
+        <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+          <p className="text-[12px] text-amber-800">
+            O cenário mudou — a distribuição ficou desatualizada em relação às
+            faixas atuais.
+          </p>
+          <button
+            onClick={sugerir}
+            disabled={pending}
+            className="shrink-0 rounded-md border border-amber-300 px-2.5 py-1 text-[12px] font-medium text-amber-900 hover:bg-amber-100"
+          >
+            Re-sugerir
+          </button>
+        </div>
+      )}
+      {erro && <p className="mt-2 text-[12px] text-[#A5544B]">{erro}</p>}
+    </div>
+  );
+}
+
 function ObjetivoCard({
+  eventId,
   objetivo,
   aberta,
+  pending,
   onAbrir,
+  onAgir,
 }: {
+  eventId: string;
   objetivo: Objetivo;
   aberta: string | null;
+  pending: boolean;
   onAbrir: (id: string) => void;
+  onAgir: (fn: () => Promise<unknown>) => void;
 }) {
   const [expandido, setExpandido] = useState(false);
+  const [editandoValor, setEditandoValor] = useState(false);
+  const [valor, setValor] = useState(
+    objetivo.valorPrevisto !== null ? String(objetivo.valorPrevisto) : ""
+  );
+
+  const temOrcamento =
+    objetivo.faixaPctIdeal !== null || objetivo.valorPrevisto !== null;
+
+  function salvarValor() {
+    setEditandoValor(false);
+    const n = valor === "" ? null : Number(valor);
+    if (n === (objetivo.valorPrevisto ?? null)) return;
+    onAgir(() => salvarValorPrevisto(eventId, objetivo.id, n));
+  }
 
   return (
     <div className="overflow-hidden rounded-[10px] border border-[#e6e6e3] bg-white">
@@ -406,6 +573,11 @@ function ObjetivoCard({
             {RESP_LABEL[objetivo.responsavelDominante]}
           </p>
         </div>
+        {objetivo.valorPrevisto !== null && (
+          <span className="mono shrink-0 text-[11px] text-[#5f5f5b]">
+            {fmtBRL(Number(objetivo.valorPrevisto))}
+          </span>
+        )}
         <span className="mono shrink-0 text-[11px] text-[#5f5f5b]">
           decisões {objetivo.decididas}/{objetivo.aplicaveis}
         </span>
@@ -413,6 +585,51 @@ function ObjetivoCard({
 
       {expandido && (
         <div className="border-t border-[#f0f0ee] px-3.5 py-2">
+          {/* Alocação do objetivo (categoria de orçamento) — editável. */}
+          {temOrcamento && (
+            <div className="mb-1 flex items-center gap-2 rounded-md bg-[#f7f7f5] px-2 py-1.5">
+              <span className={`mono ${mono}`} style={{ color: "#6b6b66" }}>
+                Previsto
+              </span>
+              {editandoValor ? (
+                <input
+                  autoFocus
+                  type="number"
+                  min={0}
+                  step={100}
+                  value={valor}
+                  onChange={(e) => setValor(e.target.value)}
+                  onBlur={salvarValor}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                  }}
+                  disabled={pending}
+                  className="mono w-[120px] rounded border border-[#c8c8c3] bg-white px-2 py-0.5 text-[12px] outline-none"
+                />
+              ) : (
+                <button
+                  onClick={() => {
+                    setValor(
+                      objetivo.valorPrevisto !== null
+                        ? String(objetivo.valorPrevisto)
+                        : ""
+                    );
+                    setEditandoValor(true);
+                  }}
+                  className="mono rounded px-1.5 py-0.5 text-[12px] font-semibold text-[#2a2a27] hover:bg-[#efefec]"
+                >
+                  {objetivo.valorPrevisto !== null
+                    ? fmtBRL(Number(objetivo.valorPrevisto))
+                    : "definir"}
+                </button>
+              )}
+              {objetivo.faixaPctMin !== null && (
+                <span className="mono ml-auto text-[10px] text-[#8a8a85]">
+                  referência {objetivo.faixaPctMin}–{objetivo.faixaPctMax}%
+                </span>
+              )}
+            </div>
+          )}
           {objetivo.decisoes.map((d) => (
             <DecisaoLinha
               key={d.id}
@@ -427,6 +644,24 @@ function ObjetivoCard({
   );
 }
 
+// Resumo dos campos preenchidos ("Fornecedor: Buffet X · Valor: R$ 18 mil")
+// no lugar do antigo texto livre.
+function resumoCampos(decisao: Decisao): string | null {
+  const preenchidos = decisao.campos.filter((c) => valorCampo(c) !== null);
+  if (preenchidos.length === 0) return null;
+  return preenchidos
+    .slice(0, 2)
+    .map((c) => {
+      const v = valorCampo(c);
+      if (c.tipo === "sim_nao") return `${c.label}: ${v ? "sim" : "não"}`;
+      if (c.tipo === "moeda") return `${c.label}: ${fmtBRL(Number(v))}`;
+      if (c.tipo === "escolha") return `${c.label}: ${opcaoLabel(String(v))}`;
+      if (c.tipo === "fornecedor") return c.label;
+      return `${c.label}: ${String(v)}`;
+    })
+    .join(" · ");
+}
+
 function DecisaoLinha({
   decisao,
   ativa,
@@ -438,6 +673,7 @@ function DecisaoLinha({
 }) {
   const na = decisao.estado === "nao_se_aplica";
   const decidida = decisao.estado === "decidida";
+  const resumo = resumoCampos(decisao);
 
   return (
     <button
@@ -461,10 +697,8 @@ function DecisaoLinha({
         >
           {decisao.titulo}
         </span>
-        {decisao.resultado && !na && (
-          <span className="truncate text-[12px] text-[#6b6b66]">
-            {decisao.resultado}
-          </span>
+        {resumo && !na && (
+          <span className="truncate text-[12px] text-[#6b6b66]">{resumo}</span>
         )}
       </span>
       {na ? (
@@ -477,8 +711,8 @@ function DecisaoLinha({
         </span>
       ) : (
         <span className="mono text-[10px] text-[#6b6b66]">
-          {decisao.guias.length > 0
-            ? `${decisao.guiasMarcados}/${decisao.guias.length} guia`
+          {decisao.campos.length > 0
+            ? `${decisao.camposPreenchidos}/${decisao.campos.length} campos`
             : "pendente"}
         </span>
       )}
@@ -486,25 +720,189 @@ function DecisaoLinha({
   );
 }
 
+// Um input por campo, conforme o tipo. Salva no blur (texto/número) ou na
+// escolha (select/sim-não/data/fornecedor).
+function CampoInput({
+  eventId,
+  campo,
+  suppliers,
+  pending,
+  onAgir,
+}: {
+  eventId: string;
+  campo: Campo;
+  suppliers: SupplierOpcao[];
+  pending: boolean;
+  onAgir: (fn: () => Promise<unknown>) => void;
+}) {
+  const [texto, setTexto] = useState(
+    campo.tipo === "numero" || campo.tipo === "moeda"
+      ? campo.valorNumero !== null
+        ? String(campo.valorNumero)
+        : ""
+      : campo.valorTexto ?? ""
+  );
+
+  const salvar = (valor: string | number | boolean | null) =>
+    onAgir(() =>
+      salvarCampo(eventId, campo.id, campo.tipo, campo.codigo, valor)
+    );
+
+  const inputCls =
+    "mt-1 w-full rounded-lg border border-[#c8c8c3] bg-white px-3 py-2 text-[13.5px] text-[#1b1b19] placeholder:text-[#9a9a95] outline-none focus:border-[oklch(0.5_0.14_285)]";
+
+  const label = (
+    <label className="mono text-[10px] uppercase tracking-[0.14em] text-[#6b6b66]">
+      {campo.label}
+      {campo.unidade ? ` (${campo.unidade})` : ""}
+    </label>
+  );
+
+  switch (campo.tipo) {
+    case "sim_nao": {
+      const v = campo.valorBool;
+      return (
+        <div>
+          {label}
+          <div className="mt-1 grid grid-cols-2 gap-1.5">
+            {([true, false] as const).map((opt) => (
+              <button
+                key={String(opt)}
+                onClick={() => salvar(v === opt ? null : opt)}
+                disabled={pending}
+                className={`rounded-lg border py-1.5 text-[12.5px] font-medium transition-colors ${
+                  v === opt
+                    ? "border-[oklch(0.5_0.14_285)] bg-[oklch(0.95_0.03_285)] text-[oklch(0.4_0.14_285)]"
+                    : "border-[#d0d0cb] text-[#5f5f5b] hover:bg-[#f2f2ef]"
+                }`}
+              >
+                {opt ? "Sim" : "Não"}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    case "escolha":
+      return (
+        <div>
+          {label}
+          <select
+            value={campo.valorOpcao ?? ""}
+            onChange={(e) => salvar(e.target.value || null)}
+            disabled={pending}
+            className={inputCls}
+          >
+            <option value="">—</option>
+            {(campo.opcoes ?? []).map((o) => (
+              <option key={o} value={o}>
+                {opcaoLabel(o)}
+              </option>
+            ))}
+          </select>
+        </div>
+      );
+    case "fornecedor":
+      return (
+        <div>
+          {label}
+          <select
+            value={campo.valorSupplierId ?? ""}
+            onChange={(e) => salvar(e.target.value || null)}
+            disabled={pending}
+            className={inputCls}
+          >
+            <option value="">—</option>
+            {suppliers.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      );
+    case "data":
+      return (
+        <div>
+          {label}
+          <input
+            type="date"
+            defaultValue={campo.valorData ?? ""}
+            onChange={(e) => salvar(e.target.value || null)}
+            disabled={pending}
+            className={inputCls}
+          />
+        </div>
+      );
+    case "numero":
+    case "moeda":
+      return (
+        <div>
+          {label}
+          <input
+            type="number"
+            min={0}
+            step={campo.tipo === "moeda" ? 100 : 1}
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            onBlur={() => {
+              const atual =
+                campo.valorNumero !== null ? String(campo.valorNumero) : "";
+              if (texto !== atual) salvar(texto === "" ? null : Number(texto));
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+            }}
+            placeholder={campo.tipo === "moeda" ? "R$" : ""}
+            disabled={pending}
+            className={inputCls}
+          />
+        </div>
+      );
+    default:
+      // texto e anexo (anexo: caminho/link até a tela final ter upload)
+      return (
+        <div>
+          {label}
+          <input
+            type="text"
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            onBlur={() => {
+              if ((campo.valorTexto ?? "") !== texto.trim())
+                salvar(texto.trim() || null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+            }}
+            placeholder={campo.tipo === "anexo" ? "link do arquivo" : ""}
+            disabled={pending}
+            className={inputCls}
+          />
+        </div>
+      );
+  }
+}
+
 function PainelDecisao({
   eventId,
   objetivoNome,
   decisao,
   dataEvento,
+  suppliers,
   pending,
   onFechar,
   onAgir,
-  onToggleGuia,
   onEstado,
 }: {
   eventId: string;
   objetivoNome: string;
   decisao: Decisao;
   dataEvento: string | null;
+  suppliers: SupplierOpcao[];
   pending: boolean;
   onFechar: () => void;
   onAgir: (fn: () => Promise<unknown>) => void;
-  onToggleGuia: (guiaId: string, marcado: boolean) => void;
   onEstado: (
     decisaoId: string,
     novo: EstadoDecisao,
@@ -515,11 +913,10 @@ function PainelDecisao({
   const decidida = decisao.estado === "decidida";
   // Esta decisão É a data do casamento? Então o "valor" dela é events.date.
   const ehData = decisao.codigo === "data";
-  const [resultado, setResultado] = useState(decisao.resultado ?? "");
 
   return (
     <aside className="w-[340px] shrink-0 border-l border-[#e6e6e3] bg-[#fbfbfa] pl-5">
-      <div className="sticky top-4">
+      <div className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto pb-4 pr-1">
         <div className="mb-3 flex items-start justify-between gap-2">
           <div>
             <p className="mono text-[10px] uppercase tracking-[0.14em] text-[#6b6b66]">
@@ -552,44 +949,23 @@ function PainelDecisao({
           </button>
         </div>
 
-        {/* CAPTURAR O RESULTADO — "definir" ganha onde acontecer. A data é
-            campo do evento; as demais decisões guardam um texto livre. */}
-        {!na && (
+        {/* A DATA é campo de primeira classe do evento (events.date). */}
+        {!na && ehData && (
           <div className="mb-4">
             <label className="mono text-[11px] uppercase tracking-[0.14em] text-[#6b6b66]">
-              {ehData ? "Data do casamento" : "O que foi decidido"}
+              Data do casamento
             </label>
-            {ehData ? (
-              <input
-                type="date"
-                defaultValue={dataEvento ?? ""}
-                onChange={(e) =>
-                  e.target.value &&
-                  onAgir(() => definirDataEvento(eventId, e.target.value))
-                }
-                disabled={pending}
-                className="mt-1.5 w-full rounded-lg border border-[#c8c8c3] bg-white px-3 py-2 text-[14px] text-[#1b1b19] outline-none focus:border-[oklch(0.5_0.14_285)]"
-              />
-            ) : (
-              <input
-                type="text"
-                value={resultado}
-                onChange={(e) => setResultado(e.target.value)}
-                onBlur={() => {
-                  if ((decisao.resultado ?? "") !== resultado.trim())
-                    onAgir(() =>
-                      registrarResultado(eventId, decisao.id, resultado)
-                    );
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                }}
-                placeholder="Ex.: Buffet Sabor & Arte — R$ 18.000"
-                disabled={pending}
-                className="mt-1.5 w-full rounded-lg border border-[#c8c8c3] bg-white px-3 py-2 text-[14px] text-[#1b1b19] placeholder:text-[#6b6b66] outline-none focus:border-[oklch(0.5_0.14_285)]"
-              />
-            )}
-            {ehData && !dataEvento && (
+            <input
+              type="date"
+              defaultValue={dataEvento ?? ""}
+              onChange={(e) =>
+                e.target.value &&
+                onAgir(() => definirDataEvento(eventId, e.target.value))
+              }
+              disabled={pending}
+              className="mt-1.5 w-full rounded-lg border border-[#c8c8c3] bg-white px-3 py-2 text-[14px] text-[#1b1b19] outline-none focus:border-[oklch(0.5_0.14_285)]"
+            />
+            {!dataEvento && (
               <p className="mt-1 text-[12px] text-[#8a6d3b]">
                 Sem data, os prazos e a agenda ficam soltos. Defina para o
                 método se ajustar ao tempo real.
@@ -598,38 +974,30 @@ function PainelDecisao({
           </div>
         )}
 
-        {/* GUIA DA DECISÃO */}
-        {decisao.guias.length > 0 && (
+        {/* O FORMULÁRIO da decisão: um input por campo, com o tipo certo.
+            Os campos vazios são o roteiro do que perguntar aos noivos. */}
+        {!na && decisao.campos.length > 0 && (
           <div className="mb-4">
             <div className="mb-2 flex items-center justify-between">
               <span className="mono text-[10px] uppercase tracking-[0.14em] text-[#5f5f5b]">
-                Guia da decisão
+                O que essa decisão define
               </span>
               <span className="mono text-[11px] text-[#6b6b66]">
-                {decisao.guiasMarcados} / {decisao.guias.length}
+                {decisao.camposPreenchidos} / {decisao.campos.length}
               </span>
             </div>
-            <ul className="space-y-1">
-              {decisao.guias.map((g) => (
-                <li key={g.id}>
-                  <button
-                    onClick={() => onToggleGuia(g.id, !g.marcado)}
-                    className="flex w-full items-start gap-2 rounded px-1.5 py-1 text-left hover:bg-[#f2f2ef]"
-                  >
-                    <span
-                      className={`mt-[1px] flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border ${g.marcado ? "border-[oklch(0.5_0.14_285)] bg-[oklch(0.5_0.14_285)] text-white" : "border-[#c8c8c3]"}`}
-                    >
-                      {g.marcado && <Check size={9} strokeWidth={3} />}
-                    </span>
-                    <span
-                      className={`text-[12.5px] ${g.marcado ? "text-[#5f5f5b] line-through" : "text-[#3a3a37]"}`}
-                    >
-                      {g.texto}
-                    </span>
-                  </button>
-                </li>
+            <div className="space-y-3">
+              {decisao.campos.map((c) => (
+                <CampoInput
+                  key={c.id}
+                  eventId={eventId}
+                  campo={c}
+                  suppliers={suppliers}
+                  pending={pending}
+                  onAgir={onAgir}
+                />
               ))}
-            </ul>
+            </div>
           </div>
         )}
 

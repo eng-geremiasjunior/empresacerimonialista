@@ -54,7 +54,8 @@ export function FormVerbaFornecedor({
   inicial?: {
     supplierId: string;
     valorEstimadoInicial: number | null;
-    valorAlocado: number;
+    // null = linha veio do Planejamento, ainda sem contrato
+    valorAlocado: number | null;
     observacao: string | null;
     itens: ItemVerba[];
   };

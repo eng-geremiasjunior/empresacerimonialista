@@ -102,7 +102,7 @@ export default async function EventoFinanceiroPage({
       id: string;
       supplier_id: string;
       valor_estimado_inicial: number | null;
-      valor_alocado: number;
+      valor_alocado: number | null;
       observacao: string | null;
       suppliers: { name: string } | null;
       evento_fornecedor_item: {
@@ -117,7 +117,9 @@ export default async function EventoFinanceiroPage({
     supplier_id: v.supplier_id,
     fornecedor: v.suppliers?.name ?? "Fornecedor",
     valor_estimado_inicial: v.valor_estimado_inicial,
-    valor_alocado: Number(v.valor_alocado),
+    // null = veio do Planejamento sem contrato ainda (Alocação sem
+    // Comprometimento) — não vira 0 para não inventar economia.
+    valor_alocado: v.valor_alocado === null ? null : Number(v.valor_alocado),
     observacao: v.observacao,
     itens: v.evento_fornecedor_item ?? [],
   }));

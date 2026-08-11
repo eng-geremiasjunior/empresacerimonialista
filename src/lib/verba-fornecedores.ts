@@ -15,7 +15,9 @@ export type VerbaFornecedor = {
   supplier_id: string;
   fornecedor: string;
   valor_estimado_inicial: number | null;
-  valor_alocado: number;
+  // null = ainda não contratado (5A): a linha pode nascer do Planejamento só
+  // com o previsto; o comprometimento chega com o contrato.
+  valor_alocado: number | null;
   observacao: string | null;
   itens: ItemDetalhe[];
 };
@@ -48,11 +50,18 @@ const soma = (ns: number[]) => ns.reduce((s, n) => s + n, 0);
 
 // Total do fornecedor: quando há itens, vale a soma deles; senão, o valor
 // alocado digitado. Sem isso o cabeçalho poderia divergir do detalhe.
+// valor_alocado null (previsto sem contrato) conta como 0 no total pago/a
+// pagar — mas NUNCA entra na economia (ver resumoVerba).
 export function totalDoFornecedor(v: VerbaFornecedor): number {
   if (v.itens.length > 0) {
     return soma(v.itens.map((i) => Number(i.valor_negociado ?? 0)));
   }
-  return Number(v.valor_alocado);
+  return Number(v.valor_alocado ?? 0);
+}
+
+// Existe comprometimento real (contrato/negociação)? Alocação sozinha não é.
+export function temComprometimento(v: VerbaFornecedor): boolean {
+  return v.itens.length > 0 || v.valor_alocado !== null;
 }
 
 export function montarLinhas(
@@ -96,10 +105,15 @@ export function resumoVerba(linhas: LinhaFornecedor[]): ResumoVerba {
   const alocado = soma(linhas.map(totalDoFornecedor));
   const pago = soma(linhas.map((l) => l.pago));
 
-  // Economia só conta quem tem estimativa inicial preenchida: sem ela não
-  // existe "antes" para comparar, e somar zero inventaria economia.
+  // Economia só existe quando há os DOIS lados: estimativa inicial (o
+  // "antes") E comprometimento real (o "depois"). Linha só com o previsto
+  // do Planejamento (valor_alocado null) NÃO entra — comparar estimado com
+  // zero inventaria economia (Alocação ≠ Comprometimento).
   const comEstimativa = linhas.filter(
-    (l) => l.valor_estimado_inicial !== null && l.valor_estimado_inicial !== undefined
+    (l) =>
+      l.valor_estimado_inicial !== null &&
+      l.valor_estimado_inicial !== undefined &&
+      temComprometimento(l)
   );
   const economia = soma(
     comEstimativa.map((l) => Number(l.valor_estimado_inicial) - totalDoFornecedor(l))

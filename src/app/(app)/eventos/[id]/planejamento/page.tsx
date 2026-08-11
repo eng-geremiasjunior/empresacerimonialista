@@ -12,11 +12,11 @@ export default async function EventoPlanejamentoPage({
   const supabase = createClient();
   const eventId = params.id;
 
-  const { data: ev } = await supabase
-    .from("events")
-    .select("date")
-    .eq("id", eventId)
-    .single();
+  const [{ data: ev }, { data: sups }] = await Promise.all([
+    supabase.from("events").select("date").eq("id", eventId).single(),
+    // para os campos tipo "fornecedor" das decisões de contratar
+    supabase.from("suppliers").select("id, name").order("name"),
+  ]);
 
   const planejamento = await getPlanejamento(eventId, ev?.date ?? null);
 
@@ -24,6 +24,7 @@ export default async function EventoPlanejamentoPage({
     <PlanejamentoEvento
       eventId={eventId}
       inicial={planejamento}
+      suppliers={sups ?? []}
       decisaoInicial={searchParams?.decisao ?? null}
     />
   );

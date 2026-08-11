@@ -54,7 +54,7 @@ export async function montarContextoEvento(
       : Promise.resolve({ data: null }),
     supabase
       .from("evento_decisao")
-      .select("titulo, estado, resultado, prazo_previsto, responsavel")
+      .select("id, titulo, estado, prazo_previsto, responsavel")
       .eq("event_id", eventId)
       .order("prioridade", { ascending: false }),
     supabase
@@ -126,13 +126,41 @@ export async function montarContextoEvento(
     );
   }
 
+  // O que cada decisão definiu: campos tipados preenchidos (5A), no lugar
+  // do antigo texto livre "resultado".
+  const { data: camposRaw } = await supabase
+    .from("evento_campo_valor")
+    .select(
+      "evento_decisao_id, label, tipo, valor_texto, valor_numero, valor_bool, valor_data, valor_opcao"
+    )
+    .eq("event_id", eventId)
+    .order("ordem");
+  const respostasPorDec = new Map<string, string[]>();
+  for (const c of camposRaw ?? []) {
+    let v: string | null = null;
+    if (c.tipo === "numero") v = c.valor_numero !== null ? String(c.valor_numero) : null;
+    else if (c.tipo === "moeda") v = c.valor_numero !== null ? moeda(Number(c.valor_numero)) : null;
+    else if (c.tipo === "sim_nao") v = c.valor_bool === null ? null : c.valor_bool ? "sim" : "não";
+    else if (c.tipo === "data") v = c.valor_data ? dataBR(c.valor_data) : null;
+    else if (c.tipo === "escolha") v = c.valor_opcao ? c.valor_opcao.replaceAll("_", " ") : null;
+    else v = c.valor_texto;
+    if (v === null) continue;
+    const arr = respostasPorDec.get(c.evento_decisao_id) ?? [];
+    arr.push(`${c.label}: ${v}`);
+    respostasPorDec.set(c.evento_decisao_id, arr);
+  }
+  const respostas = (id: string): string => {
+    const arr = respostasPorDec.get(id) ?? [];
+    return arr.length > 0 ? ` (${arr.join("; ")})` : "";
+  };
+
   const pendentes = decisoes.filter((d) => d.estado === "pendente");
   const decididas = decisoes.filter((d) => d.estado === "decidida");
   partes.push(
     `DECISÕES (${decididas.length} decididas, ${pendentes.length} pendentes):\n` +
       [
         ...decididas.map(
-          (d) => `- [decidida] ${d.titulo}${d.resultado ? `: ${d.resultado}` : ""}`
+          (d) => `- [decidida] ${d.titulo}${respostas(d.id)}`
         ),
         ...pendentes.map(
           (d) =>

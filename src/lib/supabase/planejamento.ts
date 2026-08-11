@@ -1,8 +1,9 @@
-// Dados da tela de Planejamento (4B). Consome a árvore do método (4A):
-// evento_objetivo → evento_decisao → evento_guia. Tudo real, nada mockado.
+// Dados da tela de Planejamento (4B). Consome a árvore do método (4A/5A):
+// evento_objetivo → evento_decisao → evento_campo_valor. Tudo real.
 //
-// O objeto dominante é a DECISÃO. A tela tem duas camadas: a fila das 3
-// decisões mais críticas agora e o mapa temporal por objetivo.
+// O objeto dominante é a DECISÃO — e ela é um FORMULÁRIO: produz valores
+// nomeados e tipados que o resto do sistema consome. Os campos vazios são
+// o roteiro de conversa com os noivos (o antigo guia virou isto).
 
 import { differenceInCalendarDays } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
@@ -10,12 +11,51 @@ import { createClient } from "@/lib/supabase/server";
 export type EstadoDecisao = "pendente" | "decidida" | "nao_se_aplica";
 export type Responsavel = "noivos" | "cerimonialista" | "ambos";
 
-export type Guia = {
+export type TipoCampo =
+  | "texto"
+  | "numero"
+  | "moeda"
+  | "sim_nao"
+  | "escolha"
+  | "data"
+  | "anexo"
+  | "fornecedor";
+
+export type Campo = {
   id: string;
-  texto: string;
+  codigo: string;
+  label: string;
+  tipo: TipoCampo;
+  opcoes: string[] | null;
+  unidade: string | null;
   ordem: number;
-  marcado: boolean;
+  valorTexto: string | null;
+  valorNumero: number | null;
+  valorBool: boolean | null;
+  valorData: string | null;
+  valorOpcao: string | null;
+  valorSupplierId: string | null;
 };
+
+// O valor canônico do campo, pelo tipo. null = ainda não respondido.
+export function valorDoCampo(c: Campo): string | number | boolean | null {
+  switch (c.tipo) {
+    case "numero":
+    case "moeda":
+      return c.valorNumero;
+    case "sim_nao":
+      return c.valorBool;
+    case "data":
+      return c.valorData;
+    case "escolha":
+      return c.valorOpcao;
+    case "fornecedor":
+      return c.valorSupplierId;
+    default:
+      // texto e anexo (anexo guarda o caminho do Storage em valor_texto)
+      return c.valorTexto;
+  }
+}
 
 export type Decisao = {
   id: string;
@@ -25,18 +65,17 @@ export type Decisao = {
   titulo: string;
   descricao: string | null;
   responsavel: Responsavel;
-  // o que foi decidido (buffet, valor, formato…). A data do casamento não
-  // usa isto — vive em events.date.
-  resultado: string | null;
   offsetIdealDias: number | null;
+  offsetMinDias: number | null;
+  offsetMaxDias: number | null;
   // Data recalculada pela compressão (4D). null = sem data do evento ou
   // nao_se_aplica. É esta data — não o offset cru — que a tela mostra.
   prazoPrevisto: string | null;
   prioridade: number;
   ordem: number;
   estado: EstadoDecisao;
-  guias: Guia[];
-  guiasMarcados: number;
+  campos: Campo[];
+  camposPreenchidos: number;
   // Nomes reais das tarefas que esta decisão gera na Organização (do
   // blueprint do método, 4C). Vazio para decisões sem blueprint.
   gerariaTarefas: string[];
@@ -50,6 +89,13 @@ export type Objetivo = {
   descricao: string | null;
   ordem: number;
   ativo: boolean;
+  // Alocação (5A): quanto da verba está reservado para este assunto.
+  // SEM data — intenção não tem vencimento.
+  valorPrevisto: number | null;
+  // Faixa % de referência, já com o delta de arquétipo aplicado.
+  faixaPctMin: number | null;
+  faixaPctIdeal: number | null;
+  faixaPctMax: number | null;
   responsavelDominante: Responsavel;
   decisoes: Decisao[];
   // progresso do objetivo (ponderado)
@@ -65,6 +111,19 @@ export type DecisaoCritica = Decisao & {
   objetivoNome: string;
 };
 
+// Termômetro (5C): verba, comprometido e saldo — só o macro; o detalhe
+// (parcelas, pagamentos) vive na Organização.
+export type Verba = {
+  total: number | null;
+  reservaPct: number | null;
+  reservaValor: number;
+  comprometido: number;
+  saldo: number | null;
+  // Ressalva 4: algum previsto destoa da faixa atual (ex.: o cenário mudou
+  // depois da distribuição). Nunca sobrescrevemos — avisamos.
+  distribuicaoDesatualizada: boolean;
+};
+
 export type Planejamento = {
   temArvore: boolean;
   dataEvento: string | null;
@@ -73,6 +132,7 @@ export type Planejamento = {
   progressoPct: number;
   criticas: DecisaoCritica[];
   objetivos: Objetivo[];
+  verba: Verba;
   // 4D: densidade da agenda (decisões pendentes ÷ meses até o evento) e o
   // aviso não bloqueante de ritmo intenso quando o método foi comprimido.
   densidadeMensal: number;
@@ -102,29 +162,33 @@ export async function getPlanejamento(
 ): Promise<Planejamento> {
   const supabase = createClient();
 
-  const [objRes, decRes, guiaRes] = await Promise.all([
+  const [objRes, decRes, campoRes] = await Promise.all([
     supabase
       .from("evento_objetivo")
-      .select("id, nome, descricao, ordem, ativo")
+      .select(
+        "id, nome, descricao, ordem, ativo, valor_previsto, faixa_pct_min, faixa_pct_ideal, faixa_pct_max"
+      )
       .eq("event_id", eventId)
       .order("ordem"),
     supabase
       .from("evento_decisao")
       .select(
-        "id, evento_objetivo_id, decisao_template_id, titulo, descricao, responsavel, resultado, offset_ideal_dias, prazo_previsto, prioridade, ordem, estado"
+        "id, evento_objetivo_id, decisao_template_id, titulo, descricao, responsavel, offset_ideal_dias, offset_min_dias, offset_max_dias, prazo_previsto, prioridade, ordem, estado"
       )
       .eq("event_id", eventId)
       .order("ordem"),
     supabase
-      .from("evento_guia")
-      .select("id, evento_decisao_id, texto, ordem, marcado")
+      .from("evento_campo_valor")
+      .select(
+        "id, evento_decisao_id, codigo, label, tipo, opcoes, unidade, ordem, valor_texto, valor_numero, valor_bool, valor_data, valor_opcao, valor_supplier_id"
+      )
       .eq("event_id", eventId)
       .order("ordem"),
   ]);
 
   const objsRaw = objRes.data ?? [];
   const decsRaw = decRes.data ?? [];
-  const guiasRaw = guiaRes.data ?? [];
+  const camposRaw = campoRes.data ?? [];
 
   // Blueprint (4C): tarefas que cada decisão-modelo gera. Lido pelo
   // decisao_template_id para mostrar os NOMES REAIS no painel.
@@ -164,19 +228,34 @@ export async function getPlanejamento(
       )
     : null;
 
-  // guias por decisão
-  const guiasPorDec = new Map<string, Guia[]>();
-  for (const g of guiasRaw) {
-    const arr = guiasPorDec.get(g.evento_decisao_id) ?? [];
-    arr.push({ id: g.id, texto: g.texto, ordem: g.ordem, marcado: g.marcado });
-    guiasPorDec.set(g.evento_decisao_id, arr);
+  // campos por decisão
+  const camposPorDec = new Map<string, Campo[]>();
+  for (const c of camposRaw) {
+    const campo: Campo = {
+      id: c.id,
+      codigo: c.codigo,
+      label: c.label,
+      tipo: c.tipo,
+      opcoes: c.opcoes,
+      unidade: c.unidade,
+      ordem: c.ordem,
+      valorTexto: c.valor_texto,
+      valorNumero: c.valor_numero,
+      valorBool: c.valor_bool,
+      valorData: c.valor_data,
+      valorOpcao: c.valor_opcao,
+      valorSupplierId: c.valor_supplier_id,
+    };
+    const arr = camposPorDec.get(c.evento_decisao_id) ?? [];
+    arr.push(campo);
+    camposPorDec.set(c.evento_decisao_id, arr);
   }
 
   // decisões por objetivo
   const decsPorObj = new Map<string, Decisao[]>();
   const todasDecisoes: Decisao[] = [];
   for (const d of decsRaw) {
-    const guias = guiasPorDec.get(d.id) ?? [];
+    const campos = camposPorDec.get(d.id) ?? [];
     const dec: Decisao = {
       id: d.id,
       objetivoId: d.evento_objetivo_id,
@@ -186,14 +265,15 @@ export async function getPlanejamento(
       titulo: d.titulo,
       descricao: d.descricao,
       responsavel: d.responsavel,
-      resultado: d.resultado,
       offsetIdealDias: d.offset_ideal_dias,
+      offsetMinDias: d.offset_min_dias,
+      offsetMaxDias: d.offset_max_dias,
       prazoPrevisto: d.prazo_previsto,
       prioridade: d.prioridade,
       ordem: d.ordem,
       estado: d.estado,
-      guias,
-      guiasMarcados: guias.filter((g) => g.marcado).length,
+      campos,
+      camposPreenchidos: campos.filter((c) => valorDoCampo(c) !== null).length,
       gerariaTarefas: d.decisao_template_id
         ? blueprintPorTemplate.get(d.decisao_template_id) ?? []
         : [],
@@ -240,6 +320,10 @@ export async function getPlanejamento(
       descricao: o.descricao,
       ordem: o.ordem,
       ativo: o.ativo,
+      valorPrevisto: o.valor_previsto,
+      faixaPctMin: o.faixa_pct_min,
+      faixaPctIdeal: o.faixa_pct_ideal,
+      faixaPctMax: o.faixa_pct_max,
       responsavelDominante: responsavelDominante(decisoes),
       decisoes,
       decididas: decididas.length,
@@ -271,6 +355,42 @@ export async function getPlanejamento(
         objetivos.find((o) => o.id === d.objetivoId)?.nome ?? "",
     }));
 
+  // ---- Termômetro (5C) ----
+  // Verba e reserva são campos tipados da decisão "Levantar o budget".
+  const campoValor = (codigo: string): number | null => {
+    for (const d of todasDecisoes) {
+      const c = d.campos.find((c) => c.codigo === codigo);
+      if (c && c.valorNumero !== null) return Number(c.valorNumero);
+    }
+    return null;
+  };
+  const verbaTotal = campoValor("verba_total");
+  const reservaPct = campoValor("reserva_pct");
+  const reservaValor =
+    verbaTotal !== null && reservaPct !== null
+      ? Math.round(verbaTotal * reservaPct) / 100
+      : 0;
+  const ativos = objetivos.filter((o) => o.ativo);
+  const comprometido =
+    ativos.reduce((s, o) => s + (Number(o.valorPrevisto) || 0), 0) +
+    reservaValor;
+  const saldo = verbaTotal !== null ? verbaTotal - comprometido : null;
+
+  // Ressalva 4 — distribuição desatualizada: algum previsto fora da faixa
+  // atual do objetivo (ex.: cenário mudou de salão para praia depois da
+  // distribuição). Detectado na leitura; a tela oferece re-sugerir.
+  const base =
+    verbaTotal !== null ? verbaTotal - reservaValor : null;
+  const distribuicaoDesatualizada =
+    base !== null &&
+    base > 0 &&
+    ativos.some((o) => {
+      if (o.valorPrevisto === null) return false;
+      if (o.faixaPctMin === null || o.faixaPctMax === null) return false;
+      const pct = (Number(o.valorPrevisto) / base) * 100;
+      return pct < o.faixaPctMin - 1 || pct > o.faixaPctMax + 1;
+    });
+
   // 4D — densidade da agenda: decisões pendentes ÷ meses até o evento.
   // O aviso de ritmo intenso é não bloqueante e só aparece quando o método
   // teve de ser comprimido (algum offset estruturante não coube no prazo) E
@@ -296,6 +416,14 @@ export async function getPlanejamento(
     progressoPct,
     criticas,
     objetivos,
+    verba: {
+      total: verbaTotal,
+      reservaPct,
+      reservaValor,
+      comprometido,
+      saldo,
+      distribuicaoDesatualizada,
+    },
     densidadeMensal,
     ritmoApertado,
   };
