@@ -410,7 +410,7 @@ export function PlanejamentoEvento({
           diasAteEvento={plano.diasAteEvento}
           escala={escala}
           cenario={cenario}
-          verbaTotal={plano.verba.total}
+          verba={plano.verba}
           onFechar={() => setMapaAberto(false)}
           onIrParaObjetivo={irParaObjetivo}
           onIrParaDecisao={irParaDecisao}

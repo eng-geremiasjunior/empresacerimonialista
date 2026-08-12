@@ -1,34 +1,165 @@
 "use client";
 
-// Mapa mental (handoff §9) — SOMENTE LEITURA. Arquitetura do casamento de
-// uma olhada; clicar num nó leva DE VOLTA ao modo Foco, na decisão/objetivo.
+// Mapa mental (handoff "animação de entrada + Copiloto contextual").
+// PANORAMA, SOMENTE LEITURA: o evento no centro e os objetivos em volta.
+// Toda edição acontece nos outros modos; aqui o clique só leva de volta.
 //
-// Duas propostas (1c radial, 1d árvore) com um alternador TEMPORÁRIO — a
-// versão final terá só uma; o alternador existe para a escolha ser feita
-// vendo dado real, e depois sai.
+// Duas camadas sobre o radial:
+//   1. Cascata de entrada — dispara UMA vez ao abrir, do centro para fora na
+//      ordem de prioridade, com as linhas traçando junto. Ensina por onde ler.
+//      Roda uma vez e para: movimento perpétuo cansa quem usa o dia todo.
+//   2. Apresentação guiada — o Copiloto narra quadro a quadro e o holofote
+//      segue a narração: o nó em foco cresce e ganha elevação, os outros
+//      recuam a 40%, a linha central até ele acende.
 //
-// Vínculos mostrados são os REAIS: objetivo → decisões → tarefas que a
-// decisão gera (4C). Sem curvas decisão→decisão (dependência não existe no
-// banco) e sem qualquer conceito de bloqueio.
+// Regra absoluta do Copiloto: cada frase é rastreável a um número real do
+// dado. Ele descreve o que É — nunca sugere, nunca opina, nunca prioriza.
+//
+// Nota de paleta: o handoff veio na paleta quente do Celebra Pro; como o
+// mapa vive dentro do Planejamento (neutro frio), os PAPÉIS de cor foram
+// mapeados para os neutros da tela. Estrutura, timings e easings são
+// literais do handoff. Ameixa e sálvia são iguais nas duas paletas.
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { X } from "lucide-react";
-import type { Decisao, Objetivo } from "@/lib/supabase/planejamento";
-import {
-  brl,
-  C,
-  dataBr,
-  DOT_COR,
-  estadoVisual,
-  F_MONO,
-  F_TITLE,
-  F_UI,
-  monoLabel,
-  rotuloArquetipo,
-  tituloStyle,
-} from "./celebra";
+import type { Decisao, Objetivo, Verba } from "@/lib/supabase/planejamento";
+import { brl, C, dataBr, F_MONO, F_TITLE, F_UI, rotuloArquetipo } from "./celebra";
 
-type Props = {
+const SALVIA = "#6E7F63";
+
+// ---- geometria do canvas lógico (handoff §Layout) -------------------
+// Raio generoso + card de 142px é o que garante que os nós NÃO se
+// sobreponham — era esse o defeito da versão anterior.
+const CARD_W = 142;
+const BASE_W = 1044;
+const BASE_H = 620;
+
+const CARD_H = 76; // altura real do card (nome + dots + meta + padding)
+
+// Dois cards se sobrepõem quando distam menos que a largura E menos que a
+// altura. Checagem discreta (só os ângulos que existem de fato) — a
+// condição contínua seria conservadora demais e inflaria o canvas à toa.
+function colide(n: number, W: number, H: number): boolean {
+  const cx = W / 2;
+  const cy = H / 2;
+  const rx = (W - CARD_W) / 2;
+  const ry = (H - 104) / 2;
+  const passo = 360 / Math.max(1, n);
+  const p: { x: number; y: number }[] = [];
+  for (let i = 0; i < n; i++) {
+    const a = ((-90 + i * passo) * Math.PI) / 180;
+    p.push({ x: cx + rx * Math.cos(a), y: cy + ry * Math.sin(a) });
+  }
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      if (
+        Math.abs(p[i].x - p[j].x) < CARD_W &&
+        Math.abs(p[i].y - p[j].y) < CARD_H
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function geometria(n: number) {
+  // Até 16 objetivos vale a geometria do handoff, validada no design.
+  // Acima disso (a cerimonialista pode criar objetivos próprios) o canvas
+  // cresce até caber de fato — crescer por uma fórmula fixa deixava os nós
+  // se encostando de novo, que era exatamente o defeito relatado.
+  let W = BASE_W;
+  let H = BASE_H;
+  for (let i = 0; i < 60 && colide(n, W, H); i++) {
+    W = Math.round(W * 1.04);
+    H = Math.round(H * 1.04);
+  }
+  return {
+    W,
+    H,
+    cx: W / 2,
+    cy: H / 2,
+    rx: (W - CARD_W) / 2,
+    ry: (H - 104) / 2,
+    passo: 360 / Math.max(1, n),
+  };
+}
+
+// ---- dado do mapa, derivado do real ---------------------------------
+
+type NoObjetivo = {
+  id: string;
+  nome: string;
+  valor: number;
+  feitas: number;
+  total: number;
+  pri: number; // ordem de leitura (1..n)
+  decisoes: Decisao[];
+  x: number;
+  y: number;
+};
+
+const BUCKET_PESO: Record<string, number> = { agora: 0, proximas: 1, depois: 2 };
+
+function montarNos(objetivos: Objetivo[]): NoObjetivo[] {
+  const ativos = objetivos.filter((o) => o.ativo);
+  const g = geometria(ativos.length);
+
+  // Ordem de PRIORIDADE (leitura): o que vence antes primeiro, depois o
+  // peso das decisões. Diferente da posição angular, que segue a ordem do
+  // método — assim o anel fica estável e a narração fica útil.
+  const porPrioridade = [...ativos].sort((a, b) => {
+    const pb = BUCKET_PESO[a.bucket] - BUCKET_PESO[b.bucket];
+    if (pb !== 0) return pb;
+    const maxA = Math.max(0, ...a.decisoes.map((d) => d.prioridade));
+    const maxB = Math.max(0, ...b.decisoes.map((d) => d.prioridade));
+    if (maxA !== maxB) return maxB - maxA;
+    return a.ordem - b.ordem;
+  });
+  const pri = new Map(porPrioridade.map((o, i) => [o.id, i + 1]));
+
+  return ativos.map((o, i) => {
+    const ang = ((-90 + i * g.passo) * Math.PI) / 180;
+    const aplicaveis = o.decisoes.filter((d) => d.estado !== "nao_se_aplica");
+    return {
+      id: o.id,
+      nome: o.nome,
+      valor: Number(o.valorPrevisto ?? 0),
+      feitas: aplicaveis.filter((d) => d.estado === "decidida").length,
+      total: aplicaveis.length,
+      pri: pri.get(o.id) ?? i + 1,
+      decisoes: aplicaveis,
+      x: g.cx + g.rx * Math.cos(ang),
+      y: g.cy + g.ry * Math.sin(ang),
+    };
+  });
+}
+
+// ---- Copiloto: todo texto vem de um campo do dado -------------------
+
+type Linha = { texto: string; fortes: string[] };
+type Quadro = {
+  eyebrow: string;
+  titulo: string;
+  linhas: Linha[];
+  decisoes?: { nome: string; feita: boolean }[];
+  restantes?: number;
+  plain: string; // para o cálculo do tempo de leitura
+};
+
+export function MapaMental({
+  objetivos,
+  clienteNome,
+  localEvento,
+  dataEvento,
+  diasAteEvento,
+  escala,
+  cenario,
+  verba,
+  onFechar,
+  onIrParaObjetivo,
+  onIrParaDecisao,
+}: {
   objetivos: Objetivo[];
   clienteNome: string | null;
   localEvento: string | null;
@@ -36,480 +167,298 @@ type Props = {
   diasAteEvento: number | null;
   escala: string | null;
   cenario: string | null;
-  verbaTotal: number | null;
+  verba: Verba;
   onFechar: () => void;
   onIrParaObjetivo: (objetivoId: string) => void;
   onIrParaDecisao: (d: Decisao) => void;
-};
+}) {
+  const nos = useMemo(() => montarNos(objetivos), [objetivos]);
+  const n = nos.length;
+  const g = useMemo(() => geometria(n), [n]);
 
-function CartaoEvento({
-  clienteNome,
-  dataEvento,
-  localEvento,
-  escala,
-  cenario,
-  verbaTotal,
-  diasAteEvento,
-  largura,
-}: Pick<
-  Props,
-  | "clienteNome"
-  | "dataEvento"
-  | "localEvento"
-  | "escala"
-  | "cenario"
-  | "verbaTotal"
-  | "diasAteEvento"
-> & { largura: number }) {
-  const linha1 = [
-    dataEvento ? dataBr(dataEvento) : null,
-    localEvento,
-    rotuloArquetipo(escala)?.toLowerCase(),
-    rotuloArquetipo(cenario)?.toLowerCase(),
-  ]
-    .filter(Boolean)
-    .join(" · ");
-  const linha2 = [
-    verbaTotal !== null ? brl(verbaTotal) : null,
-    diasAteEvento !== null ? `${diasAteEvento} dias` : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
-  return (
-    <div
-      style={{
-        width: largura,
-        background: C.tinta,
-        borderRadius: 12,
-        padding: "16px 18px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 6,
-      }}
-    >
-      <span
-        style={{
-          fontFamily: F_TITLE,
-          fontWeight: 600,
-          fontSize: 19,
-          lineHeight: "25px",
-          letterSpacing: "-0.02em",
-          color: "#fff",
-        }}
-      >
-        {clienteNome ?? "Casamento"}
-      </span>
-      {linha1 && (
-        <span style={{ fontFamily: F_MONO, fontSize: 10, lineHeight: "15px", color: "#B8BCC0" }}>
-          {linha1}
-        </span>
-      )}
-      {linha2 && (
-        <span style={{ fontFamily: F_MONO, fontSize: 10, lineHeight: "15px", color: "#B8BCC0" }}>
-          {linha2}
-        </span>
-      )}
-    </div>
+  const [view, setView] = useState<"radial" | "arvore">("radial");
+  const [phase, setPhase] = useState<"hidden" | "shown" | "ready">("hidden");
+  const [playing, setPlaying] = useState(false);
+  const [step, setStep] = useState(0);
+  const [colW, setColW] = useState(0);
+
+  const colRef = useRef<HTMLDivElement>(null);
+  const tAvanco = useRef<number | null>(null);
+  const tFase1 = useRef<number | null>(null);
+  const tFase2 = useRef<number | null>(null);
+
+  const reduzir =
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+  // ---- números derivados (handoff §Números derivados) ----
+  const agg = useMemo(() => {
+    const comprometido = verba.comprometido;
+    const semDecisao = nos.filter((o) => o.feitas === 0).length;
+    const feitas = nos.reduce((s, o) => s + o.feitas, 0);
+    const total = nos.reduce((s, o) => s + o.total, 0);
+    const maior = [...nos].sort((a, b) => b.valor - a.valor)[0] ?? null;
+    return { comprometido, semDecisao, feitas, total, maior };
+  }, [nos, verba.comprometido]);
+
+  // ---- conteúdo de cada quadro ----
+  const quadro = useCallback(
+    (s: number): Quadro => {
+      if (s === 0) {
+        const contexto = [
+          rotuloArquetipo(escala),
+          rotuloArquetipo(cenario),
+          localEvento,
+        ]
+          .filter(Boolean)
+          .join(" · ");
+        const linhas: Linha[] = [];
+        if (contexto || diasAteEvento !== null) {
+          linhas.push({
+            texto: `${contexto}${diasAteEvento !== null ? ` · faltam ${diasAteEvento} dias` : ""}`,
+            fortes: diasAteEvento !== null ? [`${diasAteEvento} dias`] : [],
+          });
+        }
+        linhas.push({
+          texto: `${n} objetivos no mapa · ${agg.semDecisao} ainda sem nenhuma decisão`,
+          fortes: [String(n), String(agg.semDecisao)],
+        });
+        linhas.push({
+          texto: `${agg.feitas} de ${agg.total} decisões resolvidas`,
+          fortes: [String(agg.feitas), String(agg.total)],
+        });
+        if (verba.total !== null) {
+          linhas.push({
+            texto: `Verba ${brl(verba.total)} · ${brl(agg.comprometido)} comprometido · ${verba.saldo !== null ? brl(verba.saldo) : "—"} livre`,
+            fortes: [
+              brl(verba.total),
+              brl(agg.comprometido),
+              verba.saldo !== null ? brl(verba.saldo) : "",
+            ].filter(Boolean),
+          });
+        }
+        if (agg.maior && agg.maior.valor > 0) {
+          linhas.push({
+            texto: `Maior verba prevista · ${agg.maior.nome} · ${brl(agg.maior.valor)}`,
+            fortes: [agg.maior.nome, brl(agg.maior.valor)],
+          });
+        }
+        return {
+          eyebrow: playing ? "Panorama" : "Panorama · só leitura",
+          titulo: clienteNome ? `Casamento ${clienteNome}` : "Panorama do evento",
+          linhas,
+          plain: linhas.map((l) => l.texto).join(" "),
+        };
+      }
+
+      const o = nos.find((x) => x.pri === s);
+      if (!o) return { eyebrow: "", titulo: "", linhas: [], plain: "" };
+      const linhas: Linha[] = [];
+      if (o.valor > 0) {
+        const pct =
+          agg.comprometido > 0
+            ? Math.round((o.valor / agg.comprometido) * 100)
+            : 0;
+        linhas.push({
+          texto: `Verba prevista · ${brl(o.valor)} · ${pct}% do comprometido`,
+          fortes: [brl(o.valor), `${pct}%`],
+        });
+      } else {
+        linhas.push({
+          texto: "Sem verba prevista neste objetivo",
+          fortes: [],
+        });
+      }
+      linhas.push({
+        texto: `${o.feitas} de ${o.total} decisões resolvidas`,
+        fortes: [String(o.feitas), String(o.total)],
+      });
+      const mostradas = o.decisoes.slice(0, 5);
+      return {
+        eyebrow: `Quadro ${s} de ${n}`,
+        titulo: o.nome,
+        linhas,
+        decisoes: mostradas.map((d) => ({
+          nome: d.titulo,
+          feita: d.estado === "decidida",
+        })),
+        restantes: Math.max(0, o.total - mostradas.length),
+        plain: `${o.nome} ${linhas.map((l) => l.texto).join(" ")} ${mostradas
+          .map((d) => d.titulo)
+          .join(" ")}`,
+      };
+    },
+    [nos, n, agg, verba, escala, cenario, localEvento, diasAteEvento, clienteNome, playing]
   );
-}
 
-// ------------------------------------------------------------------
-// 1c — Radial: evento no centro, objetivos em elipse ao redor
-// ------------------------------------------------------------------
+  // ---- ritmo: tempo de LEITURA do quadro ----
+  const duracao = useCallback(
+    (s: number) => {
+      const palavras = quadro(s).plain.trim().split(/\s+/).length;
+      const wpm = 230; // leitura calma
+      return Math.min(5500, Math.max(2600, Math.round((palavras / wpm) * 60000) + 500));
+    },
+    [quadro]
+  );
 
-function MapaRadial(props: Props) {
-  const ativos = props.objetivos.filter((o) => o.ativo);
-  const atualId = ativos.find((o) => o.bucket === "agora")?.id ?? null;
-  const n = ativos.length;
+  // ---- máquina da apresentação ----
+  // O auto-avanço é re-armado explicitamente a cada quadro (o handoff avisa
+  // que depender de efeito genérico não dispara de forma confiável).
+  const avancar = useCallback(
+    (s: number) => {
+      if (tAvanco.current) window.clearTimeout(tAvanco.current);
+      if (s > n) {
+        setPlaying(false);
+        setStep(0);
+        return;
+      }
+      const alvo = Math.max(0, s);
+      setPlaying(true);
+      setStep(alvo);
+      tAvanco.current = window.setTimeout(
+        () => avancar(alvo + 1),
+        duracao(alvo)
+      );
+    },
+    [n, duracao]
+  );
 
-  // posições em % sobre a área (elipse), começando no topo
-  const pos = ativos.map((_, i) => {
-    const ang = -Math.PI / 2 + (2 * Math.PI * i) / n;
-    return {
-      x: 50 + 38 * Math.cos(ang),
-      y: 50 + 40 * Math.sin(ang),
+  const parar = useCallback(() => {
+    if (tAvanco.current) window.clearTimeout(tAvanco.current);
+    tAvanco.current = null;
+    setPlaying(false);
+    setStep(0);
+  }, []);
+
+  // ---- cascata de entrada: dispara uma vez, ao montar (= ao abrir) ----
+  useEffect(() => {
+    if (reduzir) {
+      setPhase("ready");
+      return;
+    }
+    tFase1.current = window.setTimeout(() => setPhase("shown"), 60);
+    tFase2.current = window.setTimeout(
+      () => setPhase("ready"),
+      300 + n * 70 + 650
+    );
+    return () => {
+      if (tFase1.current) window.clearTimeout(tFase1.current);
+      if (tFase2.current) window.clearTimeout(tFase2.current);
     };
-  });
+  }, [reduzir, n]);
 
-  return (
-    <div style={{ position: "relative", height: 660, background: "#fff" }}>
-      {/* arestas centro → nó (vínculo real objetivo-do-evento) */}
-      <svg
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-        style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
-      >
-        {pos.map((p, i) => (
-          <line
-            key={i}
-            x1={50}
-            y1={50}
-            x2={p.x}
-            y2={p.y}
-            stroke={C.bordaMedia}
-            strokeWidth={1.5}
-            vectorEffect="non-scaling-stroke"
-          />
-        ))}
-      </svg>
-
-      {/* centro */}
-      <div
-        style={{
-          position: "absolute",
-          left: "50%",
-          top: "50%",
-          transform: "translate(-50%,-50%)",
-          zIndex: 2,
-        }}
-      >
-        <CartaoEvento {...props} largura={240} />
-      </div>
-
-      {/* nós */}
-      {ativos.map((o, i) => {
-        const ativo = o.id === atualId;
-        return (
-          <button
-            key={o.id}
-            type="button"
-            onClick={() => props.onIrParaObjetivo(o.id)}
-            title="Abrir no modo Foco"
-            style={{
-              position: "absolute",
-              left: `${pos[i].x}%`,
-              top: `${pos[i].y}%`,
-              transform: "translate(-50%,-50%)",
-              width: 190,
-              background: "#fff",
-              border: `1.5px solid ${ativo ? C.ameixa : C.bordaForte}`,
-              borderRadius: 10,
-              padding: "10px 12px",
-              textAlign: "left",
-              cursor: "pointer",
-              zIndex: 2,
-              display: "flex",
-              flexDirection: "column",
-              gap: 4,
-            }}
-          >
-            <span
-              style={{
-                fontFamily: F_TITLE,
-                fontWeight: 600,
-                fontSize: 14,
-                lineHeight: "19px",
-                letterSpacing: "-0.02em",
-                color: C.tinta,
-              }}
-            >
-              {o.nome}
-            </span>
-            <span style={{ fontFamily: F_MONO, fontSize: 10, color: C.meta }}>
-              {o.decididas}/{o.aplicaveis} · {brl(o.valorPrevisto)}
-            </span>
-            {ativo && (
-              <span style={{ display: "flex", gap: 3, marginTop: 2 }}>
-                {o.decisoes
-                  .filter((d) => d.estado !== "nao_se_aplica")
-                  .slice(0, 8)
-                  .map((d) => (
-                    <span
-                      key={d.id}
-                      style={{
-                        width: 16,
-                        height: 6,
-                        borderRadius: 3,
-                        background:
-                          d.estado === "decidida" ? C.ameixa : C.bordaSutil,
-                      }}
-                    />
-                  ))}
-              </span>
-            )}
-          </button>
-        );
-      })}
-
-      {/* legenda */}
-      <p
-        style={{
-          position: "absolute",
-          left: 22,
-          bottom: 14,
-          maxWidth: 420,
-          fontFamily: F_UI,
-          fontSize: 11,
-          lineHeight: "16px",
-          color: C.meta,
-        }}
-      >
-        Linha cheia = objetivo do evento · barrinhas = decisões resolvidas do
-        objetivo da janela atual.
-      </p>
-    </div>
+  useEffect(
+    () => () => {
+      if (tAvanco.current) window.clearTimeout(tAvanco.current);
+    },
+    []
   );
-}
 
-// ------------------------------------------------------------------
-// 1d — Árvore horizontal: evento → objetivos → decisões (e as tarefas
-// que cada decisão gera, vínculo real da 4C)
-// ------------------------------------------------------------------
-
-function MapaArvore(props: Props) {
-  const ativos = props.objetivos.filter((o) => o.ativo);
-  const atual = ativos.find((o) => o.bucket === "agora") ?? ativos[0] ?? null;
-
-  const JANELA: Record<string, string> = {
-    agora: "agora",
-    proximas: "próximas",
-    depois: "depois",
-  };
-
-  return (
-    <div
-      style={{
-        display: "flex",
-        gap: 0,
-        padding: "26px 22px 30px",
-        background: "#fff",
-        overflowX: "auto",
-      }}
-    >
-      {/* coluna 1 — evento */}
-      <div style={{ flexShrink: 0, alignSelf: "flex-start" }}>
-        <CartaoEvento {...props} largura={210} />
-      </div>
-
-      {/* espinha 1 */}
-      <div
-        style={{
-          width: 34,
-          flexShrink: 0,
-          borderLeft: `1.5px solid ${C.bordaMedia}`,
-          marginLeft: 34,
-        }}
-      />
-
-      {/* coluna 2 — objetivos · categorias de verba */}
-      <div
-        style={{
-          width: 250,
-          flexShrink: 0,
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-        }}
-      >
-        <span style={{ ...monoLabel, marginBottom: 2 }}>
-          objetivos · categorias de verba
-        </span>
-        {ativos.map((o) => {
-          const ehAtual = atual?.id === o.id;
-          return (
-            <button
-              key={o.id}
-              type="button"
-              onClick={() => props.onIrParaObjetivo(o.id)}
-              title="Abrir no modo Foco"
-              style={{
-                textAlign: "left",
-                background: "#fff",
-                border: `1.5px solid ${ehAtual ? C.ameixa : C.bordaForte}`,
-                borderRadius: 10,
-                padding: "10px 12px",
-                cursor: "pointer",
-                opacity:
-                  o.bucket === "depois" ? 0.6 : o.bucket === "proximas" ? 0.75 : 1,
-                display: "flex",
-                flexDirection: "column",
-                gap: 3,
-              }}
-            >
-              <span
-                style={{
-                  fontFamily: F_TITLE,
-                  fontWeight: 600,
-                  fontSize: 14,
-                  lineHeight: "19px",
-                  letterSpacing: "-0.02em",
-                  color: C.tinta,
-                }}
-              >
-                {o.nome}
-              </span>
-              <span style={{ fontFamily: F_MONO, fontSize: 10, color: C.meta }}>
-                {o.decididas}/{o.aplicaveis} · {brl(o.valorPrevisto)} ·{" "}
-                {JANELA[o.bucket]}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* espinha 2 */}
-      <div
-        style={{
-          width: 34,
-          flexShrink: 0,
-          borderLeft: `1.5px solid ${C.bordaMedia}`,
-          marginLeft: 34,
-        }}
-      />
-
-      {/* coluna 3 — decisões penduradas no objetivo da janela atual */}
-      <div style={{ flex: 1, minWidth: 300 }}>
-        <span style={{ ...monoLabel, display: "block", marginBottom: 10 }}>
-          decisões penduradas no objetivo
-          {atual ? ` — ${atual.nome.toLowerCase()}` : ""}
-        </span>
-        {atual && (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, minmax(220px, 1fr))",
-              gap: 10,
-            }}
-          >
-            {atual.decisoes.map((d) => {
-              const ev = estadoVisual(d);
-              const na = ev === "na";
-              const vazios = d.campos.length - d.camposPreenchidos;
-              const meta = na
-                ? "não se aplica"
-                : ev === "decidida"
-                  ? "decidida"
-                  : d.campos.length > 0
-                    ? `${vazios} ${vazios === 1 ? "vazio" : "vazios"}`
-                    : "pendente";
-              const tarefas =
-                d.gerariaTarefas.length > 0
-                  ? ` · gera ${d.gerariaTarefas.length} tarefas`
-                  : "";
-              return (
-                <button
-                  key={d.id}
-                  type="button"
-                  onClick={() => props.onIrParaDecisao(d)}
-                  title="Abrir no modo Foco"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    background: "#fff",
-                    border: `1px solid ${C.bordaMedia}`,
-                    borderRadius: 8,
-                    padding: "9px 11px",
-                    cursor: "pointer",
-                    textAlign: "left",
-                    opacity: na ? 0.6 : 1,
-                  }}
-                >
-                  <span
-                    aria-hidden
-                    style={{
-                      width: 7,
-                      height: 7,
-                      borderRadius: "50%",
-                      background: DOT_COR[ev],
-                      flexShrink: 0,
-                    }}
-                  />
-                  <span style={{ flex: 1, minWidth: 0 }}>
-                    <span
-                      style={{
-                        display: "block",
-                        fontFamily: F_UI,
-                        fontSize: 13,
-                        lineHeight: "17px",
-                        color: C.tinta,
-                        textDecoration: na ? "line-through" : "none",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {d.titulo}
-                    </span>
-                    <span
-                      style={{
-                        display: "block",
-                        fontFamily: F_MONO,
-                        fontSize: 10,
-                        color: C.meta,
-                      }}
-                    >
-                      {meta}
-                      {tarefas}
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-        <p
-          style={{
-            marginTop: 14,
-            fontFamily: F_UI,
-            fontSize: 11,
-            lineHeight: "16px",
-            color: C.meta,
-          }}
-        >
-          “gera N tarefas” é o vínculo real com a Organização: decidir cria as
-          tarefas; reverter remove só as pendentes.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// ------------------------------------------------------------------
-// Contêiner com cabeçalho próprio
-// ------------------------------------------------------------------
-
-export function MapaMental(props: Props) {
-  // Alternador TEMPORÁRIO entre as duas propostas — sai quando a escolha
-  // for feita com dado real.
-  const [proposta, setProposta] = useState<"radial" | "arvore">("radial");
-
+  // Esc fecha
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") props.onFechar();
+      if (e.key === "Escape") onFechar();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [onFechar]);
 
+  // ---- escala para caber na coluna (sem cortar, sem pan) ----
+  useEffect(() => {
+    const el = colRef.current;
+    if (!el) return;
+    const medir = () => setColW(el.clientWidth);
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [view]);
+
+  const fit = colW > 0 ? Math.min(1, Math.max(0.28, (colW - 40) / g.W)) : 1;
+  const entrando = phase !== "ready";
+  const q = quadro(step);
+
+  // ---- estilo de um nó, nas três situações (entrada, holofote, neutro) --
+  function estiloNo(no: NoObjetivo) {
+    const emFoco = playing && step === no.pri;
+    const recuado = playing && step !== no.pri;
+    const delay = 150 + (no.pri - 1) * 70;
+
+    // nasce ~40% mais perto do centro
+    const offX = entrando && phase === "hidden" ? (g.cx - no.x) * 0.4 : 0;
+    const offY = entrando && phase === "hidden" ? (g.cy - no.y) * 0.4 : 0;
+    const escalaNo =
+      entrando && phase === "hidden" ? 0.9 : emFoco ? 1.06 : recuado ? 0.96 : 1;
+
+    const base: React.CSSProperties = {
+      position: "absolute",
+      left: no.x,
+      top: no.y,
+      width: CARD_W,
+      transform: `translate(-50%,-50%) translate(${offX}px,${offY}px) scale(${escalaNo})`,
+      opacity: entrando && phase === "hidden" ? 0 : recuado ? 0.4 : 1,
+      background: "#fff",
+      border: `1px solid ${emFoco ? C.ameixa : C.bordaSutil}`,
+      borderRadius: 10,
+      padding: "9px 11px",
+      textAlign: "left",
+      cursor: "pointer",
+      zIndex: emFoco ? 5 : 1,
+      boxShadow: emFoco
+        ? "0 0 0 3px rgba(110,63,95,.16), 0 12px 30px rgba(34,30,27,.14)"
+        : "none",
+    };
+
+    if (reduzir) return { ...base, transition: "none", opacity: 1, transform: `translate(-50%,-50%)` };
+    return {
+      ...base,
+      transition: entrando
+        ? `opacity 380ms ease ${delay}ms, transform 560ms cubic-bezier(0.34,1.4,0.64,1) ${delay}ms`
+        : "opacity 280ms ease, transform 320ms cubic-bezier(0.22,0.61,0.36,1), border-color 260ms ease, box-shadow 300ms ease",
+    };
+  }
+
+  const centroEmFoco = playing && step === 0;
+  const centroRecuado = playing && step > 0;
+
+  // ---------------------------------------------------------------- UI
   return (
     <div
       style={{
         border: `1px solid ${C.bordaForte}`,
-        borderRadius: 10,
+        borderRadius: 14,
         background: "#fff",
         overflow: "hidden",
         boxShadow: "0 1px 2px rgba(0,0,0,.04)",
       }}
     >
+      {/* header do painel */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
           gap: 12,
-          padding: "16px 22px",
-          background: C.zona2,
+          padding: "14px 18px",
           borderBottom: `1px solid ${C.bordaSutil}`,
           flexWrap: "wrap",
         }}
       >
-        <span style={tituloStyle(17, 23)}>Mapa mental</span>
+        <span
+          style={{
+            fontFamily: F_TITLE,
+            fontWeight: 600,
+            fontSize: 17,
+            letterSpacing: "-0.02em",
+            color: C.tinta,
+          }}
+        >
+          Mapa mental
+        </span>
         <span
           style={{
             padding: "3px 9px",
-            borderRadius: 20,
-            background: "#E4E6E8",
+            borderRadius: 999,
+            background: C.zona,
             fontFamily: F_MONO,
             fontSize: 10,
             textTransform: "uppercase",
@@ -522,46 +471,57 @@ export function MapaMental(props: Props) {
         <span
           style={{
             flex: 1,
-            minWidth: 200,
+            minWidth: 180,
             fontFamily: F_UI,
-            fontSize: 12,
+            fontSize: 13,
             color: C.meta,
           }}
         >
-          Arquitetura do casamento de uma olhada. Clicar num nó leva de volta à
-          decisão no modo Foco.
+          Arquitetura do casamento de uma olhada. Clicar num nó leva à decisão
+          no modo Foco.
         </span>
-        {/* alternador temporário (avaliação com dado real) */}
-        <span style={{ display: "flex", gap: 2 }}>
-          {(["radial", "arvore"] as const).map((p) => (
+        <span
+          style={{
+            display: "flex",
+            gap: 2,
+            padding: 3,
+            borderRadius: 999,
+            background: C.zona,
+          }}
+        >
+          {(["radial", "arvore"] as const).map((v) => (
             <button
-              key={p}
+              key={v}
               type="button"
-              onClick={() => setProposta(p)}
+              onClick={() => setView(v)}
               style={{
-                padding: "4px 10px",
-                borderRadius: 6,
+                padding: "4px 12px",
+                borderRadius: 999,
                 border: "none",
-                background: proposta === p ? C.tinta : "transparent",
+                background: view === v ? C.tinta : "transparent",
                 fontFamily: F_MONO,
                 fontSize: 11,
-                color: proposta === p ? "#fff" : C.secundario,
+                color: view === v ? "#fff" : C.secundario,
                 cursor: "pointer",
+                transition: "background 150ms ease, color 150ms ease",
               }}
             >
-              {p === "radial" ? "radial" : "árvore"}
+              {v === "radial" ? "radial" : "árvore"}
             </button>
           ))}
         </span>
         <button
           type="button"
-          onClick={props.onFechar}
+          onClick={onFechar}
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 4,
-            border: "none",
-            background: "none",
+            gap: 6,
+            height: 32,
+            padding: "0 12px",
+            border: `1px solid ${C.bordaMedia}`,
+            borderRadius: 8,
+            background: "#fff",
             fontFamily: F_TITLE,
             fontWeight: 600,
             fontSize: 13,
@@ -569,15 +529,705 @@ export function MapaMental(props: Props) {
             cursor: "pointer",
           }}
         >
-          Fechar <X size={14} />
+          Fechar <X size={13} />
         </button>
       </div>
 
-      {proposta === "radial" ? (
-        <MapaRadial {...props} />
-      ) : (
-        <MapaArvore {...props} />
+      {/* corpo: mapa + trilho do copiloto */}
+      <div style={{ display: "flex", alignItems: "stretch", flexWrap: "wrap" }}>
+        <div ref={colRef} style={{ flex: 1, minWidth: 320, padding: "20px 0" }}>
+          {view === "radial" ? (
+            <div
+              style={{
+                position: "relative",
+                height: g.H * fit,
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  left: "50%",
+                  top: 0,
+                  width: g.W,
+                  height: g.H,
+                  transform: `translateX(-50%) scale(${fit})`,
+                  transformOrigin: "top center",
+                }}
+              >
+                {/* linhas: traçam junto com a cascata, acendem no holofote */}
+                <svg
+                  width={g.W}
+                  height={g.H}
+                  style={{ position: "absolute", inset: 0 }}
+                >
+                  {nos.map((no) => {
+                    const len = Math.hypot(no.x - g.cx, no.y - g.cy);
+                    const acesa = playing && step === no.pri;
+                    const delay = 150 + (no.pri - 1) * 70;
+                    return (
+                      <line
+                        key={no.id}
+                        x1={g.cx}
+                        y1={g.cy}
+                        x2={no.x}
+                        y2={no.y}
+                        stroke={acesa ? C.ameixa : C.bordaSutil}
+                        strokeWidth={acesa ? 2 : 1.5}
+                        strokeDasharray={entrando ? len : undefined}
+                        strokeDashoffset={
+                          entrando && phase === "hidden" ? len : 0
+                        }
+                        opacity={playing && !acesa ? 0.35 : 1}
+                        style={
+                          reduzir
+                            ? undefined
+                            : {
+                                transition: entrando
+                                  ? `stroke-dashoffset 460ms ease ${delay}ms`
+                                  : "stroke 260ms ease, opacity 280ms ease",
+                              }
+                        }
+                      />
+                    );
+                  })}
+                </svg>
+
+                {/* nó central — entra primeiro, sem delay */}
+                <div
+                  style={{
+                    position: "absolute",
+                    left: g.cx,
+                    top: g.cy,
+                    width: 212,
+                    transform: `translate(-50%,-50%) scale(${
+                      entrando && phase === "hidden"
+                        ? 0.82
+                        : centroEmFoco
+                          ? 1.05
+                          : centroRecuado
+                            ? 0.97
+                            : 1
+                    })`,
+                    opacity:
+                      entrando && phase === "hidden" ? 0 : centroRecuado ? 0.5 : 1,
+                    background: C.tinta,
+                    borderRadius: 14,
+                    padding: "16px 18px",
+                    zIndex: centroEmFoco ? 6 : 2,
+                    boxShadow: centroEmFoco
+                      ? "0 0 0 3px rgba(110,63,95,.16), 0 12px 30px rgba(34,30,27,.14)"
+                      : "none",
+                    transition: reduzir
+                      ? "none"
+                      : entrando
+                        ? "opacity 300ms ease, transform 460ms cubic-bezier(0.34,1.4,0.64,1)"
+                        : "opacity 280ms ease, transform 320ms cubic-bezier(0.22,0.61,0.36,1), box-shadow 300ms ease",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: F_TITLE,
+                      fontWeight: 600,
+                      fontSize: 18,
+                      letterSpacing: "-0.02em",
+                      color: "#fff",
+                    }}
+                  >
+                    {clienteNome ?? "Casamento"}
+                  </div>
+                  {(dataEvento || localEvento) && (
+                    <div style={linhaCentro}>
+                      {[dataEvento ? dataBr(dataEvento) : null, localEvento]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </div>
+                  )}
+                  {(escala || cenario) && (
+                    <div style={linhaCentro}>
+                      {[rotuloArquetipo(escala), rotuloArquetipo(cenario)]
+                        .filter(Boolean)
+                        .join(" · ")
+                        .toLowerCase()}
+                    </div>
+                  )}
+                  <div style={{ ...linhaCentro, color: "rgba(255,255,255,.9)" }}>
+                    {[
+                      verba.total !== null ? brl(verba.total) : null,
+                      diasAteEvento !== null ? `faltam ${diasAteEvento} dias` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </div>
+                </div>
+
+                {/* nós de objetivo */}
+                {nos.map((no) => (
+                  <button
+                    key={no.id}
+                    type="button"
+                    onClick={() => onIrParaObjetivo(no.id)}
+                    title="Abrir no modo Foco"
+                    style={estiloNo(no)}
+                  >
+                    <span
+                      style={{
+                        display: "block",
+                        fontFamily: F_UI,
+                        fontWeight: 600,
+                        fontSize: 12.5,
+                        lineHeight: "16px",
+                        color: C.tinta,
+                      }}
+                    >
+                      {no.nome}
+                    </span>
+                    <span style={{ display: "flex", gap: 3, margin: "5px 0 4px" }}>
+                      {Array.from({ length: Math.min(no.total, 8) }).map((_, i) => (
+                        <span
+                          key={i}
+                          style={{
+                            width: 5,
+                            height: 5,
+                            borderRadius: "50%",
+                            background: i < no.feitas ? C.tinta : C.bordaSutil,
+                          }}
+                        />
+                      ))}
+                    </span>
+                    <span
+                      style={{
+                        display: "block",
+                        fontFamily: F_MONO,
+                        fontSize: 10.5,
+                        color: C.meta,
+                      }}
+                    >
+                      {no.feitas}/{no.total} · {brl(no.valor)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <ArvoreLista
+              nos={nos}
+              clienteNome={clienteNome}
+              verbaTotal={verba.total}
+              diasAteEvento={diasAteEvento}
+              playing={playing}
+              step={step}
+              reduzir={!!reduzir}
+              onIr={onIrParaObjetivo}
+            />
+          )}
+        </div>
+
+        {/* trilho do Copiloto */}
+        <aside
+          style={{
+            width: 288,
+            flexShrink: 0,
+            borderLeft: `1px solid ${C.bordaSutil}`,
+            background: C.zona,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <div style={{ padding: "16px 18px 0" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <IconeCopiloto />
+              <span
+                style={{
+                  fontFamily: F_TITLE,
+                  fontWeight: 600,
+                  fontSize: 14,
+                  letterSpacing: "-0.02em",
+                  color: C.tinta,
+                }}
+              >
+                Copiloto Vela
+              </span>
+            </div>
+            <span
+              style={{
+                display: "block",
+                marginTop: 8,
+                fontFamily: F_MONO,
+                fontSize: 10,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                color: C.meta,
+              }}
+            >
+              {q.eyebrow}
+            </span>
+          </div>
+
+          {/* conteúdo troca com fade/slide curto (key reinicia a animação) */}
+          <div
+            key={step}
+            style={{
+              flex: 1,
+              padding: "10px 18px 16px",
+              animation: reduzir
+                ? "planoCopilotoFade 200ms ease both"
+                : "planoCopiloto 320ms cubic-bezier(0.22,0.61,0.36,1) both",
+            }}
+          >
+            <style>{`
+              @keyframes planoCopiloto { from { opacity:0; transform: translateY(7px) } to { opacity:1; transform:none } }
+              @keyframes planoCopilotoFade { from { opacity:0 } to { opacity:1 } }
+            `}</style>
+            <h3
+              style={{
+                fontFamily: F_TITLE,
+                fontWeight: 600,
+                fontSize: 17,
+                lineHeight: "23px",
+                letterSpacing: "-0.02em",
+                color: C.tinta,
+                margin: "0 0 10px",
+              }}
+            >
+              {q.titulo}
+            </h3>
+            <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+              {q.linhas.map((l, i) => (
+                <li
+                  key={i}
+                  style={{
+                    position: "relative",
+                    paddingLeft: 14,
+                    marginBottom: 9,
+                    fontFamily: F_UI,
+                    fontSize: 12.5,
+                    lineHeight: "18px",
+                    color: C.corpo,
+                  }}
+                >
+                  <span
+                    aria-hidden
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      top: 7,
+                      width: 4,
+                      height: 4,
+                      borderRadius: "50%",
+                      background: C.bordaMedia,
+                    }}
+                  />
+                  <Realce texto={l.texto} fortes={l.fortes} />
+                </li>
+              ))}
+            </ul>
+
+            {q.decisoes && q.decisoes.length > 0 && (
+              <>
+                <div
+                  style={{
+                    marginTop: 14,
+                    marginBottom: 8,
+                    fontFamily: F_MONO,
+                    fontSize: 10,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    color: C.meta,
+                  }}
+                >
+                  principais decisões
+                </div>
+                {q.decisoes.map((d, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "5px 0",
+                    }}
+                  >
+                    <span
+                      aria-hidden
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        background: d.feita ? SALVIA : C.bordaSutil,
+                        flexShrink: 0,
+                      }}
+                    />
+                    <span
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        fontFamily: F_UI,
+                        fontSize: 12.5,
+                        fontWeight: d.feita ? 500 : 400,
+                        color: d.feita ? C.tinta : C.meta,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {d.nome}
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: F_MONO,
+                        fontSize: 10,
+                        color: C.fantasma,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {d.feita ? "feita" : "pendente"}
+                    </span>
+                  </div>
+                ))}
+                {q.restantes! > 0 && (
+                  <div
+                    style={{
+                      marginTop: 6,
+                      fontFamily: F_MONO,
+                      fontSize: 10.5,
+                      color: C.fantasma,
+                    }}
+                  >
+                    +{q.restantes} decisões neste objetivo
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* rodapé: ocioso = executar; tocando = transporte */}
+          <div
+            style={{
+              padding: "12px 18px 16px",
+              borderTop: `1px solid ${C.bordaSutil}`,
+            }}
+          >
+            {!playing ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => avancar(0)}
+                  style={{
+                    width: "100%",
+                    height: 40,
+                    borderRadius: 8,
+                    border: "none",
+                    background: C.ameixa,
+                    color: "#fff",
+                    fontFamily: F_TITLE,
+                    fontWeight: 600,
+                    fontSize: 13,
+                    cursor: "pointer",
+                  }}
+                >
+                  Executar explicação
+                </button>
+                <p
+                  style={{
+                    margin: "8px 0 0",
+                    fontFamily: F_UI,
+                    fontSize: 11,
+                    lineHeight: "16px",
+                    color: C.fantasma,
+                  }}
+                >
+                  Leitura guiada quadro a quadro. Cada frase vem de um campo
+                  deste mapa — o copiloto narra, não sugere.
+                </p>
+              </>
+            ) : (
+              <>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontFamily: F_MONO,
+                    fontSize: 10.5,
+                    color: C.secundario,
+                    marginBottom: 6,
+                  }}
+                >
+                  <span>
+                    {step === 0 ? "Panorama" : `Quadro ${step} de ${n}`}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    height: 4,
+                    background: C.bordaSutil,
+                    borderRadius: 2,
+                    overflow: "hidden",
+                    marginBottom: 10,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${(step / n) * 100}%`,
+                      height: "100%",
+                      background: C.ameixa,
+                      transition: "width 280ms ease",
+                    }}
+                  />
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button
+                    type="button"
+                    onClick={() => avancar(step - 1)}
+                    disabled={step === 0}
+                    style={{ ...btnTransporte, opacity: step === 0 ? 0.4 : 1 }}
+                  >
+                    ‹ Anterior
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => avancar(step + 1)}
+                    style={btnTransporte}
+                  >
+                    Próximo ›
+                  </button>
+                  <button type="button" onClick={parar} style={btnTransporte}>
+                    Parar
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </aside>
+      </div>
+
+      {/* rodapé */}
+      <div
+        style={{
+          padding: "10px 18px",
+          borderTop: `1px solid ${C.bordaSutil}`,
+          fontFamily: F_UI,
+          fontSize: 11.5,
+          color: C.fantasma,
+        }}
+      >
+        Linha cheia = objetivo do evento · barrinhas = decisões resolvidas do
+        objetivo.
+      </div>
+    </div>
+  );
+}
+
+// ------------------------------------------------------------------
+// peças auxiliares
+// ------------------------------------------------------------------
+
+const linhaCentro: React.CSSProperties = {
+  marginTop: 4,
+  fontFamily: F_MONO,
+  fontSize: 11,
+  lineHeight: "16px",
+  color: "rgba(255,255,255,.62)",
+};
+
+const btnTransporte: React.CSSProperties = {
+  flex: 1,
+  height: 32,
+  borderRadius: 8,
+  border: `1px solid ${C.bordaMedia}`,
+  background: "#fff",
+  fontFamily: F_UI,
+  fontSize: 11.5,
+  color: C.tinta,
+  cursor: "pointer",
+};
+
+// Números em mono e escuros; o texto de apoio fica em cinza. É o que faz
+// a frase "ser um dado", não uma opinião.
+function Realce({ texto, fortes }: { texto: string; fortes: string[] }) {
+  if (fortes.length === 0) return <>{texto}</>;
+  const escapa = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(`(${fortes.map(escapa).join("|")})`, "g");
+  return (
+    <>
+      {texto.split(re).map((p, i) =>
+        fortes.includes(p) ? (
+          <strong
+            key={i}
+            style={{
+              fontFamily: F_MONO,
+              fontWeight: 400,
+              fontSize: 12,
+              color: C.tinta,
+            }}
+          >
+            {p}
+          </strong>
+        ) : (
+          <span key={i}>{p}</span>
+        )
       )}
+    </>
+  );
+}
+
+function IconeCopiloto() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+      <circle cx="9" cy="9" r="7" stroke={C.ameixaClara} strokeWidth="1.2" />
+      <circle cx="9" cy="9" r="2.2" fill={C.ameixa} />
+      <path
+        d="M9 1.4v2.2M9 14.4v2.2M1.4 9h2.2M14.4 9h2.2"
+        stroke={C.ameixa}
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+// Sub-modo árvore: mesma informação em lista, na ordem de prioridade, e
+// recebendo o mesmo holofote da apresentação.
+function ArvoreLista({
+  nos,
+  clienteNome,
+  verbaTotal,
+  diasAteEvento,
+  playing,
+  step,
+  reduzir,
+  onIr,
+}: {
+  nos: NoObjetivo[];
+  clienteNome: string | null;
+  verbaTotal: number | null;
+  diasAteEvento: number | null;
+  playing: boolean;
+  step: number;
+  reduzir: boolean;
+  onIr: (id: string) => void;
+}) {
+  const ordenados = [...nos].sort((a, b) => a.pri - b.pri);
+  return (
+    <div style={{ padding: "0 20px" }}>
+      <div
+        style={{
+          background: C.tinta,
+          borderRadius: 14,
+          padding: "14px 18px",
+          display: "flex",
+          alignItems: "baseline",
+          gap: 12,
+          flexWrap: "wrap",
+          opacity: playing && step > 0 ? 0.5 : 1,
+          transition: reduzir ? "none" : "opacity 280ms ease",
+        }}
+      >
+        <span
+          style={{
+            fontFamily: F_TITLE,
+            fontWeight: 600,
+            fontSize: 17,
+            letterSpacing: "-0.02em",
+            color: "#fff",
+          }}
+        >
+          {clienteNome ?? "Casamento"}
+        </span>
+        <span style={{ fontFamily: F_MONO, fontSize: 11, color: "rgba(255,255,255,.7)" }}>
+          {[
+            verbaTotal !== null ? brl(verbaTotal) : null,
+            diasAteEvento !== null ? `faltam ${diasAteEvento} dias` : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        </span>
+      </div>
+
+      <div style={{ marginTop: 10 }}>
+        {ordenados.map((no) => {
+          const emFoco = playing && step === no.pri;
+          const recuado = playing && step !== no.pri;
+          return (
+            <button
+              key={no.id}
+              type="button"
+              onClick={() => onIr(no.id)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                width: "100%",
+                padding: "10px 12px",
+                border: `1px solid ${emFoco ? C.ameixa : "transparent"}`,
+                borderRadius: 10,
+                background: emFoco ? "#fff" : "transparent",
+                borderBottom: emFoco
+                  ? `1px solid ${C.ameixa}`
+                  : `1px solid ${C.divisoria}`,
+                opacity: recuado ? 0.4 : 1,
+                cursor: "pointer",
+                textAlign: "left",
+                boxShadow: emFoco ? "0 8px 24px rgba(34,30,27,.10)" : "none",
+                transition: reduzir
+                  ? "none"
+                  : "opacity 280ms ease, border-color 260ms ease, box-shadow 300ms ease",
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: F_MONO,
+                  fontSize: 11,
+                  color: C.fantasma,
+                  width: 20,
+                  flexShrink: 0,
+                }}
+              >
+                {String(no.pri).padStart(2, "0")}
+              </span>
+              <span
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  fontFamily: F_UI,
+                  fontSize: 14,
+                  color: C.tinta,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {no.nome}
+              </span>
+              <span style={{ display: "flex", gap: 3, flexShrink: 0 }}>
+                {Array.from({ length: Math.min(no.total, 8) }).map((_, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      width: 5,
+                      height: 5,
+                      borderRadius: "50%",
+                      background: i < no.feitas ? C.tinta : C.bordaSutil,
+                    }}
+                  />
+                ))}
+              </span>
+              <span
+                style={{
+                  fontFamily: F_MONO,
+                  fontSize: 11,
+                  color: C.meta,
+                  width: 110,
+                  textAlign: "right",
+                  flexShrink: 0,
+                }}
+              >
+                {no.feitas}/{no.total} · {brl(no.valor)}
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
