@@ -204,6 +204,13 @@ export async function sugerirDistribuicao(
       .eq("event_id", eventId);
   }
   const base = verba * (1 - (reservaPct ?? 0) / 100);
+  // Sem isto a distribuição grava zero em todo objetivo e "dá certo" em
+  // silêncio — pior que recusar. Acontece quando a reserva come a verba.
+  if (base <= 0) {
+    return {
+      error: `A reserva (${reservaPct}%) está consumindo toda a verba. Reduza a reserva para distribuir.`,
+    };
+  }
 
   // Proporcional à faixa ideal — as faixas variam entre fontes e cenários,
   // então normalizamos em vez de esperar que somem 100.

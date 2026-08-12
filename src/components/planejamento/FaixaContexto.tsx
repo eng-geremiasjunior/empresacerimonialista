@@ -235,45 +235,66 @@ const valorGrande: React.CSSProperties = {
   color: C.tinta,
 };
 
-// A reserva de imprevistos é um % da verba (não é objetivo — é a fatia que
-// evita o efeito cascata). Editável no mesmo lugar em que é lida.
+// A reserva de imprevistos é a fatia da verba que evita o efeito cascata
+// (estourou no espaço → compensa na decoração → estoura de novo). No banco
+// ela é um %, mas AQUI se edita em R$ — é o número que está à vista, e
+// quem clica num valor em reais digita reais. O % vira consequência,
+// mostrado no rótulo.
 function ReservaEditavel({
-  pct,
   valor,
+  verbaTotal,
   onSalvar,
 }: {
-  pct: number | null;
   valor: number;
+  verbaTotal: number | null;
+  /** recebe o % correspondente ao valor digitado */
   onSalvar: (pct: number | null) => void;
 }) {
   const [editando, setEditando] = useState(false);
-  const [v, setV] = useState(pct !== null ? String(pct) : "");
-  useEffect(() => setV(pct !== null ? String(pct) : ""), [pct]);
+  const [v, setV] = useState(valor ? String(valor) : "");
+  useEffect(() => setV(valor ? String(valor) : ""), [valor]);
+
+  const semVerba = verbaTotal === null || verbaTotal <= 0;
 
   if (editando) {
     return (
       <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+        <span style={{ fontFamily: F_MONO, fontSize: 12, color: C.meta }}>
+          R$
+        </span>
         <input
           autoFocus
           type="text"
           inputMode="numeric"
           value={v}
-          onChange={(e) => setV(e.target.value.replace(/[^\d]/g, ""))}
+          onChange={(e) => setV(e.target.value.replace(/[^\d.,]/g, ""))}
           onBlur={() => {
             setEditando(false);
-            const n = v.trim() === "" ? null : Number(v);
-            const novo = n !== null && !Number.isNaN(n) ? Math.min(100, n) : null;
-            if (novo !== pct) onSalvar(novo);
+            const n =
+              v.trim() === ""
+                ? null
+                : Number(v.replace(/\./g, "").replace(",", "."));
+            if (n === null || Number.isNaN(n)) {
+              onSalvar(null);
+              return;
+            }
+            // a reserva nunca pode passar da verba inteira
+            const limitado = Math.max(0, Math.min(verbaTotal ?? 0, n));
+            const pct =
+              verbaTotal && verbaTotal > 0
+                ? Math.round((limitado / verbaTotal) * 1000) / 10
+                : null;
+            onSalvar(pct);
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter") (e.target as HTMLInputElement).blur();
             if (e.key === "Escape") {
-              setV(pct !== null ? String(pct) : "");
+              setV(valor ? String(valor) : "");
               setEditando(false);
             }
           }}
           style={{
-            width: 54,
+            width: 110,
             height: 26,
             border: `1.5px solid ${C.ameixa}`,
             borderRadius: 6,
@@ -285,7 +306,6 @@ function ReservaEditavel({
             boxShadow: "0 0 0 3px rgba(110,63,95,.18)",
           }}
         />
-        <span style={{ fontFamily: F_MONO, fontSize: 12, color: C.meta }}>%</span>
       </span>
     );
   }
@@ -293,14 +313,20 @@ function ReservaEditavel({
   return (
     <button
       type="button"
+      disabled={semVerba}
       onClick={() => setEditando(true)}
-      title="Editar a reserva para imprevistos"
+      title={
+        semVerba
+          ? "Informe a verba total primeiro"
+          : "Editar a reserva para imprevistos"
+      }
       style={{
         border: "none",
         background: "none",
         padding: 0,
-        cursor: "pointer",
+        cursor: semVerba ? "default" : "pointer",
         textAlign: "left",
+        borderBottom: semVerba ? "none" : `1px dashed ${C.bordaMedia}`,
       }}
     >
       <span style={valorGrande}>{brl(valor)}</span>
@@ -476,22 +502,24 @@ function LinhaPrevisto({
       ) : (
         <button
           type="button"
-          title="Editar o previsto"
+          title="Editar o previsto deste objetivo"
           onClick={() => setEditando(true)}
           style={{
             width: 86,
             textAlign: "right",
             fontFamily: F_MONO,
             fontSize: 13,
-            color: C.tinta,
+            // vazio ≠ zero: "—" convida, "R$ 0" parece um valor decidido
+            color: objetivo.valorPrevisto === null ? C.fantasma : C.tinta,
             border: "none",
+            borderBottom: `1px dashed ${C.bordaMedia}`,
             background: "none",
-            padding: 0,
+            padding: "0 0 1px",
             cursor: "pointer",
             flexShrink: 0,
           }}
         >
-          {brl(objetivo.valorPrevisto)}
+          {objetivo.valorPrevisto === null ? "—" : brl(objetivo.valorPrevisto)}
         </button>
       )}
     </div>
@@ -542,9 +570,15 @@ export function FaixaContexto({
   const [detalhar, setDetalhar] = useState(false);
 
   const ativos = objetivos.filter((o) => o.ativo);
-  const comPrevisto = [...ativos].sort(
-    (a, b) => Number(b.valorPrevisto ?? 0) - Number(a.valorPrevisto ?? 0)
-  );
+  // Maior verba primeiro. Quem não consome verba (sem faixa de referência —
+  // Estrutura, Convidados, Lua de mel…) vai para o fim: encabeçar a lista
+  // com quatro linhas de "—" esconde justamente o que importa.
+  const comPrevisto = [...ativos].sort((a, b) => {
+    const semA = a.faixaPctIdeal === null ? 1 : 0;
+    const semB = b.faixaPctIdeal === null ? 1 : 0;
+    if (semA !== semB) return semA - semB;
+    return Number(b.valorPrevisto ?? 0) - Number(a.valorPrevisto ?? 0);
+  });
   const maior = Number(comPrevisto[0]?.valorPrevisto ?? 0);
   const visiveis = verTodos ? comPrevisto : comPrevisto.slice(0, 4);
   const restantes = comPrevisto.length - 4;
@@ -744,8 +778,8 @@ export function FaixaContexto({
                 {verba.reservaPct !== null ? ` · ${verba.reservaPct}%` : ""}
               </div>
               <ReservaEditavel
-                pct={verba.reservaPct}
                 valor={verba.reservaValor}
+                verbaTotal={verba.total}
                 onSalvar={onSalvarReserva}
               />
             </div>
