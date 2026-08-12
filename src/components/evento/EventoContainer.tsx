@@ -2,12 +2,13 @@
 
 import { usePathname } from "next/navigation";
 
-// Container da página do evento. A aba Cronograma usa um layout de
-// dashboard (timeline densa + painel de 300px) e precisa de mais largura
-// que as demais abas — por isso o max-width é maior só nessa rota.
+// Container da página do evento. Cronograma e Planejamento usam layout de
+// dashboard (timeline densa; mapa mental + trilho do Copiloto) e precisam
+// de mais largura que as demais — por isso o max-width é maior nessas rotas.
 export function EventoContainer({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const largo = pathname?.includes("/roteiro");
+  const largo =
+    pathname?.includes("/roteiro") || pathname?.includes("/planejamento");
 
   return (
     <div

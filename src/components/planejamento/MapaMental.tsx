@@ -27,28 +27,29 @@ import { brl, C, dataBr, F_MONO, F_TITLE, F_UI, rotuloArquetipo } from "./celebr
 
 const SALVIA = "#6E7F63";
 
-// ---- geometria do canvas lógico (handoff §Layout) -------------------
-// Raio generoso + card de 142px é o que garante que os nós NÃO se
-// sobreponham — era esse o defeito da versão anterior.
-const CARD_W = 142;
-const BASE_W = 1044;
-const BASE_H = 620;
+// ---- geometria do canvas lógico -------------------------------------
+// O handoff fixa 1044×620 com raio 450/258. Essa elipse é ACHATADA: empilha
+// os nós nas laterais e por isso exige uma caixa larguíssima, que a coluna
+// real precisava reduzir a ~63% — o texto de 12,5px virava 8px, ilegível.
+// Uma elipse quase circular acomoda os mesmos nós num canvas bem menor, e a
+// escala que sobra vai toda para o conteúdo.
+//
+// Regra: o raio MÍNIMO que não colide — o mapa nunca maior do que precisa.
+// Altura é barata (a página rola); largura é o recurso escasso.
 
-const CARD_H = 76; // altura real do card (nome + dots + meta + padding)
+const CARD_W = 132;
+// nome em ate 3 linhas (48) + dots (18) + meta (14) + padding (18) + borda
+const CARD_H = 104;
+const ASPECTO = 1.08;
 
 // Dois cards se sobrepõem quando distam menos que a largura E menos que a
-// altura. Checagem discreta (só os ângulos que existem de fato) — a
-// condição contínua seria conservadora demais e inflaria o canvas à toa.
-function colide(n: number, W: number, H: number): boolean {
-  const cx = W / 2;
-  const cy = H / 2;
-  const rx = (W - CARD_W) / 2;
-  const ry = (H - 104) / 2;
+// altura. Checagem discreta: só os ângulos que existem de fato.
+function colide(n: number, rx: number, ry: number): boolean {
   const passo = 360 / Math.max(1, n);
   const p: { x: number; y: number }[] = [];
   for (let i = 0; i < n; i++) {
     const a = ((-90 + i * passo) * Math.PI) / 180;
-    p.push({ x: cx + rx * Math.cos(a), y: cy + ry * Math.sin(a) });
+    p.push({ x: rx * Math.cos(a), y: ry * Math.sin(a) });
   }
   for (let i = 0; i < n; i++) {
     for (let j = i + 1; j < n; j++) {
@@ -64,25 +65,19 @@ function colide(n: number, W: number, H: number): boolean {
 }
 
 function geometria(n: number) {
-  // Até 16 objetivos vale a geometria do handoff, validada no design.
-  // Acima disso (a cerimonialista pode criar objetivos próprios) o canvas
-  // cresce até caber de fato — crescer por uma fórmula fixa deixava os nós
-  // se encostando de novo, que era exatamente o defeito relatado.
-  let W = BASE_W;
-  let H = BASE_H;
-  for (let i = 0; i < 60 && colide(n, W, H); i++) {
-    W = Math.round(W * 1.04);
-    H = Math.round(H * 1.04);
+  // Cresce o raio até a checagem par-a-par ficar limpa. O arredondamento
+  // acontece DENTRO do laço: é a geometria arredondada que vai para a tela,
+  // então é ela que precisa passar no teste (arredondar depois já me custou
+  // uma colisão em 27 objetivos).
+  let rx = 100;
+  let ry = Math.round(rx * ASPECTO);
+  while (rx < 1200 && colide(n, rx, ry)) {
+    rx += 2;
+    ry = Math.round(rx * ASPECTO);
   }
-  return {
-    W,
-    H,
-    cx: W / 2,
-    cy: H / 2,
-    rx: (W - CARD_W) / 2,
-    ry: (H - 104) / 2,
-    passo: 360 / Math.max(1, n),
-  };
+  const W = 2 * rx + CARD_W;
+  const H = 2 * ry + CARD_H;
+  return { W, H, cx: W / 2, cy: H / 2, rx, ry, passo: 360 / Math.max(1, n) };
 }
 
 // ---- dado do mapa, derivado do real ---------------------------------
