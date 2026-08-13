@@ -1628,7 +1628,9 @@ function NovoCompromisso({
   const [data, setData] = useState("");
   const [hora, setHora] = useState("");
   const [local, setLocal] = useState("");
-  const [responsavel, setResponsavel] = useState("");
+  // Nasce "ambos" (o default da própria tabela): compromisso sem
+  // responsável não entra na linha do tempo do Portal da Cliente.
+  const [responsavel, setResponsavel] = useState("ambos");
   const [supplierId, setSupplierId] = useState("");
   const [observacao, setObservacao] = useState("");
   // Secretário direto na Agenda (080): em vez de escolher o horário, o
@@ -1705,11 +1707,14 @@ function NovoCompromisso({
           <TextField type="time" mono value={hora} onChange={(e) => setHora(e.target.value)} />
         )}
         <TextField placeholder="Local (opcional)" value={local} onChange={(e) => setLocal(e.target.value)} />
-        <Select value={responsavel} onChange={(e) => setResponsavel(e.target.value)}>
-          <option value="">Quem comparece?</option>
+        <Select
+          label="Quem comparece"
+          value={responsavel}
+          onChange={(e) => setResponsavel(e.target.value)}
+        >
+          <option value="ambos">Ambos</option>
           <option value="noivos">Noivos</option>
           <option value="cerimonialista">Cerimonialista</option>
-          <option value="ambos">Ambos</option>
         </Select>
         <div style={{ gridColumn: "1 / -1" }}>
           <Select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>

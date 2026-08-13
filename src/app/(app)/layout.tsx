@@ -20,6 +20,15 @@ export default async function AppLayout({
     redirect("/login");
   }
 
+  // Cliente do Portal nunca entra na área profissional — e o redirect vem
+  // ANTES do provisionamento: sem isso ela ganharia uma empresa vazia e
+  // viraria "proprietária" de um sistema que não é dela. O middleware já
+  // barra antes; aqui é a segunda tranca, para o caso de a rota ser
+  // alcançada por outro caminho.
+  if (user.app_metadata?.portal === true) {
+    redirect("/portal");
+  }
+
   let { cargo } = await getMeuCargo();
 
   // Usuário logado sem equipe (signup novo do zero): provisiona a empresa

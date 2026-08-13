@@ -17,6 +17,9 @@ const TABS: { label: string; seg: string; counter?: keyof TabCounters }[] = [
   { label: "Fornecedores", seg: "fornecedores", counter: "fornecedores" },
   { label: "Comunicação", seg: "comunicacao", counter: "comunicacao" },
   { label: "Financeiro", seg: "financeiro", counter: "financeiro" },
+  // O que a cliente enxerga do evento. Por ora: quem tem acesso e o
+  // caminho para abrir. O espaço fica reservado para crescer.
+  { label: "Área do cliente", seg: "area-do-cliente" },
   { label: "Histórico", seg: "historico" },
 ];
 

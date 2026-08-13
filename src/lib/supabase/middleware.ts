@@ -18,7 +18,10 @@ export async function updateSession(request: NextRequest) {
       request.nextUrl.pathname.startsWith("/confirmacao/") ||
       request.nextUrl.pathname.startsWith("/orcamento/") ||
       request.nextUrl.pathname.startsWith("/agendar/") ||
-      request.nextUrl.pathname === "/privacidade"
+      request.nextUrl.pathname === "/privacidade" ||
+      request.nextUrl.pathname.startsWith("/portal/entrar") ||
+      request.nextUrl.pathname.startsWith("/auth/confirm") ||
+      request.nextUrl.pathname.startsWith("/confirmar/")
     ) {
       return supabaseResponse;
     }
@@ -64,6 +67,12 @@ export async function updateSession(request: NextRequest) {
   const isPublicOrcamento = pathname.startsWith("/orcamento/");
   // Rotas de cron protegem-se sozinhas com Bearer CRON_SECRET
   const isCron = pathname.startsWith("/api/cron/");
+  // Portal da Cliente: a porta de entrada é pública; o resto exige sessão
+  const isPortalEntrar = pathname.startsWith("/portal/entrar");
+  // Callback de OTP (reset de senha) — precisa rodar antes de haver sessão
+  const isAuthConfirm = pathname.startsWith("/auth/confirm");
+  // Confirmação de presença do convidado — link público, sem login
+  const isPublicConfirmar = pathname.startsWith("/confirmar/");
 
   if (
     !user &&
@@ -73,16 +82,63 @@ export async function updateSession(request: NextRequest) {
     !isPublicAgendar &&
     !isPublicPrivacidade &&
     !isPublicOrcamento &&
-    !isCron
+    !isCron &&
+    !isPortalEntrar &&
+    !isAuthConfirm &&
+    !isPublicConfirmar
   ) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    // A cliente que abre um link do portal sem sessão volta para a porta
+    // dela, não para o login da cerimonialista.
+    url.pathname = pathname.startsWith("/portal") ? "/portal/entrar" : "/login";
     return NextResponse.redirect(url);
   }
 
+  // ------------------------------------------------------------------
+  // As duas casas do sistema não se misturam.
+  //
+  // A marca de portal vive em app_metadata (posta pelo servidor na criação
+  // do acesso), justamente porque user_metadata é editável pela própria
+  // usuária — ela poderia remover a marca e cair no app profissional.
+  // ------------------------------------------------------------------
+  const ehPortal = user?.app_metadata?.portal === true;
+  const emPortal = pathname.startsWith("/portal");
+
+  if (user && ehPortal) {
+    // Senha provisória não navega: troca primeiro.
+    const precisaTrocarSenha = user.app_metadata?.senha_provisoria === true;
+    const emTrocaDeSenha =
+      pathname.startsWith("/portal/primeiro-acesso") ||
+      pathname.startsWith("/portal/redefinir");
+
+    if (precisaTrocarSenha && !emTrocaDeSenha && !isAuthConfirm) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/portal/primeiro-acesso";
+      return NextResponse.redirect(url);
+    }
+    if (!emPortal && !isAuthConfirm && !isPublicConfirmar) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/portal";
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // Quem NÃO é do portal (equipe) pode abrir /portal: um e-mail é uma
+  // conta só no Supabase, então a mesma pessoa pode ser da equipe e ter
+  // vínculo de cliente num evento (a própria dona testando, ou uma
+  // cerimonialista que vai se casar). Quem decide é o vínculo, não a
+  // marca — e essa checagem exige banco, então mora no layout do portal,
+  // não aqui: consultar em toda requisição sairia caro.
+
   if (user && isLoginPage) {
     const url = request.nextUrl.clone();
-    url.pathname = "/eventos/dashboard";
+    url.pathname = ehPortal ? "/portal" : "/eventos/dashboard";
+    return NextResponse.redirect(url);
+  }
+
+  if (user && isPortalEntrar && ehPortal) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/portal";
     return NextResponse.redirect(url);
   }
 

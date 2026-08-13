@@ -1,0 +1,365 @@
+/* ============================================================
+   Portal da Cliente — tokens
+   Transcrição literal de design_handoff_portal_cliente/vela.tokens.js.
+   Importado SÓ pelo layout do portal: a área profissional não enxerga
+   nada disto, e o portal não enxerga os tokens do Celebra Pro.
+
+   Regra do handoff: nenhum componente escreve hex, px de fonte ou
+   duração à mão. Tudo sai daqui.
+   ============================================================ */
+
+/* ---- Tema 1: Carvão & Ouro Velho (APROVADO — casamento) ---- */
+[data-tema="carvao"] {
+  --cor-fundo: #16120f;
+  --cor-card: #1e1815;
+  --cor-borda: #2c2420;
+  --cor-borda-destaque: #3d332c;
+  --cor-texto-principal: #ede4d6;
+  --cor-texto-secundario: #b3a697;
+  --cor-texto-desativado: #7a6f63;
+  --cor-acento: #c9a55c;
+  --cor-acento-pressao: #a8863f;
+
+  --cor-estado-resolvido: var(--cor-texto-desativado);
+  --cor-estado-decidir: var(--cor-acento);
+  --cor-estado-aguardando: var(--cor-texto-secundario);
+
+  --cor-ornamento: #c9a55c;
+  --ornamento-opacidade: 0.1;
+  --cor-atmosfera-fio: #c9a55c;
+  --atmosfera-fio-opacidade: 0.22;
+  --fundo-atmosfera: radial-gradient(
+      120% 90% at 82% -6%,
+      rgba(201, 165, 92, 0.09) 0%,
+      rgba(201, 165, 92, 0) 58%
+    ),
+    radial-gradient(
+      90% 70% at 8% 104%,
+      rgba(201, 165, 92, 0.045) 0%,
+      rgba(201, 165, 92, 0) 62%
+    );
+}
+
+/* ---- Tema 2: Ébano & Tabaco (CANDIDATO — não usar sem aprovação) ---- */
+[data-tema="ebano"] {
+  --cor-fundo: #0f0c0a;
+  --cor-fundo-degrade: linear-gradient(180deg, #171210 0%, #0f0c0a 62%);
+  --cor-card: #191310;
+  --cor-card-degrade: linear-gradient(180deg, #191310 0%, #141010 100%);
+  --cor-borda: #241c17;
+  --cor-borda-destaque: #3a2c22;
+  --cor-texto-principal: #e8dfd2;
+  --cor-texto-secundario: #a99c8c;
+  --cor-texto-desativado: #6f6455;
+  --cor-acento: #b58a50;
+  --cor-acento-pressao: #946e3b;
+
+  --cor-estado-resolvido: var(--cor-texto-desativado);
+  --cor-estado-decidir: var(--cor-acento);
+  --cor-estado-aguardando: var(--cor-texto-secundario);
+
+  --cor-ornamento: #b58a50;
+  --ornamento-opacidade: 0.1;
+  --cor-atmosfera-fio: #b58a50;
+  --atmosfera-fio-opacidade: 0.26;
+  --fundo-atmosfera: radial-gradient(
+      120% 90% at 82% -6%,
+      rgba(181, 138, 80, 0.1) 0%,
+      rgba(181, 138, 80, 0) 58%
+    ),
+    radial-gradient(
+      90% 70% at 8% 104%,
+      rgba(181, 138, 80, 0.05) 0%,
+      rgba(181, 138, 80, 0) 62%
+    );
+}
+
+/* ---- Comum aos temas: tipografia, espaço, borda, movimento ---- */
+.portal-raiz {
+  /* famílias injetadas pelo next/font no layout */
+  --fonte-titulo: var(--fonte-portal-titulo), Georgia, "Times New Roman", serif;
+  --fonte-corpo: var(--fonte-portal-corpo), system-ui, -apple-system, sans-serif;
+
+  --ts-titulo: 34px;
+  --el-titulo: 1.08;
+  --peso-titulo: 400;
+  --estilo-titulo: italic;
+  --ts-subtitulo: 19px;
+  --el-subtitulo: 1.35;
+  --peso-subtitulo: 500;
+  --ts-corpo: 15px;
+  --el-corpo: 1.6;
+  --peso-corpo: 400;
+  --ts-corpo-p: 13px;
+  --el-corpo-p: 1.55;
+  --ts-rotulo: 11px;
+  --el-rotulo: 1;
+  --peso-rotulo: 500;
+  --tr-rotulo: 0.22em;
+  --ts-acao: 12px;
+  --tr-acao: 0.18em;
+
+  --esp-1: 4px;
+  --esp-2: 8px;
+  --esp-3: 12px;
+  --esp-4: 14px;
+  --esp-5: 18px;
+  --esp-6: 22px;
+  --esp-7: 24px;
+  --esp-8: 32px;
+  --esp-9: 44px;
+
+  --portal-padding: 24px;
+  --toque-min: 48px;
+  --largura-max: 430px;
+
+  --borda-fina: 1px solid var(--cor-borda);
+  --borda-destaque: 1px solid var(--cor-borda-destaque);
+  --borda-acento: 1px solid var(--cor-acento);
+  /* Canto reto em tudo. As duas únicas exceções circulares do sistema
+     são o marcador de 6px da linha do tempo e o retrato da cliente. */
+  --raio-0: 0px;
+  --raio-pill: 999px;
+  --sombra: none;
+
+  --dur-rapida: 120ms;
+  --dur-media: 220ms;
+  --dur-toque: 180ms;
+  --dur-escolha: 320ms;
+  --dur-aba: 200ms;
+  --dur-contagem: 700ms;
+  --ciclo-respiro: 14s;
+  --ease-padrao: cubic-bezier(0.2, 0, 0.2, 1);
+  --ease-saida: cubic-bezier(0.33, 0, 0.12, 1);
+  --transicao-padrao: color 120ms cubic-bezier(0.2, 0, 0.2, 1),
+    border-color 120ms cubic-bezier(0.2, 0, 0.2, 1),
+    background-color 120ms cubic-bezier(0.2, 0, 0.2, 1),
+    letter-spacing 120ms cubic-bezier(0.2, 0, 0.2, 1),
+    opacity 120ms cubic-bezier(0.2, 0, 0.2, 1);
+
+  background: var(--cor-fundo);
+  color: var(--cor-texto-principal);
+  font-family: var(--fonte-corpo);
+  font-size: var(--ts-corpo);
+  line-height: var(--el-corpo);
+  min-height: 100vh;
+}
+
+.portal-raiz *,
+.portal-raiz *::before,
+.portal-raiz *::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.portal-raiz a {
+  color: var(--cor-acento);
+  text-decoration: none;
+}
+.portal-raiz a:hover {
+  color: var(--cor-acento-pressao);
+}
+
+/* ---- As animações do handoff (e só elas) ---- */
+@keyframes vela-acender {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+/* Não vai de 0 a 1: a variação é para ser SENTIDA, não vista. */
+@keyframes vela-respirar {
+  0%,
+  100% {
+    opacity: 0.68;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes vela-surgir {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-raiz {
+    --dur-rapida: 1ms;
+    --dur-media: 1ms;
+    --dur-toque: 1ms;
+    --dur-escolha: 1ms;
+    --dur-aba: 1ms;
+    --dur-contagem: 1ms;
+  }
+  .portal-raiz [data-vela-respira] {
+    animation: none !important;
+  }
+}
+
+/* ============================================================
+   Casca responsiva (README-computador): UM breakpoint só, 768px.
+   Abaixo: coluna de celular (430px) + abas no rodapé.
+   A partir de 768: sidebar fixa de 300px + coluna de leitura de 760px.
+   Sem estado intermediário — ou é telefone, ou é computador.
+   ============================================================ */
+
+.portal-casca {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  max-width: var(--largura-max);
+  margin: 0 auto;
+  border-left: var(--borda-fina);
+  border-right: var(--borda-fina);
+}
+
+.portal-coluna {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.portal-conteudo {
+  flex: 1;
+  padding: var(--portal-padding);
+}
+
+/* Só existe num modo de cada vez. display: contents = o embrulho não
+   cria caixa própria (o sticky das abas e o flex da coluna atravessam);
+   display: none no modo errado esconde a subárvore inteira. */
+.portal-so-celular {
+  display: contents;
+}
+.portal-so-pc {
+  display: none;
+}
+
+/* No celular a grade empilha; o computador abre 2 colunas (na @media). */
+.portal-grade-2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--esp-3);
+}
+
+/* a sidebar não aparece no celular */
+.portal-sidebar {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .portal-so-celular {
+    display: none;
+  }
+  .portal-so-pc {
+    display: contents;
+  }
+
+  .portal-casca {
+    flex-direction: row;
+    max-width: none;
+    border-left: none;
+    border-right: none;
+  }
+
+  /* A sidebar é a moldura do computador: 300px, colada na viewport,
+     hairline à direita — só isso de separador (sem fundo, sem sombra).
+     O rodapé (cerimonialista) desce por margin-top: auto. */
+  .portal-sidebar {
+    display: flex;
+    flex-direction: column;
+    width: 300px;
+    flex: 0 0 300px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    border-right: var(--borda-fina);
+    padding: var(--esp-9) var(--esp-7);
+    z-index: 1;
+  }
+
+  /* A coluna de leitura NÃO estica: texto largo demais cansa. 760px,
+     centrada no espaço que sobra. */
+  .portal-conteudo {
+    width: 100%;
+    max-width: calc(760px + 2 * var(--esp-9));
+    margin: 0 auto;
+    padding: var(--esp-9) var(--esp-9) var(--esp-9);
+  }
+
+  /* grades de duas colunas só no computador */
+  .portal-grade-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Itens de navegação da sidebar (vela.desktop.js §3): o ativo é dito por
+   borda-esquerda de 1px e cor — sem fundo, sem pílula, sem sombra. O
+   inativo TAMBÉM tem borda (hairline), o mesmo vocabulário do fio das
+   abas do celular. */
+.portal-aba-lateral,
+.portal-interna-lateral {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--esp-3) var(--esp-4);
+  border-left: 1px solid var(--cor-borda);
+  color: var(--cor-texto-secundario);
+  transition: var(--transicao-padrao);
+}
+.portal-aba-lateral {
+  font-family: var(--fonte-titulo);
+  font-size: 19px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+.portal-interna-lateral {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.3;
+}
+.portal-aba-lateral:hover,
+.portal-interna-lateral:hover {
+  color: var(--cor-texto-principal);
+}
+.portal-aba-lateral[data-ativa="true"],
+.portal-interna-lateral[data-ativa="true"] {
+  border-left-color: var(--cor-acento);
+  color: var(--cor-acento);
+}
+
+/* Ornamento ramo no hero (§6.1): mais discreto no computador porque
+   sobra espaço à direita. */
+.portal-ornamento-ramo {
+  position: absolute;
+  top: 62px;
+  right: -120px;
+  width: 360px;
+  pointer-events: none;
+}
+@media (min-width: 768px) {
+  .portal-ornamento-ramo {
+    right: -40px;
+    width: 520px;
+  }
+}
+
+/* Botão que é bloco no celular e largura mínima no computador */
+.portal-botao-flex {
+  width: 100%;
+}
+@media (min-width: 768px) {
+  .portal-botao-flex {
+    width: auto;
+    min-width: 280px;
+  }
+}

@@ -3,6 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 import { getMembrosSelecionaveis } from "@/lib/supabase/equipe";
 import { EventForm } from "@/components/EventForm";
 import { DeleteEventButton } from "@/components/DeleteEventButton";
+import {
+  AcessoDaCliente,
+  type AcessoLinha,
+} from "@/components/evento/AcessoDaCliente";
 import type { Event } from "@/lib/types";
 import { updateEvent } from "../../actions";
 
@@ -47,6 +51,15 @@ export default async function EditarEventoPage({
 
   const event = data as unknown as Event;
 
+  // Acessos ao portal deste evento. A tabela pode não existir ainda
+  // (migração 086 pendente): nesse caso o painel some, sem quebrar a tela.
+  const { data: acessosData } = await supabase
+    .from("evento_acesso")
+    .select("id, nome, email, papel, status")
+    .eq("event_id", params.id)
+    .order("created_at", { ascending: true });
+  const acessos = (acessosData ?? []) as AcessoLinha[];
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
@@ -72,6 +85,20 @@ export default async function EditarEventoPage({
             (data as { cover_image_url?: string | null }).cover_image_url ??
             null,
         }}
+      />
+
+      <AcessoDaCliente
+        eventId={event.id}
+        acessos={acessos}
+        clienteSugerido={
+          event.clients
+            ? {
+                id: event.clients.id,
+                nome: event.clients.name,
+                email: event.clients.email ?? null,
+              }
+            : null
+        }
       />
     </div>
   );

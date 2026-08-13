@@ -1,0 +1,591 @@
+/* ============================================================
+   Portal da Cliente — telas de acesso (tema Café Escuro)
+   Transcrição de handoff/portal-login.js + portal-login.md.
+
+   Paleta própria e AUTOCONTIDA: vale só em /portal/entrar,
+   /portal/primeiro-acesso e /portal/redefinir. Depois do login o portal
+   é Carvão & Ouro Velho (portal.css). Decisão do dono.
+
+   Quem abre isto é a noiva, o noivo ou a mãe da debutante, quase sempre
+   no celular, vindo de um link do WhatsApp. É porta de entrada de área
+   privada, não tela de produto.
+   ============================================================ */
+
+.acesso {
+  --bg: linear-gradient(163deg, #23180f 0%, #19110a 46%, #100a06 100%);
+  --glow: radial-gradient(
+    110% 62% at 84% 1%,
+    rgba(176, 141, 87, 0.14),
+    rgba(176, 141, 87, 0) 58%
+  );
+  --surface: #1f1610;
+  --border: rgba(237, 231, 222, 0.14);
+  --rule: rgba(237, 231, 222, 0.1);
+  --ink: #ede7de;
+  --ink-soft: #cfc7bb;
+  --muted: #a79e92;
+  --faint: #9a9084;
+  --gold: #b08d57;
+  --gold-text: #c0a578;
+  --gold-press: #9c7b49;
+  --on-gold: #140d07;
+  --err-border: rgba(206, 139, 126, 0.55);
+  --err-bg: rgba(206, 139, 126, 0.1);
+  --err-ink: #e4b6ac;
+  --ok-ink: #8fa07f;
+
+  position: relative;
+  overflow: hidden;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui), system-ui, -apple-system, sans-serif;
+  box-sizing: border-box;
+}
+.acesso *,
+.acesso *::before,
+.acesso *::after {
+  box-sizing: border-box;
+}
+
+/* luz que respira — decorativa, atrás de tudo */
+.acesso-glow {
+  position: absolute;
+  inset: 0;
+  background: var(--glow);
+  animation: acesso-glow 18s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.acesso-shell {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0 28px;
+}
+.acesso-top {
+  height: 74px;
+  flex: none;
+}
+.acesso-col {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.acesso-spacer {
+  flex: 1;
+  min-height: 32px;
+}
+
+/* ornamento — nunca atrás dos campos */
+.acesso-orn {
+  position: absolute;
+  top: 16px;
+  right: -24px;
+  width: 156px;
+  height: 225px;
+  color: var(--gold);
+  opacity: 0.1;
+  pointer-events: none;
+}
+.acesso-orn svg {
+  width: 100%;
+  height: 100%;
+}
+.acesso-orn .stem {
+  stroke-dasharray: 460;
+  animation: acesso-draw 2600ms cubic-bezier(0.35, 0.1, 0.2, 1) 500ms both;
+}
+.acesso-orn .leaves {
+  animation: acesso-soft 1700ms ease 1150ms both;
+}
+
+/* cascata de entrada */
+.acesso-col > * {
+  animation: acesso-rise 700ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.acesso-col > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.acesso-col > *:nth-child(2) {
+  animation-delay: 90ms;
+}
+.acesso-col > *:nth-child(3) {
+  animation-delay: 180ms;
+}
+.acesso-col > *:nth-child(4) {
+  animation-delay: 270ms;
+}
+.acesso-col > *:nth-child(5) {
+  animation-delay: 360ms;
+}
+.acesso-col > *:nth-child(6) {
+  animation-delay: 450ms;
+}
+
+.acesso-eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold-text);
+  font-weight: 500;
+  margin: 0;
+}
+.acesso-lead {
+  margin: 18px 0 0;
+  font-family: var(--fonte-portal-titulo), Georgia, serif;
+  font-weight: 500;
+  font-style: italic;
+  font-size: 27px;
+  line-height: 1.34;
+  color: var(--ink);
+  text-wrap: pretty;
+  max-width: 300px;
+}
+/* segundo tempo da frase — cadência de fala */
+.acesso-say2 {
+  display: inline-block;
+  animation: acesso-say 900ms cubic-bezier(0.2, 0.7, 0.2, 1) 1250ms both;
+}
+.acesso-sub {
+  margin: 14px 0 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--muted);
+  max-width: 305px;
+}
+
+.acesso-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 44px;
+}
+.acesso-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.acesso label {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+}
+.acesso input {
+  height: 52px;
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  /* 16px evita o zoom automático do iOS ao focar */
+  font-size: 16px;
+  font-family: inherit;
+  padding: 0 16px;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+.acesso input::placeholder {
+  color: #6e665c;
+}
+.acesso input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(176, 141, 87, 0.18);
+}
+.acesso input[data-invalid] {
+  border-color: var(--err-border);
+}
+.acesso-pw {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.acesso-pw input {
+  padding-right: 52px;
+}
+.acesso-reveal {
+  position: absolute;
+  right: 8px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+}
+.acesso-reveal svg {
+  width: 19px;
+  height: 19px;
+}
+.acesso-reveal:hover,
+.acesso-reveal[aria-pressed="true"] {
+  color: var(--gold-text);
+}
+.acesso-reveal:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.acesso-keep {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14.5px;
+  color: var(--ink-soft);
+  text-align: left;
+}
+.acesso-keep:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+.acesso-box {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+.acesso-keep[aria-checked="true"] .acesso-box {
+  background: var(--gold);
+  border-color: var(--gold);
+}
+.acesso-box svg {
+  width: 12px;
+  height: 12px;
+  opacity: 0;
+}
+.acesso-keep[aria-checked="true"] .acesso-box svg {
+  opacity: 1;
+  stroke-dasharray: 26;
+  animation: acesso-check 420ms ease both;
+}
+
+.acesso-btn {
+  height: 54px;
+  width: 100%;
+  border: 0;
+  border-radius: 10px;
+  background: var(--gold);
+  color: var(--on-gold);
+  font-family: inherit;
+  font-size: 16.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition: background-color 160ms ease;
+}
+.acesso-btn:hover {
+  background: var(--gold-press);
+}
+.acesso-btn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+.acesso-btn[disabled] {
+  background: var(--gold-press);
+  cursor: default;
+}
+.acesso-btn.quiet {
+  background: transparent;
+  border: 1px solid rgba(237, 231, 222, 0.2);
+  color: var(--ink);
+  font-weight: 500;
+  font-size: 16px;
+}
+.acesso-btn.quiet:hover {
+  background: rgba(237, 231, 222, 0.05);
+}
+.acesso-spin {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(20, 13, 7, 0.28);
+  border-top-color: var(--on-gold);
+  animation: acesso-spin 800ms linear infinite;
+}
+
+.acesso-link {
+  background: none;
+  border: 0;
+  padding: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--muted);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: rgba(167, 158, 146, 0.4);
+}
+.acesso-link:hover {
+  color: var(--gold-text);
+}
+.acesso-link:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.acesso-center {
+  display: flex;
+  justify-content: center;
+}
+
+.acesso-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 30px;
+  padding: 13px 15px;
+  border-radius: 10px;
+  background: var(--err-bg);
+  border: 1px solid rgba(206, 139, 126, 0.28);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--err-ink);
+}
+.acesso-alert svg {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  margin-top: 1px;
+  stroke: #d9968a;
+}
+
+.acesso-mark {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 1px solid rgba(176, 141, 87, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold-text);
+}
+.acesso-mark svg {
+  width: 20px;
+  height: 20px;
+}
+.acesso-meta {
+  margin-top: 12px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--muted);
+}
+.acesso-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--ok-ink);
+}
+.acesso-hint svg {
+  width: 13px;
+  height: 13px;
+  flex: none;
+}
+
+.acesso-back {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--muted);
+  cursor: pointer;
+  margin: 14px 0 0;
+}
+.acesso-back svg {
+  width: 20px;
+  height: 20px;
+}
+.acesso-back:hover {
+  color: var(--ink);
+}
+.acesso-back:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+.acesso-rule {
+  height: 1px;
+  background: var(--rule);
+}
+.acesso-help {
+  padding: 22px 0 0;
+  text-align: center;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--faint);
+}
+.acesso-help b {
+  font-weight: 400;
+  color: var(--gold-text);
+}
+.acesso-vela {
+  padding: 26px 0 22px;
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+@keyframes acesso-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes acesso-say {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes acesso-soft {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes acesso-draw {
+  from {
+    stroke-dashoffset: 460;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes acesso-check {
+  from {
+    stroke-dashoffset: 26;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes acesso-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes acesso-glow {
+  0%,
+  100% {
+    opacity: 0.62;
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    opacity: 1;
+    transform: translate3d(-16px, 12px, 0);
+  }
+}
+
+/* desktop: a mesma coluna, centralizada no campo escuro */
+@media (min-width: 768px) {
+  .acesso-shell {
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+  }
+  .acesso-top,
+  .acesso-spacer {
+    display: none;
+  }
+  .acesso-col {
+    width: 408px;
+    padding: 56px 0;
+  }
+  .acesso-lead {
+    font-size: 34px;
+    max-width: none;
+  }
+  .acesso-orn {
+    top: 50%;
+    right: auto;
+    left: 50%;
+    transform: translate(-560px, -330px);
+    width: 340px;
+    height: 470px;
+    opacity: 0.09;
+  }
+  .acesso-rule {
+    margin-top: 34px;
+  }
+  .acesso-help {
+    padding-top: 20px;
+  }
+  .acesso-vela {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding-bottom: 34px;
+  }
+  .acesso-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+}
+@media (max-width: 767px) {
+  .acesso-row {
+    display: contents;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acesso-col > *,
+  .acesso-orn .stem,
+  .acesso-orn .leaves,
+  .acesso-say2,
+  .acesso-glow,
+  .acesso-box svg {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+  }
+  .acesso-orn .stem,
+  .acesso-box svg {
+    stroke-dashoffset: 0;
+  }
+  .acesso-spin {
+    animation-duration: 1600ms;
+  }
+}
