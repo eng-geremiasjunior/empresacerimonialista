@@ -1,6 +1,11 @@
 import { notFound } from "next/navigation";
 import { getEventoDoPortal } from "@/lib/supabase/portal";
-import { EmBreve } from "@/components/portal/EmBreve";
+import {
+  getProgramaDoDia,
+  getSugestoesDoEvento,
+} from "@/lib/supabase/programa-do-dia";
+import { TopoInterno } from "@/components/portal/TopoInterno";
+import { ProgramaDoDia } from "@/components/portal/ProgramaDoDia";
 
 export const dynamic = "force-dynamic";
 
@@ -11,11 +16,24 @@ export default async function PortalCronogramaPage({
 }) {
   const evento = await getEventoDoPortal(params.eventoId);
   if (!evento) notFound();
+
+  const [momentos, sugestoes] = await Promise.all([
+    getProgramaDoDia(evento.id),
+    getSugestoesDoEvento(evento.id),
+  ]);
+
   return (
-    <EmBreve
-      eventoId={evento.id}
-      titulo="Cronograma do dia"
-      texto="O programa do grande dia, momento a momento. Quando estiver montado, vocês vão poder acompanhar por aqui — e sugerir ajustes para a sua cerimonialista."
-    />
+    <div className="portal-tela">
+      <TopoInterno
+        eventoId={evento.id}
+        titulo="Cronograma do dia"
+        apoio="O programa como está hoje. Se algum horário não servir, é só sugerir — quem ajusta é a sua cerimonialista."
+      />
+      <ProgramaDoDia
+        eventoId={evento.id}
+        momentos={momentos}
+        sugestoes={sugestoes}
+      />
+    </div>
   );
 }

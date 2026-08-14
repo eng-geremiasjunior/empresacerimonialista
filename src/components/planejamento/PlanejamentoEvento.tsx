@@ -36,6 +36,18 @@ import { ModoFoco } from "./ModoFoco";
 import { ModoAmplo } from "./ModoAmplo";
 import { MapaMental } from "./MapaMental";
 import { DrawerDecisao, type SupplierRef } from "./DrawerDecisao";
+import type { AcoesCuradoria } from "./BlocoCuradoria";
+import type { Curadoria } from "@/lib/supabase/curadoria";
+import {
+  abrirCuradoria,
+  carregarCuradoria,
+  despublicarCuradoria,
+  fecharComFornecedor,
+  marcarRecomendada,
+  publicarCuradoria,
+  removerOpcao,
+  salvarOpcao,
+} from "@/app/(app)/eventos/[id]/planejamento/curadoria-actions";
 
 const MESES_PT = [
   "janeiro",
@@ -131,6 +143,74 @@ export function PlanejamentoEvento({
   }, [drawerId, plano.objetivos]);
 
   const refresh = () => startTransition(() => router.refresh());
+
+  // ---- rodada de opções da decisão aberta (092) ----
+  // Carrega sob demanda: a maioria das decisões nunca terá uma, e trazer
+  // no payload da tela inteira encareceria a leitura de todo mundo.
+  const [curadoria, setCuradoria] = useState<Curadoria | null>(null);
+  useEffect(() => {
+    if (!drawerId) {
+      setCuradoria(null);
+      return;
+    }
+    let vivo = true;
+    carregarCuradoria(drawerId).then((c) => {
+      if (vivo) setCuradoria(c);
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [drawerId]);
+
+  const recarregarCuradoria = useCallback(async () => {
+    if (drawerId) setCuradoria(await carregarCuradoria(drawerId));
+  }, [drawerId]);
+
+  const acoesCuradoria: AcoesCuradoria = useMemo(
+    () => ({
+      onAbrir: async () => {
+        if (!drawerId) return;
+        await abrirCuradoria(eventId, drawerId);
+        await recarregarCuradoria();
+      },
+      onSalvarOpcao: async (opcao) => {
+        if (!curadoria) return "Abra a seleção primeiro.";
+        const r = await salvarOpcao(eventId, curadoria.id, opcao);
+        await recarregarCuradoria();
+        return "error" in r ? r.error : null;
+      },
+      onRemoverOpcao: async (opcaoId) => {
+        if (!curadoria) return;
+        await removerOpcao(eventId, curadoria.id, opcaoId);
+        await recarregarCuradoria();
+      },
+      onRecomendar: async (opcaoId) => {
+        if (!curadoria) return;
+        await marcarRecomendada(eventId, curadoria.id, opcaoId);
+        await recarregarCuradoria();
+      },
+      onPublicar: async () => {
+        if (!curadoria) return "Abra a seleção primeiro.";
+        const r = await publicarCuradoria(eventId, curadoria.id);
+        await recarregarCuradoria();
+        return "error" in r ? r.error : null;
+      },
+      onDespublicar: async () => {
+        if (!curadoria) return;
+        await despublicarCuradoria(eventId, curadoria.id);
+        await recarregarCuradoria();
+      },
+      onFechar: async (opcaoId) => {
+        if (!drawerId) return null;
+        const r = await fecharComFornecedor(eventId, drawerId, opcaoId);
+        await recarregarCuradoria();
+        refresh();
+        return "error" in r ? r.error : null;
+      },
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [eventId, drawerId, curadoria, recarregarCuradoria]
+  );
 
   // ---- ações ----
   async function acaoSalvarCampo(
@@ -531,6 +611,8 @@ export function PlanejamentoEvento({
             await alternarVisivelPortal(eventId, campoId, visivel);
             refresh();
           }}
+          curadoria={curadoria}
+          acoesCuradoria={acoesCuradoria}
         />
       )}
     </div>

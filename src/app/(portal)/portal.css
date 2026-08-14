@@ -378,12 +378,23 @@
   gap: 16px;
 }
 
+/* mural de inspirações: 3 colunas no celular, 6 no computador (handoff) */
+.portal-grade-imagens {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--esp-3);
+}
+
 @media (min-width: 768px) {
   .portal-grade-conteudo {
     grid-template-columns: 1fr var(--coluna-direita-w);
     padding: 28px var(--esp-9) var(--esp-9);
   }
   .portal-grade-2 {
+    gap: var(--esp-4);
+  }
+  .portal-grade-imagens {
+    grid-template-columns: repeat(6, 1fr);
     gap: var(--esp-4);
   }
 }

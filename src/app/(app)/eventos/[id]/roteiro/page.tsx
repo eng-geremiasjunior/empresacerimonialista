@@ -3,6 +3,10 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { RoteiroList } from "@/components/RoteiroList";
+import { FilaSugestoes } from "@/components/cronograma/FilaSugestoes";
+import { BotaoAlergia } from "@/components/cronograma/BotaoAlergia";
+import { getSugestoesDoEvento } from "@/lib/supabase/programa-do-dia";
+import { alergiaCompartilhavel } from "./alergia-actions";
 import type { CronogramaItem } from "@/lib/cronograma";
 import type { Supplier } from "@/lib/types";
 
@@ -13,7 +17,14 @@ export default async function RoteiroPage({
 }) {
   const supabase = createClient();
 
-  const [{ data: eventData }, cronogramaResult, linksResult] = await Promise.all([
+  const [
+    { data: eventData },
+    cronogramaResult,
+    linksResult,
+    sugestoes,
+    alergia,
+    alergiaCompartilhadaResult,
+  ] = await Promise.all([
     supabase
       .from("events")
       .select("id, date")
@@ -22,11 +33,17 @@ export default async function RoteiroPage({
     // Leitura rica dos itens (status_novo, horários reais, responsável,
     // fornecedor + categoria) — mesma fonte usada no polling do client.
     supabase.rpc("cronograma_evento", { p_event_id: params.id }),
-    supabase
-      .from("roteiro_links")
-      .select("supplier_id, hash, suppliers(id, name)")
-      .eq("event_id", params.id),
-  ]);
+      supabase
+        .from("roteiro_links")
+        .select("supplier_id, hash, suppliers(id, name)")
+        .eq("event_id", params.id),
+      getSugestoesDoEvento(params.id),
+      alergiaCompartilhavel(params.id),
+      supabase
+        .from("evento_alergia_compartilhada")
+        .select("supplier_id")
+        .eq("event_id", params.id),
+    ]);
 
   if (!eventData) {
     notFound();
@@ -34,6 +51,12 @@ export default async function RoteiroPage({
 
   const event = eventData as { id: string; date: string };
   const items = (cronogramaResult.data ?? []) as unknown as CronogramaItem[];
+
+  const alergiaComSupplier = new Set(
+    ((alergiaCompartilhadaResult.data ?? []) as { supplier_id: string }[]).map(
+      (a) => a.supplier_id
+    )
+  );
 
   const linkRows = (linksResult.data ?? []) as unknown as {
     supplier_id: string;
@@ -65,6 +88,14 @@ export default async function RoteiroPage({
         </div>
       )}
 
+      <FilaSugestoes
+        eventId={event.id}
+        sugestoes={sugestoes.filter((s) => s.estado === "pendente")}
+        titulosPorItem={Object.fromEntries(
+          items.map((i) => [i.id, i.title])
+        )}
+      />
+
       <RoteiroList
         eventId={event.id}
         eventDate={event.date}
@@ -92,6 +123,14 @@ export default async function RoteiroPage({
                     {l.suppliers!.name}
                   </span>
                   <span className="flex shrink-0 items-center gap-2">
+                    <BotaoAlergia
+                      eventId={event.id}
+                      supplierId={l.supplier_id}
+                      supplierNome={l.suppliers!.name}
+                      compartilhado={alergiaComSupplier.has(l.supplier_id)}
+                      texto={alergia.texto}
+                      conferida={alergia.conferida}
+                    />
                     <Link
                       href={`/eventos/${event.id}/comunicacao?fornecedor=${l.supplier_id}`}
                       className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-sm font-medium hover:border-stone-400"

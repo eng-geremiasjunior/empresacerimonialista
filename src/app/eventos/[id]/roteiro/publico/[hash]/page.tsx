@@ -16,9 +16,13 @@ export default async function PublicRoteiroPage({
   params: { id: string; hash: string };
 }) {
   const supabase = createClient();
-  const { data } = await supabase.rpc("roteiro_publico", {
-    link_hash: params.hash,
-  });
+  // A alergia vem por função separada (092): só aparece se a
+  // cerimonialista compartilhou com ESTE fornecedor e a resposta já foi
+  // conferida. Medicamento não passa por aqui em hipótese nenhuma.
+  const [{ data }, { data: alergia }] = await Promise.all([
+    supabase.rpc("roteiro_publico", { link_hash: params.hash }),
+    supabase.rpc("roteiro_publico_alergia", { link_hash: params.hash }),
+  ]);
 
   if (!data) {
     return (
@@ -36,6 +40,14 @@ export default async function PublicRoteiroPage({
 
   return (
     <PublicRoteiro initial={data as PublicRoteiroData} hash={params.hash}>
+      {typeof alergia === "string" && alergia.trim() && (
+        <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4">
+          <h2 className="text-sm font-semibold text-amber-900">
+            Restrição alimentar dos noivos
+          </h2>
+          <p className="mt-1 text-sm text-amber-800">{alergia}</p>
+        </div>
+      )}
       <PublicChat hash={params.hash} />
     </PublicRoteiro>
   );

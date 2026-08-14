@@ -18,7 +18,7 @@ export type Destino = {
 /** Navegação principal (sidebar) — cinco itens. */
 export const PRINCIPAIS: Destino[] = [
   { seg: "", rotulo: "Visão geral", icone: "LayoutDashboard" },
-  { seg: "escolhas", rotulo: "Escolhas do casal", rotuloCurto: "Escolhas", icone: "Heart", emBreve: true },
+  { seg: "escolhas", rotulo: "Escolhas do casal", rotuloCurto: "Escolhas", icone: "Heart" },
   { seg: "fornecedores", rotulo: "Fornecedores", icone: "Briefcase", emBreve: true },
   { seg: "convidados", rotulo: "Convidados", icone: "Users" },
   { seg: "linha-do-tempo", rotulo: "Linha do tempo", icone: "CalendarDays" },
@@ -27,8 +27,9 @@ export const PRINCIPAIS: Destino[] = [
 /** Grupo "Durante o evento". */
 export const DURANTE: Destino[] = [
   { seg: "cortejo", rotulo: "Cortejo", icone: "Heart" },
+  { seg: "inspiracoes", rotulo: "Inspirações", icone: "Camera" },
   { seg: "informacoes", rotulo: "Informações importantes", icone: "Info", emBreve: true },
-  { seg: "cronograma", rotulo: "Cronograma do dia", icone: "Clock", emBreve: true },
+  { seg: "cronograma", rotulo: "Cronograma do dia", icone: "Clock" },
 ];
 
 /** Grupo "Investimento". */
@@ -44,7 +45,7 @@ export const INVESTIMENTO: Destino[] = [
  */
 export const ABAS_CELULAR: Destino[] = [
   { seg: "", rotulo: "Visão geral", icone: "LayoutDashboard" },
-  { seg: "escolhas", rotulo: "Escolhas", icone: "Heart", emBreve: true },
+  { seg: "escolhas", rotulo: "Escolhas", icone: "Heart" },
   { seg: "convidados", rotulo: "Convidados", icone: "Users" },
   { seg: "linha-do-tempo", rotulo: "Linha do tempo", icone: "CalendarDays" },
   { seg: "investimento", rotulo: "Investimento", icone: "CircleDollarSign" },

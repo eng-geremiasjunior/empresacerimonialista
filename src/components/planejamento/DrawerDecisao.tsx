@@ -28,6 +28,8 @@ import {
   TIPO_ROTULO,
   tituloStyle,
 } from "./celebra";
+import { BlocoCuradoria, type AcoesCuradoria } from "./BlocoCuradoria";
+import type { Curadoria } from "@/lib/supabase/curadoria";
 
 const RESP: Record<string, string> = {
   noivos: "noivos",
@@ -595,6 +597,8 @@ export function DrawerDecisao({
   onConferir,
   onVerDiff,
   onAlternarVisivel,
+  curadoria,
+  acoesCuradoria,
 }: {
   decisao: Decisao;
   objetivoNome: string;
@@ -614,6 +618,9 @@ export function DrawerDecisao({
   onConferir: () => Promise<void>;
   onVerDiff: () => Promise<LinhaDiffDrawer[]>;
   onAlternarVisivel: (campoId: string, visivel: boolean) => Promise<void>;
+  /** rodada de opções desta decisão (092); null = ainda não montada */
+  curadoria: Curadoria | null;
+  acoesCuradoria: AcoesCuradoria;
 }) {
   const na = decisao.estado === "nao_se_aplica";
   const decidida = decisao.estado === "decidida";
@@ -1065,6 +1072,16 @@ export function DrawerDecisao({
               Some da fila e do progresso; continua listada no fim da jornada,
               recuada e tachada.
             </p>
+          )}
+
+          {/* Opções para a cliente (092) — depois dos campos porque é a
+              conversa que vem DEPOIS de a decisão existir. */}
+          {!na && (
+            <BlocoCuradoria
+              curadoria={curadoria}
+              decidida={decidida}
+              acoes={acoesCuradoria}
+            />
           )}
         </div>
 
