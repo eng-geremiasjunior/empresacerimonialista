@@ -159,6 +159,22 @@
   border-radius: 10px;
   box-shadow: 0 0 0 1px rgba(70, 56, 42, 0.14) inset;
 }
+/* diz qual foto entra ali; some quando a fotografia real chega */
+.guia-faixa-legenda {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  font-family: ui-monospace, monospace;
+  font-size: 9px;
+  color: #3B332B;
+  background: rgba(253, 251, 247, 0.88);
+  padding: 3px 6px;
+  border-radius: 4px;
+  max-width: calc(100% - 16px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .guia-cores-legenda {
   display: flex;
   flex-direction: column;
@@ -219,6 +235,13 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+/* ícone cinza, nunca de erro: não usar não é falha de ninguém */
+.guia-veto-topo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #8A8074;
 }
 .guia-grade-veto {
   display: grid;
@@ -536,6 +559,26 @@
 .guia-indice-n {
   font-size: 12px;
   color: #8B8072;
+}
+.guia-trilho-situacao {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--g-titulo);
+}
+/* aprovar de qualquer ponto: ela não precisa rolar até o fim para dizer sim */
+.guia-botao-trilho {
+  width: 100%;
+  min-height: 44px;
+  gap: 8px;
+  font-size: 13px;
+}
+.guia-trilho-historico {
+  border-top: 1px solid var(--g-borda);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
 }
 .guia-historico {
   margin: 0;

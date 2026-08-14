@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
-import "../../(portal)/portal.css";
-import "../../(portal)/portal/[eventoId]/guia-estilo/guia.css";
+import { ASSUNTO_ROTULO } from "@/lib/inspiracoes-shared";
+import { MinusCircle } from "@/components/portal/icones";
 
 export const dynamic = "force-dynamic";
 
@@ -136,6 +136,36 @@ export default async function GuiaPublicoPage({
                   } as React.CSSProperties
                 }
               >
+                {urls.get(c.foto_path ?? "") ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={urls.get(c.foto_path ?? "")}
+                    alt=""
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      mixBlendMode: "multiply",
+                    }}
+                  />
+                ) : (
+                  <>
+                    <span
+                      aria-hidden
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        background:
+                          "repeating-linear-gradient(122deg,rgba(255,255,255,.16) 0 9px,rgba(0,0,0,.05) 9px 18px)",
+                      }}
+                    />
+                    <span className="guia-faixa-legenda">
+                      foto — {c.nome.toLowerCase()}
+                    </span>
+                  </>
+                )}
                 <span className="guia-faixa-anel" aria-hidden />
               </div>
             ))}
@@ -175,7 +205,10 @@ export default async function GuiaPublicoPage({
 
           {guia.vetadas && guia.vetadas.length > 0 && (
             <div className="guia-veto">
-              <span className="guia-rotulo">Não usar</span>
+              <span className="guia-veto-topo">
+                <MinusCircle size={16} strokeWidth={1.4} />
+                <span className="guia-rotulo">Não usar</span>
+              </span>
               <div className="guia-grade-veto">
                 {guia.vetadas.map((v, i) => (
                   <div key={`${v.nome}-${i}`} className="guia-veto-item">
@@ -282,7 +315,9 @@ export default async function GuiaPublicoPage({
                   altura="100%"
                 />
                 <div className="guia-referencia-texto">
-                  <span className="guia-rotulo">{r.assunto}</span>
+                  <span className="guia-rotulo">
+                    {ASSUNTO_ROTULO[r.assunto] ?? r.assunto}
+                  </span>
                   {r.agradou && (
                     <>
                       <span className="guia-rotulo-ouro">O que agradou</span>

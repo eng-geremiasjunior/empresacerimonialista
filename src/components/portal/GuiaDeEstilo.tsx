@@ -24,6 +24,15 @@ import {
   aprovarGuia,
   pedirAjusteNoGuia,
 } from "@/app/(portal)/portal/[eventoId]/guia-estilo/actions";
+import {
+  AlertCircle,
+  Check,
+  CheckCircle2,
+  Clock,
+  Loader,
+  MinusCircle,
+  Share2,
+} from "./icones";
 
 const G = "var(--fonte-titulo)";
 const U = "var(--fonte-corpo)";
@@ -56,6 +65,20 @@ const LISTRA_DENSA =
   "repeating-linear-gradient(122deg,#E8E1D6 0 7px,#F0EBE1 7px 14px)";
 const TEXTURA_COR =
   "repeating-linear-gradient(122deg,rgba(255,255,255,.16) 0 9px,rgba(0,0,0,.05) 9px 18px)";
+
+/**
+ * O ícone da faixa de status. Fica num componente próprio porque muda
+ * com a situação, e a cor vem do PAI (o svg usa currentColor) — foi
+ * assim que o protótipo resolveu, e é o que evita o ícone congelar no
+ * primeiro estado renderizado.
+ */
+function IconeSituacao({ situacao }: { situacao: Guia["situacao"] }) {
+  const props = { size: 18, strokeWidth: 1.4 };
+  if (situacao === "aprovado") return <CheckCircle2 {...props} />;
+  if (situacao === "montagem") return <Loader {...props} />;
+  if (situacao === "alterado") return <AlertCircle {...props} />;
+  return <Clock {...props} />;
+}
 
 function Secao({
   id,
@@ -239,17 +262,13 @@ export function GuiaDeEstilo({
             className="guia-status"
             style={{ background: fundoSituacao, borderColor: bordaSituacao }}
           >
+            {/* o ícone muda com a situação — loader, relógio, check, alerta */}
             <span
               aria-hidden
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: corSituacao,
-                flexShrink: 0,
-                marginTop: 6,
-              }}
-            />
+              style={{ color: corSituacao, flexShrink: 0, marginTop: 2, display: "flex" }}
+            >
+              <IconeSituacao situacao={guia.situacao} />
+            </span>
             <div>
               <p className="guia-status-titulo">
                 {situacao.rotulo}
@@ -316,14 +335,22 @@ export function GuiaDeEstilo({
                         }}
                       />
                     ) : (
-                      <span
-                        aria-hidden
-                        style={{
-                          position: "absolute",
-                          inset: 0,
-                          background: TEXTURA_COR,
-                        }}
-                      />
+                      <>
+                        <span
+                          aria-hidden
+                          style={{
+                            position: "absolute",
+                            inset: 0,
+                            background: TEXTURA_COR,
+                          }}
+                        />
+                        {/* amostra de cor é recorte de foto REAL com a cor
+                            por cima, nunca retângulo chapado. Enquanto a
+                            foto não chega, a legenda diz qual entra. */}
+                        <span className="guia-faixa-legenda">
+                          foto — {c.nome.toLowerCase()}
+                        </span>
+                      </>
                     )}
                     <span className="guia-faixa-anel" aria-hidden />
                   </div>
@@ -374,7 +401,10 @@ export function GuiaDeEstilo({
 
               {vetadas.length > 0 && (
                 <div className="guia-veto">
-                  <span className="guia-rotulo">Deixamos de fora</span>
+                  <span className="guia-veto-topo">
+                    <MinusCircle size={16} strokeWidth={1.4} />
+                    <span className="guia-rotulo">Deixamos de fora</span>
+                  </span>
                   <div className="guia-grade-veto">
                     {vetadas.map((v) => (
                       <div key={v.id} className="guia-veto-item">
@@ -538,14 +568,16 @@ export function GuiaDeEstilo({
                       ? "Vocês aprovaram este guia"
                       : guia.situacao === "alterado"
                         ? "Algumas coisas mudaram"
-                        : "O que vocês acharam?"}
+                        : "Aprovar o guia de estilo"}
                   </p>
                   <p className="guia-aprovacao-texto">
+                    {/* aprovar não pode soar como porta que fecha: é o que
+                        trava a noiva na hora de dizer sim */}
                     {guia.situacao === "aprovado"
                       ? `${guia.aprovadoNome ?? "Vocês"} aprovou. É esta a referência que vai para os fornecedores.`
                       : guia.situacao === "alterado"
                         ? "A aprovação anterior continua registrada. Confirmem a nova versão quando quiserem."
-                        : "Se estiver do jeito de vocês, é só aprovar. Se faltar alguma coisa, conte para a sua cerimonialista antes."}
+                        : "A aprovação não engessa nada: mudanças continuam possíveis, só passam a pedir uma nova confirmação sua."}
                   </p>
                 </div>
 
@@ -632,15 +664,54 @@ export function GuiaDeEstilo({
               ))}
           </div>
 
-          {guia.historico.length > 0 && (
+          {/* Situação + aprovar de qualquer ponto: ela não precisa rolar
+              até o fim do documento para dizer sim. O histórico vem junto
+              porque é a mesma pergunta — "em que pé está isto?". */}
+          <div
+            className="guia-trilho-cartao"
+            style={{ background: fundoSituacao, borderColor: bordaSituacao }}
+          >
+            <span className="guia-rotulo">Situação</span>
+            <p className="guia-trilho-situacao">{situacao.rotulo}</p>
+
+            {podeAgir && (
+              <button
+                type="button"
+                className="guia-botao guia-botao-ouro guia-botao-trilho"
+                disabled={pendente}
+                onClick={() => agir(() => aprovarGuia(eventoId, guia.id))}
+              >
+                <Check size={16} strokeWidth={1.4} />
+                {guia.situacao === "alterado"
+                  ? "Aprovar a nova versão"
+                  : "Aprovar este guia"}
+              </button>
+            )}
+
+            {guia.historico.length > 0 && (
+              <div className="guia-trilho-historico">
+                <span className="guia-rotulo">Histórico</span>
+                {guia.historico.map((h) => (
+                  <p key={h.id} className="guia-historico">
+                    <span aria-hidden className="guia-ponto" />
+                    {h.texto}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Compartilhar: a cliente não envia nada — o cartão existe para
+              ela saber que o guia CHEGA a quem executa, e que chega
+              sempre na versão aprovada mais recente. */}
+          {(guia.situacao === "aprovado" || guia.situacao === "alterado") && (
             <div className="guia-trilho-cartao">
-              <span className="guia-rotulo">Histórico</span>
-              {guia.historico.map((h) => (
-                <p key={h.id} className="guia-historico">
-                  <span aria-hidden className="guia-ponto" />
-                  {h.texto}
-                </p>
-              ))}
+              <span className="guia-rotulo">Compartilhar</span>
+              <p className="guia-nota" style={{ display: "flex", gap: 8 }}>
+                <Share2 size={16} strokeWidth={1.4} style={{ flexShrink: 0, marginTop: 2 }} />
+                Os fornecedores recebem sempre a versão aprovada mais
+                recente. Quem envia é a sua cerimonialista.
+              </p>
             </div>
           )}
         </aside>
