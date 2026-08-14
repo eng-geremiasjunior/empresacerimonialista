@@ -163,9 +163,26 @@ comment on column public.events.verba_total is
 -- 4) SALDO EM MÃOS E CHAMADA DE CAPITAL
 -- ============================================================
 -- Receita na conta 'fornecedor' = a cliente repassou verba para o caixa
--- do evento. Isso já era possível no schema e nunca foi usado; agora tem
--- significado e leitor.
+-- do evento.
 --
+-- Para isso o CHECK da 063 precisa ceder num ponto. Ele exigia fornecedor
+-- em TODO lançamento da conta do fornecedor, e a razão dele continua
+-- válida para DESPESA: pagamento sem dizer a quem não dá para prestar
+-- contas. Mas o repasse da cliente é uma RECEITA daquela conta e não tem
+-- fornecedor nenhum — é a cliente pondo dinheiro no caixa do evento.
+--
+-- A regra passa a ser: despesa de fornecedor exige fornecedor; receita
+-- da conta do evento não. Assessoria segue sem fornecedor, como antes.
+alter table public.transactions
+  drop constraint if exists transactions_fornecedor_obrigatorio_check;
+alter table public.transactions
+  add constraint transactions_fornecedor_obrigatorio_check
+  check (
+    (conta = 'fornecedor' and type = 'despesa' and supplier_id is not null)
+    or (conta = 'fornecedor' and type = 'receita')
+    or (conta = 'assessoria' and supplier_id is null)
+  );
+
 -- Saldo em mãos = repassado pela cliente − o que saiu do caixa.
 create or replace function public.saldo_do_caixa_evento(p_event_id uuid)
 returns json

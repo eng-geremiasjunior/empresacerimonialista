@@ -6,7 +6,11 @@ import { SecaoReceitas } from "@/components/financeiro/SecaoReceitas";
 import { ListaDespesas } from "@/components/financeiro/ListaDespesas";
 import { FinanceiroTabs } from "@/components/financeiro/FinanceiroTabs";
 import { FinanceiroEvento } from "@/components/financeiro/FinanceiroEvento";
-import { getFinanceiroDoEvento } from "@/lib/supabase/financeiro-evento";
+import {
+  getFinanceiroDoEvento,
+  getNumerosDoFechamento,
+} from "@/lib/supabase/financeiro-evento";
+import { linhasParaConciliar } from "./lancamento-actions";
 import {
   PendenciasFinanceiras,
   type Pendencia,
@@ -129,14 +133,24 @@ export default async function EventoFinanceiroPage({
   const parcelasFornecedor = ((parcelasRes.data ?? []) as unknown as
     ParcelaFornecedor[]).map((p) => ({ ...p, value: Number(p.value) }));
 
-  const [dadosNovos, { data: evInfo }] = await Promise.all([
-    getFinanceiroDoEvento(eventId),
-    supabase
-      .from("events")
-      .select("name, date, clients(name)")
-      .eq("id", eventId)
-      .maybeSingle(),
-  ]);
+  const [dadosNovos, { data: evInfo }, numFech, { data: fechRow }, extrato] =
+    await Promise.all([
+      getFinanceiroDoEvento(eventId),
+      supabase
+        .from("events")
+        .select("name, date, clients(name)")
+        .eq("id", eventId)
+        .maybeSingle(),
+      getNumerosDoFechamento(eventId),
+      supabase
+        .from("evento_fechamento")
+        .select(
+          "fechado_em, sobra_destino, observacao, verba_realizada, receita_assessoria, custos_diretos"
+        )
+        .eq("event_id", eventId)
+        .maybeSingle(),
+      linhasParaConciliar(eventId),
+    ]);
 
   const dataEvento = (evInfo?.date as string) ?? todayIso;
   // o embed do PostgREST devolve array quando a relação não é única
@@ -161,6 +175,21 @@ export default async function EventoFinanceiroPage({
               86400000
           ),
         }}
+        fornecedores={suppliers}
+        numerosFechamento={numFech}
+        fechamento={
+          fechRow
+            ? {
+                fechadoEm: fechRow.fechado_em as string,
+                sobraDestino: fechRow.sobra_destino as string,
+                observacao: (fechRow.observacao as string) ?? null,
+                verbaRealizada: Number(fechRow.verba_realizada ?? 0),
+                receitaAssessoria: Number(fechRow.receita_assessoria ?? 0),
+                custosDiretos: Number(fechRow.custos_diretos ?? 0),
+              }
+            : null
+        }
+        linhasExtrato={extrato}
       />
 
       {/*

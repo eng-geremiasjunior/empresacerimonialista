@@ -26,6 +26,9 @@ import {
 } from "@/lib/financeiro-core";
 import type { FinanceiroDoEvento } from "@/lib/supabase/financeiro-evento";
 import { DrawerLancamento } from "./DrawerLancamento";
+import { NovoLancamento } from "./NovoLancamento";
+import { PainelFechamento, type NumerosFechamento } from "./PainelFechamento";
+import { PainelConciliacao } from "./PainelConciliacao";
 import "./financeiro.css";
 
 type Screen = "assessoria" | "fornecedores";
@@ -41,15 +44,24 @@ export function FinanceiroEvento({
   eventId,
   dados,
   contexto,
+  fornecedores,
+  numerosFechamento,
+  fechamento,
+  linhasExtrato,
 }: {
   eventId: string;
   dados: FinanceiroDoEvento;
   contexto: { evento: string; data: string; diasAte: number };
+  fornecedores: { id: string; name: string }[];
+  numerosFechamento: NumerosFechamento | null;
+  fechamento: React.ComponentProps<typeof PainelFechamento>["fechamento"];
+  linhasExtrato: React.ComponentProps<typeof PainelConciliacao>["pendentes"];
 }) {
   const router = useRouter();
   const [screen, setScreen] = useState<Screen>("fornecedores");
   const [view, setView] = useState<View>("calendario");
   const [drawer, setDrawer] = useState<Lancamento | null>(null);
+  const [novo, setNovo] = useState(false);
   const [mes, setMes] = useState(() => dados.hoje.slice(0, 7));
 
   const hoje = dados.hoje;
@@ -153,13 +165,16 @@ export function FinanceiroEvento({
           >
             Extrato
           </button>
+          <button type="button" className="fin-btn" onClick={() => setNovo(true)}>
+            Novo lançamento
+          </button>
           <button
             type="button"
             className="fin-btn fin-btn-primario"
             onClick={() => {
               const alvo = fila.find((l) => !l.pagoEm);
               if (alvo) setDrawer(alvo);
-              else setView("fila");
+              else setNovo(true);
             }}
           >
             Anexar comprovante
@@ -447,6 +462,29 @@ export function FinanceiroEvento({
           </>
         )}
       </div>
+
+      {/* Conciliação e fechamento vivem embaixo, na tela de Fornecedores:
+          são o começo e o fim do trabalho com a verba, não o dia a dia. */}
+      {screen === "fornecedores" && (
+        <>
+          <PainelConciliacao eventId={eventId} pendentes={linhasExtrato} />
+          {numerosFechamento && (
+            <PainelFechamento
+              eventId={eventId}
+              numeros={numerosFechamento}
+              fechamento={fechamento}
+            />
+          )}
+        </>
+      )}
+
+      {novo && (
+        <NovoLancamento
+          eventId={eventId}
+          fornecedores={fornecedores}
+          onFechar={() => setNovo(false)}
+        />
+      )}
 
       {drawer && (
         <DrawerLancamento
