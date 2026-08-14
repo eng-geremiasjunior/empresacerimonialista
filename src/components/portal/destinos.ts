@@ -20,12 +20,13 @@ export const PRINCIPAIS: Destino[] = [
   { seg: "", rotulo: "Visão geral", icone: "LayoutDashboard" },
   { seg: "escolhas", rotulo: "Escolhas do casal", rotuloCurto: "Escolhas", icone: "Heart", emBreve: true },
   { seg: "fornecedores", rotulo: "Fornecedores", icone: "Briefcase", emBreve: true },
-  { seg: "convidados", rotulo: "Convidados", icone: "Users", emBreve: true },
+  { seg: "convidados", rotulo: "Convidados", icone: "Users" },
   { seg: "linha-do-tempo", rotulo: "Linha do tempo", icone: "CalendarDays" },
 ];
 
 /** Grupo "Durante o evento". */
 export const DURANTE: Destino[] = [
+  { seg: "cortejo", rotulo: "Cortejo", icone: "Heart" },
   { seg: "informacoes", rotulo: "Informações importantes", icone: "Info", emBreve: true },
   { seg: "cronograma", rotulo: "Cronograma do dia", icone: "Clock", emBreve: true },
 ];
@@ -44,7 +45,7 @@ export const INVESTIMENTO: Destino[] = [
 export const ABAS_CELULAR: Destino[] = [
   { seg: "", rotulo: "Visão geral", icone: "LayoutDashboard" },
   { seg: "escolhas", rotulo: "Escolhas", icone: "Heart", emBreve: true },
-  { seg: "convidados", rotulo: "Convidados", icone: "Users", emBreve: true },
+  { seg: "convidados", rotulo: "Convidados", icone: "Users" },
   { seg: "linha-do-tempo", rotulo: "Linha do tempo", icone: "CalendarDays" },
   { seg: "investimento", rotulo: "Investimento", icone: "CircleDollarSign" },
 ];

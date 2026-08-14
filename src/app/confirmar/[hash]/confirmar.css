@@ -1,0 +1,97 @@
+/* A tela do convidado.
+   Coluna de 430px SEMPRE, em qualquer largura — é um convite, não uma
+   aplicação. Sem barra lateral, sem navegação, sem marca do sistema. */
+
+.rsvp-fora {
+  min-height: 100vh;
+  background: var(--cor-app);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--esp-6);
+}
+
+.rsvp-cartao {
+  width: 100%;
+  max-width: 430px;
+  background: var(--cor-card);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-card);
+  padding: var(--esp-9) var(--esp-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-5);
+  box-shadow: var(--sombra-painel);
+}
+
+.rsvp-titulo {
+  font-family: var(--fonte-titulo);
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 1.15;
+  color: var(--cor-texto-forte);
+}
+
+.rsvp-nome {
+  font-family: var(--fonte-titulo);
+  font-style: italic;
+  font-size: 22px;
+  color: var(--cor-ouro-texto);
+}
+
+.rsvp-texto {
+  font-size: var(--ts-item-desc);
+  line-height: 1.55;
+  color: var(--cor-texto-suave);
+}
+
+.rsvp-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--esp-4) 0;
+  border-top: 1px solid var(--cor-borda-linha);
+  border-bottom: 1px solid var(--cor-borda-linha);
+}
+
+.rsvp-botao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--esp-2);
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--cor-borda-botao);
+  border-radius: var(--raio-botao);
+  background: var(--cor-card-suave);
+  padding: 13px 18px;
+  font-family: var(--fonte-corpo);
+  font-size: var(--ts-item-desc);
+  color: var(--cor-texto-secundario);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.rsvp-botao:hover {
+  background: var(--cor-chip);
+}
+.rsvp-botao[data-escolhido="true"] {
+  border-color: var(--cor-borda-ouro);
+  background: linear-gradient(135deg, #fdfaf4 0%, #f8f1e4 100%);
+  color: var(--cor-texto-forte);
+}
+.rsvp-botao:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.rsvp-campo {
+  width: 100%;
+  border: 1px solid var(--cor-borda-botao);
+  border-radius: var(--raio-botao);
+  background: var(--cor-card-suave);
+  padding: 11px 14px;
+  min-height: 48px;
+  font-family: var(--fonte-corpo);
+  font-size: var(--ts-item-desc);
+  color: var(--cor-texto);
+}
