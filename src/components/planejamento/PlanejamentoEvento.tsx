@@ -35,8 +35,25 @@ import { FaixaContexto } from "./FaixaContexto";
 import { ModoFoco } from "./ModoFoco";
 import { ModoAmplo } from "./ModoAmplo";
 import { MapaMental } from "./MapaMental";
-import { DrawerDecisao, type SupplierRef } from "./DrawerDecisao";
+import {
+  DrawerDecisao,
+  CODIGO_DECISAO_GUIA,
+  type SupplierRef,
+} from "./DrawerDecisao";
 import type { AcoesCuradoria } from "./BlocoCuradoria";
+import type { AcoesGuia } from "./BlocoGuiaEstilo";
+import type { GuiaDeEstilo } from "@/lib/guia-shared";
+import {
+  carregarCompartilhamentos,
+  carregarGuia,
+  carregarPaletas,
+  compartilharGuia,
+  criarGuia,
+  enviarGuiaParaCliente,
+  pararDeCompartilharGuia,
+  removerItemGuia,
+  salvarItemGuia,
+} from "@/app/(app)/eventos/[id]/planejamento/guia-actions";
 import type { Curadoria } from "@/lib/supabase/curadoria";
 import {
   abrirCuradoria,
@@ -165,6 +182,70 @@ export function PlanejamentoEvento({
   const recarregarCuradoria = useCallback(async () => {
     if (drawerId) setCuradoria(await carregarCuradoria(drawerId));
   }, [drawerId]);
+
+  // ---- guia de estilo (096) ----
+  // Carrega só quando o drawer aberto É a decisão do briefing: o guia é
+  // um documento inteiro, e nenhuma outra decisão precisa dele.
+  const [guia, setGuia] = useState<GuiaDeEstilo | null>(null);
+  const ehDecisaoDoGuia = drawer?.decisao.codigo === CODIGO_DECISAO_GUIA;
+
+  const recarregarGuia = useCallback(async () => {
+    setGuia(await carregarGuia(eventId));
+  }, [eventId]);
+
+  useEffect(() => {
+    if (!ehDecisaoDoGuia) {
+      setGuia(null);
+      return;
+    }
+    let vivo = true;
+    carregarGuia(eventId).then((g) => {
+      if (vivo) setGuia(g);
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [ehDecisaoDoGuia, eventId]);
+
+  const acoesGuia: AcoesGuia = useMemo(
+    () => ({
+      onCriar: async (paletaId) => {
+        const r = await criarGuia(eventId, drawerId, paletaId);
+        await recarregarGuia();
+        return "error" in r ? r.error : null;
+      },
+      onSalvarItem: async (tipo, item) => {
+        if (!guia) return "Monte o guia primeiro.";
+        const r = await salvarItemGuia(eventId, guia.id, tipo, item);
+        await recarregarGuia();
+        return "error" in r ? r.error : null;
+      },
+      onRemoverItem: async (tipo, id) => {
+        if (!guia) return;
+        await removerItemGuia(eventId, guia.id, tipo, id);
+        await recarregarGuia();
+      },
+      onEnviar: async () => {
+        if (!guia) return "Monte o guia primeiro.";
+        const r = await enviarGuiaParaCliente(eventId, guia.id);
+        await recarregarGuia();
+        return "error" in r ? r.error : null;
+      },
+      onCompartilhar: async (supplierId, secoes) => {
+        if (!guia) return "Monte o guia primeiro.";
+        const r = await compartilharGuia(eventId, guia.id, supplierId, secoes);
+        return "error" in r ? r.error : null;
+      },
+      onPararCompartilhar: async (supplierId) => {
+        if (!guia) return;
+        await pararDeCompartilharGuia(eventId, guia.id, supplierId);
+      },
+      carregarPaletas: () => carregarPaletas(),
+      carregarCompartilhamentos: () =>
+        guia ? carregarCompartilhamentos(guia.id) : Promise.resolve([]),
+    }),
+    [eventId, drawerId, guia, recarregarGuia]
+  );
 
   const acoesCuradoria: AcoesCuradoria = useMemo(
     () => ({
@@ -613,6 +694,8 @@ export function PlanejamentoEvento({
           }}
           curadoria={curadoria}
           acoesCuradoria={acoesCuradoria}
+          guia={guia}
+          acoesGuia={acoesGuia}
         />
       )}
     </div>

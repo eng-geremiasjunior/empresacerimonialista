@@ -15,9 +15,17 @@ export type Destino = {
   emBreve?: boolean;
 };
 
-/** Navegação principal (sidebar) — cinco itens. */
+/**
+ * Navegação principal (sidebar).
+ *
+ * "Guia de estilo" vem logo depois da visão geral, e não no grupo de
+ * baixo: escolher o estilo é o COMEÇO do casamento — o casal decide
+ * meses antes —, não algo que acontece durante a festa. A sidebar não
+ * ganhou item: é o antigo "Inspirações" amadurecido, que subiu de grupo.
+ */
 export const PRINCIPAIS: Destino[] = [
   { seg: "", rotulo: "Visão geral", icone: "LayoutDashboard" },
+  { seg: "guia-estilo", rotulo: "Guia de estilo", rotuloCurto: "Guia", icone: "Palette" },
   { seg: "escolhas", rotulo: "Escolhas do casal", rotuloCurto: "Escolhas", icone: "Heart" },
   { seg: "fornecedores", rotulo: "Fornecedores", icone: "Briefcase", emBreve: true },
   { seg: "convidados", rotulo: "Convidados", icone: "Users" },
@@ -27,7 +35,6 @@ export const PRINCIPAIS: Destino[] = [
 /** Grupo "Durante o evento". */
 export const DURANTE: Destino[] = [
   { seg: "cortejo", rotulo: "Cortejo", icone: "Heart" },
-  { seg: "inspiracoes", rotulo: "Inspirações", icone: "Camera" },
   { seg: "informacoes", rotulo: "Informações importantes", icone: "Info", emBreve: true },
   { seg: "cronograma", rotulo: "Cronograma do dia", icone: "Clock" },
 ];

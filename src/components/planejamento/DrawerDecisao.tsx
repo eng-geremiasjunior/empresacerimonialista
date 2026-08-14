@@ -29,7 +29,15 @@ import {
   tituloStyle,
 } from "./celebra";
 import { BlocoCuradoria, type AcoesCuradoria } from "./BlocoCuradoria";
+import { BlocoGuiaEstilo, type AcoesGuia } from "./BlocoGuiaEstilo";
 import type { Curadoria } from "@/lib/supabase/curadoria";
+import type { GuiaDeEstilo } from "@/lib/guia-shared";
+
+/**
+ * O guia de estilo é o produto DESTA decisão — não é área nova do
+ * sistema. Só aqui ele aparece.
+ */
+export const CODIGO_DECISAO_GUIA = "decoracao_briefing";
 
 const RESP: Record<string, string> = {
   noivos: "noivos",
@@ -599,6 +607,8 @@ export function DrawerDecisao({
   onAlternarVisivel,
   curadoria,
   acoesCuradoria,
+  guia,
+  acoesGuia,
 }: {
   decisao: Decisao;
   objetivoNome: string;
@@ -621,6 +631,9 @@ export function DrawerDecisao({
   /** rodada de opções desta decisão (092); null = ainda não montada */
   curadoria: Curadoria | null;
   acoesCuradoria: AcoesCuradoria;
+  /** guia de estilo do evento (096); só aparece na decisão de briefing */
+  guia: GuiaDeEstilo | null;
+  acoesGuia: AcoesGuia;
 }) {
   const na = decisao.estado === "nao_se_aplica";
   const decidida = decisao.estado === "decidida";
@@ -1081,6 +1094,16 @@ export function DrawerDecisao({
               curadoria={curadoria}
               decidida={decidida}
               acoes={acoesCuradoria}
+            />
+          )}
+
+          {/* O guia de estilo (096) é o produto do briefing de decoração:
+              mora dentro desta decisão, e só dela. */}
+          {!na && decisao.codigo === CODIGO_DECISAO_GUIA && (
+            <BlocoGuiaEstilo
+              guia={guia}
+              suppliers={suppliers}
+              acoes={acoesGuia}
             />
           )}
         </div>

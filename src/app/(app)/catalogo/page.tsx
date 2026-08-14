@@ -59,6 +59,23 @@ export default async function CatalogoPage() {
         </p>
       )}
 
+      {/* Paletas ficam FORA da divisão por tipo: a mesma combinação de
+          cor serve casamento e debutante, e é a empresa que a define. */}
+      <Link
+        href="/catalogo/paletas"
+        className="group flex items-start gap-3 rounded-xl border border-gray-200 bg-white p-5 transition-colors hover:border-gray-300 hover:bg-gray-50"
+      >
+        <span className="text-xl" aria-hidden>
+          🎨
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-sm font-semibold text-gray-900">Paletas</h2>
+          <p className="mt-0.5 text-xs text-gray-500">
+            As combinações de cor dos guias de estilo, para todos os eventos
+          </p>
+        </div>
+      </Link>
+
       <div className="grid gap-3 sm:grid-cols-2">
         {TIPOS_CATALOGO.map((tipo) => {
           const qtd = contagem.get(tipo) ?? 0;

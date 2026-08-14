@@ -22,6 +22,7 @@ export async function updateSession(request: NextRequest) {
       request.nextUrl.pathname.startsWith("/portal/entrar") ||
       request.nextUrl.pathname.startsWith("/auth/confirm") ||
       request.nextUrl.pathname.startsWith("/confirmar/") ||
+      request.nextUrl.pathname.startsWith("/guia/") ||
       request.nextUrl.pathname.startsWith("/api/rsvp/")
     ) {
       return supabaseResponse;
@@ -76,6 +77,9 @@ export async function updateSession(request: NextRequest) {
   const isAuthConfirm = pathname.startsWith("/auth/confirm");
   // Confirmação de presença do convidado — link público, sem login
   const isPublicConfirmar = pathname.startsWith("/confirmar/");
+  // Guia de estilo na mão do fornecedor — o hash é a credencial, e a RPC
+  // só devolve a fatia dele, e só depois de o casal aprovar
+  const isPublicGuia = pathname.startsWith("/guia/");
 
   if (
     !user &&
@@ -89,7 +93,8 @@ export async function updateSession(request: NextRequest) {
     !isRsvpApi &&
     !isPortalEntrar &&
     !isAuthConfirm &&
-    !isPublicConfirmar
+    !isPublicConfirmar &&
+    !isPublicGuia
   ) {
     const url = request.nextUrl.clone();
     // A cliente que abre um link do portal sem sessão volta para a porta
