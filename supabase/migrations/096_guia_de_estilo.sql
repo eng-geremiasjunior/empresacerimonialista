@@ -60,10 +60,14 @@ alter table public.paleta_biblioteca_cor enable row level security;
 
 -- Ler: a da minha empresa + as de sistema. Escrever: SÓ a da minha
 -- empresa (as de sistema são acervo, ninguém edita).
+--
+-- O acervo exige CARGO, não só sessão: a biblioteca é ferramenta de
+-- trabalho da equipe. A cliente não tem cargo e não lê paleta nenhuma —
+-- o que ela vê é o guia do casamento dela, com as cores já copiadas.
 drop policy if exists paleta_select on public.paleta_biblioteca;
 create policy paleta_select on public.paleta_biblioteca
   for select using (
-    empresa_id is null
+    (empresa_id is null and exists (select 1 from public.meu_cargo()))
     or empresa_id = (select mc.empresa_id from public.meu_cargo() mc)
   );
 
@@ -77,7 +81,7 @@ create policy paleta_cor_select on public.paleta_biblioteca_cor
   for select using (
     paleta_id in (
       select p.id from public.paleta_biblioteca p
-      where p.empresa_id is null
+      where (p.empresa_id is null and exists (select 1 from public.meu_cargo()))
          or p.empresa_id = (select mc.empresa_id from public.meu_cargo() mc)
     )
   );
