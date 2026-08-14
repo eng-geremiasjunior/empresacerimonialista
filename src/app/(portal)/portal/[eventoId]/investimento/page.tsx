@@ -3,16 +3,22 @@ import { getEventoDoPortal, getInvestimento } from "@/lib/supabase/portal";
 import { txStatus } from "@/lib/financeiro-const";
 import { brl } from "@/components/planejamento/celebra";
 import { TopoInterno } from "@/components/portal/TopoInterno";
-import { Divisor, Rotulo } from "@/components/portal/Nucleo";
+import { Cartao, ChipIcone, Rotulo, TituloSecao } from "@/components/portal/Nucleo";
 import { LinhaParcela } from "@/components/portal/Linhas";
+import {
+  CircleDollarSign,
+  TAMANHO,
+  TRACO,
+  Wallet,
+} from "@/components/portal/icones";
 import { diaEMes } from "@/components/portal/datas";
 
 export const dynamic = "force-dynamic";
 
-// Investimento (handoff §8.7): o que os fornecedores esperam receber, e
-// quando. SOMENTE leitura — sem botão de pagar, sem boleto, sem
-// checkout. Só dinheiro de conta 'fornecedor'; os honorários da
-// assessoria nunca aparecem aqui.
+// Resumo financeiro: o que os fornecedores esperam receber, e quando.
+// SOMENTE leitura — sem botão de pagar, sem boleto, sem checkout. Só
+// dinheiro de conta 'fornecedor'; os honorários da assessoria nunca
+// aparecem aqui.
 export default async function PortalInvestimentoPage({
   params,
 }: {
@@ -31,92 +37,78 @@ export default async function PortalInvestimentoPage({
   };
 
   return (
-    <>
-      <TopoInterno eventoId={evento.id} secao="Evento" titulo="Investimento" />
-      <p
-        style={{
-          marginTop: "var(--esp-5)",
-          maxWidth: 520,
-          fontSize: "var(--ts-corpo-p)",
-          lineHeight: "var(--el-corpo-p)",
-          color: "var(--cor-texto-secundario)",
-          textWrap: "pretty",
-        }}
-      >
-        O que os fornecedores esperam receber, e quando. O pagamento acontece
-        direto com eles; aqui é só o acompanhamento.
-      </p>
+    <div className="portal-tela">
+      <TopoInterno
+        eventoId={evento.id}
+        titulo="Resumo financeiro"
+        apoio="O que os fornecedores esperam receber, e quando. O pagamento acontece direto com eles; aqui é só o acompanhamento."
+      />
 
-      <Divisor />
-
-      <div
-        style={{
-          display: "flex",
-          gap: "var(--esp-8)",
-          flexWrap: "wrap",
-        }}
-      >
-        <div>
-          <Rotulo>Contratado</Rotulo>
-          <p
-            style={{
-              margin: "var(--esp-2) 0 0",
-              fontFamily: "var(--fonte-titulo)",
-              fontWeight: 500,
-              fontSize: 26,
-              lineHeight: 1.2,
-              color: "var(--cor-texto-principal)",
-            }}
-          >
-            {brl(investimento?.contratado ?? 0)}
-          </p>
-        </div>
-        <div>
-          <Rotulo>Já pago</Rotulo>
-          <p
-            style={{
-              margin: "var(--esp-2) 0 0",
-              fontFamily: "var(--fonte-titulo)",
-              fontWeight: 500,
-              fontSize: 26,
-              lineHeight: 1.2,
-              color: "var(--cor-texto-secundario)",
-            }}
-          >
-            {brl(investimento?.pago ?? 0)}
-          </p>
-        </div>
+      <div className="portal-grade-2">
+        <Cartao padding="18px 16px" style={{ flexDirection: "row", alignItems: "center", gap: "var(--esp-4)" }}>
+          <ChipIcone tamanho={38} redondo>
+            <Wallet size={17} strokeWidth={TRACO} />
+          </ChipIcone>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div
+              style={{
+                fontFamily: "var(--fonte-titulo)",
+                fontSize: "var(--ts-metrica)",
+                lineHeight: 1.15,
+                color: "var(--cor-texto-forte)",
+              }}
+            >
+              {brl(investimento?.contratado ?? 0)}
+            </div>
+            <div style={{ fontSize: "var(--ts-stat-rotulo)", color: "var(--cor-texto-suave)", lineHeight: 1.35 }}>
+              Contratado
+            </div>
+          </div>
+        </Cartao>
+        <Cartao padding="18px 16px" style={{ flexDirection: "row", alignItems: "center", gap: "var(--esp-4)" }}>
+          <ChipIcone tamanho={38} redondo>
+            <CircleDollarSign size={17} strokeWidth={TRACO} />
+          </ChipIcone>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div
+              style={{
+                fontFamily: "var(--fonte-titulo)",
+                fontSize: "var(--ts-metrica)",
+                lineHeight: 1.15,
+                color: "var(--cor-texto-forte)",
+              }}
+            >
+              {brl(investimento?.pago ?? 0)}
+            </div>
+            <div style={{ fontSize: "var(--ts-stat-rotulo)", color: "var(--cor-texto-suave)", lineHeight: 1.35 }}>
+              Já pago
+            </div>
+          </div>
+        </Cartao>
       </div>
 
-      <Divisor />
-
-      <Rotulo>Parcelas</Rotulo>
-      {parcelas.length === 0 ? (
-        <p
-          style={{
-            marginTop: "var(--esp-4)",
-            fontSize: "var(--ts-corpo-p)",
-            lineHeight: "var(--el-corpo-p)",
-            color: "var(--cor-texto-secundario)",
-          }}
-        >
-          As parcelas combinadas com os fornecedores vão aparecer aqui.
-        </p>
-      ) : (
-        <div style={{ marginTop: "var(--esp-2)" }}>
-          {parcelas.map((p, i) => (
-            <LinhaParcela
-              key={`${p.dueDate}-${i}`}
-              fornecedor={p.fornecedor ?? "Fornecedor"}
-              descricao={p.descricao}
-              valorFormatado={brl(p.valor)}
-              dataFormatada={diaEMes(p.dueDate)}
-              estado={estadoDe(p.paid, p.dueDate)}
-              ultima={i === parcelas.length - 1}
-            />
-          ))}
-        </div>
-      )}
-    </>
+      <Cartao padding="var(--esp-8)">
+        <TituloSecao titulo="Parcelas" />
+        {parcelas.length === 0 ? (
+          <p style={{ fontSize: "var(--ts-desc)", color: "var(--cor-texto-suave)" }}>
+            Nenhuma parcela em aberto.
+          </p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {parcelas.map((p, i) => (
+              <LinhaParcela
+                key={`${p.dueDate}-${i}`}
+                fornecedor={p.fornecedor ?? "Fornecedor"}
+                descricao={p.descricao}
+                valorFormatado={brl(p.valor)}
+                dataFormatada={diaEMes(p.dueDate)}
+                estado={estadoDe(p.paid, p.dueDate)}
+                ultima={i === parcelas.length - 1}
+              />
+            ))}
+          </div>
+        )}
+      </Cartao>
+    </div>
   );
 }

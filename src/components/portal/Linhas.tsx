@@ -1,145 +1,206 @@
-// As linhas de lista do portal (handoff §7.2): LinhaDecisao,
-// BlocoEntrada, LinhaParcela, Pergunta, ItemLinhaDoTempo. Toda lista
-// termina em espaço, não em linha (`ultima` remove a hairline).
+// As listas do portal: LinhaDecisao (com chip de ícone por assunto),
+// CartaoEntrada (coluna direita), LinhaParcela, Pergunta e
+// ItemLinhaDoTempo.
+//
+// No computador a decisão tem botão "Ver detalhes"; no celular a linha
+// inteira é o alvo, com chevron à direita — o botão sumiria num alvo
+// de 44px espremido.
 
 import Link from "next/link";
-import { Rotulo, Status } from "./Nucleo";
+import type { ReactNode } from "react";
+import {
+  AlertCircle,
+  ChevronRight,
+  Clock,
+  TAMANHO,
+  TAMANHO_PEQUENO,
+  TRACO,
+  iconeDoAssunto,
+} from "./icones";
+import { ChipIcone, Rotulo } from "./Nucleo";
 
 // ------------------------------------------------------------------
-// LinhaDecisao — item de decisão ou contratação.
+// LinhaDecisao
 // ------------------------------------------------------------------
 export function LinhaDecisao({
+  href,
+  assunto,
   titulo,
-  apoio,
-  estado,
-  statusTexto,
+  descricao,
+  prazo,
+  urgente = false,
   ultima = false,
 }: {
+  href: string;
+  /** nome do objetivo — define o ícone */
+  assunto: string | null;
   titulo: string;
-  apoio?: string | null;
-  estado: "resolvido" | "decidir";
-  statusTexto?: string;
+  descricao?: string | null;
+  /** já na voz do portal ("para agora", "faltam 12 dias") */
+  prazo?: string | null;
+  /** "para agora" ganha o âmbar; o resto fica neutro */
+  urgente?: boolean;
   ultima?: boolean;
 }) {
-  return (
-    <div
+  const Ico = iconeDoAssunto(assunto);
+  const corPrazo = urgente ? "var(--cor-atencao)" : "var(--cor-icone-neutro)";
+
+  const estado = prazo ? (
+    <span
       style={{
         display: "flex",
-        justifyContent: "space-between",
-        alignItems: "baseline",
-        gap: "var(--esp-5)",
-        padding: "13px 0",
-        minHeight: "var(--toque-min)",
-        boxSizing: "border-box",
-        borderBottom: ultima ? "none" : "var(--borda-fina)",
+        alignItems: "center",
+        gap: 6,
+        color: corPrazo,
+        fontSize: "var(--ts-status)",
+        whiteSpace: "nowrap",
       }}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <span
-          style={{
-            fontSize: "var(--ts-corpo)",
-            lineHeight: 1.5,
-            color: "var(--cor-texto-principal)",
-          }}
-        >
-          {titulo}
-        </span>
-        {apoio && (
-          <span
-            style={{
-              fontSize: "var(--ts-corpo-p)",
-              lineHeight: "var(--el-corpo-p)",
-              color: "var(--cor-texto-secundario)",
-            }}
-          >
-            {apoio}
-          </span>
-        )}
-      </div>
-      <Status estado={estado} texto={statusTexto} />
-    </div>
-  );
-}
+      {urgente ? (
+        <AlertCircle size={TAMANHO_PEQUENO} strokeWidth={TRACO} />
+      ) : (
+        <Clock size={TAMANHO_PEQUENO} strokeWidth={TRACO} />
+      )}
+      {prazo}
+    </span>
+  ) : null;
 
-// ------------------------------------------------------------------
-// BlocoEntrada — porta de entrada para área sem aba própria. Largura
-// total, título em Cormorant 19px + indicador em acento, resumo abaixo.
-// ------------------------------------------------------------------
-export function BlocoEntrada({
-  href,
-  titulo,
-  resumo,
-  indicador,
-}: {
-  href: string;
-  titulo: string;
-  resumo: string;
-  indicador?: string | null;
-}) {
   return (
     <Link
       href={href}
       style={{
         display: "flex",
-        flexDirection: "column",
-        gap: "var(--esp-2)",
-        background: "var(--cor-card)",
-        border: "var(--borda-fina)",
-        borderRadius: "var(--raio-0)",
-        padding: "var(--esp-5)",
+        alignItems: "center",
+        gap: "var(--esp-4)",
+        padding: "var(--esp-4) 0",
         minHeight: "var(--toque-min)",
-        textAlign: "left",
+        borderTop: "1px solid var(--cor-borda-linha)",
         color: "inherit",
-        transition: "var(--transicao-padrao)",
       }}
     >
-      <span
-        style={{
-          display: "flex",
-          alignItems: "baseline",
-          justifyContent: "space-between",
-          gap: "var(--esp-3)",
-        }}
-      >
+      <ChipIcone tamanho={44}>
+        <Ico size={TAMANHO} strokeWidth={TRACO} />
+      </ChipIcone>
+
+      <span style={{ flex: 1, display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
         <span
           style={{
             fontFamily: "var(--fonte-titulo)",
-            fontWeight: 500,
-            fontSize: "var(--ts-subtitulo)",
-            lineHeight: "var(--el-subtitulo)",
-            color: "var(--cor-texto-principal)",
+            fontSize: "var(--ts-titulo-item)",
+            color: "var(--cor-texto-forte)",
           }}
         >
           {titulo}
         </span>
-        {indicador && (
-          <Rotulo tom="acento" espacamento="0.14em">
-            {indicador}
-          </Rotulo>
+        {descricao && (
+          <span
+            style={{
+              fontSize: "var(--ts-item-desc)",
+              color: "var(--cor-texto-secundario)",
+            }}
+          >
+            {descricao}
+          </span>
         )}
+        {/* no celular o prazo mora embaixo do texto */}
+        <span className="portal-so-celular">{estado}</span>
       </span>
-      <span
-        style={{
-          fontSize: "var(--ts-corpo-p)",
-          lineHeight: "var(--el-corpo-p)",
-          color: "var(--cor-texto-secundario)",
-        }}
-      >
-        {resumo}
+
+      {/* no computador o prazo fica na coluna própria, antes do chevron */}
+      <span className="portal-so-pc">{estado}</span>
+      <span style={{ color: "var(--cor-icone-neutro)", display: "flex" }} aria-hidden>
+        <ChevronRight size={16} strokeWidth={TRACO} />
       </span>
     </Link>
   );
 }
 
 // ------------------------------------------------------------------
-// LinhaParcela — SOMENTE leitura. O pagamento acontece fora do portal,
-// direto com o fornecedor. vencida é o único estado em acento (pede
-// atenção); paga apaga.
+// CartaoEntrada — os cartões da coluna direita (e a grade de 2 no
+// celular): chip, título serifado, uma linha de resumo e a ação.
+// ------------------------------------------------------------------
+export function CartaoEntrada({
+  href,
+  icone,
+  titulo,
+  resumo,
+  acao,
+}: {
+  href: string;
+  icone: ReactNode;
+  titulo: string;
+  resumo: string;
+  /** texto do botão; sem ele, o cartão inteiro é o alvo */
+  acao?: string;
+}) {
+  const miolo = (
+    <>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--esp-4)" }}>
+        <ChipIcone tamanho={40}>{icone}</ChipIcone>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+          <div
+            style={{
+              fontFamily: "var(--fonte-titulo)",
+              fontSize: "var(--ts-titulo-lateral)",
+              color: "var(--cor-texto-forte)",
+            }}
+          >
+            {titulo}
+          </div>
+          <div style={{ fontSize: "var(--ts-desc)", color: "var(--cor-texto-suave)" }}>
+            {resumo}
+          </div>
+        </div>
+      </div>
+      {acao && (
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            border: "1px solid var(--cor-borda-botao)",
+            borderRadius: "var(--raio-botao)",
+            padding: "10px 14px",
+            minHeight: "var(--toque-min)",
+            fontSize: "var(--ts-botao)",
+            color: "var(--cor-ouro-texto-hover)",
+            background: "var(--cor-card-suave)",
+          }}
+        >
+          {acao}
+          <ChevronRight size={TAMANHO_PEQUENO} strokeWidth={TRACO} />
+        </span>
+      )}
+    </>
+  );
+
+  return (
+    <Link
+      href={href}
+      style={{
+        border: "1px solid var(--cor-borda)",
+        borderRadius: "var(--raio-card)",
+        background: "var(--cor-card)",
+        padding: "var(--esp-6)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--esp-4)",
+        color: "inherit",
+      }}
+    >
+      {miolo}
+    </Link>
+  );
+}
+
+// ------------------------------------------------------------------
+// LinhaParcela — somente leitura. O pagamento acontece fora do portal,
+// direto com o fornecedor.
 // ------------------------------------------------------------------
 const ESTADO_PARCELA = {
-  paga: { rotulo: "Paga", cor: "var(--cor-texto-desativado)" },
-  aVencer: { rotulo: "A vencer", cor: "var(--cor-texto-secundario)" },
-  vencida: { rotulo: "Vencida", cor: "var(--cor-acento)" },
+  paga: { rotulo: "Paga", cor: "var(--cor-texto-rotulo)" },
+  aVencer: { rotulo: "A vencer", cor: "var(--cor-texto-suave)" },
+  vencida: { rotulo: "Vencida", cor: "var(--cor-atencao)" },
 } as const;
 
 export function LinhaParcela({
@@ -158,6 +219,7 @@ export function LinhaParcela({
   ultima?: boolean;
 }) {
   const e = ESTADO_PARCELA[estado];
+  const apagada = estado === "paga";
   return (
     <div
       style={{
@@ -167,57 +229,33 @@ export function LinhaParcela({
         gap: "var(--esp-5)",
         padding: "var(--esp-4) 0",
         minHeight: "var(--toque-min)",
-        borderBottom: ultima ? "none" : "var(--borda-fina)",
+        borderBottom: ultima ? "none" : "1px solid var(--cor-borda-linha)",
       }}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
         <span
           style={{
-            fontSize: "var(--ts-corpo)",
-            lineHeight: 1.5,
-            color:
-              estado === "paga"
-                ? "var(--cor-texto-secundario)"
-                : "var(--cor-texto-principal)",
+            fontSize: "var(--ts-meta)",
+            color: apagada ? "var(--cor-texto-suave)" : "var(--cor-texto-forte)",
           }}
         >
           {fornecedor}
         </span>
         {descricao && (
-          <span
-            style={{
-              fontSize: "var(--ts-corpo-p)",
-              lineHeight: "var(--el-corpo-p)",
-              color: "var(--cor-texto-secundario)",
-            }}
-          >
+          <span style={{ fontSize: "var(--ts-desc)", color: "var(--cor-texto-suave)" }}>
             {descricao}
           </span>
         )}
-        <span
-          style={{
-            marginTop: 4,
-            fontSize: "var(--ts-rotulo)",
-            fontWeight: 500,
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
-            lineHeight: 1,
-            color: e.cor,
-          }}
-        >
+        <Rotulo cor={e.cor} style={{ letterSpacing: "0.09em", marginTop: 2 }}>
           {e.rotulo} · {dataFormatada}
-        </span>
+        </Rotulo>
       </div>
       <span
         style={{
           fontFamily: "var(--fonte-titulo)",
-          fontWeight: 500,
-          fontSize: "var(--ts-subtitulo)",
+          fontSize: "var(--ts-titulo-lateral)",
           whiteSpace: "nowrap",
-          color:
-            estado === "paga"
-              ? "var(--cor-texto-secundario)"
-              : "var(--cor-texto-principal)",
+          color: apagada ? "var(--cor-texto-suave)" : "var(--cor-texto-forte)",
         }}
       >
         {valorFormatado}
@@ -227,17 +265,17 @@ export function LinhaParcela({
 }
 
 // ------------------------------------------------------------------
-// Pergunta — prazo em acento, a pergunta, e (quando existir destino) a
-// ação. Nesta fase o item é informativo: "Responder" chega com a
-// escrita, na fase seguinte.
+// Pergunta
 // ------------------------------------------------------------------
 export function Pergunta({
   prazo,
+  urgente = false,
   pergunta,
   apoio,
   ultima = false,
 }: {
   prazo: string | null;
+  urgente?: boolean;
   pergunta: string;
   apoio?: string | null;
   ultima?: boolean;
@@ -249,31 +287,19 @@ export function Pergunta({
         flexDirection: "column",
         gap: "var(--esp-2)",
         padding: "var(--esp-5) 0",
-        borderBottom: ultima ? "none" : "var(--borda-fina)",
+        borderBottom: ultima ? "none" : "1px solid var(--cor-borda-linha)",
       }}
     >
       {prazo && (
-        <Rotulo tom="acento" espacamento="0.16em">
+        <Rotulo cor={urgente ? "var(--cor-atencao)" : "var(--cor-texto-rotulo)"}>
           {prazo}
         </Rotulo>
       )}
-      <span
-        style={{
-          fontSize: "var(--ts-corpo)",
-          lineHeight: 1.5,
-          color: "var(--cor-texto-principal)",
-        }}
-      >
+      <span style={{ fontSize: "var(--ts-meta)", color: "var(--cor-texto-forte)" }}>
         {pergunta}
       </span>
       {apoio && (
-        <span
-          style={{
-            fontSize: "var(--ts-corpo-p)",
-            lineHeight: "var(--el-corpo-p)",
-            color: "var(--cor-texto-secundario)",
-          }}
-        >
+        <span style={{ fontSize: "var(--ts-desc)", color: "var(--cor-texto-suave)" }}>
           {apoio}
         </span>
       )}
@@ -282,8 +308,7 @@ export function Pergunta({
 }
 
 // ------------------------------------------------------------------
-// ItemLinhaDoTempo — marcador de 6px (cheio = aconteceu, vazado =
-// previsto) + fio de 1px até o item seguinte.
+// ItemLinhaDoTempo — marcador de 6px (cheio = aconteceu) + fio.
 // ------------------------------------------------------------------
 export function ItemLinhaDoTempo({
   data,
@@ -314,8 +339,8 @@ export function ItemLinhaDoTempo({
             height: 6,
             flex: "0 0 auto",
             borderRadius: "var(--raio-pill)",
-            background: concluido ? "var(--cor-acento)" : "transparent",
-            border: concluido ? "none" : "1px solid var(--cor-borda-destaque)",
+            background: concluido ? "var(--cor-ouro)" : "transparent",
+            border: concluido ? "none" : "1px solid var(--cor-borda-ouro)",
           }}
         />
         {!ultimo && (
@@ -324,19 +349,18 @@ export function ItemLinhaDoTempo({
               width: 1,
               flex: 1,
               marginTop: 6,
-              background: "var(--cor-borda)",
+              background: "var(--cor-borda-linha)",
             }}
           />
         )}
       </div>
-      <div style={{ paddingBottom: ultimo ? 0 : "var(--esp-6)" }}>
-        <Rotulo tom="desativado">{data}</Rotulo>
+      <div style={{ paddingBottom: ultimo ? 0 : "var(--esp-7)" }}>
+        <Rotulo>{data}</Rotulo>
         <p
           style={{
-            margin: "var(--esp-2) 0 0",
-            fontSize: "var(--ts-corpo)",
-            lineHeight: 1.5,
-            color: "var(--cor-texto-principal)",
+            marginTop: "var(--esp-2)",
+            fontSize: "var(--ts-meta)",
+            color: "var(--cor-texto-forte)",
           }}
         >
           {titulo}
@@ -344,10 +368,9 @@ export function ItemLinhaDoTempo({
         {descricao && (
           <p
             style={{
-              margin: "2px 0 0",
-              fontSize: "var(--ts-corpo-p)",
-              lineHeight: "var(--el-corpo-p)",
-              color: "var(--cor-texto-secundario)",
+              marginTop: 2,
+              fontSize: "var(--ts-desc)",
+              color: "var(--cor-texto-suave)",
             }}
           >
             {descricao}

@@ -1,52 +1,50 @@
-// Topo das telas internas (handoff §7.4): "Voltar" + rótulo da seção de
-// origem + título da tela. As internas são FILHAS de Evento — o voltar
-// leva sempre para lá.
+// Topo das telas internas: voltar para a Visão geral + título da tela.
 
 import Link from "next/link";
-import { Rotulo } from "./Nucleo";
+import { ChevronRight, TAMANHO_PEQUENO, TRACO } from "./icones";
 
 export function TopoInterno({
   eventoId,
-  secao,
   titulo,
+  apoio,
 }: {
   eventoId: string;
-  secao: string;
   titulo: string;
+  apoio?: string;
 }) {
   return (
-    <header>
+    <header style={{ display: "flex", flexDirection: "column", gap: "var(--esp-2)" }}>
       <Link
         href={`/portal/${eventoId}`}
         style={{
           display: "inline-flex",
           alignItems: "center",
+          gap: 4,
           minHeight: "var(--toque-min)",
-          fontSize: "var(--ts-acao)",
-          fontWeight: 500,
-          letterSpacing: "var(--tr-acao)",
-          textTransform: "uppercase",
-          lineHeight: 1,
+          fontSize: "var(--ts-botao)",
+          color: "var(--cor-ouro-texto)",
         }}
       >
-        Voltar
+        <span style={{ transform: "rotate(180deg)", display: "flex" }} aria-hidden>
+          <ChevronRight size={TAMANHO_PEQUENO} strokeWidth={TRACO} />
+        </span>
+        Visão geral
       </Link>
-      <div style={{ marginTop: "var(--esp-2)" }}>
-        <Rotulo>{secao}</Rotulo>
-      </div>
       <h1
         style={{
-          margin: "var(--esp-4) 0 0",
           fontFamily: "var(--fonte-titulo)",
-          fontStyle: "italic",
           fontWeight: 400,
-          fontSize: "var(--ts-titulo)",
-          lineHeight: "var(--el-titulo)",
-          color: "var(--cor-texto-principal)",
+          fontSize: "var(--ts-h2)",
+          color: "var(--cor-texto-forte)",
         }}
       >
         {titulo}
       </h1>
+      {apoio && (
+        <p style={{ fontSize: "var(--ts-desc)", color: "var(--cor-texto-suave)" }}>
+          {apoio}
+        </p>
+      )}
     </header>
   );
 }

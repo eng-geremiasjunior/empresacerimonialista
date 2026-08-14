@@ -1,41 +1,30 @@
-// Núcleo do portal (handoff §7.1): Rotulo, Botao, Cartao, Status,
-// Divisor. Tudo pelos tokens de portal.css — nenhum hex à mão.
+// Núcleo do portal (handoff "luxo silencioso"): Rotulo, Botao, Cartao,
+// CartaoOuro, Fio, Status, ChipIcone. Tudo pelos tokens de portal.css —
+// nenhum hex à mão.
 
 import Link from "next/link";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 // ------------------------------------------------------------------
-// Rotulo — a marcação de seção. Etiqueta de uma linha, nunca texto
-// corrido. Jost 11px / 500 / 0.22em / uppercase.
+// Rotulo — 11px, caixa alta, ls .09em. É o ÚNICO texto em caixa alta do
+// portal (junto da marca), e o único com letter-spacing.
 // ------------------------------------------------------------------
-const TOM_ROTULO: Record<string, string> = {
-  secundario: "var(--cor-texto-secundario)",
-  principal: "var(--cor-texto-principal)",
-  acento: "var(--cor-acento)",
-  desativado: "var(--cor-texto-desativado)",
-};
-
 export function Rotulo({
-  tom = "secundario",
-  espacamento,
+  cor = "var(--cor-texto-rotulo)",
   style,
   children,
 }: {
-  tom?: keyof typeof TOM_ROTULO;
-  /** 0.22em padrão; contextos periféricos usam 0.14–0.16em (§4.3). */
-  espacamento?: string;
+  cor?: string;
   style?: CSSProperties;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div
       style={{
         fontSize: "var(--ts-rotulo)",
-        fontWeight: 500,
-        letterSpacing: espacamento ?? "var(--tr-rotulo)",
+        letterSpacing: "var(--tr-rotulo)",
         textTransform: "uppercase",
-        lineHeight: 1,
-        color: TOM_ROTULO[tom],
+        color: cor,
         ...style,
       }}
     >
@@ -45,113 +34,59 @@ export function Rotulo({
 }
 
 // ------------------------------------------------------------------
-// Botao — fundo SEMPRE transparente; o acento é contorno e texto,
-// nunca preenchimento. Hover pelo letter-spacing (transição padrão).
+// Fio dourado — a linha de 1px no topo do cartão com o brilho que
+// atravessa. Só em quatro lugares do portal; tempos distintos para
+// nunca passarem juntos.
 // ------------------------------------------------------------------
-type VarianteBotao = "principal" | "secundario" | "texto";
+const TEMPOS = {
+  contagem: { dur: "6.5s", atraso: "0s", largura: "38%" },
+  decisoes: { dur: "7.5s", atraso: ".8s", largura: "30%" },
+  assinatura: { dur: "8s", atraso: "1.6s", largura: "34%" },
+  inspiracao: { dur: "6s", atraso: "2.4s", largura: "40%" },
+} as const;
 
-function estiloBotao(variante: VarianteBotao, bloco: boolean): CSSProperties {
-  const base: CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    background: "transparent",
-    fontFamily: "var(--fonte-corpo)",
-    fontSize: "var(--ts-acao)",
-    fontWeight: 500,
-    letterSpacing: "var(--tr-acao)",
-    textTransform: "uppercase",
-    lineHeight: 1,
-    borderRadius: "var(--raio-0)",
-    boxShadow: "none",
-    cursor: "pointer",
-    transition: "var(--transicao-padrao)",
-    width: bloco ? "100%" : undefined,
-  };
-  if (variante === "texto") {
-    return {
-      ...base,
-      border: "none",
-      color: "var(--cor-acento)",
-      padding: "12px 0",
-      justifyContent: "flex-start",
-      width: undefined,
-    };
-  }
-  return {
-    ...base,
-    padding: "16px 22px",
-    minHeight: "var(--toque-min)",
-    border:
-      variante === "principal" ? "var(--borda-acento)" : "var(--borda-destaque)",
-    color:
-      variante === "principal"
-        ? "var(--cor-acento)"
-        : "var(--cor-texto-principal)",
-  };
-}
-
-export function Botao({
-  variante = "principal",
-  bloco = true,
-  href,
-  className,
-  children,
-}: {
-  variante?: VarianteBotao;
-  bloco?: boolean;
-  /** Com href vira Link (navegação); sem href é <button>. */
-  href?: string;
-  className?: string;
-  children: React.ReactNode;
-}) {
-  const estilo = estiloBotao(variante, bloco);
-  if (href) {
-    // Externo (WhatsApp) abre em aba nova; interno navega pelo router.
-    if (/^https?:/.test(href)) {
-      return (
-        <a
-          href={href}
-          target="_blank"
-          rel="noreferrer"
-          className={className}
-          style={estilo}
-        >
-          {children}
-        </a>
-      );
-    }
-    return (
-      <Link href={href} className={className} style={estilo}>
-        {children}
-      </Link>
-    );
-  }
+export function Fio({ tempo }: { tempo: keyof typeof TEMPOS }) {
+  const t = TEMPOS[tempo];
   return (
-    <button type="button" className={className} style={estilo}>
-      {children}
-    </button>
+    <div
+      className="portal-fio"
+      aria-hidden
+      style={
+        {
+          "--fio-dur": t.dur,
+          "--fio-atraso": t.atraso,
+          "--fio-largura": t.largura,
+        } as CSSProperties
+      }
+    >
+      <span />
+    </div>
   );
 }
 
 // ------------------------------------------------------------------
-// Cartao — superfície de bloco. destaque: MÁXIMO um por tela.
+// Cartao — branco, borda hairline, SEM sombra.
 // ------------------------------------------------------------------
 export function Cartao({
-  destaque = false,
+  padding = "var(--esp-6)",
+  style,
   children,
 }: {
-  destaque?: boolean;
-  children: React.ReactNode;
+  padding?: string;
+  style?: CSSProperties;
+  children: ReactNode;
 }) {
   return (
     <section
       style={{
+        border: "1px solid var(--cor-borda)",
+        borderRadius: "var(--raio-card)",
         background: "var(--cor-card)",
-        border: destaque ? "var(--borda-destaque)" : "var(--borda-fina)",
-        borderRadius: "var(--raio-0)",
-        padding: "var(--esp-5)",
+        padding,
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--esp-4)",
+        ...style,
       }}
     >
       {children}
@@ -159,49 +94,187 @@ export function Cartao({
   );
 }
 
-// ------------------------------------------------------------------
-// Status — estado textual, não pílula. SEM o estado "aguardando" nesta
-// fase: nenhuma fonte no modelo diz "proposta enviada ao fornecedor";
-// inventá-lo seria mentir para a cliente.
-// ------------------------------------------------------------------
-export function Status({
-  estado,
-  texto,
+/**
+ * CartaoOuro — o bloco com detalhe dourado (contagem, assinatura).
+ * Degradê creme, borda champagne e o fio animado no topo.
+ */
+export function CartaoOuro({
+  fio,
+  padding = "20px 24px",
+  style,
+  children,
 }: {
-  estado: "resolvido" | "decidir";
-  texto?: string;
+  fio: keyof typeof TEMPOS;
+  padding?: string;
+  style?: CSSProperties;
+  children: ReactNode;
+}) {
+  return (
+    <section
+      style={{
+        position: "relative",
+        overflow: "hidden",
+        border: "1px solid var(--cor-borda-ouro)",
+        borderRadius: "var(--raio-card)",
+        background: "linear-gradient(135deg, #FDFAF4 0%, #F8F1E4 100%)",
+        boxShadow: "var(--sombra-card-ouro)",
+        padding,
+        ...style,
+      }}
+    >
+      <Fio tempo={fio} />
+      {children}
+    </section>
+  );
+}
+
+// ------------------------------------------------------------------
+// ChipIcone — o quadrado (10px de raio) ou círculo que segura o ícone.
+// ------------------------------------------------------------------
+export function ChipIcone({
+  tamanho = 44,
+  redondo = false,
+  children,
+}: {
+  tamanho?: number;
+  redondo?: boolean;
+  children: ReactNode;
 }) {
   return (
     <span
       style={{
-        fontSize: "var(--ts-rotulo)",
-        fontWeight: 500,
-        letterSpacing: "0.14em",
-        textTransform: "uppercase",
-        lineHeight: 1,
-        whiteSpace: "nowrap",
-        color:
-          estado === "resolvido"
-            ? "var(--cor-estado-resolvido)"
-            : "var(--cor-estado-decidir)",
+        width: tamanho,
+        height: tamanho,
+        flex: "none",
+        borderRadius: redondo ? "var(--raio-pill)" : "var(--raio-chip)",
+        background: redondo ? "var(--cor-chip-redondo)" : "var(--cor-chip)",
+        color: "var(--cor-ouro)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
       }}
     >
-      {texto ?? (estado === "resolvido" ? "Contratado" : "A decidir")}
+      {children}
     </span>
   );
 }
 
 // ------------------------------------------------------------------
-// Divisor — a única régua visual do sistema.
+// Botao — secundário (o padrão do portal) e "fantasma sobre foto".
+// Fundo claro, borda hairline; hover só escurece o fundo.
 // ------------------------------------------------------------------
-export function Divisor() {
+export function Botao({
+  href,
+  larguraTotal = true,
+  entreExtremos = false,
+  ouro = false,
+  children,
+}: {
+  href: string;
+  larguraTotal?: boolean;
+  /** conteúdo nas pontas (texto à esquerda, chevron à direita) */
+  entreExtremos?: boolean;
+  /** borda champagne — só o botão de contato da cerimonialista */
+  ouro?: boolean;
+  children: ReactNode;
+}) {
+  const estilo: CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: entreExtremos ? "space-between" : "center",
+    gap: "var(--esp-2)",
+    width: larguraTotal ? "100%" : undefined,
+    minHeight: "var(--toque-min)",
+    border: `1px solid ${ouro ? "var(--cor-borda-botao-ouro)" : "var(--cor-borda-botao)"}`,
+    borderRadius: "var(--raio-botao)",
+    background: "var(--cor-card-suave)",
+    padding: "10px 14px",
+    fontSize: "var(--ts-botao)",
+    color: ouro ? "var(--cor-ouro-texto-hover)" : "var(--cor-texto-secundario)",
+  };
+
+  const externo = /^https?:/.test(href);
+  if (externo) {
+    return (
+      <a href={href} target="_blank" rel="noreferrer" style={estilo}>
+        {children}
+      </a>
+    );
+  }
+  return (
+    <Link href={href} style={estilo}>
+      {children}
+    </Link>
+  );
+}
+
+/** Link de ação em champagne ("Ver todas as decisões"). */
+export function LinkAcao({
+  href,
+  children,
+}: {
+  href: string;
+  children: ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "var(--esp-2)",
+        minHeight: "var(--toque-min)",
+        fontSize: "var(--ts-acao)",
+        color: "var(--cor-ouro-texto)",
+      }}
+    >
+      {children}
+    </Link>
+  );
+}
+
+// ------------------------------------------------------------------
+// Titulos
+// ------------------------------------------------------------------
+export function TituloSecao({
+  titulo,
+  apoio,
+}: {
+  titulo: string;
+  apoio?: string;
+}) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <h2
+        style={{
+          fontFamily: "var(--fonte-titulo)",
+          fontWeight: 400,
+          fontSize: "var(--ts-h2)",
+          color: "var(--cor-texto-forte)",
+        }}
+      >
+        {titulo}
+      </h2>
+      {apoio && (
+        <div style={{ fontSize: "var(--ts-desc)", color: "var(--cor-texto-suave)" }}>
+          {apoio}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ------------------------------------------------------------------
+// Divisor — a linha entre itens de lista.
+// ------------------------------------------------------------------
+export function Divisor({ margem = "0" }: { margem?: string }) {
   return (
     <div
       role="separator"
       style={{
         height: 1,
-        background: "var(--cor-borda)",
-        margin: "var(--esp-6) 0",
+        background: "var(--cor-borda-linha)",
+        margin: margem,
       }}
     />
   );

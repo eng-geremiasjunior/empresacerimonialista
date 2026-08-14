@@ -36,6 +36,20 @@ export default async function AreaDoClientePage({
 
   const acessos = (acessosData ?? []) as AcessoLinha[];
   const ativos = acessos.filter((a) => a.status === "ativo").length;
+
+  // O portal mostra o nome do membro responsável (ou da dona). Enquanto
+  // ele for o literal do gatilho de cadastro, a cliente lê
+  // "Sua cerimonialista: Proprietária" — avisar aqui, onde o acesso nasce.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: meuMembro } = await supabase
+    .from("membros_equipe")
+    .select("nome")
+    .eq("user_id", user?.id ?? "")
+    .maybeSingle();
+  const nomePlaceholder =
+    meuMembro?.nome === "Proprietária" || meuMembro?.nome === "Proprietaria";
   const cliente = (
     evento as unknown as {
       clients: { id: string; name: string; email: string | null } | null;
@@ -54,6 +68,17 @@ export default async function AreaDoClientePage({
               : `${ativos} pessoas acompanham este evento pelo portal.`}
         </p>
       </div>
+
+      {nomePlaceholder && (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          A cliente verá &ldquo;Proprietária&rdquo; como o nome da
+          cerimonialista.{" "}
+          <Link href="/configuracoes" className="font-medium underline">
+            Defina seu nome em Configurações
+          </Link>
+          .
+        </p>
+      )}
 
       <AcessoDaCliente
         eventId={params.id}

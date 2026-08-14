@@ -1,16 +1,16 @@
 import { notFound } from "next/navigation";
 import { getEventoDoPortal, getPerguntas } from "@/lib/supabase/portal";
-import { prazoRelativo } from "@/components/planejamento/celebra";
 import { TopoInterno } from "@/components/portal/TopoInterno";
-import { Divisor } from "@/components/portal/Nucleo";
+import { Cartao } from "@/components/portal/Nucleo";
 import { Pergunta } from "@/components/portal/Linhas";
+import { prazoPortal } from "@/components/portal/datas";
 
 export const dynamic = "force-dynamic";
 
-// Perguntas do momento (handoff §8.8): 3 a 5 por vez, puxadas do prazo —
-// nunca um formulário longo. São os campos ainda vazios das decisões que
-// pertencem a vocês. "Responder" chega com a escrita, na fase seguinte;
-// até lá o item informa o prazo.
+// Perguntas do momento: 3 a 5 por vez, puxadas do prazo — nunca um
+// formulário longo. São os campos marcados como pergunta da cliente
+// (pergunta_cliente) das decisões que pertencem a vocês. "Responder"
+// chega com a escrita, na fase seguinte.
 export default async function PortalPerguntasPage({
   params,
 }: {
@@ -23,43 +23,34 @@ export default async function PortalPerguntasPage({
   const perguntas = todas.slice(0, 5);
 
   return (
-    <>
+    <div className="portal-tela">
       <TopoInterno
         eventoId={evento.id}
-        secao="Evento"
         titulo="Perguntas do momento"
+        apoio={
+          perguntas.length > 0
+            ? "O que só vocês sabem responder. Aparecem conforme a data se aproxima."
+            : "Nada para responder agora. Quando a data se aproximar, as perguntas aparecem aqui."
+        }
       />
-      <p
-        style={{
-          marginTop: "var(--esp-5)",
-          maxWidth: 520,
-          fontSize: "var(--ts-corpo-p)",
-          lineHeight: "var(--el-corpo-p)",
-          color: "var(--cor-texto-secundario)",
-          textWrap: "pretty",
-        }}
-      >
-        {perguntas.length > 0
-          ? "O que só vocês sabem responder. Aparecem conforme a data se aproxima — nada de formulário longo."
-          : "Nada para responder agora. Quando a data se aproximar, as perguntas aparecem aqui."}
-      </p>
 
       {perguntas.length > 0 && (
-        <>
-          <Divisor />
-          <div>
-            {perguntas.map((p, i) => (
+        <Cartao padding="var(--esp-2) var(--esp-8)">
+          {perguntas.map((p, i) => {
+            const prazo = prazoPortal(p.prazoPrevisto);
+            return (
               <Pergunta
                 key={p.campoId}
-                prazo={prazoRelativo(p.prazoPrevisto)}
+                prazo={prazo}
+                urgente={prazo === "para agora"}
                 pergunta={p.label}
                 apoio={p.decisaoTitulo}
                 ultima={i === perguntas.length - 1}
               />
-            ))}
-          </div>
-        </>
+            );
+          })}
+        </Cartao>
       )}
-    </>
+    </div>
   );
 }

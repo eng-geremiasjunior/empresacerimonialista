@@ -1,13 +1,21 @@
+import { notFound } from "next/navigation";
+import { getEventoDoPortal } from "@/lib/supabase/portal";
 import { EmBreve } from "@/components/portal/EmBreve";
 
 export const dynamic = "force-dynamic";
 
-export default function PortalConvidadosPage() {
+export default async function PortalConvidadosPage({
+  params,
+}: {
+  params: { eventoId: string };
+}) {
+  const evento = await getEventoDoPortal(params.eventoId);
+  if (!evento) notFound();
   return (
     <EmBreve
-      rotulo="Convidados"
-      titulo="Sua lista"
-      texto="Aqui vai ficar a lista de convidados, com quem já confirmou presença, e o link para você compartilhar a confirmação."
+      eventoId={evento.id}
+      titulo="Convidados"
+      texto="Aqui vocês vão montar a lista de convidados por lado, grupo e mesa — e cada convidado vai poder confirmar presença sozinho, por um link só dele."
     />
   );
 }

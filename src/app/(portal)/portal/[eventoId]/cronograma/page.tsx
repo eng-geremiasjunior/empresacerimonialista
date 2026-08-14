@@ -4,7 +4,7 @@ import { EmBreve } from "@/components/portal/EmBreve";
 
 export const dynamic = "force-dynamic";
 
-export default async function PortalEscolhasPage({
+export default async function PortalCronogramaPage({
   params,
 }: {
   params: { eventoId: string };
@@ -14,8 +14,8 @@ export default async function PortalEscolhasPage({
   return (
     <EmBreve
       eventoId={evento.id}
-      titulo="Escolhas do casal"
-      texto="Quando sua cerimonialista separar opções para vocês — de buffet, fotografia, espaço — elas aparecem aqui, com foto, valor e o que está incluído, para vocês escolherem com calma."
+      titulo="Cronograma do dia"
+      texto="O programa do grande dia, momento a momento. Quando estiver montado, vocês vão poder acompanhar por aqui — e sugerir ajustes para a sua cerimonialista."
     />
   );
 }

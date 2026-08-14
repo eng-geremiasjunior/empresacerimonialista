@@ -19,9 +19,18 @@ export default async function ConfiguracoesPage() {
   const email = user?.email ?? "";
   const meta = (user?.user_metadata ?? {}) as {
     avatar_url?: string | null;
-    display_name?: string | null;
   };
-  const name = meta.display_name ?? "";
+
+  // Nome e WhatsApp vêm de membros_equipe — fonte única, e a mesma que o
+  // portal da cliente lê. O auth guarda só a foto.
+  const { data: membro } = await supabase
+    .from("membros_equipe")
+    .select("nome, whatsapp")
+    .eq("user_id", user?.id ?? "")
+    .maybeSingle();
+
+  const name = membro?.nome ?? "";
+  const whatsapp = membro?.whatsapp ?? "";
   const initials = (name || email).slice(0, 2).toUpperCase();
 
   const { data: cargoData } = await supabase.rpc("meu_cargo");
@@ -56,6 +65,7 @@ export default async function ConfiguracoesPage() {
       <ProfileSection
         initialAvatarUrl={meta.avatar_url ?? null}
         initialName={name}
+        initialWhatsapp={whatsapp}
         email={email}
         initials={initials}
       />

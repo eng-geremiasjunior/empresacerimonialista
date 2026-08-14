@@ -44,3 +44,27 @@ export function dataCurta(iso: string): string {
   if (!p) return iso;
   return `${String(p.dia).padStart(2, "0")} ${MESES[p.mes - 1].slice(0, 3)}`;
 }
+
+/**
+ * O prazo na voz do portal. REGRA: a cliente nunca vê tempo negativo nem
+ * vocabulário de cobrança.
+ *
+ * Atraso é informação para a profissional — e o método comprime prazos
+ * quando o casamento é mais curto que o método pede, então uma noiva que
+ * entra pela primeira vez encontraria metade da lista "vencida ontem"
+ * sem ter feito nada de errado. Aqui, tudo que já passou vira "para
+ * agora"; só o futuro conta dias.
+ *
+ * (A tela da cerimonialista continua usando prazoRelativo, que diz
+ * "venceu há 3 dias" — lá isso é exatamente o que ela precisa saber.)
+ */
+export function prazoPortal(iso: string | null): string | null {
+  if (!iso) return null;
+  const hoje = new Date(new Date().toDateString()).getTime();
+  const alvo = new Date(`${iso}T00:00:00`).getTime();
+  const dias = Math.round((alvo - hoje) / 86_400_000);
+  if (dias <= 0) return "para agora";
+  if (dias === 1) return "para amanhã";
+  if (dias <= 30) return `faltam ${dias} dias`;
+  return `faltam ${dias} dias`;
+}

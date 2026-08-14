@@ -1,15 +1,16 @@
 import { notFound } from "next/navigation";
 import { getEventoDoPortal, getLinhaDoTempo } from "@/lib/supabase/portal";
 import { brl } from "@/components/planejamento/celebra";
-import { Divisor, Rotulo } from "@/components/portal/Nucleo";
+import { TopoInterno } from "@/components/portal/TopoInterno";
+import { Cartao } from "@/components/portal/Nucleo";
 import { ItemLinhaDoTempo } from "@/components/portal/Linhas";
 import { dataCurta } from "@/components/portal/datas";
 
 export const dynamic = "force-dynamic";
 
-// Linha do tempo (handoff §8.5): do mais recente para o mais antigo —
-// aceite da proposta, contratações e os compromissos em que vocês
-// comparecem. Marcador cheio = aconteceu; vazado = previsto.
+// Linha do tempo: do mais recente para o mais antigo — aceite da
+// proposta, contratações e os compromissos em que vocês comparecem.
+// Marcador cheio = aconteceu; vazado = previsto.
 export default async function PortalLinhaDoTempoPage({
   params,
 }: {
@@ -38,40 +39,20 @@ export default async function PortalLinhaDoTempoPage({
     item.tipo === "contratacao" ? `Decidido: ${item.titulo}` : item.titulo;
 
   return (
-    <>
-      <Rotulo>Linha do tempo</Rotulo>
-      <h1
-        style={{
-          margin: "var(--esp-4) 0 0",
-          fontFamily: "var(--fonte-titulo)",
-          fontStyle: "italic",
-          fontWeight: 400,
-          fontSize: "var(--ts-titulo)",
-          lineHeight: "var(--el-titulo)",
-          color: "var(--cor-texto-principal)",
-        }}
-      >
-        O que já aconteceu
-      </h1>
+    <div className="portal-tela">
+      <TopoInterno
+        eventoId={evento.id}
+        titulo="Linha do tempo"
+        apoio={
+          itens.length > 0
+            ? "Os passos do seu evento, do mais recente ao mais antigo."
+            : "Os passos do seu evento vão aparecer aqui: contratações, escolhas suas e os compromissos marcados."
+        }
+      />
 
-      {itens.length === 0 ? (
-        <p
-          style={{
-            marginTop: "var(--esp-5)",
-            maxWidth: 520,
-            fontSize: "var(--ts-corpo-p)",
-            lineHeight: "var(--el-corpo-p)",
-            color: "var(--cor-texto-secundario)",
-            textWrap: "pretty",
-          }}
-        >
-          Os passos do seu evento vão aparecer aqui: contratações, escolhas
-          suas e os compromissos marcados.
-        </p>
-      ) : (
-        <>
-          <Divisor />
-          <div>
+      {itens.length > 0 && (
+        <Cartao padding="var(--esp-8)">
+          <div style={{ display: "flex", flexDirection: "column" }}>
             {itens.map((item, i) => (
               <ItemLinhaDoTempo
                 key={`${item.tipo}-${i}`}
@@ -83,8 +64,8 @@ export default async function PortalLinhaDoTempoPage({
               />
             ))}
           </div>
-        </>
+        </Cartao>
       )}
-    </>
+    </div>
   );
 }

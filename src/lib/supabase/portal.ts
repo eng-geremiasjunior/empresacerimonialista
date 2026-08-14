@@ -43,6 +43,9 @@ export type DecisaoDoPortal = {
   id: string;
   titulo: string;
   prazoPrevisto: string | null;
+  /** nome do objetivo (a "categoria" da linha) — vem por RPC, nunca da
+   *  tabela: evento_objetivo continua fechado para a cliente */
+  objetivoNome: string | null;
 };
 
 export type FornecedorContratado = {
@@ -238,12 +241,13 @@ export const getContatoCerimonialista = cache(
 // ------------------------------------------------------------------
 
 const COLUNAS_CAMPO =
-  "id, codigo, label, tipo, opcoes, unidade, ordem, valor_texto, valor_numero, valor_bool, valor_data, valor_opcao, valor_supplier_id";
+  "id, codigo, label, label_portal, tipo, opcoes, unidade, ordem, valor_texto, valor_numero, valor_bool, valor_data, valor_opcao, valor_supplier_id";
 
 type LinhaCampo = {
   id: string;
   codigo: string;
   label: string;
+  label_portal: string | null;
   tipo: TipoCampo;
   opcoes: string[] | null;
   unidade: string | null;
@@ -280,26 +284,35 @@ function comoCampo(l: LinhaCampo): Campo {
   };
 }
 
-/** Decisões pendentes da cliente, por prazo (as sem prazo por último). */
+/** Decisões pendentes da cliente, por prazo, com o nome do assunto. */
 const getDecisoesPendentes = cache(async (eventId: string) => {
   const supabase = createClient();
-  const { data } = await supabase
-    .from("evento_decisao")
-    .select("id, titulo, prazo_previsto")
-    .eq("event_id", eventId)
-    .eq("estado", "pendente")
-    .in("responsavel", ["noivos", "ambos"])
-    .order("prazo_previsto", { ascending: true, nullsFirst: false })
-    .order("ordem", { ascending: true });
-  return (data ?? []).map((d) => ({
+  const { data } = await supabase.rpc("portal_falta_decidir", {
+    p_event_id: eventId,
+  });
+  const linhas = (data ?? []) as unknown as {
+    id: string;
+    titulo: string;
+    prazo_previsto: string | null;
+    objetivo_nome: string | null;
+  }[];
+  return linhas.map((d) => ({
     id: d.id,
     titulo: d.titulo,
     prazoPrevisto: d.prazo_previsto,
+    objetivoNome: d.objetivo_nome,
   })) as DecisaoDoPortal[];
 });
 
 /**
  * Perguntas = campos ainda sem valor de decisões pendentes dela.
+ *
+ * `pergunta_cliente` é o filtro que separa a pergunta da noiva da anotação
+ * de trabalho: dentro de uma mesma decisão do casal convivem "O que não
+ * pode faltar" (dela) e "Tem gerador / Orçamentos até 3" (da
+ * cerimonialista). Sem ele, a noiva recebia a lista de tarefas da
+ * profissional como se fosse pergunta.
+ *
  * CUIDADO: false é resposta (sim_nao) — o vazio é valorDoCampo === null.
  */
 const getCamposSemValor = cache(async (eventId: string) => {
@@ -311,6 +324,7 @@ const getCamposSemValor = cache(async (eventId: string) => {
     )
     .eq("event_id", eventId)
     .eq("visivel_portal", true)
+    .eq("pergunta_cliente", true)
     .eq("evento_decisao.estado", "pendente")
     .in("evento_decisao.responsavel", ["noivos", "ambos"]);
 
@@ -319,7 +333,8 @@ const getCamposSemValor = cache(async (eventId: string) => {
     .filter((l) => l.evento_decisao && valorDoCampo(comoCampo(l)) === null)
     .map((l) => ({
       campoId: l.id,
-      label: l.label,
+      // o mesmo campo dito na voz dela; sem rótulo próprio, o interno serve
+      label: l.label_portal?.trim() || l.label,
       tipo: l.tipo,
       decisaoTitulo: l.evento_decisao!.titulo,
       prazoPrevisto: l.evento_decisao!.prazo_previsto,

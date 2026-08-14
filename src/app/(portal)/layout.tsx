@@ -1,22 +1,23 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Jost } from "next/font/google";
+import { EB_Garamond, Jost } from "next/font/google";
 import "./portal.css";
 
-// As duas famílias do portal, e nenhuma terceira. A Cormorant faz o gesto
-// (nome do evento, títulos, valores grandes); a Jost desaparece atrás da
+// As duas famílias do portal, e nenhuma terceira. A EB Garamond faz o
+// gesto (nome do evento, títulos, números); a Jost desaparece atrás da
 // informação. Carregadas aqui, não no layout raiz: a área profissional
 // não usa nenhuma das duas.
-const cormorant = Cormorant_Garamond({
+const garamond = EB_Garamond({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "500"],
   style: ["normal", "italic"],
   variable: "--fonte-portal-titulo",
   display: "swap",
 });
 
+// 400 é o padrão; o 300 saiu dos textos pequenos por legibilidade.
 const jost = Jost({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
+  weight: ["300", "400", "500"],
   variable: "--fonte-portal-corpo",
   display: "swap",
 });
@@ -33,6 +34,6 @@ export default function PortalRootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className={`${cormorant.variable} ${jost.variable}`}>{children}</div>
+    <div className={`${garamond.variable} ${jost.variable}`}>{children}</div>
   );
 }

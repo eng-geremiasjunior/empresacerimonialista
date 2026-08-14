@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { Camera, Trash2 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import {
+  atualizarMeuPerfil,
   removeAvatar,
-  updateDisplayName,
   uploadAvatar,
   validateAvatarFile,
 } from "@/lib/avatar";
@@ -17,6 +17,7 @@ const inputClass =
 type Props = {
   initialAvatarUrl: string | null;
   initialName: string;
+  initialWhatsapp: string;
   email: string;
   initials: string;
 };
@@ -24,6 +25,7 @@ type Props = {
 export function ProfileSection({
   initialAvatarUrl,
   initialName,
+  initialWhatsapp,
   email,
   initials,
 }: Props) {
@@ -35,6 +37,7 @@ export function ProfileSection({
     null
   );
   const [name, setName] = useState(initialName);
+  const [whatsapp, setWhatsapp] = useState(initialWhatsapp);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{
     kind: "error" | "ok";
@@ -91,12 +94,12 @@ export function ProfileSection({
   async function handleSaveName(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    const result = await updateDisplayName(name);
+    const result = await atualizarMeuPerfil(name, whatsapp);
     setBusy(false);
     setMessage(
       result.error
         ? { kind: "error", text: result.error }
-        : { kind: "ok", text: "Nome salvo." }
+        : { kind: "ok", text: "Salvo." }
     );
     if (!result.error) router.refresh();
   }
@@ -184,6 +187,29 @@ export function ProfileSection({
             placeholder="Seu nome"
             className={inputClass}
           />
+          <p className="mt-1 text-xs text-gray-400">
+            É o nome que a cliente vê no portal dela.
+          </p>
+        </div>
+        <div>
+          <label
+            htmlFor="profile_whatsapp"
+            className="mb-1 block text-sm font-medium text-gray-700"
+          >
+            WhatsApp
+          </label>
+          <input
+            id="profile_whatsapp"
+            type="tel"
+            inputMode="tel"
+            value={whatsapp}
+            onChange={(e) => setWhatsapp(e.target.value)}
+            placeholder="(31) 99999-0000"
+            className={inputClass}
+          />
+          <p className="mt-1 text-xs text-gray-400">
+            É por aqui que a cliente fala com você.
+          </p>
         </div>
         <div>
           <label

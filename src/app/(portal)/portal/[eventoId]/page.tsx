@@ -5,19 +5,42 @@ import {
   getHomePortal,
   nomeDeExibicao,
 } from "@/lib/supabase/portal";
-import { waLink } from "@/lib/fornecedores-shared";
-import { prazoRelativo } from "@/components/planejamento/celebra";
-import { CabecalhoEvento } from "@/components/portal/CabecalhoEvento";
-import { OrnamentoRamo, OrnamentoRodape } from "@/components/portal/Ornamento";
-import { Botao, Cartao, Divisor, Rotulo } from "@/components/portal/Nucleo";
-import { BlocoEntrada, LinhaDecisao } from "@/components/portal/Linhas";
-import { dataLonga, diaEMes } from "@/components/portal/datas";
+import { CabecalhoEvento, BarraConta } from "@/components/portal/CabecalhoEvento";
+import { Contagem } from "@/components/portal/Contagem";
+import {
+  Cartao,
+  CartaoOuro,
+  Fio,
+  LinkAcao,
+  TituloSecao,
+} from "@/components/portal/Nucleo";
+import { CartaoEntrada, LinhaDecisao } from "@/components/portal/Linhas";
+import {
+  CalendarCheck,
+  ChevronRight,
+  FileText,
+  Quote,
+  TAMANHO,
+  TAMANHO_PEQUENO,
+  TRACO,
+  Wallet,
+} from "@/components/portal/icones";
+import { dataLonga, diaEMes, prazoPortal } from "@/components/portal/datas";
 
 export const dynamic = "force-dynamic";
 
-// Tela Evento (home, handoff §8.1): hero + o que falta decidir + blocos
-// de entrada + já contratado + cerimonialista. Cortejo e Inspirações só
-// entram quando existirem de verdade — nenhum contador falso.
+const TIPO_ROTULO: Record<string, string> = {
+  casamento: "Casamento",
+  debutante: "Debutante",
+  aniversario: "Aniversário",
+  corporativo: "Evento corporativo",
+};
+
+// Visão geral (handoff "luxo silencioso"): cabeçalho + contagem,
+// Próximas decisões, faixa de assinatura, e a coluna direita com Meu
+// evento, Perguntas, Investimento. O bloco de percentuais do protótipo
+// NÃO existe aqui — decisão do dono: métrica de operação não é assunto
+// da noiva.
 export default async function PortalEventoPage({
   params,
 }: {
@@ -30,146 +53,174 @@ export default async function PortalEventoPage({
     getHomePortal(evento.id),
     getContatoCerimonialista(evento.id),
   ]);
-  const zap = waLink(contato.whatsapp);
   const base = `/portal/${evento.id}`;
+  const nome = nomeDeExibicao(evento);
 
-  // resumo do bloco Investimento: a próxima parcela em aberto e as vencidas
+  // resumo do investimento: a próxima parcela em aberto
   const hoje = new Date().toISOString().slice(0, 10);
   const abertas = (home.investimento?.parcelas ?? []).filter((p) => !p.paid);
-  const vencidas = abertas.filter((p) => p.dueDate < hoje).length;
-  const proxima = abertas.find((p) => p.dueDate >= hoje);
+  const proxima = abertas.find((p) => p.dueDate >= hoje) ?? abertas[0] ?? null;
 
-  // resumo do bloco Perguntas: a primeira pergunta da tela (§8.1)
-  const proximaPergunta = home.proximaPergunta;
+  const assinatura = contato.nome
+    ? `Com carinho,\n${contato.nome}`
+    : "Com carinho,\nsua cerimonialista";
 
   return (
     <>
-      {/* hero com o ramo atrás (máximo dois ornamentos por tela: este e o
-          do rodapé) */}
-      <div style={{ position: "relative", overflow: "hidden" }}>
-        <OrnamentoRamo className="portal-ornamento-ramo" />
-        <div style={{ position: "relative" }}>
-          <CabecalhoEvento
-            nome={nomeDeExibicao(evento)}
-            dataFormatada={dataLonga(evento.data)}
-            dias={evento.diasRestantes}
-            localLinha={
-              [evento.local, evento.cidade].filter(Boolean).join(" · ") || null
-            }
-          />
+      {/* topo: sino + iniciais (só computador; no celular o topo fixo já os tem) */}
+      <div className="portal-so-pc">
+        <div style={{ padding: "22px 40px 0" }}>
+          <BarraConta nome={nome} />
         </div>
       </div>
 
-      {home.totalAFechar > 0 && (
-        <>
-          <Divisor />
-          <Cartao destaque>
-            <Rotulo>O que falta decidir</Rotulo>
-            <div style={{ marginTop: "var(--esp-2)" }}>
-              {home.faltaDecidir.map((d, i) => (
-                <LinhaDecisao
-                  key={d.id}
-                  titulo={d.titulo}
-                  apoio={prazoRelativo(d.prazoPrevisto)}
-                  estado="decidir"
-                  ultima={i === home.faltaDecidir.length - 1}
-                />
-              ))}
+      {/* cabeçalho + contagem */}
+      <div className="portal-cabecalho-grade">
+        <CabecalhoEvento
+          nome={nome}
+          dataFormatada={dataLonga(evento.data)}
+          local={[evento.local, evento.cidade].filter(Boolean).join(" · ") || null}
+        />
+        {evento.diasRestantes !== null && evento.diasRestantes >= 0 && (
+          <Contagem dias={evento.diasRestantes} />
+        )}
+      </div>
+
+      <div className="portal-grade-conteudo">
+        {/* coluna principal */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--esp-7)" }}>
+          <Cartao
+            style={{ position: "relative", overflow: "hidden" }}
+            padding="var(--esp-8) var(--esp-8) var(--esp-6)"
+          >
+            <Fio tempo="decisoes" />
+            <TituloSecao
+              titulo="Próximas decisões"
+              apoio="Itens que precisam da sua atenção"
+            />
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {home.faltaDecidir.length === 0 ? (
+                <p
+                  style={{
+                    padding: "var(--esp-4) 0",
+                    fontSize: "var(--ts-desc)",
+                    color: "var(--cor-texto-suave)",
+                  }}
+                >
+                  Nada esperando por vocês agora.
+                </p>
+              ) : (
+                home.faltaDecidir.map((d, i) => (
+                  <LinhaDecisao
+                    key={d.id}
+                    href={`${base}/perguntas`}
+                    assunto={d.objetivoNome}
+                    titulo={d.objetivoNome ?? d.titulo}
+                    descricao={d.titulo}
+                    prazo={prazoPortal(d.prazoPrevisto)}
+                    urgente={prazoPortal(d.prazoPrevisto) === "para agora"}
+                    ultima={i === home.faltaDecidir.length - 1}
+                  />
+                ))
+              )}
             </div>
-            {home.perguntas > 0 && (
-              <div style={{ marginTop: "var(--esp-6)" }}>
-                <Botao href={`${base}/perguntas`}>Ver perguntas</Botao>
+            {home.totalAFechar > home.faltaDecidir.length && (
+              <div
+                style={{
+                  borderTop: "1px solid var(--cor-borda-linha)",
+                  paddingTop: "var(--esp-4)",
+                }}
+              >
+                <LinkAcao href={`${base}/perguntas`}>
+                  Ver todas as decisões
+                  <ChevronRight size={TAMANHO_PEQUENO} strokeWidth={TRACO} />
+                </LinkAcao>
               </div>
             )}
           </Cartao>
-        </>
-      )}
 
-      <Divisor />
-
-      <div className="portal-grade-2">
-        <BlocoEntrada
-          href={`${base}/perguntas`}
-          titulo="Perguntas do momento"
-          resumo={
-            proximaPergunta
-              ? proximaPergunta.prazoPrevisto
-                ? `${prazoRelativo(proximaPergunta.prazoPrevisto)}: ${proximaPergunta.label.toLowerCase()}`
-                : proximaPergunta.label
-              : "O que só vocês sabem responder."
-          }
-          indicador={
-            home.perguntas > 0
-              ? `${home.perguntas} pergunta${home.perguntas > 1 ? "s" : ""}`
-              : null
-          }
-        />
-        <BlocoEntrada
-          href={`${base}/investimento`}
-          titulo="Investimento"
-          resumo={
-            proxima
-              ? `Próxima parcela em ${diaEMes(proxima.dueDate)}`
-              : "Nenhuma parcela em aberto"
-          }
-          indicador={
-            vencidas > 0 ? `${vencidas} vencida${vencidas > 1 ? "s" : ""}` : null
-          }
-        />
-      </div>
-
-      {home.contratados.length > 0 && (
-        <>
-          <Divisor />
-          <section>
-            <Rotulo>Já contratado</Rotulo>
-            <div style={{ marginTop: "var(--esp-2)" }}>
-              {home.contratados.map((c, i) => (
-                <LinhaDecisao
-                  key={`${c.supplierId}-${i}`}
-                  titulo={c.fornecedor}
-                  apoio={c.categoria}
-                  estado="resolvido"
-                  ultima={i === home.contratados.length - 1}
-                />
-              ))}
-            </div>
-          </section>
-        </>
-      )}
-
-      {contato.nome && (
-        <>
-          <Divisor />
-          <section>
-            <Rotulo>Sua cerimonialista</Rotulo>
-            <p
+          {/* faixa de assinatura */}
+          <CartaoOuro
+            fio="assinatura"
+            padding="20px 26px"
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "var(--esp-7)",
+              flexWrap: "wrap",
+            }}
+          >
+            <div
               style={{
-                margin: "var(--esp-3) 0 0",
-                fontSize: "var(--ts-corpo)",
-                color: "var(--cor-texto-principal)",
+                display: "flex",
+                alignItems: "center",
+                gap: "var(--esp-3)",
+                color: "#7C7269",
+                fontSize: "var(--ts-item-desc)",
+                fontWeight: 300,
+                minWidth: 220,
+                flex: 1,
               }}
             >
-              {contato.nome}
-            </p>
-            {zap && (
-              <div style={{ marginTop: "var(--esp-4)" }}>
-                <Botao
-                  variante="secundario"
-                  href={zap}
-                  className="portal-botao-flex"
-                  bloco={false}
-                >
-                  Falar com {contato.nome.split(" ")[0]}
-                </Botao>
-              </div>
-            )}
-          </section>
-        </>
-      )}
+              <span style={{ color: "var(--cor-ponto)", display: "flex" }} aria-hidden>
+                <Quote size={TAMANHO_PEQUENO} strokeWidth={TRACO} />
+              </span>
+              Cada detalhe conta uma história. Estamos cuidando de tudo para que
+              vocês vivam o inesquecível.
+            </div>
+            <div
+              style={{
+                fontFamily: "var(--fonte-titulo)",
+                fontStyle: "italic",
+                fontSize: "var(--ts-assinatura)",
+                color: "var(--cor-ouro-profundo)",
+                textAlign: "right",
+                lineHeight: 1.3,
+                whiteSpace: "pre-line",
+              }}
+            >
+              {assinatura}
+            </div>
+          </CartaoOuro>
+        </div>
 
-      <div style={{ marginTop: "var(--esp-9)" }}>
-        <OrnamentoRodape />
+        {/* coluna direita */}
+        <div className="portal-coluna-direita">
+          <CartaoEntrada
+            href={base}
+            icone={<CalendarCheck size={TAMANHO} strokeWidth={TRACO} />}
+            titulo="Meu evento"
+            resumo={`${nome} · ${TIPO_ROTULO[evento.tipo] ?? evento.tipo}`}
+          />
+          <CartaoEntrada
+            href={`${base}/perguntas`}
+            icone={<FileText size={TAMANHO} strokeWidth={TRACO} />}
+            titulo="Perguntas do momento"
+            resumo={
+              home.perguntas > 0
+                ? `${home.perguntas} pergunta${home.perguntas > 1 ? "s" : ""}${
+                    home.proximaPergunta
+                      ? ` · ${home.proximaPergunta.label.toLowerCase()}`
+                      : ""
+                  }`
+                : "Nada para responder agora"
+            }
+            acao="Ver perguntas"
+          />
+          <CartaoEntrada
+            href={`${base}/investimento`}
+            icone={<Wallet size={TAMANHO} strokeWidth={TRACO} />}
+            titulo="Investimento"
+            resumo={
+              proxima
+                ? `Próxima parcela em ${diaEMes(proxima.dueDate)}`
+                : "Nenhuma parcela em aberto"
+            }
+            acao="Ver pagamentos"
+          />
+        </div>
       </div>
     </>
   );

@@ -1,147 +1,135 @@
 /* ============================================================
    Portal da Cliente — tokens
-   Transcrição literal de design_handoff_portal_cliente/vela.tokens.js.
+   Transcrição literal de tokens.js do handoff "luxo silencioso".
    Importado SÓ pelo layout do portal: a área profissional não enxerga
    nada disto, e o portal não enxerga os tokens do Celebra Pro.
+
+   Direção: ivory + creme + taupe, espresso só em texto, champagne só
+   em detalhe. Substituiu a versão escura (fundo preto + dourado forte),
+   que ficou "gótica" demais para uma noiva.
 
    Regra do handoff: nenhum componente escreve hex, px de fonte ou
    duração à mão. Tudo sai daqui.
    ============================================================ */
 
-/* ---- Tema 1: Carvão & Ouro Velho (APROVADO — casamento) ---- */
-[data-tema="carvao"] {
-  --cor-fundo: #16120f;
-  --cor-card: #1e1815;
-  --cor-borda: #2c2420;
-  --cor-borda-destaque: #3d332c;
-  --cor-texto-principal: #ede4d6;
-  --cor-texto-secundario: #b3a697;
-  --cor-texto-desativado: #7a6f63;
-  --cor-acento: #c9a55c;
-  --cor-acento-pressao: #a8863f;
-
-  --cor-estado-resolvido: var(--cor-texto-desativado);
-  --cor-estado-decidir: var(--cor-acento);
-  --cor-estado-aguardando: var(--cor-texto-secundario);
-
-  --cor-ornamento: #c9a55c;
-  --ornamento-opacidade: 0.1;
-  --cor-atmosfera-fio: #c9a55c;
-  --atmosfera-fio-opacidade: 0.22;
-  --fundo-atmosfera: radial-gradient(
-      120% 90% at 82% -6%,
-      rgba(201, 165, 92, 0.09) 0%,
-      rgba(201, 165, 92, 0) 58%
-    ),
-    radial-gradient(
-      90% 70% at 8% 104%,
-      rgba(201, 165, 92, 0.045) 0%,
-      rgba(201, 165, 92, 0) 62%
-    );
-}
-
-/* ---- Tema 2: Ébano & Tabaco (CANDIDATO — não usar sem aprovação) ---- */
-[data-tema="ebano"] {
-  --cor-fundo: #0f0c0a;
-  --cor-fundo-degrade: linear-gradient(180deg, #171210 0%, #0f0c0a 62%);
-  --cor-card: #191310;
-  --cor-card-degrade: linear-gradient(180deg, #191310 0%, #141010 100%);
-  --cor-borda: #241c17;
-  --cor-borda-destaque: #3a2c22;
-  --cor-texto-principal: #e8dfd2;
-  --cor-texto-secundario: #a99c8c;
-  --cor-texto-desativado: #6f6455;
-  --cor-acento: #b58a50;
-  --cor-acento-pressao: #946e3b;
-
-  --cor-estado-resolvido: var(--cor-texto-desativado);
-  --cor-estado-decidir: var(--cor-acento);
-  --cor-estado-aguardando: var(--cor-texto-secundario);
-
-  --cor-ornamento: #b58a50;
-  --ornamento-opacidade: 0.1;
-  --cor-atmosfera-fio: #b58a50;
-  --atmosfera-fio-opacidade: 0.26;
-  --fundo-atmosfera: radial-gradient(
-      120% 90% at 82% -6%,
-      rgba(181, 138, 80, 0.1) 0%,
-      rgba(181, 138, 80, 0) 58%
-    ),
-    radial-gradient(
-      90% 70% at 8% 104%,
-      rgba(181, 138, 80, 0.05) 0%,
-      rgba(181, 138, 80, 0) 62%
-    );
-}
-
-/* ---- Comum aos temas: tipografia, espaço, borda, movimento ---- */
 .portal-raiz {
   /* famílias injetadas pelo next/font no layout */
   --fonte-titulo: var(--fonte-portal-titulo), Georgia, "Times New Roman", serif;
   --fonte-corpo: var(--fonte-portal-corpo), system-ui, -apple-system, sans-serif;
+  --fonte-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --ts-titulo: 34px;
-  --el-titulo: 1.08;
-  --peso-titulo: 400;
-  --estilo-titulo: italic;
-  --ts-subtitulo: 19px;
-  --el-subtitulo: 1.35;
-  --peso-subtitulo: 500;
-  --ts-corpo: 15px;
-  --el-corpo: 1.6;
-  --peso-corpo: 400;
-  --ts-corpo-p: 13px;
-  --el-corpo-p: 1.55;
+  /* ---- Fundos ---- */
+  --cor-app: #f6f2eb; /* fora do painel */
+  --cor-superficie: #fdfbf7; /* painel / ivory principal */
+  --cor-superficie-alt: #fbf8f2; /* sidebar, faixas */
+  --cor-card: #ffffff; /* cartões de conteúdo */
+  --cor-card-suave: #fdfbf7; /* cartões internos, botões fantasma */
+  --cor-chip: #f7f1e8; /* fundo dos ícones quadrados */
+  --cor-chip-redondo: #f3ebdf; /* avatar, contagem */
+  --cor-nav-ativo: #f3ebdf;
+  --cor-nav-hover: #f5efe6;
+
+  /* ---- Texto (espresso -> taupe) ---- */
+  --cor-texto-forte: #332b24; /* títulos, números */
+  --cor-texto: #3a312a; /* interface */
+  --cor-texto-secundario: #463e36; /* descrição em lista */
+  --cor-texto-suave: #4c443c; /* descrições, legendas */
+  --cor-texto-rotulo: #776d60; /* rótulos em caixa alta */
+  --cor-texto-inativo: #6b6259; /* item de menu inativo */
+  --cor-texto-sobre-foto: #fffdf9;
+
+  /* ---- Bordas ---- */
+  --cor-borda: #ede5d9;
+  --cor-borda-suave: #f0eae1;
+  --cor-borda-linha: #f2ece3; /* entre itens de lista */
+  --cor-borda-ouro: #e3d3b7;
+  --cor-borda-botao: #e7dfd2;
+  --cor-borda-botao-ouro: #e2d6c2;
+  --cor-borda-painel: #ebe3d8;
+  --cor-borda-sidebar: #efe8dd;
+
+  /* ---- Champagne / dourado envelhecido (só detalhe) ---- */
+  --cor-ouro: #b39662; /* ícones */
+  --cor-ouro-texto: #8c6e43; /* links e ações */
+  --cor-ouro-texto-hover: #6e5533;
+  --cor-ouro-profundo: #8a6e42; /* assinatura */
+  --cor-ouro-fio: rgba(212, 180, 124, 0.55);
+
+  /* ---- Estado ---- */
+  --cor-atencao: #b08052; /* âmbar queimado — NUNCA vermelho */
+  --cor-icone-neutro: #8a8074;
+  --cor-ponto: #c9beaf;
+
+  /* ---- Tipografia (desktop) ---- */
+  --ts-h1: 54px;
+  --el-h1: 1.05;
+  --ts-marca: 30px;
+  --ts-metrica-grande: 34px;
+  --ts-h2: 25px;
+  --ts-metrica: 24px;
+  --ts-titulo-item: 20px;
+  --ts-titulo-lateral: 19px;
+  --ts-assinatura: 17px;
+  --ts-nav: 15px;
+  --ts-meta: 15px;
+  --ts-item-desc: 14px;
+  --ts-nav-sub: 14px;
+  --ts-acao: 14px;
+  --ts-botao: 13px;
+  --ts-desc: 13px;
+  --ts-status: 13px;
+  --ts-stat-rotulo: 12px;
   --ts-rotulo: 11px;
-  --el-rotulo: 1;
-  --peso-rotulo: 500;
-  --tr-rotulo: 0.22em;
-  --ts-acao: 12px;
-  --tr-acao: 0.18em;
+  --ts-foto-nota: 10px;
 
+  /* letter-spacing existe em DOIS lugares e nada mais */
+  --tr-marca: 0.14em;
+  --tr-rotulo: 0.09em;
+
+  /* ---- Espaço ---- */
   --esp-1: 4px;
   --esp-2: 8px;
   --esp-3: 12px;
   --esp-4: 14px;
   --esp-5: 18px;
-  --esp-6: 22px;
-  --esp-7: 24px;
-  --esp-8: 32px;
-  --esp-9: 44px;
+  --esp-6: 20px;
+  --esp-7: 22px;
+  --esp-8: 26px;
+  --esp-9: 40px;
 
-  --portal-padding: 24px;
-  --toque-min: 48px;
-  --largura-max: 430px;
+  --sidebar-w: 276px;
+  --coluna-direita-w: 340px;
+  --painel-w: 1440px;
+  --celular-w: 390px;
+  --toque-min: 44px;
 
-  --borda-fina: 1px solid var(--cor-borda);
-  --borda-destaque: 1px solid var(--cor-borda-destaque);
-  --borda-acento: 1px solid var(--cor-acento);
-  /* Canto reto em tudo. As duas únicas exceções circulares do sistema
-     são o marcador de 6px da linha do tempo e o retrato da cliente. */
-  --raio-0: 0px;
+  /* ---- Raios ---- */
+  --raio-painel: 14px;
+  --raio-celular: 26px;
+  --raio-card: 12px;
+  --raio-chip: 10px;
+  --raio-botao: 8px;
   --raio-pill: 999px;
-  --sombra: none;
 
-  --dur-rapida: 120ms;
-  --dur-media: 220ms;
-  --dur-toque: 180ms;
-  --dur-escolha: 320ms;
-  --dur-aba: 200ms;
-  --dur-contagem: 700ms;
-  --ciclo-respiro: 14s;
-  --ease-padrao: cubic-bezier(0.2, 0, 0.2, 1);
-  --ease-saida: cubic-bezier(0.33, 0, 0.12, 1);
-  --transicao-padrao: color 120ms cubic-bezier(0.2, 0, 0.2, 1),
-    border-color 120ms cubic-bezier(0.2, 0, 0.2, 1),
-    background-color 120ms cubic-bezier(0.2, 0, 0.2, 1),
-    letter-spacing 120ms cubic-bezier(0.2, 0, 0.2, 1),
-    opacity 120ms cubic-bezier(0.2, 0, 0.2, 1);
+  /* ---- Sombras ---- */
+  --sombra-painel: 0 40px 80px -50px rgba(70, 56, 42, 0.35);
+  --sombra-card-ouro: 0 0 0 1px rgba(255, 255, 255, 0.8) inset,
+    0 14px 34px -28px rgba(70, 56, 42, 0.6);
+  --sombra-foto: 0 0 0 1px rgba(255, 255, 255, 0.75) inset,
+    0 18px 40px -30px rgba(70, 56, 42, 0.55);
+  --moldura-ouro: 0 0 0 1px rgba(212, 180, 124, 0.55) inset;
+  --sombra-texto-foto: 0 1px 12px rgba(40, 32, 25, 0.45);
 
-  background: var(--cor-fundo);
-  color: var(--cor-texto-principal);
+  /* ---- Movimento ---- */
+  --dur-hover: 0.2s;
+  --dur-foto: 1.8s;
+  --dur-ponto: 0.8s;
+  --ease-padrao: ease;
+
+  background: var(--cor-app);
+  color: var(--cor-texto);
   font-family: var(--fonte-corpo);
-  font-size: var(--ts-corpo);
-  line-height: var(--el-corpo);
+  font-size: var(--ts-meta);
   min-height: 100vh;
 }
 
@@ -153,106 +141,119 @@
 }
 
 .portal-raiz a {
-  color: var(--cor-acento);
+  color: var(--cor-ouro-texto);
   text-decoration: none;
+  transition: background var(--dur-hover) var(--ease-padrao),
+    color var(--dur-hover) var(--ease-padrao);
 }
 .portal-raiz a:hover {
-  color: var(--cor-acento-pressao);
+  color: var(--cor-ouro-texto-hover);
+}
+.portal-raiz h1,
+.portal-raiz h2,
+.portal-raiz h3,
+.portal-raiz p {
+  margin: 0;
 }
 
-/* ---- As animações do handoff (e só elas) ---- */
-@keyframes vela-acender {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
+/* Foco visível — anel champagne, nunca o azul do navegador */
+.portal-raiz a:focus-visible,
+.portal-raiz button:focus-visible,
+.portal-raiz input:focus-visible,
+.portal-raiz select:focus-visible,
+.portal-raiz textarea:focus-visible {
+  outline: 2px solid rgba(212, 180, 124, 0.6);
+  outline-offset: 2px;
 }
-/* Não vai de 0 a 1: a variação é para ser SENTIDA, não vista. */
-@keyframes vela-respirar {
-  0%,
+
+/* ============================================================
+   O fio dourado que anda — o único movimento contínuo do portal.
+   Aplicado em QUATRO lugares (contagem, decisões, assinatura,
+   inspirações), com tempos distintos para nunca passarem juntos.
+   ============================================================ */
+@keyframes goldSweep {
+  0% {
+    transform: translateX(-120%);
+  }
+  55%,
   100% {
-    opacity: 0.68;
-  }
-  50% {
-    opacity: 1;
+    transform: translateX(320%);
   }
 }
-@keyframes vela-surgir {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+
+.portal-fio {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  overflow: hidden;
+  background: linear-gradient(
+    90deg,
+    rgba(212, 180, 124, 0),
+    rgba(212, 180, 124, 0.5),
+    rgba(212, 180, 124, 0)
+  );
+  pointer-events: none;
+}
+.portal-fio > span {
+  display: block;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0),
+    #e7c98d 45%,
+    #fff6e2 55%,
+    rgba(255, 255, 255, 0)
+  );
+  animation: goldSweep var(--fio-dur) ease-in-out infinite var(--fio-atraso);
+  width: var(--fio-largura);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .portal-raiz {
-    --dur-rapida: 1ms;
-    --dur-media: 1ms;
-    --dur-toque: 1ms;
-    --dur-escolha: 1ms;
-    --dur-aba: 1ms;
-    --dur-contagem: 1ms;
-  }
-  .portal-raiz [data-vela-respira] {
-    animation: none !important;
+  /* o trilho permanece; o brilho para */
+  .portal-raiz .portal-fio > span {
+    animation: none;
+    opacity: 0;
   }
 }
 
 /* ============================================================
-   Casca responsiva (README-computador): UM breakpoint só, 768px.
-   Abaixo: coluna de celular (430px) + abas no rodapé.
-   A partir de 768: sidebar fixa de 300px + coluna de leitura de 760px.
-   Sem estado intermediário — ou é telefone, ou é computador.
+   Casca — dois modos, um ponto de corte (768px).
+   Abaixo: coluna de celular. A partir daí: painel com sidebar.
    ============================================================ */
 
-.portal-casca {
-  position: relative;
-  z-index: 1;
+.portal-fora {
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  max-width: var(--largura-max);
+  background: var(--cor-app);
+  padding: 0;
+}
+
+.portal-painel {
+  width: 100%;
   margin: 0 auto;
-  border-left: var(--borda-fina);
-  border-right: var(--borda-fina);
-}
-
-.portal-coluna {
-  flex: 1;
-  min-width: 0;
+  background: var(--cor-superficie);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
 }
 
-.portal-conteudo {
-  flex: 1;
-  padding: var(--portal-padding);
-}
-
-/* Só existe num modo de cada vez. display: contents = o embrulho não
-   cria caixa própria (o sticky das abas e o flex da coluna atravessam);
-   display: none no modo errado esconde a subárvore inteira. */
+/* só existe num modo de cada vez */
 .portal-so-celular {
   display: contents;
 }
 .portal-so-pc {
   display: none;
 }
-
-/* No celular a grade empilha; o computador abre 2 colunas (na @media). */
-.portal-grade-2 {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--esp-3);
-}
-
-/* a sidebar não aparece no celular */
 .portal-sidebar {
   display: none;
+}
+
+.portal-conteudo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 @media (min-width: 768px) {
@@ -263,103 +264,179 @@
     display: contents;
   }
 
-  .portal-casca {
-    flex-direction: row;
-    max-width: none;
-    border-left: none;
-    border-right: none;
+  .portal-fora {
+    padding: var(--esp-9);
   }
 
-  /* A sidebar é a moldura do computador: 300px, colada na viewport,
-     hairline à direita — só isso de separador (sem fundo, sem sombra).
-     O rodapé (cerimonialista) desce por margin-top: auto. */
+  /* margin: 0 auto — NUNCA justify-content:center num flex, que corta
+     a lateral esquerda em telas estreitas (nota do handoff) */
+  .portal-painel {
+    width: min(var(--painel-w), 100%);
+    min-height: calc(100vh - 2 * var(--esp-9));
+    border: 1px solid var(--cor-borda-painel);
+    border-radius: var(--raio-painel);
+    box-shadow: var(--sombra-painel);
+    display: grid;
+    grid-template-columns: var(--sidebar-w) 1fr;
+  }
+
   .portal-sidebar {
+    background: var(--cor-superficie-alt);
+    border-right: 1px solid var(--cor-borda-sidebar);
+    padding: 34px 22px 26px;
     display: flex;
     flex-direction: column;
-    width: 300px;
-    flex: 0 0 300px;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    overflow-y: auto;
-    border-right: var(--borda-fina);
-    padding: var(--esp-9) var(--esp-7);
-    z-index: 1;
+    gap: 30px;
   }
 
-  /* A coluna de leitura NÃO estica: texto largo demais cansa. 760px,
-     centrada no espaço que sobra. */
   .portal-conteudo {
-    width: 100%;
-    max-width: calc(760px + 2 * var(--esp-9));
-    margin: 0 auto;
-    padding: var(--esp-9) var(--esp-9) var(--esp-9);
-  }
-
-  /* grades de duas colunas só no computador */
-  .portal-grade-2 {
-    grid-template-columns: 1fr 1fr;
+    min-width: 0; /* sem isto a grade estoura o contêiner */
   }
 }
 
-/* Itens de navegação da sidebar (vela.desktop.js §3): o ativo é dito por
-   borda-esquerda de 1px e cor — sem fundo, sem pílula, sem sombra. O
-   inativo TAMBÉM tem borda (hairline), o mesmo vocabulário do fio das
-   abas do celular. */
-.portal-aba-lateral,
-.portal-interna-lateral {
-  display: block;
-  width: 100%;
-  text-align: left;
+/* ---- Navegação lateral ---- */
+.portal-nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-4);
   padding: var(--esp-3) var(--esp-4);
-  border-left: 1px solid var(--cor-borda);
-  color: var(--cor-texto-secundario);
-  transition: var(--transicao-padrao);
+  border-radius: var(--raio-botao);
+  color: var(--cor-texto-inativo);
+  font-size: var(--ts-nav);
+  min-height: var(--toque-min);
 }
-.portal-aba-lateral {
-  font-family: var(--fonte-titulo);
-  font-size: 19px;
-  font-weight: 500;
-  line-height: 1.3;
+.portal-nav-item:hover {
+  background: var(--cor-nav-hover);
+  color: var(--cor-texto);
 }
-.portal-interna-lateral {
-  font-size: 13px;
-  font-weight: 400;
-  line-height: 1.3;
+.portal-nav-item[data-ativa="true"] {
+  background: var(--cor-nav-ativo);
+  color: var(--cor-texto);
 }
-.portal-aba-lateral:hover,
-.portal-interna-lateral:hover {
-  color: var(--cor-texto-principal);
-}
-.portal-aba-lateral[data-ativa="true"],
-.portal-interna-lateral[data-ativa="true"] {
-  border-left-color: var(--cor-acento);
-  color: var(--cor-acento);
+.portal-nav-item[data-sub="true"] {
+  padding: 11px var(--esp-4);
+  font-size: var(--ts-nav-sub);
 }
 
-/* Ornamento ramo no hero (§6.1): mais discreto no computador porque
-   sobra espaço à direita. */
-.portal-ornamento-ramo {
-  position: absolute;
-  top: 62px;
-  right: -120px;
-  width: 360px;
-  pointer-events: none;
+/* ---- Cabeçalho (nome + contagem) ---- */
+.portal-cabecalho-grade {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-5);
+  padding: var(--esp-7) var(--esp-6) 0;
 }
 @media (min-width: 768px) {
-  .portal-ornamento-ramo {
-    right: -40px;
-    width: 520px;
+  .portal-cabecalho-grade {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--esp-9);
+    padding: 14px var(--esp-9) 0;
+  }
+  .portal-cabecalho-grade > *:first-child {
+    padding-top: 6px;
+  }
+  .portal-cabecalho-grade > *:last-child {
+    width: 400px;
+    flex: none;
+  }
+}
+@media (max-width: 767px) {
+  /* tipografia mobile: só o que a tabela do handoff reduz */
+  .portal-raiz {
+    --ts-h1: 34px;
+    --el-h1: 1.1;
+    --ts-marca: 22px;
+    --ts-metrica-grande: 28px;
+    --ts-h2: 21px;
+    --ts-metrica: 20px;
+    --ts-titulo-item: 18px;
+    --ts-titulo-lateral: 17px;
+    --ts-meta: 13px;
+    --ts-item-desc: 13px;
+    --ts-desc: 12px;
+    --ts-status: 12px;
   }
 }
 
-/* Botão que é bloco no celular e largura mínima no computador */
-.portal-botao-flex {
+/* ---- Grades ---- */
+.portal-grade-conteudo {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--esp-7);
+  align-items: start;
+  padding: var(--esp-5) var(--esp-6) 0;
+}
+.portal-grade-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--esp-3);
+}
+.portal-coluna-direita {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .portal-grade-conteudo {
+    grid-template-columns: 1fr var(--coluna-direita-w);
+    padding: 28px var(--esp-9) var(--esp-9);
+  }
+  .portal-grade-2 {
+    gap: var(--esp-4);
+  }
+}
+
+/* entre 768 e 1279 a coluna direita desce e vira duas colunas */
+@media (min-width: 768px) and (max-width: 1279px) {
+  .portal-grade-conteudo {
+    grid-template-columns: 1fr;
+  }
+  .portal-coluna-direita {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+/* ---- Tela interna (uma coluna) ---- */
+.portal-tela {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-5);
+  padding: var(--esp-7) var(--esp-6) var(--esp-7);
   width: 100%;
 }
 @media (min-width: 768px) {
-  .portal-botao-flex {
-    width: auto;
-    min-width: 280px;
+  .portal-tela {
+    max-width: 860px;
+    padding: 28px var(--esp-9) var(--esp-9);
   }
+}
+
+/* ---- Barra inferior (celular) ---- */
+.portal-abas {
+  margin-top: var(--esp-7);
+  border-top: 1px solid var(--cor-borda-sidebar);
+  background: var(--cor-superficie-alt);
+  padding: 10px 8px 20px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+}
+.portal-aba {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 2px;
+  min-height: 52px;
+  color: #5a5148;
+  font-size: var(--ts-rotulo);
+  text-align: center;
+  line-height: 1.2;
+}
+.portal-aba[data-ativa="true"] {
+  color: var(--cor-ouro-texto);
 }

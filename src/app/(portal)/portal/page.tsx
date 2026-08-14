@@ -3,9 +3,9 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getEventosDaCliente, nomeDeExibicao } from "@/lib/supabase/portal";
 import { getMeuCargo } from "@/lib/supabase/equipe";
-import { temaDoEvento } from "@/lib/portal-tema";
-import { formatDate } from "@/lib/format";
-import { Atmosfera } from "@/components/portal/Atmosfera";
+import { dataLonga } from "@/components/portal/datas";
+import { Cartao, Rotulo } from "@/components/portal/Nucleo";
+import { ChevronRight, TAMANHO_PEQUENO, TRACO } from "@/components/portal/icones";
 
 export const dynamic = "force-dynamic";
 
@@ -32,114 +32,72 @@ export default async function PortalHomePage() {
     if (cargo !== null) redirect("/eventos/dashboard");
   }
 
-  if (eventos.length === 0) {
-    return (
-      <div className="portal-raiz" data-tema="carvao">
-        <div style={{ position: "relative", minHeight: "100vh" }}>
-          <Atmosfera />
-          <main
-            style={{
-              position: "relative",
-              zIndex: 1,
-              maxWidth: "var(--largura-max)",
-              margin: "0 auto",
-              padding: "var(--esp-9) var(--portal-padding)",
-            }}
-          >
-            <p
-              style={{
-                fontFamily: "var(--fonte-titulo)",
-                fontStyle: "italic",
-                fontSize: "var(--ts-titulo)",
-                lineHeight: "var(--el-titulo)",
-                margin: 0,
-              }}
-            >
-              Seu acesso ainda não está ligado a um evento.
-            </p>
-            <p
-              style={{
-                marginTop: "var(--esp-5)",
-                fontSize: "var(--ts-corpo-p)",
-                lineHeight: "var(--el-corpo-p)",
-                color: "var(--cor-texto-secundario)",
-              }}
-            >
-              Fale com sua cerimonialista para liberar o acompanhamento.
-            </p>
-          </main>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="portal-raiz" data-tema={temaDoEvento(eventos[0].tipo)}>
-      <div style={{ position: "relative", minHeight: "100vh" }}>
-        <Atmosfera />
-        <main
+    <div className="portal-raiz">
+      <div className="portal-fora" style={{ padding: "var(--esp-9) var(--esp-6)" }}>
+        <div
           style={{
-            position: "relative",
-            zIndex: 1,
-            maxWidth: "var(--largura-max)",
+            maxWidth: 560,
             margin: "0 auto",
-            padding: "var(--esp-9) var(--portal-padding)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--esp-5)",
           }}
         >
-          <p
-            style={{
-              fontSize: "var(--ts-rotulo)",
-              fontWeight: 500,
-              letterSpacing: "var(--tr-rotulo)",
-              textTransform: "uppercase",
-              color: "var(--cor-texto-secundario)",
-              margin: 0,
-            }}
-          >
-            Seus eventos
-          </p>
-
-          <div style={{ marginTop: "var(--esp-7)" }}>
-            {eventos.map((ev, i) => (
-              <Link
-                key={ev.id}
-                href={`/portal/${ev.id}`}
+          {eventos.length === 0 ? (
+            <Cartao padding="var(--esp-8)">
+              <h1
                 style={{
-                  display: "block",
-                  padding: "var(--esp-5) 0",
-                  borderBottom:
-                    i === eventos.length - 1 ? "none" : "var(--borda-fina)",
-                  minHeight: "var(--toque-min)",
-                  color: "inherit",
+                  fontFamily: "var(--fonte-titulo)",
+                  fontWeight: 400,
+                  fontSize: "var(--ts-h2)",
+                  color: "var(--cor-texto-forte)",
                 }}
               >
-                <span
-                  style={{
-                    display: "block",
-                    fontFamily: "var(--fonte-titulo)",
-                    fontStyle: "italic",
-                    fontSize: "var(--ts-subtitulo)",
-                    lineHeight: "var(--el-subtitulo)",
-                    color: "var(--cor-texto-principal)",
-                  }}
-                >
-                  {nomeDeExibicao(ev)}
-                </span>
-                <span
-                  style={{
-                    display: "block",
-                    marginTop: "var(--esp-1)",
-                    fontSize: "var(--ts-corpo-p)",
-                    color: "var(--cor-texto-secundario)",
-                  }}
-                >
-                  {formatDate(ev.data)}
-                  {ev.local ? ` · ${ev.local}` : ""}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </main>
+                Seu acesso ainda não está ligado a um evento.
+              </h1>
+              <p style={{ fontSize: "var(--ts-desc)", color: "var(--cor-texto-suave)" }}>
+                Fale com sua cerimonialista para liberar o acompanhamento.
+              </p>
+            </Cartao>
+          ) : (
+            <>
+              <Rotulo>Seus eventos</Rotulo>
+              {eventos.map((ev) => (
+                <Link key={ev.id} href={`/portal/${ev.id}`} style={{ color: "inherit" }}>
+                  <Cartao
+                    padding="var(--esp-6)"
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "var(--esp-4)",
+                    }}
+                  >
+                    <span style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                      <span
+                        style={{
+                          fontFamily: "var(--fonte-titulo)",
+                          fontSize: "var(--ts-titulo-item)",
+                          color: "var(--cor-texto-forte)",
+                        }}
+                      >
+                        {nomeDeExibicao(ev)}
+                      </span>
+                      <span style={{ fontSize: "var(--ts-desc)", color: "var(--cor-texto-suave)" }}>
+                        {dataLonga(ev.data)}
+                        {ev.local ? ` · ${ev.local}` : ""}
+                      </span>
+                    </span>
+                    <span style={{ color: "var(--cor-icone-neutro)", display: "flex" }} aria-hidden>
+                      <ChevronRight size={TAMANHO_PEQUENO} strokeWidth={TRACO} />
+                    </span>
+                  </Cartao>
+                </Link>
+              ))}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ import { EmBreve } from "@/components/portal/EmBreve";
 
 export const dynamic = "force-dynamic";
 
-export default async function PortalEscolhasPage({
+export default async function PortalPagamentosPage({
   params,
 }: {
   params: { eventoId: string };
@@ -14,8 +14,8 @@ export default async function PortalEscolhasPage({
   return (
     <EmBreve
       eventoId={evento.id}
-      titulo="Escolhas do casal"
-      texto="Quando sua cerimonialista separar opções para vocês — de buffet, fotografia, espaço — elas aparecem aqui, com foto, valor e o que está incluído, para vocês escolherem com calma."
+      titulo="Pagamentos"
+      texto="O histórico dos pagamentos combinados com cada fornecedor vai morar aqui. Por enquanto, o Resumo financeiro mostra as parcelas e o que já foi pago."
     />
   );
 }

@@ -76,15 +76,29 @@ export async function removeAvatar(): Promise<{ error?: string }> {
   return error ? { error: "Não foi possível remover a foto." } : {};
 }
 
-export async function updateDisplayName(
-  name: string
+/**
+ * Nome e WhatsApp da pessoa — FONTE ÚNICA: membros_equipe.
+ *
+ * Não grava mais em user_metadata.display_name. Duas fontes espelhadas
+ * divergem, e foi exatamente assim que o portal passou a mostrar
+ * "Sua cerimonialista: Proprietária" para a noiva: o nome de gente estava
+ * no auth, e o portal lê membros_equipe (a única fonte que outra pessoa
+ * consegue enxergar — user_metadata só é legível pela própria sessão).
+ *
+ * Via RPC porque membro não-dono não tem permissão de UPDATE na própria
+ * linha (024: só a dona gerencia a equipe).
+ */
+export async function atualizarMeuPerfil(
+  name: string,
+  whatsapp: string
 ): Promise<{ error?: string }> {
   const trimmed = name.trim();
   if (!trimmed) return { error: "Informe seu nome." };
 
   const supabase = createClient();
-  const { error } = await supabase.auth.updateUser({
-    data: { display_name: trimmed },
+  const { error } = await supabase.rpc("atualizar_meu_perfil", {
+    p_nome: trimmed,
+    p_whatsapp: whatsapp.trim(),
   });
-  return error ? { error: "Não foi possível salvar o nome." } : {};
+  return error ? { error: "Não foi possível salvar." } : {};
 }
