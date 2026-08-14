@@ -22,6 +22,7 @@ export type Convidado = {
   restricaoAlimentar: string | null;
   hash: string;
   confirmadoVia: "link" | "manual" | null;
+  origem: "cliente" | "equipe" | "autocadastro";
 };
 
 export type ResumoConvidados = {
@@ -68,7 +69,7 @@ export const getConvidados = cache(
     const { data } = await supabase
       .from("evento_convidado")
       .select(
-        "id, nome, telefone, email, lado, grupo, mesa, confirmacao, acompanhantes, criancas, restricao_alimentar, hash, confirmado_via"
+        "id, nome, telefone, email, lado, grupo, mesa, confirmacao, acompanhantes, criancas, restricao_alimentar, hash, confirmado_via, origem"
       )
       .eq("event_id", eventId)
       .order("nome");
@@ -87,6 +88,7 @@ export const getConvidados = cache(
       restricaoAlimentar: c.restricao_alimentar,
       hash: c.hash,
       confirmadoVia: c.confirmado_via,
+      origem: c.origem,
     })) as Convidado[];
   }
 );

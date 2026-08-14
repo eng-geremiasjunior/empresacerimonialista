@@ -307,6 +307,7 @@ function LinhaConvidado({
 
   const e = ESTADO[convidado.confirmacao];
   const detalhe = [
+    convidado.origem === "autocadastro" ? "se cadastrou pelo link" : null,
     convidado.mesa ? `mesa ${convidado.mesa}` : null,
     convidado.confirmacao === "confirmado" && convidado.acompanhantes > 0
       ? `+${convidado.acompanhantes} acompanhante${convidado.acompanhantes > 1 ? "s" : ""}`

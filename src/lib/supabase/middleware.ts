@@ -21,7 +21,8 @@ export async function updateSession(request: NextRequest) {
       request.nextUrl.pathname === "/privacidade" ||
       request.nextUrl.pathname.startsWith("/portal/entrar") ||
       request.nextUrl.pathname.startsWith("/auth/confirm") ||
-      request.nextUrl.pathname.startsWith("/confirmar/")
+      request.nextUrl.pathname.startsWith("/confirmar/") ||
+      request.nextUrl.pathname.startsWith("/api/rsvp/")
     ) {
       return supabaseResponse;
     }
@@ -67,6 +68,8 @@ export async function updateSession(request: NextRequest) {
   const isPublicOrcamento = pathname.startsWith("/orcamento/");
   // Rotas de cron protegem-se sozinhas com Bearer CRON_SECRET
   const isCron = pathname.startsWith("/api/cron/");
+  // Cadastro do convidado pelo link do evento — sem login, por natureza
+  const isRsvpApi = pathname.startsWith("/api/rsvp/");
   // Portal da Cliente: a porta de entrada é pública; o resto exige sessão
   const isPortalEntrar = pathname.startsWith("/portal/entrar");
   // Callback de OTP (reset de senha) — precisa rodar antes de haver sessão
@@ -83,6 +86,7 @@ export async function updateSession(request: NextRequest) {
     !isPublicPrivacidade &&
     !isPublicOrcamento &&
     !isCron &&
+    !isRsvpApi &&
     !isPortalEntrar &&
     !isAuthConfirm &&
     !isPublicConfirmar

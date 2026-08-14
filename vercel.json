@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/agendamentos",
       "schedule": "20 12 * * *"
+    },
+    {
+      "path": "/api/cron/lembretes-convidados",
+      "schedule": "30 12 * * *"
     }
   ]
 }

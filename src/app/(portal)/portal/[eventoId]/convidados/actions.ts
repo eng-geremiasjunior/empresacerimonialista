@@ -99,6 +99,50 @@ export async function removerConvidado(
 }
 
 /**
+ * Quantos dias antes do evento o lembrete sai para os convidados.
+ * null = a cliente não quer lembrete automático, e aí ninguém recebe
+ * nada — silêncio é o padrão.
+ */
+export async function definirLembrete(
+  eventoId: string,
+  dias: number | null
+): Promise<Retorno> {
+  if (dias !== null && (!Number.isInteger(dias) || dias < 1 || dias > 60)) {
+    return { error: "Escolha entre 1 e 60 dias." };
+  }
+
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("events")
+    .update({ rsvp_lembrete_dias: dias })
+    .eq("id", eventoId);
+
+  if (error) return { error: "Não foi possível salvar agora." };
+  revalidar(eventoId);
+  return { ok: true };
+}
+
+/**
+ * A válvula do link público: se ele cair em lugar errado, ou quando a
+ * lista fecha, a cliente encerra as confirmações sem precisar de
+ * ninguém. Quem abrir depois disso vê um recado, não um formulário.
+ */
+export async function fecharOuAbrirLink(
+  eventoId: string,
+  aberto: boolean
+): Promise<Retorno> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("events")
+    .update({ rsvp_aberto: aberto })
+    .eq("id", eventoId);
+
+  if (error) return { error: "Não foi possível alterar agora." };
+  revalidar(eventoId);
+  return { ok: true };
+}
+
+/**
  * Confirmação lançada à mão — quem respondeu por telefone. Marca
  * `manual` para a lista distinguir de quem clicou no link.
  */
