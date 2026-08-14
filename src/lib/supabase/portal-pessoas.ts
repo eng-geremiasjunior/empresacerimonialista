@@ -1,67 +1,29 @@
-// Convidados e cortejo — as duas listas de PESSOAS do portal.
+// Leitura de convidados e cortejo — as duas listas de PESSOAS do portal.
+//
+// SÓ SERVIDOR: usa next/headers via createClient. Os tipos e as funções
+// puras (rótulos, resumo, agrupamento) moram em portal-pessoas-shared,
+// que componentes "use client" podem importar sem quebrar o build.
 //
 // Dado de terceiro: telefone e e-mail aqui não são das clientes da
 // cerimonialista. Nunca saem em rota pública, em endereço de página, em
-// log ou no contexto da IA. A leitura abaixo é toda com sessão; a porta
-// pública do convidado tem arquivo próprio e devolve outra coisa.
+// log ou no contexto da IA.
 
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import type { Convidado, PessoaCortejo } from "@/lib/portal-pessoas-shared";
 
-export type Convidado = {
-  id: string;
-  nome: string;
-  telefone: string | null;
-  email: string | null;
-  lado: "noiva" | "noivo" | null;
-  grupo: string | null;
-  mesa: string | null;
-  confirmacao: "aguardando" | "confirmado" | "nao_vai";
-  acompanhantes: number;
-  criancas: number;
-  restricaoAlimentar: string | null;
-  hash: string;
-  confirmadoVia: "link" | "manual" | null;
-  origem: "cliente" | "equipe" | "autocadastro";
-};
-
-export type ResumoConvidados = {
-  total: number;
-  confirmados: number;
-  aguardando: number;
-  naoVao: number;
-  /** confirmados + acompanhantes + crianças: o número que vai ao buffet */
-  pessoasNaFesta: number;
-  comRestricao: number;
-};
-
-export type PessoaCortejo = {
-  id: string;
-  papel: "padrinho" | "madrinha" | "dama" | "pajem" | "porta_alianca";
-  nome: string;
-  contato: string | null;
-  oQueLeva: string | null;
-  responsavel: string | null;
-  chegada: string | null;
-  ordem: number;
-};
-
-export const PAPEL_ROTULO: Record<PessoaCortejo["papel"], string> = {
-  padrinho: "Padrinhos",
-  madrinha: "Madrinhas",
-  dama: "Damas",
-  pajem: "Pajens",
-  porta_alianca: "Porta-alianças",
-};
-
-/** A ordem em que os grupos aparecem na tela. */
-export const PAPEIS: PessoaCortejo["papel"][] = [
-  "padrinho",
-  "madrinha",
-  "dama",
-  "pajem",
-  "porta_alianca",
-];
+// reexportados por conveniência de quem já importava daqui (server)
+export type {
+  Convidado,
+  PessoaCortejo,
+  ResumoConvidados,
+} from "@/lib/portal-pessoas-shared";
+export {
+  PAPEIS,
+  PAPEL_ROTULO,
+  resumirConvidados,
+  agruparCortejo,
+} from "@/lib/portal-pessoas-shared";
 
 export const getConvidados = cache(
   async (eventId: string): Promise<Convidado[]> => {
@@ -93,22 +55,6 @@ export const getConvidados = cache(
   }
 );
 
-/** Os números que a cliente (e a cerimonialista) precisam ver. */
-export function resumirConvidados(lista: Convidado[]): ResumoConvidados {
-  const confirmados = lista.filter((c) => c.confirmacao === "confirmado");
-  return {
-    total: lista.length,
-    confirmados: confirmados.length,
-    aguardando: lista.filter((c) => c.confirmacao === "aguardando").length,
-    naoVao: lista.filter((c) => c.confirmacao === "nao_vai").length,
-    pessoasNaFesta: confirmados.reduce(
-      (s, c) => s + 1 + c.acompanhantes + c.criancas,
-      0
-    ),
-    comRestricao: confirmados.filter((c) => c.restricaoAlimentar?.trim()).length,
-  };
-}
-
 export const getCortejo = cache(
   async (eventId: string): Promise<PessoaCortejo[]> => {
     const supabase = createClient();
@@ -131,14 +77,3 @@ export const getCortejo = cache(
     })) as PessoaCortejo[];
   }
 );
-
-/** Agrupa por papel, mantendo a ordem dos grupos e omitindo os vazios. */
-export function agruparCortejo(
-  lista: PessoaCortejo[]
-): { papel: PessoaCortejo["papel"]; rotulo: string; pessoas: PessoaCortejo[] }[] {
-  return PAPEIS.map((papel) => ({
-    papel,
-    rotulo: PAPEL_ROTULO[papel],
-    pessoas: lista.filter((p) => p.papel === papel),
-  })).filter((g) => g.pessoas.length > 0);
-}

@@ -11,7 +11,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Phone, X } from "lucide-react";
-import type { Convidado, ResumoConvidados } from "@/lib/supabase/portal-pessoas";
+import type { Convidado, ResumoConvidados } from "@/lib/portal-pessoas-shared";
 import { lancarConfirmacao } from "@/app/(portal)/portal/[eventoId]/convidados/actions";
 
 const ESTADO: Record<Convidado["confirmacao"], { rotulo: string; classe: string }> = {

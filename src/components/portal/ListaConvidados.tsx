@@ -9,7 +9,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { Convidado, ResumoConvidados } from "@/lib/supabase/portal-pessoas";
+import type { Convidado, ResumoConvidados } from "@/lib/portal-pessoas-shared";
 import {
   adicionarConvidado,
   atualizarConvidado,

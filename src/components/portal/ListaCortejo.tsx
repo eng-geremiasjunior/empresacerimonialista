@@ -10,7 +10,7 @@ import {
   PAPEIS,
   PAPEL_ROTULO,
   type PessoaCortejo,
-} from "@/lib/supabase/portal-pessoas";
+} from "@/lib/portal-pessoas-shared";
 import {
   adicionarPessoaCortejo,
   atualizarPessoaCortejo,
