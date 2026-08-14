@@ -27,7 +27,13 @@ import {
   type VerbaFornecedor,
 } from "@/lib/verba-fornecedores";
 import { FormVerbaFornecedor } from "@/components/financeiro/FormVerbaFornecedor";
+import { LancarPagamentoFornecedor } from "@/components/financeiro/LancarPagamentoFornecedor";
+import { MarcarPagoInline } from "@/components/financeiro/MarcarPagoInline";
 import { excluirVerbaFornecedor } from "@/app/(app)/eventos/[id]/financeiro/verba-actions";
+import {
+  desmarcarPago,
+  excluirTransacao,
+} from "@/app/(app)/eventos/[id]/financeiro/actions";
 
 function Card({
   rotulo,
@@ -109,13 +115,19 @@ function PopoverItens({ linha }: { linha: LinhaFornecedor }) {
 function LinhaFornecedorUI({
   linha,
   eventId,
+  todayIso,
   onMudou,
 }: {
   linha: LinhaFornecedor;
   eventId: string;
+  todayIso: string;
   onMudou: () => void;
 }) {
+  // Abre sozinha quando há o que lançar: a linha fechada com "Pago R$ 0"
+  // e sem porta nenhuma foi o que escondeu esta função até agora.
   const [aberto, setAberto] = useState(false);
+  const [lancando, setLancando] = useState(false);
+  const [pagandoId, setPagandoId] = useState<string | null>(null);
   const total = totalDoFornecedor(linha);
 
   return (
@@ -126,14 +138,12 @@ function LinhaFornecedorUI({
           className="flex min-w-0 flex-1 items-center gap-2 text-left"
           aria-expanded={aberto}
         >
-          {linha.parcelas.length > 0 ? (
-            aberto ? (
-              <ChevronDown size={15} className="shrink-0 text-gray-400" />
-            ) : (
-              <ChevronRight size={15} className="shrink-0 text-gray-400" />
-            )
+          {/* o expansor existe sempre: mesmo sem parcela, é por dentro
+              que se lança o primeiro pagamento */}
+          {aberto ? (
+            <ChevronDown size={15} className="shrink-0 text-gray-400" />
           ) : (
-            <span className="w-[15px] shrink-0" />
+            <ChevronRight size={15} className="shrink-0 text-gray-400" />
           )}
           <span className="min-w-0">
             <span className="flex items-center">
@@ -206,35 +216,97 @@ function LinhaFornecedorUI({
         </div>
       </div>
 
-      {aberto && linha.parcelas.length > 0 && (
+      {aberto && (
         <div className="bg-gray-50 px-4 py-2">
+          {linha.parcelas.length === 0 && !lancando && (
+            <p className="py-2 text-xs text-gray-500">
+              Nenhum pagamento lançado para este fornecedor ainda.
+            </p>
+          )}
+
           {linha.parcelas.map((p) => (
-            <div
-              key={p.id}
-              className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 py-1.5 text-xs last:border-b-0"
-            >
-              <span className="text-gray-700">
-                {p.description || "Parcela"}
-              </span>
-              <span className="flex items-center gap-3">
-                <span className="text-gray-500">
-                  venc. {p.due_date.split("-").reverse().join("/")}
+            <div key={p.id} className="border-b border-gray-100 last:border-b-0">
+              <div className="flex flex-wrap items-center justify-between gap-2 py-1.5 text-xs">
+                <span className="text-gray-700">
+                  {p.description || "Parcela"}
                 </span>
-                <span
-                  className={
-                    p.paid
-                      ? "rounded-full bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700"
-                      : "rounded-full bg-amber-50 px-2 py-0.5 font-medium text-amber-700"
-                  }
-                >
-                  {p.paid ? "Pago" : "Em aberto"}
+                <span className="flex items-center gap-3">
+                  <span className="text-gray-500">
+                    {p.paid && p.paid_at
+                      ? `pago em ${p.paid_at.slice(0, 10).split("-").reverse().join("/")}`
+                      : `venc. ${p.due_date.split("-").reverse().join("/")}`}
+                  </span>
+                  {p.paid ? (
+                    <button
+                      onClick={() =>
+                        desmarcarPago(eventId, p.id).then(onMudou)
+                      }
+                      title="Desfazer o pagamento"
+                      className="rounded-full bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700 hover:bg-emerald-100"
+                    >
+                      Pago
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() =>
+                        setPagandoId(pagandoId === p.id ? null : p.id)
+                      }
+                      className="rounded-full bg-amber-50 px-2 py-0.5 font-medium text-amber-700 hover:bg-amber-100"
+                    >
+                      Marcar pago
+                    </button>
+                  )}
+                  <span className="w-20 text-right font-medium text-gray-900">
+                    {formatBRL(Number(p.value))}
+                  </span>
+                  <button
+                    onClick={() => {
+                      if (!confirm("Excluir este lançamento?")) return;
+                      excluirTransacao(eventId, p.id).then(onMudou);
+                    }}
+                    aria-label="Excluir lançamento"
+                    className="rounded p-1 text-gray-300 hover:bg-gray-100 hover:text-red-600"
+                  >
+                    <Trash2 size={12} />
+                  </button>
                 </span>
-                <span className="w-20 text-right font-medium text-gray-900">
-                  {formatBRL(Number(p.value))}
-                </span>
-              </span>
+              </div>
+
+              {pagandoId === p.id && (
+                <div className="pb-2">
+                  <MarcarPagoInline
+                    eventId={eventId}
+                    transactionId={p.id}
+                    todayIso={todayIso}
+                    onClose={() => {
+                      setPagandoId(null);
+                      onMudou();
+                    }}
+                  />
+                </div>
+              )}
             </div>
           ))}
+
+          {lancando ? (
+            <div className="-mx-4 mt-1">
+              <LancarPagamentoFornecedor
+                eventId={eventId}
+                supplierId={linha.supplier_id}
+                fornecedor={linha.fornecedor}
+                todayIso={todayIso}
+                onFechar={() => setLancando(false)}
+                onSalvo={onMudou}
+              />
+            </div>
+          ) : (
+            <button
+              onClick={() => setLancando(true)}
+              className="mt-1 flex items-center gap-1.5 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-900"
+            >
+              <Plus size={13} /> Lançar pagamento
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -247,6 +319,7 @@ export function AbaFornecedores({
   parcelas,
   fornecedoresDisponiveis,
   migracaoPendente,
+  todayIso,
   onMudou,
 }: {
   eventId: string;
@@ -254,6 +327,8 @@ export function AbaFornecedores({
   parcelas: ParcelaFornecedor[];
   fornecedoresDisponiveis: { id: string; name: string }[];
   migracaoPendente: boolean;
+  /** hoje calculado no servidor — o cliente pode estar em outro fuso */
+  todayIso: string;
   onMudou: () => void;
 }) {
   const [formAberto, setFormAberto] = useState(false);
@@ -347,6 +422,7 @@ export function AbaFornecedores({
               key={l.id}
               linha={l}
               eventId={eventId}
+              todayIso={todayIso}
               onMudou={onMudou}
             />
           ))

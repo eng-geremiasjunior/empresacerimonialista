@@ -132,6 +132,7 @@ export default async function EventoFinanceiroPage({
       eventId={eventId}
       verbas={verbas}
       parcelasFornecedor={parcelasFornecedor}
+      todayIso={todayIso}
       fornecedoresDisponiveis={suppliers}
       migracaoPendente={migracaoPendente}
       assessoria={

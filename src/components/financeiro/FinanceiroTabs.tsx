@@ -19,6 +19,7 @@ export function FinanceiroTabs({
   parcelasFornecedor,
   fornecedoresDisponiveis,
   migracaoPendente,
+  todayIso,
 }: {
   eventId: string;
   assessoria: React.ReactNode;
@@ -26,6 +27,7 @@ export function FinanceiroTabs({
   parcelasFornecedor: ParcelaFornecedor[];
   fornecedoresDisponiveis: { id: string; name: string }[];
   migracaoPendente: boolean;
+  todayIso: string;
 }) {
   const [aba, setAba] = useState<"assessoria" | "fornecedores">("assessoria");
   const router = useRouter();
@@ -63,6 +65,7 @@ export function FinanceiroTabs({
           parcelas={parcelasFornecedor}
           fornecedoresDisponiveis={fornecedoresDisponiveis}
           migracaoPendente={migracaoPendente}
+          todayIso={todayIso}
           onMudou={() => router.refresh()}
         />
       )}
