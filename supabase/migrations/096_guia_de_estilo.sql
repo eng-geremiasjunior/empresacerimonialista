@@ -609,7 +609,132 @@ begin
 end $$;
 
 -- ============================================================
--- 8) Relatório
+-- 8) DEFAULTS À PROVA DE INSERÇÃO EM LOTE
+-- ============================================================
+-- A mesma armadilha da 093, e as tabelas do guia são o caso típico dela:
+-- cinco cores de uma vez, seis flores de uma vez.
+--
+-- Em insert de VÁRIAS linhas o PostgREST monta um comando com a união
+-- das colunas de todas as linhas e preenche com NULL explícito o que
+-- faltou em cada uma — e NULL explícito não aciona o DEFAULT. Basta uma
+-- flor sem `sensibilidade` no meio do lote para o insert inteiro morrer
+-- com "null value in column violates not-null constraint".
+--
+-- Poderia ser resolvido mandando todo campo em toda linha, mas aí o
+-- banco fica dependendo de o código lembrar, e a próxima tela que
+-- inserir em lote quebra de novo. O saneamento fica aqui.
+
+create or replace function public.trg_guia_cor_defaults()
+returns trigger language plpgsql as $$
+begin
+  new.papel := coalesce(new.papel, 'apoio');
+  new.ordem := coalesce(new.ordem, 0);
+  return new;
+end $$;
+
+drop trigger if exists trg_guia_cor_defaults on public.evento_guia_cor;
+create trigger trg_guia_cor_defaults
+  before insert or update on public.evento_guia_cor
+  for each row execute function public.trg_guia_cor_defaults();
+
+create or replace function public.trg_guia_flor_defaults()
+returns trigger language plpgsql as $$
+begin
+  new.vetada        := coalesce(new.vetada, false);
+  -- na dúvida, o campo nasce 'normal': tratar como sensível o que não é
+  -- foi marcado por engano seria pior que o contrário aqui, porque
+  -- 'normal' é justamente o que o veto publica com motivo do fornecedor
+  new.sensibilidade := coalesce(new.sensibilidade, 'normal');
+  new.ordem         := coalesce(new.ordem, 0);
+  return new;
+end $$;
+
+drop trigger if exists trg_guia_flor_defaults on public.evento_guia_flor;
+create trigger trg_guia_flor_defaults
+  before insert or update on public.evento_guia_flor
+  for each row execute function public.trg_guia_flor_defaults();
+
+create or replace function public.trg_guia_material_defaults()
+returns trigger language plpgsql as $$
+begin
+  new.ordem := coalesce(new.ordem, 0);
+  return new;
+end $$;
+
+drop trigger if exists trg_guia_material_defaults on public.evento_guia_material;
+create trigger trg_guia_material_defaults
+  before insert or update on public.evento_guia_material
+  for each row execute function public.trg_guia_material_defaults();
+
+create or replace function public.trg_guia_estilo_defaults()
+returns trigger language plpgsql as $$
+begin
+  new.nome     := coalesce(nullif(trim(new.nome), ''), 'Guia de estilo');
+  new.situacao := coalesce(new.situacao, 'montagem');
+  return new;
+end $$;
+
+drop trigger if exists trg_guia_estilo_defaults on public.evento_guia_estilo;
+create trigger trg_guia_estilo_defaults
+  before insert or update on public.evento_guia_estilo
+  for each row execute function public.trg_guia_estilo_defaults();
+
+create or replace function public.trg_paleta_defaults()
+returns trigger language plpgsql as $$
+begin
+  new.ordem := coalesce(new.ordem, 0);
+  return new;
+end $$;
+
+drop trigger if exists trg_paleta_defaults on public.paleta_biblioteca;
+create trigger trg_paleta_defaults
+  before insert or update on public.paleta_biblioteca
+  for each row execute function public.trg_paleta_defaults();
+
+create or replace function public.trg_paleta_cor_defaults()
+returns trigger language plpgsql as $$
+begin
+  new.papel := coalesce(new.papel, 'apoio');
+  new.ordem := coalesce(new.ordem, 0);
+  return new;
+end $$;
+
+drop trigger if exists trg_paleta_cor_defaults on public.paleta_biblioteca_cor;
+create trigger trg_paleta_cor_defaults
+  before insert or update on public.paleta_biblioteca_cor
+  for each row execute function public.trg_paleta_cor_defaults();
+
+create or replace function public.trg_guia_comp_defaults()
+returns trigger language plpgsql as $$
+begin
+  -- fatia vazia não é "manda tudo": é o mínimo, as cores
+  new.secoes := coalesce(new.secoes, array['cores']::text[]);
+  return new;
+end $$;
+
+drop trigger if exists trg_guia_comp_defaults on public.guia_compartilhamento;
+create trigger trg_guia_comp_defaults
+  before insert or update on public.guia_compartilhamento
+  for each row execute function public.trg_guia_comp_defaults();
+
+-- A 093 cobriu convidados, cortejo e opções, mas não as inspirações —
+-- que agora são as referências do guia, e passam a entrar em lote.
+create or replace function public.trg_inspiracao_defaults()
+returns trigger language plpgsql as $$
+begin
+  new.assunto := coalesce(nullif(trim(new.assunto), ''), 'geral');
+  new.ordem   := coalesce(new.ordem, 0);
+  new.origem  := coalesce(new.origem, 'cliente');
+  return new;
+end $$;
+
+drop trigger if exists trg_inspiracao_defaults on public.evento_inspiracao;
+create trigger trg_inspiracao_defaults
+  before insert or update on public.evento_inspiracao
+  for each row execute function public.trg_inspiracao_defaults();
+
+-- ============================================================
+-- 9) Relatório
 -- ============================================================
 do $$
 declare
@@ -623,6 +748,7 @@ begin
   raise notice 'evento_inspiracao ganhou a coluna autor (o "o que agradou" ja morava em legenda)';
   raise notice 'paletas de sistema: % (% cores)', v_pal, v_cor;
   raise notice 'veto com dois motivos: motivo_interno (equipe) e motivo_fornecedor (sai no link)';
+  raise notice 'defaults saneados por gatilho: cor, flor, material, guia, paleta(+cor), compartilhamento, inspiracao';
 end $$;
 
 commit;
