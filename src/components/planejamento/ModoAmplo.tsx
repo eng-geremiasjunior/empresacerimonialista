@@ -28,6 +28,8 @@ type Mes = {
   decisoes: Decisao[];
   decididas: number;
   atrasadas: number;
+  /** respostas da cliente esperando conferência (091) */
+  daCliente: number;
   previsto: number; // "a fechar" no mês
   passado: boolean;
   atual: boolean;
@@ -126,6 +128,10 @@ export function montarMeses(
     const atrasadas = decisoes.filter(
       (d) => estadoVisual(d) === "atrasada"
     ).length;
+    const daCliente = decisoes.reduce(
+      (s, d) => s + (d.aguardamConferencia ?? 0),
+      0
+    );
     const m: Mes = {
       chave: cursor,
       rotulo: rotuloMes(cursor),
@@ -133,6 +139,7 @@ export function montarMeses(
       decisoes,
       decididas,
       atrasadas,
+      daCliente,
       previsto: aFecharPorMes.get(cursor) ?? 0,
       passado: cursor < chaveHoje,
       atual: cursor === chaveHoje,
@@ -259,6 +266,9 @@ export function ModoAmplo({
                 : ""}
               {m.atrasadas > 0
                 ? ` · ${m.atrasadas} ${m.atrasadas === 1 ? "atrasada" : "atrasadas"}`
+                : ""}
+              {m.daCliente > 0
+                ? ` · ${m.daCliente} da cliente`
                 : ""}
             </span>
           </div>

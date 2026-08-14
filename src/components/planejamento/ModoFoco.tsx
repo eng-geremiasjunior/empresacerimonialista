@@ -146,14 +146,19 @@ function LinhaDecisao({
   const vazios = decisao.campos.length - decisao.camposPreenchidos;
   const resumo =
     ev === "decidida" ? resumoCampos(decisao.campos, suppliers) : null;
+  // "N da cliente" fura a cascata: resposta esperando conferência é o que
+  // a cerimonialista mais precisa ver na lista (091).
+  const daCliente = decisao.aguardamConferencia;
   const meta = na
     ? "não se aplica"
-    : resumo ??
-      (decisao.campos.length > 0
-        ? vazios > 0
-          ? `${vazios} de ${decisao.campos.length} campos vazios`
-          : `${decisao.campos.length} campos preenchidos`
-        : RESP[decisao.responsavel] ?? "");
+    : daCliente > 0
+      ? `${daCliente} ${daCliente === 1 ? "resposta da cliente" : "respostas da cliente"}`
+      : resumo ??
+        (decisao.campos.length > 0
+          ? vazios > 0
+            ? `${vazios} de ${decisao.campos.length} campos vazios`
+            : `${decisao.campos.length} campos preenchidos`
+          : RESP[decisao.responsavel] ?? "");
   const prazo = na || ev === "decidida" ? null : prazoRelativo(decisao.prazoPrevisto);
 
   return (

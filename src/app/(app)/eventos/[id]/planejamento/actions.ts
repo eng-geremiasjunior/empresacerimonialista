@@ -75,52 +75,60 @@ export async function definirDataEvento(
   return { success: true };
 }
 
-// Salva a resposta de um campo tipado da decisão. O tipo diz a coluna
-// canônica; os demais valores ficam null. Campos 'escala'/'cenario' também
-// gravam em events — é isso que dispara a aplicação dos deltas de
-// arquétipo no banco (base → escala → cenário).
+// Salva a resposta de um campo tipado da decisão — pela MESMA porta que
+// o Portal da Cliente usa (portal_escrever_campo, 091). A RPC deriva o
+// tipo DA LINHA (o client não manda mais tipo/codigo como verdade),
+// valida o valor no servidor, e recusa gravar por cima se a linha mudou
+// desde a leitura (trava otimista).
+//
+// Campos 'escala'/'cenario' também gravam em events — é isso que dispara
+// a aplicação dos deltas de arquétipo (base → escala → cenário). Esse
+// efeito é DESTA action, não da RPC: o portal nunca o alcança.
 export async function salvarCampo(
   eventId: string,
   campoId: string,
   tipo: TipoCampo,
   codigo: string,
-  valor: string | number | boolean | null
-): Promise<AcaoResult> {
+  valor: string | number | boolean | null,
+  updatedAtVisto?: string | null
+): Promise<AcaoResult & { conflito?: boolean }> {
   const supabase = createClient();
 
-  const patch: Record<string, unknown> = {
-    updated_at: new Date().toISOString(),
-  };
-  switch (tipo) {
-    case "numero":
-    case "moeda":
-      patch.valor_numero = valor === null || valor === "" ? null : Number(valor);
-      break;
-    case "sim_nao":
-      patch.valor_bool = valor === null ? null : Boolean(valor);
-      break;
-    case "data":
-      patch.valor_data = valor ? String(valor) : null;
-      break;
-    case "escolha":
-      patch.valor_opcao = valor ? String(valor) : null;
-      break;
-    case "fornecedor":
-      patch.valor_supplier_id = valor ? String(valor) : null;
-      break;
-    default:
-      // texto e anexo (anexo = caminho no Storage)
-      patch.valor_texto =
-        valor === null ? null : String(valor).trim() || null;
+  // O valor no formato que a RPC valida por tipo. Vazio = apagar.
+  let jsonValor: string | number | boolean | null = null;
+  if (valor !== null && valor !== "") {
+    if (tipo === "numero" || tipo === "moeda") {
+      const n = Number(valor);
+      if (!Number.isFinite(n)) return { error: "Informe um número válido." };
+      jsonValor = n;
+    } else if (tipo === "sim_nao") {
+      jsonValor = Boolean(valor);
+    } else {
+      jsonValor = String(valor).trim() || null;
+    }
   }
 
-  const { error } = await supabase
-    .from("evento_campo_valor")
-    .update(patch)
-    .eq("id", campoId)
-    .eq("event_id", eventId);
+  const { data, error } = await supabase.rpc("portal_escrever_campo", {
+    p_campo_id: campoId,
+    p_valor: jsonValor,
+    p_updated_at_visto: updatedAtVisto ?? null,
+  });
 
   if (error) return { error: "Não foi possível salvar a resposta." };
+  const r = data as {
+    ok: boolean;
+    erro?: string;
+    conflito?: boolean;
+  } | null;
+  if (!r?.ok) {
+    if (r?.conflito) {
+      return {
+        error: "Alguém salvou uma resposta mais nova. A tela foi atualizada.",
+        conflito: true,
+      };
+    }
+    return { error: "Não foi possível salvar a resposta." };
+  }
 
   // escala/cenario são a escolha de arquétipo do evento: refletir em
   // events dispara os deltas (offsets, faixas, prioridades) no banco.
@@ -132,6 +140,64 @@ export async function salvarCampo(
     if (e2) return { error: "Não foi possível aplicar o arquétipo." };
   }
 
+  revalidatePath(`/eventos/${eventId}/planejamento`);
+  return { success: true };
+}
+
+// ------------------------------------------------------------------
+// Conferência (091): a cerimonialista aceita o bloco de respostas da
+// cliente num gesto. NÃO decide a decisão — decidir continua ato
+// separado, com geração de tarefas e efeito financeiro.
+// ------------------------------------------------------------------
+export async function conferirDecisao(
+  eventId: string,
+  decisaoId: string
+): Promise<AcaoResult> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("conferir_decisao", {
+    p_decisao_id: decisaoId,
+  });
+  const r = data as { ok: boolean } | null;
+  if (error || !r?.ok) return { error: "Não foi possível conferir o bloco." };
+  revalidatePath(`/eventos/${eventId}/planejamento`);
+  return { success: true };
+}
+
+export type LinhaDiff = {
+  campo_id: string;
+  campo_label: string | null;
+  valor_anterior: string | null;
+  valor_novo: string | null;
+  origem: string;
+  quando: string;
+};
+
+// O que mudou desde a última conferência — alimenta o painel do drawer.
+export async function verDiffDecisao(
+  decisaoId: string
+): Promise<{ linhas: LinhaDiff[] } | { error: string }> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("portal_diff_da_decisao", {
+    p_decisao_id: decisaoId,
+  });
+  if (error) return { error: "Não foi possível carregar as mudanças." };
+  return { linhas: (data ?? []) as LinhaDiff[] };
+}
+
+// O olho do portal: esconder/mostrar um campo para a cliente. A UI que a
+// 089 prometeu — antes disso o caminho era UPDATE manual no banco.
+export async function alternarVisivelPortal(
+  eventId: string,
+  campoId: string,
+  visivel: boolean
+): Promise<AcaoResult> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("evento_campo_valor")
+    .update({ visivel_portal: visivel })
+    .eq("id", campoId)
+    .eq("event_id", eventId);
+  if (error) return { error: "Não foi possível alterar a visibilidade." };
   revalidatePath(`/eventos/${eventId}/planejamento`);
   return { success: true };
 }

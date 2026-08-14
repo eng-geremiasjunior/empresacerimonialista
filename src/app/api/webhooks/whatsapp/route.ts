@@ -110,9 +110,13 @@ export async function POST(req: NextRequest) {
         const falha = error?.message ?? resp?.error;
 
         if (falha) {
-          // Sem adivinhar: devolve o motivo ao fornecedor e, se o convite
-          // não foi resolvível, avisa a cerimonialista.
-          await enviarMensagemWhatsapp(msg.from, `Não deu certo: ${falha}`);
+          // O motivo técnico fica com a cerimonialista; ao fornecedor vai
+          // uma frase neutra — mensagem de erro do banco no WhatsApp de
+          // terceiro é vazamento de detalhe interno.
+          await enviarMensagemWhatsapp(
+            msg.from,
+            "Não foi possível registrar sua escolha. A cerimonialista já foi avisada e vai te retornar."
+          );
           if (error) {
             await notificarCerimonialistaMensagemNaoProcessada(
               admin,

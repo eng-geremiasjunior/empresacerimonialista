@@ -1,16 +1,15 @@
 import { notFound } from "next/navigation";
 import { getEventoDoPortal, getPerguntas } from "@/lib/supabase/portal";
 import { TopoInterno } from "@/components/portal/TopoInterno";
-import { Cartao } from "@/components/portal/Nucleo";
-import { Pergunta } from "@/components/portal/Linhas";
-import { prazoPortal } from "@/components/portal/datas";
+import { Cartao, TituloSecao } from "@/components/portal/Nucleo";
+import { RespostaPergunta } from "@/components/portal/RespostaPergunta";
 
 export const dynamic = "force-dynamic";
 
 // Perguntas do momento: 3 a 5 por vez, puxadas do prazo — nunca um
-// formulário longo. São os campos marcados como pergunta da cliente
-// (pergunta_cliente) das decisões que pertencem a vocês. "Responder"
-// chega com a escrita, na fase seguinte.
+// formulário longo. A resposta entra AQUI e cai no mesmo campo que a
+// cerimonialista vê no Planejamento, sem ninguém redigitar. O que ela já
+// respondeu fica embaixo, editável enquanto o bloco estiver aberto.
 export default async function PortalPerguntasPage({
   params,
 }: {
@@ -19,8 +18,8 @@ export default async function PortalPerguntasPage({
   const evento = await getEventoDoPortal(params.eventoId);
   if (!evento) notFound();
 
-  const todas = await getPerguntas(evento.id);
-  const perguntas = todas.slice(0, 5);
+  const { abertas, respondidas } = await getPerguntas(evento.id);
+  const doMomento = abertas.slice(0, 5);
 
   return (
     <div className="portal-tela">
@@ -28,27 +27,41 @@ export default async function PortalPerguntasPage({
         eventoId={evento.id}
         titulo="Perguntas do momento"
         apoio={
-          perguntas.length > 0
-            ? "O que só vocês sabem responder. Aparecem conforme a data se aproxima."
-            : "Nada para responder agora. Quando a data se aproximar, as perguntas aparecem aqui."
+          doMomento.length > 0
+            ? "O que só vocês sabem responder. As respostas chegam direto para a sua cerimonialista."
+            : respondidas.length > 0
+              ? "Tudo respondido por enquanto. Quando a data se aproximar, aparecem perguntas novas."
+              : "Nada para responder agora. Quando a data se aproximar, as perguntas aparecem aqui."
         }
       />
 
-      {perguntas.length > 0 && (
+      {doMomento.length > 0 && (
         <Cartao padding="var(--esp-2) var(--esp-8)">
-          {perguntas.map((p, i) => {
-            const prazo = prazoPortal(p.prazoPrevisto);
-            return (
-              <Pergunta
+          {doMomento.map((p, i) => (
+            <RespostaPergunta
+              key={p.campoId}
+              pergunta={p}
+              ultima={i === doMomento.length - 1}
+            />
+          ))}
+        </Cartao>
+      )}
+
+      {respondidas.length > 0 && (
+        <Cartao padding="var(--esp-6) var(--esp-8)">
+          <TituloSecao
+            titulo="Já respondidas"
+            apoio="Pode ajustar enquanto o assunto estiver em aberto."
+          />
+          <div>
+            {respondidas.map((p, i) => (
+              <RespostaPergunta
                 key={p.campoId}
-                prazo={prazo}
-                urgente={prazo === "para agora"}
-                pergunta={p.label}
-                apoio={p.decisaoTitulo}
-                ultima={i === perguntas.length - 1}
+                pergunta={p}
+                ultima={i === respondidas.length - 1}
               />
-            );
-          })}
+            ))}
+          </div>
         </Cartao>
       )}
     </div>

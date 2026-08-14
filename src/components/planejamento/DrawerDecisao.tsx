@@ -569,6 +569,15 @@ const TIPOS_NOVO: { valor: TipoCampo; rotulo: string }[] = [
   { valor: "fornecedor", rotulo: "Fornecedor" },
 ];
 
+export type LinhaDiffDrawer = {
+  campo_id: string;
+  campo_label: string | null;
+  valor_anterior: string | null;
+  valor_novo: string | null;
+  origem: string;
+  quando: string;
+};
+
 export function DrawerDecisao({
   decisao,
   objetivoNome,
@@ -583,6 +592,9 @@ export function DrawerDecisao({
   onNaoSeAplica,
   onReabrir,
   onCriarCampo,
+  onConferir,
+  onVerDiff,
+  onAlternarVisivel,
 }: {
   decisao: Decisao;
   objetivoNome: string;
@@ -598,16 +610,25 @@ export function DrawerDecisao({
   onNaoSeAplica: () => void;
   onReabrir: () => void;
   onCriarCampo: (label: string, tipo: TipoCampo) => Promise<void>;
+  /** conferência do bloco (091): aceita as respostas da cliente */
+  onConferir: () => Promise<void>;
+  onVerDiff: () => Promise<LinhaDiffDrawer[]>;
+  onAlternarVisivel: (campoId: string, visivel: boolean) => Promise<void>;
 }) {
   const na = decisao.estado === "nao_se_aplica";
   const decidida = decisao.estado === "decidida";
   const vazios = decisao.campos.length - decisao.camposPreenchidos;
+  const daCliente = decisao.aguardamConferencia;
 
   // fantasma "+ adicionar campo"
   const [novoAberto, setNovoAberto] = useState(false);
   const [novoNome, setNovoNome] = useState("");
   const [novoTipo, setNovoTipo] = useState<TipoCampo>("texto");
   const [criando, setCriando] = useState(false);
+
+  // conferência: o diff abre sob demanda, e some quando confere
+  const [diff, setDiff] = useState<LinhaDiffDrawer[] | null>(null);
+  const [conferindo, setConferindo] = useState(false);
 
   // Esc fecha (handoff §10)
   useEffect(() => {
@@ -632,6 +653,11 @@ export function DrawerDecisao({
         ? `${vazios} ${vazios === 1 ? "campo vazio" : "campos vazios"}`
         : `${decisao.camposPreenchidos} de ${decisao.campos.length} campos preenchidos`
     );
+    if (daCliente > 0) {
+      metaPartes.push(
+        `${daCliente} ${daCliente === 1 ? "resposta da cliente" : "respostas da cliente"}`
+      );
+    }
   }
 
   return (
@@ -748,6 +774,99 @@ export function DrawerDecisao({
             opacity: na ? 0.55 : 1,
           }}
         >
+          {/* Conferência (091): as respostas da cliente entram valendo,
+              mas ficam marcadas até este gesto. Conferir NÃO decide. */}
+          {daCliente > 0 && !na && (
+            <div
+              style={{
+                border: `1px solid ${C.pendenteFg}`,
+                background: C.pendenteBg,
+                borderRadius: 8,
+                padding: "10px 12px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+              }}
+            >
+              <span style={{ fontFamily: F_UI, fontSize: 13, color: C.corpo }}>
+                {daCliente === 1
+                  ? "A cliente respondeu 1 campo deste bloco."
+                  : `A cliente respondeu ${daCliente} campos deste bloco.`}
+              </span>
+              {diff && diff.length > 0 && (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 6,
+                    borderTop: `1px solid ${C.bordaSutil}`,
+                    paddingTop: 8,
+                  }}
+                >
+                  {diff.map((l) => (
+                    <div key={l.campo_id} style={{ fontFamily: F_UI, fontSize: 12 }}>
+                      <span style={{ color: C.secundario }}>{l.campo_label}: </span>
+                      {l.valor_anterior !== null && (
+                        <span
+                          style={{
+                            color: C.meta,
+                            textDecoration: "line-through",
+                            marginRight: 6,
+                          }}
+                        >
+                          {l.valor_anterior}
+                        </span>
+                      )}
+                      <span style={{ color: C.tinta }}>{l.valor_novo ?? "—"}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 8 }}>
+                {!diff && (
+                  <button
+                    type="button"
+                    onClick={async () => setDiff(await onVerDiff())}
+                    style={{
+                      border: `1px solid ${C.bordaMedia}`,
+                      background: C.card,
+                      borderRadius: 6,
+                      padding: "6px 10px",
+                      fontFamily: F_UI,
+                      fontSize: 12,
+                      color: C.corpo,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Ver o que mudou
+                  </button>
+                )}
+                <button
+                  type="button"
+                  disabled={conferindo}
+                  onClick={async () => {
+                    setConferindo(true);
+                    await onConferir();
+                    setConferindo(false);
+                    setDiff(null);
+                  }}
+                  style={{
+                    border: `1px solid ${C.pendenteFg}`,
+                    background: C.card,
+                    borderRadius: 6,
+                    padding: "6px 10px",
+                    fontFamily: F_UI,
+                    fontSize: 12,
+                    color: C.pendenteFg,
+                    cursor: "pointer",
+                  }}
+                >
+                  {conferindo ? "Conferindo…" : "Conferir bloco"}
+                </button>
+              </div>
+            </div>
+          )}
+
           {ehDataDoCasamento && (
             <div>
               <label style={{ ...monoLabel, display: "block", marginBottom: 6 }}>
@@ -777,9 +896,56 @@ export function DrawerDecisao({
 
           {decisao.campos.map((campo) => (
             <div key={campo.id}>
-              <label style={{ ...monoLabel, display: "block", marginBottom: 6 }}>
-                {campo.label} · {TIPO_ROTULO[campo.tipo] ?? campo.tipo}
-              </label>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 8,
+                  marginBottom: 6,
+                }}
+              >
+                <label style={{ ...monoLabel, display: "flex", alignItems: "center", gap: 6 }}>
+                  {campo.aguardaConferencia && (
+                    <span
+                      title="Resposta da cliente, ainda não conferida"
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: 999,
+                        background: C.pendenteFg,
+                        flex: "none",
+                      }}
+                    />
+                  )}
+                  {campo.label} · {TIPO_ROTULO[campo.tipo] ?? campo.tipo}
+                </label>
+                {/* o olho do portal (089): esconder este campo da cliente */}
+                <button
+                  type="button"
+                  title={
+                    campo.visivelPortal === false
+                      ? "Oculto do portal — clique para mostrar"
+                      : "Visível no portal — clique para ocultar"
+                  }
+                  onClick={() =>
+                    onAlternarVisivel(campo.id, campo.visivelPortal === false)
+                  }
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    cursor: "pointer",
+                    fontFamily: F_MONO,
+                    fontSize: 10,
+                    letterSpacing: "0.06em",
+                    textTransform: "uppercase",
+                    color: campo.visivelPortal === false ? C.atrasadaFg : C.fantasma,
+                    padding: "2px 4px",
+                  }}
+                >
+                  {campo.visivelPortal === false ? "oculto do portal" : "portal"}
+                </button>
+              </div>
               <Controle
                 campo={campo}
                 eventId={eventId}
@@ -901,6 +1067,27 @@ export function DrawerDecisao({
             </p>
           )}
         </div>
+
+        {/* Aviso NOMEADO antes de decidir (decisão do dono: aviso genérico
+            se aprende a ignorar). Não bloqueia — ela é soberana. */}
+        {daCliente > 0 && !na && !decidida && (
+          <p
+            style={{
+              margin: 0,
+              padding: "8px 16px",
+              borderTop: `1px solid ${C.bordaSutil}`,
+              fontFamily: F_UI,
+              fontSize: 12,
+              color: C.pendenteFg,
+            }}
+          >
+            Sem conferir:{" "}
+            {decisao.campos
+              .filter((c) => c.aguardaConferencia)
+              .map((c) => c.label)
+              .join(", ")}
+          </p>
+        )}
 
         {/* rodapé fixo — os dois botões têm o MESMO peso (decisão de
             produto: dizer "não se aplica" vale tanto quanto decidir) */}

@@ -83,6 +83,12 @@ export type PerguntaDoPortal = {
   campoId: string;
   label: string;
   tipo: TipoCampo;
+  opcoes: string[] | null;
+  unidade: string | null;
+  /** resposta atual (null = ainda sem resposta) */
+  valor: string | number | boolean | null;
+  /** a versão que a tela viu — vai junto na escrita (trava otimista) */
+  updatedAt: string;
   decisaoTitulo: string;
   prazoPrevisto: string | null;
 };
@@ -305,7 +311,8 @@ const getDecisoesPendentes = cache(async (eventId: string) => {
 });
 
 /**
- * Perguntas = campos ainda sem valor de decisões pendentes dela.
+ * As perguntas da cliente: campos `pergunta_cliente` de decisões
+ * PENDENTES dela, separados entre abertas (sem resposta) e respondidas.
  *
  * `pergunta_cliente` é o filtro que separa a pergunta da noiva da anotação
  * de trabalho: dentro de uma mesma decisão do casal convivem "O que não
@@ -315,12 +322,12 @@ const getDecisoesPendentes = cache(async (eventId: string) => {
  *
  * CUIDADO: false é resposta (sim_nao) — o vazio é valorDoCampo === null.
  */
-const getCamposSemValor = cache(async (eventId: string) => {
+const getPerguntasDaCliente = cache(async (eventId: string) => {
   const supabase = createClient();
   const { data } = await supabase
     .from("evento_campo_valor")
     .select(
-      `${COLUNAS_CAMPO}, evento_decisao!inner(titulo, prazo_previsto, estado, responsavel)`
+      `${COLUNAS_CAMPO}, updated_at, evento_decisao!inner(titulo, prazo_previsto, estado, responsavel)`
     )
     .eq("event_id", eventId)
     .eq("visivel_portal", true)
@@ -328,20 +335,31 @@ const getCamposSemValor = cache(async (eventId: string) => {
     .eq("evento_decisao.estado", "pendente")
     .in("evento_decisao.responsavel", ["noivos", "ambos"]);
 
-  const linhas = (data ?? []) as unknown as LinhaCampo[];
-  return linhas
-    .filter((l) => l.evento_decisao && valorDoCampo(comoCampo(l)) === null)
+  const linhas = (data ?? []) as unknown as (LinhaCampo & {
+    updated_at: string;
+  })[];
+  const todas = linhas
+    .filter((l) => l.evento_decisao)
     .map((l) => ({
       campoId: l.id,
       // o mesmo campo dito na voz dela; sem rótulo próprio, o interno serve
       label: l.label_portal?.trim() || l.label,
       tipo: l.tipo,
+      opcoes: l.opcoes,
+      unidade: l.unidade,
+      valor: valorDoCampo(comoCampo(l)),
+      updatedAt: l.updated_at,
       decisaoTitulo: l.evento_decisao!.titulo,
       prazoPrevisto: l.evento_decisao!.prazo_previsto,
     }))
     .sort((a, b) =>
       (a.prazoPrevisto ?? "9999").localeCompare(b.prazoPrevisto ?? "9999")
     ) as PerguntaDoPortal[];
+
+  return {
+    abertas: todas.filter((p) => p.valor === null),
+    respondidas: todas.filter((p) => p.valor !== null),
+  };
 });
 
 const getContratados = cache(async (eventId: string) => {
@@ -415,17 +433,18 @@ export const getLinhaDoTempo = cache(
   }
 );
 
-export async function getPerguntas(
-  eventId: string
-): Promise<PerguntaDoPortal[]> {
-  return getCamposSemValor(eventId);
+export async function getPerguntas(eventId: string): Promise<{
+  abertas: PerguntaDoPortal[];
+  respondidas: PerguntaDoPortal[];
+}> {
+  return getPerguntasDaCliente(eventId);
 }
 
 /** Tudo da home, em paralelo. */
 export async function getHomePortal(eventId: string): Promise<HomeDoPortal> {
   const [pendentes, perguntas, contratados, investimento] = await Promise.all([
     getDecisoesPendentes(eventId),
-    getCamposSemValor(eventId),
+    getPerguntasDaCliente(eventId),
     getContratados(eventId),
     getInvestimento(eventId),
   ]);
@@ -434,8 +453,8 @@ export async function getHomePortal(eventId: string): Promise<HomeDoPortal> {
     totalAFechar: pendentes.length,
     contratados,
     investimento,
-    perguntas: Math.min(perguntas.length, 5),
-    proximaPergunta: perguntas[0] ?? null,
+    perguntas: Math.min(perguntas.abertas.length, 5),
+    proximaPergunta: perguntas.abertas[0] ?? null,
   };
 }
 

@@ -128,12 +128,26 @@ export async function montarContextoEvento(
 
   // O que cada decisão definiu: campos tipados preenchidos (5A), no lugar
   // do antigo texto livre "resultado".
+  //
+  // GATE DE SAÍDA (091). Este contexto vai inteiro para um provedor
+  // externo, então três classes de campo ficam de fora:
+  //
+  //   aguarda_conferencia  — o que a cliente escreveu e a cerimonialista
+  //                          ainda não conferiu. Rascunho não vira
+  //                          resposta do assistente.
+  //   sensibilidade        — alergia e medicamento NUNCA saem daqui.
+  //   tipo 'anexo'         — guarda o CAMINHO do arquivo no Storage
+  //                          (085), não um valor; mandar isso é vazar a
+  //                          localização de um contrato.
   const { data: camposRaw } = await supabase
     .from("evento_campo_valor")
     .select(
       "evento_decisao_id, label, tipo, valor_texto, valor_numero, valor_bool, valor_data, valor_opcao"
     )
     .eq("event_id", eventId)
+    .eq("aguarda_conferencia", false)
+    .eq("sensibilidade", "normal")
+    .neq("tipo", "anexo")
     .order("ordem");
   const respostasPorDec = new Map<string, string[]>();
   for (const c of camposRaw ?? []) {

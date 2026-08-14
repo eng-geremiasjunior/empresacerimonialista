@@ -15,6 +15,8 @@ import { usePathname, useRouter } from "next/navigation";
 import type { Decisao, Planejamento } from "@/lib/supabase/planejamento";
 import {
   alternarObjetivoAtivo,
+  alternarVisivelPortal,
+  conferirDecisao,
   criarCampoProprio,
   criarDecisaoPropria,
   criarObjetivoProprio,
@@ -25,6 +27,7 @@ import {
   salvarCampo,
   salvarValorPrevisto,
   sugerirDistribuicao,
+  verDiffDecisao,
 } from "@/app/(app)/eventos/[id]/planejamento/actions";
 import type { TipoCampo, Campo } from "@/lib/supabase/planejamento";
 import { C, F_MONO, F_TITLE, F_UI, monoLabel, tituloStyle } from "./celebra";
@@ -134,7 +137,17 @@ export function PlanejamentoEvento({
     campo: Campo,
     valor: string | number | boolean | null
   ) {
-    await salvarCampo(eventId, campo.id, campo.tipo, campo.codigo, valor);
+    // A versão que a tela leu vai junto (091): se a cliente gravou nesse
+    // meio-tempo, a RPC recusa e o refresh traz o valor novo — ninguém
+    // perde o que a outra escreveu.
+    await salvarCampo(
+      eventId,
+      campo.id,
+      campo.tipo,
+      campo.codigo,
+      valor,
+      campo.updatedAt ?? null
+    );
     refresh();
   }
 
@@ -504,6 +517,18 @@ export function PlanejamentoEvento({
           }
           onCriarCampo={async (label, tipo: TipoCampo) => {
             await criarCampoProprio(eventId, drawer.decisao.id, label, tipo);
+            refresh();
+          }}
+          onConferir={async () => {
+            await conferirDecisao(eventId, drawer.decisao.id);
+            refresh();
+          }}
+          onVerDiff={async () => {
+            const r = await verDiffDecisao(drawer.decisao.id);
+            return "linhas" in r ? r.linhas : [];
+          }}
+          onAlternarVisivel={async (campoId, visivel) => {
+            await alternarVisivelPortal(eventId, campoId, visivel);
             refresh();
           }}
         />

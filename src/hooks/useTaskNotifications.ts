@@ -76,8 +76,9 @@ export function useTaskNotifications() {
 
         const diff = due - now;
         if (diff > WINDOW_MS || diff < -GRACE_MS) {
+          // sem o título no console: dado de evento não vai para log
           console.debug(
-            `[vela:notificações] "${task.title}" fora da janela (vence em ${Math.round(diff / 60_000)} min)`
+            `[vela:notificações] tarefa ${task.id.slice(0, 8)} fora da janela (vence em ${Math.round(diff / 60_000)} min)`
           );
           continue;
         }
@@ -93,12 +94,12 @@ export function useTaskNotifications() {
 
         if (cancelled || !claimed || claimed.length === 0) {
           console.debug(
-            `[vela:notificações] "${task.title}" já foi notificada por outra aba`
+            `[vela:notificações] tarefa ${task.id.slice(0, 8)} já foi notificada por outra aba`
           );
           continue;
         }
 
-        console.debug(`[vela:notificações] notificando: "${task.title}"`);
+        console.debug(`[vela:notificações] notificando tarefa ${task.id.slice(0, 8)}`);
 
         const eventLabel = task.events
           ? `${EVENT_TYPE_LABELS[task.events.type]} — ${task.events.clients?.name ?? "Sem cliente"}`

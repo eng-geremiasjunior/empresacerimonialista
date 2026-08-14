@@ -26,6 +26,15 @@ export type Campo = {
   valorData: string | null;
   valorOpcao: string | null;
   valorSupplierId: string | null;
+  // Metadados do portal (091) — opcionais: nem toda superfície carrega.
+  /** versão da linha; vai junto na escrita (trava otimista) */
+  updatedAt?: string;
+  /** a cliente escreveu e ainda não foi conferido */
+  aguardaConferencia?: boolean;
+  /** false = escondido do portal (nem leitura) */
+  visivelPortal?: boolean;
+  /** true = o portal pergunta este campo à cliente */
+  perguntaCliente?: boolean;
 };
 
 // O valor canônico do campo, pelo tipo. null = ainda não respondido.

@@ -42,6 +42,8 @@ export type Decisao = {
   estado: EstadoDecisao;
   campos: Campo[];
   camposPreenchidos: number;
+  /** respostas da cliente ainda não conferidas (091) */
+  aguardamConferencia: number;
   // Nomes reais das tarefas que esta decisão gera na Organização (do
   // blueprint do método, 4C). Vazio para decisões sem blueprint.
   gerariaTarefas: string[];
@@ -146,7 +148,7 @@ export async function getPlanejamento(
     supabase
       .from("evento_campo_valor")
       .select(
-        "id, evento_decisao_id, codigo, label, tipo, opcoes, unidade, ordem, valor_texto, valor_numero, valor_bool, valor_data, valor_opcao, valor_supplier_id"
+        "id, evento_decisao_id, codigo, label, tipo, opcoes, unidade, ordem, valor_texto, valor_numero, valor_bool, valor_data, valor_opcao, valor_supplier_id, updated_at, aguarda_conferencia, visivel_portal, pergunta_cliente"
       )
       .eq("event_id", eventId)
       .order("ordem"),
@@ -211,6 +213,10 @@ export async function getPlanejamento(
       valorData: c.valor_data,
       valorOpcao: c.valor_opcao,
       valorSupplierId: c.valor_supplier_id,
+      updatedAt: c.updated_at,
+      aguardaConferencia: c.aguarda_conferencia,
+      visivelPortal: c.visivel_portal,
+      perguntaCliente: c.pergunta_cliente,
     };
     const arr = camposPorDec.get(c.evento_decisao_id) ?? [];
     arr.push(campo);
@@ -240,6 +246,7 @@ export async function getPlanejamento(
       estado: d.estado,
       campos,
       camposPreenchidos: campos.filter((c) => valorDoCampo(c) !== null).length,
+      aguardamConferencia: campos.filter((c) => c.aguardaConferencia).length,
       gerariaTarefas: d.decisao_template_id
         ? blueprintPorTemplate.get(d.decisao_template_id) ?? []
         : [],
