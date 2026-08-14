@@ -145,7 +145,12 @@ export function PortalLoginForm({
                 <span>{erro}</span>
               </p>
             )}
-            <form className="acesso-fields" onSubmit={entrar}>
+            {/* method="post" não é decoração: até o React hidratar, o
+                submit é NATIVO, e o padrão do HTML é GET — a senha da
+                noiva iria parar na barra de endereço, no histórico do
+                navegador e no log de acesso. Com POST, o pior caso vira
+                um 405 sem vazamento. */}
+            <form className="acesso-fields" method="post" onSubmit={entrar}>
               <div className="acesso-field">
                 <label htmlFor="email">E-mail</label>
                 <input
@@ -240,7 +245,7 @@ export function PortalLoginForm({
             <p className="acesso-sub">
               Informe o e-mail que sua cerimonialista cadastrou.
             </p>
-            <form className="acesso-fields" onSubmit={enviarLink}>
+            <form className="acesso-fields" method="post" onSubmit={enviarLink}>
               <div className="acesso-field">
                 <label htmlFor="email-recuperar">E-mail</label>
                 <input

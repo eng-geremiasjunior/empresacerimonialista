@@ -85,7 +85,9 @@ export function PortalSenhaForm({ modo }: { modo: "primeiro" | "redefinir" }) {
               <span>{erro}</span>
             </p>
           )}
-          <form className="acesso-fields" onSubmit={salvar}>
+          {/* method="post": antes da hidratação o submit é nativo e o
+              padrão é GET — a senha nova iria para a URL. */}
+          <form className="acesso-fields" method="post" onSubmit={salvar}>
             <div className="acesso-field">
               <label htmlFor="pw1">Nova senha</label>
               <div className="acesso-pw">

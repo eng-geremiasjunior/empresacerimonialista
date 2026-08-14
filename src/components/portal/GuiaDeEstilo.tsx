@@ -643,8 +643,11 @@ export function GuiaDeEstilo({
           )}
         </article>
 
-        {/* coluna fixa — só no computador */}
-        <aside className="guia-trilho portal-so-pc">
+        {/* Coluna fixa — só no computador. A visibilidade fica no CSS do
+            guia, não na classe utilitária do portal: `.portal-so-pc` usa
+            `display: contents`, que dissolveria este aside e jogaria os
+            cartões soltos dentro do grid. */}
+        <aside className="guia-trilho">
           <div className="guia-trilho-cartao">
             <span className="guia-rotulo">Neste guia</span>
             {[

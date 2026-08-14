@@ -20,14 +20,16 @@ export default async function PortalGuiaEstiloPage({
   const supabase = createClient();
   const [guia, { data: acesso }] = await Promise.all([
     getGuiaDoEvento(evento.id),
-    // quem está lendo: a cliente tem vínculo em evento_acesso; a equipe
-    // abre a mesma tela para conferir, e aí não aparece ação de aprovar
     supabase
       .from("evento_acesso")
       .select("nome")
       .eq("event_id", evento.id)
       .maybeSingle(),
   ]);
+
+  // Quem chegou aqui já tem vínculo em evento_acesso — é assim que o
+  // portal inteiro funciona. A checagem abaixo é a segunda tranca: quem
+  // aprova é a CLIENTE, e a RPC recusa qualquer outro de todo jeito.
 
   const {
     data: { user },

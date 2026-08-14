@@ -95,7 +95,11 @@ export function LoginForm() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-7 space-y-4">
+      {/* method="post" não é decoração: até o React hidratar, o submit é
+          NATIVO, e o padrão do HTML é GET — a senha iria parar na barra de
+          endereço, no histórico do navegador e no log de acesso. Com POST,
+          o pior caso vira um 405 sem vazamento. */}
+      <form onSubmit={handleSubmit} method="post" className="mt-7 space-y-4">
         <div>
           <label
             htmlFor="email"

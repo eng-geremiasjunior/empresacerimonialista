@@ -530,8 +530,11 @@
 }
 
 /* ---------- coluna fixa e histórico ---------- */
+/* No celular ela não existe: o índice não cabe, e os botões de aprovar
+ * já estão no fim do documento. Some por aqui, e não pela classe
+ * utilitária do portal, que usa `display: contents`. */
 .guia-trilho {
-  display: flex;
+  display: none;
   flex-direction: column;
   gap: 14px;
 }
@@ -672,6 +675,7 @@
     align-items: start;
   }
   .guia-trilho {
+    display: flex;
     position: sticky;
     top: 24px;
   }
