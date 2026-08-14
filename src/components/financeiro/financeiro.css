@@ -1,0 +1,670 @@
+/* Financeiro do evento — a folha da tela.
+ *
+ * Todos os tokens já existem no globals.css (fundação Celebra Pro). Aqui
+ * só há composição: nenhuma cor, fonte ou raio novo.
+ *
+ * Regra rígida do handoff: todo valor monetário e toda data em mono.
+ * Nenhum valor em Inter. Cor só nos três estados e na ação ameixa —
+ * KPI, barra e linha de tabela não têm cor.
+ */
+
+.fin {
+  font-family: var(--font-ui), system-ui, sans-serif;
+  color: var(--cinza-3);
+}
+
+.fin-mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+}
+
+/* ---------- topbar ---------- */
+.fin-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.fin-eyebrow {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cinza);
+}
+.fin-h1 {
+  margin: 6px 0 0;
+  font-family: var(--font-title), system-ui, sans-serif;
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--tinta);
+}
+.fin-topo-acoes {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.fin-hoje {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--cinza);
+  text-align: right;
+}
+
+/* ---------- botões ---------- */
+.fin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--linha);
+  border-radius: 10px;
+  background: var(--papel);
+  font-family: var(--font-ui), system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--cinza-3);
+  cursor: pointer;
+}
+.fin-btn:hover {
+  border-color: var(--cinza-2);
+}
+/* uma ação por vez: a ameixa é do botão primário e de mais nada */
+.fin-btn-primario {
+  border-color: transparent;
+  background: var(--ameixa-600);
+  color: #fff;
+}
+.fin-btn-primario:hover {
+  background: var(--ameixa-800);
+  border-color: transparent;
+}
+.fin-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ---------- seletor de tela ---------- */
+.fin-telas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.fin-tela {
+  text-align: left;
+  padding: 16px 20px;
+  border: 1px solid var(--linha);
+  border-radius: 14px;
+  background: var(--papel);
+  cursor: pointer;
+}
+.fin-tela[aria-current="true"] {
+  border-color: var(--ameixa-300);
+  background: var(--ameixa-50);
+}
+.fin-tela-nome {
+  font-family: var(--font-title), system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--tinta);
+}
+.fin-tela-meta {
+  margin-top: 4px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--cinza);
+}
+
+/* ---------- alertas ---------- */
+.fin-alertas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.fin-alerta {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  text-align: left;
+  width: 100%;
+  cursor: default;
+}
+.fin-alerta-larga {
+  grid-column: 1 / -1;
+}
+.fin-alerta-ponto {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  margin-top: 7px;
+}
+.fin-alerta-titulo {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--tinta);
+}
+.fin-alerta-meta {
+  margin-top: 4px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--cinza-3);
+}
+
+/* os três estados, dessaturados e só como significado */
+.fin-t-late {
+  background: var(--state-late-bg);
+}
+.fin-t-late .fin-alerta-ponto {
+  background: var(--state-late);
+}
+.fin-t-late .fin-alerta-titulo {
+  color: var(--state-late);
+}
+.fin-t-wait {
+  background: var(--state-wait-bg);
+}
+.fin-t-wait .fin-alerta-ponto {
+  background: var(--state-wait);
+}
+.fin-t-wait .fin-alerta-titulo {
+  color: var(--state-wait);
+}
+.fin-t-ok {
+  background: var(--state-ok-bg);
+}
+.fin-t-ok .fin-alerta-ponto {
+  background: var(--state-ok);
+}
+.fin-t-neutral {
+  background: var(--nevoa);
+}
+.fin-t-neutral .fin-alerta-ponto {
+  background: var(--cinza-2);
+}
+
+/* ---------- cards ---------- */
+.fin-card {
+  border: 1px solid var(--linha);
+  border-radius: 14px;
+  background: var(--papel);
+  padding: 24px;
+}
+.fin-card-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.fin-rotulo {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cinza);
+}
+.fin-h2 {
+  margin: 4px 0 0;
+  font-family: var(--font-title), system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--tinta);
+}
+.fin-link {
+  font-size: 14px;
+  color: var(--ameixa-600);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.fin-link:hover {
+  color: var(--ameixa-800);
+}
+
+/* ---------- KPIs ---------- */
+.fin-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid var(--linha);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.fin-kpi {
+  padding: 14px 16px;
+  border-right: 1px solid var(--linha);
+}
+.fin-kpi:last-child {
+  border-right: none;
+}
+/* o card de destaque do print usa a névoa, não cor */
+.fin-kpi-destaque {
+  background: var(--nevoa);
+}
+.fin-kpi-valor {
+  margin-top: 6px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 19px;
+  color: var(--tinta);
+}
+
+/* ---------- barra de verba ---------- */
+/* sem cor: é hierarquia, não status */
+.fin-barra {
+  display: flex;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--nevoa);
+  margin-top: 18px;
+}
+.fin-barra-pago {
+  background: var(--tinta);
+}
+.fin-barra-comprometido {
+  background: var(--cinza-2);
+}
+.fin-barra-legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 10px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--cinza);
+}
+.fin-barra-legenda span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.fin-barra-legenda i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+/* ---------- abas de visão ---------- */
+.fin-abas {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--linha);
+}
+.fin-aba {
+  margin-bottom: -1px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  padding: 10px 14px;
+  font-family: var(--font-ui), system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--cinza);
+  cursor: pointer;
+}
+.fin-aba[aria-current="page"] {
+  border-bottom-color: var(--ameixa-600);
+  color: var(--tinta);
+}
+
+/* ---------- calendário ---------- */
+.fin-cal-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.fin-cal-mes {
+  font-family: var(--font-title), system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--tinta);
+}
+.fin-cal-nav {
+  display: flex;
+  gap: 6px;
+}
+.fin-cal-nav button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--linha);
+  border-radius: 8px;
+  background: var(--papel);
+  color: var(--cinza-3);
+  cursor: pointer;
+}
+.fin-cal-semana,
+.fin-cal-grade {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+.fin-cal-semana div {
+  padding: 8px 10px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cinza);
+}
+.fin-cal-grade {
+  border: 1px solid var(--linha);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.fin-cal-celula {
+  min-height: 104px;
+  padding: 8px;
+  border-right: 1px solid var(--linha);
+  border-bottom: 1px solid var(--linha);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fin-cal-celula:nth-child(7n) {
+  border-right: none;
+}
+.fin-cal-celula.fora {
+  background: var(--marfim);
+}
+.fin-cal-celula.fora .fin-cal-dia {
+  color: var(--cinza-2);
+}
+.fin-cal-celula.hoje {
+  background: var(--ameixa-50);
+}
+.fin-cal-dia {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--cinza-3);
+}
+.fin-cal-celula.hoje .fin-cal-dia {
+  font-weight: 700;
+  color: var(--ameixa-600);
+}
+.fin-cal-hoje-tag {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px;
+  color: var(--ameixa-600);
+}
+.fin-chip {
+  text-align: left;
+  border: none;
+  border-left: 2px solid var(--cinza-2);
+  background: var(--nevoa);
+  border-radius: 0 6px 6px 0;
+  padding: 4px 6px;
+  cursor: pointer;
+  width: 100%;
+}
+.fin-chip.entrada {
+  border-left-color: var(--salvia-300);
+}
+.fin-chip.late {
+  border-left-color: var(--state-late);
+  background: var(--state-late-bg);
+}
+.fin-chip-valor {
+  display: block;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--tinta);
+}
+.fin-chip-label {
+  display: block;
+  font-size: 11px;
+  color: var(--cinza);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- fila ---------- */
+.fin-fila-linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--linha);
+}
+.fin-fila-linha:last-child {
+  border-bottom: none;
+}
+.fin-fila-linha.atrasada {
+  background: var(--state-late-bg);
+}
+.fin-data-chip {
+  width: 46px;
+  flex: none;
+  text-align: center;
+  background: var(--nevoa);
+  border-radius: 10px;
+  padding: 6px 0;
+}
+.fin-fila-linha.atrasada .fin-data-chip {
+  background: transparent;
+}
+.fin-data-dia {
+  display: block;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 17px;
+  color: var(--tinta);
+}
+.fin-fila-linha.atrasada .fin-data-dia {
+  color: var(--state-late);
+}
+.fin-data-mes {
+  display: block;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cinza);
+}
+.fin-fila-corpo {
+  flex: 1;
+  min-width: 180px;
+}
+.fin-fila-titulo {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tinta);
+}
+.fin-fila-meta {
+  margin-top: 3px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--cinza);
+}
+.fin-pill {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--nevoa);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cinza);
+  vertical-align: middle;
+}
+.fin-fila-valor {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 17px;
+  color: var(--tinta);
+  text-align: right;
+}
+.fin-fila-linha.atrasada .fin-fila-valor {
+  color: var(--state-late);
+}
+.fin-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.fin-badge.ok {
+  background: var(--state-ok-bg);
+  color: var(--state-ok);
+}
+.fin-badge.late {
+  background: var(--state-late-bg);
+  color: var(--state-late);
+}
+.fin-badge.wait {
+  background: var(--state-wait-bg);
+  color: var(--state-wait);
+}
+.fin-badge.neutral {
+  background: var(--nevoa);
+  color: var(--cinza);
+}
+
+/* ---------- tabela de categorias ---------- */
+.fin-tabela {
+  width: 100%;
+  border-collapse: collapse;
+}
+.fin-tabela th {
+  text-align: left;
+  padding: 0 12px 10px;
+  border-bottom: 1px solid var(--linha);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cinza);
+}
+.fin-tabela td {
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--linha);
+  vertical-align: middle;
+}
+.fin-tabela tr:last-child td {
+  border-bottom: none;
+}
+.fin-tabela tr.clicavel:hover td {
+  background: var(--marfim);
+  cursor: pointer;
+}
+.fin-num {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 15px;
+  color: var(--tinta);
+  text-align: right;
+}
+.fin-cat-nome {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--tinta);
+}
+.fin-cat-forn {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--cinza);
+}
+.fin-and {
+  width: 120px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--nevoa);
+  overflow: hidden;
+}
+.fin-and i {
+  display: block;
+  height: 100%;
+  background: var(--tinta);
+}
+.fin-tabela tfoot td {
+  border-top: 1px solid var(--linha);
+  border-bottom: none;
+  padding-top: 14px;
+  font-weight: 600;
+}
+
+/* ---------- resumo ---------- */
+.fin-resumo-linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--linha);
+}
+.fin-resumo-linha:last-child {
+  border-bottom: none;
+}
+.fin-resumo-label {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--tinta);
+}
+.fin-resumo-meta {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--cinza);
+}
+.fin-resumo-valor {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 19px;
+  color: var(--tinta);
+}
+
+/* ---------- vazio ---------- */
+.fin-vazio {
+  padding: 40px 20px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--cinza);
+}
+
+/* ============================================================
+ * Celular
+ * ============================================================ */
+@media (max-width: 860px) {
+  .fin-telas,
+  .fin-alertas {
+    grid-template-columns: 1fr;
+  }
+  .fin-kpis {
+    grid-template-columns: 1fr 1fr;
+  }
+  .fin-kpi:nth-child(2) {
+    border-right: none;
+  }
+  .fin-kpi:nth-child(1),
+  .fin-kpi:nth-child(2) {
+    border-bottom: 1px solid var(--linha);
+  }
+  .fin-h1 {
+    font-size: 26px;
+  }
+  /* o calendário não cabe em 7 colunas legíveis no celular: a fila é a
+     visão certa lá, e a aba de calendário some */
+  .fin-so-pc {
+    display: none;
+  }
+  .fin-tabela-rolar {
+    overflow-x: auto;
+  }
+}

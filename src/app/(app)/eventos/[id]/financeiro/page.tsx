@@ -5,6 +5,8 @@ import { ResumoContrato } from "@/components/financeiro/ResumoContrato";
 import { SecaoReceitas } from "@/components/financeiro/SecaoReceitas";
 import { ListaDespesas } from "@/components/financeiro/ListaDespesas";
 import { FinanceiroTabs } from "@/components/financeiro/FinanceiroTabs";
+import { FinanceiroEvento } from "@/components/financeiro/FinanceiroEvento";
+import { getFinanceiroDoEvento } from "@/lib/supabase/financeiro-evento";
 import {
   PendenciasFinanceiras,
   type Pendencia,
@@ -127,15 +129,59 @@ export default async function EventoFinanceiroPage({
   const parcelasFornecedor = ((parcelasRes.data ?? []) as unknown as
     ParcelaFornecedor[]).map((p) => ({ ...p, value: Number(p.value) }));
 
+  const [dadosNovos, { data: evInfo }] = await Promise.all([
+    getFinanceiroDoEvento(eventId),
+    supabase
+      .from("events")
+      .select("name, date, clients(name)")
+      .eq("id", eventId)
+      .maybeSingle(),
+  ]);
+
+  const dataEvento = (evInfo?.date as string) ?? todayIso;
+  // o embed do PostgREST devolve array quando a relação não é única
+  const cliente = Array.isArray(evInfo?.clients)
+    ? (evInfo?.clients[0] as { name: string } | undefined)
+    : (evInfo?.clients as { name: string } | null | undefined);
+  const nomeEvento = (evInfo?.name as string) || cliente?.name || "Evento";
+
   return (
-    <FinanceiroTabs
-      eventId={eventId}
-      verbas={verbas}
-      parcelasFornecedor={parcelasFornecedor}
-      todayIso={todayIso}
-      fornecedoresDisponiveis={suppliers}
-      migracaoPendente={migracaoPendente}
-      assessoria={
+    <div className="space-y-8">
+      {/* A tela nova (handoff do Financeiro): calendário, fila, verba por
+          categoria, resumo e o drawer do comprovante. */}
+      <FinanceiroEvento
+        eventId={eventId}
+        dados={dadosNovos}
+        contexto={{
+          evento: nomeEvento,
+          data: dataEvento,
+          diasAte: Math.round(
+            (new Date(dataEvento + "T00:00:00").getTime() -
+              new Date(todayIso + "T00:00:00").getTime()) /
+              86400000
+          ),
+        }}
+      />
+
+      {/*
+        TRANSITÓRIO — os controles que a tela nova ainda não absorveu:
+        criar lançamento, gerar parcelas, pendências da automação e os
+        itens do orçamento de origem. Ficam recolhidos para não competir
+        com a tela principal, e saem daqui quando forem migrados.
+      */}
+      <details className="rounded-xl border border-gray-200 bg-white">
+        <summary className="cursor-pointer px-5 py-4 text-sm font-medium text-gray-700">
+          Lançamentos e ajustes
+        </summary>
+        <div className="border-t border-gray-100 p-5">
+          <FinanceiroTabs
+            eventId={eventId}
+            verbas={verbas}
+            parcelasFornecedor={parcelasFornecedor}
+            todayIso={todayIso}
+            fornecedoresDisponiveis={suppliers}
+            migracaoPendente={migracaoPendente}
+            assessoria={
         <div className="space-y-6">
           {/* O que a automação deixou aqui, antes de tudo: é a ação que a
               cerimonialista precisa resolver agora. */}
@@ -182,8 +228,11 @@ export default async function EventoFinanceiroPage({
               valorTotal={orcamento.valor_total}
             />
           )}
+              </div>
+            }
+          />
         </div>
-      }
-    />
+      </details>
+    </div>
   );
 }
