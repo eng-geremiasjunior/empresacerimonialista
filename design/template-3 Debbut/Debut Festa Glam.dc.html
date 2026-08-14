@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;padding:0}
+  body{font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+  .display{font-family:'Syne',sans-serif}
+  ::selection{background:#E91E8C;color:#fff}
+  a{color:#E91E8C;text-decoration:none}
+  a:hover{color:#c2166f}
+  input[type=range]{-webkit-appearance:none;appearance:none;height:8px;border-radius:999px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:999px;background:#D4AF37;border:3px solid #fff;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.4)}
+  input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:999px;background:#D4AF37;border:3px solid #fff;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.4)}
+  @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+  @keyframes pulseDot{0%,100%{opacity:1}50%{opacity:.35}}
+  .nameInput::placeholder{color:rgba(0,0,0,.2)}
+  .sigInput::placeholder{color:rgba(0,0,0,.4)}
+  .sigInput:focus{border-color:#D4AF37 !important}
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#fff;color:#111111">
+
+  <!-- TOP BAR -->
+  <sc-if value="{{ topBar }}" hint-placeholder-val="{{ true }}">
+  <div style="background:#E91E8C;color:#fff;text-align:center;padding:10px 16px;display:flex;align-items:center;justify-content:center;gap:12px;font-size:13px;font-weight:700;letter-spacing:.025em;flex-wrap:wrap">
+    <span style="display:inline-flex;align-items:center;gap:6px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
+      PROPOSTA VÁLIDA POR:
+    </span>
+    <span style="background:#fff;color:#E91E8C;padding:4px 10px;border-radius:9999px;font-size:12px;font-weight:900;font-variant-numeric:tabular-nums">{{ cd.d }}D : {{ cd.h }}H : {{ cd.m }}M : {{ cd.s }}S</span>
+    <span style="opacity:.9;font-weight:600">• Preço trava hoje</span>
+  </div>
+  </sc-if>
+
+  <!-- HEADER -->
+  <header style="max-width:1320px;margin:0 auto;padding:20px 40px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid rgba(0,0,0,.1)">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="width:36px;height:36px;background:#111111;color:#fff;display:grid;place-items:center;border-radius:9999px;font-weight:900;font-size:13px">15</div>
+      <div style="line-height:1">
+        <div style="font-weight:900;font-size:13px;letter-spacing:.14em">DEBUT GLAM</div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:.2em;opacity:.6;margin-top:3px">TEMPLATE 02</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700">
+      <span style="background:#111111;color:#fff;padding:6px 12px;border-radius:9999px">{{ guests }} CONVIDADOS</span>
+      <span style="border:1px solid #000;padding:6px 12px;border-radius:9999px">R$ {{ totalStr }}</span>
+    </div>
+    <button onClick="{{ openModal }}" style="background:#111111;color:#fff;padding:10px 20px;border:none;border-radius:9999px;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px" style-hover="background:#000">
+      GARANTIR DATA
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+    </button>
+  </header>
+
+  <!-- HERO -->
+  <section style="max-width:1320px;margin:0 auto;padding:48px 40px 40px;display:grid;grid-template-columns:repeat(auto-fit,minmax(460px,1fr));gap:40px;align-items:start">
+    <div>
+      <div style="display:inline-flex;align-items:center;gap:8px;background:#E91E8C;color:#fff;padding:8px 16px;border-radius:9999px;font-size:11px;font-weight:900;letter-spacing:.14em;margin-bottom:24px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.9 5.6L20 9l-5.6 1.9L12 17l-1.4-5.1L4 9l6.1-1.4z"></path></svg>
+        TEMPLATE FESTA | MAIS PEDIDO
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <div style="font-size:18px;font-weight:700;letter-spacing:.32em;color:#111111">A NOITE DA</div>
+        <div style="position:relative">
+          <input class="nameInput display" value="{{ name }}" onChange="{{ onName }}" placeholder="NOME" style="width:100%;background:transparent;outline:none;border:none;padding:0;margin:0;font-weight:900;font-size:72px;line-height:.85;letter-spacing:-.03em;color:#111111"/>
+          <div style="font-size:11px;font-weight:700;letter-spacing:.2em;opacity:.5;margin-top:4px">TOQUE PARA EDITAR O NOME • PROPAGA AUTOMÁTICO</div>
+        </div>
+        <div class="display" style="font-weight:900;font-size:52px;line-height:.9;letter-spacing:-.02em;color:#D4AF37">15 ANOS</div>
+      </div>
+      <p style="margin:24px 0 0;font-size:20px;line-height:1.25;font-weight:600;max-width:520px;color:#111111;text-wrap:pretty">Uma festa que vai parar o feed e ficar na memória pra sempre. Pista cheia, luz profissional, você no centro.</p>
+      <div style="margin-top:28px;display:flex;flex-wrap:wrap;gap:10px">
+        <div style="display:inline-flex;align-items:center;gap:8px;background:#111111;color:#fff;padding:10px 16px;border-radius:9999px;font-size:13px;font-weight:700">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
+          12 DEZ • SÁBADO 20H
+        </div>
+        <div style="display:inline-flex;align-items:center;gap:8px;background:#111111;color:#fff;padding:10px 16px;border-radius:9999px;font-size:13px;font-weight:700">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          {{ guests }} CONVIDADOS
+        </div>
+        <div style="display:inline-flex;align-items:center;gap:8px;background:#111111;color:#fff;padding:10px 16px;border-radius:9999px;font-size:13px;font-weight:700">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+          SALÃO CRISTAL
+        </div>
+      </div>
+      <div style="margin-top:32px;background:#111111;color:#fff;border-radius:16px;padding:16px 20px;display:flex;align-items:center;gap:12px">
+        <div style="width:40px;height:40px;border-radius:9999px;background:#D4AF37;display:grid;place-items:center;color:#111111;font-weight:900;flex:none">Oi</div>
+        <div style="line-height:1.25">
+          <div style="font-weight:700;font-size:15px">{{ greeting }}</div>
+          <div style="font-size:13px;font-weight:500;opacity:.7">Cerimonialista Paula • online agora</div>
+        </div>
+        <div style="margin-left:auto;width:10px;height:10px;background:#22c55e;border-radius:9999px;animation:pulseDot 1.5s ease-in-out infinite"></div>
+      </div>
+      <div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap">
+        <button onClick="{{ openModal }}" style="background:#111111;color:#fff;padding:16px 32px;border:none;border-radius:9999px;font-weight:900;font-size:14px;letter-spacing:.025em;cursor:pointer" style-hover="background:#000">QUERO ESSA FESTA →</button>
+        <sc-if value="{{ notHl }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ verPreco }}" style="padding:16px 28px;border-radius:9999px;border:2px solid #111111;background:#fff;color:#111111;font-weight:900;font-size:13px;cursor:pointer" style-hover="background:#111111;color:#fff">VER PREÇO</button>
+        </sc-if>
+        <sc-if value="{{ hl }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ verPreco }}" style="padding:16px 28px;border-radius:9999px;border:2px solid #D4AF37;background:#D4AF37;color:#000;font-weight:900;font-size:13px;cursor:pointer">↓ DESCENDO...</button>
+        </sc-if>
+      </div>
+    </div>
+
+    <!-- HERO VIDEO PANEL -->
+    <div style="position:relative">
+      <div style="position:relative;overflow:hidden;border-radius:24px;background:#0c0c0c;aspect-ratio:4/5.2;border:1px solid rgba(0,0,0,.1)">
+        <div style="position:absolute;inset:0">
+          <div style="position:absolute;inset:0;background:radial-gradient(circle at 30% 20%,#E91E8C44,transparent 40%),radial-gradient(circle at 80% 10%,#D4AF3744,transparent 35%),radial-gradient(circle at 50% 80%,#ffffff14,transparent 45%)"></div>
+          <div style="position:absolute;top:18%;left:20%;width:120px;height:120px;background:rgba(233,30,140,.6);border-radius:9999px;filter:blur(40px)"></div>
+          <div style="position:absolute;top:10%;right:15%;width:90px;height:90px;background:rgba(212,175,55,.7);border-radius:9999px;filter:blur(30px)"></div>
+          <div style="position:absolute;bottom:25%;left:10%;width:160px;height:160px;background:rgba(255,255,255,.1);border-radius:9999px;filter:blur(50px)"></div>
+          <div style="position:absolute;top:45%;right:25%;width:8px;height:8px;background:#fff;border-radius:9999px;box-shadow:0 0 20px #fff,0 0 40px #fff"></div>
+          <div style="position:absolute;top:35%;left:40%;width:6px;height:6px;background:#D4AF37;border-radius:9999px;box-shadow:0 0 15px #D4AF37"></div>
+          <div style="position:absolute;bottom:40%;right:30%;width:5px;height:5px;background:#E91E8C;border-radius:9999px;box-shadow:0 0 12px #E91E8C"></div>
+          <div style="position:absolute;bottom:0;left:0;right:0;height:45%;background:linear-gradient(to top,#000,rgba(0,0,0,.6),transparent)"></div>
+          <div style="position:absolute;bottom:20%;left:10%;right:10%;height:1px;background:linear-gradient(to right,transparent,rgba(255,255,255,.2),transparent)"></div>
+          <div style="position:absolute;bottom:28%;left:15%;right:15%;height:1px;background:linear-gradient(to right,transparent,rgba(212,175,55,.3),transparent)"></div>
+        </div>
+        <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.8),rgba(0,0,0,.1),transparent)"></div>
+        <div style="position:absolute;top:16px;left:16px;right:16px;display:flex;justify-content:space-between">
+          <div style="background:#fff;color:#111111;padding:8px 14px;border-radius:9999px;font-size:11px;font-weight:900;letter-spacing:.1em;display:flex;align-items:center;gap:8px">
+            <div style="width:8px;height:8px;background:#22c55e;border-radius:9999px"></div> AO VIVO • PISTA LOTADA
+          </div>
+          <div style="background:#E91E8C;color:#fff;width:36px;height:36px;border-radius:9999px;display:grid;place-items:center">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M12 2l3 6.5 7 .6-5.3 4.6 1.6 6.9L12 17l-6.3 3.6 1.6-6.9L2 9.1l7-.6z"></path></svg>
+          </div>
+        </div>
+        <div style="position:absolute;bottom:0;padding:24px;color:#fff">
+          <div style="display:inline-flex;background:rgba(255,255,255,.15);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.2);padding:6px 12px;border-radius:9999px;font-size:11px;font-weight:700;letter-spacing:.1em;margin-bottom:12px">FESTA REAL • CLIENTE ANTERIOR</div>
+          <div style="font-weight:900;font-size:22px;line-height:1.05;text-wrap:pretty">Pista cheia até 2h da manhã. Essa é a energia que a gente entrega.</div>
+          <div style="margin-top:12px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;opacity:.9">
+            <div style="width:28px;height:28px;border-radius:9999px;background:#D4AF37;border:2px solid #fff;display:grid;place-items:center;font-size:11px;font-weight:900;color:#000">IS</div> @isabella fez 1.2k stories nessa noite
+          </div>
+        </div>
+      </div>
+      <div style="position:absolute;bottom:-24px;left:-24px;background:#D4AF37;color:#111111;padding:12px 20px;border-radius:14px;font-weight:900;font-size:13px;box-shadow:0 12px 30px rgba(0,0,0,.25);transform:rotate(-2deg)">+ 300 FESTAS FEITAS ✨</div>
+    </div>
+  </section>
+
+  <!-- O QUE TÁ INCLUSO -->
+  <section style="background:#111111;color:#fff;margin-top:40px;padding:80px 0">
+    <div style="max-width:1320px;margin:0 auto;padding:0 40px">
+      <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:40px">
+        <div>
+          <div style="color:#D4AF37;font-weight:900;letter-spacing:.2em;font-size:12px;margin-bottom:12px">O QUE TÁ INCLUSO</div>
+          <h2 class="display" style="font-weight:900;font-size:56px;line-height:.9;letter-spacing:-.03em;margin:0">O QUE VAI TER NA<br>SUA FESTA DE <span style="color:#D4AF37">{{ nameOr15 }}</span></h2>
+        </div>
+        <div style="font-size:14px;font-weight:600;color:rgba(255,255,255,.7);max-width:360px;line-height:1.4">Tudo que você vê no TikTok de festa de 15 anos top, mas com equipe profissa que não deixa a peteca cair.</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px">
+        <div style="border-radius:20px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.06);padding:24px" style-hover="background:rgba(255,255,255,.09)">
+          <div style="width:56px;height:56px;border-radius:14px;background:#D4AF37;display:grid;place-items:center;margin-bottom:20px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></div>
+          <div style="font-weight:900;font-size:16px;letter-spacing:.025em;line-height:1.1;margin-bottom:8px">PISTA LIBERADA</div>
+          <div style="font-size:13px;line-height:1.4;font-weight:500;color:rgba(255,255,255,.6)">DJ profissa, playlist sua + 4h de festa sem parar</div>
+        </div>
+        <div style="border-radius:20px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.06);padding:24px" style-hover="background:rgba(255,255,255,.09)">
+          <div style="width:56px;height:56px;border-radius:14px;background:#D4AF37;display:grid;place-items:center;margin-bottom:20px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16L3 6l5.5 4L12 4l3.5 6L21 6l-2 10H5z"></path><path d="M5 20h14"></path></svg></div>
+          <div style="font-weight:900;font-size:16px;letter-spacing:.025em;line-height:1.1;margin-bottom:8px">CERIMONIAL TOTAL</div>
+          <div style="font-size:13px;line-height:1.4;font-weight:500;color:rgba(255,255,255,.6)">Equipe cuida de tudo, você só curte e brilha</div>
+        </div>
+        <div style="border-radius:20px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.06);padding:24px" style-hover="background:rgba(255,255,255,.09)">
+          <div style="width:56px;height:56px;border-radius:14px;background:#D4AF37;display:grid;place-items:center;margin-bottom:20px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
+          <div style="font-weight:900;font-size:16px;letter-spacing:.025em;line-height:1.1;margin-bottom:8px">RECEPÇÃO VIP</div>
+          <div style="font-size:13px;line-height:1.4;font-weight:500;color:rgba(255,255,255,.6)">Recepção com tapete, painel neon e hostess</div>
+        </div>
+        <div style="border-radius:20px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.06);padding:24px" style-hover="background:rgba(255,255,255,.09)">
+          <div style="width:56px;height:56px;border-radius:14px;background:#D4AF37;display:grid;place-items:center;margin-bottom:20px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg></div>
+          <div style="font-weight:900;font-size:16px;letter-spacing:.025em;line-height:1.1;margin-bottom:8px">FOTOGRAFIA HYPE</div>
+          <div style="font-size:13px;line-height:1.4;font-weight:500;color:rgba(255,255,255,.6)">Fotos que bombam no feed, entrega em 48h</div>
+        </div>
+        <div style="border-radius:20px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.06);padding:24px" style-hover="background:rgba(255,255,255,.09)">
+          <div style="width:56px;height:56px;border-radius:14px;background:#D4AF37;display:grid;place-items:center;margin-bottom:20px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4"></path><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"></path></svg></div>
+          <div style="font-weight:900;font-size:16px;letter-spacing:.025em;line-height:1.1;margin-bottom:8px">SOM E LUZ PRO</div>
+          <div style="font-size:13px;line-height:1.4;font-weight:500;color:rgba(255,255,255,.6)">Moving, laser, fumaça - balada de verdade</div>
+        </div>
+        <div style="border-radius:20px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.06);padding:24px" style-hover="background:rgba(255,255,255,.09)">
+          <div style="width:56px;height:56px;border-radius:14px;background:#D4AF37;display:grid;place-items:center;margin-bottom:20px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 22h8M12 15v7M5 3h14l-1 8a6 6 0 0 1-12 0z"></path></svg></div>
+          <div style="font-weight:900;font-size:16px;letter-spacing:.025em;line-height:1.1;margin-bottom:8px">OPEN BAR JOVEM</div>
+          <div style="font-size:13px;line-height:1.4;font-weight:500;color:rgba(255,255,255,.6)">Drinks sem álcool + soda italiana liberada</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMO VAI SER NA PRÁTICA -->
+  <section style="background:#F8F8F8;padding:80px 0;border-top:1px solid rgba(0,0,0,.05);border-bottom:1px solid rgba(0,0,0,.05)">
+    <div style="max-width:1320px;margin:0 auto;padding:0 40px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:40px">
+        <div style="width:40px;height:40px;border-radius:9999px;background:#111111;color:#fff;display:grid;place-items:center;font-weight:900;flex:none">→</div>
+        <h2 class="display" style="font-weight:900;font-size:42px;line-height:1;letter-spacing:-.02em;margin:0">COMO VAI SER, NA PRÁTICA</h2>
+        <div style="margin-left:auto;font-size:12px;font-weight:700;letter-spacing:.1em;opacity:.4">5 ETAPAS • ZERO STRESS</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));border:1px solid rgba(0,0,0,.1);border-radius:20px;overflow:hidden;background:#fff">
+        <div style="padding:28px;border-right:1px solid rgba(0,0,0,.1);position:relative">
+          <div class="display" style="font-weight:900;font-size:36px;line-height:1;color:#D4AF37">01</div>
+          <div style="margin-top:12px;font-weight:900;font-size:14px;letter-spacing:.14em">BRIEFING</div>
+          <div style="margin-top:8px;font-size:13px;font-weight:600;line-height:1.35;opacity:.7">Definimos tema, cores e playlist juntas</div>
+          <div style="position:absolute;top:50%;right:-12px;width:24px;height:24px;background:#fff;border:1px solid rgba(0,0,0,.1);border-radius:9999px;display:grid;place-items:center;font-size:12px;font-weight:900;z-index:2">→</div>
+        </div>
+        <div style="padding:28px;border-right:1px solid rgba(0,0,0,.1);position:relative">
+          <div class="display" style="font-weight:900;font-size:36px;line-height:1;color:#D4AF37">02</div>
+          <div style="margin-top:12px;font-weight:900;font-size:14px;letter-spacing:.14em">MONTAGEM</div>
+          <div style="margin-top:8px;font-size:13px;font-weight:600;line-height:1.35;opacity:.7">Equipe monta tudo 6h antes, sem stress</div>
+          <div style="position:absolute;top:50%;right:-12px;width:24px;height:24px;background:#fff;border:1px solid rgba(0,0,0,.1);border-radius:9999px;display:grid;place-items:center;font-size:12px;font-weight:900;z-index:2">→</div>
+        </div>
+        <div style="padding:28px;border-right:1px solid rgba(0,0,0,.1);position:relative">
+          <div class="display" style="font-weight:900;font-size:36px;line-height:1;color:#D4AF37">03</div>
+          <div style="margin-top:12px;font-weight:900;font-size:14px;letter-spacing:.14em">CHEGADA</div>
+          <div style="margin-top:8px;font-size:13px;font-weight:600;line-height:1.35;opacity:.7">Você chega rainha, tudo pronto pra foto</div>
+          <div style="position:absolute;top:50%;right:-12px;width:24px;height:24px;background:#fff;border:1px solid rgba(0,0,0,.1);border-radius:9999px;display:grid;place-items:center;font-size:12px;font-weight:900;z-index:2">→</div>
+        </div>
+        <div style="padding:28px;border-right:1px solid rgba(0,0,0,.1);position:relative">
+          <div class="display" style="font-weight:900;font-size:36px;line-height:1;color:#D4AF37">04</div>
+          <div style="margin-top:12px;font-weight:900;font-size:14px;letter-spacing:.14em">FESTA</div>
+          <div style="margin-top:8px;font-size:13px;font-weight:600;line-height:1.35;opacity:.7">4 horas de pura energia, pista lotada</div>
+          <div style="position:absolute;top:50%;right:-12px;width:24px;height:24px;background:#fff;border:1px solid rgba(0,0,0,.1);border-radius:9999px;display:grid;place-items:center;font-size:12px;font-weight:900;z-index:2">→</div>
+        </div>
+        <div style="padding:28px;position:relative">
+          <div class="display" style="font-weight:900;font-size:36px;line-height:1;color:#D4AF37">05</div>
+          <div style="margin-top:12px;font-weight:900;font-size:14px;letter-spacing:.14em">AFTER</div>
+          <div style="margin-top:8px;font-size:13px;font-weight:600;line-height:1.35;opacity:.7">Desmontamos tudo, você só posta stories</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NO DIA / CHECKLIST -->
+  <section style="max-width:1320px;margin:0 auto;padding:80px 40px">
+    <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:40px">
+      <h2 class="display" style="font-weight:900;font-size:50px;line-height:.9;letter-spacing:-.03em;margin:0">NO DIA, A GENTE FAZ<br>TUDO. VOCÊ SÓ <span style="background:#111111;color:#fff;padding:0 12px;border-radius:10px">BRILHA.</span></h2>
+      <div style="background:#E91E8C;color:#fff;padding:8px 16px;border-radius:9999px;font-size:12px;font-weight:900;letter-spacing:.1em">CHECKLIST REAL DA EQUIPE</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px">
+      <div style="border-radius:20px;overflow:hidden;border:1px solid rgba(0,0,0,.1);background:#fff">
+        <div style="position:relative;height:220px;background:linear-gradient(to bottom right,#1a1a1a,#2a2a2a);overflow:hidden">
+          <div style="position:absolute;inset:0;opacity:.6">
+            <div style="position:absolute;top:32px;left:32px;width:80px;height:80px;border-radius:9999px;background:rgba(255,255,255,.1);filter:blur(24px)"></div>
+            <div style="position:absolute;bottom:40px;right:40px;width:128px;height:128px;border-radius:9999px;background:rgba(0,0,0,.2);filter:blur(40px)"></div>
+            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(12deg);width:1px;height:60%;background:rgba(255,255,255,.1)"></div>
+          </div>
+          <div style="position:absolute;top:16px;left:16px;width:8px;height:8px;border-radius:9999px;background:#D4AF37;box-shadow:0 4px 12px rgba(0,0,0,.4)"></div>
+          <div style="position:absolute;bottom:12px;left:16px;right:16px;color:#fff;font-weight:900;font-size:15px;letter-spacing:.025em">CHEGADA DE ESTRELA</div>
+        </div>
+        <div style="padding:20px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:center;gap:12px;font-size:13.5px;font-weight:700"><div style="width:24px;height:24px;border-radius:9999px;background:#22c55e;display:grid;place-items:center;flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span>Camarim pronto</span></div>
+          <div style="display:flex;align-items:center;gap:12px;font-size:13.5px;font-weight:700"><div style="width:24px;height:24px;border-radius:9999px;background:#22c55e;display:grid;place-items:center;flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span>Make checada</span></div>
+          <div style="display:flex;align-items:center;gap:12px;font-size:13.5px;font-weight:700"><div style="width:24px;height:24px;border-radius:9999px;background:#22c55e;display:grid;place-items:center;flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span>Família posicionada</span></div>
+          <div style="display:flex;align-items:center;gap:12px;font-size:13.5px;font-weight:700"><div style="width:24px;height:24px;border-radius:9999px;background:#22c55e;display:grid;place-items:center;flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span>DJ no ponto</span></div>
+        </div>
+      </div>
+      <div style="border-radius:20px;overflow:hidden;border:1px solid rgba(0,0,0,.1);background:#fff">
+        <div style="position:relative;height:220px;background:linear-gradient(to bottom right,rgba(233,30,140,.3),#111111);overflow:hidden">
+          <div style="position:absolute;inset:0;opacity:.6">
+            <div style="position:absolute;top:32px;left:32px;width:80px;height:80px;border-radius:9999px;background:rgba(255,255,255,.1);filter:blur(24px)"></div>
+            <div style="position:absolute;bottom:40px;right:40px;width:128px;height:128px;border-radius:9999px;background:rgba(0,0,0,.2);filter:blur(40px)"></div>
+            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(12deg);width:1px;height:60%;background:rgba(255,255,255,.1)"></div>
+          </div>
+          <div style="position:absolute;top:16px;left:16px;width:8px;height:8px;border-radius:9999px;background:#E91E8C;box-shadow:0 4px 12px rgba(0,0,0,.4)"></div>
+          <div style="position:absolute;bottom:12px;left:16px;right:16px;color:#fff;font-weight:900;font-size:15px;letter-spacing:.025em">A FESTA ACONTECENDO</div>
+        </div>
+        <div style="padding:20px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:center;gap:12px;font-size:13.5px;font-weight:700"><div style="width:24px;height:24px;border-radius:9999px;background:#22c55e;display:grid;place-items:center;flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span>Pista cheia</span></div>
+          <div style="display:flex;align-items:center;gap:12px;font-size:13.5px;font-weight:700"><div style="width:24px;height:24px;border-radius:9999px;background:#22c55e;display:grid;place-items:center;flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span>Fotos rolando</span></div>
+          <div style="display:flex;align-items:center;gap:12px;font-size:13.5px;font-weight:700"><div style="width:24px;height:24px;border-radius:9999px;background:#22c55e;display:grid;place-items:center;flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span>Cerimonial ativo</span></div>
+          <div style="display:flex;align-items:center;gap:12px;font-size:13.5px;font-weight:700"><div style="width:24px;height:24px;border-radius:9999px;background:#22c55e;display:grid;place-items:center;flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span>Você brilhando</span></div>
+        </div>
+      </div>
+      <div style="border-radius:20px;overflow:hidden;border:1px solid rgba(0,0,0,.1);background:#fff">
+        <div style="position:relative;height:220px;background:linear-gradient(to bottom right,rgba(212,175,55,.4),#111111);overflow:hidden">
+          <div style="position:absolute;inset:0;opacity:.6">
+            <div style="position:absolute;top:32px;left:32px;width:80px;height:80px;border-radius:9999px;background:rgba(255,255,255,.1);filter:blur(24px)"></div>
+            <div style="position:absolute;bottom:40px;right:40px;width:128px;height:128px;border-radius:9999px;background:rgba(0,0,0,.2);filter:blur(40px)"></div>
+            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(12deg);width:1px;height:60%;background:rgba(255,255,255,.1)"></div>
+          </div>
+          <div style="position:absolute;top:16px;left:16px;width:8px;height:8px;border-radius:9999px;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,.4)"></div>
+          <div style="position:absolute;bottom:12px;left:16px;right:16px;color:#fff;font-weight:900;font-size:15px;letter-spacing:.025em">FINAL ÉPICO</div>
+        </div>
+        <div style="padding:20px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:center;gap:12px;font-size:13.5px;font-weight:700"><div style="width:24px;height:24px;border-radius:9999px;background:#22c55e;display:grid;place-items:center;flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span>Parabéns com efeito</span></div>
+          <div style="display:flex;align-items:center;gap:12px;font-size:13.5px;font-weight:700"><div style="width:24px;height:24px;border-radius:9999px;background:#22c55e;display:grid;place-items:center;flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span>Vídeo final</span></div>
+          <div style="display:flex;align-items:center;gap:12px;font-size:13.5px;font-weight:700"><div style="width:24px;height:24px;border-radius:9999px;background:#22c55e;display:grid;place-items:center;flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span>Despedida organizada</span></div>
+          <div style="display:flex;align-items:center;gap:12px;font-size:13.5px;font-weight:700"><div style="width:24px;height:24px;border-radius:9999px;background:#22c55e;display:grid;place-items:center;flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><span>Material entregue</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INVESTIMENTO -->
+  <section id="investimento" style="position:relative;background:#111111;color:#fff;padding:96px 0">
+    <sc-if value="{{ hl }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;box-shadow:inset 0 0 0 4px #D4AF37;pointer-events:none;z-index:5"></div>
+    </sc-if>
+    <div style="max-width:1120px;margin:0 auto;padding:0 40px;text-align:center">
+      <div style="display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.15);padding:8px 16px;border-radius:9999px;font-size:11px;font-weight:900;letter-spacing:.18em;margin-bottom:32px">
+        <span style="width:8px;height:8px;background:#D4AF37;border-radius:9999px;animation:pulseDot 1.5s ease-in-out infinite"></span> INVESTIMENTO • TRANSPARENTE
+      </div>
+      <h2 class="display" style="font-weight:900;font-size:64px;line-height:.9;letter-spacing:-.03em;margin:0">QUANTO CUSTA FAZER<br>A FESTA <span style="color:#D4AF37">MAIS FALADA?</span></h2>
+      <div style="margin-top:40px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:28px;padding:40px;max-width:760px;margin-left:auto;margin-right:auto">
+        <div style="font-size:13px;font-weight:700;letter-spacing:.2em;opacity:.6">PACOTE {{ pkgNome }} • {{ guests }} CONVIDADOS</div>
+        <div class="display" style="font-weight:900;font-size:72px;line-height:1;margin-top:12px;letter-spacing:-.03em">R$ {{ totalStr }}</div>
+        <div style="font-size:13px;font-weight:600;opacity:.6;margin-top:8px">Em até 12x no cartão • Trava de preço hoje • Contrato digital</div>
+        <div style="margin-top:32px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;text-align:left">
+          <sc-for list="{{ packages }}" as="pkg" hint-placeholder-count="3">
+            <button onClick="{{ pkg.onSelect }}" style="{{ pkg.cardStyle }}">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <span style="{{ pkg.labelStyle }}">{{ pkg.label }}</span>
+                <sc-if value="{{ pkg.selected }}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></sc-if>
+              </div>
+              <div style="margin-top:12px;font-weight:900;letter-spacing:.025em">{{ pkg.nome }}</div>
+              <div style="{{ pkg.descColor }}">{{ pkg.desc }}</div>
+            </button>
+          </sc-for>
+        </div>
+        <div style="margin-top:40px;text-align:left;background:#000;border-radius:16px;padding:20px;border:1px solid rgba(255,255,255,.1)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div style="font-weight:900;font-size:13px;letter-spacing:.1em">AJUSTAR CONVIDADOS</div>
+            <div style="background:#fff;color:#000;padding:4px 12px;border-radius:9999px;font-weight:900;font-size:13px">{{ guests }} PESSOAS</div>
+          </div>
+          <input type="range" min="50" max="250" step="5" value="{{ guests }}" onChange="{{ onGuests }}" style="{{ sliderStyle }}"/>
+          <div style="margin-top:12px;display:flex;justify-content:space-between;font-size:11px;font-weight:700;opacity:.5;letter-spacing:.025em">
+            <span>50 PESSOAS</span>
+            <span>{{ baseLabel }}</span>
+            <span>250 PESSOAS</span>
+          </div>
+          <sc-if value="{{ showExtra }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:16px;font-size:12px;font-weight:700;color:#D4AF37">{{ extraLine }}</div>
+          </sc-if>
+        </div>
+        <button onClick="{{ openModal }}" style="margin-top:32px;width:100%;background:#fff;color:#111111;padding:20px;border:none;border-radius:9999px;font-weight:900;font-size:15px;letter-spacing:.025em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px" style-hover="background:#F2F2F2">
+          GARANTIR MINHA DATA COM {{ nameOrFesta }}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+        </button>
+        <div style="margin-top:16px;font-size:11px;font-weight:700;letter-spacing:.1em;opacity:.5">CONTRATO DIGITAL • ASSINATURA EM 30 SEGUNDOS • SEM FIADOR</div>
+      </div>
+      <div style="margin-top:40px;display:flex;flex-wrap:wrap;justify-content:center;gap:10px;font-size:11px;font-weight:700">
+        <span style="background:#fff;color:#000;padding:8px 14px;border-radius:9999px">✓ SEM TAXA ESCONDIDA</span>
+        <span style="background:#fff;color:#000;padding:8px 14px;border-radius:9999px">✓ EQUIPE INCLUSA</span>
+        <span style="background:#E91E8C;color:#fff;padding:8px 14px;border-radius:9999px">✓ DATA TRAVADA HOJE</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <section style="background:#fff;padding:48px 0;border-top:1px solid rgba(0,0,0,.1)">
+    <div style="max-width:1320px;margin:0 auto;padding:0 40px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:24px">
+      <div style="display:flex;align-items:center;gap:16px">
+        <div style="width:48px;height:48px;border-radius:9999px;background:#111111;border:2px solid #000;color:#fff;display:grid;place-items:center;font-weight:900;font-size:14px">PC</div>
+        <div style="line-height:1.25">
+          <div style="font-weight:900;font-size:14px">Paula Cerimonial • {{ nameOrSuaFesta }}</div>
+          <div style="font-size:12px;font-weight:600;opacity:.6">Respondo em até 2h • 300 festas • 4.9★ no Google</div>
+        </div>
+      </div>
+      <button onClick="{{ openModal }}" style="background:#111111;color:#fff;padding:16px 32px;border:none;border-radius:9999px;font-weight:900;font-size:13px;letter-spacing:.025em;cursor:pointer">FECHAR MINHA FESTA AGORA →</button>
+    </div>
+    <div style="text-align:center;margin-top:40px;font-size:11px;font-weight:700;letter-spacing:.18em;opacity:.3">TEMPLATE 02 • DEBUT FESTA GLAM • CONTRASTE AAA • LEGIBILIDADE MÁXIMA</div>
+  </section>
+
+  <!-- MODAL -->
+  <sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:24px">
+      <div onClick="{{ closeModal }}" style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+      <div style="position:relative;width:100%;max-width:520px;background:#111111;color:#fff;border-radius:28px;padding:36px;border:1px solid rgba(255,255,255,.1);box-shadow:0 25px 60px rgba(0,0,0,.5);animation:slideUp .3s ease">
+        <button onClick="{{ closeModal }}" style="position:absolute;top:20px;right:20px;width:36px;height:36px;border-radius:9999px;background:rgba(255,255,255,.1);border:none;color:#fff;display:grid;place-items:center;cursor:pointer" style-hover="background:rgba(255,255,255,.15)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></button>
+        <div style="display:inline-flex;background:#D4AF37;color:#000;padding:6px 12px;border-radius:9999px;font-size:11px;font-weight:900;letter-spacing:.1em;margin-bottom:20px">CONTRATO DIGITAL • ASSINATURA</div>
+        <h3 class="display" style="font-weight:900;font-size:30px;line-height:.95;margin:0">Fechar a festa da<br><span style="color:#D4AF37">{{ nameOrDebutante }}</span>?</h3>
+        <div style="margin-top:24px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:16px;font-size:13px;line-height:1.4">
+          <div style="display:flex;justify-content:space-between;font-weight:700"><span>Pacote:</span><span style="color:#D4AF37">{{ pkgNome }}</span></div>
+          <div style="display:flex;justify-content:space-between;font-weight:700;margin-top:8px"><span>Convidados:</span><span>{{ guests }}</span></div>
+          <div style="display:flex;justify-content:space-between;font-weight:900;font-size:18px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.1)"><span>Total:</span><span>R$ {{ totalStr }}</span></div>
+          <div style="font-size:11px;font-weight:600;opacity:.6;margin-top:8px">Valor trava hoje por 10 dias. Após aceite, nossa equipe chama no Whats em até 2h.</div>
+        </div>
+        <div style="margin-top:24px">
+          <label style="font-size:11px;font-weight:900;letter-spacing:.1em;opacity:.7">ASSINE COM SEU NOME COMPLETO (BRANCO NO PRETO)</label>
+          <input class="sigInput" value="{{ signature }}" onChange="{{ onSignature }}" placeholder="Digite seu nome completo aqui" style="margin-top:8px;width:100%;box-sizing:border-box;background:#fff;color:#111111;border-radius:12px;padding:14px 16px;font-size:15px;font-weight:700;outline:none;border:2px solid transparent"/>
+          <div style="margin-top:12px;height:64px;border-radius:12px;background:#fff;display:grid;place-items:center;border:2px dashed rgba(0,0,0,.1);overflow:hidden">
+            <span style="font-family:'Syne',cursive;font-weight:900;font-size:28px;letter-spacing:-.02em;color:#111111;opacity:.9">{{ sigDisplay }}</span>
+          </div>
+        </div>
+        <label style="margin-top:20px;display:flex;align-items:flex-start;gap:12px;cursor:pointer">
+          <input type="checkbox" checked="{{ agree }}" onChange="{{ onAgree }}" style="margin-top:4px;width:20px;height:20px;accent-color:#D4AF37"/>
+          <span style="font-size:12px;font-weight:600;line-height:1.35;opacity:.8">Li e aceito o contrato digital, trava de data e condições de pagamento em até 12x. Autorizo contato via WhatsApp.</span>
+        </label>
+        <button disabled="{{ cannotSubmit }}" onClick="{{ onSubmit }}" style="{{ submitStyle }}">
+          ASSINAR E TRAVAR MINHA DATA
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+        </button>
+        <div style="margin-top:12px;text-align:center;font-size:11px;font-weight:700;opacity:.4;letter-spacing:.025em">DOCUMENTO VÁLIDO JURIDICAMENTE • ASSINATURA DIGITAL</div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1320,&quot;height&quot;:900},&quot;debutName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;ISABELLA&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Conteúdo&quot;},&quot;countdownDays&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:10,&quot;min&quot;:1,&quot;max&quot;:60,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Contagem&quot;},&quot;showTopBar&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Layout&quot;}}">
+class Component extends DCLogic {
+  state = { name: "ISABELLA", pkg: "completa", guests: 120, modal: false, sig: "", agree: false, cd: { d: 10, h: 0, m: 0, s: 0 }, hl: false };
+
+  componentDidMount() {
+    const dn = this.props.debutName;
+    if (dn && dn !== this.state.name) this.setState({ name: String(dn).toUpperCase() });
+    const days = this.props.countdownDays ?? 10;
+    const target = Date.now() + days * 86400000 - 10800000;
+    const tick = () => {
+      const D = target - Date.now();
+      if (D <= 0) { this.setState({ cd: { d: 0, h: 0, m: 0, s: 0 } }); return; }
+      this.setState({ cd: {
+        d: Math.floor(D / 86400000),
+        h: Math.floor(D / 3600000 % 24),
+        m: Math.floor(D / 60000 % 60),
+        s: Math.floor(D / 1000 % 60)
+      }});
+    };
+    tick();
+    this._iv = setInterval(tick, 1000);
+  }
+  componentWillUnmount() { clearInterval(this._iv); }
+
+  pad(n) { return String(n).padStart(2, "0"); }
+
+  renderVals() {
+    const PKGS = [
+      { id: "essencial", nome: "FESTA ESSENCIAL", precoBase: 4900, label: "R$4.9k", desc: "80 convidados • DJ + Pista + Luz" },
+      { id: "completa", nome: "FESTA COMPLETA", precoBase: 6900, label: "R$6.9k ★", desc: "100 convidados • Tudo da essencial + Foto + Cerimonial" },
+      { id: "lendaria", nome: "FESTA LENDÁRIA", precoBase: 9700, label: "R$9.7k", desc: "150 convidados • Open bar + Robô + Plataforma 360" }
+    ];
+    const { name, pkg, guests, modal, sig, agree, cd, hl } = this.state;
+    const f = PKGS.find(p => p.id === pkg);
+    const base = pkg === "essencial" ? 80 : pkg === "completa" ? 100 : 150;
+    const extra = Math.max(0, guests - base);
+    const total = f.precoBase + extra * 35;
+    const totalStr = total.toLocaleString("pt-BR");
+
+    const labelBase = { padding: "4px 10px", borderRadius: 9999, fontSize: 11, fontWeight: 900 };
+    const cardBase = { textAlign: "left", borderRadius: 16, padding: 16, cursor: "pointer", fontWeight: 700, lineHeight: 1.2, fontSize: 13, transition: "background .2s" };
+    const packages = PKGS.map(p => {
+      const selected = p.id === pkg;
+      return {
+        label: p.label, nome: p.nome, desc: p.desc, selected,
+        onSelect: () => this.setState({ pkg: p.id }),
+        cardStyle: selected
+          ? { ...cardBase, border: "2px solid #D4AF37", background: "#D4AF37", color: "#111111", boxShadow: "0 0 0 4px rgba(212,175,55,.25)" }
+          : { ...cardBase, border: "2px solid rgba(255,255,255,.15)", background: "rgba(255,255,255,.06)", color: "#fff" },
+        labelStyle: selected ? { ...labelBase, background: "#000", color: "#fff" } : { ...labelBase, background: "#fff", color: "#000" },
+        descColor: { marginTop: 4, fontWeight: 500, fontSize: 12, lineHeight: 1.3, color: selected ? "rgba(0,0,0,.7)" : "rgba(255,255,255,.6)" }
+      };
+    });
+
+    const canSubmit = !!sig && agree;
+
+    return {
+      topBar: this.props.showTopBar ?? true,
+      name,
+      onName: (e) => this.setState({ name: e.target.value.toUpperCase() }),
+      greeting: "Oi, " + (name || "Linda") + "! Sua festa vai ser ÉPICA \uD83D\uDD25",
+      guests,
+      onGuests: (e) => this.setState({ guests: parseInt(e.target.value) }),
+      sliderStyle: { width: "100%", background: `linear-gradient(to right, #D4AF37 ${(guests - 50) / 200 * 100}%, rgba(255,255,255,.2) 0%)` },
+      baseLabel: "BASE " + base,
+      showExtra: extra > 0,
+      extraLine: "+ " + extra + " extras × R$35 = +R$ " + (extra * 35).toLocaleString("pt-BR") + " no total",
+      totalStr,
+      pkgNome: f.nome,
+      nameOr15: name || "15 ANOS",
+      nameOrFesta: name || "MINHA FESTA",
+      nameOrDebutante: name || "DEBUTANTE",
+      nameOrSuaFesta: name || "sua festa",
+      cd: { d: this.pad(cd.d), h: this.pad(cd.h), m: this.pad(cd.m), s: this.pad(cd.s) },
+      packages,
+      hl, notHl: !hl,
+      verPreco: () => {
+        const el = document.getElementById("investimento");
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+        this.setState({ hl: true });
+        setTimeout(() => this.setState({ hl: false }), 1600);
+      },
+      modalOpen: modal,
+      openModal: () => this.setState({ modal: true }),
+      closeModal: () => this.setState({ modal: false }),
+      signature: sig,
+      onSignature: (e) => this.setState({ sig: e.target.value }),
+      sigDisplay: sig || "Sua assinatura aqui",
+      agree,
+      onAgree: (e) => this.setState({ agree: e.target.checked }),
+      cannotSubmit: !canSubmit,
+      submitStyle: {
+        marginTop: 24, width: "100%", padding: "16px 0", borderRadius: 9999, fontWeight: 900, fontSize: 14, letterSpacing: ".025em",
+        border: "none", cursor: canSubmit ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+        background: canSubmit ? "#D4AF37" : "rgba(255,255,255,.15)",
+        color: canSubmit ? "#000" : "rgba(255,255,255,.4)"
+      },
+      onSubmit: () => {
+        const { name, guests } = this.state;
+        const f2 = PKGS.find(p => p.id === this.state.pkg);
+        const tot = (f2.precoBase + Math.max(0, guests - (this.state.pkg === "essencial" ? 80 : this.state.pkg === "completa" ? 100 : 150)) * 35).toLocaleString("pt-BR");
+        alert(`FESTA FECHADA! \uD83C\uDF89\n\n${name} - ${f2.nome}\nR$ ${tot} • ${guests} convidados\n\nEquipe vai te chamar no Whats em até 2h.`);
+        this.setState({ modal: false });
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

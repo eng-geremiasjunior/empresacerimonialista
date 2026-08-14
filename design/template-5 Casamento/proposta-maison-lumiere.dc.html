@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#2B1E16"/><text x="50" y="58" font-family="Georgia,serif" font-size="34" fill="#B8935A" text-anchor="middle">ML</text></svg></template>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Great+Vibes&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;overflow-x:hidden;max-width:100vw;background:#FAF8F5;color:#2B1E16;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+  *{box-sizing:border-box;}
+  ::selection{background:#3C2415;color:#FAF8F5;}
+  a{color:#3C2415;text-decoration:none;}
+  a:hover{color:#8B7355;}
+  @keyframes goldPulse {0%,100%{opacity:.45;transform:scale(1)}50%{opacity:1;transform:scale(1.35)}}
+  @keyframes badgePulse {0%{box-shadow:0 0 0 0 rgba(60,36,21,.18)}70%{box-shadow:0 0 0 12px rgba(60,36,21,0)}100%{box-shadow:0 0 0 0 rgba(60,36,21,0)}}
+  @keyframes shimmer {0%{transform:translateX(-120%)}100%{transform:translateX(220%)}}
+</style>
+</helmet>
+
+<div style="min-height:100vh;width:100%;max-width:100vw;overflow-x:hidden;background:#FAF8F5;color:#2B1E16;">
+
+  <div style="position:fixed;top:0;left:0;right:0;z-index:60;height:44px;background:#3C2415;color:#F5F1EB;display:flex;align-items:center;">
+    <div style="width:100%;max-width:1600px;margin:0 auto;padding:0 32px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
+      <div style="display:flex;align-items:center;gap:12px;font-size:11px;letter-spacing:0.18em;font-weight:600;">
+        <span style="opacity:0.7;">PROPOSTA VÁLIDA POR:</span>
+        <div style="display:flex;gap:6px;">
+          <span style="padding:4px 10px;border-radius:9999px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.1);font-size:12px;font-weight:600;letter-spacing:0.05em;">{{ hh }}H</span>
+          <span style="padding:4px 10px;border-radius:9999px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.1);font-size:12px;font-weight:600;">{{ mm }}M</span>
+          <span style="padding:4px 10px;border-radius:9999px;background:#B8935A;color:#2B1E16;font-size:12px;font-weight:700;">{{ ss }}S</span>
+        </div>
+        <span style="display:inline-flex;align-items:center;gap:6px;margin-left:12px;font-size:10px;letter-spacing:0.15em;opacity:0.8;">
+          <span style="width:6px;height:6px;border-radius:9999px;background:#B8935A;animation:goldPulse 2.5s infinite;"></span> PREÇO TRAVA HOJE
+        </span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;font-size:11px;">
+        <span style="opacity:0.6;letter-spacing:0.02em;">+300 casamentos • 4.9★ 127 avaliações</span>
+        <button onClick="{{ openModal }}" style="display:inline-flex;align-items:center;padding:0 16px;height:28px;border-radius:9999px;background:#FAF8F5;color:#3C2415;font-size:11px;letter-spacing:0.12em;font-weight:600;border:none;cursor:pointer;">GARANTIR DATA</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="position:fixed;top:44px;left:0;right:0;z-index:61;height:2px;background:rgba(232,221,210,0.6);">
+    <div style="{{ progressStyle }}"></div>
+  </div>
+
+  <aside style="{{ asideStyle }}">
+    <div style="padding:40px 28px 32px;">
+      <div style="font-size:10px;letter-spacing:0.32em;color:#8B7355;font-weight:600;">ATELIÊ</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:22px;line-height:0.9;margin-top:4px;font-weight:300;letter-spacing:-0.02em;">MAISON<br>LUMIÈRE</div>
+      <div style="margin-top:12px;height:0.5px;width:48px;background:#B8935A;"></div>
+    </div>
+    <nav style="flex:1;padding:0 12px;display:flex;flex-direction:column;gap:4px;overflow-y:auto;">
+      <sc-for list="{{ navItems }}" as="it" hint-placeholder-count="9">
+        <button onClick="{{ it.onClick }}" style="{{ it.style }}">
+          <span>{{ it.label }}</span>
+          <span style="{{ it.dotStyle }}"></span>
+        </button>
+      </sc-for>
+    </nav>
+    <div style="padding:16px;display:flex;flex-direction:column;gap:12px;">
+      <div style="border-radius:16px;background:#2B1E16;color:#FAF8F5;padding:16px;box-shadow:0 20px 60px -20px rgba(60,36,21,.15),0 1px 0 0 rgba(184,147,90,.15) inset;">
+        <div style="font-size:10px;letter-spacing:0.18em;opacity:0.6;">ESCASSEZ</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:15px;line-height:1.2;margin-top:4px;font-weight:400;">Apenas 2 datas em<br>Maio/26 disponíveis</div>
+        <div style="margin-top:12px;display:flex;align-items:center;gap:8px;font-size:11px;opacity:0.7;">
+          <span style="width:8px;height:8px;border-radius:9999px;background:#B8935A;display:inline-block;animation:goldPulse 2.5s infinite;"></span>Alta procura
+        </div>
+      </div>
+      <div style="padding:12px 16px;border-radius:12px;border:0.5px solid #DDD5C7;background:rgba(255,255,255,0.6);font-size:11px;line-height:1.5;color:#5C4033;">Proposta confidencial • R$ 500k+ padrão<br>Validade limitada</div>
+    </div>
+  </aside>
+
+  <main style="margin-left:240px;padding-top:46px;">
+
+    <section id="apresentacao" style="min-height:92vh;display:flex;align-items:center;background:#FAF8F5;position:relative;overflow:hidden;">
+      <div style="width:100%;max-width:1320px;margin:0 auto;padding:80px 72px;display:grid;grid-template-columns:1.08fr 0.92fr;gap:80px;align-items:center;">
+        <div>
+          <div style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:9999px;background:#3C2415;color:#FAF8F5;font-size:10px;letter-spacing:0.18em;font-weight:600;animation:badgePulse 3s infinite;">
+            <span style="width:6px;height:6px;border-radius:9999px;background:#B8935A;animation:goldPulse 2.5s infinite;"></span>VAGAS LIMITADAS • MAIO 2026
+          </div>
+          <div style="margin-top:32px;">
+            <div style="font-family:'Cormorant Garamond',serif;font-weight:300;font-size:56px;line-height:0.9;letter-spacing:-0.02em;color:#8B7355;">Proposta de</div>
+            <div style="font-family:'Great Vibes',cursive;font-size:72px;line-height:0.95;margin-top:4px;color:#2B1E16;letter-spacing:-0.02em;">Marina &amp; João</div>
+            <div style="margin-top:16px;display:flex;align-items:center;gap:12px;">
+              <div style="height:0.5px;width:40px;background:#B8935A;"></div>
+              <span style="font-size:12px;letter-spacing:0.28em;color:#8B7355;font-weight:500;">22 . 05 . 2026 • VILLA D'ESTE • 180 CONVIDADOS</span>
+            </div>
+          </div>
+          <p style="margin-top:32px;font-size:15px;line-height:1.8;color:#5C4033;max-width:480px;font-weight:400;">Uma celebração pensada como alta-costura: cada detalhe sob medida, equipe exclusiva e curadoria de fornecedores nível Dior. Orçamento único, sem pacotes genéricos — criado para um casamento de <span style="font-weight:600;color:#2B1E16;">padrão R$ 500 mil</span>.</p>
+          <div style="margin-top:32px;display:flex;flex-wrap:wrap;gap:12px;">
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9999px;border:0.5px solid #E8DDD2;background:#fff;font-size:12px;"><span style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:300;">+300</span> casamentos</div>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9999px;border:0.5px solid #E8DDD2;background:#fff;font-size:12px;">4.9★ 127 avaliações</div>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9999px;border:0.5px solid #E8DDD2;background:#fff;font-size:12px;">Equipe exclusiva 12 pessoas</div>
+          </div>
+          <div style="margin-top:40px;">
+            <button onClick="{{ openModal }}" style="position:relative;overflow:hidden;height:52px;padding:0 32px;border-radius:9999px;background:#3C2415;color:#FAF8F5;font-size:12px;letter-spacing:0.18em;font-weight:600;border:none;cursor:pointer;box-shadow:0 20px 60px -20px rgba(60,36,21,.15),0 1px 0 0 rgba(184,147,90,.15) inset;">
+              <span style="position:relative;z-index:10;display:flex;align-items:center;gap:12px;">ACEITAR PROPOSTA • R$ 12.800 <span style="opacity:0.6;">→</span></span>
+              <span style="position:absolute;inset:0;background:linear-gradient(to right,transparent,rgba(255,255,255,0.15),transparent);width:60%;transform:skewX(-12deg);animation:shimmer 2.8s ease-in-out infinite;"></span>
+            </button>
+            <div style="margin-top:12px;font-size:11px;color:#8B7355;letter-spacing:0.02em;">Entrada de 30% • 7x sem juros • Contrato em 2h</div>
+          </div>
+        </div>
+        <div style="position:relative;">
+          <div style="position:absolute;top:8px;left:8px;width:100%;height:100%;border:0.5px solid rgba(184,147,90,0.4);border-radius:4px;pointer-events:none;"></div>
+          <div style="position:relative;border-radius:4px;overflow:hidden;aspect-ratio:4/5.5;background:#E8DDD2;box-shadow:0 20px 60px -20px rgba(60,36,21,.15),0 1px 0 0 rgba(184,147,90,.15) inset;max-width:100%;">
+            <img id="mimg-hero" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='1100' viewBox='0 0 800 1100'%3E%3Crect width='800' height='1100' fill='%23F5F1EB'/%3E%3Crect x='80' y='80' width='640' height='940' fill='none' stroke='%23B8935A' stroke-opacity='0.25'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%238B7355' font-family='serif' font-size='22' letter-spacing='0.2em'%3EVILLA EDITORIAL%3C/text%3E%3C/svg%3E" alt="Editorial wedding" style="width:100%;height:100%;object-fit:cover;display:block;">
+            <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(43,30,22,0.7),rgba(43,30,22,0.1),transparent);"></div>
+            <div style="position:absolute;top:40px;left:40px;width:96px;height:96px;border-radius:9999px;background:rgba(250,248,245,0.15);filter:blur(18px);"></div>
+            <div style="position:absolute;bottom:96px;right:48px;width:64px;height:64px;border-radius:9999px;background:rgba(184,147,90,0.2);filter:blur(12px);"></div>
+            <div style="position:absolute;bottom:0;left:0;right:0;padding:32px;">
+              <div style="font-family:'Great Vibes',cursive;color:#fff;font-size:48px;line-height:0.9;filter:drop-shadow(0 2px 12px rgba(0,0,0,.4));">Marina &amp; João</div>
+              <div style="margin-top:8px;color:rgba(255,255,255,0.8);font-size:11px;letter-spacing:0.32em;">22 • 05 • 2026</div>
+            </div>
+            <span style="position:absolute;bottom:8px;right:8px;padding:4px 8px;border-radius:9999px;background:#fff;color:#3C2415;font-size:10px;font-weight:600;letter-spacing:0.02em;">800×1100 | 4:5.5</span>
+          </div>
+          <div style="position:absolute;bottom:-24px;left:-40px;background:#FDFBF7;border:0.5px solid #E8DDD2;border-radius:16px;padding:16px;box-shadow:0 16px 40px -12px rgba(43,30,22,.18);max-width:220px;">
+            <div style="display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:0.18em;color:#8B7355;">
+              <span style="width:6px;height:6px;border-radius:9999px;background:#B8935A;animation:goldPulse 2.5s infinite;"></span> REFERÊNCIA
+            </div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:16px;line-height:1.2;margin-top:8px;font-weight:500;">Seu casamento<br>nesse padrão</div>
+            <div style="margin-top:8px;font-size:11px;color:#5C4033;line-height:1.5;">Villa, paisagismo suspenso e mesa orgânica curada.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="quem-somos" style="background:#FDFBF7;border-top:0.5px solid #E8DDD2;border-bottom:0.5px solid #E8DDD2;width:100%;max-width:100vw;overflow:hidden;">
+      <div style="width:100%;max-width:1320px;margin:0 auto;padding:112px 72px;display:grid;grid-template-columns:1fr 1fr;gap:96px;align-items:start;">
+        <div>
+          <div style="font-size:11px;letter-spacing:0.28em;color:#B8935A;font-weight:600;">QUEM SOMOS</div>
+          <h2 style="font-family:'Cormorant Garamond',serif;font-size:52px;line-height:0.95;font-weight:300;letter-spacing:-0.02em;margin:16px 0 0;">Ateliê de casamentos<br>nível maison</h2>
+          <p style="margin-top:32px;font-size:15px;line-height:1.8;color:#5C4033;">Não fazemos festas. Desenhamos memórias com obsessão por acabamento. Cada casamento é tratado como desfile: prova, ajuste, luz, tecido e cronometragem cirúrgica.</p>
+          <div style="margin-top:40px;display:grid;grid-template-columns:repeat(3,1fr);gap:24px;border-top:0.5px solid #E8DDD2;padding-top:32px;">
+            <div><div style="font-family:'Cormorant Garamond',serif;font-size:48px;line-height:0.9;font-weight:300;">127</div><div style="margin-top:8px;font-size:11px;line-height:1.4;letter-spacing:0.08em;color:#8B7355;white-space:pre;">avaliações
+5 estrelas</div></div>
+            <div><div style="font-family:'Cormorant Garamond',serif;font-size:48px;line-height:0.9;font-weight:300;">300+</div><div style="margin-top:8px;font-size:11px;line-height:1.4;letter-spacing:0.08em;color:#8B7355;white-space:pre;">casamentos
+entregues</div></div>
+            <div><div style="font-family:'Cormorant Garamond',serif;font-size:48px;line-height:0.9;font-weight:300;">12</div><div style="margin-top:8px;font-size:11px;line-height:1.4;letter-spacing:0.08em;color:#8B7355;white-space:pre;">profissionais
+no dia</div></div>
+          </div>
+        </div>
+        <div style="position:relative;">
+          <div style="border-radius:4px;overflow:hidden;aspect-ratio:3/2;box-shadow:0 20px 60px -20px rgba(60,36,21,.15),0 1px 0 0 rgba(184,147,90,.15) inset;position:relative;">
+            <img id="mimg-venue" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='800' viewBox='0 0 1200 800'%3E%3Crect width='1200' height='800' fill='%23FDFBF7'/%3E%3Crect x='40' y='40' width='1120' height='720' fill='none' stroke='%23DDD5C7'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%238B7355' font-family='serif' font-size='20'%3EVENUE 1200x800%3C/text%3E%3C/svg%3E" alt="venue" style="width:100%;height:100%;object-fit:cover;display:block;">
+            <span style="position:absolute;bottom:8px;right:8px;padding:4px 8px;border-radius:9999px;background:#fff;color:#3C2415;font-size:10px;font-weight:600;">1200×800 | 3:2</span>
+          </div>
+          <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div style="border-radius:4px;overflow:hidden;aspect-ratio:1/1;position:relative;border:0.5px solid #E8DDD2;">
+              <img id="mimg-detail" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600' viewBox='0 0 600 600'%3E%3Crect width='600' height='600' fill='%23F5F1EB'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%238B7355' font-family='serif'%3EDETAIL 600x600%3C/text%3E%3C/svg%3E" alt="detail" style="width:100%;height:100%;object-fit:cover;display:block;">
+              <span style="position:absolute;bottom:8px;right:8px;padding:4px 8px;border-radius:9999px;background:#fff;color:#3C2415;font-size:10px;font-weight:600;">600×600 | 1:1</span>
+            </div>
+            <div style="background:#2B1E16;color:#FAF8F5;border-radius:4px;padding:24px;display:flex;flex-direction:column;justify-content:center;">
+              <div style="font-family:'Cormorant Garamond',serif;font-size:20px;line-height:1.2;font-weight:300;">“Detalhe é<br>não negociável.”</div>
+              <div style="margin-top:16px;height:0.5px;background:rgba(184,147,90,0.4);width:48px;"></div>
+              <div style="margin-top:12px;font-size:11px;letter-spacing:0.14em;opacity:0.6;">DIRETORA CRIATIVA</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="incluso" style="background:#FAF8F5;">
+      <div style="max-width:1320px;margin:0 auto;padding:112px 72px;">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:24px;">
+          <h2 style="font-family:'Cormorant Garamond',serif;font-size:42px;line-height:0.95;font-weight:300;margin:0;">O que está incluso</h2>
+          <div style="font-size:11px;letter-spacing:0.18em;color:#8B7355;">CURADORIA COMPLETA • SEM TERCEIRIZAÇÃO BARATA</div>
+        </div>
+        <div style="margin-top:48px;border-top:0.5px solid #E8DDD2;border-bottom:0.5px solid #E8DDD2;">
+          <div style="display:grid;grid-template-columns:96px 1fr 1.2fr;gap:32px;padding:32px 0;align-items:start;border-bottom:0.5px solid #E8DDD2;">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:48px;line-height:1;font-weight:300;color:rgba(184,147,90,0.7);">01</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:22px;line-height:1.2;font-weight:500;">Direção criativa &amp; projeto</div>
+            <div style="font-size:14px;line-height:1.7;color:#5C4033;">Moodboard, paleta, plantas, luz e curadoria de tecidos. 3 apresentações presenciais.</div>
+          </div>
+          <div style="display:grid;grid-template-columns:96px 1fr 1.2fr;gap:32px;padding:32px 0;align-items:start;border-bottom:0.5px solid #E8DDD2;">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:48px;line-height:1;font-weight:300;color:rgba(184,147,90,0.7);">02</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:22px;line-height:1.2;font-weight:500;">Equipe exclusiva no dia</div>
+            <div style="font-size:14px;line-height:1.7;color:#5C4033;">12 profissionais fixos, rádio, cronograma de 15min, kit emergência Dior nível.</div>
+          </div>
+          <div style="display:grid;grid-template-columns:96px 1fr 1.2fr;gap:32px;padding:32px 0;align-items:start;border-bottom:0.5px solid #E8DDD2;">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:48px;line-height:1;font-weight:300;color:rgba(184,147,90,0.7);">03</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:22px;line-height:1.2;font-weight:500;">Fornecedores curados</div>
+            <div style="font-size:14px;line-height:1.7;color:#5C4033;">Lista fechada de 18 parceiros auditados. Sem comissão oculta. Você aprova cada um.</div>
+          </div>
+          <div style="display:grid;grid-template-columns:96px 1fr 1.2fr;gap:32px;padding:32px 0;align-items:start;border-bottom:0.5px solid #E8DDD2;">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:48px;line-height:1;font-weight:300;color:rgba(184,147,90,0.7);">04</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:22px;line-height:1.2;font-weight:500;">Cerimonial e recepção</div>
+            <div style="font-size:14px;line-height:1.7;color:#5C4033;">2 cerimonialistas + 1 hostess bilíngue, controle de convidados e presentes.</div>
+          </div>
+          <div style="display:grid;grid-template-columns:96px 1fr 1.2fr;gap:32px;padding:32px 0;align-items:start;">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:48px;line-height:1;font-weight:300;color:rgba(184,147,90,0.7);">05</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:22px;line-height:1.2;font-weight:500;">Pós-produção</div>
+            <div style="font-size:14px;line-height:1.7;color:#5C4033;">Edição de fotos em 20 dias, teaser filme 72h, álbum fine art 60 páginas.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="como-funciona" style="background:#FDFBF7;border-top:0.5px solid #E8DDD2;border-bottom:0.5px solid #E8DDD2;">
+      <div style="max-width:1320px;margin:0 auto;padding:112px 72px;">
+        <div style="display:grid;grid-template-columns:0.9fr 1.1fr;gap:80px;">
+          <div>
+            <div style="font-size:11px;letter-spacing:0.28em;color:#B8935A;font-weight:600;">COMO FUNCIONA</div>
+            <h2 style="font-family:'Cormorant Garamond',serif;font-size:42px;line-height:0.95;font-weight:300;margin:16px 0 0;">Leveza para vocês,<br>rigor para nós</h2>
+            <div style="margin-top:40px;border-radius:16px;overflow:hidden;aspect-ratio:4/3;position:relative;border:0.5px solid #E8DDD2;box-shadow:0 20px 60px -20px rgba(60,36,21,.15),0 1px 0 0 rgba(184,147,90,.15) inset;">
+              <img id="mimg-table" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='600' viewBox='0 0 900 600'%3E%3Crect width='900' height='600' fill='%23FAF8F5'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%238B7355' font-family='serif'%3ETABLESCAPE 900x600%3C/text%3E%3C/svg%3E" alt="table" style="width:100%;height:100%;object-fit:cover;display:block;">
+              <span style="position:absolute;bottom:8px;right:8px;padding:4px 8px;border-radius:9999px;background:#fff;color:#3C2415;font-size:10px;font-weight:600;">900×600 | 3:2</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:40px;padding-top:8px;">
+            <div style="display:flex;gap:24px;">
+              <div style="display:flex;flex-direction:column;align-items:center;">
+                <div style="width:32px;height:32px;border-radius:9999px;background:#3C2415;color:#FAF8F5;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:600;">1</div>
+                <div style="width:0.5px;height:64px;background:#E8DDD2;margin-top:12px;"></div>
+              </div>
+              <div>
+                <div style="font-size:11px;letter-spacing:0.18em;color:#8B7355;font-weight:600;">Semana 1</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;margin-top:4px;">Assinatura + imersão</div>
+                <div style="font-size:14px;line-height:1.7;color:#5C4033;margin-top:8px;max-width:420px;">Contrato digital, entrada 30%, visita técnica e briefing de 3h na villa.</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:24px;">
+              <div style="display:flex;flex-direction:column;align-items:center;">
+                <div style="width:32px;height:32px;border-radius:9999px;background:#3C2415;color:#FAF8F5;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:600;">2</div>
+                <div style="width:0.5px;height:64px;background:#E8DDD2;margin-top:12px;"></div>
+              </div>
+              <div>
+                <div style="font-size:11px;letter-spacing:0.18em;color:#8B7355;font-weight:600;">Semana 2-6</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;margin-top:4px;">Projeto &amp; compras</div>
+                <div style="font-size:14px;line-height:1.7;color:#5C4033;margin-top:8px;max-width:420px;">Apresentações semanais, provas de mesa, vestido e luz. Tudo aprovado no Figma privado.</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:24px;">
+              <div style="display:flex;flex-direction:column;align-items:center;">
+                <div style="width:32px;height:32px;border-radius:9999px;background:#3C2415;color:#FAF8F5;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:600;">3</div>
+              </div>
+              <div>
+                <div style="font-size:11px;letter-spacing:0.18em;color:#8B7355;font-weight:600;">Semana 8</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;margin-top:4px;">Ensaio &amp; checklist</div>
+                <div style="font-size:14px;line-height:1.7;color:#5C4033;margin-top:8px;max-width:420px;">Ensaio de luz e som, cronograma final 15/15min, confirmação de 180 convidados.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="no-dia" style="background:#FAF8F5;">
+      <div style="max-width:1320px;margin:0 auto;padding:112px 72px;">
+        <h2 style="font-family:'Cormorant Garamond',serif;font-size:42px;line-height:0.95;font-weight:300;margin:0;">No dia do casamento</h2>
+        <div style="margin-top:48px;display:grid;grid-template-columns:repeat(3,1fr);gap:0.5px;background:#E8DDD2;border:0.5px solid #E8DDD2;border-radius:4px;overflow:hidden;">
+          <div style="background:#FDFBF7;padding:32px;"><div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;">07:00</div><div style="margin-top:8px;font-size:13px;letter-spacing:0.18em;font-weight:600;">Montagem cega</div><div style="margin-top:12px;font-size:13px;line-height:1.6;color:#5C4033;">Equipe entra sem contato com noivos. Checagem de luz, som, climatização e flores.</div></div>
+          <div style="background:#FDFBF7;padding:32px;"><div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;">12:00</div><div style="margin-top:8px;font-size:13px;letter-spacing:0.18em;font-weight:600;">Prévia fotográfica</div><div style="margin-top:12px;font-size:13px;line-height:1.6;color:#5C4033;">Making of com luz natural, vestido suspenso, buquê na água e flatlay joias.</div></div>
+          <div style="background:#FDFBF7;padding:32px;"><div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;">16:30</div><div style="margin-top:8px;font-size:13px;letter-spacing:0.18em;font-weight:600;">Cerimônia</div><div style="margin-top:12px;font-size:13px;line-height:1.6;color:#5C4033;">Entrada cronometrada, áudio lapela, controle de tempo e emoção com 2 cerimonialistas.</div></div>
+          <div style="background:#FDFBF7;padding:32px;"><div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;">18:00</div><div style="margin-top:8px;font-size:13px;letter-spacing:0.18em;font-weight:600;">Recepção</div><div style="margin-top:12px;font-size:13px;line-height:1.6;color:#5C4033;">Mesa posta impecável, serviço 1 garçom/12 convidados, troca de luz para jantar.</div></div>
+          <div style="background:#FDFBF7;padding:32px;"><div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;">22:00</div><div style="margin-top:8px;font-size:13px;letter-spacing:0.18em;font-weight:600;">Festa</div><div style="margin-top:12px;font-size:13px;line-height:1.6;color:#5C4033;">Pista com luz cênica, 2 DJs, coordenação de atrações e surpresas.</div></div>
+          <div style="background:#FDFBF7;padding:32px;"><div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;">02:00</div><div style="margin-top:8px;font-size:13px;letter-spacing:0.18em;font-weight:600;">Encerramento</div><div style="margin-top:12px;font-size:13px;line-height:1.6;color:#5C4033;">Desmontagem silenciosa, guarda de presentes e entrega de kit no hotel.</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="investimento" style="background:#F5F1EB;border-top:0.5px solid #DDD5C7;border-bottom:0.5px solid #DDD5C7;">
+      <div style="max-width:1320px;margin:0 auto;padding:112px 72px;">
+        <div style="max-width:720px;margin:0 auto;">
+          <div style="text-align:center;">
+            <div style="display:inline-flex;padding:4px 12px;border-radius:9999px;border:0.5px solid rgba(184,147,90,0.4);background:#fff;font-size:10px;letter-spacing:0.2em;">INVESTIMENTO ÚNICO • PADRÃO MAISON</div>
+            <h2 style="font-family:'Cormorant Garamond',serif;font-size:44px;line-height:0.95;font-weight:300;margin:24px 0 0;">Um orçamento.<br>Sem surpresas.</h2>
+            <p style="margin-top:16px;font-size:14px;line-height:1.7;color:#5C4033;">Valor fechado para 180 convidados, villa inclusa. Sem taxas de fornecedor. Sem upsell no dia.</p>
+          </div>
+          <div style="margin-top:40px;border-radius:20px;background:#FDFBF7;border:0.5px solid rgba(184,147,90,0.5);box-shadow:0 20px 60px -20px rgba(60,36,21,.15),0 1px 0 0 rgba(184,147,90,.15) inset;padding:40px;position:relative;overflow:hidden;">
+            <div style="position:absolute;top:0;left:0;right:0;height:0.5px;background:#B8935A;"></div>
+            <div style="display:flex;justify-content:space-between;align-items:start;gap:24px;">
+              <div>
+                <div style="font-size:11px;letter-spacing:0.24em;color:#8B7355;font-weight:600;">MAISON COMPLETA</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:16px;margin-top:4px;">Para casamentos R$ 400k-600k</div>
+              </div>
+              <div style="padding:4px 12px;border-radius:9999px;background:#2B1E16;color:#FAF8F5;font-size:10px;letter-spacing:0.18em;">MAIS ESCOLHIDO</div>
+            </div>
+            <div style="margin-top:32px;display:flex;align-items:baseline;gap:12px;">
+              <span style="font-family:'Cormorant Garamond',serif;font-size:48px;line-height:1;font-weight:300;">R$ 12.800</span>
+              <span style="font-size:13px;color:#8B7355;">entrada 30% para travar</span>
+            </div>
+            <div style="margin-top:8px;font-size:13px;color:#5C4033;">ou 7x de R$ 1.828 sem juros • contrato em 2h • equipe exclusiva</div>
+            <div style="margin-top:32px;display:grid;grid-template-columns:1fr;gap:12px;font-size:13px;">
+              <div style="display:flex;align-items:center;gap:12px;"><span style="width:16px;height:16px;border-radius:9999px;background:#F5F1EB;border:0.5px solid #DDD5C7;display:flex;align-items:center;justify-content:center;font-size:10px;">✓</span>Direção criativa completa</div>
+              <div style="display:flex;align-items:center;gap:12px;"><span style="width:16px;height:16px;border-radius:9999px;background:#F5F1EB;border:0.5px solid #DDD5C7;display:flex;align-items:center;justify-content:center;font-size:10px;">✓</span>Equipe 12 pessoas no dia</div>
+              <div style="display:flex;align-items:center;gap:12px;"><span style="width:16px;height:16px;border-radius:9999px;background:#F5F1EB;border:0.5px solid #DDD5C7;display:flex;align-items:center;justify-content:center;font-size:10px;">✓</span>Lista curada 18 fornecedores premium</div>
+              <div style="display:flex;align-items:center;gap:12px;"><span style="width:16px;height:16px;border-radius:9999px;background:#F5F1EB;border:0.5px solid #DDD5C7;display:flex;align-items:center;justify-content:center;font-size:10px;">✓</span>Cerimonial bilíngue + hostess</div>
+              <div style="display:flex;align-items:center;gap:12px;"><span style="width:16px;height:16px;border-radius:9999px;background:#F5F1EB;border:0.5px solid #DDD5C7;display:flex;align-items:center;justify-content:center;font-size:10px;">✓</span>Fotos + filme teaser + álbum fine art</div>
+            </div>
+            <button onClick="{{ openModal }}" style="margin-top:32px;width:100%;position:relative;overflow:hidden;height:52px;border-radius:9999px;background:#3C2415;color:#FAF8F5;font-size:12px;letter-spacing:0.18em;font-weight:600;border:none;cursor:pointer;">
+              <span style="position:relative;z-index:10;">ACEITAR PROPOSTA E TRAVAR DATA →</span>
+              <span style="position:absolute;inset:0;background:linear-gradient(to right,transparent,rgba(255,255,255,0.15),transparent);width:60%;transform:skewX(-12deg);animation:shimmer 2.8s ease-in-out infinite;"></span>
+            </button>
+            <div style="margin-top:16px;text-align:center;font-size:11px;color:#8B7355;">Entrada de 30% garante equipe exclusiva • Restante 7x sem juros</div>
+          </div>
+          <div style="margin-top:24px;display:flex;justify-content:center;gap:24px;font-size:11px;color:#8B7355;">
+            <span>✓ Contrato digital</span>
+            <span>✓ Cronograma em 2h</span>
+            <span>✓ Lista curada</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="eventos" style="background:#FAF8F5;">
+      <div style="max-width:1320px;margin:0 auto;padding:112px 72px;">
+        <div style="display:flex;align-items:end;justify-content:space-between;">
+          <h2 style="font-family:'Cormorant Garamond',serif;font-size:42px;line-height:0.95;font-weight:300;margin:0;">Eventos realizados</h2>
+          <div style="font-size:11px;letter-spacing:0.18em;color:#8B7355;">VILLA • FAZENDA • COBERTURA • PRAIA</div>
+        </div>
+        <div style="margin-top:40px;display:grid;grid-template-columns:repeat(4,1fr);gap:0.5px;background:#E8DDD2;border:0.5px solid #E8DDD2;">
+          <div style="position:relative;background:#FDFBF7;aspect-ratio:4/3;overflow:hidden;"><img id="mimg-gal1" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23FDFBF7'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23A68A64' font-family='serif' font-size='14'%3E400x300%3C/text%3E%3C/svg%3E" alt="evento" style="width:100%;height:100%;object-fit:cover;display:block;transition:transform .7s;" style-hover="transform:scale(1.03);"><span style="position:absolute;bottom:8px;right:8px;padding:4px 8px;border-radius:9999px;background:#fff;color:#3C2415;font-size:10px;font-weight:600;">400×300 | 4:3</span></div>
+          <div style="position:relative;background:#FDFBF7;aspect-ratio:4/3;overflow:hidden;"><img id="mimg-gal2" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23FDFBF7'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23A68A64' font-family='serif' font-size='14'%3E400x300%3C/text%3E%3C/svg%3E" alt="evento" style="width:100%;height:100%;object-fit:cover;display:block;transition:transform .7s;" style-hover="transform:scale(1.03);"><span style="position:absolute;bottom:8px;right:8px;padding:4px 8px;border-radius:9999px;background:#fff;color:#3C2415;font-size:10px;font-weight:600;">400×300 | 4:3</span></div>
+          <div style="position:relative;background:#FDFBF7;aspect-ratio:4/3;overflow:hidden;"><img id="mimg-gal3" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23FDFBF7'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23A68A64' font-family='serif' font-size='14'%3E400x300%3C/text%3E%3C/svg%3E" alt="evento" style="width:100%;height:100%;object-fit:cover;display:block;transition:transform .7s;" style-hover="transform:scale(1.03);"><span style="position:absolute;bottom:8px;right:8px;padding:4px 8px;border-radius:9999px;background:#fff;color:#3C2415;font-size:10px;font-weight:600;">400×300 | 4:3</span></div>
+          <div style="position:relative;background:#FDFBF7;aspect-ratio:4/3;overflow:hidden;"><img id="mimg-gal4" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23FDFBF7'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23A68A64' font-family='serif' font-size='14'%3E400x300%3C/text%3E%3C/svg%3E" alt="evento" style="width:100%;height:100%;object-fit:cover;display:block;transition:transform .7s;" style-hover="transform:scale(1.03);"><span style="position:absolute;bottom:8px;right:8px;padding:4px 8px;border-radius:9999px;background:#fff;color:#3C2415;font-size:10px;font-weight:600;">400×300 | 4:3</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="depoimentos" style="background:#FDFBF7;border-top:0.5px solid #E8DDD2;border-bottom:0.5px solid #E8DDD2;">
+      <div style="max-width:1320px;margin:0 auto;padding:112px 72px;">
+        <h2 style="font-family:'Cormorant Garamond',serif;font-size:42px;line-height:0.95;font-weight:300;margin:0;">O que falam</h2>
+        <div style="margin-top:40px;display:grid;grid-template-columns:repeat(3,1fr);gap:0.5px;background:#E8DDD2;border:0.5px solid #E8DDD2;">
+          <div style="background:#fff;padding:32px;"><div style="color:#B8935A;font-size:13px;">★★★★★</div><div style="font-family:'Cormorant Garamond',serif;font-size:18px;line-height:1.4;margin-top:16px;font-weight:400;">“Parecia desfile da Dior. Cada minuto cronometrado, zero estresse. Nunca vimos tanto cuidado.”</div><div style="margin-top:24px;font-size:11px;letter-spacing:0.18em;color:#8B7355;">Ana &amp; Rafael</div></div>
+          <div style="background:#fff;padding:32px;"><div style="color:#B8935A;font-size:13px;">★★★★★</div><div style="font-family:'Cormorant Garamond',serif;font-size:18px;line-height:1.4;margin-top:16px;font-weight:400;">“Lista curada salvou nosso casamento. Fornecedores impecáveis, sem pegadinhas. Equipe invisível.”</div><div style="margin-top:24px;font-size:11px;letter-spacing:0.18em;color:#8B7355;">Juliana &amp; Marcos</div></div>
+          <div style="background:#fff;padding:32px;"><div style="color:#B8935A;font-size:13px;">★★★★★</div><div style="font-family:'Cormorant Garamond',serif;font-size:18px;line-height:1.4;margin-top:16px;font-weight:400;">“R$ 500k bem investidos. Voltaria a pagar. Fotos entregues em 18 dias, álbum de museu.”</div><div style="margin-top:24px;font-size:11px;letter-spacing:0.18em;color:#8B7355;">Camila &amp; Eduardo</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="proximos" style="background:#FAF8F5;padding-bottom:96px;">
+      <div style="max-width:1320px;margin:0 auto;padding:112px 72px 0;">
+        <div style="border-radius:24px;background:#2B1E16;color:#F5F1EB;overflow:hidden;box-shadow:0 20px 60px -20px rgba(60,36,21,.15),0 1px 0 0 rgba(184,147,90,.15) inset;position:relative;">
+          <div style="position:absolute;top:0;left:0;right:0;height:0.5px;background:rgba(184,147,90,0.5);"></div>
+          <div style="display:grid;grid-template-columns:1.1fr 0.9fr;">
+            <div style="padding:56px;">
+              <div style="font-size:11px;letter-spacing:0.28em;color:#B8935A;font-weight:600;">PRÓXIMOS PASSOS</div>
+              <h2 style="font-family:'Cormorant Garamond',serif;font-size:48px;line-height:0.9;font-weight:300;margin:24px 0 0;">Vamos travar<br>sua data?</h2>
+              <p style="font-family:'Cormorant Garamond',serif;font-size:20px;line-height:1.4;font-weight:300;margin-top:16px;opacity:0.85;">Assine digitalmente e receba em 2h o contrato + cronograma + lista curada de fornecedores. Entrada de 30% para garantir equipe exclusiva.</p>
+              <div style="margin-top:40px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                <button onClick="{{ openModal }}" style="height:52px;padding:0 32px;border-radius:9999px;background:#FAF8F5;color:#2B1E16;font-size:12px;letter-spacing:0.18em;font-weight:700;border:none;cursor:pointer;">ACEITAR PROPOSTA AGORA</button>
+                <div style="display:flex;align-items:center;gap:8px;font-size:11px;opacity:0.7;"><span style="width:6px;height:6px;border-radius:9999px;background:#B8935A;display:inline-block;animation:goldPulse 2.5s infinite;"></span> Apenas 2 datas em Maio/26</div>
+              </div>
+              <div style="margin-top:40px;display:grid;grid-template-columns:repeat(3,1fr);gap:24px;border-top:0.5px solid rgba(255,255,255,0.1);padding-top:32px;font-size:11px;line-height:1.5;opacity:0.7;">
+                <div><span style="display:block;font-size:22px;font-family:'Cormorant Garamond',serif;color:#FAF8F5;">2h</span>contrato +<br>cronograma</div>
+                <div><span style="display:block;font-size:22px;font-family:'Cormorant Garamond',serif;color:#FAF8F5;">18</span>fornecedores<br>curados</div>
+                <div><span style="display:block;font-size:22px;font-family:'Cormorant Garamond',serif;color:#FAF8F5;">30%</span>entrada<br>trava equipe</div>
+              </div>
+            </div>
+            <div style="background:rgba(60,36,21,0.6);padding:56px;border-left:0.5px solid rgba(255,255,255,0.1);display:flex;flex-direction:column;justify-content:center;">
+              <div style="font-size:11px;letter-spacing:0.22em;opacity:0.6;">O QUE ACONTECE DEPOIS</div>
+              <div style="margin-top:32px;display:flex;flex-direction:column;gap:24px;">
+                <div style="display:flex;gap:16px;"><div style="width:24px;height:24px;border-radius:9999px;border:0.5px solid rgba(184,147,90,0.5);display:flex;align-items:center;justify-content:center;font-size:10px;color:#B8935A;flex:none;">1</div><div><div style="font-size:13px;font-weight:600;letter-spacing:0.02em;">Assinatura digital</div><div style="font-size:12px;opacity:0.6;margin-top:4px;line-height:1.5;">Nome, CPF, e-mail + assinatura na tela. 2 minutos.</div></div></div>
+                <div style="display:flex;gap:16px;"><div style="width:24px;height:24px;border-radius:9999px;border:0.5px solid rgba(184,147,90,0.5);display:flex;align-items:center;justify-content:center;font-size:10px;color:#B8935A;flex:none;">2</div><div><div style="font-size:13px;font-weight:600;letter-spacing:0.02em;">Recebimento em 2h</div><div style="font-size:12px;opacity:0.6;margin-top:4px;line-height:1.5;">Contrato, cronograma detalhado e lista curada de fornecedores.</div></div></div>
+                <div style="display:flex;gap:16px;"><div style="width:24px;height:24px;border-radius:9999px;border:0.5px solid rgba(184,147,90,0.5);display:flex;align-items:center;justify-content:center;font-size:10px;color:#B8935A;flex:none;">3</div><div><div style="font-size:13px;font-weight:600;letter-spacing:0.02em;">Entrada 30%</div><div style="font-size:12px;opacity:0.6;margin-top:4px;line-height:1.5;">PIX ou 7x sem juros. Trava equipe exclusiva e data.</div></div></div>
+                <div style="display:flex;gap:16px;"><div style="width:24px;height:24px;border-radius:9999px;border:0.5px solid rgba(184,147,90,0.5);display:flex;align-items:center;justify-content:center;font-size:10px;color:#B8935A;flex:none;">4</div><div><div style="font-size:13px;font-weight:600;letter-spacing:0.02em;">Grupo VIP</div><div style="font-size:12px;opacity:0.6;margin-top:4px;line-height:1.5;">WhatsApp direto com diretora criativa + cronograma ao vivo.</div></div></div>
+              </div>
+              <div style="margin-top:40px;padding:16px;border-radius:12px;background:#FAF8F5;color:#2B1E16;">
+                <div style="font-size:11px;letter-spacing:0.18em;font-weight:600;">GARANTIA MAISON</div>
+                <div style="font-size:12px;line-height:1.5;margin-top:4px;color:#5C4033;">Se não receber em 2h, devolvemos 100% da entrada. Sem perguntas.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer style="border-top:0.5px solid #E8DDD2;padding:40px 72px;display:flex;justify-content:space-between;font-size:11px;letter-spacing:0.14em;color:#8B7355;">
+      <span>© MAISON LUMIÈRE • ATELIÊ DE CASAMENTOS</span>
+      <span>CONFIDENCIAL • R$ 500K+ PADRÃO • 4.9★</span>
+    </footer>
+  </main>
+
+  <sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:16px;">
+      <div onClick="{{ closeModal }}" style="position:absolute;inset:0;background:rgba(43,30,22,0.7);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);"></div>
+      <div style="position:relative;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;border-radius:20px;background:#FDFBF7;border:0.5px solid rgba(184,147,90,0.3);box-shadow:0 24px 80px -16px rgba(0,0,0,.4);">
+        <sc-if value="{{ notDone }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:32px;">
+            <div style="display:flex;justify-content:space-between;align-items:start;">
+              <div>
+                <div style="font-size:11px;letter-spacing:0.28em;color:#B8935A;font-weight:600;">ASSINATURA DIGITAL</div>
+                <h3 style="font-family:'Cormorant Garamond',serif;font-size:28px;line-height:0.95;font-weight:300;margin:8px 0 0;">Confirme seus dados para travar a data</h3>
+                <div style="margin-top:8px;font-size:12px;color:#8B7355;">Seu casamento nesse padrão • R$ 12.800 • Entrada 30%</div>
+              </div>
+              <button onClick="{{ closeModal }}" style="width:32px;height:32px;border-radius:9999px;border:0.5px solid #E8DDD2;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;">✕</button>
+            </div>
+            <div style="margin-top:32px;display:grid;gap:16px;">
+              <label style="display:block;"><span style="font-size:11px;letter-spacing:0.14em;font-weight:600;color:#5C4033;">Nome completo</span><input value="{{ form.nome }}" onChange="{{ setNome }}" placeholder="Marina Silva Costa" style="margin-top:6px;width:100%;height:44px;padding:0 16px;border-radius:9999px;border:0.5px solid #DDD5C7;background:#fff;font-size:14px;font-weight:500;outline:none;" style-focus="border-color:#B8935A;"></label>
+              <label style="display:block;"><span style="font-size:11px;letter-spacing:0.14em;font-weight:600;color:#5C4033;">CPF</span><input value="{{ form.cpf }}" onChange="{{ setCpf }}" placeholder="000.000.000-00" style="margin-top:6px;width:100%;height:44px;padding:0 16px;border-radius:9999px;border:0.5px solid #DDD5C7;background:#fff;font-size:14px;font-weight:500;outline:none;" style-focus="border-color:#B8935A;"></label>
+              <label style="display:block;"><span style="font-size:11px;letter-spacing:0.14em;font-weight:600;color:#5C4033;">E-mail</span><input value="{{ form.email }}" onChange="{{ setEmail }}" placeholder="marina@email.com" style="margin-top:6px;width:100%;height:44px;padding:0 16px;border-radius:9999px;border:0.5px solid #DDD5C7;background:#fff;font-size:14px;font-weight:500;outline:none;" style-focus="border-color:#B8935A;"></label>
+              <label style="display:block;"><span style="font-size:11px;letter-spacing:0.14em;font-weight:600;color:#5C4033;">Telefone / WhatsApp</span><input value="{{ form.tel }}" onChange="{{ setTel }}" placeholder="(11) 99999-9999" style="margin-top:6px;width:100%;height:44px;padding:0 16px;border-radius:9999px;border:0.5px solid #DDD5C7;background:#fff;font-size:14px;font-weight:500;outline:none;" style-focus="border-color:#B8935A;"></label>
+              <label style="display:block;"><span style="font-size:11px;letter-spacing:0.14em;font-weight:600;color:#5C4033;">Data do casamento</span><input value="{{ form.data }}" onChange="{{ setData }}" placeholder="22/05/2026" style="margin-top:6px;width:100%;height:44px;padding:0 16px;border-radius:9999px;border:0.5px solid #DDD5C7;background:#fff;font-size:14px;font-weight:500;outline:none;" style-focus="border-color:#B8935A;"></label>
+            </div>
+            <div style="margin-top:24px;">
+              <span style="font-size:11px;letter-spacing:0.14em;font-weight:600;color:#5C4033;">Assinatura digital</span>
+              <div style="margin-top:8px;border-radius:12px;border:0.5px solid #DDD5C7;background:#fff;overflow:hidden;">
+                <canvas ref="{{ canvasRef }}" width="440" height="120" onPointerDown="{{ onDown }}" onPointerMove="{{ onMove }}" onPointerUp="{{ onUp }}" onPointerLeave="{{ onUp }}" style="width:100%;height:120px;touch-action:none;cursor:crosshair;display:block;"></canvas>
+              </div>
+              <div style="margin-top:8px;display:flex;justify-content:space-between;font-size:11px;color:#8B7355;">
+                <span>{{ sigText }}</span>
+                <button onClick="{{ clearSig }}" style="text-decoration:underline;background:none;border:none;color:#8B7355;cursor:pointer;font-size:11px;">Limpar</button>
+              </div>
+            </div>
+            <button disabled="{{ submitDisabled }}" onClick="{{ submit }}" style="{{ submitStyle }}">ASSINAR E TRAVAR DATA →</button>
+            <div style="margin-top:12px;text-align:center;font-size:11px;color:#8B7355;">Contrato em 2h • Entrada 30% • 7x sem juros</div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ done }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:32px;text-align:center;">
+            <div style="width:48px;height:48px;border-radius:9999px;background:#3C2415;color:#fff;margin:0 auto;display:flex;align-items:center;justify-content:center;">✓</div>
+            <h3 style="font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:300;margin:20px 0 0;line-height:0.95;">Data travada com sucesso</h3>
+            <p style="margin-top:12px;font-size:14px;line-height:1.6;color:#5C4033;">Marina, seu contrato, cronograma e lista curada chegam em até 2h no e-mail {{ email }}.</p>
+            <div style="margin-top:24px;padding:16px;border-radius:12px;background:#F5F1EB;border:0.5px solid #E8DDD2;text-align:left;">
+              <div style="font-size:11px;letter-spacing:0.18em;font-weight:600;">RECIBO • {{ receipt }}</div>
+              <div style="margin-top:8px;font-size:13px;line-height:1.6;">Proposta Maison Completa • R$ 12.800<br>Entrada 30% = R$ 3.840<br>Status: Aguardando pagamento</div>
+            </div>
+            <a href="https://wa.me/5511999999999" target="_blank" style="margin-top:24px;display:inline-flex;width:100%;height:48px;align-items:center;justify-content:center;border-radius:9999px;background:#25D366;color:#fff;font-size:12px;letter-spacing:0.14em;font-weight:600;">ABRIR WHATSAPP VIP →</a>
+            <button onClick="{{ forceClose }}" style="margin-top:12px;width:100%;height:44px;border-radius:9999px;border:0.5px solid #DDD5C7;background:transparent;font-size:11px;letter-spacing:0.18em;cursor:pointer;">FECHAR</button>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;revealPhotos&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Comportamento&quot;},&quot;revealDelaySec&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:15,&quot;min&quot;:0,&quot;max&quot;:60,&quot;unit&quot;:&quot;s&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Comportamento&quot;},&quot;countdownStartH&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:23,&quot;min&quot;:0,&quot;max&quot;:72,&quot;unit&quot;:&quot;h&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Comportamento&quot;}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.canvasRef = React.createRef();
+    this.drawing = false;
+    this.ph = {
+      hero: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='1100' viewBox='0 0 800 1100'%3E%3Crect width='800' height='1100' fill='%23F5F1EB'/%3E%3Crect x='80' y='80' width='640' height='940' fill='none' stroke='%23B8935A' stroke-opacity='0.25'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%238B7355' font-family='serif' font-size='22' letter-spacing='0.2em'%3EVILLA EDITORIAL%3C/text%3E%3C/svg%3E",
+      venue: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='800' viewBox='0 0 1200 800'%3E%3Crect width='1200' height='800' fill='%23FDFBF7'/%3E%3Crect x='40' y='40' width='1120' height='720' fill='none' stroke='%23DDD5C7'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%238B7355' font-family='serif' font-size='20'%3EVENUE 1200x800%3C/text%3E%3C/svg%3E",
+      detail: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600' viewBox='0 0 600 600'%3E%3Crect width='600' height='600' fill='%23F5F1EB'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%238B7355' font-family='serif'%3EDETAIL 600x600%3C/text%3E%3C/svg%3E",
+      table: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='600' viewBox='0 0 900 600'%3E%3Crect width='900' height='600' fill='%23FAF8F5'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%238B7355' font-family='serif'%3ETABLESCAPE 900x600%3C/text%3E%3C/svg%3E",
+      gal: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23FDFBF7'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23A68A64' font-family='serif' font-size='14'%3E400x300%3C/text%3E%3C/svg%3E"
+    };
+    this.real = {
+      hero: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=800&auto=format&fit=crop",
+      venue: "https://images.unsplash.com/photo-1469371670807-013ccf25f16a?q=80&w=1200&auto=format&fit=crop",
+      detail: "https://images.unsplash.com/photo-1520854221256-17451cc331bf?q=80&w=600&auto=format&fit=crop",
+      table: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=900&auto=format&fit=crop",
+      gal1: "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=400&auto=format&fit=crop",
+      gal2: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=400&auto=format&fit=crop",
+      gal3: "https://images.unsplash.com/photo-1520854221256-17451cc331bf?q=80&w=400&auto=format&fit=crop",
+      gal4: "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?q=80&w=400&auto=format&fit=crop"
+    };
+    this.nav = [
+      { id: "apresentacao", label: "APRESENTAÇÃO" },
+      { id: "quem-somos", label: "QUEM SOMOS" },
+      { id: "incluso", label: "O QUE ESTÁ INCLUSO" },
+      { id: "como-funciona", label: "COMO FUNCIONA" },
+      { id: "no-dia", label: "NO DIA DO CASAMENTO" },
+      { id: "investimento", label: "INVESTIMENTO" },
+      { id: "eventos", label: "EVENTOS REALIZADOS" },
+      { id: "depoimentos", label: "DEPOIMENTOS" },
+      { id: "proximos", label: "PRÓXIMOS PASSOS" }
+    ];
+    const startH = this.props.countdownStartH ?? 23;
+    this.state = {
+      active: "apresentacao",
+      scrolled: false,
+      progress: 0,
+      time: { h: startH, m: 41, s: 58 },
+      modalOpen: false,
+      done: false,
+      sigCaptured: false,
+      form: { nome: "", cpf: "", email: "", tel: "", data: "" },
+      images: { hero: this.ph.hero, venue: this.ph.venue, detail: this.ph.detail, table: this.ph.table, gal1: this.ph.gal, gal2: this.ph.gal, gal3: this.ph.gal, gal4: this.ph.gal },
+      receipt: "KD-" + Math.floor(1000 + Math.random() * 9000)
+    };
+  }
+
+  componentDidMount() {
+    const reveal = this.props.revealPhotos ?? true;
+    const delay = (this.props.revealDelaySec ?? 15) * 1000;
+    if (reveal) {
+      const pairs = [["mimg-hero", this.real.hero, this.ph.hero], ["mimg-venue", this.real.venue, this.ph.venue], ["mimg-detail", this.real.detail, this.ph.detail], ["mimg-table", this.real.table, this.ph.table], ["mimg-gal1", this.real.gal1, this.ph.gal], ["mimg-gal2", this.real.gal2, this.ph.gal], ["mimg-gal3", this.real.gal3, this.ph.gal], ["mimg-gal4", this.real.gal4, this.ph.gal]];
+      this._imgT = setTimeout(() => {
+        pairs.forEach(([id, url, fb]) => {
+          const el = document.getElementById(id);
+          if (el) { el.onerror = () => { el.onerror = null; el.src = fb; }; el.src = url; }
+        });
+      }, delay);
+    }
+    this._onScroll = () => {
+      const R = document.documentElement.scrollHeight - window.innerHeight;
+      this.setState({ scrolled: window.scrollY > 10, progress: R > 0 ? (window.scrollY / R) * 100 : 0 });
+    };
+    window.addEventListener("scroll", this._onScroll, { passive: true });
+    this._onScroll();
+    this._io = new IntersectionObserver((entries) => {
+      entries.forEach((x) => { if (x.isIntersecting) this.setState({ active: x.target.id }); });
+    }, { rootMargin: "-40% 0px -50% 0px" });
+    this.nav.forEach((n) => { const el = document.getElementById(n.id); if (el) this._io.observe(el); });
+    this._tick = setInterval(() => {
+      this.setState((s) => {
+        let { h, m, s: sec } = s.time;
+        if (sec > 0) sec--;
+        else if (m > 0) { sec = 59; m--; }
+        else if (h > 0) { sec = 59; m = 59; h--; }
+        else { h = 23; m = 59; sec = 59; }
+        return { time: { h, m, s: sec } };
+      });
+    }, 1000);
+  }
+
+  componentWillUnmount() {
+    clearTimeout(this._imgT);
+    clearInterval(this._tick);
+    window.removeEventListener("scroll", this._onScroll);
+    if (this._io) this._io.disconnect();
+  }
+
+  goTo(id) {
+    const el = document.getElementById(id);
+    if (el) {
+      const top = el.getBoundingClientRect().top + window.scrollY - 46;
+      window.scrollTo({ top, behavior: "smooth" });
+    }
+    this.setState({ active: id });
+  }
+
+  pDown(e) {
+    const c = this.canvasRef.current; if (!c) return;
+    this.drawing = true;
+    const ctx = c.getContext("2d"), r = c.getBoundingClientRect();
+    ctx.beginPath();
+    ctx.moveTo(e.clientX - r.left, e.clientY - r.top);
+  }
+  pMove(e) {
+    if (!this.drawing) return;
+    const c = this.canvasRef.current; if (!c) return;
+    const ctx = c.getContext("2d"), r = c.getBoundingClientRect();
+    ctx.lineTo(e.clientX - r.left, e.clientY - r.top);
+    ctx.strokeStyle = "#2B1E16"; ctx.lineWidth = 1.6; ctx.lineCap = "round"; ctx.stroke();
+    if (!this.state.sigCaptured) this.setState({ sigCaptured: true });
+  }
+  pUp() { this.drawing = false; }
+  clearSig() {
+    const c = this.canvasRef.current;
+    if (c) { c.getContext("2d").clearRect(0, 0, c.width, c.height); this.setState({ sigCaptured: false }); }
+  }
+  setField(k, val) { this.setState((s) => ({ form: { ...s.form, [k]: val } })); }
+
+  renderVals() {
+    const s = this.state;
+    const pad = (n) => String(n).padStart(2, "0");
+    const luxury = "box-shadow:0 20px 60px -20px rgba(60,36,21,.15),0 1px 0 0 rgba(184,147,90,.15) inset;";
+    const navItems = this.nav.map((n) => {
+      const on = s.active === n.id;
+      return {
+        id: n.id,
+        label: n.label,
+        onClick: () => this.goTo(n.id),
+        style: "width:100%;text-align:left;padding:11px 16px;border-radius:9999px;font-size:11px;letter-spacing:0.16em;font-weight:500;display:flex;align-items:center;justify-content:space-between;transition:all .3s;cursor:pointer;border:none;" + (on ? "background:#3C2415;color:#FAF8F5;" + luxury : "background:transparent;color:#8B7355;"),
+        dotStyle: on ? "width:6px;height:6px;border-radius:9999px;background:#B8935A;animation:goldPulse 2.5s ease-in-out infinite;" : "display:none;"
+      };
+    });
+    const canSubmit = !!(s.form.nome && s.form.cpf && s.sigCaptured);
+    return {
+      hh: pad(s.time.h), mm: pad(s.time.m), ss: pad(s.time.s),
+      progressStyle: "height:100%;background:#3C2415;transition:width .15s;width:" + s.progress + "%;",
+      asideStyle: "position:fixed;left:0;top:46px;bottom:0;width:240px;z-index:40;display:flex;flex-direction:column;border-right:0.5px solid #E8DDD2;background:rgba(253,251,247,0.95);transition:all .5s;" + (s.scrolled ? "backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:4px 0 24px -12px rgba(43,30,22,.12);" : ""),
+      navItems,
+      openModal: () => this.setState({ modalOpen: true }),
+      closeModal: () => { if (!this.state.done) this.setState({ modalOpen: false }); },
+      forceClose: () => this.setState({ modalOpen: false, done: false }),
+      submit: () => { if (canSubmit) this.setState({ done: true }); },
+      modalOpen: s.modalOpen,
+      done: s.done,
+      notDone: !s.done,
+      submitDisabled: !canSubmit,
+      submitStyle: "margin-top:32px;width:100%;height:52px;border-radius:9999px;background:#3C2415;color:#fff;font-size:12px;letter-spacing:0.18em;font-weight:600;border:none;" + (canSubmit ? "cursor:pointer;" : "opacity:0.4;cursor:not-allowed;"),
+      form: s.form,
+      setNome: (e) => this.setField("nome", e.target.value),
+      setCpf: (e) => this.setField("cpf", e.target.value),
+      setEmail: (e) => this.setField("email", e.target.value),
+      setTel: (e) => this.setField("tel", e.target.value),
+      setData: (e) => this.setField("data", e.target.value),
+      canvasRef: this.canvasRef,
+      onDown: (e) => this.pDown(e),
+      onMove: (e) => this.pMove(e),
+      onUp: () => this.pUp(),
+      clearSig: () => this.clearSig(),
+      sigText: s.sigCaptured ? "✓ Assinatura capturada" : "Desenhe acima com o dedo ou mouse",
+      email: s.form.email || "informado",
+      receipt: s.receipt
+    };
+  }
+}
+</script>
+</body>
+</html>

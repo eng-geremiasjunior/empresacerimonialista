@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  @keyframes omBlink{0%,100%{opacity:1}50%{opacity:.3}}
+  @keyframes omPop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+  a{color:oklch(0.55 0.19 285);text-decoration:none}
+  a:hover{color:oklch(0.46 0.19 285)}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:oklch(0.88 0.01 285);border-radius:8px}
+</style>
+</helmet>
+<div style="min-height:100vh;background:oklch(0.98 0.004 285);font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:oklch(0.28 0.02 285);padding:28px 32px 48px">
+
+  <div style="max-width:1240px;margin:0 auto">
+
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:18px">
+      <div>
+        <div style="font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:oklch(0.55 0.19 285);margin-bottom:6px">Cronograma do dia · visão por equipes</div>
+        <div style="font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1.1">Casamento Marina &amp; Rafael</div>
+        <div style="font-size:14px;color:oklch(0.5 0.02 285);margin-top:4px">Quarta-feira, 29 de julho de 2026 · Espaço Villa Verde</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:18px">
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <div style="font-size:13px;color:oklch(0.5 0.02 285)">Progresso do dia</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:160px;height:8px;background:oklch(0.92 0.01 285);border-radius:99px;overflow:hidden">
+              <div style="{{ progressBarStyle }}"></div>
+            </div>
+            <div style="font-size:15px;font-weight:700">{{ progressPct }}%</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;background:oklch(0.55 0.19 285);color:#fff;padding:8px 14px;border-radius:12px;font-weight:700;font-size:14px">
+          <span style="width:8px;height:8px;border-radius:99px;background:#fff;animation:omBlink 1.4s ease-in-out infinite"></span>
+          Agora {{ nowLabel }}
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;align-items:stretch">
+      <div style="flex:1;min-width:280px;display:flex;align-items:center;gap:14px;background:linear-gradient(100deg,oklch(0.55 0.19 285),oklch(0.5 0.2 300));color:#fff;padding:14px 18px;border-radius:16px">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;opacity:.8;white-space:nowrap">A seguir</div>
+        <sc-if value="{{ hasNext }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0">
+            <div style="font-size:22px;font-weight:800;letter-spacing:-.01em;white-space:nowrap">{{ nextTime }}</div>
+            <div style="width:1px;height:30px;background:rgba(255,255,255,.3)"></div>
+            <div style="min-width:0">
+              <div style="font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ nextTitle }}</div>
+              <div style="font-size:12px;opacity:.85">{{ nextTeam }} · em {{ nextIn }}</div>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noNext }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:15px;font-weight:700">Nada mais agendado — dia encerrado 🎉</div>
+        </sc-if>
+      </div>
+
+      <sc-if value="{{ hasClash }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:6px;justify-content:center;background:oklch(0.97 0.04 25);border:1px solid oklch(0.85 0.09 25);padding:12px 16px;border-radius:16px">
+          <div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:oklch(0.5 0.19 25);letter-spacing:.02em">⚠ CHOQUE DE EQUIPE</div>
+          <sc-for list="{{ clashTeams }}" as="c" hint-placeholder-count="1">
+            <div style="font-size:13px;font-weight:600;color:oklch(0.42 0.12 25)"><b>{{ c.name }}</b> em 2 tarefas ao mesmo tempo — provável a mesma pessoa</div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px">
+      <div style="display:inline-flex;gap:4px;background:oklch(0.94 0.008 285);padding:4px;border-radius:12px">
+        <button onClick="{{ setRaias }}" style="{{ tabRaiasStyle }}">
+          <span style="width:14px;height:14px;border-radius:3px;background:currentColor;opacity:.35"></span>
+          Raias · panorama
+        </button>
+        <button onClick="{{ setLista }}" style="{{ tabListaStyle }}">
+          <span style="display:flex;flex-direction:column;gap:2px"><span style="width:14px;height:2.5px;background:currentColor;border-radius:2px"></span><span style="width:14px;height:2.5px;background:currentColor;border-radius:2px"></span><span style="width:10px;height:2.5px;background:currentColor;border-radius:2px"></span></span>
+          Lista · sequência
+        </button>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <sc-if value="{{ hasDelays }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ resetDelays }}" style="font-size:12px;font-weight:700;color:oklch(0.5 0.13 30);background:oklch(0.97 0.03 30);border:1px solid oklch(0.88 0.06 30);padding:7px 12px;border-radius:99px;cursor:pointer;font-family:inherit">↺ Desfazer atrasos</button>
+        </sc-if>
+        <span style="font-size:12px;font-weight:600;color:oklch(0.5 0.02 285);margin-right:4px">Equipes:</span>
+        <sc-for list="{{ lanes }}" as="lane" hint-placeholder-count="5">
+          <div style="display:flex;align-items:center;gap:7px;background:#fff;border:1px solid oklch(0.91 0.008 285);padding:6px 11px;border-radius:99px">
+            <span style="{{ lane.dotStyle }}"></span>
+            <span style="font-size:12.5px;font-weight:600">{{ lane.name }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <sc-if value="{{ isRaias }}" hint-placeholder-val="{{ true }}">
+    <div style="background:#fff;border:1px solid oklch(0.91 0.008 285);border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(30,20,60,.04)">
+      <div style="height:660px;overflow:auto;position:relative">
+
+        <div style="position:sticky;top:0;z-index:6;display:flex;background:oklch(0.995 0.003 285);border-bottom:1px solid oklch(0.91 0.008 285)">
+          <div style="width:74px;flex:none;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:oklch(0.6 0.02 285);border-right:1px solid oklch(0.93 0.008 285)">Hora</div>
+          <div style="flex:1;display:flex">
+            <sc-for list="{{ lanes }}" as="lane" hint-placeholder-count="5">
+              <div style="{{ lane.headStyle }}">
+                <div style="display:flex;align-items:center;gap:7px">
+                  <span style="{{ lane.dotStyle }}"></span>
+                  <span style="font-size:13.5px;font-weight:700">{{ lane.name }}</span>
+                  <sc-if value="{{ lane.clash }}" hint-placeholder-val="{{ false }}">
+                    <span style="font-size:10px;font-weight:800;color:#fff;background:oklch(0.6 0.2 25);padding:1px 6px;border-radius:99px">⚠</span>
+                  </sc-if>
+                </div>
+                <span style="font-size:11px;color:oklch(0.6 0.02 285);font-weight:500">{{ lane.countLabel }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="{{ bodyStyle }}">
+
+          <sc-if value="{{ showGrid }}" hint-placeholder-val="{{ true }}">
+            <sc-for list="{{ hours }}" as="h" hint-placeholder-count="10">
+              <div style="{{ h.lineStyle }}"></div>
+            </sc-for>
+          </sc-if>
+
+          <div style="position:absolute;left:0;top:0;width:74px;height:100%;border-right:1px solid oklch(0.93 0.008 285)">
+            <sc-for list="{{ hours }}" as="h" hint-placeholder-count="10">
+              <div style="{{ h.labelStyle }}">{{ h.label }}</div>
+            </sc-for>
+          </div>
+
+          <div style="position:absolute;left:74px;right:0;top:0;height:100%;display:flex">
+            <sc-for list="{{ lanes }}" as="lane" hint-placeholder-count="5">
+              <div style="{{ lane.colStyle }}">
+                <sc-for list="{{ lane.tasks }}" as="t" hint-placeholder-count="3">
+                  <div style="{{ t.blockStyle }}">
+                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+                      <sc-if value="{{ t.live }}" hint-placeholder-val="{{ false }}">
+                        <span style="{{ t.liveDotStyle }}"></span>
+                      </sc-if>
+                      <span style="{{ t.titleStyle }}">{{ t.title }}</span>
+                      <sc-if value="{{ t.clashInline }}" hint-placeholder-val="{{ false }}">
+                        <span title="Choque: equipe em 2 tarefas ao mesmo tempo" style="font-size:10px;font-weight:800;color:#fff;background:oklch(0.6 0.2 25);padding:1px 6px;border-radius:99px;flex:none">⚠</span>
+                      </sc-if>
+                    </div>
+                    <sc-if value="{{ t.showTime }}" hint-placeholder-val="{{ true }}">
+                      <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:5px">
+                        <span style="{{ t.timeStyle }}">{{ t.timeLabel }}</span>
+                        <sc-if value="{{ t.delayed }}" hint-placeholder-val="{{ false }}">
+                          <span style="font-size:10px;color:oklch(0.6 0.03 285);text-decoration:line-through">era {{ t.origEnd }}</span>
+                        </sc-if>
+                      </div>
+                    </sc-if>
+                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                      <sc-if value="{{ t.showChipText }}" hint-placeholder-val="{{ true }}">
+                        <div style="{{ t.chipStyle }}">{{ t.chipText }}</div>
+                      </sc-if>
+                      <sc-if value="{{ t.chipDot }}" hint-placeholder-val="{{ false }}">
+                        <span title="{{ t.chipText }}" style="{{ t.chipDotStyle }}"></span>
+                      </sc-if>
+                      <sc-if value="{{ t.canDelay }}" hint-placeholder-val="{{ false }}">
+                        <button onClick="{{ t.onDelay }}" style="font-size:10px;font-weight:700;color:oklch(0.5 0.13 30);background:oklch(0.97 0.03 30);border:1px solid oklch(0.88 0.06 30);padding:2px 7px;border-radius:99px;cursor:pointer;font-family:inherit">+15 min</button>
+                      </sc-if>
+                    </div>
+                    <sc-if value="{{ t.clashFull }}" hint-placeholder-val="{{ false }}">
+                      <div style="font-size:10.5px;font-weight:700;color:oklch(0.5 0.19 25);margin-top:6px;line-height:1.25">⚠ Choque: equipe em 2 tarefas ao mesmo tempo</div>
+                    </sc-if>
+                    <sc-if value="{{ t.showNote }}" hint-placeholder-val="{{ false }}">
+                      <div style="font-size:11px;font-style:italic;color:oklch(0.55 0.13 30);margin-top:6px;line-height:1.3">⚠ {{ t.note }}</div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="{{ nowLineStyle }}">
+            <div style="position:absolute;left:-70px;top:3px;background:oklch(0.55 0.19 285);color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;white-space:nowrap">{{ nowLabel }}</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:18px;display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:oklch(0.5 0.02 285);align-items:center">
+      <div style="display:flex;align-items:center;gap:6px"><span style="width:14px;height:14px;border-radius:4px;background:oklch(0.62 0.12 285);opacity:.5"></span> Concluído</div>
+      <div style="display:flex;align-items:center;gap:6px"><span style="width:14px;height:14px;border-radius:4px;background:oklch(0.62 0.19 285);box-shadow:0 0 0 2px oklch(0.55 0.19 285)"></span> Em andamento</div>
+      <div style="display:flex;align-items:center;gap:6px"><span style="width:14px;height:14px;border-radius:4px;background:#fff;border:1.5px dashed oklch(0.7 0.05 285)"></span> Pendente</div>
+      <div style="display:flex;align-items:center;gap:6px"><span style="width:14px;height:14px;border-radius:4px;background:oklch(0.97 0.04 25);border:1.5px solid oklch(0.6 0.2 25)"></span> Choque de equipe</div>
+      <div style="margin-left:auto;font-style:italic">Clique <b>+15 min</b> num bloco para simular atraso e ver o impacto nas dependências.</div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ isLista }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:10px;max-width:820px">
+      <sc-for list="{{ listItems }}" as="it" hint-placeholder-count="6">
+        <div style="{{ it.rowStyle }}">
+          <div style="{{ it.timeBoxStyle }}">
+            <span>{{ it.startLabel }}</span>
+            <sc-if value="{{ it.delayed }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size:10px;font-weight:700;color:oklch(0.55 0.16 30);margin-top:2px">+{{ it.delayMin }}m</span>
+            </sc-if>
+          </div>
+          <div style="{{ it.barStyle }}"></div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <span style="font-size:15px;font-weight:700;letter-spacing:-.01em">{{ it.title }}</span>
+              <sc-if value="{{ it.overlap }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ it.toggle }}" style="{{ it.badgeStyle }}">⇄ Simultânea</button>
+              </sc-if>
+              <sc-if value="{{ it.clash }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size:10.5px;font-weight:800;color:#fff;background:oklch(0.6 0.2 25);padding:2px 8px;border-radius:99px">⚠ Choque de equipe</span>
+              </sc-if>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <span style="{{ it.teamStyle }}"><span style="{{ it.teamDotStyle }}"></span>{{ it.team }}</span>
+              <span style="font-size:12px;color:oklch(0.55 0.02 285)">{{ it.rangeLabel }}</span>
+              <sc-if value="{{ it.delayed }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size:11px;color:oklch(0.6 0.03 285);text-decoration:line-through">era {{ it.origRange }}</span>
+              </sc-if>
+            </div>
+            <sc-if value="{{ it.hasNote }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size:12px;font-style:italic;color:oklch(0.55 0.13 30)">⚠ {{ it.note }}</span>
+            </sc-if>
+            <sc-if value="{{ it.expanded }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:4px;padding:10px 12px;background:oklch(0.98 0.006 285);border-radius:10px;display:flex;flex-direction:column;gap:7px">
+                <span style="font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:oklch(0.55 0.02 285)">Acontece junto com</span>
+                <div style="display:flex;flex-wrap:wrap;gap:6px">
+                  <sc-for list="{{ it.overlapTeams }}" as="ov" hint-placeholder-count="2">
+                    <span style="{{ ov.chipStyle }}"><span style="{{ ov.dotStyle }}"></span>{{ ov.label }}</span>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+          <div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+            <span style="{{ it.statusChip }}">{{ it.chipText }}</span>
+            <sc-if value="{{ it.canDelay }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ it.onDelay }}" style="font-size:11px;font-weight:700;color:oklch(0.5 0.13 30);background:oklch(0.97 0.03 30);border:1px solid oklch(0.88 0.06 30);padding:5px 10px;border-radius:99px;cursor:pointer;font-family:inherit;white-space:nowrap">+15 min</button>
+            </sc-if>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    </sc-if>
+
+  </div>
+
+  <sc-if value="{{ showPreview }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closePreview }}" style="position:fixed;inset:0;background:rgba(30,20,50,.4);z-index:40;display:flex;align-items:center;justify-content:center;padding:20px">
+      <div onClick="{{ stop }}" style="background:#fff;border-radius:20px;padding:24px 26px;max-width:440px;width:100%;box-shadow:0 24px 60px rgba(30,20,60,.3);animation:omPop .18s ease">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:oklch(0.5 0.13 30);margin-bottom:8px">Registrar atraso</div>
+        <div style="font-size:19px;font-weight:800;letter-spacing:-.01em;line-height:1.25;margin-bottom:16px">Atrasar <span style="color:oklch(0.5 0.19 285)">{{ previewTitle }}</span> em +15 min?</div>
+
+        <sc-if value="{{ previewHasImpact }}" hint-placeholder-val="{{ true }}">
+          <div style="font-size:13px;font-weight:600;color:oklch(0.4 0.02 285);margin-bottom:10px">Vai empurrar {{ previewCount }} tarefa(s) com dependência <b>dura</b>:</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+            <sc-for list="{{ previewImpacted }}" as="im" hint-placeholder-count="1">
+              <div style="display:flex;align-items:center;gap:10px;background:oklch(0.98 0.006 285);border-radius:10px;padding:10px 12px">
+                <span style="width:9px;height:9px;border-radius:3px;flex:none;background:{{ im.accent }}"></span>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13.5px;font-weight:700">{{ im.title }}</div>
+                  <div style="font-size:11.5px;color:oklch(0.55 0.02 285)">{{ im.team }}</div>
+                </div>
+                <div style="font-size:13px;font-weight:700;white-space:nowrap"><span style="color:oklch(0.6 0.03 285);text-decoration:line-through">{{ im.from }}</span> → <span style="color:oklch(0.5 0.16 30)">{{ im.to }}</span></div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-size:12px;font-style:italic;color:oklch(0.55 0.02 285);margin-bottom:18px;line-height:1.4">Dependências <b>suaves</b> e tarefas sem vínculo continuam iguais — elas podem rodar em paralelo.</div>
+          <div style="display:flex;gap:10px">
+            <button onClick="{{ confirmCascade }}" style="flex:1;font-size:14px;font-weight:700;color:#fff;background:oklch(0.55 0.19 285);border:none;padding:12px;border-radius:12px;cursor:pointer;font-family:inherit">Confirmar · empurra {{ previewCount }}</button>
+            <button onClick="{{ confirmSelf }}" style="flex:none;font-size:14px;font-weight:700;color:oklch(0.4 0.02 285);background:oklch(0.95 0.006 285);border:none;padding:12px 16px;border-radius:12px;cursor:pointer;font-family:inherit">Só essa</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ previewNoImpact }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:13px;color:oklch(0.45 0.02 285);margin-bottom:18px;line-height:1.5">Nenhuma outra tarefa depende dela — atrasar não impacta ninguém no cronograma.</div>
+          <div style="display:flex;gap:10px">
+            <button onClick="{{ confirmSelf }}" style="flex:1;font-size:14px;font-weight:700;color:#fff;background:oklch(0.55 0.19 285);border:none;padding:12px;border-radius:12px;cursor:pointer;font-family:inherit">Aplicar +15 min</button>
+            <button onClick="{{ closePreview }}" style="flex:none;font-size:14px;font-weight:700;color:oklch(0.4 0.02 285);background:oklch(0.95 0.006 285);border:none;padding:12px 16px;border-radius:12px;cursor:pointer;font-family:inherit">Cancelar</button>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 1240, &quot;height&quot;: 940 },
+  &quot;simular&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: false, &quot;section&quot;: &quot;Simulação — arraste o \&quot;Agora\&quot;&quot; },
+  &quot;nowMinutes&quot;: { &quot;editor&quot;: &quot;range&quot;, &quot;default&quot;: 1050, &quot;min&quot;: 780, &quot;max&quot;: 1380, &quot;step&quot;: 5, &quot;unit&quot;: &quot;min&quot;, &quot;section&quot;: &quot;Simulação — arraste o \&quot;Agora\&quot;&quot; },
+  &quot;zoom&quot;: { &quot;editor&quot;: &quot;range&quot;, &quot;default&quot;: 1.9, &quot;min&quot;: 1.2, &quot;max&quot;: 3.4, &quot;step&quot;: 0.1, &quot;unit&quot;: &quot;px/min&quot;, &quot;section&quot;: &quot;Exibição&quot; },
+  &quot;showGrid&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;section&quot;: &quot;Exibição&quot; }
+}">
+const START = 13 * 60;   // 13:00
+const END   = 23 * 60;   // 23:00
+
+const PALETTE = {
+  som:   { h: 285, name: "Som / DJ" },
+  deco:  { h: 20,  name: "Decoração" },
+  buffet:{ h: 70,  name: "Buffet" },
+  foto:  { h: 180, name: "Fotografia" },
+  ceri:  { h: 250, name: "Cerimônia" },
+};
+
+// dep = id da tarefa anterior · depType: "dura" (empurra) | "suave" (ideal, roda em paralelo)
+const TASKS = [
+  { id:"som-mont",  team:"som", s:[13,0],  e:[15,30], title:"Montagem de som" },
+  { id:"som-teste", team:"som", s:[14,0],  e:[14,45], title:"Teste de microfones" }, // choque proposital c/ montagem
+  { id:"som-pass",  team:"som", s:[15,30], e:[16,0],  title:"Passagem de som", dep:"som-mont", depType:"dura" },
+  { id:"som-audio", team:"som", s:[17,0],  e:[18,0],  title:"Áudio da cerimônia", dep:"som-pass", depType:"suave", note:"Retorno com ruído" },
+  { id:"som-festa", team:"som", s:[19,0],  e:[23,0],  title:"Festa / DJ" },
+
+  { id:"deco-mont", team:"deco", s:[13,0],  e:[16,30], title:"Montagem decoração" },
+  { id:"deco-aju",  team:"deco", s:[16,30], e:[17,0],  title:"Ajustes finais", dep:"deco-mont", depType:"dura" },
+  { id:"deco-ilum", team:"deco", s:[17,0],  e:[18,30], title:"Iluminação decorativa", dep:"deco-aju", depType:"suave", note:"Caiu a energia" },
+  { id:"deco-mesas",team:"deco", s:[18,30], e:[20,0],  title:"Decoração das mesas" },
+
+  { id:"buf-cheg",  team:"buffet", s:[14,0],  e:[15,0],  title:"Chegada do buffet" },
+  { id:"buf-mise",  team:"buffet", s:[15,0],  e:[18,0],  title:"Mise en place", dep:"buf-cheg", depType:"dura" },
+  { id:"buf-coq",   team:"buffet", s:[18,0],  e:[20,0],  title:"Coquetel de recepção", dep:"buf-mise", depType:"dura" },
+  { id:"buf-jantar",team:"buffet", s:[20,0],  e:[22,0],  title:"Jantar servido", dep:"buf-coq", depType:"dura" },
+
+  { id:"foto-making",team:"foto", s:[15,0],  e:[16,30], title:"Making of" },
+  { id:"foto-retra", team:"foto", s:[16,30], e:[17,0],  title:"Retratos do casal" },
+  { id:"foto-ceri",  team:"foto", s:[17,0],  e:[18,0],  title:"Cerimônia", dep:"ceri-ceri", depType:"dura" },
+  { id:"foto-cob",   team:"foto", s:[19,0],  e:[23,0],  title:"Cobertura da festa" },
+
+  { id:"ceri-rec",  team:"ceri", s:[16,30], e:[17,0],  title:"Recepção dos convidados" },
+  { id:"ceri-ceri", team:"ceri", s:[17,0],  e:[18,0],  title:"Cerimônia", dep:"ceri-rec", depType:"dura", note:"Obrigatória" },
+  { id:"ceri-coq",  team:"ceri", s:[18,0],  e:[20,0],  title:"Coquetel" },
+];
+
+const M = (a) => a[0] * 60 + a[1];
+
+class Component extends DCLogic {
+  state = { view: "raias", open: null, delays: {}, preview: null, clock: this.liveMinutes() };
+
+  liveMinutes() { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); }
+  componentDidMount() { this._t = setInterval(() => this.setState({ clock: this.liveMinutes() }), 30000); }
+  componentWillUnmount() { clearInterval(this._t); }
+
+  fmt(m) { const h = Math.floor(m / 60), mm = m % 60; return ("0"+h).slice(-2)+":"+("0"+mm).slice(-2); }
+
+  tabStyle(active) {
+    return "display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:10px;font-size:13.5px;font-weight:700;cursor:pointer;border:none;transition:all .15s;font-family:inherit;" +
+      (active ? "background:#fff;color:oklch(0.32 0.03 285);box-shadow:0 1px 3px rgba(30,20,60,.1)" : "background:transparent;color:oklch(0.5 0.02 285)");
+  }
+
+  // só dependentes DURA, em cascata (suave nunca é empurrado)
+  duraChain(id) {
+    const D = this.state.delays, out = [], seen = {};
+    const visit = (pid) => {
+      TASKS.forEach((t) => {
+        if (t.dep === pid && t.depType === "dura" && !seen[t.id]) {
+          seen[t.id] = 1;
+          const s = M(t.s) + (D[t.id] || 0);
+          out.push({ id: t.id, title: t.title, team: PALETTE[t.team].name,
+            from: this.fmt(s), to: this.fmt(s + 15), accent: `oklch(0.6 0.19 ${PALETTE[t.team].h})` });
+          visit(t.id);
+        }
+      });
+    };
+    visit(id);
+    return out;
+  }
+
+  openPreview(id) {
+    const t = TASKS.find((x) => x.id === id);
+    this.setState({ preview: { id, title: t.title, impacted: this.duraChain(id) } });
+  }
+  confirmCascade() {
+    this.setState((st) => { const p = st.preview, D = { ...st.delays };
+      D[p.id] = (D[p.id] || 0) + 15; p.impacted.forEach((im) => D[im.id] = (D[im.id] || 0) + 15);
+      return { delays: D, preview: null }; });
+  }
+  confirmSelf() {
+    this.setState((st) => { const p = st.preview, D = { ...st.delays };
+      D[p.id] = (D[p.id] || 0) + 15; return { delays: D, preview: null }; });
+  }
+
+  renderVals() {
+    const live = Math.max(START, Math.min(END, this.state.clock));
+    const now  = (this.props.simular ?? false) ? (this.props.nowMinutes ?? 1050) : live;
+    const ppm  = this.props.zoom ?? 1.9;
+    const grid = this.props.showGrid ?? true;
+    const totalPx = (END - START) * ppm;
+    const D = this.state.delays;
+
+    const hours = [];
+    for (let h = 13; h <= 23; h++) {
+      const top = (h * 60 - START) * ppm;
+      hours.push({ label: ("0"+h).slice(-2)+":00",
+        lineStyle: `position:absolute;left:74px;right:0;top:${top}px;height:1px;background:oklch(0.94 0.006 285);pointer-events:none`,
+        labelStyle: `position:absolute;top:${top-8}px;left:0;right:0;text-align:center;font-size:11px;font-weight:600;color:oklch(0.62 0.02 285)` });
+    }
+
+    // enriquece com tempos efetivos (base + atraso) e status
+    const enriched = TASKS.map((t) => {
+      const bs = M(t.s), be = M(t.e), d = D[t.id] || 0;
+      const s = bs + d, e = be + d;
+      const status = e <= now ? "done" : (s <= now ? "live" : "pending");
+      return { ...t, bs, be, s, e, delay: d, status };
+    });
+    const clashOf = (t) => enriched.some((o) => o.id !== t.id && o.team === t.team && o.s < t.e && t.s < o.e);
+
+    let done = 0;
+    enriched.forEach((t) => { if (t.status === "done") done++; });
+
+    const lanes = Object.keys(PALETTE).map((key, li) => {
+      const p = PALETTE[key];
+      const accent = `oklch(0.6 0.19 ${p.h})`;
+      const soft = `oklch(0.965 0.03 ${p.h})`;
+      const isLast = li === Object.keys(PALETTE).length - 1;
+      const mine = enriched.filter((t) => t.team === key).sort((a, b) => a.s - b.s);
+      const laneClash = mine.some((t) => clashOf(t));
+
+      // empacota tarefas sobrepostas em sub-colunas lado a lado
+      const packCols = [];
+      mine.forEach((t) => {
+        let c = packCols.findIndex((col) => col.every((o) => o.e <= t.s || t.e <= o.s));
+        if (c === -1) { c = packCols.length; packCols.push([]); }
+        packCols[c].push(t); t._col = c;
+      });
+      const nCols = Math.max(1, packCols.length);
+      // cada bloco ocupa o máximo de colunas livres à direita durante seu intervalo
+      mine.forEach((t) => {
+        let span = 1;
+        for (let c = t._col + 1; c < nCols; c++) {
+          if (mine.some((o) => o !== t && o._col === c && o.s < t.e && t.s < o.e)) break;
+          span++;
+        }
+        t._span = span;
+      });
+
+      const tasks = mine.map((t) => {
+        const top = (t.s - START) * ppm, rawH = (t.e - t.s) * ppm;
+        const slotW = 100 / nCols, narrow = t._span < nCols;
+        const compact = rawH < 92 || narrow, tight = rawH < 134 || narrow;
+        const left = `calc(${t._col * slotW}% + 6px)`, width = `calc(${t._span * slotW}% - 12px)`;
+        const clash = clashOf(t);
+        let blockStyle = `position:absolute;left:${left};width:${width};top:${top}px;height:${rawH}px;border-radius:11px;padding:${compact?"6px 9px":"9px 11px"};box-sizing:border-box;overflow:hidden;`;
+        let titleStyle = compact
+          ? "font-size:12px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+          : "font-size:13px;font-weight:700;letter-spacing:-.01em;line-height:1.15;";
+        let chipStyle = `display:inline-flex;align-items:center;gap:5px;font-size:${compact?"9.5px":"10.5px"};font-weight:700;padding:2px 7px;border-radius:99px;`;
+        let chipText, liveDotStyle = "";
+
+        if (t.status === "done") {
+          blockStyle += `background:${soft};border:1px solid oklch(0.9 0.02 ${p.h});border-left:4px solid oklch(0.72 0.08 ${p.h});opacity:.72;`;
+          titleStyle += `color:oklch(0.42 0.03 ${p.h});`;
+          chipStyle += "background:oklch(0.94 0.05 150);color:oklch(0.5 0.14 150);"; chipText = "✓ Concluído";
+        } else if (t.status === "live") {
+          blockStyle += `background:${soft};border:1.5px solid ${accent};border-left:4px solid ${accent};box-shadow:0 4px 14px oklch(0.6 0.19 ${p.h} / .22);`;
+          titleStyle += `color:oklch(0.32 0.04 ${p.h});`;
+          chipStyle += `background:${accent};color:#fff;`; chipText = "Em andamento";
+          liveDotStyle = `width:8px;height:8px;border-radius:99px;background:${accent};flex:none;animation:omBlink 1.2s ease-in-out infinite`;
+        } else {
+          blockStyle += `background:#fff;border:1.5px dashed oklch(0.82 0.05 ${p.h});border-left:4px solid oklch(0.82 0.05 ${p.h});`;
+          titleStyle += "color:oklch(0.5 0.02 285);";
+          chipStyle += "background:oklch(0.95 0.006 285);color:oklch(0.55 0.02 285);"; chipText = "Pendente";
+        }
+        if (clash) blockStyle += "border:2px solid oklch(0.6 0.2 25);background:oklch(0.98 0.03 25);";
+        if (t.delay) blockStyle += "box-shadow:0 0 0 2px oklch(0.7 0.16 30) inset;";
+
+        // em slots estreitos o chip vira só um ponto de status (evita clip do texto nowrap)
+        const dotColor = t.status === "done" ? "oklch(0.6 0.14 150)" : (t.status === "live" ? accent : "oklch(0.8 0.03 285)");
+        const chipDotStyle = `width:11px;height:11px;border-radius:99px;flex:none;background:${dotColor};` + (t.status === "pending" ? "background:#fff;border:2px solid oklch(0.8 0.03 285);" : "");
+
+        return { title: t.title, showTime: !compact,
+          timeLabel: this.fmt(t.s)+"–"+this.fmt(t.e), timeStyle: (t.delay?"color:oklch(0.5 0.16 30);":"color:oklch(0.55 0.02 285);")+"font-size:11px;font-weight:600",
+          delayed: t.delay > 0, origEnd: this.fmt(t.be),
+          blockStyle, titleStyle, chipStyle, chipText, live: t.status === "live", liveDotStyle,
+          showChipText: !narrow, chipDot: narrow, chipDotStyle,
+          clashInline: clash && tight, clashFull: clash && !tight,
+          showNote: !!t.note && !tight, note: t.note || "—",
+          canDelay: t.status !== "done" && !tight, onDelay: () => this.openPreview(t.id) };
+      });
+
+      return { name: p.name, countLabel: mine.length + " tarefas", clash: laneClash,
+        dotStyle: `width:10px;height:10px;border-radius:3px;background:${accent};flex:none`,
+        headStyle: `flex:1;padding:11px 12px;display:flex;flex-direction:column;gap:3px;` + (isLast?"":"border-right:1px solid oklch(0.93 0.008 285);"),
+        colStyle: `flex:1;position:relative;height:100%;` + (isLast?"":"border-right:1px solid oklch(0.95 0.006 285);"),
+        tasks };
+    });
+
+    // LISTA (ordenada por início efetivo)
+    const sorted = [...enriched].sort((a, b) => a.s - b.s || PALETTE[a.team].name.localeCompare(PALETTE[b.team].name));
+    const listItems = sorted.map((f) => {
+      const accent = `oklch(0.6 0.19 ${PALETTE[f.team].h})`;
+      const withList = sorted.filter((o) => o.id !== f.id && o.s < f.e && f.s < o.e);
+      let rowStyle = "display:flex;gap:14px;align-items:stretch;padding:14px 16px;border-radius:14px;border:1px solid oklch(0.92 0.008 285);background:#fff;";
+      let statusChip = "display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;";
+      if (f.status === "done") statusChip += "background:oklch(0.94 0.05 150);color:oklch(0.5 0.14 150);";
+      else if (f.status === "live") { rowStyle += "border-color:oklch(0.6 0.19 285);box-shadow:0 4px 16px oklch(0.6 0.19 285 / .14);"; statusChip += "background:oklch(0.55 0.19 285);color:#fff;"; }
+      else statusChip += "background:oklch(0.95 0.006 285);color:oklch(0.55 0.02 285);";
+      if (clashOf(f)) rowStyle += "border-color:oklch(0.6 0.2 25);";
+
+      return { title: f.title, startLabel: this.fmt(f.s), team: PALETTE[f.team].name,
+        rangeLabel: this.fmt(f.s)+"–"+this.fmt(f.e), origRange: this.fmt(f.bs)+"–"+this.fmt(f.be),
+        delayed: f.delay > 0, delayMin: f.delay, chipText: f.status === "done" ? "✓ Concluído" : (f.status === "live" ? "Em andamento" : "Pendente"),
+        hasNote: !!f.note, note: f.note || "", overlap: withList.length > 0, clash: clashOf(f),
+        overlapTeams: withList.map((o) => ({ chipStyle: `display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px;background:oklch(0.97 0.03 ${PALETTE[o.team].h});color:oklch(0.6 0.19 ${PALETTE[o.team].h})`, dotStyle: `width:7px;height:7px;border-radius:2px;background:oklch(0.6 0.19 ${PALETTE[o.team].h})`, label: o.title+" · "+this.fmt(o.s)+"–"+this.fmt(o.e) })),
+        expanded: this.state.open === f.id, toggle: () => this.setState((s) => ({ open: s.open === f.id ? null : f.id })),
+        canDelay: f.status !== "done", onDelay: () => this.openPreview(f.id),
+        badgeStyle: "font-size:10.5px;font-weight:700;color:oklch(0.55 0.19 285);background:oklch(0.96 0.03 285);padding:2px 8px;border-radius:99px;cursor:pointer;border:none;font-family:inherit;display:inline-flex;align-items:center;gap:4px",
+        rowStyle, statusChip,
+        timeBoxStyle: `flex:none;width:66px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:oklch(0.97 0.006 285);border-radius:10px;padding:8px 0;font-weight:800;font-size:15px;` + (f.status === "live" ? "color:oklch(0.55 0.19 285);" : "color:oklch(0.35 0.02 285);"),
+        barStyle: `flex:none;width:5px;border-radius:99px;background:${accent}`,
+        teamStyle: `display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:${accent}`,
+        teamDotStyle: `width:8px;height:8px;border-radius:3px;background:${accent}` };
+    });
+
+    // choques por equipe (para o alerta de topo)
+    const clashTeams = Object.keys(PALETTE).filter((k) => enriched.filter((t) => t.team === k).some((t) => clashOf(t))).map((k) => ({ name: PALETTE[k].name }));
+
+    // "A seguir"
+    const upcoming = enriched.filter((t) => t.s > now).sort((a, b) => a.s - b.s);
+    const nx = upcoming[0];
+    const nextIn = nx ? (nx.s - now) : 0;
+    const nextInLabel = nx ? (nextIn >= 60 ? Math.floor(nextIn/60)+"h"+(nextIn%60?" "+(nextIn%60)+"min":"") : nextIn+" min") : "";
+
+    const nowTop = (now - START) * ppm;
+    const pv = this.state.preview;
+
+    return {
+      lanes, hours, listItems, clashTeams, hasClash: clashTeams.length > 0,
+      hasNext: !!nx, noNext: !nx, nextTime: nx ? this.fmt(nx.s) : "", nextTitle: nx ? nx.title : "", nextTeam: nx ? PALETTE[nx.team].name : "", nextIn: nextInLabel,
+      isRaias: this.state.view === "raias", isLista: this.state.view === "lista",
+      setRaias: () => this.setState({ view: "raias" }), setLista: () => this.setState({ view: "lista" }),
+      tabRaiasStyle: this.tabStyle(this.state.view === "raias"), tabListaStyle: this.tabStyle(this.state.view === "lista"),
+      hasDelays: Object.keys(D).length > 0, resetDelays: () => this.setState({ delays: {} }),
+      showGrid: grid, nowLabel: this.fmt(now),
+      bodyStyle: `position:relative;height:${totalPx}px;min-width:820px`,
+      nowLineStyle: `position:absolute;left:74px;right:0;top:${nowTop}px;height:2px;background:oklch(0.55 0.19 285);z-index:4;pointer-events:none`,
+      progressPct: Math.round((done / enriched.length) * 100),
+      progressBarStyle: `height:100%;width:${Math.round((done / enriched.length) * 100)}%;background:oklch(0.6 0.19 150);border-radius:99px`,
+      showPreview: !!pv, previewTitle: pv ? pv.title : "", previewImpacted: pv ? pv.impacted : [], previewCount: pv ? pv.impacted.length : 0,
+      previewHasImpact: !!pv && pv.impacted.length > 0, previewNoImpact: !!pv && pv.impacted.length === 0,
+      confirmCascade: () => this.confirmCascade(), confirmSelf: () => this.confirmSelf(),
+      closePreview: () => this.setState({ preview: null }), stop: (e) => e.stopPropagation(),
+    };
+  }
+}
+</script>
+</body>
+</html>

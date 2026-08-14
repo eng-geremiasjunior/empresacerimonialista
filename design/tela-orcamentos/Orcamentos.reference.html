@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
+  <style>
+    *{ margin:0; padding:0; box-sizing:border-box; }
+    body{ background:#FFFFFF; }
+    ::selection{ background:#EDE9E2; }
+    input::placeholder{ color:#B4B1A9; }
+    input:focus{ outline:none; }
+    .vela-scroll::-webkit-scrollbar{ width:10px; }
+    .vela-scroll::-webkit-scrollbar-thumb{ background:#E4E2DD; border-radius:6px; border:3px solid #fff; }
+    .vela-scroll::-webkit-scrollbar-track{ background:transparent; }
+    a{ color:#37352F; text-decoration:none; }
+    a:hover{ color:#000; }
+  </style>
+</helmet>
+
+<div style="display:flex; height:100vh; width:100%; font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif; color:#37352F; background:#FFFFFF; overflow:hidden;">
+
+  <!-- SIDEBAR -->
+  <aside style="width:236px; flex-shrink:0; background:#F7F7F5; border-right:1px solid #E9E9E7; display:flex; flex-direction:column; padding:20px 12px 16px;">
+    <div style="display:flex; align-items:center; gap:10px; padding:6px 10px 20px;">
+      <div style="width:26px; height:26px; border-radius:7px; background:#37352F; display:flex; align-items:center; justify-content:center; color:#F7F7F5; font-family:'Newsreader',serif; font-size:16px; font-weight:500;">V</div>
+      <span style="font-family:'Newsreader',serif; font-size:19px; font-weight:500; letter-spacing:0.2px;">Vela</span>
+    </div>
+
+    <nav style="display:flex; flex-direction:column; gap:1px;">
+      <sc-for list="{{ nav }}" as="item" hint-placeholder-count="12">
+        <a href="#" onClick="{{ item.onClick }}" style="{{ item.style }}">
+          <span style="width:5px; height:5px; border-radius:50%; background:{{ item.dot }}; flex-shrink:0;"></span>
+          <span style="flex:1;">{{ item.label }}</span>
+          <sc-if value="{{ item.soon }}" hint-placeholder-val="{{ false }}">
+            <span style="font-size:9.5px; letter-spacing:0.6px; color:#B4B1A9; border:1px solid #E4E2DD; border-radius:4px; padding:1px 5px;">BREVE</span>
+          </sc-if>
+        </a>
+      </sc-for>
+    </nav>
+
+    <div style="margin-top:auto; padding:10px; display:flex; align-items:center; gap:10px; border-top:1px solid #E9E9E7;">
+      <div style="width:28px; height:28px; border-radius:50%; background:#EDE9E2; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; color:#8A867C;">GE</div>
+      <div style="flex:1; min-width:0;">
+        <div style="font-size:12.5px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">geremiaseng</div>
+        <div style="font-size:11px; color:#B4B1A9;">Ateliê Vela</div>
+      </div>
+      <a href="#" style="font-size:11.5px; color:#B4B1A9;">Sair</a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="vela-scroll" style="flex:1; overflow-y:auto; background:#FFFFFF;">
+    <div style="max-width:1080px; margin:0 auto; padding:34px 48px 80px;">
+
+      <!-- topbar -->
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:34px;">
+        <span style="font-size:12.5px; color:#B4B1A9;">Quarta-feira, 29 de julho de 2026</span>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="width:7px; height:7px; border-radius:50%; background:#C08A4E;"></span>
+          <span style="font-size:12.5px; color:#8A867C;">9+ novidades</span>
+        </div>
+      </div>
+
+      <!-- header -->
+      <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:24px; margin-bottom:30px;">
+        <div>
+          <h1 style="font-family:'Newsreader',serif; font-size:34px; font-weight:500; letter-spacing:-0.3px; line-height:1.1;">Orçamentos</h1>
+          <p style="font-size:14px; color:#8A867C; margin-top:8px; line-height:1.6;">Monte propostas e acompanhe aprovações dos seus eventos.</p>
+        </div>
+        <div style="display:flex; gap:10px; flex-shrink:0;">
+          <button style="font-family:inherit; font-size:13.5px; color:#37352F; background:#fff; border:1px solid #E9E9E7; border-radius:9px; padding:9px 15px; cursor:pointer;" style-hover="background:#F7F7F5;">Modelos de precificação</button>
+          <button style="font-family:inherit; font-size:13.5px; color:#F7F7F5; background:#37352F; border:1px solid #37352F; border-radius:9px; padding:9px 17px; cursor:pointer;" style-hover="background:#000;">＋ Novo orçamento</button>
+        </div>
+      </div>
+
+      <!-- stats -->
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:0; border:1px solid #E9E9E7; border-radius:14px; overflow:hidden; margin-bottom:34px;">
+        <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+          <div onClick="{{ s.onClick }}" style="{{ s.cardStyle }}">
+            <div style="font-size:10.5px; letter-spacing:1px; text-transform:uppercase; color:#B4B1A9; font-weight:500;">{{ s.label }}</div>
+            <div style="display:flex; align-items:baseline; gap:7px; margin-top:12px;">
+              <span style="font-family:'Newsreader',serif; font-size:30px; font-weight:500; line-height:1;">{{ s.value }}</span>
+              <span style="font-size:12px; color:{{ s.tintColor }};">{{ s.sub }}</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- controls -->
+      <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:6px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="flex:1; display:flex; align-items:center; gap:9px; background:#F7F7F5; border:1px solid #E9E9E7; border-radius:10px; padding:9px 13px;">
+            <span style="color:#B4B1A9; font-size:14px;">⌕</span>
+            <input value="{{ query }}" onInput="{{ onSearch }}" placeholder="Buscar por contato ou telefone…" style="flex:1; border:none; background:transparent; font-family:inherit; font-size:13.5px; color:#37352F;" />
+          </div>
+          <sc-for list="{{ statusChips }}" as="c" hint-placeholder-count="3">
+            <button onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.label }}</button>
+          </sc-for>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:10.5px; letter-spacing:0.8px; text-transform:uppercase; color:#B4B1A9; font-weight:500; margin-right:2px;">Tipo de evento</span>
+          <sc-for list="{{ typeChips }}" as="c" hint-placeholder-count="3">
+            <button onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="height:1px; background:#E9E9E7; margin:14px 0 4px;"></div>
+
+      <!-- column header -->
+      <div style="display:grid; grid-template-columns:2.4fr 1.1fr 1.1fr 1fr 1.3fr 1.1fr; gap:16px; padding:10px 12px; font-size:10.5px; letter-spacing:0.8px; text-transform:uppercase; color:#B4B1A9; font-weight:500;">
+        <div>Cliente</div>
+        <div>Evento</div>
+        <div onClick="{{ sortDate }}" style="cursor:pointer; user-select:none;">Data prevista{{ dateArrow }}</div>
+        <div onClick="{{ sortValue }}" style="cursor:pointer; user-select:none;">Valor{{ valueArrow }}</div>
+        <div>Validade</div>
+        <div>Status</div>
+      </div>
+
+      <!-- rows -->
+      <div>
+        <sc-for list="{{ rows }}" as="q" hint-placeholder-count="10">
+          <div onMouseEnter="{{ q.onEnter }}" onMouseLeave="{{ q.onLeave }}" style="{{ q.rowStyle }}">
+            <a href="#" style="display:grid; grid-template-columns:2.4fr 1.1fr 1.1fr 1fr 1.3fr 1.1fr; gap:16px; align-items:center; padding:14px 12px; text-decoration:none;">
+              <!-- cliente -->
+              <div style="display:flex; align-items:center; gap:12px; min-width:0;">
+                <div style="width:36px; height:36px; border-radius:50%; background:{{ q.avatarBg }}; color:{{ q.avatarColor }}; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; flex-shrink:0;">{{ q.initials }}</div>
+                <div style="min-width:0;">
+                  <div style="font-family:'Newsreader',serif; font-size:16px; font-weight:500; color:#37352F; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.3;">{{ q.name }}</div>
+                  <div style="font-size:12px; color:#B4B1A9; margin-top:1px;">{{ q.phone }}</div>
+                </div>
+              </div>
+              <!-- evento -->
+              <div>
+                <span style="font-size:12px; color:#8A867C; background:#F2F1EE; border-radius:6px; padding:3px 9px;">{{ q.type }}</span>
+              </div>
+              <!-- data -->
+              <div style="font-size:13.5px; color:#37352F;">{{ q.dateLabel }}</div>
+              <!-- valor -->
+              <div style="font-family:'Newsreader',serif; font-size:16px; font-weight:500; color:#37352F;">{{ q.value }}</div>
+              <!-- validade -->
+              <div style="font-size:12.5px; color:{{ q.validityColor }}; display:flex; align-items:center; gap:6px;">
+                <sc-if value="{{ q.validitySoon }}" hint-placeholder-val="{{ false }}">
+                  <span style="width:6px; height:6px; border-radius:50%; background:{{ q.validityColor }}; flex-shrink:0;"></span>
+                </sc-if>
+                {{ q.validity }}
+              </div>
+              <!-- status -->
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                <span style="display:inline-flex; align-items:center; gap:7px; font-size:12.5px; color:{{ q.statusColor }};">
+                  <span style="width:7px; height:7px; border-radius:50%; background:{{ q.statusDot }};"></span>
+                  {{ q.status }}
+                </span>
+                <sc-if value="{{ q.hasEvent }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size:10.5px; color:#8A867C; border:1px solid #E4E2DD; border-radius:5px; padding:2px 6px; white-space:nowrap;">Evento</span>
+                </sc-if>
+                <div style="position:relative; margin-left:auto;">
+                  <button onClick="{{ q.onKebab }}" aria-label="Mais opções" style="border:none; background:transparent; cursor:pointer; color:#B4B1A9; font-size:16px; line-height:1; padding:4px 6px; border-radius:6px;" style-hover="background:#EDE9E2; color:#37352F;">⋮</button>
+                  <sc-if value="{{ q.menuOpen }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:absolute; top:30px; right:0; z-index:20; width:168px; background:#fff; border:1px solid #E9E9E7; border-radius:10px; box-shadow:0 8px 28px rgba(55,53,47,0.12); padding:5px; display:flex; flex-direction:column; gap:1px;">
+                      <button onClick="{{ q.onKebab }}" style="text-align:left; border:none; background:transparent; cursor:pointer; font-family:inherit; font-size:13px; color:#37352F; padding:8px 10px; border-radius:7px;" style-hover="background:#F7F7F5;">Editar orçamento</button>
+                      <button onClick="{{ q.onKebab }}" style="text-align:left; border:none; background:transparent; cursor:pointer; font-family:inherit; font-size:13px; color:#37352F; padding:8px 10px; border-radius:7px;" style-hover="background:#F7F7F5;">Duplicar</button>
+                      <button onClick="{{ q.onKebab }}" style="text-align:left; border:none; background:transparent; cursor:pointer; font-family:inherit; font-size:13px; color:#37352F; padding:8px 10px; border-radius:7px;" style-hover="background:#F7F7F5;">Enviar por WhatsApp</button>
+                      <div style="height:1px; background:#E9E9E7; margin:3px 6px;"></div>
+                      <button onClick="{{ q.onKebab }}" style="text-align:left; border:none; background:transparent; cursor:pointer; font-family:inherit; font-size:13px; color:#B0553F; padding:8px 10px; border-radius:7px;" style-hover="background:#F7EEEB;">Excluir</button>
+                    </div>
+                  </sc-if>
+                </div>
+              </div>
+            </a>
+            <!-- resumo expansível -->
+            <div style="{{ q.detailStyle }}">
+              <div style="display:flex; align-items:center; gap:26px; padding:0 12px 15px 60px; font-size:12.5px; color:#8A867C;">
+                <span style="display:inline-flex; align-items:center; gap:7px;"><span style="color:#B4B1A9;">Local</span> <span style="color:#37352F;">{{ q.venue }}</span></span>
+                <span style="width:1px; height:12px; background:#E4E2DD;"></span>
+                <span style="display:inline-flex; align-items:center; gap:7px;"><span style="color:#B4B1A9;">Convidados</span> <span style="color:#37352F;">{{ q.guests }}</span></span>
+                <span style="width:1px; height:12px; background:#E4E2DD;"></span>
+                <span style="display:inline-flex; align-items:center; gap:7px;"><span style="color:#B4B1A9;">Horário</span> <span style="color:#37352F;">{{ q.time }}</span></span>
+                <span style="width:1px; height:12px; background:#E4E2DD;"></span>
+                <span style="display:inline-flex; align-items:center; gap:7px;"><span style="color:#B4B1A9;">Pacote</span> <span style="color:#37352F;">{{ q.pkg }}</span></span>
+                <span style="width:1px; height:12px; background:#E4E2DD;"></span>
+                <span style="display:inline-flex; align-items:center; gap:7px;"><span style="color:#B4B1A9;">E-mail</span> <span style="color:#37352F;">{{ q.email }}</span></span>
+                <a href="#" onClick="{{ q.onKebab }}" style="margin-left:auto; font-size:11.5px; color:#5A7A55; border:1px solid #DCE4D8; border-radius:6px; padding:4px 11px; white-space:nowrap;" style-hover="background:#EFF3ED;">Falar com cliente</a>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+        <div style="text-align:center; padding:60px 0; color:#B4B1A9; font-size:14px;">Nenhum orçamento encontrado para esses filtros.</div>
+      </sc-if>
+
+      <div style="margin-top:22px; font-size:12.5px; color:#B4B1A9;">Mostrando {{ count }} de {{ total }} orçamentos</div>
+
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { query: "", status: "todos", type: "todos", hovered: -1, openMenu: -1, sortKey: "date", sortDir: "asc" };
+
+  toggleMenu(i, e){ e.preventDefault(); e.stopPropagation(); this.setState(s=>({ openMenu: s.openMenu===i ? -1 : i })); }
+  sortBy(k){ this.setState(s=>({ sortKey:k, sortDir: s.sortKey===k && s.sortDir==="asc" ? "desc" : "asc" })); }
+  toDate(d){ const [dd,mm,yy]=d.split("/"); return new Date(+yy,+mm-1,+dd); }
+  daysUntil(d){ return Math.round((this.toDate(d) - this.toDate("29/07/2026"))/86400000); }
+  emailOf(n){ const t=n.replace(/&/g," ").split(/\s+/).filter(Boolean)[0].toLowerCase(); return t+"@email.com"; }
+
+  data = [
+    { name:"Geremias Júnior & Luana Godinho", raw:"33999478774", type:"Casamento", date:"08/08/2026", value:2000, validity:"27/10/2026", status:"Aprovado", event:false, venue:"Espaço Villa Bianca — Uberaba/MG", guests:180, time:"19h00", pkg:"Cerimônia + recepção" },
+    { name:"Maria Eduarda", raw:"33999478774", type:"Debutante", date:"31/07/2026", value:9150, validity:"27/10/2026", status:"Aprovado", event:false, venue:"Buffet Golden Hall", guests:250, time:"21h00", pkg:"Festa 15 anos completa" },
+    { name:"Juliana", raw:"33999478774", type:"Debutante", date:"30/07/2026", value:1250, validity:"28/08/2026", status:"Enviado", event:false, venue:"Salão Jardim das Rosas", guests:90, time:"20h00", pkg:"Decoração + cerimonial" },
+    { name:"Marina", raw:"33999592997", type:"Debutante", date:"31/07/2026", value:8600, validity:"27/09/2026", status:"Aprovado", event:false, venue:"Chácara Recanto Azul", guests:200, time:"21h30", pkg:"Festa 15 anos completa" },
+    { name:"Lia", raw:"33999478774", type:"Debutante", date:"31/07/2026", value:9200, validity:"27/10/2026", status:"Aprovado", event:false, venue:"Espaço Lumière", guests:220, time:"21h00", pkg:"Festa + assessoria full" },
+    { name:"Lya", raw:"33999478774", type:"Debutante", date:"30/07/2026", value:6900, validity:"26/09/2026", status:"Aprovado", event:false, venue:"Buffet Estação Central", guests:160, time:"20h30", pkg:"Festa 15 anos" },
+    { name:"Luana & Geremias", raw:"33999592997", type:"Casamento", date:"30/07/2026", value:750, validity:"26/10/2026", status:"Enviado", event:false, venue:"Cartório + mini wedding", guests:40, time:"16h00", pkg:"Cerimônia civil" },
+    { name:"Geremias & Luana", raw:"33999478774", type:"Casamento", date:"28/07/2026", value:2500, validity:"27/08/2026", status:"Aprovado", event:true, venue:"Fazenda Santa Clara", guests:120, time:"18h30", pkg:"Cerimônia + recepção" },
+    { name:"Geremias Silveira da Silva Júnior", raw:"33999478774", type:"Casamento", date:"30/07/2026", value:2000, validity:"26/08/2026", status:"Aprovado", event:true, venue:"Espaço Villa Bianca", guests:150, time:"19h00", pkg:"Recepção" },
+    { name:"Bella & Jonas", raw:"33999478774", type:"Casamento", date:"31/07/2026", value:3150, validity:"22/10/2026", status:"Aprovado", event:true, venue:"Praia do Forte — destination", guests:80, time:"17h00", pkg:"Destination wedding" },
+  ];
+
+  navItems = ["Dashboard","Eventos","Orçamentos","Clientes","Cerimonialistas","Fornecedores","Tarefas","Calendário","Financeiro","Relatórios","Catálogo","Configurações"];
+
+  fmtPhone(r){ return "(" + r.slice(0,2) + ") " + r.slice(2,7) + "-" + r.slice(7); }
+  fmtValue(v){ return "R$ " + v.toLocaleString("pt-BR"); }
+  initials(n){
+    const clean = n.replace(/&/g," ").split(/\s+/).filter(Boolean);
+    return ((clean[0]?.[0]||"") + (clean[1]?.[0]||"")).toUpperCase();
+  }
+  monthLabel(d){
+    const [dd,mm,yy] = d.split("/");
+    const M = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+    return dd + " " + M[parseInt(mm,10)-1] + " " + yy;
+  }
+
+  statusStyle(s){
+    if(s==="Aprovado") return { color:"#5A7A55", dot:"#7A9B6E" };
+    if(s==="Enviado")  return { color:"#9A7B3E", dot:"#C08A4E" };
+    return { color:"#8A867C", dot:"#B4B1A9" };
+  }
+  avatarPalette(s){
+    if(s==="Casamento") return { bg:"#EDE9E2", color:"#8A6E4B" };
+    return { bg:"#EAEAE6", color:"#6E7A6A" };
+  }
+
+  renderVals(){
+    const { query, status, type } = this.state;
+    const q = query.trim().toLowerCase();
+
+    const filtered = this.data.filter(d=>{
+      const matchQ = !q || d.name.toLowerCase().includes(q) || d.raw.includes(q.replace(/\D/g,""));
+      const matchS = status==="todos" || d.status.toLowerCase()===status;
+      const matchT = type==="todos" || d.type.toLowerCase()===type;
+      return matchQ && matchS && matchT;
+    });
+
+    const { sortKey, sortDir } = this.state;
+    const dir = sortDir==="asc" ? 1 : -1;
+    const sorted = filtered.slice().sort((a,b)=>{
+      const v = sortKey==="value" ? a.value-b.value : (this.toDate(a.date)-this.toDate(b.date));
+      return v*dir;
+    });
+
+    const rows = sorted.map((d,i)=>{
+      const ss = this.statusStyle(d.status);
+      const av = this.avatarPalette(d.type);
+      const open = this.state.hovered===i;
+      const dLeft = this.daysUntil(d.validity);
+      const soon = dLeft>=0 && dLeft<=30;
+      const expired = dLeft<0;
+      return {
+        name:d.name, phone:this.fmtPhone(d.raw), type:d.type,
+        dateLabel:this.monthLabel(d.date), value:this.fmtValue(d.value),
+        validity: expired ? "Vencido em "+d.validity : (soon ? "Vence em "+dLeft+" dias" : "Válido até "+d.validity),
+        validityColor: expired ? "#B0553F" : (soon ? "#9A7B3E" : "#B4B1A9"),
+        validitySoon: soon || expired,
+        email:this.emailOf(d.name),
+        status:d.status,
+        statusColor:ss.color, statusDot:ss.dot,
+        avatarBg:av.bg, avatarColor:av.color, initials:this.initials(d.name),
+        hasEvent:d.event,
+        venue:d.venue, guests:d.guests+" convidados", time:d.time, pkg:d.pkg,
+        onEnter:()=>this.setState({ hovered:i }),
+        onLeave:()=>this.setState({ hovered:-1 }),
+        menuOpen:this.state.openMenu===i,
+        onKebab:(e)=>this.toggleMenu(i,e),
+        rowStyle:"border-radius:10px; transition:background .35s cubic-bezier(.22,.61,.36,1); "+(open?"background:#F7F7F5;":"background:transparent;"),
+        detailStyle:"overflow:hidden; transition:max-height .42s cubic-bezier(.22,.61,.36,1), opacity .32s ease, transform .42s cubic-bezier(.22,.61,.36,1); "
+          +(open?"max-height:60px; opacity:1; transform:translateY(0);":"max-height:0; opacity:0; transform:translateY(-4px);"),
+      };
+    });
+
+    const statDefs = [
+      { label:"Total de orçamentos", value:"15", sub:"este mês", tintColor:"#B4B1A9", filter:"todos" },
+      { label:"Em aberto", value:"3", sub:"aguardando", tintColor:"#C08A4E", filter:"enviado" },
+      { label:"Aprovados", value:"12", sub:"fechados", tintColor:"#7A9B6E", filter:"aprovado" },
+      { label:"Taxa de conversão", value:"100%", sub:"", tintColor:"#B4B1A9", filter:null },
+    ];
+    const stats = statDefs.map((s,i)=>{
+      const on = s.filter && status===s.filter;
+      return { ...s, border: i<3 ? "1px solid #E9E9E7" : "none",
+        clickable: !!s.filter, active: on,
+        cardStyle:"padding:20px 22px; border-right:"+(i<3?"1px solid #E9E9E7":"none")+"; transition:background .2s ease; "
+          +(s.filter?"cursor:pointer;":"cursor:default;")+(on?"background:#F2F1EE;":"background:transparent;"),
+        onClick: s.filter ? ()=>this.setState({ status: status===s.filter ? "todos" : s.filter }) : ()=>{},
+      };
+    });
+
+    const activeIdx = 2;
+    const nav = this.navItems.map((label,i)=>{
+      const active = i===activeIdx;
+      const soon = label==="Relatórios";
+      return {
+        label, soon,
+        dot: active ? "#37352F" : "transparent",
+        onClick: (e)=>{ e.preventDefault(); },
+        style: "display:flex; align-items:center; gap:10px; padding:7px 10px; border-radius:8px; font-size:13.5px; text-decoration:none; "
+          + (active
+              ? "background:#EDE9E2; color:#37352F; font-weight:500;"
+              : "color:#6B6862;"),
+      };
+    });
+
+    const chipDefs = [
+      { key:"todos", label:"Todos" },
+      { key:"aprovado", label:"Aprovados" },
+      { key:"enviado", label:"Enviados" },
+    ];
+    const statusChips = chipDefs.map(c=>{
+      const on = status===c.key;
+      return {
+        label:c.label,
+        onClick:()=>this.setState({ status:c.key }),
+        style:"font-family:inherit; font-size:13px; border-radius:10px; padding:9px 15px; cursor:pointer; white-space:nowrap; "
+          + (on
+              ? "background:#37352F; color:#F7F7F5; border:1px solid #37352F;"
+              : "background:#fff; color:#6B6862; border:1px solid #E9E9E7;"),
+      };
+    });
+
+    const typeDefs = [
+      { key:"todos", label:"Todos os tipos" },
+      { key:"casamento", label:"Casamento" },
+      { key:"debutante", label:"Debutante" },
+    ];
+    const typeChips = typeDefs.map(c=>{
+      const on = type===c.key;
+      return {
+        label:c.label,
+        onClick:()=>this.setState({ type:c.key }),
+        style:"font-family:inherit; font-size:13px; border-radius:10px; padding:9px 15px; cursor:pointer; white-space:nowrap; "
+          + (on
+              ? "background:#37352F; color:#F7F7F5; border:1px solid #37352F;"
+              : "background:#fff; color:#6B6862; border:1px solid #E9E9E7;"),
+      };
+    });
+
+    return {
+      nav, stats, statusChips, typeChips, rows,
+      query,
+      onSearch:(e)=>this.setState({ query:e.target.value }),
+      sortDate:()=>this.sortBy("date"),
+      sortValue:()=>this.sortBy("value"),
+      dateArrow: sortKey==="date" ? (sortDir==="asc"?" ↑":" ↓") : "",
+      valueArrow: sortKey==="value" ? (sortDir==="asc"?" ↑":" ↓") : "",
+      empty: rows.length===0,
+      count: rows.length, total: this.data.length,
+    };
+  }
+}
+</script>
+</body>
+</html>
