@@ -84,7 +84,21 @@ export async function criarLancamento(
   });
 
   const { error } = await supabase.from("transactions").insert(linhas);
-  if (error) return { error: "Não foi possível lançar." };
+  if (error) {
+    // Engolir a causa foi um erro: sem ela, nem quem usa nem quem
+    // conserta sabe o que houve. As duas que o schema realmente impõe
+    // ganham texto humano; o resto sai com a mensagem do banco.
+    if (error.message.includes("fornecedor_obrigatorio")) {
+      return {
+        error:
+          "Pagamento da verba do evento precisa do fornecedor. Escolha um, ou lance sem marcar que sai do seu caixa.",
+      };
+    }
+    if (error.code === "42501" || error.message.includes("row-level security")) {
+      return { error: "Você não tem permissão para lançar neste evento." };
+    }
+    return { error: `Não foi possível lançar: ${error.message}` };
+  }
 
   revalidatePath(`/eventos/${eventId}/financeiro`);
   return { success: true };

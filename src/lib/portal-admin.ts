@@ -106,6 +106,34 @@ export async function criarAcessoPortal(params: {
     (u) => (u.email ?? "").toLowerCase() === email
   );
 
+  // ------------------------------------------------------------------
+  // Equipe e cliente não podem ser a MESMA conta.
+  //
+  // No Supabase um e-mail é uma conta só, e o navegador guarda uma sessão
+  // por domínio. Se a cerimonialista também for cliente, entrar no portal
+  // derruba a sessão dela do sistema, e as duas permissões passam a valer
+  // ao mesmo tempo na mesma sessão — ela vira equipe e cliente conforme a
+  // tela que abrir. Confuso de usar e ruim de auditar.
+  //
+  // Barrar aqui é mais barato que desfazer depois: quem precisa dos dois
+  // papéis usa dois e-mails.
+  // ------------------------------------------------------------------
+  if (existente) {
+    const { data: membro } = await admin
+      .from("membros_equipe")
+      .select("nome, cargo")
+      .eq("user_id", existente.id)
+      .maybeSingle();
+
+    if (membro) {
+      return {
+        error:
+          `Este e-mail já é da sua equipe (${membro.nome} · ${membro.cargo}). ` +
+          `Use outro e-mail para o acesso da cliente — a mesma conta não pode ser as duas coisas.`,
+      };
+    }
+  }
+
   const vinculo = {
     event_id: params.eventId,
     empresa_id: params.empresaId,

@@ -32,9 +32,12 @@ function horaEValidade(): string {
 
 export function PortalLoginForm({
   erroInicial,
+  sessaoAtual,
 }: {
   /** Vem do ?erro= da URL (ex.: link de redefinição expirado). */
   erroInicial?: string;
+  /** e-mail da EQUIPE já logada neste navegador, quando houver */
+  sessaoAtual?: string | null;
 }) {
   const router = useRouter();
   const [vista, setVista] = useState<Vista>("login");
@@ -143,6 +146,20 @@ export function PortalLoginForm({
               <p className="acesso-alert" role="alert">
                 <IconeAlerta />
                 <span>{erro}</span>
+              </p>
+            )}
+            {/* O navegador guarda uma sessão por domínio: entrar aqui
+                encerra a de quem já estava. Sem este aviso, a
+                cerimonialista que abre o portal para conferir perde a
+                própria sessão e acha que o sistema se confundiu. */}
+            {sessaoAtual && (
+              <p className="acesso-alert" role="status">
+                <IconeAlerta />
+                <span>
+                  Você está conectada como <strong>{sessaoAtual}</strong>.
+                  Entrar aqui vai encerrar essa sessão. Para ver o portal sem
+                  sair do sistema, use uma janela anônima.
+                </span>
               </p>
             )}
             {/* method="post" não é decoração: até o React hidratar, o
