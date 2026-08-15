@@ -27,6 +27,7 @@ import {
 import type { FinanceiroDoEvento } from "@/lib/supabase/financeiro-evento";
 import { DrawerLancamento } from "./DrawerLancamento";
 import { NovoLancamento } from "./NovoLancamento";
+import { salvarVerbaTotal } from "@/app/(app)/eventos/[id]/financeiro/lancamento-actions";
 import { PainelFechamento, type NumerosFechamento } from "./PainelFechamento";
 import { PainelConciliacao } from "./PainelConciliacao";
 import "./financeiro.css";
@@ -518,11 +519,36 @@ function CardVerba({
   totais: { alocado: number; pago: number; aPagar: number };
   eventId: string;
 }) {
+  const router = useRouter();
+  const [editando, setEditando] = useState(false);
+  const [texto, setTexto] = useState(
+    dados.verbaTotal == null ? "" : String(dados.verbaTotal).replace(".", ",")
+  );
+  const [salvando, setSalvando] = useState(false);
   const teto = dados.verbaTotal;
   const livre = teto == null ? null : teto - totais.alocado;
   const base = teto ?? totais.alocado;
   const pctPago = base ? (totais.pago / base) * 100 : 0;
   const pctComp = base ? (totais.aPagar / base) * 100 : 0;
+
+  function salvar() {
+    setSalvando(true);
+    const limpo = texto.trim();
+    // campo vazio apaga o teto: sem verba definida é um estado legítimo,
+    // e a tela mostra o alocado em vez de inventar um número
+    const valor = limpo
+      ? Number(limpo.replace(/\./g, "").replace(",", "."))
+      : null;
+    if (valor !== null && !Number.isFinite(valor)) {
+      setSalvando(false);
+      return;
+    }
+    salvarVerbaTotal(eventId, valor).then(() => {
+      setSalvando(false);
+      setEditando(false);
+      router.refresh();
+    });
+  }
 
   return (
     <div className="fin-card">
@@ -531,9 +557,57 @@ function CardVerba({
           <p className="fin-rotulo">Fornecedores</p>
           <h2 className="fin-h2">Verba do evento que você administra</h2>
         </div>
-        <a className="fin-link" href={`/eventos/${eventId}/financeiro/verba`}>
-          Ajustar verba
-        </a>
+        {/* a verba é um número só: editar aqui, sem tirar ela da tela */}
+        {editando ? (
+          <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <input
+              className="fin-mono"
+              value={texto}
+              onChange={(e) => setTexto(e.target.value)}
+              inputMode="decimal"
+              placeholder="0,00"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") salvar();
+                if (e.key === "Escape") setEditando(false);
+              }}
+              style={{
+                width: 140,
+                height: 36,
+                padding: "0 10px",
+                border: "1px solid var(--linha)",
+                borderRadius: 10,
+                fontSize: 15,
+                color: "var(--tinta)",
+              }}
+            />
+            <button
+              type="button"
+              className="fin-btn fin-btn-primario"
+              style={{ minHeight: 36 }}
+              disabled={salvando}
+              onClick={salvar}
+            >
+              {salvando ? "…" : "Salvar"}
+            </button>
+            <button
+              type="button"
+              className="fin-btn"
+              style={{ minHeight: 36 }}
+              onClick={() => setEditando(false)}
+            >
+              Cancelar
+            </button>
+          </span>
+        ) : (
+          <button
+            type="button"
+            className="fin-link"
+            onClick={() => setEditando(true)}
+          >
+            {teto == null ? "Definir a verba" : "Ajustar verba"}
+          </button>
+        )}
       </div>
 
       <div className="fin-kpis">
