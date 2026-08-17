@@ -307,7 +307,10 @@ function LinhaObjetivo({
           padding: `${pad}px 16px`,
           borderBottom: `1px solid ${C.bordaSutil}`,
           background: expandido ? C.tint : "transparent",
-          opacity: compactar === "depois" ? 0.62 : 1,
+          // "depois" é esmaecido porque ainda não é a vez dele; resolvido
+          // não — está pronto, e ler o que já se conquistou vale
+          opacity:
+            compactar === "depois" && objetivo.bucket !== "concluido" ? 0.62 : 1,
           cursor: "pointer",
         }}
         onClick={onToggle}
@@ -352,16 +355,35 @@ function LinhaObjetivo({
             {brl(objetivo.valorPrevisto)}
           </span>
         </div>
-        <span
-          style={{
-            fontFamily: F_MONO,
-            fontSize: 11,
-            color: C.secundario,
-            flexShrink: 0,
-          }}
-        >
-          decisões {objetivo.decididas}/{objetivo.aplicaveis}
-        </span>
+        {/* Categoria resolvida diz que ACABOU, não uma fração que a
+            pessoa precisa comparar de cabeça para descobrir o mesmo. */}
+        {objetivo.bucket === "concluido" ? (
+          <span
+            style={{
+              fontFamily: F_MONO,
+              fontSize: 11,
+              color: "var(--state-ok)",
+              background: "var(--state-ok-bg)",
+              padding: "3px 9px",
+              borderRadius: 999,
+              flexShrink: 0,
+              whiteSpace: "nowrap",
+            }}
+          >
+            tudo decidido · {objetivo.aplicaveis}
+          </span>
+        ) : (
+          <span
+            style={{
+              fontFamily: F_MONO,
+              fontSize: 11,
+              color: C.secundario,
+              flexShrink: 0,
+            }}
+          >
+            decisões {objetivo.decididas}/{objetivo.aplicaveis}
+          </span>
+        )}
         {compactar !== "proximas" && compactar !== "depois" && (
           <div
             style={{
@@ -588,6 +610,16 @@ export function ModoFoco({
       chave: "depois",
       rotulo: "depois",
       lista: ativos.filter((o) => o.bucket === "depois"),
+      compactar: "depois",
+    },
+    // No fim, e só quando existe: o que já foi resolvido não disputa
+    // atenção com o que falta, mas também não pode ficar escondido no
+    // meio do que "ainda vem".
+    {
+      chave: "concluido",
+      rotulo: "resolvidas",
+      extra: "nada mais a decidir aqui",
+      lista: ativos.filter((o) => o.bucket === "concluido"),
       compactar: "depois",
     },
   ];

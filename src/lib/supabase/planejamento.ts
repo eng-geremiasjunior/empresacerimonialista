@@ -49,7 +49,15 @@ export type Decisao = {
   gerariaTarefas: string[];
 };
 
-export type Bucket = "agora" | "proximas" | "depois";
+/**
+ * A janela do objetivo.
+ *
+ * 'concluido' não é uma janela de tempo: é o fim da linha. Sem ele, um
+ * objetivo com tudo decidido caía em 'depois' — porque 'depois' era o
+ * valor de partida e nada o tirava de lá quando não sobrava pendência.
+ * A tela dizia "ainda vem" para trabalho que já tinha acabado.
+ */
+export type Bucket = "agora" | "proximas" | "depois" | "concluido";
 
 export type Objetivo = {
   id: string;
@@ -271,7 +279,11 @@ export async function getPlanejamento(
       .filter((p): p is string => p !== null)
       .sort()[0] ?? null;
 
-    let bucket: Bucket = "depois";
+    // Nada pendente e havia o que decidir = acabou. Isto vem ANTES do
+    // cálculo de janela: objetivo concluído não tem "quando começar".
+    const concluido = aplicaveis.length > 0 && pendentes.length === 0;
+
+    let bucket: Bucket = concluido ? "concluido" : "depois";
     let faltamDias: number | null = null;
     let janelaDias: number | null = null;
     if (proximoPrazo) {

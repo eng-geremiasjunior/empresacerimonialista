@@ -94,7 +94,13 @@ type NoObjetivo = {
   y: number;
 };
 
-const BUCKET_PESO: Record<string, number> = { agora: 0, proximas: 1, depois: 2 };
+// resolvido vai por último: já não disputa a atenção de ninguém
+const BUCKET_PESO: Record<string, number> = {
+  agora: 0,
+  proximas: 1,
+  depois: 2,
+  concluido: 3,
+};
 
 function montarNos(objetivos: Objetivo[]): NoObjetivo[] {
   const ativos = objetivos.filter((o) => o.ativo);
