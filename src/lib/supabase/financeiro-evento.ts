@@ -83,7 +83,8 @@ export const getFinanceiroDoEvento = cache(
     const supabase = createClient();
     const hoje = new Date().toISOString().slice(0, 10);
 
-    const [evRes, txRes, verbaRes, saldoRes, vinculoRes] = await Promise.all([
+    const [evRes, txRes, verbaRes, saldoRes, vinculoRes, objetivosRes] =
+      await Promise.all([
       supabase
         .from("events")
         .select("verba_total, clients(name)")
@@ -106,6 +107,12 @@ export const getFinanceiroDoEvento = cache(
         .select("valor_supplier_id, evento_decisao(evento_objetivo(id, nome))")
         .eq("event_id", eventId)
         .not("valor_supplier_id", "is", null),
+      // as categorias de verba: já vêm preenchidas pelo método
+      supabase
+        .from("evento_objetivo")
+        .select("id, nome, valor_previsto, ordem, ativo")
+        .eq("event_id", eventId)
+        .order("ordem"),
     ]);
 
     const ev = evRes.data as Linha | null;
@@ -132,23 +139,70 @@ export const getFinanceiroDoEvento = cache(
       );
     });
 
-    // Verba por categoria: a base é a alocação por fornecedor (é ela que
-    // tem o dinheiro combinado), e o nome da categoria vem do objetivo.
-    const categorias: CategoriaVerba[] = ((verbaRes.data ?? []) as unknown as Linha[]).map(
-      (v) => {
-        const supplierId = v.supplier_id as string;
-        const cat = categoriaDo.get(supplierId);
-        return {
-          id: v.id as string,
-          nome: cat?.nome ?? "Sem categoria",
-          fornecedor: (v.suppliers as { name: string } | null)?.name ?? "Fornecedor",
-          alocado: v.valor_alocado === null ? 0 : Number(v.valor_alocado),
-          lancamentos: lancamentos.filter(
-            (l) => l.supplierId === supplierId && l.direcao === "saida"
-          ),
-        };
-      }
+    /*
+     * Verba por categoria.
+     *
+     * A base são as CATEGORIAS do Planejamento (evento_objetivo), não os
+     * fornecedores: elas já nascem preenchidas com o método e é nelas que
+     * a verba foi distribuída. Montar a partir do fornecedor mostraria só
+     * quem já foi fechado — e o buraco do orçamento é justamente o que
+     * ainda não foi.
+     *
+     * Dentro de cada uma entram os fornecedores fechados, e o que sobrar
+     * sem categoria vai para uma linha própria em vez de sumir.
+     */
+    const objetivos = ((objetivosRes.data ?? []) as Linha[]).filter(
+      (o) => o.ativo !== false
     );
+    const verbas = (verbaRes.data ?? []) as unknown as Linha[];
+
+    const itensDaCategoria = (objetivoId: string | null) =>
+      verbas
+        .filter((v) => {
+          const cat = categoriaDo.get(v.supplier_id as string);
+          return objetivoId ? cat?.id === objetivoId : !cat;
+        })
+        .map((v) => ({
+          id: v.id as string,
+          nome: (v.suppliers as { name: string } | null)?.name ?? "Fornecedor",
+          fornecedor: (v.suppliers as { name: string } | null)?.name ?? null,
+          contratado: v.valor_alocado === null ? 0 : Number(v.valor_alocado),
+          estimado:
+            v.valor_estimado_inicial === null
+              ? null
+              : Number(v.valor_estimado_inicial),
+        }));
+
+    const lancamentosDaCategoria = (objetivoId: string | null) =>
+      lancamentos.filter((l) => {
+        if (l.direcao !== "saida") return false;
+        // o lançamento diz a categoria dele, se souber; senão herda a do
+        // fornecedor
+        if (l.objetivoId) return l.objetivoId === objetivoId;
+        const cat = l.supplierId ? categoriaDo.get(l.supplierId) : null;
+        return objetivoId ? cat?.id === objetivoId : !cat;
+      });
+
+    const categorias: CategoriaVerba[] = objetivos.map((o) => ({
+      id: o.id as string,
+      nome: o.nome as string,
+      previsto: o.valor_previsto === null ? 0 : Number(o.valor_previsto),
+      itens: itensDaCategoria(o.id as string),
+      lancamentos: lancamentosDaCategoria(o.id as string),
+    }));
+
+    // fornecedor ou gasto que ainda não pertence a categoria nenhuma
+    const soltos = itensDaCategoria(null);
+    const lancamentosSoltos = lancamentosDaCategoria(null);
+    if (soltos.length > 0 || lancamentosSoltos.length > 0) {
+      categorias.push({
+        id: "sem-categoria",
+        nome: "Sem categoria",
+        previsto: 0,
+        itens: soltos,
+        lancamentos: lancamentosSoltos,
+      });
+    }
 
     // Contrato de assessoria: soma do que ela combinou receber.
     const entradas = lancamentos.filter(

@@ -384,8 +384,9 @@ export function FinanceiroEvento({
               <table className="fin-tabela">
                 <thead>
                   <tr>
-                    <th>Categoria · fornecedor</th>
-                    <th style={{ textAlign: "right" }}>Alocado</th>
+                    <th>Categoria</th>
+                    <th style={{ textAlign: "right" }}>Previsto</th>
+                    <th style={{ textAlign: "right" }}>Contratado</th>
                     <th style={{ textAlign: "right" }}>Pago</th>
                     <th style={{ textAlign: "right" }}>A pagar</th>
                     <th>Andamento</th>
@@ -403,11 +404,33 @@ export function FinanceiroEvento({
                     >
                       <td>
                         <span className="fin-cat-nome">{c.nome}</span>
-                        <span className="fin-cat-forn">{c.fornecedor}</span>
+                        {c.fornecedores.length > 0 && (
+                          <span className="fin-cat-forn">
+                            {c.fornecedores.join(" · ")}
+                          </span>
+                        )}
                       </td>
-                      <td className="fin-num">{money(c.alocado)}</td>
-                      <td className="fin-num">{money(c.pago)}</td>
-                      <td className="fin-num">{money(c.aPagar)}</td>
+                      <td className="fin-num" style={{ color: "var(--cinza)" }}>
+                        {c.previsto ? money(c.previsto) : "—"}
+                      </td>
+                      <td
+                        className="fin-num"
+                        style={{
+                          // contratar acima do previsto avisa, não bloqueia
+                          color: c.estourou ? "var(--state-wait)" : undefined,
+                        }}
+                        title={
+                          c.estourou
+                            ? `${c.pctDoPrevisto}% do previsto`
+                            : undefined
+                        }
+                      >
+                        {c.contratado ? money(c.contratado) : "—"}
+                      </td>
+                      <td className="fin-num">{c.pago ? money(c.pago) : "—"}</td>
+                      <td className="fin-num">
+                        {c.aPagar ? money(c.aPagar) : "—"}
+                      </td>
                       <td>
                         <span className="fin-and">
                           <i style={{ width: `${Math.min(100, c.pct)}%` }} />
@@ -432,8 +455,9 @@ export function FinanceiroEvento({
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td>Total alocado</td>
-                    <td className="fin-num">{money(cats.totais.alocado)}</td>
+                    <td>Total</td>
+                    <td className="fin-num">{money(cats.totais.previsto)}</td>
+                    <td className="fin-num">{money(cats.totais.contratado)}</td>
                     <td className="fin-num">{money(cats.totais.pago)}</td>
                     <td className="fin-num">{money(cats.totais.aPagar)}</td>
                     <td colSpan={2} />
@@ -516,7 +540,12 @@ function CardVerba({
   eventId,
 }: {
   dados: FinanceiroDoEvento;
-  totais: { alocado: number; pago: number; aPagar: number };
+  totais: {
+    previsto: number;
+    contratado: number;
+    pago: number;
+    aPagar: number;
+  };
   eventId: string;
 }) {
   const router = useRouter();
@@ -526,8 +555,10 @@ function CardVerba({
   );
   const [salvando, setSalvando] = useState(false);
   const teto = dados.verbaTotal;
-  const livre = teto == null ? null : teto - totais.alocado;
-  const base = teto ?? totais.alocado;
+  // "Livre" é o que ainda não foi PREVISTO em categoria nenhuma — é a
+  // folga real do orçamento, não o que falta contratar.
+  const livre = teto == null ? null : teto - totais.previsto;
+  const base = teto ?? totais.previsto ?? totais.contratado;
   const pctPago = base ? (totais.pago / base) * 100 : 0;
   const pctComp = base ? (totais.aPagar / base) * 100 : 0;
 

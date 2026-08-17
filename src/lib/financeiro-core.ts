@@ -72,11 +72,28 @@ export type Lancamento = {
   formaPagamento: string | null;
 };
 
+/**
+ * A categoria de verba é o OBJETIVO do Planejamento — "Buffet e bebidas",
+ * "Foto e vídeo". Elas já nascem preenchidas com o método, e é nelas que
+ * a verba foi distribuída.
+ *
+ * Três valores, como todo orçamento de casamento sério:
+ *   previsto   — o que se planejou gastar (a distribuição da verba)
+ *   contratado — o que foi de fato fechado com fornecedor
+ *   pago       — o que já saiu
+ */
 export type CategoriaVerba = {
   id: string;
   nome: string;
-  fornecedor: string;
-  alocado: number;
+  previsto: number;
+  /** os fornecedores fechados dentro desta categoria */
+  itens: {
+    id: string;
+    nome: string;
+    fornecedor: string | null;
+    contratado: number;
+    estimado: number | null;
+  }[];
   lancamentos: Lancamento[];
 };
 
@@ -323,14 +340,22 @@ export const buildFila = (
 export type LinhaCategoria = {
   id: string;
   nome: string;
-  fornecedor: string;
-  alocado: number;
+  /** quem já está fechado nesta categoria, para a linha de apoio */
+  fornecedores: string[];
+  previsto: number;
+  contratado: number;
   pago: number;
   aPagar: number;
+  /** quanto do previsto já foi comprometido; > 100 estourou o planejado */
+  pctDoPrevisto: number;
+  /** quanto do contratado já foi pago — é o andamento da barra */
   pct: number;
+  /** contratado acima do previsto: alerta, não bloqueio */
+  estourou: boolean;
   prox: string;
   proxTone: Tone;
   proxLancamento: Lancamento | null;
+  itens: CategoriaVerba["itens"];
 };
 
 export function buildCategorias(
@@ -338,9 +363,15 @@ export function buildCategorias(
   hoje: string = HOJE_PADRAO
 ): {
   linhas: LinhaCategoria[];
-  totais: { alocado: number; pago: number; aPagar: number };
+  totais: {
+    previsto: number;
+    contratado: number;
+    pago: number;
+    aPagar: number;
+  };
 } {
   const linhas = categorias.map((c) => {
+    const contratado = c.itens.reduce((t, i) => t + i.contratado, 0);
     const pago = c.lancamentos
       .filter((l) => l.pagoEm)
       .reduce((t, l) => t + l.valor, 0);
@@ -350,21 +381,34 @@ export function buildCategorias(
     return {
       id: c.id,
       nome: c.nome,
-      fornecedor: c.fornecedor,
-      alocado: c.alocado,
+      fornecedores: c.itens
+        .map((i) => i.fornecedor)
+        .filter((f): f is string => Boolean(f)),
+      previsto: c.previsto,
+      contratado,
       pago,
-      aPagar: c.alocado - pago,
-      pct: c.alocado ? Math.round((pago / c.alocado) * 100) : 0,
+      // a pagar sai do CONTRATADO, não do previsto: dívida é o que se
+      // fechou, não o que se planejou
+      aPagar: Math.max(0, contratado - pago),
+      pctDoPrevisto: c.previsto ? Math.round((contratado / c.previsto) * 100) : 0,
+      pct: contratado ? Math.round((pago / contratado) * 100) : 0,
+      estourou: c.previsto > 0 && contratado > c.previsto,
       prox: prox ? fmtData(prox.vencimento).slice(0, 5) : "—",
       proxTone: prox ? statusDe(prox, hoje).tone : ("neutral" as Tone),
       proxLancamento: prox || null,
+      itens: c.itens,
     };
   });
-  const t = (k: "alocado" | "pago" | "aPagar") =>
+  const t = (k: "previsto" | "contratado" | "pago" | "aPagar") =>
     linhas.reduce((s, l) => s + l[k], 0);
   return {
     linhas,
-    totais: { alocado: t("alocado"), pago: t("pago"), aPagar: t("aPagar") },
+    totais: {
+      previsto: t("previsto"),
+      contratado: t("contratado"),
+      pago: t("pago"),
+      aPagar: t("aPagar"),
+    },
   };
 }
 
@@ -423,11 +467,19 @@ export function buildResumo(
       valor: dados.verbaTotal ? money(dados.verbaTotal) : "—",
     },
     {
-      label: `Alocado em ${dados.categorias.length} ${dados.categorias.length === 1 ? "categoria" : "categorias"}`,
+      label: `Previsto em ${dados.categorias.length} ${dados.categorias.length === 1 ? "categoria" : "categorias"}`,
       meta: dados.verbaTotal
-        ? `livre ${money(dados.verbaTotal - totais.alocado)}`
+        ? `livre ${money(dados.verbaTotal - totais.previsto)}`
         : "sem teto definido",
-      valor: money(totais.alocado),
+      valor: money(totais.previsto),
+    },
+    {
+      label: "Contratado",
+      meta:
+        totais.previsto > 0
+          ? `${Math.round((totais.contratado / totais.previsto) * 100)}% do previsto`
+          : "fornecedores fechados",
+      valor: money(totais.contratado),
     },
     {
       label: "Pago aos fornecedores",
