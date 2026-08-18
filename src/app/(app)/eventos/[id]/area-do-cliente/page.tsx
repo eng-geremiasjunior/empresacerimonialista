@@ -5,8 +5,6 @@ import {
   AcessoDaCliente,
   type AcessoLinha,
 } from "@/components/evento/AcessoDaCliente";
-import { ConvidadosDoEvento } from "@/components/evento/ConvidadosDoEvento";
-import { getConvidados, resumirConvidados } from "@/lib/supabase/portal-pessoas";
 
 export const dynamic = "force-dynamic";
 
@@ -53,8 +51,6 @@ export default async function AreaDoClientePage({
   const nomePlaceholder =
     meuMembro?.nome === "Proprietária" || meuMembro?.nome === "Proprietaria";
 
-  const convidados = await getConvidados(params.id);
-  const resumo = resumirConvidados(convidados);
   const cliente = (
     evento as unknown as {
       clients: { id: string; name: string; email: string | null } | null;
@@ -95,12 +91,7 @@ export default async function AreaDoClientePage({
         }
       />
 
-      <ConvidadosDoEvento
-        eventId={params.id}
-        convidados={convidados}
-        resumo={resumo}
-      />
-
+      {/* a lista de convidados mora na aba Mesas, junto de onde é usada */}
       <section className="rounded-xl border border-gray-200 bg-white p-4">
         <h3 className="text-sm font-semibold text-gray-900">
           Por onde ela entra

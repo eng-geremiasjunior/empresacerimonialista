@@ -100,7 +100,7 @@ export function ListaConvidados({
   const router = useRouter();
   const [pendente, iniciar] = useTransition();
   const [lado, setLado] = useState<(typeof LADOS)[number]["valor"]>("todos");
-  const [novo, setNovo] = useState({ nome: "", lado: "", grupo: "", mesa: "", telefone: "" });
+  const [novo, setNovo] = useState({ nome: "", lado: "", grupo: "", telefone: "" });
   const [editando, setEditando] = useState<string | null>(null);
   const [copiado, setCopiado] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -129,12 +129,11 @@ export function ListaConvidados({
         nome: novo.nome,
         lado: (novo.lado || null) as "noiva" | "noivo" | null,
         grupo: novo.grupo,
-        mesa: novo.mesa,
         telefone: novo.telefone,
       });
       if (r.error) setAviso(r.error);
       else {
-        setNovo({ nome: "", lado: "", grupo: "", mesa: "", telefone: "" });
+        setNovo({ nome: "", lado: "", grupo: "", telefone: "" });
         setAviso(null);
         router.refresh();
       }
@@ -221,9 +220,9 @@ export function ListaConvidados({
           />
           <input
             style={campoStyle}
-            placeholder="Mesa (opcional)"
-            value={novo.mesa}
-            onChange={(e) => setNovo({ ...novo, mesa: e.target.value })}
+            placeholder="Telefone (opcional)"
+            value={novo.telefone}
+            onChange={(e) => setNovo({ ...novo, telefone: e.target.value })}
           />
         </div>
         {aviso && (
@@ -301,14 +300,12 @@ function LinhaConvidado({
     nome: convidado.nome,
     lado: convidado.lado ?? "",
     grupo: convidado.grupo ?? "",
-    mesa: convidado.mesa ?? "",
     telefone: convidado.telefone ?? "",
   });
 
   const e = ESTADO[convidado.confirmacao];
   const detalhe = [
     convidado.origem === "autocadastro" ? "se cadastrou pelo link" : null,
-    convidado.mesa ? `mesa ${convidado.mesa}` : null,
     convidado.confirmacao === "confirmado" && convidado.acompanhantes > 0
       ? `+${convidado.acompanhantes} acompanhante${convidado.acompanhantes > 1 ? "s" : ""}`
       : null,
@@ -326,7 +323,6 @@ function LinhaConvidado({
         nome: form.nome,
         lado: (form.lado || null) as "noiva" | "noivo" | null,
         grupo: form.grupo,
-        mesa: form.mesa,
         telefone: form.telefone,
       });
       aoEditar();
@@ -407,9 +403,9 @@ function LinhaConvidado({
             />
             <input
               style={campoStyle}
-              value={form.mesa}
-              onChange={(ev) => setForm({ ...form, mesa: ev.target.value })}
-              placeholder="Mesa"
+              value={form.telefone}
+              onChange={(ev) => setForm({ ...form, telefone: ev.target.value })}
+              placeholder="Telefone"
             />
           </div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>

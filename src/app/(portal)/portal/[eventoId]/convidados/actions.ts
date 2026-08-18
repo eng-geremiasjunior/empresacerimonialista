@@ -17,7 +17,6 @@ export type ConvidadoForm = {
   email?: string | null;
   lado?: "noiva" | "noivo" | null;
   grupo?: string | null;
-  mesa?: string | null;
 };
 
 type Retorno = { ok?: true; error?: string };
@@ -45,7 +44,6 @@ export async function adicionarConvidado(
     email: limpo(form.email, 160),
     lado: form.lado ?? null,
     grupo: limpo(form.grupo, 60),
-    mesa: limpo(form.mesa, 20),
     origem: "cliente",
   });
 
@@ -71,7 +69,6 @@ export async function atualizarConvidado(
       email: limpo(form.email, 160),
       lado: form.lado ?? null,
       grupo: limpo(form.grupo, 60),
-      mesa: limpo(form.mesa, 20),
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)

@@ -31,7 +31,7 @@ export const getConvidados = cache(
     const { data } = await supabase
       .from("evento_convidado")
       .select(
-        "id, nome, telefone, email, lado, grupo, mesa, confirmacao, acompanhantes, criancas, restricao_alimentar, hash, confirmado_via, origem"
+        "id, nome, telefone, email, lado, grupo, confirmacao, acompanhantes, criancas, restricao_alimentar, hash, confirmado_via, origem"
       )
       .eq("event_id", eventId)
       .order("nome");
@@ -43,7 +43,6 @@ export const getConvidados = cache(
       email: c.email,
       lado: c.lado,
       grupo: c.grupo,
-      mesa: c.mesa,
       confirmacao: c.confirmacao,
       acompanhantes: c.acompanhantes ?? 0,
       criancas: c.criancas ?? 0,

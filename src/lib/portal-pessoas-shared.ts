@@ -11,7 +11,6 @@ export type Convidado = {
   email: string | null;
   lado: "noiva" | "noivo" | null;
   grupo: string | null;
-  mesa: string | null;
   confirmacao: "aguardando" | "confirmado" | "nao_vai";
   acompanhantes: number;
   criancas: number;
