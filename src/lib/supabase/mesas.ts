@@ -17,6 +17,19 @@ export type Salao = {
   larguraCm: number;
   alturaCm: number;
   observacao: string | null;
+  /** planta baixa do local, quando o espaço mandou */
+  planta: {
+    path: string;
+    tipo: "svg" | "imagem";
+    /** URL assinada e temporária — o bucket é privado */
+    url: string | null;
+    /** nulo = subiu mas ainda falta calibrar a escala */
+    larguraCm: number | null;
+    alturaCm: number | null;
+    xCm: number;
+    yCm: number;
+    opacidade: number;
+  } | null;
 };
 
 /** relação completa, com o motivo — só a tela logada consome */
@@ -32,17 +45,42 @@ export const getSalao = cache(async (eventId: string): Promise<Salao | null> => 
   const supabase = createClient();
   const { data } = await supabase
     .from("evento_salao")
-    .select("id, nome, largura_cm, altura_cm, observacao")
+    .select(
+      "id, nome, largura_cm, altura_cm, observacao, planta_path, planta_tipo, planta_largura_cm, planta_altura_cm, planta_x_cm, planta_y_cm, planta_opacidade"
+    )
     .eq("event_id", eventId)
     .maybeSingle();
   if (!data) return null;
+
+  // bucket privado: a planta só existe por URL assinada, que vence.
+  // Uma hora cobre a sessão de montagem sem virar link eterno.
+  let url: string | null = null;
+  if (data.planta_path) {
+    const { data: assinada } = await supabase.storage
+      .from("plantas")
+      .createSignedUrl(data.planta_path, 60 * 60);
+    url = assinada?.signedUrl ?? null;
+  }
+
   return {
     id: data.id,
     nome: data.nome,
     larguraCm: data.largura_cm,
     alturaCm: data.altura_cm,
     observacao: data.observacao,
-  };
+    planta: data.planta_path
+      ? {
+          path: data.planta_path,
+          tipo: data.planta_tipo,
+          url,
+          larguraCm: data.planta_largura_cm,
+          alturaCm: data.planta_altura_cm,
+          xCm: data.planta_x_cm ?? 0,
+          yCm: data.planta_y_cm ?? 0,
+          opacidade: data.planta_opacidade ?? 45,
+        }
+      : null,
+  } as Salao;
 });
 
 export const getMesas = cache(async (eventId: string): Promise<Mesa[]> => {

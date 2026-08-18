@@ -17,6 +17,15 @@ export const CORREDOR_MIN_CM = 150;
 /** raio de desobstrução exigido na frente de uma saída de emergência */
 export const DESOBSTRUCAO_SAIDA_CM = 120;
 
+/** largura de uma cadeira de evento */
+export const LARGURA_CADEIRA_CM = 45;
+/** do centro da cadeira até a borda da mesa */
+export const AFASTAMENTO_CADEIRA_CM = 28;
+/** quanto a mesa "cresce" de cada lado com a cadeira posta */
+export const CADEIRA_TOTAL_CM = AFASTAMENTO_CADEIRA_CM + LARGURA_CADEIRA_CM / 2;
+/** passo confortável entre centros de cadeira lado a lado */
+export const PASSO_CADEIRA_CM = 60;
+
 export type TipoMesa =
   | "redonda_8"
   | "redonda_10"
@@ -182,6 +191,24 @@ export const caixaDoElemento = (e: Pick<Elemento, "xCm" | "yCm" | "larguraCm" | 
 
 const centro = (c: Caixa) => ({ cx: c.x + c.largura / 2, cy: c.y + c.altura / 2 });
 
+/** caixa envolvente da forma GIRADA em torno do próprio centro (o mesmo
+ *  eixo do rotate() do desenho). Círculo não muda. Para retângulo em
+ *  ângulo diagonal a envolvente é maior que a mesa — de propósito: numa
+ *  régua de aviso, acusar 10 cm antes é melhor que deixar de acusar. */
+export function caixaGirada(c: Caixa, rotacao: number): Caixa {
+  if (c.raio != null || rotacao % 180 === 0) return c;
+  const rad = (rotacao * Math.PI) / 180;
+  const largura = Math.abs(c.largura * Math.cos(rad)) + Math.abs(c.altura * Math.sin(rad));
+  const altura = Math.abs(c.largura * Math.sin(rad)) + Math.abs(c.altura * Math.cos(rad));
+  const { cx, cy } = centro(c);
+  return { x: cx - largura / 2, y: cy - altura / 2, largura, altura };
+}
+
+/** a pegada da mesa no chão, já considerando rotação e cadeiras */
+export const pegadaDaMesa = (m: Mesa): Caixa => caixaGirada(caixaDaMesa(m), m.rotacao);
+export const pegadaComCadeiras = (m: Mesa): Caixa =>
+  caixaGirada(caixaComCadeiras(m), m.rotacao);
+
 /** menor distância entre um ponto e um retângulo (0 se dentro) */
 function distanciaPontoRetangulo(px: number, py: number, r: Caixa): number {
   const dx = Math.max(r.x - px, 0, px - (r.x + r.largura));
@@ -211,15 +238,102 @@ export function distanciaEntre(a: Caixa, b: Caixa): number {
 
 export const sobrepostas = (a: Caixa, b: Caixa): boolean => distanciaEntre(a, b) === 0;
 
+/** a mesa com as cadeiras postas — a pegada que ela realmente ocupa no chão */
+export function caixaComCadeiras(m: Pick<Mesa, "tipo" | "xCm" | "yCm" | "larguraCm" | "alturaCm" | "lugares">): Caixa {
+  const caixa = caixaDaMesa(m);
+  if (m.lugares <= 0) return caixa;
+  const folga = CADEIRA_TOTAL_CM;
+  return caixa.raio != null
+    ? {
+        x: caixa.x - folga,
+        y: caixa.y - folga,
+        largura: caixa.largura + folga * 2,
+        altura: caixa.altura + folga * 2,
+        raio: caixa.raio + folga,
+      }
+    : {
+        x: caixa.x - folga,
+        y: caixa.y - folga,
+        largura: caixa.largura + folga * 2,
+        altura: caixa.altura + folga * 2,
+      };
+}
+
+/* ---------------- cadeiras ---------------- */
+
+/** posição do centro de cada cadeira, RELATIVA ao canto da caixa da mesa
+ *  (mesmo referencial do translate do <g>). `angulo` é a rotação do
+ *  desenho da cadeira, em graus, com 0 = encosto voltado para cima. */
+export type Cadeira = { x: number; y: number; angulo: number };
+
+/** distribui n pontos igualmente espaçados ao longo de um segmento,
+ *  com meia folga nas pontas (assim ninguém senta na quina) */
+const aoLongo = (comprimento: number, n: number): number[] =>
+  Array.from({ length: n }, (_, i) => (comprimento * (i + 0.5)) / n);
+
+export function posicoesDasCadeiras(mesa: Mesa): Cadeira[] {
+  if (mesa.lugares <= 0 || mesa.tipo === "bolo") return [];
+  const caixa = caixaDaMesa(mesa);
+  const n = mesa.lugares;
+
+  // Redonda: volta inteira, primeira cadeira ao norte.
+  if (caixa.raio != null) {
+    const r = caixa.raio;
+    const orbita = r + AFASTAMENTO_CADEIRA_CM;
+    return Array.from({ length: n }, (_, i) => {
+      const rad = (i / n) * 2 * Math.PI - Math.PI / 2;
+      return {
+        x: r + orbita * Math.cos(rad),
+        y: r + orbita * Math.sin(rad),
+        angulo: (rad * 180) / Math.PI + 90,
+      };
+    });
+  }
+
+  const { largura, altura } = caixa;
+  const fora = AFASTAMENTO_CADEIRA_CM;
+
+  // Mesa dos noivos: costas para a parede, todo mundo virado para o salão.
+  if (mesa.tipo === "noivos") {
+    return aoLongo(largura, n).map((x) => ({ x, y: -fora, angulo: 0 }));
+  }
+
+  // Retangular e imperial: lados longos primeiro; o que não couber
+  // confortavelmente vai para as cabeceiras.
+  const porLado = Math.max(1, Math.floor(largura / PASSO_CADEIRA_CM));
+  const nasCabeceiras = Math.min(2, Math.max(0, n - porLado * 2));
+  const nosLongos = n - nasCabeceiras;
+  const nTopo = Math.ceil(nosLongos / 2);
+  const nBaixo = nosLongos - nTopo;
+
+  const cadeiras: Cadeira[] = [
+    ...aoLongo(largura, nTopo).map((x) => ({ x, y: -fora, angulo: 0 })),
+    ...aoLongo(largura, nBaixo).map((x) => ({ x, y: altura + fora, angulo: 180 })),
+  ];
+  if (nasCabeceiras >= 1) {
+    cadeiras.push({ x: largura + fora, y: altura / 2, angulo: 90 });
+  }
+  if (nasCabeceiras >= 2) {
+    cadeiras.push({ x: -fora, y: altura / 2, angulo: 270 });
+  }
+  return cadeiras;
+}
+
 /* ---------------- circulação ---------------- */
 
 export type ProblemaCirculacao =
   | { tipo: "corredor_estreito"; mesaA: string; mesaB: string; gapCm: number }
+  | { tipo: "cadeiras_encostam"; mesaA: string; mesaB: string }
   | { tipo: "saida_obstruida"; mesaId: string; elementoId: string };
 
-/** corredores < 1,5 m entre mesas e mesa colada em saída de emergência.
+/** corredores < 1,5 m entre mesas, cadeiras que se esbarram, e mesa
+ *  colada em saída de emergência.
+ *
  *  Sobreposição mesa × mesa NÃO entra aqui de propósito: "mesa em cima
- *  de mesa é problema dela, não do sistema" — a tela só marca o contorno. */
+ *  de mesa é problema dela, não do sistema" — a tela só marca o contorno.
+ *  Cadeira encostando é outra coisa: aí ninguém consegue sentar, e o
+ *  aviso substitui o de corredor (dizer as duas coisas do mesmo par só
+ *  faria barulho). */
 export function problemasDeCirculacao(
   mesas: Mesa[],
   elementos: Elemento[]
@@ -227,9 +341,19 @@ export function problemasDeCirculacao(
   const problemas: ProblemaCirculacao[] = [];
   for (let i = 0; i < mesas.length; i++) {
     for (let j = i + 1; j < mesas.length; j++) {
-      const gap = distanciaEntre(caixaDaMesa(mesas[i]), caixaDaMesa(mesas[j]));
-      // 0 = sobrepostas (escolha dela); entre 1 e 149 = corredor apertado
-      if (gap > 0 && gap < CORREDOR_MIN_CM) {
+      const gap = distanciaEntre(pegadaDaMesa(mesas[i]), pegadaDaMesa(mesas[j]));
+      if (gap === 0) continue; // sobrepostas: escolha dela
+      const gapCadeiras = distanciaEntre(
+        pegadaComCadeiras(mesas[i]),
+        pegadaComCadeiras(mesas[j])
+      );
+      if (gapCadeiras === 0) {
+        problemas.push({
+          tipo: "cadeiras_encostam",
+          mesaA: mesas[i].id,
+          mesaB: mesas[j].id,
+        });
+      } else if (gap < CORREDOR_MIN_CM) {
         problemas.push({
           tipo: "corredor_estreito",
           mesaA: mesas[i].id,
@@ -241,9 +365,10 @@ export function problemasDeCirculacao(
   }
   const saidas = elementos.filter((e) => e.tipo === "saida_emergencia");
   for (const mesa of mesas) {
-    const caixa = caixaDaMesa(mesa);
+    const caixa = pegadaDaMesa(mesa);
     for (const saida of saidas) {
-      if (distanciaEntre(caixa, caixaDoElemento(saida)) < DESOBSTRUCAO_SAIDA_CM) {
+      const caixaSaida = caixaGirada(caixaDoElemento(saida), saida.rotacao);
+      if (distanciaEntre(caixa, caixaSaida) < DESOBSTRUCAO_SAIDA_CM) {
         problemas.push({ tipo: "saida_obstruida", mesaId: mesa.id, elementoId: saida.id });
       }
     }

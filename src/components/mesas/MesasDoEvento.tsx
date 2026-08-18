@@ -15,11 +15,11 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Armchair, Plus, Printer, Trash2, UserRound, X } from "lucide-react";
+import { Armchair, Image as IconePlanta, Plus, Printer, Trash2, UserRound, X } from "lucide-react";
 import {
   contadores,
   distanciaEntre,
-  caixaDaMesa,
+  pegadaDaMesa,
   NOME_ELEMENTO,
   NOME_RESTRICAO,
   NOME_TIPO_MESA,
@@ -30,13 +30,13 @@ import {
   type Mesa,
   type SaudeMesa,
   type TipoElemento,
-  type TipoMesa,
   type TipoRestricao,
 } from "@/lib/croqui-core";
 import type { Relacao, Salao } from "@/lib/supabase/mesas";
 import { Croqui } from "@/components/mesas/Croqui";
 import {
   adicionarConvidadoEquipe,
+  ajustarPlanta,
   alocarConvidado,
   atualizarConvidadoCroqui,
   atualizarMesa,
@@ -47,12 +47,15 @@ import {
   ordenarMesa,
   removerElemento,
   removerMesa,
+  removerPlanta,
   removerRelacao,
+  salvarPlanta,
   salvarRelacao,
   salvarSalao,
 } from "@/app/(app)/eventos/[id]/mesas/actions";
+import { ModalMesa } from "@/components/mesas/ModalMesa";
+import { ImportarPlanta } from "@/components/mesas/ImportarPlanta";
 
-const TIPOS_MESA: TipoMesa[] = ["redonda_8", "redonda_10", "retangular", "imperial", "noivos", "bolo"];
 const TIPOS_ELEMENTO: TipoElemento[] = [
   "pista", "palco", "bar", "praca_alimentacao", "porta", "banheiro", "coluna", "saida_emergencia",
 ];
@@ -124,7 +127,7 @@ export function MesasDoEvento({
     const ids = new Set<string>();
     for (let i = 0; i < mesas.length; i++) {
       for (let j = i + 1; j < mesas.length; j++) {
-        if (distanciaEntre(caixaDaMesa(mesas[i]), caixaDaMesa(mesas[j])) === 0) {
+        if (distanciaEntre(pegadaDaMesa(mesas[i]), pegadaDaMesa(mesas[j])) === 0) {
           ids.add(mesas[i].id);
           ids.add(mesas[j].id);
         }
@@ -155,6 +158,28 @@ export function MesasDoEvento({
   const cont = useMemo(() => contadores(convidados), [convidados]);
   const rotuloDe = useMemo(() => new Map(mesas.map((m) => [m.id, m.rotulo])), [mesas]);
   const nomeDe = useMemo(() => new Map(convidados.map((c) => [c.id, c.nome])), [convidados]);
+
+  // a planta só entra no croqui depois de calibrada — sem escala ela
+  // enganaria mais do que ajudaria
+  const plantaNoCroqui = useMemo(() => {
+    const p = salao?.planta;
+    if (!p?.url || p.larguraCm == null || p.alturaCm == null) return null;
+    return {
+      url: p.url,
+      xCm: p.xCm,
+      yCm: p.yCm,
+      larguraCm: p.larguraCm,
+      alturaCm: p.alturaCm,
+      opacidade: p.opacidade,
+    };
+  }, [salao]);
+
+  const proximoNumero = useMemo(() => {
+    const numeros = mesas
+      .map((m) => (/^\d+$/.test(m.rotulo) ? Number(m.rotulo) : 0))
+      .filter((n) => n > 0);
+    return numeros.length > 0 ? Math.max(...numeros) + 1 : mesas.length + 1;
+  }, [mesas]);
 
   /* ---------- movimentos ---------- */
 
@@ -210,7 +235,13 @@ export function MesasDoEvento({
       <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
         {/* coluna do croqui */}
         <div className="min-w-0 space-y-3">
-          <Ferramentas eventId={eventId} salao={salao} rodar={rodar} pendente={pendente} />
+          <Ferramentas
+            eventId={eventId}
+            salao={salao}
+            proximoNumero={proximoNumero}
+            rodar={rodar}
+            pendente={pendente}
+          />
 
           {/* o croqui arrasta no desktop; no celular é leitura */}
           <div className="hidden md:block">
@@ -225,6 +256,7 @@ export function MesasDoEvento({
               saidaObstruidaIds={saidaObstruidaIds}
               selecionada={selecionada}
               editavel
+              planta={plantaNoCroqui}
               aoSelecionar={setSelecionada}
               aoMover={moveu}
               aoSoltarConvidado={(mesaId, convidadoId) => alocar(convidadoId, mesaId)}
@@ -242,6 +274,7 @@ export function MesasDoEvento({
               saidaObstruidaIds={saidaObstruidaIds}
               selecionada={selecionada}
               editavel={false}
+              planta={plantaNoCroqui}
               aoSelecionar={setSelecionada}
               aoMover={() => undefined}
               aoSoltarConvidado={() => undefined}
@@ -386,18 +419,20 @@ function FormSalao({
 function Ferramentas({
   eventId,
   salao,
+  proximoNumero,
   rodar,
   pendente,
 }: {
   eventId: string;
   salao: Salao;
+  proximoNumero: number;
   rodar: (a: () => Promise<{ error?: string } | { success: true }>) => void;
   pendente: boolean;
 }) {
-  const [tipo, setTipo] = useState<TipoMesa>("redonda_8");
-  const [qtd, setQtd] = useState("1");
   const [elemento, setElemento] = useState<TipoElemento>("pista");
   const [editandoSalao, setEditandoSalao] = useState(false);
+  const [modalMesa, setModalMesa] = useState(false);
+  const [modalPlanta, setModalPlanta] = useState(false);
 
   if (editandoSalao) {
     return (
@@ -413,62 +448,123 @@ function Ferramentas({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <select className={campo} value={tipo} onChange={(e) => setTipo(e.target.value as TipoMesa)}>
-        {TIPOS_MESA.map((t) => (
-          <option key={t} value={t}>
-            {NOME_TIPO_MESA[t]}
-          </option>
-        ))}
-      </select>
-      <input
-        className={`${campo} w-16`}
-        inputMode="numeric"
-        value={qtd}
-        onChange={(e) => setQtd(e.target.value)}
-        aria-label="Quantidade"
-      />
-      <button
-        type="button"
-        className={botao}
-        disabled={pendente}
-        onClick={() => rodar(() => criarMesas(eventId, tipo, Number(qtd) || 1))}
-      >
-        <Plus size={14} className="mr-1 inline" />
-        Mesas
-      </button>
+    <>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          className={botaoForte}
+          disabled={pendente}
+          onClick={() => setModalMesa(true)}
+        >
+          <Plus size={14} className="mr-1 inline" />
+          Mesa
+        </button>
 
-      <span className="mx-1 h-5 w-px bg-gray-200" aria-hidden />
+        <select
+          className={campo}
+          value={elemento}
+          onChange={(e) => setElemento(e.target.value as TipoElemento)}
+          aria-label="Elemento do espaço"
+        >
+          {TIPOS_ELEMENTO.map((t) => (
+            <option key={t} value={t}>
+              {NOME_ELEMENTO[t]}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className={botao}
+          disabled={pendente}
+          onClick={() => rodar(() => criarElemento(eventId, elemento))}
+        >
+          <Plus size={14} className="mr-1 inline" />
+          Elemento
+        </button>
 
-      <select
-        className={campo}
-        value={elemento}
-        onChange={(e) => setElemento(e.target.value as TipoElemento)}
-      >
-        {TIPOS_ELEMENTO.map((t) => (
-          <option key={t} value={t}>
-            {NOME_ELEMENTO[t]}
-          </option>
-        ))}
-      </select>
-      <button
-        type="button"
-        className={botao}
-        disabled={pendente}
-        onClick={() => rodar(() => criarElemento(eventId, elemento))}
-      >
-        <Plus size={14} className="mr-1 inline" />
-        Elemento
-      </button>
+        <button
+          type="button"
+          className={botao}
+          onClick={() => setModalPlanta(true)}
+        >
+          <IconePlanta size={14} className="mr-1 inline" />
+          {salao.planta ? "Planta" : "Importar planta"}
+        </button>
 
-      <button
-        type="button"
-        className="ml-auto text-sm text-gray-500 underline-offset-2 hover:underline"
-        onClick={() => setEditandoSalao(true)}
-      >
-        {salao.nome || "Salão"} · {salao.larguraCm / 100} × {salao.alturaCm / 100} m
-      </button>
-    </div>
+        <button
+          type="button"
+          className="ml-auto text-sm text-gray-500 underline-offset-2 hover:underline"
+          onClick={() => setEditandoSalao(true)}
+        >
+          {salao.nome || "Salão"} · {salao.larguraCm / 100} × {salao.alturaCm / 100} m
+        </button>
+      </div>
+
+      {/* a planta importada mas sem escala não é confiável: avisa e resolve */}
+      {salao.planta && salao.planta.larguraCm == null && (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          A planta está sem escala.{" "}
+          <button
+            type="button"
+            className="font-medium underline"
+            onClick={() => setModalPlanta(true)}
+          >
+            Calibre a medida
+          </button>{" "}
+          para o croqui bater com o espaço real.
+        </p>
+      )}
+
+      {/* opacidade: a planta é guia, não protagonista */}
+      {salao.planta?.larguraCm != null && (
+        <label className="flex items-center gap-2 text-xs text-gray-500">
+          Planta
+          <input
+            type="range"
+            min={10}
+            max={100}
+            step={5}
+            defaultValue={salao.planta.opacidade}
+            onChange={(e) => rodar(() => ajustarPlanta(eventId, { opacidade: Number(e.target.value) }))}
+            className="w-32 accent-gray-700"
+            aria-label="Opacidade da planta"
+          />
+          <span className="text-gray-400">
+            {(salao.planta.larguraCm / 100).toFixed(1)} ×{" "}
+            {((salao.planta.alturaCm ?? 0) / 100).toFixed(1)} m
+          </span>
+        </label>
+      )}
+
+      {modalMesa && (
+        <ModalMesa
+          proximoNumero={proximoNumero}
+          pendente={pendente}
+          aoFechar={() => setModalMesa(false)}
+          aoSalvar={(input) => {
+            rodar(() => criarMesas(eventId, input));
+            setModalMesa(false);
+          }}
+        />
+      )}
+
+      {modalPlanta && (
+        <ImportarPlanta
+          eventId={eventId}
+          temPlanta={!!salao.planta}
+          pendente={pendente}
+          aoFechar={() => setModalPlanta(false)}
+          aoSalvar={(input) => {
+            rodar(() => salvarPlanta(eventId, input));
+            setModalPlanta(false);
+          }}
+          aoRemover={() => {
+            rodar(() => removerPlanta(eventId));
+            setModalPlanta(false);
+          }}
+        />
+      )}
+    </>
   );
 }
 
@@ -492,6 +588,10 @@ function AvisosAoVivo({
     if (p.tipo === "corredor_estreito") {
       linhas.push(
         `Corredor de ${(p.gapCm / 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })} m entre as mesas ${rotuloDe.get(p.mesaA)} e ${rotuloDe.get(p.mesaB)} — o mínimo confortável é 1,5 m.`
+      );
+    } else if (p.tipo === "cadeiras_encostam") {
+      linhas.push(
+        `As cadeiras das mesas ${rotuloDe.get(p.mesaA)} e ${rotuloDe.get(p.mesaB)} se esbarram — ninguém consegue sentar assim.`
       );
     }
   }

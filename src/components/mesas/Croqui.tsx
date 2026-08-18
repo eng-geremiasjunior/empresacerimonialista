@@ -15,6 +15,8 @@
 import { useId, useRef, useState } from "react";
 import {
   caixaDaMesa,
+  LARGURA_CADEIRA_CM,
+  posicoesDasCadeiras,
   snap,
   type Elemento,
   type Mesa,
@@ -56,6 +58,7 @@ export function Croqui({
   saidaObstruidaIds,
   selecionada,
   editavel,
+  planta,
   aoSelecionar,
   aoMover,
   aoSoltarConvidado,
@@ -73,6 +76,17 @@ export function Croqui({
   selecionada: string | null;
   /** false no celular: croqui vira leitura */
   editavel: boolean;
+  /** planta baixa do local por baixo de tudo, já calibrada em cm.
+   *  A url é assinada e temporária; o arquivo entra como <image>, nunca
+   *  inline — SVG de terceiro não roda script assim. */
+  planta?: {
+    url: string;
+    xCm: number;
+    yCm: number;
+    larguraCm: number;
+    alturaCm: number;
+    opacidade: number;
+  } | null;
   aoSelecionar: (id: string | null) => void;
   aoMover: (kind: "mesa" | "elemento", id: string, xCm: number, yCm: number) => void;
   aoSoltarConvidado: (mesaId: string, convidadoId: string) => void;
@@ -181,6 +195,21 @@ export function Croqui({
 
       {/* o piso do salão */}
       <rect x="0" y="0" width={larguraCm} height={alturaCm} fill="#fdfcfb" stroke="#d6d3d1" strokeWidth="4" />
+
+      {/* a planta do local, se houver, entre o piso e a grade */}
+      {planta && (
+        <image
+          href={planta.url}
+          x={planta.xCm}
+          y={planta.yCm}
+          width={planta.larguraCm}
+          height={planta.alturaCm}
+          opacity={planta.opacidade / 100}
+          preserveAspectRatio="xMidYMid meet"
+          pointerEvents="none"
+        />
+      )}
+
       <rect x="0" y="0" width={larguraCm} height={alturaCm} fill={`url(#${gradeFina})`} pointerEvents="none" />
       <rect x="0" y="0" width={larguraCm} height={alturaCm} fill={`url(#${gradeMetro})`} pointerEvents="none" />
 
@@ -273,6 +302,23 @@ export function Croqui({
             }}
             style={{ cursor: editavel ? "grab" : "pointer" }}
           >
+            {/* as cadeiras primeiro: a mesa fica por cima delas, como na
+                vista de cima real (o tampo esconde o encosto) */}
+            {posicoesDasCadeiras(m).map((c, i) => (
+              <rect
+                key={i}
+                x={c.x - LARGURA_CADEIRA_CM / 2}
+                y={c.y - LARGURA_CADEIRA_CM / 2}
+                width={LARGURA_CADEIRA_CM}
+                height={LARGURA_CADEIRA_CM}
+                rx={10}
+                transform={`rotate(${c.angulo} ${c.x} ${c.y})`}
+                fill="#f5f5f4"
+                stroke={ativa ? "#78716c" : "#d6d3d1"}
+                strokeWidth={3}
+                pointerEvents="none"
+              />
+            ))}
             {redonda ? (
               <circle
                 cx={caixa.raio}

@@ -74,17 +74,132 @@ export async function salvarSalao(
 }
 
 /* ------------------------------------------------------------------
+ * A planta do local
+ * ---------------------------------------------------------------- */
+
+export async function salvarPlanta(
+  eventId: string,
+  input: {
+    path: string;
+    tipo: "svg" | "imagem";
+    larguraCm: number;
+    alturaCm: number;
+  }
+): Promise<Resultado> {
+  // o caminho tem que ser da pasta DESTE evento — a policy do bucket já
+  // garante, mas gravar um path de outro evento renderia uma planta que
+  // ninguém consegue abrir
+  if (!input.path.startsWith(`${eventId}/`)) {
+    return { error: "Arquivo fora da pasta deste evento." };
+  }
+  if (
+    !Number.isFinite(input.larguraCm) ||
+    input.larguraCm < 100 ||
+    input.larguraCm > 50000
+  ) {
+    return { error: "A escala não fechou. Refaça a calibração." };
+  }
+
+  const supabase = createClient();
+  // troca de planta: o arquivo antigo sai do bucket
+  const { data: atual } = await supabase
+    .from("evento_salao")
+    .select("planta_path")
+    .eq("event_id", eventId)
+    .maybeSingle();
+
+  const { error } = await supabase
+    .from("evento_salao")
+    .update({
+      planta_path: input.path,
+      planta_tipo: input.tipo,
+      planta_largura_cm: Math.round(input.larguraCm),
+      planta_altura_cm: Math.round(input.alturaCm),
+      planta_x_cm: 0,
+      planta_y_cm: 0,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("event_id", eventId);
+  if (error) return causa(error, "Não foi possível salvar a planta");
+
+  if (atual?.planta_path && atual.planta_path !== input.path) {
+    await supabase.storage.from("plantas").remove([atual.planta_path]);
+  }
+  revalidar(eventId);
+  return { success: true };
+}
+
+export async function ajustarPlanta(
+  eventId: string,
+  input: { xCm?: number; yCm?: number; opacidade?: number; larguraCm?: number; alturaCm?: number }
+): Promise<Resultado> {
+  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (input.xCm !== undefined) patch.planta_x_cm = Math.round(input.xCm);
+  if (input.yCm !== undefined) patch.planta_y_cm = Math.round(input.yCm);
+  if (input.opacidade !== undefined) {
+    patch.planta_opacidade = Math.max(10, Math.min(100, Math.round(input.opacidade)));
+  }
+  if (input.larguraCm !== undefined) patch.planta_largura_cm = Math.round(input.larguraCm);
+  if (input.alturaCm !== undefined) patch.planta_altura_cm = Math.round(input.alturaCm);
+
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("evento_salao")
+    .update(patch)
+    .eq("event_id", eventId);
+  if (error) return causa(error, "Não foi possível ajustar");
+  revalidar(eventId);
+  return { success: true };
+}
+
+export async function removerPlanta(eventId: string): Promise<Resultado> {
+  const supabase = createClient();
+  const { data: atual } = await supabase
+    .from("evento_salao")
+    .select("planta_path")
+    .eq("event_id", eventId)
+    .maybeSingle();
+
+  const { error } = await supabase
+    .from("evento_salao")
+    .update({
+      planta_path: null,
+      planta_tipo: null,
+      planta_largura_cm: null,
+      planta_altura_cm: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("event_id", eventId);
+  if (error) return causa(error, "Não foi possível remover");
+
+  // o arquivo só sai depois que a linha esquece dele: órfão no bucket
+  // incomoda menos que planta fantasma no croqui
+  if (atual?.planta_path) {
+    await supabase.storage.from("plantas").remove([atual.planta_path]);
+  }
+  revalidar(eventId);
+  return { success: true };
+}
+
+/* ------------------------------------------------------------------
  * Mesas
  * ---------------------------------------------------------------- */
 
 export async function criarMesas(
   eventId: string,
-  tipo: TipoMesa,
-  quantidade: number,
-  rotuloInicial?: string
+  input: {
+    tipo: TipoMesa;
+    rotulo: string;
+    lugares: number;
+    quantidade: number;
+  }
 ): Promise<Resultado> {
-  const n = Math.max(1, Math.min(30, Math.round(quantidade)));
+  const { tipo } = input;
   if (!MEDIDA_PADRAO[tipo]) return { error: "Tipo de mesa desconhecido." };
+  const n = Math.max(1, Math.min(30, Math.round(input.quantidade)));
+  const lugares = Math.max(0, Math.min(40, Math.round(input.lugares)));
+  const rotulo = input.rotulo.trim().slice(0, 40);
+  if (!rotulo) return { error: "A mesa precisa de um nome." };
 
   const supabase = createClient();
 
@@ -95,15 +210,24 @@ export async function criarMesas(
     .eq("event_id", eventId);
   const base = count ?? 0;
 
+  // Em lote, o nome vira sequência. Se o nome dela já é um número
+  // ("07"), a série continua dali; se é palavra ("Família"), vira
+  // "Família 1, 2, 3" — em nenhum caso ela recebe dez mesas homônimas.
+  const comoNumero = /^\d+$/.test(rotulo) ? Number(rotulo) : null;
+  const nomeDaVez = (i: number) => {
+    if (n === 1) return rotulo;
+    if (comoNumero != null) {
+      return String(comoNumero + i).padStart(rotulo.length, "0");
+    }
+    return `${rotulo} ${i + 1}`;
+  };
+
   const padrao = MEDIDA_PADRAO[tipo];
   const linhas = Array.from({ length: n }, (_, i) => ({
     event_id: eventId,
-    rotulo:
-      n === 1 && rotuloInicial?.trim()
-        ? rotuloInicial.trim().slice(0, 40)
-        : String(base + i + 1).padStart(2, "0"),
+    rotulo: nomeDaVez(i),
     tipo,
-    lugares: padrao.lugares || 8,
+    lugares,
     // nascem em fileira a partir do canto, com folga de corredor;
     // a cerimonialista arrasta para o lugar real
     x_cm: 100 + (i % 5) * (padrao.largura + 150),

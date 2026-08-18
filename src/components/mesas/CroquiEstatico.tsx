@@ -13,6 +13,7 @@ export function CroquiEstatico({
   mesas,
   elementos,
   rotuloOcupacao,
+  planta,
 }: {
   larguraCm: number;
   alturaCm: number;
@@ -20,6 +21,14 @@ export function CroquiEstatico({
   elementos: Elemento[];
   /** mesaId → texto sob o rótulo (ex.: "8 lug.") */
   rotuloOcupacao: [string, string][];
+  planta?: {
+    url: string;
+    xCm: number;
+    yCm: number;
+    larguraCm: number;
+    alturaCm: number;
+    opacidade: number;
+  } | null;
 }) {
   return (
     <Croqui
@@ -27,6 +36,7 @@ export function CroquiEstatico({
       alturaCm={alturaCm}
       mesas={mesas}
       elementos={elementos}
+      planta={planta}
       ocupacao={new Map(rotuloOcupacao)}
       comProblema={new Set()}
       sobrepostasIds={new Set()}

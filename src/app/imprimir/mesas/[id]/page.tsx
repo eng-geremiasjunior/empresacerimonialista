@@ -226,6 +226,22 @@ function FolhaMontagem({
         mesas={mesas}
         elementos={elementos}
         rotuloOcupacao={mesas.map((m) => [m.id, `${m.lugares} lug.`])}
+        planta={
+          // no papel a planta vem mais forte: é contra ela que a equipe
+          // vai medir o salão na hora da montagem
+          salao.planta?.url &&
+          salao.planta.larguraCm != null &&
+          salao.planta.alturaCm != null
+            ? {
+                url: salao.planta.url,
+                xCm: salao.planta.xCm,
+                yCm: salao.planta.yCm,
+                larguraCm: salao.planta.larguraCm,
+                alturaCm: salao.planta.alturaCm,
+                opacidade: Math.max(salao.planta.opacidade, 70),
+              }
+            : null
+        }
       />
       <div className="imp-legenda">
         <span>
