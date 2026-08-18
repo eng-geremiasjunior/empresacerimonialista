@@ -63,7 +63,14 @@ export async function getCabecalhoEvento(
   const [tasksRes, linksRes, itemsRes, txRes, msgRes, confRes] = await Promise.all([
     // due_date entra para o Copiloto saber o que está vencido.
     supabase.from("tasks").select("status, due_date").eq("event_id", eventId),
-    supabase.from("roteiro_links").select("confirmed").eq("event_id", eventId),
+    // suppliers(id) junto de propósito: um vínculo cujo cadastro a
+    // sessão não enxerga (fornecedor de outra empresa, ou apagado) não
+    // aparece na aba Fornecedores — contá-lo aqui faria o selo dizer 3
+    // com 2 na tela.
+    supabase
+      .from("roteiro_links")
+      .select("confirmed, suppliers(id)")
+      .eq("event_id", eventId),
     // status_novo (031) é o estado real do item no dia: planejado,
     // em_andamento, concluido, problema. A contagem sozinha não diria
     // quanto da Execução já andou.
@@ -92,7 +99,10 @@ export async function getCabecalhoEvento(
     status: string;
     due_date: string | null;
   }[];
-  const links = (linksRes.data ?? []) as { confirmed: boolean }[];
+  const links = ((linksRes.data ?? []) as unknown as {
+    confirmed: boolean;
+    suppliers: { id: string } | null;
+  }[]).filter((l) => l.suppliers);
   const tx = (txRes.data ?? []) as {
     type: string;
     paid: boolean;
@@ -360,7 +370,11 @@ export async function getEventoContadores(
   const em7 = iso(addDays(new Date(), 7));
 
   const [linksRes, msgRes, txRes, confRes] = await Promise.all([
-    supabase.from("roteiro_links").select("confirmed").eq("event_id", eventId),
+    // mesma régua da aba Fornecedores: vínculo sem cadastro legível não conta
+    supabase
+      .from("roteiro_links")
+      .select("confirmed, suppliers(id)")
+      .eq("event_id", eventId),
     supabase
       .from("event_messages")
       .select("id", { count: "exact", head: true })
@@ -381,7 +395,10 @@ export async function getEventoContadores(
       .eq("aguarda_conferencia", true),
   ]);
 
-  const links = (linksRes.data ?? []) as { confirmed: boolean }[];
+  const links = ((linksRes.data ?? []) as unknown as {
+    confirmed: boolean;
+    suppliers: { id: string } | null;
+  }[]).filter((l) => l.suppliers);
 
   return {
     fornecedoresPendentes: links.filter((l) => !l.confirmed).length,
@@ -492,7 +509,11 @@ export async function getResumoEvento(
         .from("tasks")
         .select("id, title, status, due_date, due_time")
         .eq("event_id", eventId),
-      supabase.from("roteiro_links").select("confirmed").eq("event_id", eventId),
+      // mesma régua da aba Fornecedores: vínculo sem cadastro legível não conta
+      supabase
+        .from("roteiro_links")
+        .select("confirmed, suppliers(id)")
+        .eq("event_id", eventId),
       supabase
         .from("roteiro_items")
         .select("id", { count: "exact", head: true })
@@ -517,7 +538,10 @@ export async function getResumoEvento(
     due_date: string | null;
     due_time: string | null;
   }[];
-  const links = (linksRes.data ?? []) as { confirmed: boolean }[];
+  const links = ((linksRes.data ?? []) as unknown as {
+    confirmed: boolean;
+    suppliers: { id: string } | null;
+  }[]).filter((l) => l.suppliers);
   const tx = (txRes.data ?? []) as {
     category: string;
     installment_total: number | null;
