@@ -13,7 +13,7 @@ import {
   getSalao,
 } from "@/lib/supabase/mesas";
 import { formatDate } from "@/lib/format";
-import { Croqui } from "@/components/mesas/Croqui";
+import { CroquiEstatico } from "@/components/mesas/CroquiEstatico";
 import { BotaoImprimir } from "./BotaoImprimir";
 import "./impressos.css";
 
@@ -220,20 +220,12 @@ function FolhaMontagem({
   const tiposPresentes = [...new Set(elementos.map((e) => e.tipo))];
   return (
     <>
-      <Croqui
+      <CroquiEstatico
         larguraCm={salao.larguraCm}
         alturaCm={salao.alturaCm}
         mesas={mesas}
         elementos={elementos}
-        ocupacao={new Map(mesas.map((m) => [m.id, `${m.lugares} lug.`]))}
-        comProblema={new Set()}
-        sobrepostasIds={new Set()}
-        saidaObstruidaIds={new Set()}
-        selecionada={null}
-        editavel={false}
-        aoSelecionar={() => undefined}
-        aoMover={() => undefined}
-        aoSoltarConvidado={() => undefined}
+        rotuloOcupacao={mesas.map((m) => [m.id, `${m.lugares} lug.`])}
       />
       <div className="imp-legenda">
         <span>
