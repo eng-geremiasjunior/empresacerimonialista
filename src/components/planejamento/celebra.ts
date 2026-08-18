@@ -94,6 +94,17 @@ export function prazoRelativo(iso: string | null): string | null {
   return `venceu há ${-dias} dias`;
 }
 
+/** "há 2 dias" — quando algo aconteceu, também sempre relativo */
+export function tempoAtras(iso: string | null): string | null {
+  if (!iso) return null;
+  const min = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60_000));
+  if (min < 60) return min <= 1 ? "agora há pouco" : `há ${min} min`;
+  const horas = Math.round(min / 60);
+  if (horas < 24) return horas === 1 ? "há 1 hora" : `há ${horas} horas`;
+  const dias = Math.round(horas / 24);
+  return dias === 1 ? "ontem" : `há ${dias} dias`;
+}
+
 export function prazoVencido(iso: string | null): boolean {
   if (!iso) return false;
   return (

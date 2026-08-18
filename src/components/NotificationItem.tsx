@@ -8,6 +8,7 @@ import {
   Banknote,
   MessageSquare,
   Handshake,
+  UserRound,
   type LucideIcon,
 } from "lucide-react";
 import type { NotificationRow, NotificationType } from "@/lib/notifications-db";
@@ -18,6 +19,7 @@ const TYPE_ICON: Record<NotificationType, LucideIcon> = {
   pagamento: Banknote,
   mensagem: MessageSquare,
   fornecedor: Handshake,
+  portal: UserRound,
 };
 
 type Props = {

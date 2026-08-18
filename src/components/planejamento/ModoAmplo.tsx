@@ -267,9 +267,13 @@ export function ModoAmplo({
               {m.atrasadas > 0
                 ? ` · ${m.atrasadas} ${m.atrasadas === 1 ? "atrasada" : "atrasadas"}`
                 : ""}
-              {m.daCliente > 0
-                ? ` · ${m.daCliente} da cliente`
-                : ""}
+              {m.daCliente > 0 ? (
+                <span style={{ color: C.pendenteFg }}>
+                  {` · ${m.daCliente} da cliente`}
+                </span>
+              ) : (
+                ""
+              )}
             </span>
           </div>
           <span

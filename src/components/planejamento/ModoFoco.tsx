@@ -218,7 +218,9 @@ function LinhaDecisao({
             fontFamily: F_MONO,
             fontSize: 10,
             lineHeight: "14px",
-            color: C.meta,
+            // resposta da cliente fura a cascata também na COR: na lista,
+            // o olho acha o tom pendente sem ler linha a linha
+            color: !na && daCliente > 0 ? C.pendenteFg : C.meta,
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",

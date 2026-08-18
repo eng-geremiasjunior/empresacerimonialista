@@ -5,7 +5,10 @@ export type NotificationType =
   | "evento"
   | "pagamento"
   | "mensagem"
-  | "fornecedor";
+  | "fornecedor"
+  // a cliente respondeu pelo portal (091) — o banco agrega por decisão
+  // e o "Conferir bloco" marca como lida
+  | "portal";
 
 export type NotificationRow = {
   id: string;

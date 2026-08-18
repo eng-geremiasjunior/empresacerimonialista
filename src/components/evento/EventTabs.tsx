@@ -7,11 +7,13 @@ export type TabCounters = {
   fornecedores: number;
   comunicacao: number;
   financeiro: number;
+  /** blocos com resposta da cliente esperando conferência */
+  planejamento: number;
 };
 
 const TABS: { label: string; seg: string; counter?: keyof TabCounters }[] = [
   { label: "Resumo", seg: "" },
-  { label: "Planejamento", seg: "planejamento" },
+  { label: "Planejamento", seg: "planejamento", counter: "planejamento" },
   { label: "Organização", seg: "organizacao" },
   { label: "Execução do evento", seg: "roteiro" },
   { label: "Mesas", seg: "mesas" },

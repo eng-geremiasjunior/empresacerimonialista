@@ -171,6 +171,7 @@ export default async function EventoLayout({
           fornecedores: contadores.fornecedoresPendentes,
           comunicacao: contadores.comunicacaoNaoLidas,
           financeiro: contadores.financeiroVencendo,
+          planejamento: contadores.planejamentoDaCliente,
         }}
       />
 

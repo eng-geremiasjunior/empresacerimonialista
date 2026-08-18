@@ -60,7 +60,7 @@ export async function getCabecalhoEvento(
   const hoje = iso(new Date());
   const em7 = iso(addDays(new Date(), 7));
 
-  const [tasksRes, linksRes, itemsRes, txRes, msgRes] = await Promise.all([
+  const [tasksRes, linksRes, itemsRes, txRes, msgRes, confRes] = await Promise.all([
     // due_date entra para o Copiloto saber o que está vencido.
     supabase.from("tasks").select("status, due_date").eq("event_id", eventId),
     supabase.from("roteiro_links").select("confirmed").eq("event_id", eventId),
@@ -78,6 +78,14 @@ export async function getCabecalhoEvento(
       .eq("event_id", eventId)
       .eq("sender_type", "fornecedor")
       .is("read_at", null),
+    // respostas da cliente esperando conferência (091) — a aba
+    // Planejamento mostra em quantos BLOCOS ela mexeu, não em quantos
+    // campos: é o número de conferências que faltam fazer.
+    supabase
+      .from("evento_campo_valor")
+      .select("evento_decisao_id")
+      .eq("event_id", eventId)
+      .eq("aguarda_conferencia", true),
   ]);
 
   const tasks = (tasksRes.data ?? []) as {
@@ -319,6 +327,10 @@ export async function getCabecalhoEvento(
     (t) => t.type === "receita" && !t.paid && t.due_date && t.due_date <= em7
   ).length;
 
+  const decisoesDaCliente = new Set(
+    (confRes.data ?? []).map((c: { evento_decisao_id: string }) => c.evento_decisao_id)
+  ).size;
+
   return {
     saude,
     fases: { lista, sugerida },
@@ -326,6 +338,7 @@ export async function getCabecalhoEvento(
       fornecedoresPendentes: fornTotal - fornConfirmados,
       comunicacaoNaoLidas: msgRes.count ?? 0,
       financeiroVencendo: receberContador,
+      planejamentoDaCliente: decisoesDaCliente,
     },
   };
 }
@@ -335,6 +348,8 @@ export type EventoContadores = {
   fornecedoresPendentes: number;
   comunicacaoNaoLidas: number;
   financeiroVencendo: number;
+  /** blocos do Planejamento com resposta da cliente sem conferir (091) */
+  planejamentoDaCliente: number;
 };
 
 export async function getEventoContadores(
@@ -344,7 +359,7 @@ export async function getEventoContadores(
   const hoje = iso(new Date());
   const em7 = iso(addDays(new Date(), 7));
 
-  const [linksRes, msgRes, txRes] = await Promise.all([
+  const [linksRes, msgRes, txRes, confRes] = await Promise.all([
     supabase.from("roteiro_links").select("confirmed").eq("event_id", eventId),
     supabase
       .from("event_messages")
@@ -359,6 +374,11 @@ export async function getEventoContadores(
       .eq("type", "receita")
       .eq("paid", false)
       .lte("due_date", em7),
+    supabase
+      .from("evento_campo_valor")
+      .select("evento_decisao_id")
+      .eq("event_id", eventId)
+      .eq("aguarda_conferencia", true),
   ]);
 
   const links = (linksRes.data ?? []) as { confirmed: boolean }[];
@@ -369,6 +389,9 @@ export async function getEventoContadores(
     financeiroVencendo: txRes.count ?? 0,
     // financeiroVencendo já cobre "vencendo em 7 dias ou vencidas"
     // (lte em7 inclui datas passadas).
+    planejamentoDaCliente: new Set(
+      (confRes.data ?? []).map((c: { evento_decisao_id: string }) => c.evento_decisao_id)
+    ).size,
   };
 }
 

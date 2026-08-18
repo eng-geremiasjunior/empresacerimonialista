@@ -25,6 +25,7 @@ import {
   idCurto,
   monoLabel,
   prazoRelativo,
+  tempoAtras,
   TIPO_ROTULO,
   tituloStyle,
 } from "./celebra";
@@ -925,20 +926,53 @@ export function DrawerDecisao({
                   marginBottom: 6,
                 }}
               >
-                <label style={{ ...monoLabel, display: "flex", alignItems: "center", gap: 6 }}>
+                <label style={{ ...monoLabel, display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                  <span
+                    style={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {campo.label} · {TIPO_ROTULO[campo.tipo] ?? campo.tipo}
+                  </span>
+                  {/* o chamariz da 091: resposta dela, ainda sua de conferir.
+                      Some no "Conferir bloco" — o rastro fica no Ver o que mudou */}
                   {campo.aguardaConferencia && (
                     <span
-                      title="Resposta da cliente, ainda não conferida"
+                      title="A cliente respondeu pelo portal — confira no bloco acima"
                       style={{
-                        width: 6,
-                        height: 6,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 5,
+                        padding: "2px 8px",
                         borderRadius: 999,
-                        background: C.pendenteFg,
+                        background: C.pendenteBg,
+                        border: `1px solid ${C.pendenteFg}`,
+                        color: C.pendenteFg,
+                        fontFamily: F_UI,
+                        fontSize: 11,
+                        letterSpacing: 0,
+                        textTransform: "none",
+                        whiteSpace: "nowrap",
                         flex: "none",
                       }}
-                    />
+                    >
+                      <span
+                        aria-hidden
+                        style={{
+                          width: 5,
+                          height: 5,
+                          borderRadius: 999,
+                          background: C.pendenteFg,
+                        }}
+                      />
+                      cliente
+                      {tempoAtras(campo.updatedAt ?? null)
+                        ? ` · ${tempoAtras(campo.updatedAt ?? null)}`
+                        : ""}
+                    </span>
                   )}
-                  {campo.label} · {TIPO_ROTULO[campo.tipo] ?? campo.tipo}
                 </label>
                 {/* o olho do portal (089): esconder este campo da cliente */}
                 <button
