@@ -198,6 +198,25 @@ export async function salvarWhatsappAuto(
   return {};
 }
 
+// Canal de e-mail da confirmação automática (100). Par do whatsapp_auto:
+// é o e-mail que gera o magic link, então desligá-lo desliga o convite
+// com link — o WhatsApp sozinho vira só aviso.
+export async function salvarEmailAuto(
+  eventId: string,
+  ativo: boolean
+): Promise<{ error?: string }> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("events")
+    .update({ email_auto: ativo })
+    .eq("id", eventId);
+
+  if (error) return { error: "Não foi possível salvar" };
+
+  revalidatePath(`/eventos/${eventId}/fornecedores`);
+  return {};
+}
+
 export async function enviarConfirmacaoAgora(
   eventId: string,
   supplierId: string
@@ -206,7 +225,7 @@ export async function enviarConfirmacaoAgora(
 
   const { data: ev } = await supabase
     .from("events")
-    .select("id, type, date, time, location, whatsapp_auto, clients(name)")
+    .select("id, type, date, time, location, whatsapp_auto, email_auto, clients(name)")
     .eq("id", eventId)
     .single();
 
@@ -229,6 +248,7 @@ export async function enviarConfirmacaoAgora(
     client_name:
       (ev.clients as unknown as { name: string } | null)?.name ?? null,
     whatsapp_auto: ev.whatsapp_auto ?? true,
+    email_auto: ev.email_auto ?? true,
   };
 
   const resultado = await enviarConfirmacaoFornecedor(supabase, evento, sup);

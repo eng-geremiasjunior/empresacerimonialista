@@ -17,9 +17,10 @@ export type EventoParaConfirmar = {
   time: string | null;
   location: string | null;
   client_name: string | null;
-  // Preferência de canal do evento (075). undefined = ligado, que é o
-  // comportamento histórico; só desliga quando explicitamente false.
+  // Preferência de canal do evento (075/100). undefined = ligado, que é
+  // o comportamento histórico; só desliga quando explicitamente false.
   whatsapp_auto?: boolean;
+  email_auto?: boolean;
 };
 
 export type ResultadoEnvio = {
@@ -60,6 +61,21 @@ export async function enviarConfirmacaoFornecedor(
     return { ...base, motivo: "fornecedor sem e-mail e sem WhatsApp cadastrado" };
   }
 
+  // Canal desligado no evento (100) não sai nem no automático nem no
+  // manual — o botão da tela obedece a mesma chave que o cron.
+  const emailDoFornecedor = supplier.email;
+  const porEmail = !!emailDoFornecedor && evento.email_auto !== false;
+  const porWhatsapp =
+    !!telefone && evento.whatsapp_auto !== false && whatsappConfigurado();
+  if (!porEmail && !porWhatsapp) {
+    return {
+      ...base,
+      motivo: supplier.email
+        ? "os dois canais estão desligados neste evento"
+        : "sem e-mail cadastrado e o WhatsApp está desligado neste evento",
+    };
+  }
+
   // Reutiliza a confirmação existente (reenvio) ou cria uma nova.
   const { data: existing } = await supabase
     .from("supplier_confirmations")
@@ -92,9 +108,9 @@ export async function enviarConfirmacaoFornecedor(
   const canais: string[] = [];
   const falhas: string[] = [];
 
-  if (supplier.email) {
+  if (porEmail && emailDoFornecedor) {
     const envio = await enviarEmailConfirmacao({
-      to: supplier.email,
+      to: emailDoFornecedor,
       supplierName: supplier.name,
       eventLabel: eventLabel(evento),
       eventDate: evento.date,
@@ -109,7 +125,7 @@ export async function enviarConfirmacaoFornecedor(
   // WhatsApp com botões (mesmo hash do e-mail). Respeita a preferência do
   // evento e as credenciais — sem qualquer um dos dois, pula sem quebrar o
   // fluxo do e-mail.
-  if (telefone && evento.whatsapp_auto !== false && whatsappConfigurado()) {
+  if (porWhatsapp) {
     const zap = await enviarConfirmacaoWhatsapp({
       telefone,
       supplierName: supplier.name,
