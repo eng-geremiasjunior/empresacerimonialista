@@ -5,7 +5,7 @@ import { ArrowLeft, Pencil, Play } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { EventTabs } from "@/components/evento/EventTabs";
 import { EventoContainer } from "@/components/evento/EventoContainer";
-import { ProgressoEvento } from "@/components/eventos/ProgressoEvento";
+import { FasesDoEvento } from "@/components/eventos/FasesDoEvento";
 import { ResumoDaFase } from "@/components/eventos/ResumoDaFase";
 import { getCabecalhoEvento } from "@/lib/supabase/resumo-evento";
 import { formatDate } from "@/lib/format";
@@ -161,8 +161,15 @@ export default async function EventoLayout({
         </div>
       </div>
 
-      {/* Jornada: stepper clicável + resumo da fase aberta */}
-      <ProgressoEvento saude={saude} fases={fases} />
+      {/* A jornada É a navegação: cada fase leva à sua tela e mostra o
+          próprio avanço. Substituiu o stepper, que dizia a mesma coisa
+          das abas logo abaixo e deixava as duas sem força. */}
+      <FasesDoEvento
+        eventId={event.id}
+        fases={fases}
+        respostasDaCliente={contadores.planejamentoDaCliente}
+      />
+
       <ResumoDaFase saude={saude} fases={fases} eventId={event.id} />
 
       <EventTabs

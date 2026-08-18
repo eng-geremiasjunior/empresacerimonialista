@@ -11,11 +11,12 @@ export type TabCounters = {
   planejamento: number;
 };
 
+// As três fases da jornada saíram daqui: viraram os cartões de
+// FasesDoEvento, logo acima. O que sobra nesta barra é consulta — e é
+// isso que a torna calma: ela deixou de disputar atenção com o motor de
+// trabalho.
 const TABS: { label: string; seg: string; counter?: keyof TabCounters }[] = [
   { label: "Resumo", seg: "" },
-  { label: "Planejamento", seg: "planejamento", counter: "planejamento" },
-  { label: "Organização", seg: "organizacao" },
-  { label: "Execução do evento", seg: "roteiro" },
   { label: "Mesas", seg: "mesas" },
   { label: "Fornecedores", seg: "fornecedores", counter: "fornecedores" },
   { label: "Comunicação", seg: "comunicacao", counter: "comunicacao" },

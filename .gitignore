@@ -24,8 +24,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
+# local env files (inclui backups .bak-*, que carregam as mesmas chaves)
 .env*.local
+.env*.local.*
+.env.local.bak*
 
 # claude (config local da máquina)
 .claude/settings.local.json
