@@ -110,6 +110,11 @@
   body {
     background: #fff;
   }
+  /* o croqui herda maxHeight de tela (inline) — no papel ele ocupa a folha */
+  .imp-pagina svg[viewBox] {
+    max-height: none !important;
+    width: 100% !important;
+  }
 }
 
 /* o croqui de montagem deita a folha */

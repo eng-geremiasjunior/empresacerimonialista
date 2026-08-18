@@ -12,7 +12,7 @@
 // Sobreposição não é impedida — só marcada. Mesa em cima de mesa é
 // problema dela, não do sistema.
 
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import {
   caixaDaMesa,
   snap,
@@ -80,6 +80,11 @@ export function Croqui({
   const svgRef = useRef<SVGSVGElement>(null);
   const [arrasto, setArrasto] = useState<PosLocal | null>(null);
   const grab = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
+  // a tela renderiza mais de um croqui (desktop, celular, impresso):
+  // cada um precisa dos SEUS ids de pattern, ou a grade some
+  const uid = useId();
+  const gradeFina = `grade-fina-${uid}`;
+  const gradeMetro = `grade-metro-${uid}`;
 
   function pontoSvg(clientX: number, clientY: number) {
     const svg = svgRef.current;
@@ -166,18 +171,18 @@ export function Croqui({
       }}
     >
       <defs>
-        <pattern id="grade-croqui" width="50" height="50" patternUnits="userSpaceOnUse">
+        <pattern id={gradeFina} width="50" height="50" patternUnits="userSpaceOnUse">
           <path d="M50 0H0V50" fill="none" stroke="#f1f0ee" strokeWidth="2" />
         </pattern>
-        <pattern id="grade-metro" width="100" height="100" patternUnits="userSpaceOnUse">
+        <pattern id={gradeMetro} width="100" height="100" patternUnits="userSpaceOnUse">
           <path d="M100 0H0V100" fill="none" stroke="#e7e5e4" strokeWidth="2" />
         </pattern>
       </defs>
 
       {/* o piso do salão */}
       <rect x="0" y="0" width={larguraCm} height={alturaCm} fill="#fdfcfb" stroke="#d6d3d1" strokeWidth="4" />
-      <rect x="0" y="0" width={larguraCm} height={alturaCm} fill="url(#grade-croqui)" pointerEvents="none" />
-      <rect x="0" y="0" width={larguraCm} height={alturaCm} fill="url(#grade-metro)" pointerEvents="none" />
+      <rect x="0" y="0" width={larguraCm} height={alturaCm} fill={`url(#${gradeFina})`} pointerEvents="none" />
+      <rect x="0" y="0" width={larguraCm} height={alturaCm} fill={`url(#${gradeMetro})`} pointerEvents="none" />
 
       {/* régua em metros */}
       {marcasX.map((x) => (
