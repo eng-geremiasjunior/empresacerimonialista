@@ -99,7 +99,13 @@ export function Croqui({
   ) {
     if (!editavel) return;
     e.preventDefault();
-    (e.target as Element).setPointerCapture?.(e.pointerId);
+    // a captura garante o soltar fora do SVG; se o browser recusar
+    // (pointer já encerrado), o arrasto segue sem ela
+    try {
+      (e.target as Element).setPointerCapture?.(e.pointerId);
+    } catch {
+      /* segue sem captura */
+    }
     const p = pontoSvg(e.clientX, e.clientY);
     grab.current = { dx: p.x - x, dy: p.y - y };
     setArrasto({ id, kind, x, y });
