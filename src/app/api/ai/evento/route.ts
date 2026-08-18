@@ -20,7 +20,14 @@ export const dynamic = "force-dynamic";
 // o padrão atual como fallback. Assim trocar de provedor/modelo é config,
 // não deploy de código.
 const BASE_URL = process.env.LLAMA_BASE_URL || "https://api.groq.com/openai/v1";
-const MODELO = process.env.LLAMA_MODEL || "llama-3.3-70b-versatile";
+const MODELO = process.env.LLAMA_MODEL || "openai/gpt-oss-120b";
+
+// gpt-oss raciocina antes de responder e devolve isso num campo separado.
+// Em "low" ele gasta um terço dos tokens de raciocínio e responde mais
+// rápido — o que esta tela pede é resposta direta, não ensaio. O
+// parâmetro só vai quando o modelo entende, para não quebrar a troca de
+// provedor por variável de ambiente.
+const EXTRA = MODELO.includes("gpt-oss") ? { reasoning_effort: "low" } : {};
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -95,6 +102,7 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         model: MODELO,
         temperature: 0.2,
+        ...EXTRA,
         messages: [{ role: "system", content: system }, ...historico],
       }),
     });
@@ -109,7 +117,11 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error:
-            res.status === 401
+            res.status === 404 || detalhe.includes("model_not_found")
+              ? `o modelo ${MODELO} não existe mais no provedor. Atualize a variável LLAMA_MODEL.`
+              : res.status === 429
+                ? "o provedor recusou por limite de uso. Tente daqui a pouco."
+                : res.status === 401
               ? "chave do assistente rejeitada pelo provedor."
               : "o assistente não respondeu agora. Tente de novo.",
         },
