@@ -23,8 +23,7 @@
 //  * a copy institucional é do template, mas depoimentos e imagens são da
 //    empresa quando ela tiver cadastrado.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatDateBR } from "@/lib/orcamentos";
 import { expirado, type OrcamentoPublicoData } from "@/lib/orcamento-publico";
 import { ModalAceiteProposta } from "@/components/orcamento-publico/ModalAceiteProposta";

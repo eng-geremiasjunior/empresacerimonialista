@@ -37,7 +37,6 @@ import {
   Music,
   Users,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { criarEventoAPartirDoOrcamento } from "@/lib/orcamento-para-evento";
 import { FichaCadastroAprovacao } from "@/components/orcamento-publico/FichaCadastroAprovacao";
 import { ModalAceiteProposta } from "@/components/orcamento-publico/ModalAceiteProposta";

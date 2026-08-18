@@ -109,3 +109,113 @@ export function opcoesParcelamento(maximo: number): number[] {
   if (maximo > 0 && !base.includes(maximo)) base.push(maximo);
   return base.length > 0 ? base.sort((a, b) => a - b) : [1];
 }
+
+// ------------------------------------------------------------------
+// DEFAULTS únicos da proposta pública.
+//
+// Antes, cada template inventava os seus quando o banco vinha vazio
+// (6x aqui, 12x ali, entrada 0% num, 30% noutro) — a MESMA empresa
+// oferecia condições diferentes conforme o template. A fonte da
+// verdade é o default do banco (045): entrada 30, até 7x, 5% à vista,
+// 150 convidados inclusos.
+// ------------------------------------------------------------------
+
+export const REGRA_PADRAO: RegraConvidados = {
+  inclusos: 150,
+  valorPorExtra: 12,
+  min: 50,
+  max: 300,
+};
+
+export const CONDICOES_PADRAO: CondicoesPagamento = {
+  entradaPercentual: 30,
+  parcelasMaximo: 7,
+  descontoAVista: 5,
+  prazoParcelasTexto: "sem juros no cartão",
+};
+
+export function regraDoBanco(i: {
+  convidados_inclusos?: number | null;
+  valor_por_convidado_extra?: number | null;
+  convidados_minimo?: number | null;
+  convidados_maximo?: number | null;
+} | null): RegraConvidados {
+  return {
+    inclusos: i?.convidados_inclusos ?? REGRA_PADRAO.inclusos,
+    valorPorExtra: i?.valor_por_convidado_extra ?? REGRA_PADRAO.valorPorExtra,
+    min: i?.convidados_minimo ?? REGRA_PADRAO.min,
+    max: i?.convidados_maximo ?? REGRA_PADRAO.max,
+  };
+}
+
+export function condicoesDoBanco(i: {
+  condicao_entrada_percentual?: number | null;
+  condicao_parcelas?: number | null;
+  condicao_desconto_avista?: number | null;
+  condicao_prazo_texto?: string | null;
+} | null): CondicoesPagamento {
+  return {
+    entradaPercentual:
+      i?.condicao_entrada_percentual ?? CONDICOES_PADRAO.entradaPercentual,
+    parcelasMaximo: i?.condicao_parcelas ?? CONDICOES_PADRAO.parcelasMaximo,
+    descontoAVista:
+      i?.condicao_desconto_avista ?? CONDICOES_PADRAO.descontoAVista,
+    prazoParcelasTexto:
+      i?.condicao_prazo_texto ?? CONDICOES_PADRAO.prazoParcelasTexto,
+  };
+}
+
+// ------------------------------------------------------------------
+// Formatação BRL única. Existiam QUATRO versões entre os templates
+// (com centavos, sem centavos, sem "R$", Intl.currency).
+// ------------------------------------------------------------------
+
+/** "R$ 2.500,00" — valores de resumo/total */
+export const brl = (n: number): string =>
+  "R$ " +
+  Number(n).toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+/** "R$ 2.500" — preço de cartão de pacote (sem centavos, como no handoff) */
+export const brlInteiro = (n: number): string =>
+  "R$ " + Math.round(Number(n)).toLocaleString("pt-BR");
+
+// ------------------------------------------------------------------
+// Validade: uma base só.
+//
+// O banco decide a expiração em America/Sao_Paulo (RPCs da 101). O
+// navegador conta até o fim do dia da validade NESSE fuso — offset
+// fixo -03:00, o Brasil não tem horário de verão desde 2019. Antes,
+// um template contava a partir de Date.now() e os outros da meia-noite
+// LOCAL do navegador: dois clientes em fusos diferentes viam prazos
+// diferentes.
+// ------------------------------------------------------------------
+
+export function prazoFinalValidade(dataValidade: string): number {
+  return new Date(`${dataValidade.slice(0, 10)}T23:59:59-03:00`).getTime();
+}
+
+export type TempoRestante = {
+  dias: number;
+  horas: number;
+  minutos: number;
+  segundos: number;
+  acabou: boolean;
+};
+
+export function tempoRestante(
+  dataValidade: string,
+  agora = Date.now()
+): TempoRestante {
+  const resta = prazoFinalValidade(dataValidade) - agora;
+  if (resta <= 0) return { dias: 0, horas: 0, minutos: 0, segundos: 0, acabou: true };
+  return {
+    dias: Math.floor(resta / 86_400_000),
+    horas: Math.floor(resta / 3_600_000) % 24,
+    minutos: Math.floor(resta / 60_000) % 60,
+    segundos: Math.floor(resta / 1_000) % 60,
+    acabou: false,
+  };
+}

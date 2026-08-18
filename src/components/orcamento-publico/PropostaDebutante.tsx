@@ -22,8 +22,7 @@
 //    tipo de evento (Catálogo › Debutante); os valores do handoff são o
 //    seed da migração 058, não números cravados aqui.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ModalAceiteProposta } from "@/components/orcamento-publico/ModalAceiteProposta";
 import { formatDateBR } from "@/lib/orcamentos";
 import { expirado, type OrcamentoPublicoData } from "@/lib/orcamento-publico";

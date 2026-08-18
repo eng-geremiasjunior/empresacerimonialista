@@ -26,12 +26,11 @@
 //  * o countdown usa a validade real do orçamento, não os 10 dias fixos do
 //    mockup.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Clock, ArrowRight, Sparkles, Calendar, Users, MapPin, Star, Check, X,
   Music, Crown, Camera, Zap, Wine,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { ModalAceiteProposta } from "@/components/orcamento-publico/ModalAceiteProposta";
 import { formatDateBR } from "@/lib/orcamentos";
 import { expirado, type OrcamentoPublicoData } from "@/lib/orcamento-publico";
