@@ -196,3 +196,85 @@ export async function salvarRegraConvidados(
   revalidatePath(`/catalogo/${tipo}`);
   return { success: true };
 }
+
+// ---------- Blocos da proposta (101): incluso / no dia / próximos passos ----------
+// Substituição completa POR SEÇÃO — nunca por empresa/tipo inteiro:
+// salvar "incluso" não pode apagar "no dia" (a armadilha documentada na 047).
+
+export type BlocoEntrada = {
+  icone: string | null;
+  titulo: string;
+  texto_curto: string | null;
+  texto_longo: string | null;
+};
+
+export async function salvarBlocosProposta(
+  tipoEvento: EventType,
+  secao: "incluso" | "no_dia" | "proximos_passos",
+  itens: BlocoEntrada[]
+): Promise<AcaoResult> {
+  const { supabase, empresaId, cargo } = await contexto();
+  if (!empresaId) return { error: "Empresa não encontrada." };
+  if (cargo !== "proprietaria") return { error: "Sem permissão." };
+  const tipo = tipoValido(tipoEvento);
+  if (!tipo) return { error: "Tipo de evento inválido." };
+  if (!["incluso", "no_dia", "proximos_passos"].includes(secao)) {
+    return { error: "Seção inválida." };
+  }
+
+  const validos = itens.filter((b) => b.titulo.trim());
+
+  const { error: delErr } = await supabase
+    .from("empresa_proposta_blocos")
+    .delete()
+    .eq("empresa_id", empresaId)
+    .eq("tipo_evento", tipo)
+    .eq("secao", secao);
+  if (delErr) return { error: "Não foi possível salvar os blocos." };
+
+  if (validos.length > 0) {
+    const { error } = await supabase.from("empresa_proposta_blocos").insert(
+      validos.map((b, i) => ({
+        empresa_id: empresaId,
+        tipo_evento: tipo,
+        secao,
+        ordem: i + 1,
+        icone: b.icone,
+        titulo: b.titulo.trim(),
+        texto_curto: b.texto_curto?.trim() || null,
+        texto_longo: b.texto_longo?.trim() || null,
+      }))
+    );
+    if (error) return { error: "Não foi possível salvar os blocos." };
+  }
+
+  revalidatePath(`/catalogo/${tipo}`);
+  return { success: true };
+}
+
+// ---------- Citação do hero (101) ----------
+export async function salvarCitacaoHero(
+  tipoEvento: EventType,
+  citacao: string
+): Promise<AcaoResult> {
+  const { supabase, empresaId, cargo } = await contexto();
+  if (!empresaId) return { error: "Empresa não encontrada." };
+  if (cargo !== "proprietaria") return { error: "Sem permissão." };
+  const tipo = tipoValido(tipoEvento);
+  if (!tipo) return { error: "Tipo de evento inválido." };
+
+  const { error } = await supabase
+    .from("empresa_conteudo_institucional")
+    .upsert(
+      {
+        empresa_id: empresaId,
+        tipo_evento: tipo,
+        citacao_hero: citacao.trim().slice(0, 300) || null,
+      },
+      { onConflict: "empresa_id,tipo_evento" }
+    );
+  if (error) return { error: "Não foi possível salvar a citação." };
+
+  revalidatePath(`/catalogo/${tipo}`);
+  return { success: true };
+}

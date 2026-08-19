@@ -18,6 +18,7 @@ export type OrcamentoPublicoItem = {
 
 export type InstitucionalPublico = {
   sobre_nos_texto: string | null;
+  citacao_hero?: string | null;
   stat_anos_experiencia: number | null;
   stat_eventos_realizados: number | null;
   stat_dedicacao_percentual: number;
@@ -84,6 +85,9 @@ export type OrcamentoPublicoData = {
   pacotes: PacoteRpc[];
   extras: ExtraRpc[];
   aceite: AceiteRpc | null;
+  // 101 — podem vir undefined enquanto a migração não roda
+  blocos?: BlocoPublico[];
+  comentarios?: ComentarioPublico[];
 };
 
 
@@ -103,6 +107,23 @@ export type ExtraRpc = {
   nome: string;
   descricao: string | null;
   preco: number;
+};
+
+// ---------- blocos editáveis + comentários (migração 101) ----------
+// Opcionais no tipo de propósito: o front tolera o banco ainda sem a
+// 101 aplicada (chega undefined → os templates caem na copy-padrão).
+export type BlocoPublico = {
+  secao: "incluso" | "no_dia" | "proximos_passos";
+  icone: string | null;
+  titulo: string;
+  texto_curto: string | null;
+  texto_longo: string | null;
+};
+
+export type ComentarioPublico = {
+  autor_nome: string;
+  texto: string;
+  created_at: string;
 };
 
 export type AceiteRpc = {

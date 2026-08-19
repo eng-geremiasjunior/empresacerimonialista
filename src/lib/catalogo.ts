@@ -55,6 +55,8 @@ export const TIPO_EMOJI: Record<EventType, string> = {
 // tela em branco já vem com valores coerentes com o que o banco gravaria.
 export const CONTEUDO_PADRAO = {
   sobre_nos_texto: null,
+  // 101 — citação em itálico do topo da proposta (null = padrão do template)
+  citacao_hero: null as string | null,
   stat_anos_experiencia: null,
   stat_eventos_realizados: null,
   stat_dedicacao_percentual: 100,

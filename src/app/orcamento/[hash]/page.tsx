@@ -1,11 +1,10 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { PropostaV2 } from "@/components/orcamento-publico/PropostaV2";
+import { PropostaCasamentoClassico } from "@/components/orcamento-publico/PropostaCasamentoClassico";
 import { PropostaDebutante } from "@/components/orcamento-publico/PropostaDebutante";
 import { PropostaDebutanteGlam } from "@/components/orcamento-publico/PropostaDebutanteGlam";
 import { PropostaCasamentoMaison } from "@/components/orcamento-publico/PropostaCasamentoMaison";
 import type { OrcamentoPublicoData } from "@/lib/orcamento-publico";
-import { variaveisDoTema } from "@/lib/orcamento-temas";
 import { TEMPLATE_PADRAO_POR_TIPO } from "@/lib/proposta-templates";
 import type { EventType } from "@/lib/types";
 
@@ -67,12 +66,7 @@ export default async function OrcamentoPublicoPage({
     );
   }
 
-  return (
-    <div
-      className="min-h-screen [font-family:var(--fonte-corpo)]"
-      style={{ ...variaveisDoTema(), background: "var(--cor-fundo)" }}
-    >
-      <PropostaV2 hash={params.hash} inicial={proposta} />
-    </div>
-  );
+  // O slug casamento_v2 sempre foi rotulado "Clássico — Creme e dourado";
+  // este É o Clássico agora (o dono redesenhou e o novo assumiu o slug).
+  return <PropostaCasamentoClassico hash={params.hash} inicial={proposta} />;
 }

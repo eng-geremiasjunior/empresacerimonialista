@@ -4,6 +4,16 @@ import { createClient } from "@/lib/supabase/server";
 import { SobreNosForm } from "@/components/configuracoes/SobreNosForm";
 import { ProcessoEtapasForm } from "@/components/configuracoes/ProcessoEtapasForm";
 import { FaqForm } from "@/components/configuracoes/FaqForm";
+import {
+  BlocosPropostaForm,
+  CitacaoHeroForm,
+} from "@/components/configuracoes/BlocosPropostaForm";
+import {
+  BLOCOS_INCLUSO_CLASSICO,
+  BLOCOS_NO_DIA_CLASSICO,
+  BLOCOS_PROXIMOS_CLASSICO,
+  CITACAO_CLASSICO,
+} from "@/lib/proposta-classico-conteudo";
 import { DepoimentosForm } from "@/components/configuracoes/DepoimentosForm";
 import { CondicoesPagamentoForm } from "@/components/configuracoes/CondicoesPagamentoForm";
 import { PortfolioGaleria } from "@/components/configuracoes/PortfolioGaleria";
@@ -76,6 +86,7 @@ export default async function CatalogoTipoPage({
     pacotesRes,
     extrasRes,
     fotosRes,
+    blocosRes,
   ] = await Promise.all([
     supabase
       .from("empresas")
@@ -125,6 +136,13 @@ export default async function CatalogoTipoPage({
       .eq("tipo_evento", tipo)
       .order("ordem")
       .order("created_at"),
+    supabase
+      .from("empresa_proposta_blocos")
+      .select("secao, icone, titulo, texto_curto, texto_longo")
+      .eq("empresa_id", cargo.empresa_id)
+      .eq("tipo_evento", tipo)
+      .order("secao")
+      .order("ordem"),
   ]);
 
   // A coluna tipo_evento só existe depois da 057: sem ela toda consulta
@@ -142,6 +160,17 @@ export default async function CatalogoTipoPage({
     titulo: string;
     descricao: string | null;
   }[];
+  // 101 — pode vir erro se a migração ainda não rodou; degrada para vazio
+  const blocos = (blocosRes.data ?? []) as {
+    secao: "incluso" | "no_dia" | "proximos_passos";
+    icone: string | null;
+    titulo: string;
+    texto_curto: string | null;
+    texto_longo: string | null;
+  }[];
+  const blocosDe = (s: "incluso" | "no_dia" | "proximos_passos") =>
+    blocos.filter((b) => b.secao === s);
+
   const faq = (faqRes.data ?? []) as {
     pergunta: string;
     resposta: string;
@@ -233,6 +262,53 @@ export default async function CatalogoTipoPage({
               descricao="Apresentação da empresa e números que passam confiança."
             >
               <SobreNosForm tipoEvento={tipo} inicial={conteudo} />
+            </SubSecao>
+
+            <SubSecao
+              titulo="Citação de abertura"
+              descricao="A frase em itálico no topo da proposta."
+            >
+              <CitacaoHeroForm
+                tipoEvento={tipo}
+                inicial={conteudo.citacao_hero ?? null}
+                padrao={CITACAO_CLASSICO}
+              />
+            </SubSecao>
+
+            <SubSecao
+              titulo="O que está incluso"
+              descricao="Os cartões de serviço da proposta. Texto curto no cartão; o longo abre no ver detalhes."
+            >
+              <BlocosPropostaForm
+                tipoEvento={tipo}
+                secao="incluso"
+                inicial={blocosDe("incluso")}
+                padrao={BLOCOS_INCLUSO_CLASSICO}
+              />
+            </SubSecao>
+
+            <SubSecao
+              titulo="No dia do evento"
+              descricao="Os cartões do que a sua equipe garante no dia."
+            >
+              <BlocosPropostaForm
+                tipoEvento={tipo}
+                secao="no_dia"
+                inicial={blocosDe("no_dia")}
+                padrao={BLOCOS_NO_DIA_CLASSICO}
+              />
+            </SubSecao>
+
+            <SubSecao
+              titulo="Próximos passos"
+              descricao="Os passos do fechamento, na ordem em que o casal lê."
+            >
+              <BlocosPropostaForm
+                tipoEvento={tipo}
+                secao="proximos_passos"
+                inicial={blocosDe("proximos_passos")}
+                padrao={BLOCOS_PROXIMOS_CLASSICO}
+              />
             </SubSecao>
 
             <SubSecao
