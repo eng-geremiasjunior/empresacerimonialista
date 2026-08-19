@@ -26,12 +26,13 @@
 //  * o countdown usa a validade real do orçamento, não os 10 dias fixos do
 //    mockup.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Clock, ArrowRight, Sparkles, Calendar, Users, MapPin, Star, Check, X,
   Music, Crown, Camera, Zap, Wine,
 } from "lucide-react";
 import { ModalAceiteProposta } from "@/components/orcamento-publico/ModalAceiteProposta";
+import { useCountdownValidade } from "@/components/orcamento-publico/useCountdownValidade";
 import { formatDateBR } from "@/lib/orcamentos";
 import { expirado, type OrcamentoPublicoData } from "@/lib/orcamento-publico";
 import { calcularProposta } from "@/lib/proposta";
@@ -62,6 +63,7 @@ export function PropostaDebutanteGlam({
   const pacotes = useMemo(() => dados.pacotes ?? [], [dados.pacotes]);
   const extras = useMemo(() => dados.extras ?? [], [dados.extras]);
   const nome = (dados.nome_contato || "DEBUTANTE").toUpperCase();
+  const iniciais = dados.nome_empresa.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase();
 
   const regra = {
     inclusos: inst?.convidados_inclusos ?? 150,
@@ -101,19 +103,8 @@ export function PropostaDebutanteGlam({
     [pacote, guests, extrasIds, extras, regra.inclusos, regra.valorPorExtra]
   );
 
-  // Countdown a partir da validade real; começa no cliente (evita mismatch).
-  const [cd, setCd] = useState<{ d: number; h: number; m: number; s: number } | null>(null);
-  useEffect(() => {
-    if (!podeResponder) return;
-    const fim = new Date(`${dados.data_validade}T23:59:59`).getTime();
-    const tick = () => {
-      const s = Math.max(0, Math.floor((fim - Date.now()) / 1000));
-      setCd({ d: Math.floor(s / 86400), h: Math.floor((s % 86400) / 3600), m: Math.floor((s % 3600) / 60), s: s % 60 });
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [dados.data_validade, podeResponder]);
+  // Countdown compartilhado a partir da validade real.
+  const tempo = useCountdownValidade(dados.status === "enviado" ? dados.data_validade : null);
 
   const verPreco = useCallback(() => {
     document.getElementById("investimento")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -142,6 +133,8 @@ export function PropostaDebutanteGlam({
         .glam-root input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:9999px;background:${OURO};border:3px solid #111;cursor:pointer}
         @keyframes glamPulse{0%,100%{opacity:1}50%{opacity:.35}}
         .glam-pulse{animation:glamPulse 1.6s ease-in-out infinite}
+        .glam-inclui-card{background:rgba(255,255,255,.06)}
+        @media (hover:hover){.glam-inclui-card:hover{background:rgba(255,255,255,.09)}}
         @keyframes glamUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
         .glam-modal-card{animation:glamUp .3s ease}
         @media (prefers-reduced-motion:reduce){.glam-pulse,.glam-modal-card{animation:none}}
@@ -156,7 +149,7 @@ export function PropostaDebutanteGlam({
           <Clock size={15} />
           <span>PROPOSTA VÁLIDA POR:</span>
           <span className="rounded-full bg-white px-2.5 py-0.5 text-[12px] font-black tabular-nums" style={{ color: INK }}>
-            {cd ? `${pad2(cd.d)}D : ${pad2(cd.h)}H : ${pad2(cd.m)}M : ${pad2(cd.s)}S` : "—"}
+            {`${pad2(tempo.dias)}D : ${pad2(tempo.horas)}H : ${pad2(tempo.minutos)}M : ${pad2(tempo.segundos)}S`}
           </span>
           <span className="opacity-90">• Preço trava hoje</span>
         </div>
@@ -166,14 +159,20 @@ export function PropostaDebutanteGlam({
       <header className="sticky top-0 z-30 border-b border-black/10 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-[1320px] items-center justify-between gap-3 px-6 py-3 sm:px-10">
           <div className="flex items-center gap-2.5">
-            <div className="display flex h-9 w-9 items-center justify-center rounded-full bg-[#111] text-[15px] font-black text-white">
-              15
-            </div>
-            <div className="leading-none">
-              <div className="text-[13px] font-black tracking-tight">
-                {dados.nome_empresa.toUpperCase()}
+            {dados.logo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={dados.logo_url}
+                alt={dados.nome_empresa}
+                className="h-10 w-10 rounded-full object-cover"
+              />
+            ) : (
+              <div className="display flex h-9 w-9 items-center justify-center rounded-full bg-[#111] text-[15px] font-black text-white">
+                {iniciais}
               </div>
-              <div className="text-[9px] font-bold tracking-[0.2em] text-black/40">TEMPLATE 02</div>
+            )}
+            <div className="text-[13px] font-black tracking-tight">
+              {dados.nome_empresa.toUpperCase()}
             </div>
           </div>
           <div className="hidden items-center gap-2 sm:flex">
@@ -281,10 +280,8 @@ export function PropostaDebutanteGlam({
         highlight={highlight}
         podeResponder={podeResponder}
         onAbrir={abrir}
-        cd={cd}
-        pad2={pad2}
       />
-      <FooterGlam dados={dados} nome={nome} onAbrir={abrir} podeResponder={podeResponder} />
+      <FooterGlam dados={dados} nome={nome} hash={hash} onAbrir={abrir} podeResponder={podeResponder} />
 
       {modal && pacote && (
         <ModalAceiteProposta
@@ -353,11 +350,7 @@ function PainelVideo({ dados }: { dados: OrcamentoPublicoData }) {
       {/* gradiente escuro de baixo */}
       <div className="absolute inset-x-0 bottom-0 h-1/2" style={{ background: "linear-gradient(to top,rgba(0,0,0,.85),transparent)" }} />
 
-      {/* badges topo */}
-      <div className="absolute left-4 top-4 flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[10px] font-bold text-[#111]">
-        <span className="glam-pulse h-1.5 w-1.5 rounded-full" style={{ background: ROSA }} />
-        AO VIVO • PISTA LOTADA
-      </div>
+      {/* badge topo */}
       <div className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full" style={{ background: ROSA }}>
         <Star size={16} className="text-white" fill="#fff" />
       </div>
@@ -373,12 +366,14 @@ function PainelVideo({ dados }: { dados: OrcamentoPublicoData }) {
       </div>
 
       {/* selo dourado flutuante */}
-      <div
-        className="absolute -bottom-3 left-4 rounded-xl px-3 py-2 text-[11px] font-black text-[#111]"
-        style={{ background: OURO, transform: "rotate(-2deg)" }}
-      >
-        + 300 FESTAS FEITAS ✨
-      </div>
+      {dados.institucional?.stat_eventos_realizados ? (
+        <div
+          className="absolute -bottom-3 left-4 rounded-xl px-3 py-2 text-[11px] font-black text-[#111]"
+          style={{ background: OURO, transform: "rotate(-2deg)" }}
+        >
+          + {dados.institucional.stat_eventos_realizados} FESTAS FEITAS ✨
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -399,13 +394,7 @@ function IncluiSection({ nome }: { nome: string }) {
           {INCLUSO_GLAM.map((item) => {
             const Icone = ICONES_INCLUSO[item.icone] ?? Check;
             return (
-              <div
-                key={item.titulo}
-                className="rounded-[20px] p-6 transition-colors"
-                style={{ background: "rgba(255,255,255,.06)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,.09)")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,.06)")}
-              >
+              <div key={item.titulo} className="glam-inclui-card rounded-[20px] p-6 transition-colors">
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: OURO }}>
                   <Icone size={26} className="text-[#111]" strokeWidth={2.5} />
                 </div>
@@ -488,8 +477,6 @@ function InvestimentoSection({
   highlight: boolean;
   podeResponder: boolean;
   onAbrir: () => void;
-  cd: { d: number; h: number; m: number; s: number } | null;
-  pad2: (n: number) => string;
 }) {
   const pct = ((guests - regra.min) / Math.max(1, regra.max - regra.min)) * 100;
   const fill = `linear-gradient(to right, ${OURO} ${pct}%, rgba(255,255,255,.2) ${pct}%)`;
@@ -682,10 +669,11 @@ function NoDiaSection() {
 
 // 8 — FOOTER
 function FooterGlam({
-  dados, nome, onAbrir, podeResponder,
+  dados, nome, hash, onAbrir, podeResponder,
 }: {
   dados: OrcamentoPublicoData;
   nome: string;
+  hash: string;
   onAbrir: () => void;
   podeResponder: boolean;
 }) {
@@ -700,9 +688,11 @@ function FooterGlam({
             </div>
             <div>
               <p className="text-[14px] font-black">{dados.nome_empresa} • {nome}</p>
-              <p className="text-[12px] font-medium text-black/50">
-                Respondo em até 2h • 300 festas • 4.9★ no Google
-              </p>
+              {dados.institucional?.stat_eventos_realizados ? (
+                <p className="text-[12px] font-medium text-black/50">
+                  {dados.institucional.stat_eventos_realizados} festas
+                </p>
+              ) : null}
             </div>
           </div>
           <button
@@ -714,7 +704,17 @@ function FooterGlam({
           </button>
         </div>
         <p className="mt-10 text-center text-[11px] font-bold tracking-[0.16em] text-black/30">
-          TEMPLATE 02 • DEBUT FESTA GLAM • CONTRASTE AAA • LEGIBILIDADE MÁXIMA
+          {dados.nome_empresa.toUpperCase()} • {new Date().getFullYear()}
+        </p>
+        <p className="mt-2 text-center text-[11px] font-medium text-black/30">
+          <a
+            href={`/orcamento/${hash}/pdf`}
+            target="_blank"
+            rel="noreferrer"
+            className="underline underline-offset-2 hover:text-black/50"
+          >
+            Baixar em PDF
+          </a>
         </p>
       </div>
     </footer>

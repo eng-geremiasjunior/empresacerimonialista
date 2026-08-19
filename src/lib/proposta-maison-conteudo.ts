@@ -20,7 +20,6 @@ export const HERO_MAISON = {
   badge: "VAGAS LIMITADAS",
   paragrafo:
     "Uma celebração pensada como alta-costura: cada detalhe sob medida, equipe exclusiva e curadoria de fornecedores nível maison. Orçamento único, sem pacotes genéricos.",
-  ctaRodape: "Entrada de 30% • 7x sem juros • Contrato em 2h",
   cardReferencia: {
     rotulo: "REFERÊNCIA",
     titulo: "Seu casamento\nnesse padrão",
@@ -78,7 +77,7 @@ export const COMO_FUNCIONA_MAISON = {
       quando: "Semana 1",
       titulo: "Assinatura + imersão",
       descricao:
-        "Contrato digital, entrada 30%, visita técnica e briefing de 3h no local.",
+        "Contrato digital, pagamento da entrada, visita técnica e briefing de 3h no local.",
     },
     {
       quando: "Semana 2-6",
@@ -138,9 +137,9 @@ export const INVESTIMENTO_MAISON = {
   paragrafo:
     "Valor fechado, sem taxas de fornecedor e sem upsell no dia.",
   selo: "MAIS ESCOLHIDO",
-  rodape:
-    "Entrada de 30% garante equipe exclusiva • Restante parcelado sem juros",
-  selos: ["✓ Contrato digital", "✓ Cronograma em 2h", "✓ Lista curada"],
+  rodape: (pct: number) =>
+    `Entrada de ${pct}% garante equipe exclusiva • Restante parcelado sem juros`,
+  selos: ["✓ Contrato digital", "✓ Cronograma detalhado", "✓ Lista curada"],
 };
 
 export const DEPOIMENTOS_MAISON = [
@@ -167,13 +166,13 @@ export const DEPOIMENTOS_MAISON = [
 export const PROXIMOS_MAISON = {
   eyebrow: "PRÓXIMOS PASSOS",
   titulo: "Vamos travar\nsua data?",
-  paragrafo:
-    "Assine digitalmente e receba em 2h o contrato + cronograma + lista curada de fornecedores. Entrada de 30% para garantir equipe exclusiva.",
+  paragrafo: (pct: number) =>
+    `Assine digitalmente e receba o contrato + cronograma + lista curada de fornecedores. Entrada de ${pct}% para garantir equipe exclusiva.`,
   cta: "ACEITAR PROPOSTA AGORA",
-  stats: [
-    { valor: "2h", rotulo: "contrato +\ncronograma" },
+  stats: (pct: number) => [
+    { valor: "Na hora", rotulo: "contrato +\ncronograma" },
     { valor: "18", rotulo: "fornecedores\ncurados" },
-    { valor: "30%", rotulo: "entrada\ntrava equipe" },
+    { valor: `${pct}%`, rotulo: "entrada\ntrava equipe" },
   ],
   depoisTitulo: "O QUE ACONTECE DEPOIS",
   depois: [
@@ -182,12 +181,12 @@ export const PROXIMOS_MAISON = {
       descricao: "Nome, CPF, e-mail + assinatura na tela. 2 minutos.",
     },
     {
-      titulo: "Recebimento em 2h",
+      titulo: "Contrato + cronograma",
       descricao:
-        "Contrato, cronograma detalhado e lista curada de fornecedores.",
+        "Contrato digital, cronograma detalhado e lista curada de fornecedores.",
     },
     {
-      titulo: "Entrada 30%",
+      titulo: "Pagamento da entrada",
       descricao: "PIX ou parcelado sem juros. Trava equipe exclusiva e data.",
     },
     {
@@ -195,9 +194,6 @@ export const PROXIMOS_MAISON = {
       descricao: "WhatsApp direto com a cerimonialista + cronograma ao vivo.",
     },
   ],
-  garantiaTitulo: "GARANTIA MAISON",
-  garantia:
-    "Se não receber em 2h, devolvemos 100% da entrada. Sem perguntas.",
 };
 
 export const MODAL_MAISON = {
@@ -205,5 +201,6 @@ export const MODAL_MAISON = {
   subtitulo: "Confirme seus dados para travar a data",
   dicaAssinatura: "Desenhe acima com o dedo ou mouse",
   cta: "ASSINAR E TRAVAR DATA →",
-  rodape: "Contrato em 2h • Entrada 30% • parcelado sem juros",
+  rodape: (pct: number) =>
+    `Contrato digital na hora do aceite • Entrada ${pct}% • parcelado sem juros`,
 };

@@ -27,6 +27,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatDateBR } from "@/lib/orcamentos";
 import { expirado, type OrcamentoPublicoData } from "@/lib/orcamento-publico";
 import { ModalAceiteProposta } from "@/components/orcamento-publico/ModalAceiteProposta";
+import { useCountdownValidade } from "@/components/orcamento-publico/useCountdownValidade";
 import {
   NAV_MAISON, HERO_MAISON, QUEM_SOMOS_MAISON, INCLUSO_MAISON,
   COMO_FUNCIONA_MAISON, NO_DIA_MAISON, INVESTIMENTO_MAISON,
@@ -83,24 +84,10 @@ export function PropostaCasamentoMaison({
   const [progresso, setProgresso] = useState(0);
   const [rolou, setRolou] = useState(false);
 
-  // Countdown a partir da validade real; começa no cliente (evita mismatch).
-  const [cd, setCd] = useState<{ h: string; m: string; s: string } | null>(null);
-  useEffect(() => {
-    if (!podeResponder) return;
-    const fim = new Date(`${dados.data_validade}T23:59:59`).getTime();
-    const tick = () => {
-      const total = Math.max(0, Math.floor((fim - Date.now()) / 1000));
-      const h = Math.floor(total / 3600);
-      setCd({
-        h: String(h).padStart(2, "0"),
-        m: String(Math.floor((total % 3600) / 60)).padStart(2, "0"),
-        s: String(total % 60).padStart(2, "0"),
-      });
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [dados.data_validade, podeResponder]);
+  // Countdown compartilhado a partir da validade real.
+  const tempo = useCountdownValidade(
+    dados.status === "enviado" ? dados.data_validade : null
+  );
 
   // Barra de progresso + sombra da sidebar
   useEffect(() => {
@@ -182,12 +169,13 @@ export function PropostaCasamentoMaison({
           <span style={{ letterSpacing: "0.14em", color: "rgba(250,248,245,.65)" }}>
             PROPOSTA VÁLIDA POR:
           </span>
-          {cd && (
+          {podeResponder && !tempo.acabou && (
             <span className="flex items-center gap-1 font-medium tabular-nums">
-              <span>{cd.h}H</span>
-              <span>{cd.m}M</span>
+              {tempo.dias > 0 && <span>{tempo.dias}D</span>}
+              <span>{String(tempo.horas).padStart(2, "0")}H</span>
+              <span>{String(tempo.minutos).padStart(2, "0")}M</span>
               <span className="rounded-full px-1.5 py-0.5" style={{ background: CAMEL, color: ESPRESSO }}>
-                {cd.s}S
+                {String(tempo.segundos).padStart(2, "0")}S
               </span>
             </span>
           )}
@@ -231,6 +219,15 @@ export function PropostaCasamentoMaison({
         }}
       >
         <div>
+          {dados.logo_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={dados.logo_url}
+              alt={dados.nome_empresa}
+              className="mb-3 rounded-full"
+              style={{ width: 40, height: 40, objectFit: "cover" }}
+            />
+          )}
           <p className="text-[9px]" style={{ letterSpacing: "0.32em", color: TAUPE }}>ATELIÊ</p>
           <p className="serif mt-1 text-[19px] font-light leading-[1.1]" style={{ letterSpacing: "0.02em" }}>
             {dados.nome_empresa.toUpperCase()}
@@ -303,8 +300,8 @@ export function PropostaCasamentoMaison({
         />
         <SecaoEventos fotos={fotos} />
         <SecaoDepoimentos depoimentos={depoimentos} />
-        <SecaoProximos onAceitar={abrir} podeResponder={podeResponder} />
-        <RodapeMaison nomeEmpresa={dados.nome_empresa} />
+        <SecaoProximos onAceitar={abrir} podeResponder={podeResponder} entradaPct={entradaPct} />
+        <RodapeMaison nomeEmpresa={dados.nome_empresa} hash={hash} />
       </main>
 
       {/* CTA fixo no mobile — a sidebar some abaixo de lg */}
@@ -341,7 +338,7 @@ export function PropostaCasamentoMaison({
           tipoEvento={dados.tipo_evento}
           dataEvento={dados.data_evento}
           textoBotao={MODAL_MAISON.cta}
-          rodape={MODAL_MAISON.rodape}
+          rodape={MODAL_MAISON.rodape(entradaPct)}
           onFechar={() => setModal(false)}
           onAceito={(recibo, total) =>
             setAceite({
@@ -467,7 +464,7 @@ function SecaoHero({
             ACEITAR PROPOSTA • {brl(valor)} <span>→</span>
           </button>
           <p className="mt-3 text-[10.5px]" style={{ color: TAUPE }}>
-            Entrada de {entradaPct}% • {parcelas}x sem juros • Contrato em 2h
+            Entrada de {entradaPct}% • {parcelas}x sem juros • Contrato digital na hora do aceite
           </p>
         </div>
 
@@ -518,10 +515,14 @@ function SecaoHero({
 // 2 — QUEM SOMOS
 function SecaoQuemSomos({ inst, fotos }: { inst: Inst; fotos: Fotos }) {
   const metricas = [
-    { valor: inst?.stat_eventos_realizados ? `${inst.stat_eventos_realizados}` : "300+", rotulo: "casamentos\nentregues" },
-    { valor: inst?.stat_anos_experiencia ? `${inst.stat_anos_experiencia}` : "12", rotulo: "anos de\nateliê" },
+    inst?.stat_eventos_realizados
+      ? { valor: `${inst.stat_eventos_realizados}`, rotulo: "casamentos\nentregues" }
+      : null,
+    inst?.stat_anos_experiencia
+      ? { valor: `${inst.stat_anos_experiencia}`, rotulo: "anos de\nateliê" }
+      : null,
     { valor: `${inst?.stat_dedicacao_percentual ?? 100}%`, rotulo: "dedicação\nno dia" },
-  ];
+  ].filter((m): m is { valor: string; rotulo: string } => m !== null);
   return (
     <Secao id="quem-somos" fundo={CARD}>
       <div className="grid gap-12 lg:grid-cols-2 lg:gap-24">
@@ -697,7 +698,7 @@ function SecaoInvestimento({
           </p>
           {parcelas > 0 && parcela > 0 && (
             <p className="mt-1 text-[11.5px]" style={{ color: TAUPE }}>
-              ou {parcelas}x de {brl(parcela)} sem juros • contrato em 2h
+              ou {parcelas}x de {brl(parcela)} sem juros
             </p>
           )}
 
@@ -719,7 +720,7 @@ function SecaoInvestimento({
             {podeResponder ? "ACEITAR PROPOSTA E TRAVAR DATA →" : "PROPOSTA INDISPONÍVEL"}
           </button>
           <p className="mt-3 text-center text-[10.5px]" style={{ color: TAUPE }}>
-            {INVESTIMENTO_MAISON.rodape}
+            {INVESTIMENTO_MAISON.rodape(entradaPct)}
           </p>
 
           <div className="mt-6 flex flex-wrap justify-center gap-4">
@@ -774,10 +775,11 @@ function SecaoDepoimentos({
 
 // 9 — PRÓXIMOS PASSOS (bloco escuro)
 function SecaoProximos({
-  onAceitar, podeResponder,
+  onAceitar, podeResponder, entradaPct,
 }: {
   onAceitar: () => void;
   podeResponder: boolean;
+  entradaPct: number;
 }) {
   return (
     <section id="proximos" style={{ background: ESPRESSO }}>
@@ -788,7 +790,7 @@ function SecaoProximos({
             {PROXIMOS_MAISON.titulo}
           </h2>
           <p className="mt-6 max-w-[440px] text-[14px] leading-[1.75]" style={{ color: "rgba(245,241,235,.7)" }}>
-            {PROXIMOS_MAISON.paragrafo}
+            {PROXIMOS_MAISON.paragrafo(entradaPct)}
           </p>
           <button
             onClick={onAceitar}
@@ -799,7 +801,7 @@ function SecaoProximos({
             {PROXIMOS_MAISON.cta}
           </button>
           <div className="mt-10 grid grid-cols-3 gap-6">
-            {PROXIMOS_MAISON.stats.map((s) => (
+            {PROXIMOS_MAISON.stats(entradaPct).map((s) => (
               <div key={s.valor}>
                 <p className="serif text-[30px] font-light leading-none" style={{ color: CAMEL }}>{s.valor}</p>
                 <p className="mt-2 whitespace-pre-line text-[10px] leading-snug" style={{ color: "rgba(245,241,235,.55)" }}>
@@ -831,14 +833,6 @@ function SecaoProximos({
                 </div>
               </div>
             ))}
-          </div>
-          <div className="mt-8 rounded-xl p-5" style={{ border: `0.5px solid rgba(184,147,90,.3)` }}>
-            <p className="text-[9px]" style={{ letterSpacing: "0.2em", color: CAMEL }}>
-              {PROXIMOS_MAISON.garantiaTitulo}
-            </p>
-            <p className="mt-2 text-[12.5px] leading-snug" style={{ color: "rgba(245,241,235,.7)" }}>
-              {PROXIMOS_MAISON.garantia}
-            </p>
           </div>
         </div>
       </div>
@@ -925,14 +919,14 @@ function ReciboMaison({
           </a>
         )}
         <p className="mt-4 text-[10.5px]" style={{ color: TAUPE }}>
-          Guarde este código. O contrato chega em até 2h.
+          Guarde este código. O contrato digital chega em seguida.
         </p>
       </div>
     </div>
   );
 }
 
-function RodapeMaison({ nomeEmpresa }: { nomeEmpresa: string }) {
+function RodapeMaison({ nomeEmpresa, hash }: { nomeEmpresa: string; hash: string }) {
   return (
     <footer style={{ background: OFF, borderTop: `0.5px solid ${BORDA}` }}>
       <div className="mx-auto flex max-w-[1320px] flex-wrap items-center justify-between gap-3 px-6 py-8 pb-24 sm:px-[72px] lg:pb-8">
@@ -942,6 +936,15 @@ function RodapeMaison({ nomeEmpresa }: { nomeEmpresa: string }) {
         <p className="text-[9.5px]" style={{ letterSpacing: "0.18em", color: TAUPE }}>
           PROPOSTA CONFIDENCIAL
         </p>
+        <a
+          href={`/orcamento/${hash}/pdf`}
+          target="_blank"
+          rel="noreferrer"
+          className="text-[9.5px] underline underline-offset-2"
+          style={{ letterSpacing: "0.18em", color: TAUPE }}
+        >
+          BAIXAR EM PDF
+        </a>
       </div>
     </footer>
   );

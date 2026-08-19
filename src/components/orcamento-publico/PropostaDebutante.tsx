@@ -24,6 +24,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ModalAceiteProposta } from "@/components/orcamento-publico/ModalAceiteProposta";
+import { useCountdownValidade } from "@/components/orcamento-publico/useCountdownValidade";
 import { formatDateBR } from "@/lib/orcamentos";
 import { expirado, type OrcamentoPublicoData } from "@/lib/orcamento-publico";
 import { calcularProposta } from "@/lib/proposta";
@@ -33,7 +34,6 @@ import {
   CUIDADOS_PADRAO,
   PROCESSO_DEBUTANTE_PADRAO,
   DEPOIMENTOS_DEBUTANTE_PADRAO,
-  GARANTIA_DEBUTANTE,
   SELOS_CONFIANCA,
   FECHAMENTO_DEBUTANTE,
 } from "@/lib/proposta-debutante-conteudo";
@@ -82,6 +82,7 @@ export function PropostaDebutante({
   };
 
   const venceu = expirado(dados);
+  const whats = inst?.whatsapp_contato?.replace(/\D/g, "") || null;
   const podeResponder = dados.status === "enviado" && !venceu;
 
   const [pacoteId, setPacoteId] = useState<string | null>(
@@ -122,22 +123,13 @@ export function PropostaDebutante({
     [pacote, convidados, extrasIds, extras, regra.inclusos, regra.valorPorExtra]
   );
 
-  // Countdown: começa no cliente para não divergir do HTML do servidor.
-  const [restante, setRestante] = useState<string | null>(null);
-  useEffect(() => {
-    if (!podeResponder) return;
-    const fim = new Date(`${dados.data_validade}T23:59:59`).getTime();
-    const tick = () => {
-      const s = Math.max(0, Math.floor((fim - Date.now()) / 1000));
-      const d = Math.floor(s / 86400);
-      const h = Math.floor((s % 86400) / 3600);
-      const m = Math.floor((s % 3600) / 60);
-      setRestante(`${d}d ${h}h ${m}m ${s % 60}s`);
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [dados.data_validade, podeResponder]);
+  // Countdown: relógio único de validade, compartilhado pelos templates.
+  const tempo = useCountdownValidade(
+    dados.status === "enviado" ? dados.data_validade : null
+  );
+  const restante = tempo.acabou
+    ? null
+    : `${tempo.dias}d ${tempo.horas}h ${tempo.minutos}m ${tempo.segundos}s`;
 
   // Carrossel automático, como no handoff.
   useEffect(() => {
@@ -296,7 +288,7 @@ export function PropostaDebutante({
             ACEITAR AGORA →
           </button>
           <div className="text-center text-[9.5px]" style={{ color: "#A8A29A" }}>
-            garantia e contrato digital
+            contrato digital
           </div>
         </div>
 
@@ -899,21 +891,6 @@ export function PropostaDebutante({
               </div>
             </div>
           </div>
-
-          <div
-            className="mt-5 flex items-center gap-3.5 rounded-[14px] bg-white px-[22px] py-[18px]"
-            style={{ border: `1px solid ${BORDA}` }}
-          >
-            <span className="text-[18px]">🛡️</span>
-            <div>
-              <div className="text-[12.5px] font-bold">
-                {GARANTIA_DEBUTANTE.titulo}
-              </div>
-              <div className="text-[12px]" style={{ color: "#8A8479" }}>
-                {GARANTIA_DEBUTANTE.texto}
-              </div>
-            </div>
-          </div>
         </Secao>
 
         {/* 6 — DEPOIMENTOS */}
@@ -1004,6 +981,31 @@ export function PropostaDebutante({
               {inst?.stat_anos_experiencia
                 ? ` • ${inst.stat_anos_experiencia} ANOS`
                 : ""}
+            </div>
+            <div
+              className="mt-4 flex items-center justify-center gap-5 text-[11px]"
+              style={{ color: "#A8A29A" }}
+            >
+              <a
+                href={`/orcamento/${hash}/pdf`}
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+                style={{ color: "inherit" }}
+              >
+                Baixar em PDF
+              </a>
+              {whats && (
+                <a
+                  href={`https://wa.me/${whats}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline"
+                  style={{ color: "inherit" }}
+                >
+                  Falar no WhatsApp
+                </a>
+              )}
             </div>
           </div>
         </Secao>

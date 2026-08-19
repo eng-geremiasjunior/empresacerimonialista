@@ -24,7 +24,7 @@ export const CUIDADOS_PADRAO = [
   {
     icone: "💎",
     titulo: "FORNECEDORES",
-    descricao: "Só top 5% de GV + contratos blindados.",
+    descricao: "Só fornecedores homologados por nós + contratos blindados.",
   },
   {
     icone: "📋",
@@ -88,16 +88,10 @@ export const DEPOIMENTOS_DEBUTANTE_PADRAO = [
   },
 ];
 
-export const GARANTIA_DEBUTANTE = {
-  titulo: "SATISFAÇÃO GARANTIDA",
-  texto:
-    "Se não se apaixonar pelo planejamento nos primeiros 15 dias, devolvemos 100% do valor. Sem perguntas.",
-};
-
 export const SELOS_CONFIANCA = [
-  { icone: "🛡️", texto: "Garantia total" },
+  { icone: "🛡️", texto: "Contrato digital" },
   { icone: "🕐", texto: "Suporte 2h" },
-  { icone: "👑", texto: "Top 1% GV" },
+  { icone: "✓", texto: "Sem surpresas" },
 ];
 
 export const FECHAMENTO_DEBUTANTE = {

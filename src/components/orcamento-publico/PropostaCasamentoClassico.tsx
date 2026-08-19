@@ -1292,7 +1292,9 @@ export function PropostaCasamentoClassico({
                   }}
                 >
                   {inst?.stat_anos_experiencia
-                    ? `${inst.stat_anos_experiencia} anos transformando SIM em arte`
+                    ? `${inst.stat_anos_experiencia} ${
+                        inst.stat_anos_experiencia === 1 ? "ano" : "anos"
+                      } transformando SIM em arte`
                     : "Transformamos SIM em arte"}
                 </h3>
                 {inst?.sobre_nos_texto && (
@@ -1856,9 +1858,7 @@ export function PropostaCasamentoClassico({
               >
                 Baixar em PDF
               </a>
-              <span>
-                ♥ Proposta • {recibo ? `ID ${recibo.codigo}` : "—"}
-              </span>
+              {recibo && <span>♥ Proposta • ID {recibo.codigo}</span>}
             </span>
           </footer>
         </div>
