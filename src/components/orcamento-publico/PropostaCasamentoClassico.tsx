@@ -1195,7 +1195,7 @@ export function PropostaCasamentoClassico({
                     <p style={{ margin: 0, fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", color: "rgba(249,245,240,0.6)" }}>
                       ENTRADA {condicoes.entradaPercentual}%
                     </p>
-                    <p style={{ margin: "4px 0 0", fontSize: 16, fontWeight: 600 }}>
+                    <p style={{ margin: "4px 0 0", fontSize: 18, fontWeight: 600 }}>
                       {brl(valores.entrada)}
                     </p>
                     <p style={{ margin: "2px 0 0", fontSize: 10, color: "rgba(249,245,240,0.6)" }}>
@@ -1211,7 +1211,7 @@ export function PropostaCasamentoClassico({
                     <p style={{ margin: 0, fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", color: "rgba(255,255,255,0.75)" }}>
                       {forma === "vista" ? "À VISTA" : `RESTANTE ${parcelas}X`}
                     </p>
-                    <p style={{ margin: "4px 0 0", fontSize: 16, fontWeight: 600 }}>
+                    <p style={{ margin: "4px 0 0", fontSize: 18, fontWeight: 600 }}>
                       {forma === "vista"
                         ? brl(valores.saldo)
                         : brl(valores.parcela ?? 0)}
