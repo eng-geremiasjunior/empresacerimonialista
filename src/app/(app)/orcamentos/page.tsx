@@ -26,9 +26,13 @@ const PER_PAGE = 20;
 // Ordenação vem por URL, não do cliente: a lista é paginada no servidor, e
 // ordenar só a página aberta daria uma ordem errada sobre o total.
 const COLUNA_ORDEM: Record<string, string> = {
+  criacao: "data_criacao",
   data: "data_evento",
   valor: "valor_total",
 };
+
+// Quantos "vencendo o prazo" cabem no trilho sem virar uma segunda lista.
+const VENCENDO_LIMITE = 6;
 
 export default async function OrcamentosPage({
   searchParams,
@@ -44,8 +48,13 @@ export default async function OrcamentosPage({
 }) {
   const supabase = createClient();
   const page = Math.max(1, Number(searchParams.page) || 1);
-  const ordem = COLUNA_ORDEM[searchParams.ordem ?? ""] ? searchParams.ordem! : "data";
-  const asc = searchParams.dir !== "desc";
+  // Padrão: o que foi criado por último aparece primeiro. Antes a lista
+  // vinha por data do evento, e um orçamento montado hoje para um casamento
+  // de 2028 caía no fim — era preciso caçar o que se acabou de criar.
+  const ordem = COLUNA_ORDEM[searchParams.ordem ?? ""] ? searchParams.ordem! : "criacao";
+  const asc = searchParams.dir
+    ? searchParams.dir !== "desc"
+    : ordem !== "criacao";
 
   let query = supabase
     .from("orcamentos")
@@ -67,10 +76,23 @@ export default async function OrcamentosPage({
   if (searchParams.status) query = query.eq("status", searchParams.status);
   if (searchParams.tipo) query = query.eq("tipo_evento", searchParams.tipo);
 
-  const [{ data, count, error }, { data: todos }] = await Promise.all([
-    query,
-    supabase.from("orcamentos").select("status, data_validade"),
-  ]);
+  // Trilho "vencendo o prazo": só proposta enviada e ainda dentro da
+  // validade, da mais urgente para a menos. Consulta própria porque não
+  // pode depender do filtro nem da página em que ela está.
+  const hojeIso = new Date().toISOString().slice(0, 10);
+
+  const [{ data, count, error }, { data: todos }, { data: aVencer }] =
+    await Promise.all([
+      query,
+      supabase.from("orcamentos").select("status, data_validade"),
+      supabase
+        .from("orcamentos")
+        .select("*")
+        .eq("status", "enviado")
+        .gte("data_validade", hojeIso)
+        .order("data_validade", { ascending: true })
+        .limit(VENCENDO_LIMITE),
+    ]);
 
   const rows = (data ?? []) as unknown as Orcamento[];
   const resumoBase = (todos ?? []) as Pick<
@@ -253,6 +275,7 @@ export default async function OrcamentosPage({
         rows={rows}
         total={count ?? 0}
         perPage={PER_PAGE}
+        vencendo={(aVencer ?? []) as unknown as Orcamento[]}
         pacotePorOrcamento={pacotePorOrcamento}
         current={{
           busca: searchParams.busca ?? "",

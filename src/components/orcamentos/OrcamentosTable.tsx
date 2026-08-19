@@ -1,12 +1,24 @@
 "use client";
 
-// Listagem de Orçamentos — redesign "quiet luxury"
-// (design/tela-orcamentos). Lista em estilo documento: cada linha é um
-// link para o orçamento, com um resumo que abre no hover.
+// Listagem de Orçamentos.
 //
-// Filtros, ordenação e paginação continuam por URL (padrão do sistema).
-// Ordenar no cliente ordenaria só a página aberta, o que daria uma ordem
-// errada sobre o total — por isso o clique no cabeçalho navega.
+// Antes era uma tabela de seis colunas ocupando a largura inteira, com um
+// resumo que abria no hover de cada linha — cansativo depois do segundo dia
+// de uso, e a informação só aparecia se o mouse parasse ali.
+//
+// Agora são dois blocos lado a lado, que respondem às duas perguntas reais
+// de quem abre esta tela:
+//
+//   "cadê o que acabei de montar?"  → coluna da esquerda, mais novo no topo
+//   "o que está para vencer?"       → trilho da direita, mais urgente no topo
+//
+// A ordenação padrão passou a ser por data de CRIAÇÃO. Antes era por data
+// do evento: um orçamento criado hoje para um casamento em 2028 caía no fim
+// da lista, e era preciso caçar. Ordenar por evento continua disponível.
+//
+// Filtros, ordenação e paginação seguem por URL (padrão do sistema):
+// ordenar no cliente ordenaria só a página aberta, dando uma ordem errada
+// sobre o total.
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
@@ -28,10 +40,9 @@ import {
   excluirOrcamento,
 } from "@/app/(app)/orcamentos/actions";
 import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
-import { formatDateBR, type Orcamento } from "@/lib/orcamentos";
+import { type Orcamento } from "@/lib/orcamentos";
 import {
   CORES,
-  GRID_LISTA,
   dataPorExtenso,
   estiloStatus,
   infoValidade,
@@ -57,8 +68,8 @@ function buildHref(c: Current, patch: Partial<Current>): string {
   if (m.status) p.set("status", m.status);
   if (m.tipo) p.set("tipo", m.tipo);
   if (m.page > 1) p.set("page", String(m.page));
-  if (m.ordem && m.ordem !== "data") p.set("ordem", m.ordem);
-  if (m.dir === "desc") p.set("dir", m.dir);
+  if (m.ordem && m.ordem !== "criacao") p.set("ordem", m.ordem);
+  if (m.dir) p.set("dir", m.dir);
   const qs = p.toString();
   return qs ? `/orcamentos?${qs}` : "/orcamentos";
 }
@@ -111,10 +122,10 @@ function MenuAcoes({ o }: { o: Orcamento }) {
     "flex w-full items-center gap-2 px-3 py-[7px] text-left text-[13px] transition-colors";
 
   return (
-    // O kebab vive dentro do link da linha: sem parar a propagação, abrir
+    // O kebab vive dentro do link do cartão: sem parar a propagação, abrir
     // o menu abriria o orçamento junto.
     <div
-      className="relative"
+      className="relative shrink-0"
       ref={ref}
       onClick={(e) => {
         e.preventDefault();
@@ -215,174 +226,120 @@ function MenuAcoes({ o }: { o: Orcamento }) {
   );
 }
 
-function Linha({
-  o,
-  pacote,
-}: {
-  o: Orcamento;
-  pacote?: string;
-}) {
-  const [aberto, setAberto] = useState(false);
+/** Cartão da lista principal. Três linhas, sem nada que abra no hover. */
+function Cartao({ o, pacote }: { o: Orcamento; pacote?: string }) {
   const avatar = paletaAvatar(o.tipo_evento);
   const st = estiloStatus(o.status);
   const val = infoValidade(o.data_validade);
   const tel = telefoneFormatado(o.contato_telefone);
-  const email = o.ficha_email || o.contato_email;
-  const whats = (o.contato_telefone ?? "").replace(/\D/g, "");
 
-  const resumo = [
-    o.local_evento || o.cidade_evento
-      ? { r: "Local", v: [o.local_evento, o.cidade_evento].filter(Boolean).join(" — ") }
-      : null,
-    o.numero_convidados ? { r: "Convidados", v: String(o.numero_convidados) } : null,
-    pacote ? { r: "Pacote", v: pacote } : null,
-    email ? { r: "E-mail", v: email } : null,
-  ].filter(Boolean) as { r: string; v: string }[];
+  // O pacote só existe depois do aceite — quando existe, é a informação
+  // mais concreta da linha e entra na frente do resto.
+  const contexto = [
+    pacote,
+    EVENT_TYPE_LABELS[o.tipo_evento as EventType] ?? o.tipo_evento,
+    o.data_evento ? dataPorExtenso(o.data_evento) : null,
+    o.numero_convidados ? `${o.numero_convidados} convidados` : null,
+  ].filter(Boolean) as string[];
 
   return (
     <Link
       href={`/orcamentos/${o.id}`}
-      onMouseEnter={() => setAberto(true)}
-      onMouseLeave={() => setAberto(false)}
-      onFocus={() => setAberto(true)}
-      onBlur={() => setAberto(false)}
-      className="block border-b transition-colors"
-      style={{ borderColor: CORES.borda, background: aberto ? CORES.suave : undefined }}
+      className="block rounded-[12px] border p-3.5 transition-colors hover:bg-[#F7F7F5]"
+      style={{ borderColor: CORES.borda }}
     >
-      <div
-        className="grid items-center gap-3 px-3 py-3.5 lg:gap-4"
-        style={{ gridTemplateColumns: GRID_LISTA }}
-      >
-        {/* Cliente */}
-        <div className="flex min-w-0 items-center gap-3">
-          <span
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[12.5px] font-medium"
-            style={{ background: avatar.bg, color: avatar.cor }}
-            aria-hidden
-          >
-            {iniciaisDe(o.contato_nome)}
-          </span>
-          <span className="min-w-0">
+      <div className="flex items-start gap-3">
+        <span
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[12.5px] font-medium"
+          style={{ background: avatar.bg, color: avatar.cor }}
+          aria-hidden
+        >
+          {iniciaisDe(o.contato_nome)}
+        </span>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p
+                className="truncate text-[15px] font-medium"
+                style={{ fontFamily: "var(--font-serif-orcamentos), Georgia, serif" }}
+              >
+                {o.contato_nome}
+              </p>
+              {tel && (
+                <p className="text-[12px]" style={{ color: CORES.terciario }}>
+                  {tel}
+                </p>
+              )}
+            </div>
+            <span className="flex items-center gap-1">
+              {o.evento_gerado_id && (
+                <span
+                  className="rounded-[6px] px-1.5 py-0.5 text-[10.5px]"
+                  style={{ background: CORES.tag, color: CORES.secundario }}
+                >
+                  Evento
+                </span>
+              )}
+              <MenuAcoes o={o} />
+            </span>
+          </div>
+
+          <p className="mt-1 truncate text-[12.5px]" style={{ color: CORES.secundario }}>
+            {contexto.join(" · ")}
+          </p>
+
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
             <span
-              className="block truncate text-[15px] font-medium sm:text-[16px]"
+              className="text-[15px] font-medium"
               style={{ fontFamily: "var(--font-serif-orcamentos), Georgia, serif" }}
             >
-              {o.contato_nome}
+              {valorFormatado(o.valor_total)}
             </span>
-            {tel && (
-              <span className="block text-[12px]" style={{ color: CORES.terciario }}>
-                {tel}
-              </span>
-            )}
-          </span>
-        </div>
-
-        {/* Evento */}
-        <div className="min-w-0">
-          <span
-            className="inline-block truncate rounded-[6px] px-2 py-1 text-[12px]"
-            style={{ background: CORES.tag, color: CORES.secundario }}
-          >
-            {EVENT_TYPE_LABELS[o.tipo_evento as EventType] ?? o.tipo_evento}
-          </span>
-        </div>
-
-        {/* Data prevista — ano obrigatório */}
-        <div className="text-[13.5px]" style={{ color: CORES.texto }}>
-          {dataPorExtenso(o.data_evento)}
-        </div>
-
-        {/* Valor */}
-        <div
-          className="text-[15px] font-medium sm:text-[16px]"
-          style={{ fontFamily: "var(--font-serif-orcamentos), Georgia, serif" }}
-        >
-          {valorFormatado(o.valor_total)}
-        </div>
-
-        {/* Validade */}
-        <div className="flex items-center gap-1.5 text-[12.5px]" style={{ color: val.cor }}>
-          {val.alerta && (
-            <span
-              className="h-1.5 w-1.5 shrink-0 rounded-full"
-              style={{ background: val.cor }}
-              aria-hidden
-            />
-          )}
-          {val.rotulo}
-        </div>
-
-        {/* Status + ações */}
-        <div className="flex items-center justify-between gap-2">
-          <span className="flex items-center gap-1.5 text-[12.5px]" style={{ color: st.cor }}>
-            <span
-              className="h-1.5 w-1.5 shrink-0 rounded-full"
-              style={{ background: st.ponto }}
-              aria-hidden
-            />
-            {st.rotulo}
-          </span>
-          <span className="flex items-center gap-1">
-            {o.evento_gerado_id && (
+            <span className="flex items-center gap-3">
+              {/* prazo só aparece quando há algo a fazer com ele */}
+              {val.alerta && (
+                <span className="text-[12px]" style={{ color: val.cor }}>
+                  {val.rotulo}
+                </span>
+              )}
               <span
-                className="rounded-[6px] px-1.5 py-0.5 text-[10.5px]"
-                style={{ background: CORES.tag, color: CORES.secundario }}
+                className="flex items-center gap-1.5 text-[12.5px]"
+                style={{ color: st.cor }}
               >
-                Evento
+                <span
+                  className="h-1.5 w-1.5 shrink-0 rounded-full"
+                  style={{ background: st.ponto }}
+                  aria-hidden
+                />
+                {st.rotulo}
               </span>
-            )}
-            <MenuAcoes o={o} />
-          </span>
+            </span>
+          </div>
         </div>
       </div>
+    </Link>
+  );
+}
 
-      {/* Resumo que expande no hover */}
-      <div
-        className="overflow-hidden px-3"
-        style={{
-          maxHeight: aberto ? 120 : 0,
-          opacity: aberto ? 1 : 0,
-          transform: aberto ? "translateY(0)" : "translateY(-4px)",
-          transition: "max-height .38s cubic-bezier(.22,.61,.36,1), opacity .32s, transform .32s",
-        }}
-      >
-        <div
-          className="mb-3 flex flex-wrap items-center gap-x-6 gap-y-2 border-t pt-3 text-[12.5px]"
-          style={{ borderColor: CORES.bordaSutil, color: CORES.secundario }}
-        >
-          {resumo.length === 0 && (
-            <span style={{ color: CORES.terciario }}>Sem detalhes cadastrados</span>
-          )}
-          {resumo.map((d) => (
-            <span key={d.r}>
-              <span style={{ color: CORES.terciario }}>{d.r}: </span>
-              {d.v}
-            </span>
-          ))}
-          {whats && (
-            <span
-              role="link"
-              tabIndex={0}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                window.open(`https://wa.me/55${whats}`, "_blank", "noopener");
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  window.open(`https://wa.me/55${whats}`, "_blank", "noopener");
-                }
-              }}
-              className="ml-auto cursor-pointer rounded-[8px] border px-2.5 py-1 transition-colors hover:bg-[#EFF3ED]"
-              style={{ color: CORES.aprovadoTexto, borderColor: "#DCE4D8" }}
-            >
-              Falar com cliente
-            </span>
-          )}
-        </div>
-      </div>
+/** Trilho da direita: proposta enviada com prazo chegando. */
+function ItemVencendo({ o }: { o: Orcamento }) {
+  const val = infoValidade(o.data_validade);
+  return (
+    <Link
+      href={`/orcamentos/${o.id}`}
+      className="-mx-2 block rounded-[9px] px-2 py-2.5 transition-colors hover:bg-[#F7F7F5]"
+    >
+      <p className="truncate text-[13.5px]" style={{ color: CORES.texto }}>
+        {o.contato_nome}
+      </p>
+      <p className="mt-0.5 text-[12px]">
+        <span style={{ color: val.cor }}>{val.rotulo}</span>
+        <span style={{ color: CORES.terciario }}>
+          {" · "}
+          {valorFormatado(o.valor_total)}
+        </span>
+      </p>
     </Link>
   );
 }
@@ -392,12 +349,16 @@ export function OrcamentosTable({
   total,
   perPage,
   current,
+  vencendo = [],
   pacotePorOrcamento = {},
 }: {
   rows: Orcamento[];
   total: number;
   perPage: number;
   current: Current;
+  /** enviados com prazo mais próximo — vem pronto do servidor */
+  vencendo?: Orcamento[];
+  /** nome do pacote fechado, por orçamento aceito */
   pacotePorOrcamento?: Record<string, string>;
 }) {
   const router = useRouter();
@@ -405,16 +366,23 @@ export function OrcamentosTable({
 
   const paginas = Math.max(1, Math.ceil(total / perPage));
 
-  // Clicar de novo na mesma coluna inverte a direção; coluna nova começa
-  // em asc, como o handoff especifica.
-  const hrefOrdem = (chave: "data" | "valor") =>
-    buildHref(current, {
+  // Clicar de novo na mesma ordenação inverte a direção.
+  const hrefOrdem = (chave: "criacao" | "data" | "valor") => {
+    const mesma = current.ordem === chave;
+    // criação começa do mais novo; as outras, crescente
+    const padrao = chave === "criacao" ? "desc" : "asc";
+    return buildHref(current, {
       ordem: chave,
-      dir: current.ordem === chave && current.dir === "asc" ? "desc" : "asc",
+      dir: mesma ? (current.dir === "asc" ? "desc" : "asc") : padrao,
       page: 1,
     });
-  const seta = (chave: string) =>
-    current.ordem === chave ? (current.dir === "asc" ? " ↑" : " ↓") : "";
+  };
+
+  const ORDENS: { chave: "criacao" | "data" | "valor"; rotulo: string }[] = [
+    { chave: "criacao", rotulo: "Mais recentes" },
+    { chave: "data", rotulo: "Data do evento" },
+    { chave: "valor", rotulo: "Valor" },
+  ];
 
   const tiposChip: { valor: string; rotulo: string }[] = [
     { valor: "", rotulo: "Todos os tipos" },
@@ -429,6 +397,12 @@ export function OrcamentosTable({
       rotulo: EVENT_TYPE_LABELS[current.tipo as EventType] ?? current.tipo,
     });
   }
+
+  const rotuloBloco = {
+    fontSize: 10.5,
+    letterSpacing: "0.8px",
+    color: CORES.terciario,
+  } as const;
 
   return (
     <div className="mt-7">
@@ -481,10 +455,7 @@ export function OrcamentosTable({
 
       {/* Linha 2: tipo de evento */}
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span
-          className="text-[10.5px] uppercase"
-          style={{ letterSpacing: "0.8px", color: CORES.terciario }}
-        >
+        <span className="uppercase" style={rotuloBloco}>
           Tipo de evento
         </span>
         {tiposChip.map((t) => (
@@ -501,69 +472,101 @@ export function OrcamentosTable({
         ))}
       </div>
 
-      {/* Cabeçalho de colunas */}
-      <div
-        className="mt-6 grid items-center gap-3 border-b px-3 pb-2.5 text-[10.5px] uppercase lg:gap-4"
-        style={{
-          gridTemplateColumns: GRID_LISTA,
-          borderColor: CORES.borda,
-          letterSpacing: "0.8px",
-          color: CORES.terciario,
-        }}
-      >
-        <span>Cliente</span>
-        <span>Evento</span>
-        <Link href={hrefOrdem("data")} className="hover:text-[#37352F]">
-          Data prevista{seta("data")}
-        </Link>
-        <Link href={hrefOrdem("valor")} className="hover:text-[#37352F]">
-          Valor{seta("valor")}
-        </Link>
-        <span>Validade</span>
-        <span>Status</span>
-      </div>
-
-      {/* Linhas */}
-      {rows.length === 0 ? (
-        <p className="px-3 py-14 text-center text-[13.5px]" style={{ color: CORES.secundario }}>
-          Nenhum orçamento encontrado com esses filtros.
-        </p>
-      ) : (
-        rows.map((o) => (
-          <Linha key={o.id} o={o} pacote={pacotePorOrcamento[o.id]} />
-        ))
-      )}
-
-      {/* Rodapé */}
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[12.5px]" style={{ color: CORES.terciario }}>
-          Mostrando {rows.length} de {total} orçamento{total === 1 ? "" : "s"}
-        </p>
-        {paginas > 1 && (
-          <div className="flex items-center gap-2">
-            <button
-              disabled={current.page <= 1}
-              onClick={() => router.push(buildHref(current, { page: current.page - 1 }))}
-              className="rounded-[9px] border p-1.5 disabled:opacity-40"
-              style={{ borderColor: CORES.borda, color: CORES.nav }}
-              aria-label="Página anterior"
-            >
-              <ChevronLeft size={15} />
-            </button>
-            <span className="text-[12.5px]" style={{ color: CORES.secundario }}>
-              {current.page} / {paginas}
+      {/* Dois blocos: a lista e o trilho de prazos */}
+      <div className="mt-6 grid items-start gap-6 lg:grid-cols-[1.55fr_1fr]">
+        <section>
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-3">
+            <span className="uppercase" style={rotuloBloco}>
+              {current.ordem === "criacao" && current.dir === "desc"
+                ? "Recentes"
+                : "Orçamentos"}
             </span>
-            <button
-              disabled={current.page >= paginas}
-              onClick={() => router.push(buildHref(current, { page: current.page + 1 }))}
-              className="rounded-[9px] border p-1.5 disabled:opacity-40"
-              style={{ borderColor: CORES.borda, color: CORES.nav }}
-              aria-label="Próxima página"
-            >
-              <ChevronRight size={15} />
-            </button>
+            <div className="flex items-center gap-3 text-[12px]">
+              {ORDENS.map((op) => {
+                const ativo = current.ordem === op.chave;
+                return (
+                  <Link
+                    key={op.chave}
+                    href={hrefOrdem(op.chave)}
+                    style={{ color: ativo ? CORES.texto : CORES.terciario }}
+                    className="transition-colors hover:text-[#37352F]"
+                  >
+                    {op.rotulo}
+                    {ativo ? (current.dir === "asc" ? " ↑" : " ↓") : ""}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
-        )}
+
+          {rows.length === 0 ? (
+            <p
+              className="rounded-[12px] border border-dashed px-3 py-14 text-center text-[13.5px]"
+              style={{ borderColor: CORES.borda, color: CORES.secundario }}
+            >
+              Nenhum orçamento encontrado com esses filtros.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2.5">
+              {rows.map((o) => (
+                <Cartao key={o.id} o={o} pacote={pacotePorOrcamento[o.id]} />
+              ))}
+            </div>
+          )}
+
+          {/* Rodapé */}
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-[12.5px]" style={{ color: CORES.terciario }}>
+              Mostrando {rows.length} de {total} orçamento{total === 1 ? "" : "s"}
+            </p>
+            {paginas > 1 && (
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={current.page <= 1}
+                  onClick={() => router.push(buildHref(current, { page: current.page - 1 }))}
+                  className="rounded-[9px] border p-1.5 disabled:opacity-40"
+                  style={{ borderColor: CORES.borda, color: CORES.nav }}
+                  aria-label="Página anterior"
+                >
+                  <ChevronLeft size={15} />
+                </button>
+                <span className="text-[12.5px]" style={{ color: CORES.secundario }}>
+                  {current.page} / {paginas}
+                </span>
+                <button
+                  disabled={current.page >= paginas}
+                  onClick={() => router.push(buildHref(current, { page: current.page + 1 }))}
+                  className="rounded-[9px] border p-1.5 disabled:opacity-40"
+                  style={{ borderColor: CORES.borda, color: CORES.nav }}
+                  aria-label="Próxima página"
+                >
+                  <ChevronRight size={15} />
+                </button>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Trilho: prazo chegando. Some quando não há nada a cobrar. */}
+        <aside
+          className="rounded-[12px] border p-4"
+          style={{ borderColor: CORES.borda, background: CORES.suave }}
+        >
+          <span className="uppercase" style={rotuloBloco}>
+            Vencendo o prazo
+          </span>
+          {vencendo.length === 0 ? (
+            <p className="mt-3 text-[12.5px]" style={{ color: CORES.secundario }}>
+              Nenhuma proposta enviada perto do prazo.
+            </p>
+          ) : (
+            <div className="mt-2 flex flex-col">
+              {vencendo.map((o) => (
+                <ItemVencendo key={o.id} o={o} />
+              ))}
+            </div>
+          )}
+        </aside>
       </div>
     </div>
   );
