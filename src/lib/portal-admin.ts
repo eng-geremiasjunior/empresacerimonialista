@@ -171,9 +171,14 @@ export async function criarAcessoPortal(params: {
         email,
         password: senha,
         email_confirm: true,
-        user_metadata: { name: params.nome },
-        // portal: o middleware roteia por esta marca;
-        // senha_provisoria: força a troca no primeiro acesso.
+        // O 'portal' aparece duas vezes de propósito. Em app_metadata é a
+        // marca de autoridade: o middleware roteia por ela e a usuária não
+        // consegue editá-la. Mas o Supabase grava app_metadata DEPOIS do
+        // insert em auth.users, então o gatilho de cadastro (que roda no
+        // insert) não a enxerga — e criava uma empresa própria para a
+        // noiva. A cópia em user_metadata existe só para o gatilho, que é
+        // o mesmo lugar de onde ele já lia a marca 'equipe'.
+        user_metadata: { name: params.nome, portal: true },
         app_metadata: { portal: true, senha_provisoria: true },
       });
 
