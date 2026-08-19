@@ -785,7 +785,7 @@ export function PropostaCasamentoClassico({
 
           {/* ---------------- investimento ---------------- */}
           <section id="investimento" style={{ padding: "56px 24px" }}>
-            <p style={{ ...labelSecao, margin: 0 }}>⚡ CALCULADORA INTERATIVA</p>
+            <p style={{ ...labelSecao, margin: 0 }}>⚡ CALCULADORA INTERATIVA V2.0</p>
             <div
               style={{
                 display: "flex", alignItems: "flex-end",
@@ -861,7 +861,13 @@ export function PropostaCasamentoClassico({
                       position: "relative", textAlign: "left", cursor: "pointer",
                       borderRadius: 20, padding: 20,
                       background: fundo, color: textoCard,
-                      border: `2px solid ${ativo ? COR.escuro : COR.borda}`,
+                      border: ativo
+                        ? `2px solid ${COR.escuro}`
+                        : escuroCard
+                          ? `1px solid ${COR.escuro}`
+                          : fundo === COR.premium
+                            ? "1px solid rgba(184,147,90,0.5)"
+                            : `1px solid ${COR.borda}`,
                       boxShadow: ativo
                         ? "0 20px 60px -20px rgba(60,36,21,0.3)"
                         : "none",
@@ -900,7 +906,7 @@ export function PropostaCasamentoClassico({
                             style={{
                               margin: 0, fontSize: 10, fontWeight: 600,
                               letterSpacing: "0.12em", textTransform: "uppercase",
-                              color: escuroCard ? "rgba(255,255,255,0.6)" : COR.texto3,
+                              color: escuroCard ? "rgba(255,255,255,0.7)" : COR.texto3,
                             }}
                           >
                             {p.subtitulo}
@@ -919,20 +925,27 @@ export function PropostaCasamentoClassico({
                       <span
                         aria-hidden
                         style={{
-                          width: 20, height: 20, borderRadius: 8, flex: "none",
-                          border: `1.5px solid ${ativo ? COR.dourado : escuroCard ? "rgba(255,255,255,0.4)" : COR.borda}`,
+                          position: "absolute", top: 16, right: 16,
+                          width: 24, height: 24, borderRadius: 8,
+                          background: escuroCard ? "rgba(255,255,255,0.1)" : "#fff",
+                          border: `1px solid ${escuroCard ? "rgba(255,255,255,0.25)" : COR.borda}`,
                           display: "flex", alignItems: "center",
                           justifyContent: "center",
                         }}
                       >
-                        {ativo && (
-                          <span
-                            style={{
-                              width: 10, height: 10, borderRadius: "50%",
-                              background: COR.dourado,
-                            }}
-                          />
-                        )}
+                        <span
+                          style={{
+                            width: 14, height: 14, borderRadius: 999,
+                            fontSize: 9, color: "#fff", lineHeight: "14px",
+                            textAlign: "center",
+                            background: ativo ? COR.escuro : "transparent",
+                            border: ativo
+                              ? "none"
+                              : `1px solid ${escuroCard ? "rgba(255,255,255,0.6)" : COR.texto3}`,
+                          }}
+                        >
+                          {ativo ? "✓" : ""}
+                        </span>
                       </span>
                     </div>
                     <p style={{ margin: "14px 0 0", fontFamily: SERIF, fontSize: 34, fontWeight: 600 }}>
@@ -941,19 +954,19 @@ export function PropostaCasamentoClassico({
                         style={{
                           fontFamily: SANS, fontSize: 11, fontWeight: 400,
                           marginLeft: 6,
-                          color: escuroCard ? "rgba(255,255,255,0.6)" : COR.texto3,
+                          color: escuroCard ? "rgba(255,255,255,0.7)" : COR.texto3,
                         }}
                       >
                         / pacote base
                       </span>
                     </p>
-                    <ul style={{ margin: "14px 0 0", padding: 0, listStyle: "none" }}>
+                    <ul style={{ margin: "14px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
                       {p.inclui.map((linha) => (
                         <li
                           key={linha}
                           style={{
-                            display: "flex", gap: 8, fontSize: 13,
-                            lineHeight: 1.5,
+                            display: "flex", gap: 8, fontSize: 12,
+                            lineHeight: 1.4,
                             color: escuroCard ? "rgba(255,255,255,0.9)" : COR.texto2,
                           }}
                         >
@@ -1146,7 +1159,7 @@ export function PropostaCasamentoClassico({
                       fontWeight: 600, letterSpacing: "0.1em",
                     }}
                   >
-                    CÁLCULO INSTANTÂNEO
+                    V2.0 • CÁLCULO INSTANTÂNEO
                   </span>
                 </div>
 
