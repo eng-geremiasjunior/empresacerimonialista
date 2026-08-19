@@ -18,10 +18,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import {
-  ModalAceiteProposta,
-  type TemaModal,
-} from "@/components/orcamento-publico/ModalAceiteProposta";
+import { ModalAceiteClassico } from "@/components/orcamento-publico/ModalAceiteClassico";
 import { useCountdownValidade } from "@/components/orcamento-publico/useCountdownValidade";
 import {
   brl,
@@ -63,18 +60,6 @@ const COR = {
 
 const SERIF = "var(--font-titulo), 'Cormorant Garamond', serif";
 const SANS = "var(--font-inter), 'Inter', sans-serif";
-
-const TEMA_MODAL: TemaModal = {
-  fundo: "rgba(60,36,21,0.55)",
-  card: COR.branco,
-  texto: COR.escuro,
-  textoSuave: COR.texto2,
-  borda: COR.borda,
-  acento: COR.dourado,
-  botaoFundo: COR.escuro,
-  botaoTexto: "#FFFFFF",
-  raio: 24,
-};
 
 const NAV = [
   ["apresentacao", "APRESENTAÇÃO"],
@@ -633,7 +618,7 @@ export function PropostaCasamentoClassico({
                 <h1
                   style={{
                     margin: "20px 0 0", fontFamily: SERIF, fontWeight: 400,
-                    fontSize: "clamp(40px, 6vw, 56px)", lineHeight: 0.95,
+                    fontSize: 56, lineHeight: 0.95,
                   }}
                 >
                   Proposta de
@@ -648,7 +633,7 @@ export function PropostaCasamentoClassico({
                   </span>{" "}
                   <span style={{ color: COR.dourado }}>♥</span>
                   <br />
-                  <span style={{ fontSize: "clamp(30px, 4.4vw, 40px)", fontWeight: 300 }}>
+                  <span style={{ fontSize: 40, fontWeight: 300 }}>
                     assessoria
                   </span>
                 </h1>
@@ -777,7 +762,7 @@ export function PropostaCasamentoClassico({
                     color: "#fff",
                   }}
                 >
-                  <p style={{ margin: 0, fontFamily: SERIF, fontSize: 24, fontWeight: 600 }}>
+                  <p style={{ margin: 0, fontFamily: SERIF, fontSize: 26, fontWeight: 600 }}>
                     {dados.nome_contato}
                   </p>
                   <p
@@ -810,7 +795,7 @@ export function PropostaCasamentoClassico({
               <h2
                 style={{
                   margin: "10px 0 0", fontFamily: SERIF, fontWeight: 400,
-                  fontSize: "clamp(36px, 5vw, 48px)", lineHeight: 0.95,
+                  fontSize: 48, lineHeight: 0.95,
                   maxWidth: 520,
                 }}
               >
@@ -887,8 +872,7 @@ export function PropostaCasamentoClassico({
                     {p.recomendado && (
                       <span
                         style={{
-                          position: "absolute", top: -12, left: "50%",
-                          transform: "translateX(-50%)",
+                          position: "absolute", top: -14, left: 24,
                           display: "inline-flex", alignItems: "center", gap: 5,
                           padding: "5px 14px", borderRadius: 999,
                           background: COR.dourado, color: "#fff",
@@ -1288,7 +1272,7 @@ export function PropostaCasamentoClassico({
                 <h3
                   style={{
                     margin: "12px 0 0", fontFamily: SERIF, fontWeight: 400,
-                    fontSize: "clamp(30px, 4vw, 38px)", lineHeight: 0.95,
+                    fontSize: 38, lineHeight: 0.95,
                   }}
                 >
                   {inst?.stat_anos_experiencia
@@ -1305,7 +1289,7 @@ export function PropostaCasamentoClassico({
                 <div className="kd-sm2" style={{ marginTop: 20, maxWidth: 380 }}>
                   {inst?.stat_eventos_realizados ? (
                     <div style={{ background: COR.branco, borderRadius: 16, border: `1px solid ${COR.borda}`, padding: 16 }}>
-                      <p style={{ margin: 0, fontFamily: SERIF, fontSize: 28, fontWeight: 600 }}>
+                      <p style={{ margin: 0, fontFamily: SERIF, fontSize: 26, fontWeight: 600 }}>
                         {inst.stat_eventos_realizados}+
                       </p>
                       <p style={{ ...labelSecao, margin: "2px 0 0", fontSize: 10 }}>CASAMENTOS</p>
@@ -1313,7 +1297,7 @@ export function PropostaCasamentoClassico({
                   ) : null}
                   {inst?.stat_equipe_texto ? (
                     <div style={{ background: COR.branco, borderRadius: 16, border: `1px solid ${COR.borda}`, padding: 16 }}>
-                      <p style={{ margin: 0, fontFamily: SERIF, fontSize: 20, fontWeight: 600 }}>
+                      <p style={{ margin: 0, fontFamily: SERIF, fontSize: 26, fontWeight: 600 }}>
                         {inst.stat_equipe_texto}
                       </p>
                       <p style={{ ...labelSecao, margin: "2px 0 0", fontSize: 10 }}>EQUIPE</p>
@@ -1330,7 +1314,7 @@ export function PropostaCasamentoClassico({
                     justifyContent: "space-between", gap: 12, flexWrap: "wrap",
                   }}
                 >
-                  <h3 style={{ margin: 0, fontFamily: SERIF, fontWeight: 400, fontSize: 30 }}>
+                  <h3 style={{ margin: 0, fontFamily: SERIF, fontWeight: 400, fontSize: 26 }}>
                     O que está incluso
                   </h3>
                   <span
@@ -1406,7 +1390,7 @@ export function PropostaCasamentoClassico({
                 <h3
                   style={{
                     margin: "12px 0 0", fontFamily: SERIF, fontWeight: 400,
-                    fontSize: "clamp(32px, 4.4vw, 40px)", lineHeight: 0.9,
+                    fontSize: 40, lineHeight: 0.9,
                   }}
                 >
                   Do &ldquo;aceito a proposta&rdquo;
@@ -1458,11 +1442,11 @@ export function PropostaCasamentoClassico({
                     >
                       {String(i + 1).padStart(2, "0")}
                     </span>
-                    <p style={{ margin: "12px 0 0", fontSize: 14, fontWeight: 600 }}>
+                    <p style={{ margin: "12px 0 0", fontFamily: SERIF, fontSize: 16, fontWeight: 600, lineHeight: 1.2 }}>
                       {e.titulo}
                     </p>
                     {e.descricao && (
-                      <p style={{ margin: "4px 0 0", fontSize: 12, lineHeight: 1.5, color: COR.texto2 }}>
+                      <p style={{ margin: "4px 0 0", fontSize: 12, lineHeight: 1.4, color: COR.texto2 }}>
                         {e.descricao}
                       </p>
                     )}
@@ -1480,7 +1464,7 @@ export function PropostaCasamentoClassico({
                 <h3
                   style={{
                     margin: "12px 0 0", fontFamily: SERIF, fontWeight: 400,
-                    fontSize: "clamp(30px, 4vw, 38px)", lineHeight: 1.1,
+                    fontSize: 34, lineHeight: 1.1,
                   }}
                 >
                   Vocês vivem.
@@ -1579,7 +1563,7 @@ export function PropostaCasamentoClassico({
                         {depoimentos[0].autor[0]}
                       </span>
                       <div>
-                        <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>
+                        <p style={{ margin: 0, fontSize: 12, fontWeight: 600 }}>
                           {depoimentos[0].autor}
                         </p>
                         {depoimentos[0].contexto && (
@@ -1605,7 +1589,7 @@ export function PropostaCasamentoClassico({
                 <p style={{ ...labelSecao, margin: 0, color: "rgba(249,245,240,0.6)" }}>
                   EVENTOS REALIZADOS
                 </p>
-                <h3 style={{ margin: "12px 0 0", fontFamily: SERIF, fontWeight: 400, fontSize: 34 }}>
+                <h3 style={{ margin: "12px 0 0", fontFamily: SERIF, fontWeight: 400, fontSize: 36, lineHeight: 0.95 }}>
                   Últimos casamentos assinados
                 </h3>
                 <div style={{ marginTop: 20, display: "flex", flexWrap: "wrap", gap: 12 }}>
@@ -1674,7 +1658,7 @@ export function PropostaCasamentoClassico({
           {/* ---------------- próximos passos + comentários ---------------- */}
           <section id="proximos" style={{ padding: "56px 24px" }}>
             <p style={{ ...labelSecao, margin: 0 }}>PRÓXIMOS PASSOS</p>
-            <h3 style={{ margin: "12px 0 0", fontFamily: SERIF, fontWeight: 400, fontSize: 34 }}>
+            <h3 style={{ margin: "12px 0 0", fontFamily: SERIF, fontWeight: 400, fontSize: 36 }}>
               Como fechamos?
             </h3>
             <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 12, maxWidth: 620 }}>
@@ -1703,7 +1687,7 @@ export function PropostaCasamentoClassico({
                   textAlign: "center",
                 }}
               >
-                <p style={{ margin: 0, fontFamily: SERIF, fontSize: 24, fontWeight: 600 }}>
+                <p style={{ margin: 0, fontFamily: SERIF, fontSize: 26, fontWeight: 600 }}>
                   Proposta aceita ✓
                 </p>
                 <p style={{ margin: "6px 0 0", fontSize: 13, color: COR.texto2 }}>
@@ -1927,27 +1911,27 @@ export function PropostaCasamentoClassico({
         </div>
       )}
 
-      {/* ---------------- modal de aceite (compartilhado) ---------------- */}
+      {/* ---------------- modal de aceite (design do handoff) ---------------- */}
       {modalAceite && pacote && (
-        <ModalAceiteProposta
+        <ModalAceiteClassico
           hash={hash}
-          tema={TEMA_MODAL}
-          titulo={`Quase lá, ${dados.nome_contato}!`}
-          subtitulo="Revise o resumo financeiro e assine digitalmente. A data é travada após a entrada."
-          resumo={`${pacote.nome} • ${convidados} convidados — ${brl(valores.total)} (entrada ${brl(valores.entrada)}${forma === "parcelado" ? `, ${parcelas}x de ${brl(valores.parcela ?? 0)}` : ", restante à vista"})`}
-          nomeInicial={dados.nome_contato}
+          nomeContato={dados.nome_contato}
           pacoteId={pacote.id}
+          pacoteNome={pacote.nome}
           convidados={convidados}
           extrasIds={extrasIds}
-          formaPagamento={forma}
-          parcelas={forma === "parcelado" ? parcelas : null}
+          extrasNomes={dados.extras
+            .filter((x) => extrasIds.includes(x.id))
+            .map((x) => x.nome)}
+          forma={forma}
+          parcelas={parcelas}
+          total={valores.total}
+          entrada={valores.entrada}
+          parcela={valores.parcela ?? null}
+          entradaPct={condicoes.entradaPercentual}
           tipoEvento={dados.tipo_evento}
           dataEvento={dados.data_evento}
-          assinaturaDupla
-          rotuloAssinatura="Assinatura noiva"
-          rotuloAssinatura2="Assinatura noivo"
-          textoBotao="CONFIRMAR E GERAR CONTRATO →"
-          rodape="Li e aceito os termos da assessoria e autorizo o uso das assinaturas para travamento da data."
+          localEvento={dados.local_evento}
           onFechar={() => setModalAceite(false)}
           onAceito={(codigo, total) => {
             setModalAceite(false);
