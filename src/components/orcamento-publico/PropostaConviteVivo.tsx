@@ -245,7 +245,10 @@ export function PropostaConviteVivo({
         color: COR.marfim,
         fontFamily: SANS,
         minHeight: "100vh",
-        overflowX: "hidden",
+        // Sem overflow-x aqui: ele cria um contexto de rolagem e mata
+        // TODO position:sticky de dentro — a barra do topo e o cartão de
+        // resumo iam embora ao rolar. Quem transborda são os blobs, e cada
+        // seção que tem um já recorta o seu.
         WebkitFontSmoothing: "antialiased",
       }}
     >
