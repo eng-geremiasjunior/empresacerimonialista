@@ -30,6 +30,12 @@ export type ResultadoEnvio = {
   enviado: boolean;
   motivo?: string;
   canais?: string[]; // canais em que o envio funcionou: 'email' | 'whatsapp'
+  /**
+   * true quando havia canal para tentar e a ENTREGA falhou — diferente de
+   * "não havia o que enviar". A rotina diária usa isso para decidir se
+   * marca o evento como processado ou tenta de novo amanhã.
+   */
+  falhouEntrega?: boolean;
 };
 
 export function eventLabel(ev: EventoParaConfirmar) {
@@ -140,7 +146,11 @@ export async function enviarConfirmacaoFornecedor(
   }
 
   if (canais.length === 0) {
-    return { ...base, motivo: falhas.join(" | ") || "nenhum canal disponível" };
+    return {
+      ...base,
+      falhouEntrega: falhas.length > 0,
+      motivo: falhas.join(" | ") || "nenhum canal disponível",
+    };
   }
 
   await supabase

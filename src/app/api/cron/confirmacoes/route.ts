@@ -82,6 +82,7 @@ export async function GET(request: NextRequest) {
     eventId: string;
     enviados: number;
     pulados: { supplier: string; motivo?: string }[];
+    repetiraAmanha?: boolean;
   }[] = [];
 
   for (const raw of eventos ?? []) {
@@ -115,23 +116,37 @@ export async function GET(request: NextRequest) {
 
     const fornecedores = await fornecedoresDoEvento(supabase, ev.id);
     let enviados = 0;
+    let falhouEntrega = false;
     const pulados: { supplier: string; motivo?: string }[] = [];
 
     for (const f of fornecedores) {
       const r = await enviarConfirmacaoFornecedor(supabase, evento, f);
       if (r.enviado) enviados += 1;
-      else pulados.push({ supplier: r.supplierName, motivo: r.motivo });
+      else {
+        if (r.falhouEntrega) falhouEntrega = true;
+        pulados.push({ supplier: r.supplierName, motivo: r.motivo });
+      }
     }
 
-    // Marca o evento como processado mesmo sem fornecedores com e-mail,
-    // para o job não reprocessar todo dia; o reenvio manual continua
-    // disponível na aba Fornecedores.
-    await supabase
-      .from("events")
-      .update({ confirmation_sent_at: new Date().toISOString() })
-      .eq("id", ev.id);
+    // Marca o evento como processado mesmo sem fornecedores com e-mail —
+    // amanhã seria igual e não vale reprocessar todo dia. MAS não marca se
+    // alguma entrega FALHOU: aí amanhã pode funcionar (é o caso enquanto o
+    // domínio de e-mail não está verificado). Marcar nesse caso queimava a
+    // confirmação em silêncio: o fornecedor nunca era avisado e o sistema
+    // nunca mais tentava.
+    if (!falhouEntrega) {
+      await supabase
+        .from("events")
+        .update({ confirmation_sent_at: new Date().toISOString() })
+        .eq("id", ev.id);
+    }
 
-    resultados.push({ eventId: ev.id, enviados, pulados });
+    resultados.push({
+      eventId: ev.id,
+      enviados,
+      pulados,
+      ...(falhouEntrega ? { repetiraAmanha: true } : {}),
+    });
   }
 
   return NextResponse.json({
