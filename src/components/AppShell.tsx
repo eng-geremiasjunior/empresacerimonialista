@@ -58,7 +58,7 @@ function Icon({ name, className }: { name: string; className?: string }) {
 type NavItem = {
   label: string;
   icon: string;
-  href?: string;
+  href: string;
   // cargos que enxergam o item; ausente = todos. Cargo null (conta sem
   // equipe/migração pendente) vê tudo, preservando o comportamento antigo.
   cargos?: string[];
@@ -149,35 +149,21 @@ export function AppShell({ userEmail, avatarUrl, cargo, atencaoCount, signOut, c
         </button>
       </div>
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 pb-4">
-        {navVisivel.map((item) =>
-          item.href ? (
-            <Link
-              key={item.label}
-              href={item.href}
-              onClick={() => setOpen(false)}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                isActive(pathname, item.href)
-                  ? "bg-stone-800 text-white"
-                  : "text-stone-400 hover:bg-stone-800/60 hover:text-white"
-              }`}
-            >
-              <Icon name={item.icon} />
-              {item.label}
-            </Link>
-          ) : (
-            <span
-              key={item.label}
-              title="Em breve"
-              className="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-stone-600"
-            >
-              <Icon name={item.icon} />
-              {item.label}
-              <span className="ml-auto rounded-full bg-stone-800 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-500">
-                breve
-              </span>
-            </span>
-          )
-        )}
+        {navVisivel.map((item) => (
+          <Link
+            key={item.label}
+            href={item.href}
+            onClick={() => setOpen(false)}
+            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              isActive(pathname, item.href)
+                ? "bg-stone-800 text-white"
+                : "text-stone-400 hover:bg-stone-800/60 hover:text-white"
+            }`}
+          >
+            <Icon name={item.icon} />
+            {item.label}
+          </Link>
+        ))}
 
       </nav>
       <div className="border-t border-stone-800 p-3">
