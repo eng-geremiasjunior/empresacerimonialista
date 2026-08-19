@@ -28,6 +28,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Copy,
+  ExternalLink,
   Eye,
   MessageCircle,
   MoreVertical,
@@ -163,8 +164,17 @@ function MenuAcoes({ o }: { o: Orcamento }) {
             className={`${item} hover:bg-[#F7F7F5]`}
             style={{ color: CORES.texto }}
           >
-            <Eye size={14} /> Ver proposta
+            <Eye size={14} /> Ver detalhes
           </Link>
+          <a
+            href={`/orcamento/${o.hash_publico}`}
+            target="_blank"
+            rel="noreferrer"
+            className={`${item} hover:bg-[#F7F7F5]`}
+            style={{ color: CORES.texto }}
+          >
+            <ExternalLink size={14} /> Acessar orçamento
+          </a>
           {o.evento_gerado_id && (
             <Link
               href={`/eventos/${o.evento_gerado_id}`}

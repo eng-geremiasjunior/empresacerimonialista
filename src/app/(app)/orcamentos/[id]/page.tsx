@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ArrowRight, CalendarCheck, FileDown, Pencil } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarCheck, FileDown, Pencil, ExternalLink } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { EnviarOrcamentoBox } from "@/components/orcamentos/EnviarOrcamentoBox";
 import { GerarEventoBox } from "@/components/orcamentos/GerarEventoBox";
@@ -62,6 +62,14 @@ export default async function VisualizarOrcamentoPage({
               <Pencil size={14} /> Editar
             </Link>
           )}
+          <a
+            href={`/orcamento/${orc.hash_publico}`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 hover:border-gray-400"
+          >
+            <ExternalLink size={14} /> Acessar orçamento
+          </a>
           <a
             href={`/orcamentos/${orc.id}/pdf`}
             className="inline-flex items-center gap-1.5 rounded-lg bg-gray-900 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700"

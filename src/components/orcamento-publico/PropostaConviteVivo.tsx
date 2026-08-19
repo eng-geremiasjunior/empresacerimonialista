@@ -541,7 +541,7 @@ export function PropostaConviteVivo({
                   backdropFilter: "blur(10px)", color: COR.marfim,
                 }}
               >
-                {somLigado ? "❙❙ PAUSAR SOM" : "♪ LIGAR SOM"}
+                {somLigado ? "❙❙ PAUSAR O SOM" : "♪ LIGAR O SOM DA FESTA"}
               </button>
             </div>
 
