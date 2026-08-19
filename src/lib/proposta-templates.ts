@@ -9,6 +9,7 @@ import type { EventType } from "@/lib/types";
 export type TemplateProposta =
   | "debutante_classico"
   | "debutante_glam"
+  | "debutante_convite_vivo"
   | "casamento_v2"
   | "casamento_maison";
 
@@ -39,6 +40,11 @@ export const TEMPLATES_POR_TIPO: Partial<
       valor: "debutante_glam",
       nome: "Festa Glam",
       descricao: "Neon, alto contraste, foco na balada",
+    },
+    {
+      valor: "debutante_convite_vivo",
+      nome: "Convite Vivo",
+      descricao: "Vídeo, trilha e montador interativo de seis passos",
     },
   ],
 };

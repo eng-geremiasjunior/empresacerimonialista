@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PropostaCasamentoClassico } from "@/components/orcamento-publico/PropostaCasamentoClassico";
 import { PropostaDebutante } from "@/components/orcamento-publico/PropostaDebutante";
+import { PropostaConviteVivo } from "@/components/orcamento-publico/PropostaConviteVivo";
 import { PropostaDebutanteGlam } from "@/components/orcamento-publico/PropostaDebutanteGlam";
 import { PropostaCasamentoMaison } from "@/components/orcamento-publico/PropostaCasamentoMaison";
 import type { OrcamentoPublicoData } from "@/lib/orcamento-publico";
@@ -32,6 +33,10 @@ export default async function OrcamentoPublicoPage({
       proposta.template_proposta ??
       TEMPLATE_PADRAO_POR_TIPO[proposta.tipo_evento as EventType] ??
       "debutante_classico";
+
+    if (template === "debutante_convite_vivo") {
+      return <PropostaConviteVivo hash={params.hash} inicial={proposta} />;
+    }
 
     if (template === "debutante_glam") {
       return (

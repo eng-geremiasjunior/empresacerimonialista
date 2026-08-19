@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import {
   Cormorant_Garamond,
   Great_Vibes,
+  Instrument_Serif,
   Inter,
+  Manrope,
   Playfair_Display,
   Syne,
 } from "next/font/google";
@@ -44,6 +46,20 @@ const greatVibes = Great_Vibes({
   variable: "--font-cursiva",
   display: "swap",
 });
+// Modelo 03 (Convite Vivo): serifa editorial + Manrope no corpo.
+const instrument = Instrument_Serif({
+  subsets: ["latin"],
+  weight: ["400"],
+  style: ["normal", "italic"],
+  variable: "--font-instrument",
+  display: "swap",
+});
+const manrope = Manrope({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-manrope",
+  display: "swap",
+});
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
@@ -63,7 +79,7 @@ export default function OrcamentoLayout({
 }) {
   return (
     <div
-      className={`${titulo.variable} ${playfair.variable} ${syne.variable} ${greatVibes.variable} ${inter.variable}`}
+      className={`${titulo.variable} ${playfair.variable} ${syne.variable} ${greatVibes.variable} ${instrument.variable} ${manrope.variable} ${inter.variable}`}
     >
       {children}
     </div>
