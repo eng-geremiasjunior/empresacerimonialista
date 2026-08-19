@@ -1,10 +1,102 @@
 // Envio de e-mail via Resend (server-side apenas).
-// Pré-requisitos no .env.local: RESEND_API_KEY (obrigatório),
-// EMAIL_FROM (opcional; sem domínio verificado use onboarding@resend.dev,
-// que só entrega para o e-mail da própria conta Resend) e
-// NEXT_PUBLIC_APP_URL (base dos links; default http://localhost:3000).
+//
+// Variáveis: RESEND_API_KEY (obrigatória), EMAIL_FROM (remetente) e
+// NEXT_PUBLIC_APP_URL (base dos links). As três precisam existir no
+// ambiente de PRODUÇÃO da Vercel, não só no .env.local — foi o que
+// segurou o módulo inteiro até aqui.
+//
+// Sobre o remetente: sem um domínio próprio verificado no Resend, a conta
+// fica em modo de teste e a API recusa qualquer destinatário que não seja
+// o dono da conta (403). Ou seja, fornecedor, noiva e convidado não
+// recebem nada — e o erro precisa dizer isso em português, para a
+// cerimonialista saber que tem que mandar o link por WhatsApp enquanto
+// não estiver liberado.
 
 import { formatDate, formatTime } from "@/lib/format";
+
+/** Base dos links enviados por e-mail. */
+export function appUrl() {
+  const explicito = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/+$/, "");
+  const emDeploy = Boolean(process.env.VERCEL);
+  const apontaProLocal = explicito
+    ? /^https?:\/\/(localhost|127\.0\.0\.1)/i.test(explicito)
+    : false;
+
+  // localhost configurado num deploy é sempre esquecimento: o link chega
+  // ao fornecedor apontando para a máquina de quem programou. Nesse caso
+  // o endereço do próprio deploy vale mais que a variável.
+  if (explicito && !(emDeploy && apontaProLocal)) return explicito;
+
+  const producao = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  if (producao) return `https://${producao}`;
+  const deploy = process.env.VERCEL_URL;
+  if (deploy) return `https://${deploy}`;
+  return "http://localhost:3000";
+}
+
+/** Remetente configurado. O padrão é o domínio de teste do Resend. */
+export function remetente() {
+  return process.env.EMAIL_FROM?.trim() || "Vela <onboarding@resend.dev>";
+}
+
+/** true quando ainda estamos no domínio de teste (não entrega a terceiros). */
+export function envioEmModoTeste() {
+  return /resend\.dev/i.test(remetente());
+}
+
+function erroLegivel(status: number, corpo: string): string {
+  if (status === 403 && /only send testing emails|own email address/i.test(corpo)) {
+    return "O envio de e-mails ainda não foi liberado para esta conta — nada foi entregue. Envie o link por WhatsApp enquanto isso.";
+  }
+  if (status === 422 && /domain is not verified/i.test(corpo)) {
+    return "O endereço de envio ainda não foi verificado — nada foi entregue. Envie o link por WhatsApp enquanto isso.";
+  }
+  if (status === 429) {
+    return "Muitos e-mails enviados em pouco tempo. Tente de novo em alguns minutos.";
+  }
+  return `Não foi possível enviar o e-mail agora (erro ${status}).`;
+}
+
+/**
+ * Único ponto de saída de e-mail do sistema. Antes cada função montava a
+ * própria chamada, com o remetente repetido em cinco lugares — trocar o
+ * domínio significava lembrar dos cinco.
+ */
+export async function enviarViaResend(dados: {
+  to: string;
+  subject: string;
+  html: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    return {
+      ok: false,
+      error: "O envio de e-mails ainda não está configurado nesta conta.",
+    };
+  }
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: remetente(),
+      to: [dados.to],
+      subject: dados.subject,
+      html: dados.html,
+    }),
+  });
+
+  if (!res.ok) {
+    const corpo = await res.text();
+    // o detalhe técnico fica no log do servidor, não na tela dela
+    console.error(`[vela:email] Resend ${res.status}: ${corpo.slice(0, 300)}`);
+    return { ok: false, error: erroLegivel(res.status, corpo) };
+  }
+  return { ok: true };
+}
 
 export type EmailConfirmacao = {
   to: string;
@@ -16,18 +108,9 @@ export type EmailConfirmacao = {
   hash: string;
 };
 
-export function appUrl() {
-  return process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-}
-
 export async function enviarEmailConfirmacao(
   dados: EmailConfirmacao
 ): Promise<{ ok: boolean; error?: string }> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    return { ok: false, error: "RESEND_API_KEY não configurada no .env.local" };
-  }
-
   const link = `${appUrl()}/confirmacao/${dados.hash}`;
   const detalhes = [
     `<strong>Data:</strong> ${formatDate(dados.eventDate)}`,
@@ -57,25 +140,11 @@ export async function enviarEmailConfirmacao(
     <p style="color:#9ca3af;font-size:12px">Se o botão não funcionar, copie e cole este endereço no navegador:<br/>${link}</p>
   </div>`;
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: process.env.EMAIL_FROM ?? "Vela <onboarding@resend.dev>",
-      to: [dados.to],
-      subject: `Confirme sua presença — ${dados.eventLabel}`,
-      html,
-    }),
+  return enviarViaResend({
+    to: dados.to,
+    subject: `Confirme sua presença — ${dados.eventLabel}`,
+    html,
   });
-
-  if (!res.ok) {
-    const body = await res.text();
-    return { ok: false, error: `Resend ${res.status}: ${body.slice(0, 200)}` };
-  }
-  return { ok: true };
 }
 
 // Convite de agendamento por e-mail (Secretário). Abre a MESMA página
@@ -95,11 +164,6 @@ export type EmailConviteAgendamento = {
 export async function enviarConviteAgendamentoEmail(
   dados: EmailConviteAgendamento
 ): Promise<{ ok: boolean; error?: string }> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    return { ok: false, error: "RESEND_API_KEY não configurada no .env.local" };
-  }
-
   const link = `${appUrl()}/agendar/${dados.hash}`;
   const DIAS = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
   const previa = dados.slots
@@ -129,25 +193,11 @@ export async function enviarConviteAgendamentoEmail(
     <p style="color:#9ca3af;font-size:12px">Válido por ${dados.prazoDias} dias. Se o botão não funcionar, copie e cole:<br/>${link}</p>
   </div>`;
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: process.env.EMAIL_FROM ?? "Vela <onboarding@resend.dev>",
-      to: [dados.to],
-      subject: `Escolha um horário — ${dados.tarefa}`,
-      html,
-    }),
+  return enviarViaResend({
+    to: dados.to,
+    subject: `Escolha um horário — ${dados.tarefa}`,
+    html,
   });
-
-  if (!res.ok) {
-    const body = await res.text();
-    return { ok: false, error: `Resend ${res.status}: ${body.slice(0, 200)}` };
-  }
-  return { ok: true };
 }
 
 export type EmailOrcamento = {
@@ -161,11 +211,6 @@ export type EmailOrcamento = {
 export async function enviarEmailOrcamento(
   dados: EmailOrcamento
 ): Promise<{ ok: boolean; error?: string }> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    return { ok: false, error: "RESEND_API_KEY não configurada no .env.local" };
-  }
-
   const link = `${appUrl()}/orcamento/${dados.hash}`;
   const html = `
     <div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:520px;margin:0 auto;color:#17162A">
@@ -186,23 +231,9 @@ export async function enviarEmailOrcamento(
     </div>
   `;
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: process.env.EMAIL_FROM ?? "Vela <onboarding@resend.dev>",
-      to: [dados.to],
-      subject: `Seu orçamento — ${dados.nomeEmpresa}`,
-      html,
-    }),
+  return enviarViaResend({
+    to: dados.to,
+    subject: `Seu orçamento — ${dados.nomeEmpresa}`,
+    html,
   });
-
-  if (!res.ok) {
-    const body = await res.text();
-    return { ok: false, error: `Resend ${res.status}: ${body.slice(0, 200)}` };
-  }
-  return { ok: true };
 }

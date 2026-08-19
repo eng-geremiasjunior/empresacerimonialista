@@ -6,7 +6,7 @@
 // O e-mail leva o link INDIVIDUAL dele — é assim que ele muda de ideia
 // depois, reusando a mesma tela de confirmação.
 
-import { appUrl } from "@/lib/email";
+import { appUrl, enviarViaResend } from "@/lib/email";
 
 const MESES = [
   "janeiro", "fevereiro", "março", "abril", "maio", "junho",
@@ -55,8 +55,6 @@ function faltam(dataIso: string): string {
 export async function enviarLembreteConvidado(
   d: EmailConvidado
 ): Promise<{ ok: boolean; error?: string }> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return { ok: false, error: "RESEND_API_KEY não configurada" };
 
   const link = `${appUrl()}/confirmar/${d.hash}`;
   const quando = dataLonga(d.data) + (d.hora ? ` · ${d.hora.slice(0, 5)}` : "");
@@ -106,32 +104,12 @@ export async function enviarLembreteConvidado(
     </p>
   </div>`;
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: process.env.EMAIL_FROM ?? "Vela <onboarding@resend.dev>",
-      to: [d.para],
-      subject: assunto,
-      html,
-    }),
-  });
-
-  if (!res.ok) {
-    const body = await res.text();
-    return { ok: false, error: `Resend ${res.status}: ${body.slice(0, 200)}` };
-  }
-  return { ok: true };
+  return enviarViaResend({ to: d.para, subject: assunto, html });
 }
 
 export async function enviarEmailConvidado(
   d: EmailConvidado
 ): Promise<{ ok: boolean; error?: string }> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return { ok: false, error: "RESEND_API_KEY não configurada" };
 
   const link = `${appUrl()}/confirmar/${d.hash}`;
   const quando = dataLonga(d.data) + (d.hora ? ` · ${d.hora.slice(0, 5)}` : "");
@@ -184,23 +162,5 @@ export async function enviarEmailConvidado(
     </p>
   </div>`;
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: process.env.EMAIL_FROM ?? "Vela <onboarding@resend.dev>",
-      to: [d.para],
-      subject: assunto,
-      html,
-    }),
-  });
-
-  if (!res.ok) {
-    const body = await res.text();
-    return { ok: false, error: `Resend ${res.status}: ${body.slice(0, 200)}` };
-  }
-  return { ok: true };
+  return enviarViaResend({ to: d.para, subject: assunto, html });
 }
