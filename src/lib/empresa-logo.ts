@@ -59,3 +59,22 @@ export async function removeEmpresaLogo(
     .eq("id", empresaId);
   return error ? { error: "Não foi possível remover a logo." } : {};
 }
+
+// Nome do negócio. É o que a cliente final lê na proposta pública, no
+// rodapé e no PDF — até esta tela existir, toda conta nova ficava presa
+// no "Minha Empresa" que o provisionamento usa como último recurso.
+export async function salvarNomeEmpresa(
+  empresaId: string,
+  nome: string
+): Promise<{ error?: string }> {
+  const limpo = nome.trim();
+  if (limpo.length < 2) return { error: "Escreva o nome do seu negócio." };
+  if (limpo.length > 80) return { error: "Use um nome com até 80 caracteres." };
+
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("empresas")
+    .update({ nome: limpo })
+    .eq("id", empresaId);
+  return error ? { error: "Não foi possível salvar o nome." } : {};
+}

@@ -24,7 +24,7 @@ export const CUIDADOS_PADRAO = [
   {
     icone: "💎",
     titulo: "FORNECEDORES",
-    descricao: "Só fornecedores homologados por nós + contratos blindados.",
+    descricao: "Fornecedores que já conhecemos + contratos conferidos.",
   },
   {
     icone: "📋",

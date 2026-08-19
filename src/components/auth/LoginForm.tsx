@@ -5,7 +5,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { Building2, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const inputClass =
@@ -14,6 +14,7 @@ const inputClass =
 export function LoginForm() {
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "signup">("login");
+  const [negocio, setNegocio] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -46,7 +47,15 @@ export function LoginForm() {
       router.push("/eventos/dashboard");
       router.refresh();
     } else {
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      // O nome do negócio vira o nome da empresa no provisionamento
+      // (garantir_empresa_propria lê 'empresa'). Sem ele, toda conta nova
+      // nasceria como "Minha Empresa" — e esse nome vai para a proposta
+      // pública, o rodapé e o PDF que o casal recebe.
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { empresa: negocio.trim() } },
+      });
       if (error) {
         setError("Não foi possível criar a conta. " + error.message);
         setLoading(false);
@@ -100,6 +109,36 @@ export function LoginForm() {
           endereço, no histórico do navegador e no log de acesso. Com POST,
           o pior caso vira um 405 sem vazamento. */}
       <form onSubmit={handleSubmit} method="post" className="mt-7 space-y-4">
+        {!isLogin && (
+          <div>
+            <label
+              htmlFor="negocio"
+              className="mb-1.5 block text-sm font-medium text-gray-700"
+            >
+              Nome do seu negócio
+            </label>
+            <div className="relative">
+              <Building2
+                size={16}
+                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
+              />
+              <input
+                id="negocio"
+                type="text"
+                required
+                autoComplete="organization"
+                placeholder="Ateliê Marina Cerimonial"
+                value={negocio}
+                onChange={(e) => setNegocio(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <p className="mt-1.5 text-xs text-gray-500">
+              É o nome que seus clientes veem na proposta. Dá para mudar depois.
+            </p>
+          </div>
+        )}
+
         <div>
           <label
             htmlFor="email"

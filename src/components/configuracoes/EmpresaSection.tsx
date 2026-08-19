@@ -7,6 +7,7 @@ import { useRef, useState } from "react";
 import { Building2, Trash2, Upload } from "lucide-react";
 import {
   removeEmpresaLogo,
+  salvarNomeEmpresa,
   uploadEmpresaLogo,
   validateLogoFile,
 } from "@/lib/empresa-logo";
@@ -20,6 +21,10 @@ export function EmpresaSection({
   empresaNome: string;
   initialLogoUrl: string | null;
 }) {
+  const [nome, setNome] = useState(empresaNome);
+  const [nomeSalvo, setNomeSalvo] = useState(empresaNome);
+  const [salvandoNome, setSalvandoNome] = useState(false);
+  const [erroNome, setErroNome] = useState<string | null>(null);
   const [logoUrl, setLogoUrl] = useState(initialLogoUrl);
   const [preview, setPreview] = useState<{ url: string; file: File } | null>(
     null
@@ -66,7 +71,21 @@ export function EmpresaSection({
     setLogoUrl(null);
   }
 
+  async function salvarNome() {
+    setErroNome(null);
+    setSalvandoNome(true);
+    const res = await salvarNomeEmpresa(empresaId, nome);
+    setSalvandoNome(false);
+    if (res.error) {
+      setErroNome(res.error);
+      return;
+    }
+    setNomeSalvo(nome.trim());
+    setNome(nome.trim());
+  }
+
   const exibida = preview?.url ?? logoUrl;
+  const nomeMudou = nome.trim() !== nomeSalvo;
 
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-6">
@@ -75,9 +94,42 @@ export function EmpresaSection({
         <div>
           <h2 className="text-sm font-semibold text-gray-900">Minha Empresa</h2>
           <p className="text-xs text-gray-500">
-            A logo aparece em todos os orçamentos em PDF — passados e futuros.
+            Nome e logo aparecem na proposta que o cliente abre e no PDF.
           </p>
         </div>
+      </div>
+
+      <div className="mb-6 max-w-md">
+        <label
+          htmlFor="empresa-nome"
+          className="mb-1.5 block text-sm font-medium text-gray-700"
+        >
+          Nome do negócio
+        </label>
+        <div className="flex items-center gap-2">
+          <input
+            id="empresa-nome"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            maxLength={80}
+            placeholder="Ateliê Marina Cerimonial"
+            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-500 focus:outline-none"
+          />
+          <button
+            onClick={salvarNome}
+            disabled={salvandoNome || !nomeMudou}
+            className="shrink-0 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-40"
+          >
+            {salvandoNome ? "Salvando…" : "Salvar"}
+          </button>
+        </div>
+        {erroNome && <p className="mt-1.5 text-sm text-rose-600">{erroNome}</p>}
+        {nomeSalvo === "Minha Empresa" && (
+          <p className="mt-1.5 text-xs text-amber-700">
+            Sua proposta está saindo como “Minha Empresa”. Troque pelo nome que
+            seus clientes conhecem.
+          </p>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-5">

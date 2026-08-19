@@ -159,6 +159,13 @@ export function PropostaCasamentoClassico({
     dados.depoimentos.length > 0 ? dados.depoimentos : DEPOIMENTOS_CLASSICO;
   const citacao = inst?.citacao_hero?.trim() || CITACAO_CLASSICO;
 
+  // Empresa sem depoimentos cadastrados não mostra a seção — e o item
+  // sai do índice junto, senão o link levaria a lugar nenhum.
+  const nav = useMemo(
+    () => NAV.filter(([id]) => id !== "depoimentos" || depoimentos.length > 0),
+    [depoimentos.length]
+  );
+
   const regra = regraDoBanco(inst);
   const condicoes = condicoesDoBanco({
     condicao_entrada_percentual: inst?.condicao_entrada_percentual,
@@ -260,7 +267,7 @@ export function PropostaCasamentoClassico({
       },
       { rootMargin: "-40% 0px -55% 0px" }
     );
-    for (const [id] of NAV) {
+    for (const [id] of nav) {
       const el = document.getElementById(id);
       if (el) observer.observe(el);
     }
@@ -268,7 +275,7 @@ export function PropostaCasamentoClassico({
       window.removeEventListener("scroll", aoRolar);
       observer.disconnect();
     };
-  }, []);
+  }, [nav]);
 
   const irPara = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
@@ -432,7 +439,7 @@ export function PropostaCasamentoClassico({
         </div>
 
         <nav style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
-          {NAV.map(([id, rotulo]) => {
+          {nav.map(([id, rotulo]) => {
             const ativa = secaoAtiva === id;
             return (
               <button
@@ -535,7 +542,7 @@ export function PropostaCasamentoClassico({
             display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 6,
           }}
         >
-          {NAV.map(([id, rotulo]) => (
+          {nav.map(([id, rotulo]) => (
             <button
               key={id}
               onClick={() => irPara(id)}
@@ -1632,7 +1639,7 @@ export function PropostaCasamentoClassico({
                 </div>
               </div>
 
-              <div id="depoimentos">
+              <div id="depoimentos" hidden={depoimentos.length === 0}>
                 <p style={{ ...labelSecao, margin: 0, color: "rgba(249,245,240,0.6)" }}>
                   DEPOIMENTOS REAIS
                 </p>

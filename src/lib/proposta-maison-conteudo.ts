@@ -41,31 +41,31 @@ export const INCLUSO_MAISON = [
     n: "01",
     titulo: "Direção criativa & projeto",
     descricao:
-      "Moodboard, paleta, plantas, luz e curadoria de tecidos. 3 apresentações presenciais.",
+      "Moodboard, paleta, plantas, luz e curadoria de tecidos, apresentados presencialmente.",
   },
   {
     n: "02",
     titulo: "Equipe exclusiva no dia",
     descricao:
-      "12 profissionais fixos, rádio, cronograma de 15min, kit emergência completo.",
+      "Equipe dedicada ao evento, comunicação por rádio, cronograma minuto a minuto e kit emergência completo.",
   },
   {
     n: "03",
     titulo: "Fornecedores curados",
     descricao:
-      "Lista fechada de 18 parceiros auditados. Sem comissão oculta. Você aprova cada um.",
+      "Lista curada de parceiros que já conhecemos. Sem comissão oculta. Você aprova cada um.",
   },
   {
     n: "04",
     titulo: "Cerimonial e recepção",
     descricao:
-      "2 cerimonialistas + 1 hostess bilíngue, controle de convidados e presentes.",
+      "Cerimonial e recepção conduzidos pela equipe, com controle de convidados e presentes.",
   },
   {
     n: "05",
     titulo: "Pós-produção",
     descricao:
-      "Edição de fotos em 20 dias, teaser filme 72h, álbum fine art 60 páginas.",
+      "Acompanhamento da edição de fotos e vídeo e da produção do álbum.",
   },
 ];
 
