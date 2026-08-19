@@ -211,11 +211,12 @@ export default async function OrcamentosPage({
       </div>
 
       {error && (
-        <div className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
-          Não foi possível carregar os orçamentos. Se o banco ainda não foi
-          atualizado, execute{" "}
-          <code>supabase/migrations/041_orcamentos_estrutura.sql</code> no SQL
-          Editor do Supabase.
+        <div
+          data-migracao="041_orcamentos_estrutura.sql"
+          className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800"
+        >
+          Não foi possível carregar os orçamentos agora. Recarregue a página em
+          alguns instantes.
         </div>
       )}
 

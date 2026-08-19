@@ -92,7 +92,7 @@ export function EventChat({ eventId, suppliers, initialSupplierId }: Props) {
       addLocal(sent);
     } else {
       toast.error(
-        "Não foi possível enviar. Se o banco não foi atualizado, execute a migração 006_chat.sql."
+        "Não foi possível enviar a mensagem agora. Tente de novo em alguns instantes."
       );
     }
   }

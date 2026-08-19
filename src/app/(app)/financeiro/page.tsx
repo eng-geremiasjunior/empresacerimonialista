@@ -55,10 +55,11 @@ export default async function FinanceiroEmpresaPage({
             Receita própria e despesas operacionais do seu negócio
           </p>
         </div>
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-          O Financeiro da Empresa precisa da migração{" "}
-          <code>supabase/migrations/020_business_transactions.sql</code> no SQL
-          Editor do Supabase.
+        <div
+          data-migracao="020_business_transactions.sql"
+          className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
+        >
+          O Financeiro da Empresa ainda não foi liberado nesta conta.
         </div>
       </div>
     );

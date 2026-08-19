@@ -43,8 +43,8 @@ export default async function TarefasPage() {
 
       {error && (
         <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
-          Não foi possível carregar as tarefas. Execute as migrações pendentes
-          no SQL Editor do Supabase.
+          Não foi possível carregar as tarefas agora. Recarregue a página em
+          alguns instantes.
         </div>
       )}
 

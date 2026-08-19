@@ -40,7 +40,7 @@ async function empresaDoOwner() {
   if (error?.code === "42P01" || error?.code === "PGRST205") {
     return {
       error:
-        "A migração 021_fundacao_empresas_equipe.sql ainda não foi aplicada no Supabase" as const,
+        "A gestão de equipe ainda não foi liberada nesta conta." as const,
     };
   }
   if (!empresa) {

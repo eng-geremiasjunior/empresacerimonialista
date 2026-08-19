@@ -11,7 +11,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as Icones from "./icones";
-import { DURANTE, INVESTIMENTO, PRINCIPAIS, type Destino } from "./destinos";
+import { DURANTE, INVESTIMENTO, PRINCIPAIS, visiveis, type Destino } from "./destinos";
 import { Rotulo } from "./Nucleo";
 
 function Icone({ nome, tamanho }: { nome: string; tamanho?: number }) {
@@ -101,7 +101,7 @@ export function NavLateral({
       </div>
 
       <nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        {PRINCIPAIS.map((d) => (
+        {visiveis(PRINCIPAIS).map((d) => (
           <Link
             key={d.seg}
             href={d.seg ? `${base}/${d.seg}` : base}
@@ -114,8 +114,8 @@ export function NavLateral({
         ))}
       </nav>
 
-      <Grupo titulo="Durante o evento" itens={DURANTE} base={base} pathname={pathname} />
-      <Grupo titulo="Investimento" itens={INVESTIMENTO} base={base} pathname={pathname} />
+      <Grupo titulo="Durante o evento" itens={visiveis(DURANTE)} base={base} pathname={pathname} />
+      <Grupo titulo="Investimento" itens={visiveis(INVESTIMENTO)} base={base} pathname={pathname} />
 
       {/* cerimonialista, ancorada no rodapé */}
       {cerimonialistaNome && (

@@ -79,7 +79,7 @@ export async function salvarVerbaFornecedor(
   if (error || !salvo) {
     return {
       error:
-        "Não foi possível salvar a verba. Se o banco não foi atualizado, execute a migração 063_financeiro_duas_contas.sql.",
+        "Não foi possível salvar a verba agora. Tente de novo em alguns instantes.",
     };
   }
 

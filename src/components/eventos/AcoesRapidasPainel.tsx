@@ -56,14 +56,11 @@ export function AcoesRapidasPainel({ exportHref }: { exportHref: string }) {
     <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
       <h3 className="text-sm font-semibold text-gray-900">Ações rápidas</h3>
       <div className="mt-2 space-y-0.5">
-        <Item icon={FilePlus2} href="/eventos/novo">
+        <Item icon={FilePlus2} href="/orcamentos/novo">
           Novo orçamento
         </Item>
         <Item icon={Upload} onClick={() => setImportar(true)}>
           Importar evento
-        </Item>
-        <Item icon={FileText} href={exportHref}>
-          Relatório de eventos
         </Item>
         <Item icon={FileSpreadsheet} href={exportHref}>
           Exportar CSV

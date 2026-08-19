@@ -85,7 +85,6 @@ const NAV: NavItem[] = [
     href: "/financeiro",
     cargos: ["proprietaria"],
   },
-  { label: "Relatórios", icon: "relatorios" },
   {
     label: "Catálogo",
     icon: "catalogo",
@@ -180,17 +179,6 @@ export function AppShell({ userEmail, avatarUrl, cargo, atencaoCount, signOut, c
           )
         )}
 
-        {/* Fonte única (076): a aba global virou visão de leitura; a tarefa
-            vive na Organização de cada evento. */}
-        <div className="mt-3 rounded-lg border border-dashed border-stone-700 bg-stone-800/40 px-3 py-2.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">
-            Tarefas movidas
-          </p>
-          <p className="mt-1 text-[11.5px] leading-snug text-stone-500">
-            Agora elas vivem dentro de cada evento, em Organização. Aqui você
-            só consulta o consolidado.
-          </p>
-        </div>
       </nav>
       <div className="border-t border-stone-800 p-3">
         <CopilotoSidebarCard atencao={atencaoCount} />

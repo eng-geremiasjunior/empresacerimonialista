@@ -9,7 +9,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as Icones from "./icones";
-import { DURANTE, INVESTIMENTO, PRINCIPAIS, type Destino } from "./destinos";
+import { DURANTE, INVESTIMENTO, PRINCIPAIS, visiveis, type Destino } from "./destinos";
 import { Rotulo } from "./Nucleo";
 
 function Icone({ nome }: { nome: string }) {
@@ -191,9 +191,9 @@ export function TopoCelular({
             >
               {(marcaNome ?? "Vela").toUpperCase()}
             </div>
-            <GrupoGaveta itens={PRINCIPAIS} base={base} aoNavegar={fechar} />
-            <GrupoGaveta titulo="Durante o evento" itens={DURANTE} base={base} aoNavegar={fechar} />
-            <GrupoGaveta titulo="Investimento" itens={INVESTIMENTO} base={base} aoNavegar={fechar} />
+            <GrupoGaveta itens={visiveis(PRINCIPAIS)} base={base} aoNavegar={fechar} />
+            <GrupoGaveta titulo="Durante o evento" itens={visiveis(DURANTE)} base={base} aoNavegar={fechar} />
+            <GrupoGaveta titulo="Investimento" itens={visiveis(INVESTIMENTO)} base={base} aoNavegar={fechar} />
           </div>
           <button
             type="button"

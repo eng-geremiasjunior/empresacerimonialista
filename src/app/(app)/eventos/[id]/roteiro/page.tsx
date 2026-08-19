@@ -82,9 +82,8 @@ export default async function RoteiroPage({
     <div>
       {cronogramaResult.error && (
         <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
-          Não foi possível carregar o cronograma. Se o banco ainda não foi
-          atualizado, execute as migrações{" "}
-          <code>031</code>–<code>033</code> no SQL Editor do Supabase.
+          Não foi possível carregar o cronograma agora. Recarregue a página em
+          alguns instantes.
         </div>
       )}
 

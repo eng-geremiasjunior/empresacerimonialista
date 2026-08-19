@@ -43,10 +43,11 @@ export default async function FornecedoresPage({
       </div>
 
       {lista.migrationPendente && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-          O módulo Fornecedores precisa da migração{" "}
-          <code>026_fornecedores_categoria_tipo_operacional.sql</code> no SQL
-          Editor do Supabase.
+        <div
+          data-migracao="026_fornecedores_categoria_tipo_operacional.sql"
+          className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
+        >
+          Esta parte do sistema ainda não foi liberada nesta conta.
         </div>
       )}
 

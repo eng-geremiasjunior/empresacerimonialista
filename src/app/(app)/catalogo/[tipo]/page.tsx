@@ -218,10 +218,11 @@ export default async function CatalogoTipoPage({
       </div>
 
       {faltaMigracao ? (
-        <p className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
-          Catálogo por tipo de evento ainda não disponível. Execute{" "}
-          <code>supabase/migrations/057_catalogo_por_tipo_evento.sql</code> no
-          SQL Editor do Supabase.
+        <p
+          data-migracao="057_catalogo_por_tipo_evento.sql"
+          className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800"
+        >
+          O catálogo por tipo de evento ainda não foi liberado nesta conta.
         </p>
       ) : (
         <>

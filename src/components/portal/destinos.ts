@@ -32,6 +32,14 @@ export const PRINCIPAIS: Destino[] = [
   { seg: "linha-do-tempo", rotulo: "Linha do tempo", icone: "CalendarDays" },
 ];
 
+/**
+ * O que ainda não existe não entra no menu. As três telas marcadas com
+ * emBreve renderizam só uma promessa ("vai aparecer aqui"); anunciá-las
+ * na navegação faz a noiva clicar e não encontrar nada — pior do que não
+ * oferecer. As rotas continuam de pé para quando o conteúdo existir.
+ */
+export const visiveis = (itens: Destino[]) => itens.filter((d) => !d.emBreve);
+
 /** Grupo "Durante o evento". */
 export const DURANTE: Destino[] = [
   { seg: "cortejo", rotulo: "Cortejo", icone: "Heart" },

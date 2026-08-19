@@ -114,9 +114,11 @@ export default async function EventosPage({
           <EventosFiltros current={current} />
 
           {migrationPendente && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-              O recurso &ldquo;Arquivar evento&rdquo; precisa da migração{" "}
-              <code>supabase/migrations/015_eventos_arquivar.sql</code>.
+            <div
+              data-migracao="015_eventos_arquivar.sql"
+              className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
+            >
+              Arquivar evento ainda não foi liberado nesta conta.
             </div>
           )}
 

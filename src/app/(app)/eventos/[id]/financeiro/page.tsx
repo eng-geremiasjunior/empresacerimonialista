@@ -221,10 +221,11 @@ export default async function EventoFinanceiroPage({
           />
 
           {fin.migrationPendente && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-              O módulo Financeiro precisa da migração{" "}
-              <code>supabase/migrations/017_financeiro.sql</code> no SQL Editor
-              do Supabase.
+            <div
+              data-migracao="017_financeiro.sql"
+              className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
+            >
+              O módulo Financeiro ainda não foi liberado nesta conta.
             </div>
           )}
 

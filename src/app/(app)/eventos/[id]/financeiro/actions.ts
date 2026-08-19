@@ -92,7 +92,7 @@ export async function gerarParcelas(
   if (error) {
     return {
       error:
-        "Não foi possível gerar as parcelas. Se o banco não foi atualizado, execute a migração 017_financeiro.sql.",
+        "Não foi possível gerar as parcelas agora. Tente de novo em alguns instantes.",
     };
   }
 

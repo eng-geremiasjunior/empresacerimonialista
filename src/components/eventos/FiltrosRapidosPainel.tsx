@@ -161,13 +161,6 @@ export function FiltrosRapidosPainel({
         Mostrar arquivados
       </label>
 
-      <button
-        disabled
-        title="Em breve"
-        className="mt-3 w-full cursor-not-allowed rounded-lg border border-dashed border-gray-200 py-1.5 text-xs font-medium text-gray-400"
-      >
-        Salvar filtro (em breve)
-      </button>
     </section>
   );
 }

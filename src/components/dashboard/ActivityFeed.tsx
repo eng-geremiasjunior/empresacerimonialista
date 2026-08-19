@@ -32,12 +32,6 @@ export function ActivityFeed({ activities, referenceIso }: Props) {
         <h2 className="text-sm font-semibold text-stone-700">
           Atividade recente
         </h2>
-        <button
-          title="Histórico completo — em breve"
-          className="text-xs font-medium text-stone-400 transition-colors hover:text-stone-600"
-        >
-          Ver tudo
-        </button>
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-1.5">

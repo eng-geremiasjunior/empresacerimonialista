@@ -128,7 +128,7 @@ function Menu({ eventId, archivingDisabled }: { eventId: string; archivingDisabl
               });
             }}
             disabled={archivingDisabled}
-            title={archivingDisabled ? "Requer a migração 015" : undefined}
+            title={archivingDisabled ? "Arquivar ainda não foi liberado nesta conta" : undefined}
             className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Archive size={14} /> Arquivar

@@ -30,11 +30,12 @@ export default async function ModelosPrecificacaoPage() {
   return (
     <div className="mx-auto max-w-5xl">
       {error && (
-        <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
-          Não foi possível carregar os modelos. Se o banco ainda não foi
-          atualizado, execute{" "}
-          <code>supabase/migrations/041_orcamentos_estrutura.sql</code> no SQL
-          Editor do Supabase.
+        <div
+          data-migracao="041_orcamentos_estrutura.sql"
+          className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800"
+        >
+          Não foi possível carregar os modelos agora. Recarregue a página em
+          alguns instantes.
         </div>
       )}
 

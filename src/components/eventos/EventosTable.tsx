@@ -153,7 +153,7 @@ export function EventosTable({
               disabled={archivingDisabled}
               title={
                 archivingDisabled
-                  ? "Requer a migração 015_eventos_arquivar.sql"
+                  ? "Arquivar ainda não foi liberado nesta conta"
                   : undefined
               }
               className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
