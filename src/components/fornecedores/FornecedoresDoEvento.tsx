@@ -19,6 +19,9 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/celebra";
 import {
   acoesDe,
+  contratoAnexado,
+  dinheiroEmPalavras,
+  pedidosEmPalavras,
   canaisDe,
   contagens,
   corDoTom,
@@ -80,6 +83,9 @@ export function FornecedoresDoEvento({
   const [filtro, setFiltro] = useState<Filtro>("todos");
   const [aberto, setAberto] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  // Ação que dá certo em silêncio ensina a clicar de novo. O que ela
+  // precisa saber é onde o pedido foi parar.
+  const [feito, setFeito] = useState<string | null>(null);
 
   // espelho otimista dos toggles: o trilho anda na hora, o servidor confirma
   const [canais, setCanais] = useState({
@@ -94,12 +100,18 @@ export function FornecedoresDoEvento({
     [fornecedores, filtro]
   );
 
-  function rodar(acao: () => Promise<{ error?: string } | { success: true } | void>) {
+  function rodar(
+    acao: () => Promise<{ error?: string } | { success: true } | void>,
+    sucesso?: string
+  ) {
     iniciar(async () => {
       const r = await acao();
-      if (r && "error" in r && r.error) setAviso(r.error);
-      else {
+      if (r && "error" in r && r.error) {
+        setAviso(r.error);
+        setFeito(null);
+      } else {
         setAviso(null);
+        setFeito(sucesso ?? null);
         router.refresh();
       }
     });
@@ -286,6 +298,23 @@ export function FornecedoresDoEvento({
               })}
             </div>
           </div>
+
+          {feito && (
+            <p
+              style={{
+                fontFamily: F_UI,
+                fontSize: 13,
+                color: "var(--tinta)",
+                background: "var(--nevoa)",
+                border: "1px solid var(--linha)",
+                borderRadius: 8,
+                padding: "8px 12px",
+                margin: 0,
+              }}
+            >
+              {feito}
+            </p>
+          )}
 
           {aviso && (
             <p
@@ -481,7 +510,10 @@ function Linha({
   aberto: boolean;
   pendente: boolean;
   aoAbrir: () => void;
-  rodar: (a: () => Promise<{ error?: string } | { success: true } | void>) => void;
+  rodar: (
+    a: () => Promise<{ error?: string } | { success: true } | void>,
+    sucesso?: string
+  ) => void;
   setAviso: (s: string | null) => void;
 }) {
   const convite = estadoConvite(f);
@@ -636,7 +668,10 @@ function Detalhe({
   f: Fornecedor;
   canais: { email: boolean; whatsapp: boolean };
   pendente: boolean;
-  rodar: (a: () => Promise<{ error?: string } | { success: true } | void>) => void;
+  rodar: (
+    a: () => Promise<{ error?: string } | { success: true } | void>,
+    sucesso?: string
+  ) => void;
   setAviso: (s: string | null) => void;
 }) {
   const [editandoEmail, setEditandoEmail] = useState(false);
@@ -661,7 +696,10 @@ function Detalhe({
       return;
     }
     if (a.id === "pedir-contrato") {
-      rodar(() => pedirAoFornecedor(eventId, f.supplierId, "contrato"));
+      rodar(
+        () => pedirAoFornecedor(eventId, f.supplierId, "contrato"),
+        "Pedido criado. A mensagem está na fila, em Solicitações."
+      );
       return;
     }
     if (a.id === "confirmar") {
@@ -702,6 +740,41 @@ function Detalhe({
           convite: {convite.meta}
         </span>
         <span>presença: {presenca.meta}</span>
+      </div>
+
+      {/* O dinheiro dele e o que está pendurado com ele. Vem do Financeiro
+          do evento e da Central de Solicitações: ela decide sobre o
+          fornecedor sem sair de onde está olhando para ele. */}
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "6px 18px",
+          fontFamily: F_MONO,
+          fontSize: 11,
+          color: "var(--cinza)",
+        }}
+      >
+        <span
+          style={{
+            color: f.dinheiro ? "var(--tinta)" : "var(--cinza)",
+          }}
+        >
+          {dinheiroEmPalavras(f.dinheiro)}
+        </span>
+        {pedidosEmPalavras(f) && (
+          <span style={{ color: "var(--tinta)" }}>{pedidosEmPalavras(f)}</span>
+        )}
+        {contratoAnexado(f) && (
+          <a
+            href={`/api/contrato?path=${encodeURIComponent(contratoAnexado(f)!.path)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "var(--tinta)", textDecoration: "underline" }}
+          >
+            contrato: {contratoAnexado(f)!.nome}
+          </a>
+        )}
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>

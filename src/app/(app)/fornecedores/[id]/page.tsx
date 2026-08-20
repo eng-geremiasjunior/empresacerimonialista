@@ -18,7 +18,7 @@ import { EditarFornecedorButton } from "@/components/fornecedores/EditarForneced
 import { LinkDoFornecedor } from "@/components/fornecedores/LinkDoFornecedor";
 import { createClient } from "@/lib/supabase/server";
 import { appUrl } from "@/lib/email";
-import { formatDate } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 import {
   FAIXA_PRECO_CIFRAO,
   FAIXA_PRECO_LABELS,
@@ -141,6 +141,43 @@ export default async function FornecedorDetalhePage({
         aberturas={acesso?.aberturas ?? 0}
         baseUrl={appUrl()}
       />
+
+      {/* O que ela já pagou a ele, somando os eventos. É o valor praticado
+          que ela usa para negociar o próximo, e vivia trancado dentro da
+          aba Financeiro de cada evento, um de cada vez. */}
+      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h2 className="text-sm font-semibold text-gray-700">Valores com este fornecedor</h2>
+        {historico.dinheiro.eventosComValor === 0 ? (
+          <p className="mt-2 text-sm text-gray-500">
+            Nenhuma despesa lançada com ele até agora. O valor aparece aqui
+            assim que você lançar no Financeiro de um evento.
+          </p>
+        ) : (
+          <>
+            <p className="mt-2 text-2xl font-semibold tabular-nums text-gray-900">
+              {formatCurrency(historico.dinheiro.total)}
+            </p>
+            <p className="mt-1 text-sm text-gray-600">
+              em {historico.dinheiro.eventosComValor}{" "}
+              {historico.dinheiro.eventosComValor === 1 ? "evento" : "eventos"}
+              {/* média só quando há o que comparar: com um evento só ela
+                  repetiria o total logo acima */}
+              {historico.dinheiro.eventosComValor > 1 &&
+                historico.dinheiro.medioPorEvento !== null && (
+                  <> · {formatCurrency(historico.dinheiro.medioPorEvento)} por evento</>
+                )}
+            </p>
+            {historico.dinheiro.aberto > 0 && (
+              <p className="mt-2 text-sm text-gray-600">
+                {formatCurrency(historico.dinheiro.pago)} já pagos ·{" "}
+                <span className="font-medium text-gray-900">
+                  {formatCurrency(historico.dinheiro.aberto)} em aberto
+                </span>
+              </p>
+            )}
+          </>
+        )}
+      </div>
 
       {/* Histórico — dados reais (via roteiro_links) */}
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">

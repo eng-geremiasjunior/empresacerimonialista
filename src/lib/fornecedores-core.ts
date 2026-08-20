@@ -27,7 +27,66 @@ export type Fornecedor = {
     aberturas: number;
     ultimaAbertura: string | null;
   } | null;
+  /** o que já foi pedido a ele pela Central, vivo ou já respondido */
+  pedidos: {
+    id: string;
+    tipo: "confirmacao" | "contrato";
+    status: string;
+    arquivoPath: string | null;
+    arquivoNome: string | null;
+  }[];
+  /** o dinheiro deste fornecedor NESTE evento, vindo do Financeiro */
+  dinheiro: DinheiroDoFornecedor | null;
 };
+
+/** Lançado no Financeiro do evento, somado por fornecedor. */
+export type DinheiroDoFornecedor = {
+  contratado: number;
+  pago: number;
+  parcelasAbertas: number;
+  /** a próxima parcela a vencer, se houver */
+  proximoVencimento: string | null;
+};
+
+/**
+ * O valor do fornecedor em uma linha. Ela não precisa abrir o Financeiro
+ * para saber quanto custa quem está olhando — e não precisa de um card
+ * para isso, precisa de uma frase.
+ */
+export function dinheiroEmPalavras(d: DinheiroDoFornecedor | null): string {
+  if (!d || d.contratado === 0) return "sem valor lançado no financeiro";
+  const reais = (v: number) =>
+    v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  if (d.pago >= d.contratado) return `${reais(d.contratado)} · tudo pago`;
+  const falta = d.contratado - d.pago;
+  const parcelas =
+    d.parcelasAbertas === 1 ? "1 parcela" : `${d.parcelasAbertas} parcelas`;
+  return `${reais(d.contratado)} · ${reais(falta)} a pagar em ${parcelas}`;
+}
+
+/** O contrato que ele mandou, se mandou. */
+export function contratoAnexado(
+  f: Fornecedor
+): { path: string; nome: string } | null {
+  for (const p of f.pedidos) {
+    if (p.tipo === "contrato" && p.arquivoPath) {
+      return { path: p.arquivoPath, nome: p.arquivoNome ?? "contrato" };
+    }
+  }
+  return null;
+}
+
+/** O que está pendurado com ele agora, em uma frase — ou nada. */
+export function pedidosEmPalavras(f: Fornecedor): string | null {
+  const vivos = f.pedidos.filter((p) =>
+    ["pendente", "enviada", "reenviada"].includes(p.status)
+  );
+  if (vivos.length === 0) return null;
+  const nome = (t: string) => (t === "contrato" ? "contrato assinado" : "confirmação");
+  const naFila = vivos.some((p) => p.status === "pendente");
+  const lista = vivos.map((p) => nome(p.tipo)).join(" e ");
+  return naFila ? `${lista}: na fila de hoje` : `${lista}: aguardando resposta`;
+}
 
 export type Automacao = {
   diasAntes: number;

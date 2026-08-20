@@ -48,10 +48,17 @@ export async function pedirAoFornecedor(
     .select("id")
     .single();
 
-  // O índice parcial impede dois pedidos vivos do mesmo tipo — e essa é a
-  // mensagem certa para ela: já está pedido, não é erro do sistema.
   if (erroSol || !sol) {
-    return { error: "Você já tem esse pedido em aberto com este fornecedor." };
+    // O índice parcial impede dois pedidos vivos do mesmo tipo, e aí a
+    // mensagem é informação, não erro. Qualquer outra falha precisa
+    // aparecer como falha — dizer "já está pedido" quando o banco recusou
+    // por outro motivo faz ela acreditar que pediu, e ninguém pede de novo.
+    if (erroSol?.code === "23505") {
+      return { error: "Este pedido já está em aberto com este fornecedor." };
+    }
+    return {
+      error: `Não deu para registrar o pedido${erroSol?.message ? `: ${erroSol.message}` : "."}`,
+    };
   }
 
   const { data: batidaViva } = await supabase

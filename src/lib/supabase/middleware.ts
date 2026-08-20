@@ -24,6 +24,7 @@ export async function updateSession(request: NextRequest) {
       request.nextUrl.pathname.startsWith("/confirmar/") ||
       request.nextUrl.pathname.startsWith("/guia/") ||
       request.nextUrl.pathname.startsWith("/fornecedor/") ||
+      request.nextUrl.pathname.startsWith("/api/fornecedor/") ||
       request.nextUrl.pathname.startsWith("/api/rsvp/")
     ) {
       return supabaseResponse;
@@ -84,7 +85,8 @@ export async function updateSession(request: NextRequest) {
   // Central de Solicitações na mão do fornecedor — um link por fornecedor,
   // atravessando os eventos dela; o hash é a credencial e a RPC devolve
   // só as pendências dele.
-  const isPublicFornecedor = pathname.startsWith("/fornecedor/");
+  const isPublicFornecedor =
+    pathname.startsWith("/fornecedor/") || pathname.startsWith("/api/fornecedor/");
 
   if (
     !user &&

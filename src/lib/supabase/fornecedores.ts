@@ -171,6 +171,17 @@ export type HistoricoFornecedor = {
   taxaConfirmacao: number | null;
   totalConfirmados: number;
   eventos: EventoDoFornecedor[];
+  /** o que já foi lançado no Financeiro com este fornecedor, somando
+   *  todos os eventos dela — é o "valor praticado" que ela usa para
+   *  negociar o próximo, e vivia trancado na aba Financeiro de cada evento */
+  dinheiro: {
+    total: number;
+    pago: number;
+    aberto: number;
+    eventosComValor: number;
+    /** média por evento em que houve lançamento, não por evento atendido */
+    medioPorEvento: number | null;
+  };
 };
 
 export async function getHistoricoFornecedor(
@@ -214,6 +225,24 @@ export async function getHistoricoFornecedor(
         : b.date.localeCompare(a.date);
     });
 
+  // O dinheiro atravessa os eventos, como o fornecedor. RLS já limita à
+  // empresa dela, então somar aqui é somar o que é dela.
+  const { data: lancamentos } = await supabase
+    .from("transactions")
+    .select("event_id, value, paid")
+    .eq("supplier_id", supplierId)
+    .eq("type", "despesa");
+
+  let total = 0;
+  let pago = 0;
+  const eventosComLancamento = new Set<string>();
+  for (const t of lancamentos ?? []) {
+    const valor = Number(t.value) || 0;
+    total += valor;
+    if (t.paid) pago += valor;
+    if (t.event_id) eventosComLancamento.add(t.event_id);
+  }
+
   const futuros = eventos.filter((e) => e.futuro);
   const passados = eventos.filter((e) => !e.futuro);
   const totalConfirmados = eventos.filter((e) => e.confirmado).length;
@@ -228,6 +257,16 @@ export async function getHistoricoFornecedor(
         : null,
     totalConfirmados,
     eventos,
+    dinheiro: {
+      total,
+      pago,
+      aberto: total - pago,
+      eventosComValor: eventosComLancamento.size,
+      medioPorEvento:
+        eventosComLancamento.size > 0
+          ? Math.round(total / eventosComLancamento.size)
+          : null,
+    },
   };
 }
 

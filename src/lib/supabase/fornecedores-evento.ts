@@ -8,7 +8,11 @@
 
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import type { Automacao, Fornecedor } from "@/lib/fornecedores-core";
+import type {
+  Automacao,
+  DinheiroDoFornecedor,
+  Fornecedor,
+} from "@/lib/fornecedores-core";
 
 type LinkRow = {
   supplier_id: string;
@@ -31,7 +35,7 @@ export const getFornecedoresDoEvento = cache(
   async (eventId: string): Promise<DadosFornecedores> => {
     const supabase = createClient();
 
-    const [linksRes, confRes, evRes] = await Promise.all([
+    const [linksRes, confRes, evRes, pedidosRes, dinheiroRes] = await Promise.all([
       supabase
         .from("roteiro_links")
         .select(
@@ -49,7 +53,64 @@ export const getFornecedoresDoEvento = cache(
         .select("confirmation_days_before, whatsapp_auto, email_auto")
         .eq("id", eventId)
         .maybeSingle(),
+      supabase
+        .from("solicitacao_fornecedor")
+        // Todos os status, não só os vivos: o contrato JÁ ENTREGUE é o que
+        // ela mais precisa achar depois, e ele mora numa solicitação
+        // respondida.
+        .select("id, supplier_id, tipo, status, resposta")
+        .eq("event_id", eventId),
+      // O Financeiro do evento já guarda a despesa com fornecedor
+      // (transactions.supplier_id, migração 017). O que faltava era a
+      // informação atravessar para cá: ela decide sobre o fornecedor
+      // olhando para o fornecedor, não para a planilha.
+      supabase
+        .from("transactions")
+        .select("supplier_id, value, paid, due_date")
+        .eq("event_id", eventId)
+        .eq("type", "despesa")
+        .not("supplier_id", "is", null),
     ]);
+
+    const pedidosPor = new Map<string, Fornecedor["pedidos"]>();
+    for (const p of pedidosRes.data ?? []) {
+      const lista = pedidosPor.get(p.supplier_id) ?? [];
+      const r = (p.resposta ?? {}) as {
+        arquivo_path?: string;
+        arquivo_nome?: string;
+      };
+      lista.push({
+        id: p.id,
+        tipo: p.tipo,
+        status: p.status,
+        arquivoPath: r.arquivo_path ?? null,
+        arquivoNome: r.arquivo_nome ?? null,
+      });
+      pedidosPor.set(p.supplier_id, lista);
+    }
+
+    const dinheiroPor = new Map<string, DinheiroDoFornecedor>();
+    for (const t of dinheiroRes.data ?? []) {
+      const atual = dinheiroPor.get(t.supplier_id) ?? {
+        contratado: 0,
+        pago: 0,
+        parcelasAbertas: 0,
+        proximoVencimento: null,
+      };
+      const valor = Number(t.value) || 0;
+      atual.contratado += valor;
+      if (t.paid) atual.pago += valor;
+      else {
+        atual.parcelasAbertas += 1;
+        if (
+          t.due_date &&
+          (!atual.proximoVencimento || t.due_date < atual.proximoVencimento)
+        ) {
+          atual.proximoVencimento = t.due_date;
+        }
+      }
+      dinheiroPor.set(t.supplier_id, atual);
+    }
 
     const convitePor = new Map<string, Fornecedor["convite"]>();
     for (const c of confRes.data ?? []) {
@@ -73,6 +134,8 @@ export const getFornecedoresDoEvento = cache(
         confirmadoNoEvento: l.confirmed,
         vinculadoEm: l.created_at,
         convite: convitePor.get(l.supplier_id) ?? null,
+        pedidos: pedidosPor.get(l.supplier_id) ?? [],
+        dinheiro: dinheiroPor.get(l.supplier_id) ?? null,
       }))
       .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
