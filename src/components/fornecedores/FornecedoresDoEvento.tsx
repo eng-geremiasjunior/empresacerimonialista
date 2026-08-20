@@ -43,6 +43,7 @@ import {
   salvarWhatsappAuto,
   setSupplierConfirmed,
 } from "@/app/(app)/eventos/[id]/fornecedores/actions";
+import { pedirAoFornecedor } from "@/app/(app)/solicitacoes/actions";
 
 const F_UI = "var(--font-ui)";
 const F_MONO = "var(--font-mono)";
@@ -657,6 +658,10 @@ function Detalhe({
         return;
       }
       rodar(() => enviarConfirmacaoAgora(eventId, f.supplierId));
+      return;
+    }
+    if (a.id === "pedir-contrato") {
+      rodar(() => pedirAoFornecedor(eventId, f.supplierId, "contrato"));
       return;
     }
     if (a.id === "confirmar") {

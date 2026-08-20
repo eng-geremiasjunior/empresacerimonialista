@@ -191,6 +191,7 @@ export type AcaoId =
   | "confirmar"
   | "desmarcar"
   | "editar-email"
+  | "pedir-contrato"
   | "remover";
 
 export type Acao = {
@@ -204,12 +205,14 @@ export function acoesDe(f: Fornecedor, agora = Date.now()): Acao[] {
   if (grupo === "confirmados") {
     return [
       { id: "desmarcar", label: "Desmarcar confirmação", variante: "ghost" },
+      { id: "pedir-contrato", label: "Pedir contrato assinado", variante: "secondary" },
       { id: "remover", label: "Remover do evento", variante: "ghost" },
     ];
   }
   if (!f.email) {
     return [
       { id: "editar-email", label: "Cadastrar e-mail", variante: "primary" },
+      { id: "pedir-contrato", label: "Pedir contrato assinado", variante: "secondary" },
       { id: "confirmar", label: "Confirmar manualmente", variante: "secondary" },
       { id: "remover", label: "Remover do evento", variante: "ghost" },
     ];
@@ -225,6 +228,7 @@ export function acoesDe(f: Fornecedor, agora = Date.now()): Acao[] {
         : "Enviar convite",
       variante: "primary",
     },
+    { id: "pedir-contrato", label: "Pedir contrato assinado", variante: "secondary" },
     { id: "confirmar", label: "Confirmar manualmente", variante: "secondary" },
     { id: "remover", label: "Remover do evento", variante: "ghost" },
   ];

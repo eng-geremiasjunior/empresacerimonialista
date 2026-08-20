@@ -6,6 +6,105 @@ import { createClient } from "@/lib/supabase/server";
 
 export type FilaState = { error: string } | { success: true } | null;
 
+const TITULOS: Record<"confirmacao" | "contrato", string> = {
+  confirmacao: "Confirmar presença no evento",
+  contrato: "Enviar contrato assinado",
+};
+
+/**
+ * Ela pede algo a um fornecedor. A solicitação nasce e já entra na fila do
+ * mesmo dia — esperar a rotina da madrugada faria o pedido sumir por horas,
+ * e ela não teria como saber se registrou.
+ *
+ * Se já existe batida viva para esse fornecedor, o pedido entra NELA: é a
+ * promessa da Central, uma mensagem por vez, mesmo quando ela pede duas
+ * coisas seguidas.
+ */
+export async function pedirAoFornecedor(
+  eventId: string,
+  supplierId: string,
+  tipo: "confirmacao" | "contrato"
+): Promise<{ error: string } | { success: true }> {
+  const supabase = createClient();
+
+  const { data: evento } = await supabase
+    .from("events")
+    .select("id, date, empresa_id")
+    .eq("id", eventId)
+    .maybeSingle();
+  if (!evento?.empresa_id) return { error: "Evento não encontrado." };
+
+  const { data: sol, error: erroSol } = await supabase
+    .from("solicitacao_fornecedor")
+    .insert({
+      empresa_id: evento.empresa_id,
+      supplier_id: supplierId,
+      event_id: eventId,
+      tipo,
+      titulo: TITULOS[tipo],
+      status: "pendente",
+      prazo_ate: evento.date ? `${evento.date}T23:59:59` : null,
+    })
+    .select("id")
+    .single();
+
+  // O índice parcial impede dois pedidos vivos do mesmo tipo — e essa é a
+  // mensagem certa para ela: já está pedido, não é erro do sistema.
+  if (erroSol || !sol) {
+    return { error: "Você já tem esse pedido em aberto com este fornecedor." };
+  }
+
+  const { data: batidaViva } = await supabase
+    .from("batida")
+    .select("id")
+    .eq("supplier_id", supplierId)
+    .in("status", ["na_fila", "segurada"])
+    .maybeSingle();
+
+  let batidaId = batidaViva?.id ?? null;
+  if (!batidaId) {
+    const { data: forn } = await supabase
+      .from("suppliers")
+      .select("whatsapp, phone, email")
+      .eq("id", supplierId)
+      .maybeSingle();
+
+    const { data: nova } = await supabase
+      .from("batida")
+      .insert({
+        empresa_id: evento.empresa_id,
+        supplier_id: supplierId,
+        canal: forn?.whatsapp || forn?.phone ? "whatsapp" : "email",
+        status: "na_fila",
+      })
+      .select("id")
+      .single();
+    batidaId = nova?.id ?? null;
+  }
+
+  if (batidaId) {
+    await supabase
+      .from("solicitacao_fornecedor")
+      .update({ batida_id: batidaId })
+      .eq("id", sol.id);
+  }
+
+  // O link nasce junto: sem ele a mensagem não tem para onde apontar.
+  await supabase.from("fornecedor_acesso").upsert(
+    {
+      empresa_id: evento.empresa_id,
+      supplier_id: supplierId,
+      expira_em: new Date(Date.now() + 90 * 86_400_000).toISOString(),
+      revogado_em: null,
+    },
+    { onConflict: "empresa_id,supplier_id", ignoreDuplicates: true }
+  );
+
+  revalidatePath("/solicitacoes");
+  revalidatePath(`/eventos/${eventId}/fornecedores`);
+  return { success: true };
+}
+
 /** Segurar não cancela: tira do dia de hoje e devolve amanhã. */
 export async function segurarBatida(batidaId: string): Promise<FilaState> {
   const supabase = createClient();
