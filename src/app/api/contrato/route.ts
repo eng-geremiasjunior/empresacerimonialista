@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { urlParaLer } from "@/lib/contratos";
 
 export const dynamic = "force-dynamic";
 
@@ -24,16 +25,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "não autorizado" }, { status: 401 });
   }
 
-  const { data, error } = await supabase.storage
-    .from("contratos")
-    .createSignedUrl(caminho, 300);
-
-  if (error || !data?.signedUrl) {
+  const url = await urlParaLer(supabase, caminho);
+  if (!url) {
     return NextResponse.json(
       { error: "arquivo não encontrado" },
       { status: 404 }
     );
   }
 
-  return NextResponse.redirect(data.signedUrl);
+  return NextResponse.redirect(url);
 }

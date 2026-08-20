@@ -12,33 +12,16 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import {
+  MIMES_ACEITOS,
+  caminhoDoContrato,
+  nomeSeguro,
+  permitirEnvio,
+} from "@/lib/contratos";
 
 export const dynamic = "force-dynamic";
 
-const MIMES = new Set([
-  "application/pdf",
-  "image/jpeg",
-  "image/png",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-]);
-
-/**
- * Nome de arquivo previsivel para o caminho no Storage: so ASCII simples.
- * O nome bonito que ela ve fica guardado na resposta da solicitacao, entao
- * aqui pode ser agressivo — o que importa e nunca virar caminho.
- */
-function nomeSeguro(nome: string): string {
-  const base = nome.split(/[\/]/).pop() ?? "contrato";
-  const limpo = base
-    .normalize("NFD")
-    .split("")
-    .filter((c) => /[A-Za-z0-9._-]/.test(c))
-    .join("")
-    .replace(/-{2,}/g, "-")
-    .slice(-80);
-  return limpo.replace(/^[.-]+/, "") || "contrato";
-}
+const MIMES = new Set<string>(MIMES_ACEITOS);
 
 export async function POST(
   request: NextRequest,
@@ -105,22 +88,20 @@ export async function POST(
     );
   }
 
-  const caminho = `${acesso.empresa_id}/${sol.event_id}/${sol.id}/${nomeSeguro(corpo.nome)}`;
+  const caminho = caminhoDoContrato(
+    acesso.empresa_id,
+    sol.event_id,
+    sol.id,
+    corpo.nome
+  );
 
-  const { data: assinada, error } = await supabase.storage
-    .from("contratos")
-    .createSignedUploadUrl(caminho, { upsert: true });
-
-  if (error || !assinada) {
+  const permissao = await permitirEnvio(supabase, caminho);
+  if (!permissao) {
     return NextResponse.json(
       { error: "não foi possível preparar o envio" },
       { status: 500 }
     );
   }
 
-  return NextResponse.json({
-    caminho,
-    token: assinada.token,
-    nome: nomeSeguro(corpo.nome),
-  });
+  return NextResponse.json({ permissao, nome: nomeSeguro(corpo.nome) });
 }

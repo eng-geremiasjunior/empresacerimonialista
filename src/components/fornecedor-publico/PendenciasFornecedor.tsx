@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Calendar, Check, MapPin, Paperclip, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { enviarArquivo } from "@/lib/contratos-cliente";
 import { formatDate } from "@/lib/format";
 import type {
   PendenciaPublica,
@@ -69,32 +70,23 @@ export function PendenciasFornecedor({
       body: JSON.stringify({ solicitacaoId: id, nome: arquivo.name, tipo: arquivo.type }),
     });
     const pronto = await preparo.json().catch(() => null);
-    if (!preparo.ok || !pronto?.token) {
+    if (!preparo.ok || !pronto?.permissao) {
       setSubindo(null);
       setErroArquivo(pronto?.error ?? "Não deu para preparar o envio.");
       return;
     }
 
-    const supabase = createClient();
-    const { error: erroUpload } = await supabase.storage
-      .from("contratos")
-      .uploadToSignedUrl(pronto.caminho, pronto.token, arquivo);
-
-    if (erroUpload) {
-      setSubindo(null);
-      setErroArquivo(
-        arquivo.size > 10_485_760
-          ? "O arquivo passa de 10 MB. Tente enviar em PDF."
-          : "Não deu para enviar o arquivo. Tente de novo."
-      );
+    const envio = await enviarArquivo(pronto.permissao, arquivo);
+    setSubindo(null);
+    if (!envio.ok) {
+      setErroArquivo(envio.erro);
       return;
     }
 
-    setSubindo(null);
     await responder(id, {
       ...extra,
       feito: true,
-      arquivo_path: pronto.caminho,
+      arquivo_path: pronto.permissao.caminho,
       arquivo_nome: arquivo.name,
     });
   }
