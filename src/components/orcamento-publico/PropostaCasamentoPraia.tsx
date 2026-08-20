@@ -76,6 +76,17 @@ const SANS = "var(--font-karla), system-ui, sans-serif";
 
 const brl = (n: number) => `R$ ${Math.round(n).toLocaleString("pt-BR")}`;
 
+// Largura do conteúdo. A SPEC diz 1180px, e 1180 é exatamente 92,2% da
+// prancheta de 1280 em que o design foi desenhado — o número fixo já era
+// uma PROPORÇÃO disfarçada. Num monitor de 1440, 1180 vira 130px de margem
+// de cada lado e a página encolhe, enquanto a prévia do design (que escala
+// a prancheta para preencher a janela) continua cheia.
+//
+// Mantém 1180 até 1280 (idêntico ao spec e ao mockup), cresce na mesma
+// proporção acima disso e para em 1460 para a linha de texto não ficar
+// longa demais em telas muito largas.
+const LARGURA_CONTAINER = "min(1460px, max(1180px, 92.2vw))";
+
 const TEMA_MODAL: TemaModal = {
   fundo: COR.suave,
   card: COR.branco,
@@ -358,7 +369,7 @@ export function PropostaCasamentoPraia({
         </div>
         <div
           style={{
-            maxWidth: 1180, margin: "0 auto", padding: "14px 32px",
+            maxWidth: LARGURA_CONTAINER, margin: "0 auto", padding: "14px 32px",
             display: "flex", alignItems: "center", justifyContent: "space-between",
             gap: 18, flexWrap: "wrap",
           }}
@@ -547,7 +558,7 @@ export function PropostaCasamentoPraia({
       </section>
 
       {/* ---------------- timeline ---------------- */}
-      <section style={{ maxWidth: 1180, margin: "0 auto", padding: "88px 32px 0" }}>
+      <section style={{ maxWidth: LARGURA_CONTAINER, margin: "0 auto", padding: "88px 32px 0" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 32, flexWrap: "wrap", marginBottom: 30 }}>
           <div>
             <p style={{ ...eyebrow, margin: 0 }}>{T.timelineEyebrow}</p>
@@ -627,7 +638,7 @@ export function PropostaCasamentoPraia({
       </section>
 
       {/* ---------------- simulador do pôr do sol ---------------- */}
-      <section style={{ maxWidth: 1180, margin: "0 auto", padding: "88px 32px 0" }}>
+      <section style={{ maxWidth: LARGURA_CONTAINER, margin: "0 auto", padding: "88px 32px 0" }}>
         <div className="praia-grid2">
           <div
             style={{
@@ -714,7 +725,7 @@ export function PropostaCasamentoPraia({
       </section>
 
       {/* ---------------- montador ---------------- */}
-      <section id="montador" style={{ maxWidth: 1180, margin: "0 auto", padding: "88px 32px 0" }}>
+      <section id="montador" style={{ maxWidth: LARGURA_CONTAINER, margin: "0 auto", padding: "88px 32px 0" }}>
         <p style={{ ...eyebrow, margin: 0 }}>{T.montadorEyebrow}</p>
         <h2 className="praia-serif" style={{ margin: "12px 0 30px", fontSize: "clamp(28px, 3.4vw, 40px)", lineHeight: 1.2 }}>
           {T.montadorTitulo}
@@ -986,7 +997,7 @@ export function PropostaCasamentoPraia({
       </section>
 
       {/* ---------------- roteiro (tradições) ---------------- */}
-      <section style={{ maxWidth: 1180, margin: "0 auto", padding: "88px 32px 0" }}>
+      <section style={{ maxWidth: LARGURA_CONTAINER, margin: "0 auto", padding: "88px 32px 0" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 20, flexWrap: "wrap", marginBottom: 22 }}>
           <div>
             <p style={{ ...eyebrow, margin: 0 }}>{T.roteiroEyebrow}</p>
@@ -1024,7 +1035,7 @@ export function PropostaCasamentoPraia({
       </section>
 
       {/* ---------------- stats + cta data ---------------- */}
-      <section style={{ maxWidth: 1180, margin: "0 auto", padding: "88px 32px 0" }}>
+      <section style={{ maxWidth: LARGURA_CONTAINER, margin: "0 auto", padding: "88px 32px 0" }}>
         {statsProva.length > 0 && (
           <div className="praia-grid-cards">
             {statsProva.map((s) => (
@@ -1055,7 +1066,7 @@ export function PropostaCasamentoPraia({
       </section>
 
       {/* ---------------- prova social: depoimento + carta ---------------- */}
-      <section style={{ maxWidth: 1180, margin: "0 auto", padding: "88px 32px 0" }}>
+      <section style={{ maxWidth: LARGURA_CONTAINER, margin: "0 auto", padding: "88px 32px 0" }}>
         <div className="praia-grid2">
           {depoimento && (
             <div style={{ position: "relative", background: COR.branco, border: `1px solid ${COR.borda}`, borderRadius: 2, padding: 38 }}>
@@ -1094,7 +1105,7 @@ export function PropostaCasamentoPraia({
       {/* ---------------- footer ---------------- */}
       <footer
         style={{
-          maxWidth: 1180, margin: "0 auto", padding: "56px 32px 136px",
+          maxWidth: LARGURA_CONTAINER, margin: "0 auto", padding: "56px 32px 136px",
           display: "flex", justifyContent: "space-between", gap: 24,
           flexWrap: "wrap", alignItems: "center",
         }}
@@ -1151,7 +1162,7 @@ export function PropostaCasamentoPraia({
         >
           <div
             style={{
-              maxWidth: 1180, margin: "0 auto", display: "flex",
+              maxWidth: LARGURA_CONTAINER, margin: "0 auto", display: "flex",
               alignItems: "center", justifyContent: "space-between",
               gap: 16, flexWrap: "wrap",
             }}
