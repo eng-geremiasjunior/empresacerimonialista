@@ -7,7 +7,7 @@ export type EventosParams = {
   q: string;
   status: string; // lista separada por vírgula de EventStatus
   type: string; // lista separada por vírgula de EventType
-  sort: string; // date | client | status
+  sort: string; // relevancia | criacao | date | client | status
   dir: string; // asc | desc
   view: string; // list (cards horizontais) | grid
   responsavel: string; // membro_equipe id ou ""
@@ -22,7 +22,7 @@ const DEFAULTS: EventosParams = {
   q: "",
   status: "",
   type: "",
-  sort: "date",
+  sort: "relevancia",
   dir: "asc",
   view: "list",
   responsavel: "",

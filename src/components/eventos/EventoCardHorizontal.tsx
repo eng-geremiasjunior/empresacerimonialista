@@ -7,7 +7,6 @@ import {
   ArrowRight,
   CalendarDays,
   Copy,
-  Image as ImageIcon,
   MapPin,
   MoreVertical,
   Users,
@@ -27,6 +26,8 @@ import {
   EVENT_TYPE_LABELS,
   type EventStatus,
 } from "@/lib/types";
+
+const MES_CURTO = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 
 const STATUS_STYLES: Record<EventStatus, string> = {
   orcamento: "bg-amber-50 text-amber-700",
@@ -184,8 +185,17 @@ export function EventoCardHorizontal({
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-gray-300">
-            <ImageIcon size={26} strokeWidth={1.5} />
+          // Sem capa, o ícone de imagem cinza lia como "foto quebrada" — e
+          // metade da agenda dela não tem capa, então a lista inteira ficava
+          // com cara de defeito. No lugar entra a data em bloco: é o que ela
+          // procura primeiro quando bate o olho na lista.
+          <div className="flex h-full w-full flex-col items-center justify-center bg-gray-50 text-gray-500">
+            <span className="text-2xl font-semibold leading-none tabular-nums">
+              {row.date ? row.date.slice(8, 10) : "—"}
+            </span>
+            <span className="mt-1 text-[10px] font-medium uppercase tracking-wider text-gray-400">
+              {row.date ? MES_CURTO[Number(row.date.slice(5, 7)) - 1] : ""}
+            </span>
           </div>
         )}
       </div>

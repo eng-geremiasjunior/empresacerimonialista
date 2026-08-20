@@ -15,6 +15,16 @@ const STATUS_CHIPS: { value: EventStatus | "todos"; label: string }[] = [
   { value: "cancelado", label: EVENT_STATUS_LABELS.cancelado },
 ];
 
+// Ordem da lista. "relevancia" é o padrão: o que ainda vai acontecer
+// primeiro, o que já passou depois. "criacao" existe para achar o que
+// se acabou de cadastrar — um evento novo costuma ser para daqui a um
+// ano, então por data ele nasce no fim da fila.
+const ORDENS: { value: string; label: string }[] = [
+  { value: "relevancia", label: "Mais próximos" },
+  { value: "criacao", label: "Recém-criados" },
+  { value: "client", label: "Cliente" },
+];
+
 const TYPE_OPTIONS = Object.keys(EVENT_TYPE_LABELS) as EventType[];
 
 export function EventosFiltros({ current }: { current: EventosParams }) {
@@ -137,7 +147,7 @@ export function EventosFiltros({ current }: { current: EventosParams }) {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
         {STATUS_CHIPS.map((chip) => {
           const active =
             chip.value === "todos"
@@ -157,6 +167,23 @@ export function EventosFiltros({ current }: { current: EventosParams }) {
             </button>
           );
         })}
+
+        <div className="ml-auto flex items-center gap-2">
+          <span className="text-xs text-gray-500">Ordenar por</span>
+          <select
+            value={ORDENS.some((o) => o.value === current.sort) ? current.sort : "relevancia"}
+            onChange={(e) =>
+              router.push(buildEventosHref(current, { sort: e.target.value, page: "1" }))
+            }
+            className="rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-sm text-gray-700"
+          >
+            {ORDENS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
     </div>
   );

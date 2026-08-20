@@ -126,8 +126,8 @@ export async function getEventosList(
   ) {
     const cover = withCover ? "cover_image_url, " : "";
     const cols = withResponsavel
-      ? `id, type, name, date, location, city, guests, status, ${cover}clients(name), responsavel:membros_equipe(nome)`
-      : `id, type, name, date, location, city, guests, status, ${cover}clients(name)`;
+      ? `id, type, name, date, location, city, guests, status, created_at, ${cover}clients(name), responsavel:membros_equipe(nome)`
+      : `id, type, name, date, location, city, guests, status, created_at, ${cover}clients(name)`;
     let query = supabase.from("events").select(cols).limit(1000);
 
     if (withArchived) query = query.eq("archived", mostrarArquivados);
@@ -153,7 +153,12 @@ export async function getEventosList(
       query = query.order("name", { ascending: params.dir !== "desc", referencedTable: "clients" });
     } else if (params.sort === "status") {
       query = query.order("status", { ascending: params.dir !== "desc" });
+    } else if (params.sort === "criacao") {
+      query = query.order("created_at", { ascending: params.dir === "asc" });
     } else {
+      // 'relevancia' também sai daqui por data; a reordenação real (futuro
+      // antes de passado) é feita em memória logo abaixo, porque depende
+      // da data de hoje e o Postgres ordenaria tudo numa régua só.
       query = query.order("date", { ascending: params.dir !== "desc" });
     }
     return query;
@@ -178,6 +183,27 @@ export async function getEventosList(
   }
 
   let rows = ((data ?? []) as unknown as RawRow[]).map(mapRow);
+
+  // Ordem padrão: o que ainda vai acontecer primeiro (do mais próximo ao
+  // mais distante), e só depois o que já aconteceu (do mais recente ao
+  // mais antigo). Antes era data crescente pura, e numa agenda com muito
+  // evento passado a tela abria mostrando o ano retrasado — o que
+  // interessa hoje ficava no fim.
+  if (params.sort === "relevancia" || !params.sort) {
+    const hoje = new Date().toLocaleDateString("en-CA", {
+      timeZone: "America/Sao_Paulo",
+    });
+    const passou = (d: string | null) => Boolean(d && d < hoje);
+    rows = rows.slice().sort((a, b) => {
+      const pa = passou(a.date);
+      const pb = passou(b.date);
+      if (pa !== pb) return pa ? 1 : -1; // futuro antes de passado
+      if (!a.date) return 1;
+      if (!b.date) return -1;
+      // futuros: mais próximo primeiro · passados: mais recente primeiro
+      return pa ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date);
+    });
+  }
 
   // Filtro por faixa de saúde (calculado)
   if (params.saude) {
