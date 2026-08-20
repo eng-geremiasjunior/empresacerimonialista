@@ -228,21 +228,17 @@ export function PropostaCasamentoPraia({
   const [scrollT, setScrollT] = useState(0);
   const [rolagem, setRolagem] = useState(0);
   useEffect(() => {
-    let raf = 0;
+    // Sem requestAnimationFrame aqui: rAF pausa em aba fora de foco e o
+    // céu congelaria ao voltar. O trabalho é leve (duas contas) e o
+    // listener é passivo — mesmo padrão do Convite Vivo.
     const aoRolar = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        setScrollT(Math.min(1, window.scrollY / (window.innerHeight * 1.4)));
-        const total = document.documentElement.scrollHeight - window.innerHeight;
-        setRolagem(total > 0 ? (window.scrollY / total) * 100 : 0);
-      });
+      setScrollT(Math.min(1, window.scrollY / (window.innerHeight * 1.4)));
+      const total = document.documentElement.scrollHeight - window.innerHeight;
+      setRolagem(total > 0 ? (window.scrollY / total) * 100 : 0);
     };
     window.addEventListener("scroll", aoRolar, { passive: true });
     aoRolar();
-    return () => {
-      window.removeEventListener("scroll", aoRolar);
-      cancelAnimationFrame(raf);
-    };
+    return () => window.removeEventListener("scroll", aoRolar);
   }, []);
   // 0→0.5 tarde→pôr do sol · 0.5→1 pôr do sol→noite
   const solOp = Math.min(1, scrollT * 2) * (1 - Math.max(0, scrollT - 0.5) * 2);
