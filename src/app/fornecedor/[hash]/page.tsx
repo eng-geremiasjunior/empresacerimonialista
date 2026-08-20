@@ -18,7 +18,7 @@ export type PendenciaPublica = {
   id: string;
   tipo: "confirmacao" | "contrato";
   titulo: string;
-  status: "enviada" | "reenviada" | "respondida";
+  status: "pendente" | "enviada" | "reenviada" | "respondida";
   prazo_ate: string | null;
   respondida_em: string | null;
   evento: { nome: string | null; data: string | null; local: string | null };

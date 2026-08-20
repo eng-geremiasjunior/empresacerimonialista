@@ -14,9 +14,21 @@ export async function segurarBatida(batidaId: string): Promise<FilaState> {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sessão expirada. Entre de novo." };
 
+  // segurada_por aponta para membros_equipe, não para o usuário do Auth:
+  // quem segurou é uma pessoa da equipe dela, e é assim que a coluna lê.
+  const { data: membro } = await supabase
+    .from("membros_equipe")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
   const { error } = await supabase
     .from("batida")
-    .update({ status: "segurada", segurada_em: new Date().toISOString(), segurada_por: user.id })
+    .update({
+      status: "segurada",
+      segurada_em: new Date().toISOString(),
+      segurada_por: membro?.id ?? null,
+    })
     .eq("id", batidaId)
     .eq("status", "na_fila");
 

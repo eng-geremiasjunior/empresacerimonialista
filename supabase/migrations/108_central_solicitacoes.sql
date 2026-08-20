@@ -251,6 +251,17 @@ begin
           and ev.status <> 'concluido'
           and (
             sf.status in ('enviada', 'reenviada')
+            -- Pendente que já venceu também aparece: a página é o lugar
+            -- onde está tudo, e a cerimonialista pode ter mandado o link
+            -- por fora, sem passar pela fila. O que ainda não venceu fica
+            -- de fora — mostrar seria cobrar antes da hora.
+            or (
+              sf.status = 'pendente'
+              and (
+                sf.dispara_em is null
+                or sf.dispara_em <= (now() at time zone 'America/Sao_Paulo')::date
+              )
+            )
             or (sf.status = 'respondida' and sf.respondida_em > now() - interval '7 days')
           )
       ), '[]'::json)
@@ -301,7 +312,10 @@ begin
   if not found then
     return json_build_object('error', 'solicitação não encontrada');
   end if;
-  if v_sol.status not in ('enviada', 'reenviada') then
+  -- 'pendente' entra aqui porque o fornecedor pode chegar pela página
+  -- antes de a fila ter mandado a mensagem. Resposta adiantada é resposta
+  -- boa: fecha a pendência e evita a cobrança que sairia amanhã.
+  if v_sol.status not in ('pendente', 'enviada', 'reenviada') then
     return json_build_object('error', 'esta solicitação já foi respondida');
   end if;
 
