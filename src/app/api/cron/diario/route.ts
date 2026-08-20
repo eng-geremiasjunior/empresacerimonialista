@@ -26,6 +26,7 @@ const ROTINAS = [
   "agendamentos",
   "lembretes-convidados",
   "concluir-eventos",
+  "solicitacoes",
 ] as const;
 
 export async function GET(request: NextRequest) {

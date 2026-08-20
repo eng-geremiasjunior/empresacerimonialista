@@ -15,6 +15,9 @@ import {
   getHistoricoFornecedor,
 } from "@/lib/supabase/fornecedores";
 import { EditarFornecedorButton } from "@/components/fornecedores/EditarFornecedorButton";
+import { LinkDoFornecedor } from "@/components/fornecedores/LinkDoFornecedor";
+import { createClient } from "@/lib/supabase/server";
+import { appUrl } from "@/lib/email";
 import { formatDate } from "@/lib/format";
 import {
   FAIXA_PRECO_CIFRAO,
@@ -36,6 +39,13 @@ export default async function FornecedorDetalhePage({
   if (!f) notFound();
 
   const historico = await getHistoricoFornecedor(params.id);
+
+  const { data: acesso } = await createClient()
+    .from("fornecedor_acesso")
+    .select("hash, aberturas")
+    .eq("supplier_id", params.id)
+    .is("revogado_em", null)
+    .maybeSingle();
 
   const wa = waLink(f.whatsapp ?? f.phone);
   const contatos = [
@@ -124,6 +134,13 @@ export default async function FornecedorDetalhePage({
           </div>
         )}
       </div>
+
+      <LinkDoFornecedor
+        supplierId={params.id}
+        hashInicial={acesso?.hash ?? null}
+        aberturas={acesso?.aberturas ?? 0}
+        baseUrl={appUrl()}
+      />
 
       {/* Histórico — dados reais (via roteiro_links) */}
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">

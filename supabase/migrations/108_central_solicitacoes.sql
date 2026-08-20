@@ -282,6 +282,7 @@ as $$
 declare
   v_acesso public.fornecedor_acesso%rowtype;
   v_sol    public.solicitacao_fornecedor%rowtype;
+  v_sincronizou int := 0;
 begin
   select * into v_acesso from public.fornecedor_acesso where hash = p_hash;
   if not found
@@ -321,17 +322,22 @@ begin
         end,
         responded_at = now()
     where event_id = v_sol.event_id and supplier_id = v_sol.supplier_id;
+    get diagnostics v_sincronizou = row_count;
   end if;
 
-  insert into public.notifications
-    (cerimonialista_id, empresa_id, type, title, message, link)
-  select ev.cerimonialista_id, v_sol.empresa_id, 'fornecedor',
-         s.name || ' respondeu',
-         v_sol.titulo,
-         '/eventos/' || v_sol.event_id || '/fornecedores'
-  from public.events ev
-  join public.suppliers s on s.id = v_sol.supplier_id
-  where ev.id = v_sol.event_id and ev.cerimonialista_id is not null;
+  -- O registro antigo tem gatilho proprio de notificacao (019). Quando ele
+  -- existe, o aviso ja saiu por la; repetir daqui duplicaria na tela dela.
+  if v_sincronizou = 0 then
+    insert into public.notifications
+      (cerimonialista_id, empresa_id, type, title, message, link)
+    select ev.cerimonialista_id, v_sol.empresa_id, 'fornecedor',
+           s.name || ' respondeu',
+           v_sol.titulo,
+           '/eventos/' || v_sol.event_id || '/fornecedores'
+    from public.events ev
+    join public.suppliers s on s.id = v_sol.supplier_id
+    where ev.id = v_sol.event_id and ev.cerimonialista_id is not null;
+  end if;
 
   return json_build_object('success', true);
 end;
