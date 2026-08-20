@@ -11,6 +11,7 @@ export type TemplateProposta =
   | "debutante_glam"
   | "debutante_convite_vivo"
   | "casamento_v2"
+  | "casamento_praia"
   | "casamento_maison";
 
 // Opções mostradas no form de orçamento, por tipo de evento. Um tipo fora
@@ -28,6 +29,11 @@ export const TEMPLATES_POR_TIPO: Partial<
       valor: "casamento_maison",
       nome: "Maison Lumière",
       descricao: "Alta-costura, sóbrio, valor único sem pacotes",
+    },
+    {
+      valor: "casamento_praia",
+      nome: "Praia",
+      descricao: "Pé na areia: vídeo do mar, simulador do pôr do sol",
     },
   ],
   debutante: [

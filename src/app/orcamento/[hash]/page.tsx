@@ -5,6 +5,7 @@ import { PropostaDebutante } from "@/components/orcamento-publico/PropostaDebuta
 import { PropostaConviteVivo } from "@/components/orcamento-publico/PropostaConviteVivo";
 import { PropostaDebutanteGlam } from "@/components/orcamento-publico/PropostaDebutanteGlam";
 import { PropostaCasamentoMaison } from "@/components/orcamento-publico/PropostaCasamentoMaison";
+import { PropostaCasamentoPraia } from "@/components/orcamento-publico/PropostaCasamentoPraia";
 import type { OrcamentoPublicoData } from "@/lib/orcamento-publico";
 import { TEMPLATE_PADRAO_POR_TIPO } from "@/lib/proposta-templates";
 import type { EventType } from "@/lib/types";
@@ -60,6 +61,10 @@ export default async function OrcamentoPublicoPage({
     proposta.template_proposta ??
     TEMPLATE_PADRAO_POR_TIPO[proposta.tipo_evento as EventType] ??
     "casamento_v2";
+
+  if (templateCasamento === "casamento_praia") {
+    return <PropostaCasamentoPraia hash={params.hash} inicial={proposta} />;
+  }
 
   if (templateCasamento === "casamento_maison") {
     return (

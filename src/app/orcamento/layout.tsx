@@ -4,7 +4,9 @@ import {
   Great_Vibes,
   Instrument_Serif,
   Inter,
+  Karla,
   Manrope,
+  Marcellus,
   Playfair_Display,
   Syne,
 } from "next/font/google";
@@ -60,6 +62,20 @@ const manrope = Manrope({
   variable: "--font-manrope",
   display: "swap",
 });
+// Template Praia: Marcellus nos títulos, Karla no corpo.
+const marcellus = Marcellus({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-marcellus",
+  display: "swap",
+});
+const karla = Karla({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-karla",
+  display: "swap",
+});
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
@@ -79,7 +95,7 @@ export default function OrcamentoLayout({
 }) {
   return (
     <div
-      className={`${titulo.variable} ${playfair.variable} ${syne.variable} ${greatVibes.variable} ${instrument.variable} ${manrope.variable} ${inter.variable}`}
+      className={`${titulo.variable} ${playfair.variable} ${syne.variable} ${greatVibes.variable} ${instrument.variable} ${manrope.variable} ${marcellus.variable} ${karla.variable} ${inter.variable}`}
     >
       {children}
     </div>
