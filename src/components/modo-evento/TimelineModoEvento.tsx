@@ -41,6 +41,11 @@ export function TimelineModoEvento({ items, currentId, onSelect, t }: Props) {
                 } ${done ? "opacity-40" : ""}`}
               >
                 {formatTime(item.time)}
+                {item.time && item.origemHorario === 'calculado' && (
+                  <span className='block text-[10px] font-sans font-normal normal-case opacity-60'>
+                    estimado
+                  </span>
+                )}
               </span>
               <span className="min-w-0 flex-1">
                 <span

@@ -35,7 +35,9 @@ export function ProximaAtividade({ item, eventDate, now, t }: Props) {
       </p>
       <p className="mt-1 text-xl font-semibold">{item.title}</p>
       <p className={`text-sm ${t.sub}`}>
-        {item.time ? `às ${formatTime(item.time)}` : "Horário a definir"}
+        {item.time
+          ? `às ${formatTime(item.time)}${item.origemHorario === "calculado" ? " · estimado" : ""}`
+          : "Horário a definir"}
       </p>
       {futuro ? (
         <p className="mt-2 font-mono text-4xl font-bold tabular-nums">

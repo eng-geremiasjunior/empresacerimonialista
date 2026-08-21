@@ -90,6 +90,8 @@ export async function createRoteiroItem(
   const { error } = await supabase.from("roteiro_items").insert({
     event_id: eventId,
     time,
+    // digitado por ela: firme — o recálculo da âncora não toca
+    origem_horario: "manual",
     title: form.title,
     description: form.description || null,
     supplier_id: form.supplierId,
@@ -129,12 +131,26 @@ export async function updateRoteiroItem(
 
   const time = normalizeTime(form.time);
 
+  // A hora mudou? Então foi ELA quem decidiu o novo horário, e ele vira
+  // firme. Editar só título/descrição preserva a origem — senão toda
+  // correção de texto congelaria uma estimativa.
+  const { data: atual } = await supabase
+    .from("roteiro_items")
+    .select("time")
+    .eq("id", itemId)
+    .eq("event_id", eventId)
+    .maybeSingle();
+  const horaAtual = atual?.time ? String(atual.time).slice(0, 5) : null;
+  const horaNova = time ? String(time).slice(0, 5) : null;
+  const horaMudou = horaAtual !== horaNova;
+
   // Edição NÃO altera status (isso é feito pelas ações de status, que
   // carimbam horários e registram no log). Só os campos do formulário.
   const { error } = await supabase
     .from("roteiro_items")
     .update({
       time,
+      ...(horaMudou ? { origem_horario: "manual" } : {}),
       title: form.title,
       description: form.description || null,
       supplier_id: form.supplierId,
@@ -237,6 +253,9 @@ export async function atrasarItem(
       .from("roteiro_items")
       .update({
         time: somar(linha.time, minutos),
+        // atraso é decisão humana no meio do dia: vira firme, senão uma
+        // mudança de âncora desfaria o atraso que ela acabou de aplicar
+        origem_horario: "manual",
         // Só no primeiro atraso: preserva o horário combinado para a tela
         // mostrar "era HH:MM" riscado.
         time_original: linha.time_original ?? linha.time,

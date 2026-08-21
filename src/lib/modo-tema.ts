@@ -5,6 +5,7 @@ import type { RoteiroStatusNovo, TaskPriority } from "@/lib/types";
 export type ModoItem = {
   id: string;
   time: string | null; // horário previsto; null = "A definir"
+  origemHorario?: string | null;
   title: string;
   description: string | null;
   statusNovo: RoteiroStatusNovo;

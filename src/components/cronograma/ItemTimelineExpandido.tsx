@@ -221,6 +221,11 @@ export function ItemTimelineExpandido({
                 {formatTime(item.time)}
               </span>
             )}
+            {item.time && item.origem_horario === 'calculado' && (
+              <div className='mt-1 text-[11px]' style={{ color: '#9A97AE' }}>
+                estimado
+              </div>
+            )}
             {dur && (
               <div className="mt-1 text-xs" style={{ color: "#9A97AE" }}>
                 {dur}

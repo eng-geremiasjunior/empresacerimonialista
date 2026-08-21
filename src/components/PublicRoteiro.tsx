@@ -186,6 +186,11 @@ export function PublicRoteiro({ initial, hash, children }: Props) {
                       <span className="font-mono text-xl font-bold leading-none">
                         {formatTime(item.time)}
                       </span>
+                      {item.time && item.origem_horario === 'calculado' && (
+                        <span className='mt-0.5 block text-[11px] text-stone-400'>
+                          estimado
+                        </span>
+                      )}
                       <p className="mt-1 text-lg font-medium leading-snug">
                         {item.title}
                         {item.etapa_obrigatoria && (

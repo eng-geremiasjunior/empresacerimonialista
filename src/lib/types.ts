@@ -76,6 +76,7 @@ export type PublicRoteiroItem = {
   observacao: string | null;
   responsavel_nome: string | null;
   etapa_obrigatoria: boolean;
+  origem_horario?: string | null;
 };
 
 export type PublicRoteiroData = {

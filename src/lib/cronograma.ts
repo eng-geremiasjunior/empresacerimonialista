@@ -27,6 +27,8 @@ export type CronogramaItem = {
   depende_de: string | null;
   tipo_dependencia: "dura" | "suave" | null;
   time_original: string | null;
+  offset_min?: number | null;
+  origem_horario?: string | null;
 };
 
 // ---- UI tokens por status (paleta dessaturada) ----

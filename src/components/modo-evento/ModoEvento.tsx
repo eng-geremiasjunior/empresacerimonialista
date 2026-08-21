@@ -44,6 +44,7 @@ function mapItem(i: CronogramaItem): ModoItem {
   return {
     id: i.id,
     time: i.time,
+    origemHorario: i.origem_horario ?? null,
     title: i.title,
     description: i.description,
     statusNovo: i.status_novo,
