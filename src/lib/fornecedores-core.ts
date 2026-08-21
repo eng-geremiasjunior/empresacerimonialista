@@ -30,7 +30,7 @@ export type Fornecedor = {
   /** o que já foi pedido a ele pela Central, vivo ou já respondido */
   pedidos: {
     id: string;
-    tipo: "confirmacao" | "contrato";
+    tipo: "confirmacao" | "contrato" | "horario";
     status: string;
     arquivoPath: string | null;
     arquivoNome: string | null;
@@ -85,6 +85,11 @@ export function contratoAnexado(
 
 /** O que está pendurado com ele agora, em uma frase — ou nada. */
 export function pedidosEmPalavras(f: Fornecedor): string | null {
+  // o silêncio que virou trabalho dela fala mais alto que o resto
+  const esgotadas = f.pedidos.filter((p) => p.status === "expirada");
+  if (esgotadas.length > 0) {
+    return "sem resposta após as cobranças — ligar";
+  }
   const vivos = f.pedidos.filter((p) =>
     ["pendente", "enviada", "reenviada"].includes(p.status)
   );

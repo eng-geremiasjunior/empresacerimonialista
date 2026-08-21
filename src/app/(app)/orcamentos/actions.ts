@@ -60,8 +60,14 @@ async function contexto() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   const { data } = await supabase.rpc("meu_cargo");
-  const empresaId = (data as { empresa_id: string }[] | null)?.[0]?.empresa_id;
-  return { supabase, empresaId };
+  const linha = (data as
+    | { empresa_id: string; membro_equipe_id?: string }[]
+    | null)?.[0];
+  return {
+    supabase,
+    empresaId: linha?.empresa_id,
+    membroId: linha?.membro_equipe_id ?? null,
+  };
 }
 
 // Cria ou atualiza o orçamento. Itens: substituição completa (o snapshot
@@ -74,7 +80,7 @@ export async function salvarOrcamento(
   const invalido = validar(payload);
   if (invalido) return { error: invalido };
 
-  const { supabase, empresaId } = await contexto();
+  const { supabase, empresaId, membroId } = await contexto();
   if (!empresaId) return { error: "Empresa não encontrada." };
 
   const campos = {
@@ -125,7 +131,13 @@ export async function salvarOrcamento(
   } else {
     const { data: criado, error } = await supabase
       .from("orcamentos")
-      .insert({ ...campos, empresa_id: empresaId })
+      .insert({
+        ...campos,
+        empresa_id: empresaId,
+        // quem cria a proposta conduz o evento que nascer dela — sem isso
+        // o evento gerado fica sem responsável e só a dona o enxerga
+        cerimonialista_responsavel_id: membroId,
+      })
       .select("id")
       .single();
     if (error || !criado) {

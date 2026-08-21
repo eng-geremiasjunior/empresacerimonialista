@@ -71,10 +71,22 @@ async function criarPedido(
 
   const { data: evento } = await supabase
     .from("events")
-    .select("id, date, empresa_id")
+    .select("id, date, empresa_id, cerimonialista_responsavel_id")
     .eq("id", eventId)
     .maybeSingle();
   if (!evento?.empresa_id) return { error: "Evento não encontrado." };
+
+  // a batida pertence a quem conduz; sem responsável, à dona (022)
+  let responsavelId = evento.cerimonialista_responsavel_id as string | null;
+  if (!responsavelId) {
+    const { data: dona } = await supabase
+      .from("membros_equipe")
+      .select("id")
+      .eq("empresa_id", evento.empresa_id)
+      .eq("is_owner", true)
+      .maybeSingle();
+    responsavelId = dona?.id ?? null;
+  }
 
   const { data: sol, error: erroSol } = await supabase
     .from("solicitacao_fornecedor")
@@ -108,6 +120,7 @@ async function criarPedido(
     .from("batida")
     .select("id")
     .eq("supplier_id", supplierId)
+    .eq("responsavel_membro_id", responsavelId ?? "00000000-0000-0000-0000-000000000000")
     .in("status", ["na_fila", "segurada"])
     .maybeSingle();
 
@@ -124,6 +137,7 @@ async function criarPedido(
       .insert({
         empresa_id: evento.empresa_id,
         supplier_id: supplierId,
+        responsavel_membro_id: responsavelId,
         canal: forn?.whatsapp || forn?.phone ? "whatsapp" : "email",
         status: "na_fila",
       })
@@ -153,6 +167,133 @@ async function criarPedido(
   revalidatePath("/solicitacoes");
   revalidatePath(`/eventos/${eventId}/fornecedores`);
   return { success: true };
+}
+
+/**
+ * A única ação da caixa de espera. Não cria pedido, não responde por
+ * ninguém: monta a batida de novo com as solicitações vivas do
+ * fornecedor (menos as expiradas — a ação delas é a tarefa/ligar — e a
+ * de horário órfã) e a põe na fila de hoje. Decisão humana explícita
+ * passa por cima do silêncio mínimo do robô; o aviso "cobrada há N
+ * dias" aparece ANTES do toque, na lista.
+ *
+ * Como a batida é por (fornecedor, responsável), um fornecedor com
+ * eventos de duas condutoras gera uma batida para cada.
+ */
+export async function cobrarDeNovo(
+  supplierId: string
+): Promise<{ error: string } | { success: true; batidas: number }> {
+  const supabase = createClient();
+
+  const { data: vivas } = await supabase
+    .from("solicitacao_fornecedor")
+    .select(
+      "id, empresa_id, tipo, roteiro_item_id, status, events!inner(id, status, cerimonialista_responsavel_id)"
+    )
+    .eq("supplier_id", supplierId)
+    .in("status", ["pendente", "enviada", "reenviada"]);
+
+  const um = <T,>(v: T | T[] | null): T | null =>
+    Array.isArray(v) ? (v[0] ?? null) : v;
+
+  const anexaveis = (vivas ?? []).filter((v) => {
+    const ev = um(v.events as never) as {
+      status?: string;
+      cerimonialista_responsavel_id?: string | null;
+    } | null;
+    if (!ev || ev.status === "concluido" || ev.status === "cancelado") return false;
+    if (v.tipo === "horario" && v.roteiro_item_id === null) return false;
+    return true;
+  });
+
+  if (anexaveis.length === 0) {
+    return { error: "Nada vivo para cobrar deste fornecedor." };
+  }
+
+  const empresaId = anexaveis[0].empresa_id as string;
+  const { data: dona } = await supabase
+    .from("membros_equipe")
+    .select("id")
+    .eq("empresa_id", empresaId)
+    .eq("is_owner", true)
+    .maybeSingle();
+
+  // uma batida por responsável (fallback: dona)
+  const porResp = new Map<string, string[]>();
+  for (const v of anexaveis) {
+    const ev = um(v.events as never) as {
+      cerimonialista_responsavel_id?: string | null;
+    } | null;
+    const resp = ev?.cerimonialista_responsavel_id ?? dona?.id ?? "";
+    const lista = porResp.get(resp) ?? [];
+    lista.push(v.id);
+    porResp.set(resp, lista);
+  }
+
+  const { data: forn } = await supabase
+    .from("suppliers")
+    .select("whatsapp, phone, email")
+    .eq("id", supplierId)
+    .maybeSingle();
+  const canal = forn?.whatsapp || forn?.phone ? "whatsapp" : "email";
+
+  let criadas = 0;
+  for (const [resp, ids] of porResp) {
+    // batida viva dessa dupla? anexa nela — e se estiver segurada, solta:
+    // "cobrar de novo" com nada saindo hoje seria sucesso de mentira
+    const { data: viva } = await supabase
+      .from("batida")
+      .select("id, status")
+      .eq("supplier_id", supplierId)
+      .eq("responsavel_membro_id", resp || "00000000-0000-0000-0000-000000000000")
+      .in("status", ["na_fila", "segurada"])
+      .maybeSingle();
+
+    let batidaId = viva?.id ?? null;
+    if (batidaId && viva?.status === "segurada") {
+      await supabase
+        .from("batida")
+        .update({ status: "na_fila", segurada_em: null, segurada_por: null })
+        .eq("id", batidaId);
+    }
+    if (!batidaId) {
+      const { data: nova } = await supabase
+        .from("batida")
+        .insert({
+          empresa_id: empresaId,
+          supplier_id: supplierId,
+          responsavel_membro_id: resp || null,
+          canal,
+          status: "na_fila",
+        })
+        .select("id")
+        .single();
+      batidaId = nova?.id ?? null;
+    }
+    if (!batidaId) continue;
+
+    await supabase
+      .from("solicitacao_fornecedor")
+      .update({ batida_id: batidaId })
+      .in("id", ids);
+    criadas++;
+  }
+
+  if (criadas === 0) return { error: "Não deu para montar a cobrança." };
+
+  // o link se renova junto, como em toda batida
+  await supabase.from("fornecedor_acesso").upsert(
+    {
+      empresa_id: empresaId,
+      supplier_id: supplierId,
+      expira_em: new Date(Date.now() + 90 * 86_400_000).toISOString(),
+      revogado_em: null,
+    },
+    { onConflict: "empresa_id,supplier_id", ignoreDuplicates: true }
+  );
+
+  revalidatePath("/solicitacoes");
+  return { success: true, batidas: criadas };
 }
 
 /** Segurar não cancela: tira do dia de hoje e devolve amanhã. */
@@ -207,38 +348,16 @@ export async function soltarBatida(batidaId: string): Promise<FilaState> {
  */
 export async function marcarEnviada(batidaId: string): Promise<FilaState> {
   const supabase = createClient();
-  const agora = new Date().toISOString();
-
-  const { data: batida, error: erroBatida } = await supabase
-    .from("batida")
-    .update({ status: "enviada", enviada_em: agora })
-    .eq("id", batidaId)
-    .in("status", ["na_fila", "segurada"])
-    .select("id")
-    .maybeSingle();
-
-  if (erroBatida || !batida) return { error: "Esta mensagem já tinha saído." };
-
-  const { data: itens } = await supabase
-    .from("solicitacao_fornecedor")
-    .select("id, status, tentativas")
-    .eq("batida_id", batidaId)
-    .in("status", ["pendente", "enviada"]);
-
-  for (const i of itens ?? []) {
-    await supabase
-      .from("solicitacao_fornecedor")
-      .update({
-        // primeira saída é envio; a segunda é cobrança da mesma coisa
-        status: i.status === "pendente" ? "enviada" : "reenviada",
-        enviada_em: i.status === "pendente" ? agora : undefined,
-        reenviada_em: i.status === "pendente" ? undefined : agora,
-        tentativas: (i.tentativas ?? 0) + 1,
-        updated_at: agora,
-      })
-      .eq("id", i.id);
+  // Operação íntegra no servidor (115): marca a batida e TODOS os itens
+  // atomicamente, e recusa remetente que não enxergue algum evento da
+  // batida — mensagem parcial não sai.
+  const { data, error } = await supabase.rpc("marcar_batida_enviada", {
+    p_batida_id: batidaId,
+  });
+  const r = data as { success?: boolean; error?: string } | null;
+  if (error || !r?.success) {
+    return { error: r?.error ?? "Esta mensagem já tinha saído." };
   }
-
   revalidatePath("/solicitacoes");
   return { success: true };
 }
@@ -253,9 +372,11 @@ export async function cancelarBatida(batidaId: string): Promise<FilaState> {
     .in("status", ["na_fila", "segurada"]);
 
   if (error) return { error: "Não deu para cancelar." };
+  // "Já resolvi por fora" tem que valer: pendente solta voltaria à fila
+  // na manhã seguinte pelo cron, contra a promessa do botão.
   await supabase
     .from("solicitacao_fornecedor")
-    .update({ batida_id: null })
+    .update({ status: "cancelada", batida_id: null, updated_at: new Date().toISOString() })
     .eq("batida_id", batidaId)
     .eq("status", "pendente");
 

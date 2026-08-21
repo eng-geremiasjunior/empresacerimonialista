@@ -78,7 +78,12 @@ const NAV: NavItem[] = [
     cargos: ["proprietaria", "coordenadora"],
   },
   { label: "Fornecedores", icon: "fornecedores", href: "/fornecedores" },
-  { label: "Solicitações", icon: "solicitacoes", href: "/solicitacoes" },
+  {
+    label: "Solicitações",
+    icon: "solicitacoes",
+    href: "/solicitacoes",
+    cargos: ["proprietaria", "coordenadora", "cerimonialista"],
+  },
   { label: "Agenda de Fornecedores", icon: "agenda", href: "/agenda" },
   { label: "Tarefas", icon: "tarefas", href: "/tarefas" },
   { label: "Calendário", icon: "calendario", href: "/calendario" },
@@ -112,11 +117,12 @@ type Props = {
   avatarUrl: string | null;
   cargo: string | null;
   atencaoCount: number;
+  esperaFrase: string | null;
   signOut: () => Promise<void>;
   children: React.ReactNode;
 };
 
-export function AppShell({ userEmail, avatarUrl, cargo, atencaoCount, signOut, children }: Props) {
+export function AppShell({ userEmail, avatarUrl, cargo, atencaoCount, esperaFrase, signOut, children }: Props) {
   const navVisivel = NAV.filter(
     (item) => !item.cargos || cargo === null || item.cargos.includes(cargo)
   );
@@ -170,7 +176,7 @@ export function AppShell({ userEmail, avatarUrl, cargo, atencaoCount, signOut, c
 
       </nav>
       <div className="border-t border-stone-800 p-3">
-        <CopilotoSidebarCard atencao={atencaoCount} />
+        <CopilotoSidebarCard atencao={atencaoCount} esperaFrase={esperaFrase} />
       </div>
       <div className="border-t border-stone-800 px-5 py-3">
         <p className="truncate text-xs text-stone-500">{userEmail}</p>

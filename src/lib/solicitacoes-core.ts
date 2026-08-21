@@ -22,7 +22,7 @@ export const MAX_TENTATIVAS = 2;
 /** Padrão quando a tarefa não define reenvio_horas. */
 export const REENVIO_HORAS_PADRAO = 48;
 
-export type TipoSolicitacao = "confirmacao" | "contrato";
+export type TipoSolicitacao = "confirmacao" | "contrato" | "horario";
 
 export type StatusSolicitacao =
   | "pendente"
@@ -45,13 +45,17 @@ export type Solicitacao = {
   prazoAte: string | null;
   tentativas: number;
   enviadaEm: string | null;
+  reenviadaEm: string | null;
   reenvioHoras: number | null;
+  /** quem conduz o evento (membros_equipe); null cai na dona */
+  responsavelMembroId: string | null;
   eventoNome: string | null;
   eventoData: string | null;
 };
 
 export type BatidaExistente = {
   supplierId: string;
+  responsavelMembroId: string | null;
   status: "na_fila" | "segurada" | "enviada" | "cancelada";
   programadaPara: string | null;
   enviadaEm: string | null;
@@ -59,6 +63,7 @@ export type BatidaExistente = {
 
 export type PlanoBatida = {
   supplierId: string;
+  responsavelMembroId: string | null;
   solicitacaoIds: string[];
   /** por que esta batida existe — vai para o log da rotina, não para a tela */
   motivo: string;
@@ -106,12 +111,15 @@ export function venceNaJanela(
  */
 export function podeBater(
   supplierId: string,
+  responsavelMembroId: string | null,
   batidas: BatidaExistente[],
   agoraIso: string,
   intervaloDias = INTERVALO_MINIMO_DIAS
 ): boolean {
   for (const b of batidas) {
     if (b.supplierId !== supplierId) continue;
+    // outra condutora nao bloqueia esta: sao interlocutoras diferentes
+    if ((b.responsavelMembroId ?? null) !== (responsavelMembroId ?? null)) continue;
     if (b.status === "na_fila" || b.status === "segurada") return false;
     if (b.status === "enviada") {
       if (!b.enviadaEm) return false;
@@ -138,26 +146,32 @@ export function agrupar(
     { maduras: Solicitacao[]; carona: Solicitacao[] }
   >();
 
+  const chaveDe = (s: Solicitacao) =>
+    s.supplierId + "|" + (s.responsavelMembroId ?? "");
+
   for (const s of solicitacoes) {
-    const grupo = porFornecedor.get(s.supplierId) ?? { maduras: [], carona: [] };
+    const grupo = porFornecedor.get(chaveDe(s)) ?? { maduras: [], carona: [] };
     // Novidade e cobrança entram na MESMA batida. Separá-las faria o
     // fornecedor receber duas mensagens no mesmo dia — que é exatamente
     // o que a Central existe para não fazer.
     if (madura(s, hoje) || precisaReenvio(s, agoraIso)) grupo.maduras.push(s);
     else if (venceNaJanela(s, hoje)) grupo.carona.push(s);
-    porFornecedor.set(s.supplierId, grupo);
+    porFornecedor.set(chaveDe(s), grupo);
   }
 
   const planos: PlanoBatida[] = [];
-  for (const [supplierId, grupo] of porFornecedor) {
+  for (const [chave, grupo] of porFornecedor) {
     if (grupo.maduras.length === 0) continue;
-    if (!podeBater(supplierId, batidas, agoraIso)) continue;
+    const supplierId = chave.split("|")[0];
+    const responsavelMembroId = grupo.maduras[0].responsavelMembroId ?? null;
+    if (!podeBater(supplierId, responsavelMembroId, batidas, agoraIso)) continue;
 
     const juntas = [...grupo.maduras, ...grupo.carona].sort((a, b) =>
       (a.eventoData ?? "9999").localeCompare(b.eventoData ?? "9999")
     );
     planos.push({
       supplierId,
+      responsavelMembroId,
       solicitacaoIds: juntas.map((s) => s.id),
       motivo:
         grupo.carona.length > 0
@@ -197,9 +211,12 @@ export function expirou(s: Solicitacao, agoraIso: string): boolean {
 export function precisaEscalar(s: Solicitacao, agoraIso: string): boolean {
   if (s.status !== "reenviada") return false;
   if (s.tentativas < MAX_TENTATIVAS) return false;
-  if (!s.enviadaEm) return false;
+  // do ÚLTIMO envio, não do primeiro: senão a cobrança manual dela seria
+  // anulada pelo cron horas depois, virando tarefa em cima do gesto dela
+  const marco = s.reenviadaEm ?? s.enviadaEm;
+  if (!marco) return false;
   const horas = s.reenvioHoras ?? REENVIO_HORAS_PADRAO;
-  return Date.parse(agoraIso) >= Date.parse(s.enviadaEm) + horas * 3_600_000;
+  return Date.parse(agoraIso) >= Date.parse(marco) + horas * 3_600_000;
 }
 
 // ------------------------------------------------------------- mensagem

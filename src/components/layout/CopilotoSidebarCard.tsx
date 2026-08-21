@@ -10,7 +10,13 @@ import { ArrowRight, Clock, Sparkles } from "lucide-react";
 //   evento — relógio ao vivo + atalho para o cronograma.
 // - Nas visões gerais (Dashboard, listagem): N real de eventos que
 //   precisam de atenção.
-export function CopilotoSidebarCard({ atencao }: { atencao: number }) {
+export function CopilotoSidebarCard({
+  atencao,
+  esperaFrase,
+}: {
+  atencao: number;
+  esperaFrase: string | null;
+}) {
   const pathname = usePathname();
   const match = pathname?.match(
     /^\/eventos\/([0-9a-fA-F-]{36})(?:\/|$)/
@@ -23,6 +29,30 @@ export function CopilotoSidebarCard({ atencao }: { atencao: number }) {
         <Sparkles size={13} className="text-indigo-400" />
         Copiloto Vela
       </p>
+
+      {/* A pergunta das onze da noite não some dentro do evento: a linha
+          da espera aparece nas DUAS variantes. */}
+      {esperaFrase && (
+        <p
+          className={`mt-1.5 text-xs leading-snug ${
+            esperaFrase === "Fornecedores em dia."
+              ? "text-stone-400"
+              : "text-stone-300"
+          }`}
+        >
+          {esperaFrase}
+          {esperaFrase !== "Fornecedores em dia." &&
+            esperaFrase !== "Fornecedores: —" && (
+              <Link
+                href="/solicitacoes#espera"
+                className="mt-0.5 flex items-center gap-1 font-medium text-indigo-300 hover:text-indigo-200"
+              >
+                Ver quem deve
+                <ArrowRight size={12} />
+              </Link>
+            )}
+        </p>
+      )}
 
       {eventId ? (
         <ContextoEvento eventId={eventId} />

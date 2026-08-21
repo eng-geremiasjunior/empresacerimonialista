@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { garantirEmpresaDoUsuario, getMeuCargo } from "@/lib/supabase/equipe";
+import { getEspera } from "@/lib/supabase/espera-solicitacoes";
+import { fraseDoCopiloto } from "@/lib/espera-core";
 import { getEventosAtencaoCount } from "@/lib/supabase/eventos-list";
 import { AppShell } from "@/components/AppShell";
 import { TaskNotifications } from "@/components/TaskNotifications";
@@ -40,12 +42,29 @@ export default async function AppLayout({
 
   const atencaoCount = await getEventosAtencaoCount().catch(() => 0);
 
+  // A linha da espera no Copiloto — só para quem conduz. O erro não vira
+  // "em dia" de mentira: vira traço.
+  let esperaFrase: string | null = null;
+  if (
+    cargo === "proprietaria" ||
+    cargo === "coordenadora" ||
+    cargo === "cerimonialista"
+  ) {
+    try {
+      const espera = await getEspera();
+      esperaFrase = espera ? fraseDoCopiloto(espera.resumo) : "Fornecedores: —";
+    } catch {
+      esperaFrase = "Fornecedores: —";
+    }
+  }
+
   return (
     <>
       <AppShell
         userEmail={user.email ?? ""}
         cargo={cargo}
         atencaoCount={atencaoCount}
+        esperaFrase={esperaFrase}
         avatarUrl={
           ((user.user_metadata as { avatar_url?: string | null } | null)
             ?.avatar_url as string | null) ?? null

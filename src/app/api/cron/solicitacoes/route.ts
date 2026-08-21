@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
   const { data: linhas } = await supabase
     .from("solicitacao_fornecedor")
     .select(
-      "id, empresa_id, supplier_id, event_id, task_id, tipo, titulo, status, dispara_em, prazo_ate, tentativas, enviada_em, events(name, date, status, cerimonialista_id, clients(name)), tasks(reenvio_horas)"
+      "id, empresa_id, supplier_id, event_id, task_id, tipo, titulo, status, dispara_em, prazo_ate, tentativas, enviada_em, reenviada_em, events(name, date, status, cerimonialista_id, cerimonialista_responsavel_id, clients(name)), tasks(reenvio_horas)"
     )
     .in("status", ["pendente", "enviada", "reenviada"]);
 
@@ -92,6 +92,7 @@ export async function GET(request: NextRequest) {
     const ev = um(l.events as never) as {
       name?: string | null;
       date?: string | null;
+      cerimonialista_responsavel_id?: string | null;
       clients?: unknown;
     } | null;
     const cli = um((ev?.clients ?? null) as never) as { name?: string } | null;
@@ -107,7 +108,9 @@ export async function GET(request: NextRequest) {
       prazoAte: l.prazo_ate,
       tentativas: l.tentativas ?? 0,
       enviadaEm: l.enviada_em,
+      reenviadaEm: l.reenviada_em ?? null,
       reenvioHoras: tk?.reenvio_horas ?? null,
+      responsavelMembroId: ev?.cerimonialista_responsavel_id ?? null,
       eventoNome: ev?.name ?? cli?.name ?? null,
       eventoData: ev?.date ?? null,
     };
@@ -119,16 +122,29 @@ export async function GET(request: NextRequest) {
   const seteDias = new Date(Date.now() - 7 * 86_400_000).toISOString();
   const { data: batidasCru } = await supabase
     .from("batida")
-    .select("supplier_id, status, programada_para, enviada_em")
+    .select("supplier_id, responsavel_membro_id, status, programada_para, enviada_em")
     .in("status", ["na_fila", "segurada", "enviada"])
     .or(`enviada_em.is.null,enviada_em.gte.${seteDias}`);
 
   const batidas: BatidaExistente[] = (batidasCru ?? []).map((b) => ({
     supplierId: b.supplier_id,
+    responsavelMembroId: b.responsavel_membro_id ?? null,
     status: b.status,
     programadaPara: b.programada_para,
     enviadaEm: b.enviada_em,
   }));
+
+  // fallback do responsável: a dona da empresa (padrão da 022)
+  const empresasEnvolvidas = [...new Set(vivas.map((v) => v.empresa_id))];
+  const donaPor = new Map<string, string>();
+  if (empresasEnvolvidas.length > 0) {
+    const { data: donas } = await supabase
+      .from("membros_equipe")
+      .select("id, empresa_id")
+      .in("empresa_id", empresasEnvolvidas)
+      .eq("is_owner", true);
+    for (const d of donas ?? []) donaPor.set(d.empresa_id, d.id);
+  }
 
   const planos = agrupar(solicitacoes, batidas, hoje, agora);
   const porId = new Map(solicitacoes.map((s) => [s.id, s]));
@@ -175,6 +191,8 @@ export async function GET(request: NextRequest) {
       .insert({
         empresa_id: empresaId,
         supplier_id: plano.supplierId,
+        responsavel_membro_id:
+          plano.responsavelMembroId ?? donaPor.get(empresaId) ?? null,
         canal,
         status: "na_fila",
         programada_para: agora,
@@ -216,17 +234,35 @@ export async function GET(request: NextRequest) {
       .maybeSingle();
     const nome = forn?.name ?? "o fornecedor";
 
-    await supabase.from("tasks").insert({
-      event_id: s.eventId,
-      supplier_id: s.supplierId,
-      title: `Falar com ${nome}: ${s.titulo}`,
-      description:
-        "O pedido foi enviado e não voltou resposta. Insistir por mensagem não vai resolver — uma ligação resolve.",
-      due_date: hoje,
-      status: "pendente",
-      priority: "alta",
-      category: "fornecedor",
-    });
+    // category 'geral': o CHECK da 005 é fixo (a 068 firmou o padrão) —
+    // 'fornecedor' violava e a tarefa NUNCA nascia, em silêncio.
+    const { data: tarefa, error: erroTarefa } = await supabase
+      .from("tasks")
+      .insert({
+        event_id: s.eventId,
+        supplier_id: s.supplierId,
+        title: `Falar com ${nome}: ${s.titulo}`,
+        description:
+          "O pedido foi enviado e não voltou resposta. Insistir por mensagem não vai resolver — uma ligação resolve.",
+        due_date: hoje,
+        status: "pendente",
+        priority: "alta",
+        category: "geral",
+      })
+      .select("id")
+      .single();
+
+    if (erroTarefa || !tarefa) {
+      console.error(
+        `[vela:solicitacoes] tarefa de escalada falhou: ${erroTarefa?.message}`
+      );
+    } else {
+      // o vínculo navegável: a coluna existia desde a 108 sem escritor
+      await supabase
+        .from("solicitacao_fornecedor")
+        .update({ task_id: tarefa.id })
+        .eq("id", s.id);
+    }
 
     if (ev?.cerimonialista_id) {
       await supabase.from("notifications").insert({

@@ -48,7 +48,9 @@ export async function getFilaDoDia(): Promise<ItemDaFila[]> {
     .in(
       "batida_id",
       batidas.map((b) => b.id)
-    );
+    )
+    // vivo de verdade: o texto não pode cobrar o que já foi respondido
+    .in("status", ["pendente", "enviada", "reenviada"]);
 
   const { data: acessos } = await supabase
     .from("fornecedor_acesso")
@@ -96,7 +98,9 @@ export async function getFilaDoDia(): Promise<ItemDaFila[]> {
         prazoAte: i.prazo_ate,
         tentativas: i.tentativas ?? 0,
         enviadaEm: i.enviada_em,
+        reenviadaEm: null,
         reenvioHoras: null,
+        responsavelMembroId: null,
         eventoNome: ev?.name ?? cli?.name ?? null,
         eventoData: ev?.date ?? null,
       };
