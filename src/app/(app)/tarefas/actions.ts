@@ -126,8 +126,12 @@ export async function updateTask(
       status: form.status,
       priority: form.priority,
       category: form.category,
-      // Editar a tarefa rearma a notificação para o novo prazo.
+      // Editar a tarefa rearma AS DUAS notificações para o novo prazo:
+      // notified_at é o aviso de 5 minutos do navegador; notified é o
+      // lembrete de véspera da rotina diária. Réguas diferentes, marcas
+      // diferentes — mudar o prazo tem que zerar as duas.
       notified_at: null,
+      notified: false,
     })
     .eq("id", taskId);
 

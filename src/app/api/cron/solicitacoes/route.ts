@@ -248,6 +248,11 @@ export async function GET(request: NextRequest) {
         status: "pendente",
         priority: "alta",
         category: "geral",
+        // Nasce JÁ avisada: a notificação logo abaixo é o aviso desta
+        // tarefa. Sem isto, a rotina de lembretes — que roda no mesmo
+        // despachante, segundos depois, e olha o que vence hoje — mandaria
+        // um segundo aviso sobre a mesma coisa, no mesmo minuto.
+        notified: true,
       })
       .select("id")
       .single();

@@ -159,6 +159,24 @@ export async function atualizarTarefa(
   if (Object.keys(row).length === 0) return { success: true };
 
   const supabase = createClient();
+
+  // Prazo novo rearma os DOIS lembretes: notified é a véspera (rotina
+  // diária, 116) e notified_at é o aviso de 5 minutos do navegador (004).
+  // Só rearma se a data MUDOU de verdade — o drawer grava o formulário
+  // inteiro a cada "Salvar", e rearmar em toda gravação faria o aviso de
+  // amanhã sair de novo sem nada ter mudado.
+  if (row.due_date !== undefined) {
+    const { data: antes } = await supabase
+      .from("tasks")
+      .select("due_date")
+      .eq("id", taskId)
+      .maybeSingle();
+    if (antes && (antes.due_date ?? null) !== (row.due_date ?? null)) {
+      row.notified = false;
+      row.notified_at = null;
+    }
+  }
+
   const { error } = await supabase
     .from("tasks")
     .update(row)

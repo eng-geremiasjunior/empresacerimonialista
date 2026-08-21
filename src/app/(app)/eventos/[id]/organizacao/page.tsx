@@ -32,12 +32,20 @@ export default async function EventoOrganizacaoPage({
 
   const organizacao = await getOrganizacao(eventId, ev?.date ?? null);
 
+  // "Hoje" nasce aqui, em Brasília, e desce como dado. A lista agrupa por
+  // tempo, então a resposta muda a tela inteira — calcular nos dois lados
+  // faria servidor e navegador discordarem depois das 21h.
+  const hoje = new Date().toLocaleDateString("en-CA", {
+    timeZone: "America/Sao_Paulo",
+  });
+
   return (
     <OrganizacaoEvento
       inicial={organizacao}
       eventId={eventId}
       fornecedores={fornecedores}
       tarefaInicial={searchParams?.tarefa ?? null}
+      hoje={hoje}
     />
   );
 }

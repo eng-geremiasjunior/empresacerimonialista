@@ -10,6 +10,7 @@ import {
   uploadAvatar,
   validateAvatarFile,
 } from "@/lib/avatar";
+import { definirAvisoWhatsapp } from "@/lib/avisos-cliente";
 
 const inputClass =
   "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-100";
@@ -18,6 +19,9 @@ type Props = {
   initialAvatarUrl: string | null;
   initialName: string;
   initialWhatsapp: string;
+  initialAvisarWhatsapp: boolean;
+  /** o número oficial do sistema já existe no ambiente */
+  transporteWhatsappAtivo: boolean;
   email: string;
   initials: string;
 };
@@ -26,6 +30,8 @@ export function ProfileSection({
   initialAvatarUrl,
   initialName,
   initialWhatsapp,
+  initialAvisarWhatsapp,
+  transporteWhatsappAtivo,
   email,
   initials,
 }: Props) {
@@ -38,6 +44,7 @@ export function ProfileSection({
   );
   const [name, setName] = useState(initialName);
   const [whatsapp, setWhatsapp] = useState(initialWhatsapp);
+  const [avisar, setAvisar] = useState(initialAvisarWhatsapp);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{
     kind: "error" | "ok";
@@ -91,6 +98,21 @@ export function ProfileSection({
     router.refresh();
   }
 
+  // Salva na hora: interruptor que só vale depois de "Salvar alterações"
+  // é interruptor que a pessoa acha que ligou e não ligou.
+  async function handleAvisar(proximo: boolean) {
+    const anterior = avisar;
+    setAvisar(proximo); // otimista
+    setMessage(null);
+    const r = await definirAvisoWhatsapp(proximo);
+    if ("error" in r) {
+      setAvisar(anterior);
+      setMessage({ kind: "error", text: r.error });
+      return;
+    }
+    setAvisar(r.ativo);
+  }
+
   async function handleSaveName(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -103,6 +125,15 @@ export function ProfileSection({
     );
     if (!result.error) router.refresh();
   }
+
+  // O interruptor depende do número JÁ SALVO, não do que está digitado:
+  // é o valor gravado que a rotina diária vai ler.
+  const numeroSalvo = initialWhatsapp.trim().length > 0;
+  const motivoBloqueio = !numeroSalvo
+    ? "Salve seu WhatsApp acima para ligar o aviso."
+    : !transporteWhatsappAtivo
+      ? "O WhatsApp do sistema ainda não está no ar. O aviso continua chegando no sino."
+      : null;
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-6">
@@ -210,6 +241,23 @@ export function ProfileSection({
           <p className="mt-1 text-xs text-gray-400">
             É por aqui que a cliente fala com você.
           </p>
+
+          <label className="mt-3 flex cursor-pointer items-start gap-2.5">
+            <input
+              type="checkbox"
+              checked={avisar}
+              disabled={busy || !numeroSalvo || !transporteWhatsappAtivo}
+              onChange={(e) => handleAvisar(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-gray-900 accent-gray-900 disabled:opacity-40"
+            />
+            <span className="text-sm text-gray-700">
+              Avisar neste número
+              <span className="mt-0.5 block text-xs text-gray-400">
+                {motivoBloqueio ??
+                  "Um aviso por dia, na véspera, com o que vence amanhã."}
+              </span>
+            </span>
+          </label>
         </div>
         <div>
           <label

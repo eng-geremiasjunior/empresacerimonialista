@@ -35,6 +35,10 @@ import type {
 } from "@/lib/supabase/organizacao";
 import { marcoTemporal } from "@/lib/supabase/organizacao";
 import {
+  agruparPorTempo,
+  type TomGrupo,
+} from "@/lib/organizacao-agrupamento";
+import {
   adicionarChecklistItem,
   alternarChecklist,
   alternarTarefa,
@@ -128,11 +132,14 @@ export function OrganizacaoEvento({
   eventId,
   fornecedores,
   tarefaInicial,
+  hoje,
 }: {
   inicial: Organizacao;
   eventId: string;
   fornecedores: Fornecedor[];
   tarefaInicial?: string | null;
+  /** yyyy-MM-dd em Brasília, vindo do servidor (ver page.tsx) */
+  hoje: string;
 }) {
   const [vista, setVista] = useState<Vista>("lista");
   const [filtro, setFiltro] = useState<Filtro>("todas");
@@ -162,8 +169,8 @@ export function OrganizacaoEvento({
 
   // Filtros aplicados (busca + chip + próximos 7 dias)
   const tarefasVisiveis = useMemo(() => {
-    const hoje = new Date(new Date().toDateString()).getTime();
-    const seteDias = hoje + 7 * 86_400_000;
+    const hojeMs = new Date(`${hoje}T00:00:00`).getTime();
+    const seteDias = hojeMs + 7 * 86_400_000;
     const q = busca.trim().toLowerCase();
     return org.tarefas.filter((t) => {
       if (q) {
@@ -174,16 +181,16 @@ export function OrganizacaoEvento({
       if (filtro === "andamento" && t.status === "concluido") return false;
       if (filtro === "atrasadas") {
         if (t.status === "concluido" || !t.dueDate) return false;
-        if (new Date(`${t.dueDate}T00:00:00`).getTime() >= hoje) return false;
+        if (new Date(`${t.dueDate}T00:00:00`).getTime() >= hojeMs) return false;
       }
       if (prox7) {
         if (!t.dueDate) return false;
         const d = new Date(`${t.dueDate}T00:00:00`).getTime();
-        if (d < hoje || d > seteDias) return false;
+        if (d < hojeMs || d > seteDias) return false;
       }
       return true;
     });
-  }, [org.tarefas, filtro, prox7, busca]);
+  }, [org.tarefas, filtro, prox7, busca, hoje]);
 
   const tarefaSel = sel && sel !== "nova" ? org.tarefas.find((t) => t.id === sel) ?? null : null;
   const abertas = org.tarefas.filter((t) => t.status !== "concluido").length;
@@ -305,6 +312,7 @@ export function OrganizacaoEvento({
           tarefas={tarefasVisiveis}
           dataEvento={org.dataEvento}
           eventId={eventId}
+          hoje={hoje}
           onAbrir={setSel}
           onToggle={alternar}
         />
@@ -329,6 +337,7 @@ export function OrganizacaoEvento({
           eventId={eventId}
           tarefa={tarefaSel}
           dataEvento={org.dataEvento}
+          hoje={hoje}
           fornecedores={fornecedores}
           onFechar={() => setSel(null)}
         />
@@ -343,15 +352,21 @@ function VistaLista({
   tarefas,
   dataEvento,
   eventId,
+  hoje,
   onAbrir,
   onToggle,
 }: {
   tarefas: Tarefa[];
   dataEvento: string | null;
   eventId: string;
+  hoje: string;
   onAbrir: (id: string) => void;
   onToggle: (id: string, concluida: boolean) => void;
 }) {
+  // A lista já vem ordenada por prazo crescente do banco; agrupar é só
+  // render, não reordenação.
+  const grupos = useMemo(() => agruparPorTempo(tarefas, hoje), [tarefas, hoje]);
+
   if (tarefas.length === 0) {
     return (
       <p style={{ padding: "28px 4px", fontSize: 13.5, color: "var(--text-muted)" }}>
@@ -360,22 +375,63 @@ function VistaLista({
     );
   }
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
-      {tarefas.map((t) => (
-        <LinhaTarefa
-          key={t.id}
-          t={t}
-          dataEvento={dataEvento}
-          eventId={eventId}
-          onAbrir={onAbrir}
-          onToggle={onToggle}
-        />
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      {grupos.map((g) => (
+        <section key={g.chave} style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+          {/* A hierarquia sai daqui, não de cor no cartão. Mesma
+              especificação do FieldLabel dos primitivos: 11px, 600,
+              caixa alta, tracking largo, em muted. Sem borda, sem fundo. */}
+          <h3
+            style={{
+              margin: 0,
+              fontFamily: "var(--font-ui)",
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "var(--text-muted)",
+            }}
+          >
+            {g.titulo}
+          </h3>
+          {g.itens.map((t) => (
+            <LinhaTarefa
+              key={t.id}
+              t={t}
+              dataEvento={dataEvento}
+              eventId={eventId}
+              hoje={hoje}
+              tom={g.tom}
+              peso={g.peso}
+              onAbrir={onAbrir}
+              onToggle={onToggle}
+            />
+          ))}
+        </section>
       ))}
     </div>
   );
 }
 
-function ChipData({ iso, hora }: { iso: string | null; hora: string | null }) {
+// A cor da caixa de data é a única cor da linha, e agora ela SIGNIFICA
+// algo: ameixa = está chegando (hoje/amanhã), terracota = passou,
+// neutro = está no calendário. Antes toda tarefa com prazo era ameixa —
+// o acento virava papel de parede e não informava nada.
+const TOM_DATA: Record<TomGrupo, { bg: string; fg: string }> = {
+  proxima: { bg: "var(--accent-tint)", fg: "var(--accent)" },
+  atrasada: { bg: "var(--state-late-bg)", fg: "var(--state-late)" },
+  quieta: { bg: "var(--surface-sunken)", fg: "var(--text-muted)" },
+};
+
+function ChipData({
+  iso,
+  hora,
+  tom,
+}: {
+  iso: string | null;
+  hora: string | null;
+  tom: TomGrupo;
+}) {
   if (!iso) {
     return (
       <div
@@ -393,21 +449,22 @@ function ChipData({ iso, hora }: { iso: string | null; hora: string | null }) {
     );
   }
   const [a, m, d] = iso.split("-");
+  const c = TOM_DATA[tom];
   return (
     <div
       style={{
         width: 64, flex: "0 0 64px", borderRadius: "var(--r-md)",
-        background: "var(--accent-tint)", padding: "8px 6px", textAlign: "center",
+        background: c.bg, padding: "8px 6px", textAlign: "center",
       }}
     >
-      <div style={{ fontFamily: "var(--font-title)", fontWeight: 700, fontSize: 20, lineHeight: 1.1, color: "var(--accent)" }}>
+      <div style={{ fontFamily: "var(--font-title)", fontWeight: 700, fontSize: 20, lineHeight: 1.1, color: c.fg }}>
         {Number(d)}
       </div>
-      <div className="mono" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: "var(--accent)" }}>
+      <div className="mono" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: c.fg }}>
         {m}/{a}
       </div>
       {hora && (
-        <div className="mono" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--accent)", opacity: 0.75 }}>
+        <div className="mono" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: c.fg, opacity: 0.75 }}>
           {hora}
         </div>
       )}
@@ -419,17 +476,23 @@ function LinhaTarefa({
   t,
   dataEvento,
   eventId,
+  hoje,
+  tom,
+  peso,
   onAbrir,
   onToggle,
 }: {
   t: Tarefa;
   dataEvento: string | null;
   eventId: string;
+  hoje: string;
+  tom: TomGrupo;
+  peso: 600 | 700;
   onAbrir: (id: string) => void;
   onToggle: (id: string, concluida: boolean) => void;
 }) {
   const feita = t.status === "concluido";
-  const marco = marcoTemporal(t.dueDate, dataEvento, feita);
+  const marco = marcoTemporal(t.dueDate, dataEvento, feita, hoje);
   const st = STATUS_META[t.status];
   const vinc = t.vinculoModulo ? VINCULO_MODULO[t.vinculoModulo] : null;
 
@@ -443,12 +506,15 @@ function LinhaTarefa({
         padding: "14px 18px", cursor: "pointer", opacity: feita ? 0.62 : 1,
       }}
     >
-      <ChipData iso={t.dueDate} hora={t.dueTime} />
+      <ChipData iso={t.dueDate} hora={t.dueTime} tom={feita ? "quieta" : tom} />
 
       <div style={{ minWidth: 0, flex: 1 }}>
+        {/* O que muda no que é para agora é o PESO, não a cor — mesmo
+            padrão do cabeçalho do evento, que marca "faltam menos de 7
+            dias" escurecendo e engrossando, sem matiz nova. */}
         <p
           style={{
-            margin: 0, fontFamily: "var(--font-title)", fontWeight: 600, fontSize: 16,
+            margin: 0, fontFamily: "var(--font-title)", fontWeight: feita ? 600 : peso, fontSize: 16,
             letterSpacing: "-0.01em", textDecoration: feita ? "line-through" : "none",
             color: feita ? "var(--text-muted)" : "var(--text-strong)",
           }}
@@ -462,9 +528,11 @@ function LinhaTarefa({
           {!t.supplierNome && !t.local && t.origemDecisao ? ` · ${t.origemDecisao}` : ""}
         </p>
         <div style={{ display: "flex", gap: 6, marginTop: 7, flexWrap: "wrap", alignItems: "center" }}>
-          <Badge tone={marco.vencida && !feita ? "late" : st.tone}>
-            {marco.vencida && !feita ? "Atrasada" : st.label}
-          </Badge>
+          {/* O cabeçalho da seção já diz "Atrasadas", e a caixa de data
+              já está em terracota. O selo aqui volta a dizer o que só ele
+              sabe: em que pé a tarefa está. Antes o mesmo fato aparecia
+              quatro vezes na mesma linha. */}
+          <Badge tone={st.tone}>{st.label}</Badge>
           {/* Selo do Secretário: reunião marcada pelo convite */}
           {t.convite?.status === "respondido" && !feita && (
             <Badge tone="sage">Agendada</Badge>
@@ -473,7 +541,12 @@ function LinhaTarefa({
             <Badge tone="wait">Sugestão p/ aprovar</Badge>
           )}
           {t.priority && <Badge tone="plum">{PRIO_LABEL[t.priority] ?? t.priority}</Badge>}
-          <Badge tone={marco.vencida ? "late" : "neutral"}>{marco.label}</Badge>
+          {/* "vencida" e "sem prazo" seriam repetição do cabeçalho da
+              seção; o marco só entra quando tem algo próprio a dizer
+              (D-7, 3S antes, dia do evento). */}
+          {!marco.vencida && t.dueDate && (
+            <Badge tone="neutral">{marco.label}</Badge>
+          )}
           {t.checklist.length > 0 && (
             <span className="mono" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text-muted)", display: "inline-flex", alignItems: "center", gap: 4 }}>
               <ListChecks size={12} />
@@ -754,12 +827,16 @@ function TarefaDrawer({
   eventId,
   tarefa,
   dataEvento,
+  hoje,
   fornecedores,
   onFechar,
 }: {
   eventId: string;
   tarefa: Tarefa | null; // null = nova
   dataEvento: string | null;
+  /** o mesmo "hoje" da lista: com ?tarefa=<id> o drawer renderiza no
+      servidor, e marco divergente entre linha e drawer seria mentira */
+  hoje: string;
   fornecedores: Fornecedor[];
   onFechar: () => void;
 }) {
@@ -806,8 +883,11 @@ function TarefaDrawer({
     if (!dataEvento || !Number.isFinite(conviteOffset)) return null;
     const d = new Date(`${dataEvento}T00:00:00`);
     d.setDate(d.getDate() - conviteOffset);
-    const hoje = new Date(new Date().toDateString());
-    const alvo = d < hoje ? hoje : d;
+    // piso = o "hoje" do servidor: com ?tarefa=<id> este drawer renderiza
+    // no servidor, e relógio local aqui quebraria a hidratação das 21h à
+    // meia-noite (servidor em UTC, aparelho em Brasília)
+    const piso = new Date(`${hoje}T00:00:00`);
+    const alvo = d < piso ? piso : d;
     return `${alvo.getFullYear()}-${String(alvo.getMonth() + 1).padStart(2, "0")}-${String(alvo.getDate()).padStart(2, "0")}`;
   })();
   const conviteEfetiva = modoDataManual ? conviteData || null : conviteCalculada;
@@ -821,7 +901,9 @@ function TarefaDrawer({
   const feitosCk = checklist.filter((c) => c.feito).length;
   const pctCk = checklist.length ? Math.round((feitosCk / checklist.length) * 100) : 0;
 
-  const marco = tarefa ? marcoTemporal(tarefa.dueDate, dataEvento, tarefa.status === "concluido") : null;
+  const marco = tarefa
+    ? marcoTemporal(tarefa.dueDate, dataEvento, tarefa.status === "concluido", hoje)
+    : null;
 
   function salvar() {
     setErro(null);

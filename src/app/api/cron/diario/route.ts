@@ -27,6 +27,9 @@ const ROTINAS = [
   "lembretes-convidados",
   "concluir-eventos",
   "solicitacoes",
+  // por último de propósito: só avisa do que vence amanhã depois que
+  // concluir-eventos já tirou de cena os eventos que acabaram ontem
+  "lembretes-tarefas",
 ] as const;
 
 export async function GET(request: NextRequest) {

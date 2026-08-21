@@ -6,6 +6,7 @@ import {
   RoteiroPadraoSection,
   type ItemRoteiroPadrao,
 } from "@/components/configuracoes/RoteiroPadraoSection";
+import { whatsappConfigurado } from "@/lib/whatsapp";
 import { CalendarClock } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -29,12 +30,13 @@ export default async function ConfiguracoesPage() {
   // portal da cliente lê. O auth guarda só a foto.
   const { data: membro } = await supabase
     .from("membros_equipe")
-    .select("nome, whatsapp")
+    .select("nome, whatsapp, avisar_whatsapp")
     .eq("user_id", user?.id ?? "")
     .maybeSingle();
 
   const name = membro?.nome ?? "";
   const whatsapp = membro?.whatsapp ?? "";
+  const avisarWhatsapp = membro?.avisar_whatsapp === true;
   const initials = (name || email).slice(0, 2).toUpperCase();
 
   const { data: cargoData } = await supabase.rpc("meu_cargo");
@@ -97,6 +99,8 @@ export default async function ConfiguracoesPage() {
         initialAvatarUrl={meta.avatar_url ?? null}
         initialName={name}
         initialWhatsapp={whatsapp}
+        initialAvisarWhatsapp={avisarWhatsapp}
+        transporteWhatsappAtivo={whatsappConfigurado()}
         email={email}
         initials={initials}
       />

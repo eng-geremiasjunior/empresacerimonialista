@@ -133,11 +133,18 @@ export type Organizacao = {
 export function marcoTemporal(
   dueDate: string | null,
   dataEvento: string | null,
-  concluida: boolean
+  concluida: boolean,
+  // "hoje" vindo de fora (yyyy-MM-dd). Quem renderiza no servidor e
+  // hidrata no navegador precisa dos DOIS lados concordando: sem isto, a
+  // conta usa UTC no servidor e o fuso do aparelho no cliente, e das 21h
+  // à meia-noite os dois discordam sobre que dia é.
+  hojeIso?: string
 ): { label: string; vencida: boolean } {
   if (!dueDate) return { label: "sem prazo", vencida: false };
   const due = new Date(`${dueDate}T00:00:00`).getTime();
-  const hoje = new Date(new Date().toDateString()).getTime();
+  const hoje = hojeIso
+    ? new Date(`${hojeIso}T00:00:00`).getTime()
+    : new Date(new Date().toDateString()).getTime();
   if (!concluida && due < hoje) return { label: "vencida", vencida: true };
   if (!dataEvento) return { label: "no prazo", vencida: false };
   const evento = new Date(`${dataEvento}T00:00:00`).getTime();
