@@ -5,7 +5,8 @@ import type {
   ActivityCategory,
   ActivityType,
 } from "@/lib/activity";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
+import type { TipoPrazo } from "@/lib/copiloto-prazos";
 import {
   EVENT_TYPE_LABELS,
   type EventStatus,
@@ -293,6 +294,8 @@ export async function getPerformanceMes(): Promise<PerformanceMes> {
 
 export type CopilotoAlerta = {
   id: string;
+  /** que espécie de prazo é este — o Copiloto conta por espécie, não em bloco */
+  tipo: TipoPrazo;
   texto: string;
   href: string;
   ref: string; // data usada para ordenar por urgência (mais cedo primeiro)
@@ -302,6 +305,26 @@ function eventLabel(type: EventType, clientName: string | null | undefined) {
   return `${EVENT_TYPE_LABELS[type]}${clientName ? ` — ${clientName}` : ""}`;
 }
 
+/** Evento que não pede mais nada: cancelado ou arquivado. */
+function eventoMorto(ev: { status?: string | null; archived?: boolean | null }): boolean {
+  return ev.status === "cancelado" || ev.archived === true;
+}
+
+/**
+ * Os prazos do Copiloto. Fonte ÚNICA — o card da sidebar e o bloco do
+ * dashboard leem daqui, e por isso não podem mais divergir.
+ *
+ * Três espécies, cada uma com a sua regra de vida:
+ *
+ *  - parcela a cobrar: vale MESMO depois do evento. A festa acabou, o
+ *    dinheiro que a cliente não pagou continua sendo dela. Inclui o que já
+ *    venceu (antes a consulta começava em hoje e dívida atrasada era
+ *    invisível aqui, embora aparecesse no cartão do evento).
+ *  - fornecedor sem confirmar: só faz sentido ANTES do dia. Depois da
+ *    festa, confirmar presença não muda nada.
+ *  - tarefa atrasada: idem — tarefa de evento que já aconteceu é peso
+ *    morto, não pendência.
+ */
 export async function getAlertasCopiloto(): Promise<CopilotoAlerta[]> {
   const supabase = createClient();
   const hoje = iso(new Date());
@@ -311,34 +334,41 @@ export async function getAlertasCopiloto(): Promise<CopilotoAlerta[]> {
   const [tarefasRes, fornecedoresRes, pagamentosRes] = await Promise.all([
     supabase
       .from("tasks")
-      .select("id, title, due_date, event_id")
+      .select("id, title, due_date, event_id, events!inner(date, status, archived)")
       .lt("due_date", hoje)
       .neq("status", "concluido")
-      .not("due_date", "is", null),
+      .not("due_date", "is", null)
+      .gte("events.date", hoje),
     supabase
       .from("roteiro_links")
-      .select("supplier_id, event_id, suppliers(name), events!inner(date, type, clients(name))")
+      .select(
+        "supplier_id, event_id, suppliers(name), events!inner(date, type, status, archived, clients(name))"
+      )
       .eq("confirmed", false)
       .gte("events.date", hoje)
       .lte("events.date", fim),
     supabase
       .from("transactions")
-      .select("id, value, due_date, event_id, events(type, clients(name))")
+      .select("id, value, due_date, event_id, events(type, status, archived, clients(name))")
+      .eq("type", "receita")
       .eq("paid", false)
-      .gte("due_date", hoje)
+      .not("due_date", "is", null)
       .lte("due_date", fim),
   ]);
 
-  for (const row of (tarefasRes.data ?? []) as {
+  for (const row of (tarefasRes.data ?? []) as unknown as {
     id: string;
     title: string;
     due_date: string;
     event_id: string;
+    events: { date: string; status: string; archived: boolean | null };
   }[]) {
+    if (eventoMorto(row.events)) continue;
     alertas.push({
       id: `tarefa-${row.id}`,
+      tipo: "tarefa",
       texto: `Tarefa atrasada: ${row.title}`,
-      href: `/eventos/${row.event_id}/tarefas`,
+      href: `/eventos/${row.event_id}/organizacao?tarefa=${row.id}`,
       ref: row.due_date,
     });
   }
@@ -346,10 +376,18 @@ export async function getAlertasCopiloto(): Promise<CopilotoAlerta[]> {
   for (const row of (fornecedoresRes.data ?? []) as unknown as {
     event_id: string;
     suppliers: { name: string } | null;
-    events: { date: string; type: EventType; clients: { name: string } | null };
+    events: {
+      date: string;
+      type: EventType;
+      status: string;
+      archived: boolean | null;
+      clients: { name: string } | null;
+    };
   }[]) {
+    if (eventoMorto(row.events)) continue;
     alertas.push({
       id: `fornecedor-${row.event_id}-${row.suppliers?.name}`,
+      tipo: "fornecedor",
       texto: `${row.suppliers?.name ?? "Fornecedor"} não confirmou — ${eventLabel(row.events.type, row.events.clients?.name)}`,
       href: `/eventos/${row.event_id}/fornecedores`,
       ref: row.events.date,
@@ -361,14 +399,24 @@ export async function getAlertasCopiloto(): Promise<CopilotoAlerta[]> {
     value: number;
     due_date: string;
     event_id: string;
-    events: { type: EventType; clients: { name: string } | null } | null;
+    events: {
+      type: EventType;
+      status: string;
+      archived: boolean | null;
+      clients: { name: string } | null;
+    } | null;
   }[]) {
+    if (row.events && eventoMorto(row.events)) continue;
     const label = row.events
       ? ` — ${eventLabel(row.events.type, row.events.clients?.name)}`
       : "";
+    const venceu = row.due_date < hoje;
     alertas.push({
       id: `pagamento-${row.id}`,
-      texto: `Pagamento de ${formatCurrency(Number(row.value))} vencendo${label}`,
+      tipo: "pagamento",
+      // "venceu em" e "vence em" são fatos diferentes e a diferença é a
+      // que decide se ela liga hoje ou anota para depois
+      texto: `Cobrar ${formatCurrency(Number(row.value))} — ${venceu ? "venceu" : "vence"} ${formatDate(row.due_date)}${label}`,
       href: `/eventos/${row.event_id}/financeiro`,
       ref: row.due_date,
     });

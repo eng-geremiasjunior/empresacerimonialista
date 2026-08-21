@@ -59,6 +59,13 @@ export function calcularProximaAcao(input: ProximaAcaoInput): ProximaAcao {
     };
   }
 
+  // Depois da festa acaba a lista de afazeres. Confirmar fornecedor,
+  // fechar checklist ou criar cronograma de um casamento que já aconteceu
+  // não muda nada — só o dinheiro (regra 1, acima) sobrevive ao evento.
+  if (input.eventoDate < input.hojeIso) {
+    return { texto: "Evento realizado", acao: null, urgencia: "baixa", botao: null };
+  }
+
   // 2. Fornecedor pendente e evento em até 7 dias
   if (input.fornecedorPendenteNome) {
     return {

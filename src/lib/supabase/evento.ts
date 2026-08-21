@@ -34,7 +34,13 @@ export async function getSaudeBulk(
       .in("event_id", eventIds),
     supabase
       .from("transactions")
-      .select("event_id, due_date, paid")
+      // só RECEITA: "parcela vencida" no texto da saúde sempre quis dizer
+      // dinheiro que a cliente não pagou. Sem este filtro, uma despesa em
+      // aberto derrubava a saúde aqui e não no cartão do evento — duas
+      // contas do MESMO score, divergindo (o print mostrava um evento com
+      // anel 100 dentro da lista de "pendentes")
+      .select("event_id, due_date, paid, type")
+      .eq("type", "receita")
       .in("event_id", eventIds),
     supabase.from("roteiro_items").select("event_id").in("event_id", eventIds),
   ]);

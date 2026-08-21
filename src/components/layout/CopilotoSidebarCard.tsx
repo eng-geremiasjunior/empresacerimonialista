@@ -5,16 +5,25 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowRight, Clock, Sparkles } from "lucide-react";
 
+// mesma frase que frasePrazos() devolve quando não há nada vencendo
+const NADA_VENCENDO = "Nada vencendo hoje.";
+
 // Card do Copiloto na sidebar.
 // - Dentro de um evento específico (/eventos/{uuid}/...): contexto do
 //   evento — relógio ao vivo + atalho para o cronograma.
-// - Nas visões gerais (Dashboard, listagem): N real de eventos que
-//   precisam de atenção.
+// - Nas visões gerais: o que VENCE, por espécie.
+//
+// Antes esta linha dizia "N eventos precisam da sua atenção hoje", com N
+// vindo de saúde abaixo de 80. Dois defeitos num número só: quatro dos
+// nove eram "checklist 0%" de casamentos de 2027 (não é para hoje) e
+// quatro eram eventos já realizados pedindo confirmação de fornecedor
+// (não é para nunca mais). Um contador sem substantivo é alarme, não
+// informação.
 export function CopilotoSidebarCard({
-  atencao,
+  prazosFrase,
   esperaFrase,
 }: {
-  atencao: number;
+  prazosFrase: string | null;
   esperaFrase: string | null;
 }) {
   const pathname = usePathname();
@@ -56,24 +65,28 @@ export function CopilotoSidebarCard({
 
       {eventId ? (
         <ContextoEvento eventId={eventId} />
-      ) : atencao > 0 ? (
+      ) : prazosFrase === null ? (
+        <p className="mt-1.5 text-xs leading-snug text-stone-400">Prazos: —</p>
+      ) : prazosFrase === NADA_VENCENDO ? (
+        <p className="mt-1.5 text-xs leading-snug text-stone-400">
+          {prazosFrase}
+        </p>
+      ) : (
         <>
           <p className="mt-1.5 text-xs leading-snug text-stone-300">
-            {atencao} evento{atencao === 1 ? "" : "s"}{" "}
-            {atencao === 1 ? "precisa" : "precisam"} da sua atenção hoje.
+            {prazosFrase}
           </p>
+          {/* o destino é onde cada um destes está listado com o seu
+              próprio link — e não mais o filtro ?saude=pendente, que não
+              acendia chip nenhum e deixava a lista sem dizer por quê */}
           <Link
-            href="/eventos?saude=pendente"
+            href="/eventos/dashboard"
             className="mt-2 flex items-center gap-1 text-xs font-medium text-indigo-300 hover:text-indigo-200"
           >
-            Ver recomendações
+            Ver o que vence
             <ArrowRight size={12} />
           </Link>
         </>
-      ) : (
-        <p className="mt-1.5 text-xs leading-snug text-stone-400">
-          Nenhum evento precisa de atenção hoje.
-        </p>
       )}
     </div>
   );

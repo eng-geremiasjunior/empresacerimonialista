@@ -214,7 +214,10 @@ export async function getEventosList(
       if (params.saude === "critico") return s.score < 50;
       if (params.saude === "atencao") return s.score >= 50 && s.score < 80;
       if (params.saude === "saudavel") return s.score >= 80;
-      if (params.saude === "pendente") return s.score < 80; // usado pelo Copiloto
+      // "pendente" saiu: era o destino do Copiloto, um valor que não existe
+      // no tipo da URL e não acende chip nenhum — ela caía numa lista
+      // filtrada sem nada na tela dizendo por quê. Valor desconhecido agora
+      // não filtra, em vez de filtrar em silêncio.
       return true;
     });
   }
@@ -359,65 +362,6 @@ export async function getResumoRapidoEventos(): Promise<ResumoRapidoEventos> {
       )
       .reduce((s, e) => s + Number(e.contract_value ?? 0), 0),
   };
-}
-
-// Copiloto: nº de eventos que precisam de atenção hoje.
-// saúde < 80% OU parcela vencendo hoje OU fornecedor não confirmado com
-// evento em até 3 dias. Reaproveita a Saúde do Evento (não cria cálculo
-// paralelo) e adiciona os dois gatilhos temporais.
-export async function getEventosAtencaoCount(): Promise<number> {
-  const supabase = createClient();
-  const hoje = iso(new Date());
-  const em3 = iso(addDays(new Date(), 3));
-
-  const { data: evData } = await supabase
-    .from("events")
-    .select("id, date, archived, status")
-    .limit(2000);
-  const eventos = ((evData ?? []) as {
-    id: string;
-    date: string;
-    archived?: boolean;
-    status: string;
-  }[]).filter((e) => e.archived !== true && e.status !== "cancelado");
-  const ids = eventos.map((e) => e.id);
-  if (ids.length === 0) return 0;
-
-  const [saudeById, txRes, linksRes] = await Promise.all([
-    getSaudeBulk(ids),
-    supabase
-      .from("transactions")
-      .select("event_id, type, paid, due_date")
-      .in("event_id", ids)
-      .eq("type", "receita")
-      .eq("paid", false)
-      .eq("due_date", hoje),
-    supabase
-      .from("roteiro_links")
-      .select("event_id, confirmed")
-      .in("event_id", ids)
-      .eq("confirmed", false),
-  ]);
-
-  const comParcelaHoje = new Set(
-    ((txRes.data ?? []) as { event_id: string }[]).map((t) => t.event_id)
-  );
-  const comFornPendente = new Set(
-    ((linksRes.data ?? []) as { event_id: string }[]).map((l) => l.event_id)
-  );
-  const dateById = new Map(eventos.map((e) => [e.id, e.date]));
-
-  let n = 0;
-  for (const id of ids) {
-    const saude = saudeById[id];
-    const baixa = saude ? saude.score < 80 : false;
-    const parcelaHoje = comParcelaHoje.has(id);
-    const d = dateById.get(id)!;
-    const fornUrgente =
-      comFornPendente.has(id) && d >= hoje && d <= em3;
-    if (baixa || parcelaHoje || fornUrgente) n++;
-  }
-  return n;
 }
 
 // Linhas para relatório/exportação (respeita os filtros atuais, sem paginar).

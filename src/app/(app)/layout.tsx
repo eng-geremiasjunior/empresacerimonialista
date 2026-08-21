@@ -3,7 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { garantirEmpresaDoUsuario, getMeuCargo } from "@/lib/supabase/equipe";
 import { getEspera } from "@/lib/supabase/espera-solicitacoes";
 import { fraseDoCopiloto } from "@/lib/espera-core";
-import { getEventosAtencaoCount } from "@/lib/supabase/eventos-list";
+import { getAlertasCopiloto } from "@/lib/supabase/queries";
+import { frasePrazos, resumirPrazos } from "@/lib/copiloto-prazos";
 import { AppShell } from "@/components/AppShell";
 import { TaskNotifications } from "@/components/TaskNotifications";
 import { signOut } from "./actions";
@@ -40,7 +41,17 @@ export default async function AppLayout({
     ({ cargo } = await getMeuCargo());
   }
 
-  const atencaoCount = await getEventosAtencaoCount().catch(() => 0);
+  // A linha dos prazos vem da MESMA fonte que o bloco do dashboard: antes
+  // eram duas contas diferentes (a sidebar somava saúde<80 + dois gatilhos;
+  // o dashboard listava alertas por data) e os números discordavam na cara
+  // dela. Erro não vira "tudo em dia" de mentira — vira traço.
+  let prazosFrase: string | null = null;
+  try {
+    const alertas = await getAlertasCopiloto();
+    prazosFrase = frasePrazos(resumirPrazos(alertas.map((a) => a.tipo)));
+  } catch {
+    prazosFrase = null;
+  }
 
   // A linha da espera no Copiloto — só para quem conduz. O erro não vira
   // "em dia" de mentira: vira traço.
@@ -63,7 +74,7 @@ export default async function AppLayout({
       <AppShell
         userEmail={user.email ?? ""}
         cargo={cargo}
-        atencaoCount={atencaoCount}
+        prazosFrase={prazosFrase}
         esperaFrase={esperaFrase}
         avatarUrl={
           ((user.user_metadata as { avatar_url?: string | null } | null)

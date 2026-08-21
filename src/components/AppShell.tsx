@@ -116,13 +116,13 @@ type Props = {
   userEmail: string;
   avatarUrl: string | null;
   cargo: string | null;
-  atencaoCount: number;
+  prazosFrase: string | null;
   esperaFrase: string | null;
   signOut: () => Promise<void>;
   children: React.ReactNode;
 };
 
-export function AppShell({ userEmail, avatarUrl, cargo, atencaoCount, esperaFrase, signOut, children }: Props) {
+export function AppShell({ userEmail, avatarUrl, cargo, prazosFrase, esperaFrase, signOut, children }: Props) {
   const navVisivel = NAV.filter(
     (item) => !item.cargos || cargo === null || item.cargos.includes(cargo)
   );
@@ -176,7 +176,7 @@ export function AppShell({ userEmail, avatarUrl, cargo, atencaoCount, esperaFras
 
       </nav>
       <div className="border-t border-stone-800 p-3">
-        <CopilotoSidebarCard atencao={atencaoCount} esperaFrase={esperaFrase} />
+        <CopilotoSidebarCard prazosFrase={prazosFrase} esperaFrase={esperaFrase} />
       </div>
       <div className="border-t border-stone-800 px-5 py-3">
         <p className="truncate text-xs text-stone-500">{userEmail}</p>
