@@ -9,7 +9,7 @@ import {
   MODO_LIGHT,
   type ModoItem,
   type ModoSupplier,
-  type ModoTask,
+
 } from "@/lib/modo-tema";
 import type { CronogramaItem } from "@/lib/cronograma";
 import {
@@ -25,7 +25,8 @@ import { TimelineModoEvento } from "./TimelineModoEvento";
 import { AcaoItemSheet } from "./AcaoItemSheet";
 import { ResumoFinal } from "./ResumoFinal";
 import { FornecedoresStatus } from "./FornecedoresStatus";
-import { ChecklistRapido } from "./ChecklistRapido";
+import { ChecklistDoDia, type ItemChecklistDia } from "./ChecklistDoDia";
+import { hojeLocalISO } from "@/lib/format";
 
 const POLL_MS = 15_000;
 
@@ -33,9 +34,10 @@ type Props = {
   eventId: string;
   eventLabel: string;
   eventDate: string;
+  eventTime: string | null;
   items: ModoItem[];
   suppliers: ModoSupplier[];
-  tasks: ModoTask[];
+  checklist: ItemChecklistDia[];
 };
 
 function mapItem(i: CronogramaItem): ModoItem {
@@ -76,9 +78,10 @@ export function ModoEvento({
   eventId,
   eventLabel,
   eventDate,
+  eventTime,
   items: initialItems,
   suppliers,
-  tasks,
+  checklist,
 }: Props) {
   const [now, setNow] = useState(() => Date.now());
   const [isDark, setIsDark] = useState(true);
@@ -171,7 +174,10 @@ export function ModoEvento({
   );
   const proximo = useMemo(() => proximoPlanejado(items), [items]);
   const nowMinutes = new Date(now).getHours() * 60 + new Date(now).getMinutes();
-  const hoje = new Date().toISOString().slice(0, 10);
+  // hoje LOCAL: com toISOString (UTC), a partir das 21h o guarda achava
+  // que o evento era "ontem" e silenciava a detecção de atraso no pico
+  // da recepção.
+  const hoje = hojeLocalISO(new Date(now));
   const status = useMemo(
     () => statusGeral(items, eventDate === hoje ? nowMinutes : -1),
     [items, eventDate, hoje, nowMinutes]
@@ -236,8 +242,14 @@ export function ModoEvento({
             <FornecedoresStatus suppliers={suppliers} t={t} />
           </Section>
 
-          <Section title="Checklist — alta prioridade" sub={t.sub}>
-            <ChecklistRapido tasks={tasks} t={t} />
+          <Section title="Checklist" sub={t.sub}>
+            <ChecklistDoDia
+              eventId={eventId}
+              eventDate={eventDate}
+              ancora={eventTime}
+              initial={checklist}
+              t={t}
+            />
           </Section>
         </div>
       </main>

@@ -134,11 +134,12 @@ export async function getEventosCardData(
       ? links.find((l) => !l.confirmed && l.suppliers)?.suppliers?.name ?? null
       : null;
 
-    // 3. tarefa de alta prioridade vencendo hoje ou atrasada
+    // 3. tarefa vencendo hoje ou atrasada. Sem filtro de prioridade: as
+    // tarefas do método nascem todas 'media' (a 076 aposentou o seeder de
+    // 'alta'), então filtrar por alta deixava esta regra morta.
     const tarefaUrgente = tasks
       .filter(
         (t) =>
-          t.priority === "alta" &&
           t.status !== "concluido" &&
           t.due_date &&
           t.due_date <= hoje

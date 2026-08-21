@@ -20,7 +20,7 @@ import { PainelLateralCronograma } from "@/components/cronograma/PainelLateralCr
 import { VisaoRaias } from "@/components/cronograma/VisaoRaias";
 import { ModalAtraso } from "@/components/cronograma/ModalAtraso";
 import { createClient } from "@/lib/supabase/client";
-import { formatTime } from "@/lib/format";
+import { formatTime, hojeLocalISO } from "@/lib/format";
 import { proximosItens, timeToMinutes, type CronogramaItem } from "@/lib/cronograma";
 
 const REFRESH_INTERVAL_MS = 20_000;
@@ -79,7 +79,9 @@ export function RoteiroList({ eventId, eventDate, items: initialItems, suppliers
 
   useEffect(() => setItems(initialItems), [initialItems]);
 
-  const hoje = new Date().toISOString().slice(0, 10);
+  // local, não UTC: com toISOString o "hoje" virava amanhã às 21h e o
+  // modo dia-do-evento desligava no meio da recepção
+  const hoje = hojeLocalISO();
   const eventoHoje = eventDate === hoje;
 
   // Item "atual": em andamento agora, senão problema aberto, senão o

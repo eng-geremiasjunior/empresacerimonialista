@@ -29,7 +29,7 @@ export type ProximaAcaoInput = {
   parcelaUrgenteData: string | null;
   // fornecedor não confirmado (nome), quando o evento é em até 7 dias
   fornecedorPendenteNome: string | null;
-  // tarefa de alta prioridade vencendo hoje ou atrasada
+  // tarefa vencendo hoje ou atrasada
   tarefaUrgenteTitulo: string | null;
   cronogramaVazio: boolean;
 };
@@ -69,7 +69,7 @@ export function calcularProximaAcao(input: ProximaAcaoInput): ProximaAcao {
     };
   }
 
-  // 3. Tarefa de alta prioridade vencendo hoje ou atrasada
+  // 3. Tarefa vencendo hoje ou atrasada
   if (input.tarefaUrgenteTitulo) {
     return {
       texto: input.tarefaUrgenteTitulo,

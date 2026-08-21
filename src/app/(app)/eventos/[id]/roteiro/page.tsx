@@ -6,6 +6,11 @@ import { RoteiroList } from "@/components/RoteiroList";
 import { FilaSugestoes } from "@/components/cronograma/FilaSugestoes";
 import { BotaoAlergia } from "@/components/cronograma/BotaoAlergia";
 import { getSugestoesDoEvento } from "@/lib/supabase/programa-do-dia";
+import {
+  ChecklistDoDiaAjuste,
+  type ItemChecklistAjuste,
+} from "@/components/cronograma/ChecklistDoDiaAjuste";
+import { getMembrosSelecionaveis } from "@/lib/supabase/equipe";
 import { alergiaCompartilhavel } from "./alergia-actions";
 import type { CronogramaItem } from "@/lib/cronograma";
 import type { Supplier } from "@/lib/types";
@@ -17,6 +22,10 @@ export default async function RoteiroPage({
 }) {
   const supabase = createClient();
 
+  // A semeadura é lazy e por item: itens condicionais (igreja) entram
+  // quando o objetivo ligar, na próxima abertura desta tela.
+  await supabase.rpc("semear_checklist_dia", { p_event_id: params.id });
+
   const [
     { data: eventData },
     cronogramaResult,
@@ -24,6 +33,8 @@ export default async function RoteiroPage({
     sugestoes,
     alergia,
     alergiaCompartilhadaResult,
+    checklistResult,
+    membrosResult,
   ] = await Promise.all([
     supabase
       .from("events")
@@ -43,6 +54,15 @@ export default async function RoteiroPage({
         .from("evento_alergia_compartilhada")
         .select("supplier_id")
         .eq("event_id", params.id),
+      supabase
+        .from("evento_checklist_dia")
+        .select(
+          "id, bloco, titulo, ordem, horario, ativo, template_id, responsavel_membro_id"
+        )
+        .eq("event_id", params.id)
+        .order("bloco")
+        .order("ordem"),
+      getMembrosSelecionaveis(),
     ]);
 
   if (!eventData) {
@@ -50,6 +70,28 @@ export default async function RoteiroPage({
   }
 
   const event = eventData as { id: string; date: string };
+
+  const checklist: ItemChecklistAjuste[] = (
+    (checklistResult.data ?? []) as {
+      id: string;
+      bloco: ItemChecklistAjuste["bloco"];
+      titulo: string;
+      ordem: number;
+      horario: string | null;
+      ativo: boolean;
+      template_id: string | null;
+      responsavel_membro_id: string | null;
+    }[]
+  ).map((i) => ({
+    id: i.id,
+    bloco: i.bloco,
+    titulo: i.titulo,
+    ordem: i.ordem,
+    horario: i.horario,
+    ativo: i.ativo,
+    templateId: i.template_id,
+    responsavelMembroId: i.responsavel_membro_id,
+  }));
   const items = (cronogramaResult.data ?? []) as unknown as CronogramaItem[];
 
   const alergiaComSupplier = new Set(
@@ -100,6 +142,12 @@ export default async function RoteiroPage({
         eventDate={event.date}
         items={items}
         suppliers={suppliers}
+      />
+
+      <ChecklistDoDiaAjuste
+        eventId={event.id}
+        itens={checklist}
+        membros={membrosResult.membros.map((m) => ({ id: m.id, nome: m.nome }))}
       />
 
       {suppliers.length > 0 && (
