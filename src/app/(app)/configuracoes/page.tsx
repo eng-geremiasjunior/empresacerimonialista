@@ -2,6 +2,10 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileSection } from "@/components/configuracoes/ProfileSection";
 import { EmpresaSection } from "@/components/configuracoes/EmpresaSection";
+import {
+  RoteiroPadraoSection,
+  type ItemRoteiroPadrao,
+} from "@/components/configuracoes/RoteiroPadraoSection";
 import { CalendarClock } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -52,6 +56,33 @@ export default async function ConfiguracoesPage() {
     empresa = data;
   }
 
+  // Os deslocamentos do roteiro (112). RLS: todos leem, só a
+  // proprietária escreve — a seção só aparece para quem pode mexer.
+  let roteiroPadrao: ItemRoteiroPadrao[] = [];
+  if (proprietaria) {
+    const { data } = await supabase
+      .from("metodo_roteiro_item")
+      .select("id, tipo_evento, titulo, offset_min, duracao_min, ordem")
+      .order("ordem");
+    roteiroPadrao = (
+      (data ?? []) as {
+        id: string;
+        tipo_evento: string;
+        titulo: string;
+        offset_min: number;
+        duracao_min: number | null;
+        ordem: number;
+      }[]
+    ).map((i) => ({
+      id: i.id,
+      tipoEvento: i.tipo_evento,
+      titulo: i.titulo,
+      offsetMin: i.offset_min,
+      duracaoMin: i.duracao_min,
+      ordem: i.ordem,
+    }));
+  }
+
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -77,6 +108,8 @@ export default async function ConfiguracoesPage() {
           initialLogoUrl={empresa.logo_url}
         />
       )}
+
+      {proprietaria && <RoteiroPadraoSection itens={roteiroPadrao} />}
 
       {/* A grade completa (dias, slots, buffer, exceções) foi promovida
           para a Agenda de Fornecedores; aqui fica só o atalho. */}
