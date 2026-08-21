@@ -13,7 +13,6 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import {
   gerarFasesPorTipo,
-  gerarTimelineSugerida,
   resolverTemplate,
 } from "@/lib/event-templates";
 
@@ -36,17 +35,17 @@ export async function criarEventoAPartirDoOrcamento(
   // pelas perguntas de estruturação do wizard.
   const arquetipo = resolverTemplate(tipoEvento);
   const phases = gerarFasesPorTipo(arquetipo);
-  const roteiro = gerarTimelineSugerida(arquetipo, {}).map((r) => ({
-    title: r.title,
-    order: r.order,
-  }));
+  // O roteiro não é montado aqui: a RPC (112) semeia do Playbook da
+  // empresa, dentro do SECURITY DEFINER — o navegador da cliente não
+  // enxerga (nem deve enxergar) o modelo. p_roteiro vai vazio e é
+  // ignorado pela função, como p_tasks desde a 065.
 
   const { data, error } = await supabase.rpc("criar_evento_do_orcamento", {
     p_hash: hash,
     p_tasks: [],
     p_phases: phases,
     p_data_evento: dataEvento ?? null,
-    p_roteiro: roteiro,
+    p_roteiro: [],
   });
 
   if (error) {

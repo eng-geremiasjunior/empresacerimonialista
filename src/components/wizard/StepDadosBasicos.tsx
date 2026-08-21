@@ -83,7 +83,7 @@ export function StepDadosBasicos({
           </div>
           <div>
             <label htmlFor="ev_time" className={labelClass}>
-              Horário
+              Hora da cerimônia
             </label>
             <input
               id="ev_time"

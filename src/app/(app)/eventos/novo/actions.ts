@@ -3,9 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { montarTimelineDoPlaybook } from "@/lib/supabase/roteiro-template";
 import {
   gerarFasesPorTipo,
-  gerarTimelineSugerida,
   resolverTemplate,
   type WizardRespostas,
 } from "@/lib/event-templates";
@@ -50,10 +50,12 @@ export async function criarEventoCompleto(
 
   const arquetipo = resolverTemplate(payload.type);
 
-  // Fases: sempre do template do tipo. Timeline: só no fluxo completo.
+  // Fases: sempre do template do tipo. Timeline: só no fluxo completo —
+  // e do Playbook da empresa (deslocamentos vs. hora da cerimônia), com
+  // fallback na constante TS enquanto a 112 não existe.
   const phases = gerarFasesPorTipo(arquetipo);
   const timeline = payload.incluirTimeline
-    ? gerarTimelineSugerida(arquetipo, payload.respostas)
+    ? await montarTimelineDoPlaybook(payload.type, payload.respostas)
     : [];
 
   // Checklist plano APOSENTADO (076): tarefa nasce da decisão do método

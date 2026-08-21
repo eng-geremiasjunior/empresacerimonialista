@@ -17,6 +17,7 @@ function readForm(formData: FormData) {
     clientPhone: String(formData.get("client_phone") ?? "").trim(),
     type: String(formData.get("type") ?? ""),
     date: String(formData.get("date") ?? ""),
+    time: String(formData.get("time") ?? "").trim(),
     location: String(formData.get("location") ?? "").trim(),
     status: String(formData.get("status") ?? ""),
     responsavelId: String(formData.get("responsavel_id") ?? "").trim(),
@@ -140,6 +141,9 @@ export async function updateEvent(
     client_id: finalClientId,
     type: form.type,
     date: form.date,
+    // hora da cerimônia: a âncora do cronograma. Mudou aqui, o gatilho
+    // da 112 recalcula os horários que ainda são estimativa.
+    time: form.time || null,
     location: form.location || null,
     status: form.status,
   };

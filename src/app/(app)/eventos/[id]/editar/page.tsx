@@ -22,7 +22,7 @@ export default async function EditarEventoPage({
   let { data, error } = await supabase
     .from("events")
     .select(
-      "id, client_id, type, date, location, status, cover_image_url, cerimonialista_responsavel_id, clients(id, name, phone, email)"
+      "id, client_id, type, date, time, location, status, cover_image_url, cerimonialista_responsavel_id, clients(id, name, phone, email)"
     )
     .eq("id", params.id)
     .single();
@@ -32,7 +32,7 @@ export default async function EditarEventoPage({
     temResponsavel = false;
     ({ data } = await supabase
       .from("events")
-      .select("id, client_id, type, date, location, status, clients(id, name, phone, email)")
+      .select("id, client_id, type, date, time, location, status, clients(id, name, phone, email)")
       .eq("id", params.id)
       .single());
   }
@@ -78,6 +78,7 @@ export default async function EditarEventoPage({
           clientPhone: event.clients?.phone ?? "",
           type: event.type,
           date: event.date,
+          time: (data as { time?: string | null }).time ?? null,
           location: event.location ?? "",
           status: event.status,
           responsavelId,

@@ -17,6 +17,7 @@ type Initial = {
   clientPhone: string;
   type: string;
   date: string;
+  time?: string | null;
   location: string;
   status: string;
   responsavelId?: string | null;
@@ -118,6 +119,20 @@ export function EventForm({ action, initial, membros }: Props) {
             type="date"
             required
             defaultValue={initial?.date}
+            className={inputClass}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="time" className="mb-1 block text-sm font-medium">
+            Hora da cerimônia{" "}
+            <span className="font-normal text-stone-400">(opcional)</span>
+          </label>
+          <input
+            id="time"
+            name="time"
+            type="time"
+            defaultValue={initial?.time ?? undefined}
             className={inputClass}
           />
         </div>
