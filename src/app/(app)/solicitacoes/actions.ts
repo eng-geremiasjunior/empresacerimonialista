@@ -25,6 +25,48 @@ export async function pedirAoFornecedor(
   supplierId: string,
   tipo: "confirmacao" | "contrato"
 ): Promise<{ error: string } | { success: true }> {
+  return criarPedido(eventId, supplierId, tipo, TITULOS[tipo], null);
+}
+
+/**
+ * Confirmar horário: a solicitação que vira estado operacional. Carrega o
+ * item do roteiro do fornecedor (snapshot na página dele); a resposta
+ * confirma ou corrige o horário — e o cronograma muda sozinho (114).
+ */
+export async function pedirHorarioAoFornecedor(
+  eventId: string,
+  supplierId: string
+): Promise<{ error: string } | { success: true }> {
+  const supabase = createClient();
+  // o item dele no dia: o mais cedo com fornecedor vinculado
+  const { data: item } = await supabase
+    .from("roteiro_items")
+    .select("id, title")
+    .eq("event_id", eventId)
+    .eq("supplier_id", supplierId)
+    .order("time", { ascending: true, nullsFirst: false })
+    .order("order", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (!item) {
+    return { error: "Este fornecedor não tem item no roteiro deste evento." };
+  }
+  return criarPedido(
+    eventId,
+    supplierId,
+    "horario",
+    `Confirmar horário: ${item.title}`,
+    item.id
+  );
+}
+
+async function criarPedido(
+  eventId: string,
+  supplierId: string,
+  tipo: "confirmacao" | "contrato" | "horario",
+  titulo: string,
+  roteiroItemId: string | null
+): Promise<{ error: string } | { success: true }> {
   const supabase = createClient();
 
   const { data: evento } = await supabase
@@ -41,7 +83,8 @@ export async function pedirAoFornecedor(
       supplier_id: supplierId,
       event_id: eventId,
       tipo,
-      titulo: TITULOS[tipo],
+      titulo,
+      roteiro_item_id: roteiroItemId,
       status: "pendente",
       prazo_ate: evento.date ? `${evento.date}T23:59:59` : null,
     })

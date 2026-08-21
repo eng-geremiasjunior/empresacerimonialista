@@ -35,9 +35,16 @@ type Props = {
   eventDate: string; // yyyy-MM-dd
   items: CronogramaItem[];
   suppliers: { id: string; name: string; category: string | null; phone: string | null }[];
+  liberacaoEspaco?: string | null;
 };
 
-export function RoteiroList({ eventId, eventDate, items: initialItems, suppliers }: Props) {
+export function RoteiroList({
+  eventId,
+  eventDate,
+  items: initialItems,
+  suppliers,
+  liberacaoEspaco = null,
+}: Props) {
   const [items, setItems] = useState(initialItems);
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -286,6 +293,7 @@ export function RoteiroList({ eventId, eventDate, items: initialItems, suppliers
           items={items}
           eventId={eventId}
           eventoHoje={eventoHoje}
+          liberacaoEspaco={liberacaoEspaco}
           onAtualizarStatus={() => setStatusModal({ open: true })}
           onFocarItem={focarItem}
         />

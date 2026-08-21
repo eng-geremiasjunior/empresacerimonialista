@@ -16,11 +16,13 @@ export const metadata: Metadata = {
 
 export type PendenciaPublica = {
   id: string;
-  tipo: "confirmacao" | "contrato";
+  tipo: "confirmacao" | "contrato" | "horario";
   titulo: string;
   status: "pendente" | "enviada" | "reenviada" | "respondida";
   prazo_ate: string | null;
   respondida_em: string | null;
+  /** snapshot do item, quando a solicitação é de horário */
+  roteiro_item?: { titulo: string; horario: string | null; origem: string | null } | null;
   evento: { nome: string | null; data: string | null; local: string | null };
 };
 

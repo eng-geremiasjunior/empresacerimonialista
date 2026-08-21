@@ -31,12 +31,14 @@ export function PainelLateralCronograma({
   items,
   eventId,
   eventoHoje,
+  liberacaoEspaco = null,
   onAtualizarStatus,
   onFocarItem,
 }: {
   items: CronogramaItem[];
   eventId: string;
   eventoHoje: boolean;
+  liberacaoEspaco?: string | null;
   onAtualizarStatus: () => void;
   onFocarItem: (itemId: string) => void;
 }) {
@@ -55,7 +57,8 @@ export function PainelLateralCronograma({
   const proximos = proximosItens(items, 3);
   const alertas = alertasCronograma(
     items,
-    eventoHoje && mounted ? nowMinutes : -1
+    eventoHoje && mounted ? nowMinutes : -1,
+    liberacaoEspaco
   );
 
   return (

@@ -35,7 +35,8 @@ export const getFornecedoresDoEvento = cache(
   async (eventId: string): Promise<DadosFornecedores> => {
     const supabase = createClient();
 
-    const [linksRes, confRes, evRes, pedidosRes, dinheiroRes] = await Promise.all([
+    const [linksRes, confRes, evRes, pedidosRes, roteiroRes, dinheiroRes] =
+      await Promise.all([
       supabase
         .from("roteiro_links")
         .select(
@@ -65,6 +66,13 @@ export const getFornecedoresDoEvento = cache(
       // informação atravessar para cá: ela decide sobre o fornecedor
       // olhando para o fornecedor, não para a planilha.
       supabase
+        .from("roteiro_items")
+        .select('id, supplier_id, title, time, origem_horario, "order"')
+        .eq("event_id", eventId)
+        .not("supplier_id", "is", null)
+        .order("time", { ascending: true, nullsFirst: false })
+        .order("order", { ascending: true }),
+      supabase
         .from("transactions")
         .select("supplier_id, value, paid, due_date")
         .eq("event_id", eventId)
@@ -87,6 +95,26 @@ export const getFornecedoresDoEvento = cache(
         arquivoNome: r.arquivo_nome ?? null,
       });
       pedidosPor.set(p.supplier_id, lista);
+    }
+
+    // o item mais cedo de cada fornecedor no roteiro do dia — a query já
+    // vem ordenada (time asc, nulos por último), então o primeiro vence
+    const itemPor = new Map<string, Fornecedor["itemRoteiro"]>();
+    for (const r of (roteiroRes.data ?? []) as {
+      id: string;
+      supplier_id: string;
+      title: string;
+      time: string | null;
+      origem_horario: string | null;
+    }[]) {
+      if (!itemPor.has(r.supplier_id)) {
+        itemPor.set(r.supplier_id, {
+          id: r.id,
+          titulo: r.title,
+          horario: r.time,
+          origem: r.origem_horario,
+        });
+      }
     }
 
     const dinheiroPor = new Map<string, DinheiroDoFornecedor>();
@@ -136,6 +164,7 @@ export const getFornecedoresDoEvento = cache(
         convite: convitePor.get(l.supplier_id) ?? null,
         pedidos: pedidosPor.get(l.supplier_id) ?? [],
         dinheiro: dinheiroPor.get(l.supplier_id) ?? null,
+        itemRoteiro: itemPor.get(l.supplier_id) ?? null,
       }))
       .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 

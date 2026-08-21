@@ -247,7 +247,7 @@ export const getContatoCerimonialista = cache(
 // ------------------------------------------------------------------
 
 const COLUNAS_CAMPO =
-  "id, codigo, label, label_portal, tipo, opcoes, unidade, ordem, valor_texto, valor_numero, valor_bool, valor_data, valor_opcao, valor_supplier_id";
+  "id, codigo, label, label_portal, tipo, opcoes, unidade, ordem, valor_texto, valor_numero, valor_bool, valor_data, valor_hora, valor_opcao, valor_supplier_id";
 
 type LinhaCampo = {
   id: string;
@@ -262,6 +262,7 @@ type LinhaCampo = {
   valor_numero: number | null;
   valor_bool: boolean | null;
   valor_data: string | null;
+  valor_hora: string | null;
   valor_opcao: string | null;
   valor_supplier_id: string | null;
   evento_decisao: {
@@ -285,6 +286,7 @@ function comoCampo(l: LinhaCampo): Campo {
     valorNumero: l.valor_numero,
     valorBool: l.valor_bool,
     valorData: l.valor_data,
+    valorHora: l.valor_hora,
     valorOpcao: l.valor_opcao,
     valorSupplierId: l.valor_supplier_id,
   };

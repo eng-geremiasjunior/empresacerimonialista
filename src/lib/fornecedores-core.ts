@@ -37,6 +37,13 @@ export type Fornecedor = {
   }[];
   /** o dinheiro deste fornecedor NESTE evento, vindo do Financeiro */
   dinheiro: DinheiroDoFornecedor | null;
+  /** o item dele no roteiro do dia (o mais cedo), se houver */
+  itemRoteiro: {
+    id: string;
+    titulo: string;
+    horario: string | null;
+    origem: string | null;
+  } | null;
 };
 
 /** Lançado no Financeiro do evento, somado por fornecedor. */
@@ -82,7 +89,10 @@ export function pedidosEmPalavras(f: Fornecedor): string | null {
     ["pendente", "enviada", "reenviada"].includes(p.status)
   );
   if (vivos.length === 0) return null;
-  const nome = (t: string) => (t === "contrato" ? "contrato assinado" : "confirmação");
+  const nome = (t: string) =>
+    t === "contrato" ? "contrato assinado"
+    : t === "horario" ? "horário de chegada"
+    : "confirmação";
   const naFila = vivos.some((p) => p.status === "pendente");
   const lista = vivos.map((p) => nome(p.tipo)).join(" e ");
   return naFila ? `${lista}: na fila de hoje` : `${lista}: aguardando resposta`;
@@ -251,6 +261,7 @@ export type AcaoId =
   | "desmarcar"
   | "editar-email"
   | "pedir-contrato"
+  | "pedir-horario"
   | "remover";
 
 export type Acao = {
@@ -265,6 +276,9 @@ export function acoesDe(f: Fornecedor, agora = Date.now()): Acao[] {
     return [
       { id: "desmarcar", label: "Desmarcar confirmação", variante: "ghost" },
       { id: "pedir-contrato", label: "Pedir contrato assinado", variante: "secondary" },
+      ...(f.itemRoteiro && f.itemRoteiro.horario
+        ? [{ id: "pedir-horario", label: "Confirmar horário de chegada", variante: "secondary" } as Acao]
+        : []),
       { id: "remover", label: "Remover do evento", variante: "ghost" },
     ];
   }
@@ -272,6 +286,9 @@ export function acoesDe(f: Fornecedor, agora = Date.now()): Acao[] {
     return [
       { id: "editar-email", label: "Cadastrar e-mail", variante: "primary" },
       { id: "pedir-contrato", label: "Pedir contrato assinado", variante: "secondary" },
+      ...(f.itemRoteiro && f.itemRoteiro.horario
+        ? [{ id: "pedir-horario", label: "Confirmar horário de chegada", variante: "secondary" } as Acao]
+        : []),
       { id: "confirmar", label: "Confirmar manualmente", variante: "secondary" },
       { id: "remover", label: "Remover do evento", variante: "ghost" },
     ];
@@ -288,6 +305,9 @@ export function acoesDe(f: Fornecedor, agora = Date.now()): Acao[] {
       variante: "primary",
     },
     { id: "pedir-contrato", label: "Pedir contrato assinado", variante: "secondary" },
+      ...(f.itemRoteiro && f.itemRoteiro.horario
+        ? [{ id: "pedir-horario", label: "Confirmar horário de chegada", variante: "secondary" } as Acao]
+        : []),
     { id: "confirmar", label: "Confirmar manualmente", variante: "secondary" },
     { id: "remover", label: "Remover do evento", variante: "ghost" },
   ];

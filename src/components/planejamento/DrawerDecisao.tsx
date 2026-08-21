@@ -303,6 +303,33 @@ function CampoData({
   );
 }
 
+function CampoHora({
+  campo,
+  salvar,
+  disabled,
+}: {
+  campo: Campo;
+  salvar: Salvar;
+  disabled?: boolean;
+}) {
+  const foco = useCampoFoco();
+  return (
+    <input
+      type="time"
+      value={campo.valorHora ? String(campo.valorHora).slice(0, 5) : ""}
+      disabled={disabled}
+      onChange={(e) => salvar(campo, e.target.value || null)}
+      {...foco.props}
+      style={{
+        ...inputBase,
+        fontFamily: F_MONO,
+        color: campo.valorHora ? C.tinta : C.fantasma,
+        ...foco.style,
+      }}
+    />
+  );
+}
+
 function CampoFornecedor({
   campo,
   salvar,
@@ -542,6 +569,8 @@ function Controle({
       return <CampoEscolha campo={campo} salvar={salvar} disabled={disabled} />;
     case "data":
       return <CampoData campo={campo} salvar={salvar} disabled={disabled} />;
+    case "hora":
+      return <CampoHora campo={campo} salvar={salvar} disabled={disabled} />;
     case "fornecedor":
       return (
         <CampoFornecedor
@@ -1271,6 +1300,7 @@ export function resumoCampos(
       partes.push(`${v}${c.unidade ? ` ${c.unidade}` : ""}`);
     else if (c.tipo === "sim_nao") partes.push(`${c.label}: ${v ? "sim" : "não"}`);
     else if (c.tipo === "data") partes.push(dataBr(String(v)));
+    else if (c.tipo === "hora") partes.push(String(v).slice(0, 5));
     else if (c.tipo === "fornecedor") {
       const s = suppliers.find((s) => s.id === v);
       if (s) partes.push(s.name);

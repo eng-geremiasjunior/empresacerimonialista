@@ -181,7 +181,7 @@ export function contagemRegressiva(
 // ---- Alertas REAIS (não IA) ----
 export type AlertaCronograma = {
   id: string;
-  tipo: "problema" | "atraso";
+  tipo: "problema" | "conflito" | "atraso";
   prioridade: number; // menor = mais urgente
   titulo: string;
   detalhe: string;
@@ -192,9 +192,31 @@ const ATRASO_MIN = 10;
 
 export function alertasCronograma(
   items: CronogramaItem[],
-  nowMinutes: number
+  nowMinutes: number,
+  liberacaoEspaco?: string | null
 ): AlertaCronograma[] {
   const alertas: AlertaCronograma[] = [];
+
+  // Conflito com o espaço: item marcado para antes de o salão liberar.
+  // Não é atraso (não depende do relógio de agora) — é o dia que não
+  // fecha, e ela precisa ver isso semanas antes, não na hora.
+  const liberacao = timeToMinutes(liberacaoEspaco ?? null);
+  if (liberacao !== null) {
+    for (const item of items) {
+      if (item.status_novo === "concluido") continue;
+      const previsto = timeToMinutes(item.time);
+      if (previsto !== null && previsto < liberacao) {
+        alertas.push({
+          id: `conflito-${item.id}`,
+          tipo: "conflito",
+          prioridade: 1,
+          titulo: `"${item.title}" antes de o espaço liberar`,
+          detalhe: `Marcado para ${(item.time ?? "").slice(0, 5)} · o espaço libera às ${(liberacaoEspaco ?? "").slice(0, 5)}`,
+          itemId: item.id,
+        });
+      }
+    }
+  }
 
   for (const item of items) {
     // Prioridade máxima: problema reportado.

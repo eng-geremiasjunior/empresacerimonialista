@@ -33,6 +33,7 @@ export default async function RoteiroPage({
     sugestoes,
     alergia,
     alergiaCompartilhadaResult,
+    liberacaoResult,
     checklistResult,
     membrosResult,
   ] = await Promise.all([
@@ -54,6 +55,15 @@ export default async function RoteiroPage({
         .from("evento_alergia_compartilhada")
         .select("supplier_id")
         .eq("event_id", params.id),
+      // a borda do dia: o horário em que o espaço libera para montagem
+      // (campo tipado do Planejamento, 114) — alimenta o aviso de conflito
+      supabase
+        .from("evento_campo_valor")
+        .select("valor_hora")
+        .eq("event_id", params.id)
+        .eq("codigo", "liberacao_fornecedores")
+        .not("valor_hora", "is", null)
+        .maybeSingle(),
       supabase
         .from("evento_checklist_dia")
         .select(
@@ -142,6 +152,10 @@ export default async function RoteiroPage({
         eventDate={event.date}
         items={items}
         suppliers={suppliers}
+        liberacaoEspaco={
+          (liberacaoResult.data as { valor_hora: string | null } | null)
+            ?.valor_hora ?? null
+        }
       />
 
       <ChecklistDoDiaAjuste

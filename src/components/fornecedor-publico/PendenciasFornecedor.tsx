@@ -203,6 +203,8 @@ function ItemPendencia({
 }) {
   const [nota, setNota] = useState("");
   const [notaAberta, setNotaAberta] = useState(false);
+  const [corrigindo, setCorrigindo] = useState(false);
+  const [horaNova, setHoraNova] = useState("");
 
   if (item.status === "respondida") {
     return (
@@ -251,6 +253,58 @@ function ItemPendencia({
             Não poderei
           </button>
         </div>
+      ) : item.tipo === "horario" ? (
+        <>
+          {item.roteiro_item && (
+            <p className="mt-2 rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700">
+              {item.roteiro_item.titulo} —{" "}
+              <span className="font-semibold tabular-nums">
+                {item.roteiro_item.horario
+                  ? item.roteiro_item.horario.slice(0, 5)
+                  : "sem horário definido"}
+              </span>
+            </p>
+          )}
+          {corrigindo ? (
+            <div className="mt-3 flex items-center gap-2">
+              <input
+                type="time"
+                autoFocus
+                value={horaNova}
+                onChange={(e) => setHoraNova(e.target.value)}
+                className="h-12 flex-1 rounded-lg border border-gray-300 px-3 text-base tabular-nums text-gray-900 focus:border-gray-400 focus:outline-none"
+              />
+              <button
+                onClick={() =>
+                  horaNova &&
+                  onResponder({ confirmado: false, hora_chegada: horaNova, ...extra })
+                }
+                disabled={enviando || !horaNova}
+                className="flex h-12 items-center justify-center gap-2 rounded-lg bg-gray-900 px-4 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-60"
+              >
+                {enviando ? "Enviando…" : "Enviar"}
+              </button>
+            </div>
+          ) : (
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button
+                onClick={() => onResponder({ confirmado: true, ...extra })}
+                disabled={enviando}
+                className="flex items-center justify-center gap-2 rounded-lg bg-gray-900 px-4 py-3 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-60"
+              >
+                <Check size={16} />
+                {enviando ? "Enviando…" : "Confirmo o horário"}
+              </button>
+              <button
+                onClick={() => setCorrigindo(true)}
+                disabled={enviando}
+                className="flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+              >
+                Corrigir
+              </button>
+            </div>
+          )}
+        </>
       ) : (
         <>
           <label

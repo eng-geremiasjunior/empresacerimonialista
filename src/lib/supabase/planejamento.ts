@@ -156,7 +156,7 @@ export async function getPlanejamento(
     supabase
       .from("evento_campo_valor")
       .select(
-        "id, evento_decisao_id, codigo, label, tipo, opcoes, unidade, ordem, valor_texto, valor_numero, valor_bool, valor_data, valor_opcao, valor_supplier_id, updated_at, aguarda_conferencia, visivel_portal, pergunta_cliente"
+        "id, evento_decisao_id, codigo, label, tipo, opcoes, unidade, ordem, valor_texto, valor_numero, valor_bool, valor_data, valor_hora, valor_opcao, valor_supplier_id, updated_at, aguarda_conferencia, visivel_portal, pergunta_cliente"
       )
       .eq("event_id", eventId)
       .order("ordem"),
@@ -219,6 +219,7 @@ export async function getPlanejamento(
       valorNumero: c.valor_numero,
       valorBool: c.valor_bool,
       valorData: c.valor_data,
+      valorHora: c.valor_hora,
       valorOpcao: c.valor_opcao,
       valorSupplierId: c.valor_supplier_id,
       updatedAt: c.updated_at,

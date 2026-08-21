@@ -9,6 +9,7 @@ export type TipoCampo =
   | "sim_nao"
   | "escolha"
   | "data"
+  | "hora"
   | "anexo"
   | "fornecedor";
 
@@ -24,6 +25,7 @@ export type Campo = {
   valorNumero: number | null;
   valorBool: boolean | null;
   valorData: string | null;
+  valorHora: string | null;
   valorOpcao: string | null;
   valorSupplierId: string | null;
   // Metadados do portal (091) — opcionais: nem toda superfície carrega.
@@ -47,6 +49,8 @@ export function valorDoCampo(c: Campo): string | number | boolean | null {
       return c.valorBool;
     case "data":
       return c.valorData;
+    case "hora":
+      return c.valorHora;
     case "escolha":
       return c.valorOpcao;
     case "fornecedor":

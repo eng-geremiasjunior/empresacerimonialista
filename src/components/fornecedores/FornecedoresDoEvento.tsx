@@ -46,7 +46,10 @@ import {
   salvarWhatsappAuto,
   setSupplierConfirmed,
 } from "@/app/(app)/eventos/[id]/fornecedores/actions";
-import { pedirAoFornecedor } from "@/app/(app)/solicitacoes/actions";
+import {
+  pedirAoFornecedor,
+  pedirHorarioAoFornecedor,
+} from "@/app/(app)/solicitacoes/actions";
 
 const F_UI = "var(--font-ui)";
 const F_MONO = "var(--font-mono)";
@@ -693,6 +696,13 @@ function Detalhe({
         return;
       }
       rodar(() => enviarConfirmacaoAgora(eventId, f.supplierId));
+      return;
+    }
+    if (a.id === "pedir-horario") {
+      rodar(
+        () => pedirHorarioAoFornecedor(eventId, f.supplierId),
+        "Pedido criado. A mensagem está na fila, em Solicitações."
+      );
       return;
     }
     if (a.id === "pedir-contrato") {
