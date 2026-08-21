@@ -33,15 +33,11 @@ export function CopilotoDia({
           <h1 className="text-2xl font-semibold text-gray-900">{greeting}</h1>
           <p className="mt-0.5 text-sm text-gray-500">{dateLabel}</p>
         </div>
+        {/* "Ver todas as pendências" ia para /tarefas, onde fornecedor
+            não confirmado e parcela a cobrar simplesmente NÃO EXISTEM —
+            duas das três espécies sumiam no caminho. As pendências agora
+            abrem aqui mesmo, e o que sobrou no cabeçalho é a agenda. */}
         <div className="flex shrink-0 items-center gap-2">
-          {alertas.length > 0 && (
-            <Link
-              href="/tarefas"
-              className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
-            >
-              Ver todas as pendências
-            </Link>
-          )}
           <Link
             href="/calendario"
             className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-gray-400"
@@ -77,12 +73,29 @@ export function CopilotoDia({
               </Link>
             ))}
             {restantes > 0 && (
-              <Link
-                href="/tarefas"
-                className="ml-[26px] block text-sm text-gray-500 hover:text-gray-900"
-              >
-                +{restantes} pendência{restantes > 1 ? "s" : ""} — ver todas
-              </Link>
+              // <details> e nao um link: sem componente de cliente, sem
+              // navegacao, e sobretudo sem prometer uma tela que reune as
+              // tres especies — ela nao existe, e criar uma seria mais um
+              // lugar de olhar
+              <details className="group">
+                <summary className="ml-[26px] cursor-pointer list-none text-sm text-gray-500 hover:text-gray-900 [&::-webkit-details-marker]:hidden">
+                  +{restantes} pendência{restantes > 1 ? "s" : ""}
+                  <span className="group-open:hidden"> — mostrar</span>
+                  <span className="hidden group-open:inline"> — ocultar</span>
+                </summary>
+                <div className="mt-1.5 space-y-1.5">
+                  {alertas.slice(MAX_VISIVEL).map((alerta) => (
+                    <Link
+                      key={alerta.id}
+                      href={alerta.href}
+                      className="flex items-start gap-2.5 rounded-md text-sm text-gray-900 hover:text-gray-600"
+                    >
+                      <AlertCircle size={18} className="mt-0.5 shrink-0 text-gray-600" />
+                      <span>{alerta.texto}</span>
+                    </Link>
+                  ))}
+                </div>
+              </details>
             )}
           </div>
         )}
