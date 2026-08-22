@@ -4,6 +4,7 @@
 // pelo trigger fill_empresa_from_cerimonialista (migração 021). O RLS por
 // cargo (024) garante que só quem pode gerenciar escreve.
 
+import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -172,4 +173,154 @@ export async function setStatusFornecedor(
   revalidatePath("/fornecedores");
   revalidatePath(`/fornecedores/${id}`);
   return { id };
+}
+
+// ------------------------------------------------------------------
+// Ações da tela nova: favoritar em lote e vincular a evento
+// ------------------------------------------------------------------
+
+// Teto de lote: protege a query string do PostgREST e o tempo de resposta.
+// NÃO exportado — arquivo "use server" só pode exportar função async.
+const MAX_LOTE = 200;
+
+/**
+ * Favoritar em lote, a partir da barra de seleção.
+ *
+ * "Favorito" não é uma coluna própria: é um VALOR de status (026), então
+ * marcar sobrescreve o status atual. Por isso só alcança quem está
+ * 'ativo' — favoritar em lote não pode ressuscitar um inativo nem apagar
+ * um "não contratar" que ela marcou de propósito.
+ */
+export async function marcarComoFavorito(
+  ids: string[]
+): Promise<{ error?: string; alterados?: number; pedidos?: number }> {
+  const limpos = [...new Set(ids.filter(Boolean))].slice(0, MAX_LOTE);
+  if (limpos.length === 0) return { alterados: 0, pedidos: 0 };
+
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("suppliers")
+    .update({ status: "favorito" })
+    .in("id", limpos)
+    .eq("status", "ativo")
+    .select("id");
+
+  if (error) return { error: "Não foi possível marcar como favorito" };
+  revalidatePath("/fornecedores");
+  for (const id of limpos) revalidatePath(`/fornecedores/${id}`);
+  // "alterados" pode ser MENOR que o pedido: quem não estava 'ativo' fica
+  // de fora de propósito. Quem chama precisa contar isso, senão a seleção
+  // some como se tudo tivesse funcionado.
+  return { alterados: data?.length ?? 0, pedidos: limpos.length };
+}
+
+/** Desfaz o favorito: volta para 'ativo', que é de onde ele saiu. */
+export async function desmarcarFavorito(
+  id: string
+): Promise<{ error?: string }> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("suppliers")
+    .update({ status: "ativo" })
+    .eq("id", id)
+    .eq("status", "favorito");
+  if (error) return { error: "Não foi possível desmarcar" };
+  revalidatePath("/fornecedores");
+  revalidatePath(`/fornecedores/${id}`);
+  return {};
+}
+
+export type EventoParaVincular = {
+  id: string;
+  label: string;
+  date: string;
+};
+
+/**
+ * Os eventos que ainda podem receber fornecedor.
+ *
+ * Só o que ainda vai acontecer. Sem o corte por data, o menu abria com
+ * orçamentos de meses atrás no topo (a ordem é por data crescente) — os
+ * menos prováveis primeiro, e o casamento da semana que vem enterrado
+ * lá embaixo.
+ *
+ * Erro NÃO vira lista vazia: "Nenhum evento em aberto" é uma afirmação, e
+ * afirmá-la porque a consulta falhou faria ela cadastrar um evento que já
+ * existe.
+ */
+export async function eventosParaVincular(): Promise<{
+  eventos: EventoParaVincular[];
+  error?: string;
+}> {
+  const supabase = createClient();
+  const hoje = new Date().toLocaleDateString("en-CA", {
+    timeZone: "America/Sao_Paulo",
+  });
+
+  const { data, error } = await supabase
+    .from("events")
+    .select("id, name, date, status, archived, clients(name)")
+    .not("status", "in", "(concluido,cancelado)")
+    .gte("date", hoje)
+    .order("date", { ascending: true })
+    .limit(200);
+
+  if (error) return { eventos: [], error: "Não foi possível carregar os eventos." };
+
+  const eventos = ((data ?? []) as unknown as {
+    id: string;
+    name: string | null;
+    date: string;
+    archived: boolean | null;
+    clients: { name: string } | null;
+  }[])
+    .filter((e) => e.archived !== true)
+    .map((e) => ({
+      id: e.id,
+      label: e.name || e.clients?.name || "Evento sem nome",
+      date: e.date,
+    }));
+
+  return { eventos };
+}
+
+/**
+ * Vincula um ou vários fornecedores a um evento — o mesmo upsert em
+ * roteiro_links que a tela do evento já faz, com o mesmo fallback para a
+ * coluna `role` ausente (027 pendente). Idempotente.
+ */
+export async function vincularAoEvento(
+  eventId: string,
+  supplierIds: string[]
+): Promise<{ error?: string; vinculados?: number }> {
+  const limpos = [...new Set(supplierIds.filter(Boolean))].slice(0, MAX_LOTE);
+  if (!eventId || limpos.length === 0) return { vinculados: 0 };
+
+  const supabase = createClient();
+  const linhas = limpos.map((supplier_id) => ({
+    event_id: eventId,
+    supplier_id,
+    hash: randomBytes(16).toString("hex"),
+  }));
+
+  let { error } = await supabase
+    .from("roteiro_links")
+    .upsert(
+      linhas.map((l) => ({ ...l, role: null })),
+      { onConflict: "event_id,supplier_id", ignoreDuplicates: true }
+    );
+
+  if (error?.code === "42703") {
+    ({ error } = await supabase
+      .from("roteiro_links")
+      .upsert(linhas, { onConflict: "event_id,supplier_id", ignoreDuplicates: true }));
+  }
+
+  if (error) return { error: "Não foi possível vincular ao evento" };
+
+  revalidatePath("/fornecedores");
+  revalidatePath(`/eventos/${eventId}/fornecedores`);
+  revalidatePath(`/eventos/${eventId}/roteiro`);
+  revalidatePath("/eventos/[id]", "layout");
+  return { vinculados: limpos.length };
 }

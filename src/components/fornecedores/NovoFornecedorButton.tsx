@@ -14,7 +14,16 @@ export function NovoFornecedorButton({
     <>
       <button
         onClick={() => setAberto(true)}
-        className="flex items-center gap-1.5 rounded-lg bg-gray-900 px-3.5 py-2 text-sm font-semibold text-white hover:bg-gray-800"
+        className="flex h-8 items-center gap-1.5 px-3.5"
+        style={{
+          border: 0,
+          borderRadius: 8,
+          background: "var(--tinta)",
+          color: "var(--marfim)",
+          font: "600 13px/1 'Instrument Sans', system-ui, sans-serif",
+          cursor: "pointer",
+          whiteSpace: "nowrap",
+        }}
       >
         <Plus size={15} />
         {label}

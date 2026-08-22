@@ -1,8 +1,13 @@
 import type { EventoExportRow } from "@/lib/supabase/eventos-list";
 import { EVENT_STATUS_LABELS, type EventStatus } from "@/lib/types";
 
+// Campo que começa com =, +, - ou @ é lido como FÓRMULA pelo Excel e pelo
+// Sheets: nome de cliente digitado à mão viraria código na planilha de
+// quem abre. O apóstrofo neutraliza sem mudar o que se lê na célula.
+// (Mesma proteção em relatorio-fornecedores.ts.)
 function csvCampo(v: string) {
-  return /[",\n;]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+  const seguro = /^[=+\-@\t\r]/.test(v) ? "'" + v : v;
+  return /[",\n\r;]/.test(seguro) ? `"${seguro.replace(/"/g, '""')}"` : seguro;
 }
 
 // Gera o CSV do relatório de eventos (separador ";", BOM p/ Excel pt-BR).

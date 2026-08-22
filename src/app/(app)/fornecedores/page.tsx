@@ -1,84 +1,41 @@
-// Tela global de Fornecedores (Etapa 2): listagem com busca, filtros e
-// cadastro. Recurso compartilhado da empresa — visível para toda a equipe
-// (RLS por empresa da migração 024).
+import { getFornecedoresDaTela } from "@/lib/supabase/fornecedores-tela";
+import { getMeuCargo } from "@/lib/supabase/equipe";
+import { FornecedoresTela } from "@/components/fornecedores/FornecedoresTela";
 
-import {
-  getCategoriasEmUso,
-  getFornecedoresList,
-} from "@/lib/supabase/fornecedores";
-import { parseFornecedoresParams } from "@/lib/fornecedores-url";
-import { FornecedoresFiltros } from "@/components/fornecedores/FornecedoresFiltros";
-import { FornecedoresTable } from "@/components/fornecedores/FornecedoresTable";
-import { NovoFornecedorButton } from "@/components/fornecedores/NovoFornecedorButton";
+// A tela filtra no cliente, então o servidor entrega a lista inteira uma
+// vez — e por isso ela precisa ser sempre fresca: sem `force-dynamic` o
+// Next serviria um cadastro velho depois de cada cadastro novo.
+export const dynamic = "force-dynamic";
 
 export default async function FornecedoresPage({
   searchParams,
 }: {
-  searchParams: Record<string, string | string[] | undefined>;
+  searchParams?: { f?: string };
 }) {
-  const current = parseFornecedoresParams(searchParams);
-
-  const [lista, categorias] = await Promise.all([
-    getFornecedoresList(current),
-    getCategoriasEmUso(),
+  const [{ linhas, migracaoPendente }, { cargo }] = await Promise.all([
+    getFornecedoresDaTela(),
+    getMeuCargo(),
   ]);
 
-  const semFiltros =
-    !current.q &&
-    !current.categoria &&
-    !current.tipo &&
-    !current.status &&
-    !current.faixa;
+  // Assistente LÊ o cadastro (RLS 024) mas não escreve — e as policies de
+  // UPDATE só têm USING, então a recusa volta com zero linhas e SEM erro.
+  // Botão que falha calado é pior que botão ausente.
+  const podeEscrever =
+    cargo === "proprietaria" || cargo === "coordenadora" || cargo === "cerimonialista";
+
+  // "Este ano" nasce aqui, em Brasília: calcular no cliente faria o
+  // servidor e o navegador discordarem na virada do ano.
+  const anoCorrente = Number(
+    new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }).slice(0, 4)
+  );
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold text-gray-900">Fornecedores</h1>
-          <p className="text-sm text-gray-500">
-            Gerencie seus fornecedores e parceiros
-          </p>
-        </div>
-        <NovoFornecedorButton />
-      </div>
-
-      {lista.migrationPendente && (
-        <div
-          data-migracao="026_fornecedores_categoria_tipo_operacional.sql"
-          className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
-        >
-          Esta parte do sistema ainda não foi liberada nesta conta.
-        </div>
-      )}
-
-      {!lista.migrationPendente && semFiltros && lista.total === 0 ? (
-        <div className="rounded-lg border-2 border-dashed border-gray-200 bg-white p-12 text-center">
-          <p className="text-sm text-gray-500">
-            Nenhum fornecedor cadastrado ainda.
-          </p>
-          <div className="mt-4 flex justify-center">
-            <NovoFornecedorButton label="Cadastrar primeiro fornecedor" />
-          </div>
-        </div>
-      ) : (
-        <>
-          <FornecedoresFiltros
-            current={current}
-            categoriasDisponiveis={categorias}
-          />
-          {lista.rows.length === 0 ? (
-            <div className="rounded-lg border-2 border-dashed border-gray-200 bg-white p-12 text-center text-sm text-gray-500">
-              Nenhum fornecedor encontrado com estes filtros.
-            </div>
-          ) : (
-            <FornecedoresTable
-              rows={lista.rows}
-              total={lista.total}
-              current={current}
-            />
-          )}
-        </>
-      )}
-    </div>
+    <FornecedoresTela
+      linhas={linhas}
+      anoCorrente={anoCorrente}
+      migracaoPendente={migracaoPendente}
+      selecionadoInicial={searchParams?.f ?? null}
+      podeEscrever={podeEscrever}
+    />
   );
 }

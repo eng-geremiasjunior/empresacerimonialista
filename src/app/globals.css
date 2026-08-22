@@ -13,6 +13,12 @@
   --papel: #ffffff;
   --nevoa: #f2eee9;
   --linha: #e6e0d8;
+  /* nevoa aprofundada: item de navegacao ATIVO, onde a nevoa normal ja e
+     o hover e precisaria de um degrau a mais para se distinguir dele */
+  --nevoa-2: #ede8e2;
+  /* regua entre linhas de lista longa: a hairline cheia pesa quando se
+     repete quarenta vezes na mesma tela */
+  --linha-suave: #f0ece6;
   --tinta: #221e1b;
   --cinza: #928a81;
   --cinza-2: #b4ada4;
@@ -130,3 +136,18 @@ body[data-tema="neutro"] {
   --ev-st-cancelado-bg: #f1eae8;
   --ev-st-cancelado-fg: #96605a;
 }
+
+/* ------------------------------------------------------------------
+   Fornecedores — hover e foco.
+   Estilo inline não faz :hover nem :focus-visible, e a especificação
+   pede os dois em todo controle. Classes mínimas, só o que o inline
+   não alcança.
+   ------------------------------------------------------------------ */
+.vela-btn-primario:hover { background: #000000; }
+.vela-btn-primario:active { transform: translateY(0.5px); }
+.vela-btn-secundario:hover { background: var(--nevoa); border-color: var(--tinta); }
+.vela-btn-secundario:active { transform: translateY(0.5px); }
+.vela-link:hover { color: #000000; }
+.vela-item-nav:hover { background: var(--nevoa); color: var(--tinta); }
+.vela-busca:focus-within { border-color: var(--tinta); box-shadow: var(--ring-focus); }
+.vela-foco:focus-visible { outline: none; box-shadow: var(--ring-focus); border-color: var(--accent-quiet); }
