@@ -19,7 +19,7 @@ import { coverPublicUrl } from "@/lib/event-cover";
 import { ACAO_PATH } from "@/lib/proxima-acao";
 import type { EventoRow } from "@/lib/supabase/eventos-list";
 import type { EventoCardData } from "@/lib/supabase/eventos-cards";
-import { SAUDE_UI, type Saude } from "@/lib/saude-evento";
+import { SAUDE_UI, type Saude, saudeEmPalavras } from "@/lib/saude-evento";
 import { formatDate } from "@/lib/format";
 import {
   EVENT_STATUS_LABELS,
@@ -38,9 +38,7 @@ const STATUS_STYLES: Record<EventStatus, string> = {
 
 // Descrição textual da saúde conforme os limiares já definidos.
 function saudeTexto(saude: Saude) {
-  if (saude.score >= 80) return "Tudo encaminhado";
-  if (saude.score >= 50) return "Atenção necessária";
-  return "Risco alto";
+  return saudeEmPalavras(saude);
 }
 
 function CircularSaude({ saude }: { saude: Saude }) {

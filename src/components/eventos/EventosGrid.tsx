@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Image as ImageIcon } from "lucide-react";
 import type { EventoRow } from "@/lib/supabase/eventos-list";
 import { coverPublicUrl } from "@/lib/event-cover";
-import { SAUDE_UI, type Saude } from "@/lib/saude-evento";
+import { SAUDE_UI, type Saude, saudeEmPalavras } from "@/lib/saude-evento";
 import { formatDate } from "@/lib/format";
 import {
   EVENT_STATUS_LABELS,
@@ -82,11 +82,11 @@ export function EventosGrid({ rows, saudeById, todayIso, weekEndIso }: Props) {
                 <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100">
                   <div
                     className={`h-full rounded-full ${SAUDE_UI[saude.nivel].bar}`}
-                    style={{ width: `${saude.score}%` }}
+                    style={{ width: `${saudeEmPalavras(saude)}` }}
                   />
                 </div>
                 <span className="text-xs font-medium text-gray-500 tabular-nums">
-                  {saude.score}%
+                  {saudeEmPalavras(saude)}
                 </span>
               </div>
             )}

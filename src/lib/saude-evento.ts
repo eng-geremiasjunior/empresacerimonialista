@@ -22,7 +22,22 @@ export type Saude = {
   score: number; // 0-100 inteiro
   nivel: SaudeNivel;
   alertas: SaudeAlerta[];
+  /** o evento ainda não tem nada para avaliar — não confundir com saudável */
+  semDados: boolean;
 };
+
+/**
+ * A frase que acompanha o anel. Score alto com alerta na lista não é
+ * "tudo encaminhado" — é "nada deu errado ainda", que é outra coisa.
+ */
+export function saudeEmPalavras(saude: Saude): string {
+  if (saude.semDados) return "Ainda não configurado";
+  if (saude.score >= 80) {
+    return saude.alertas.length === 0 ? "Tudo encaminhado" : "Falta configurar";
+  }
+  if (saude.score >= 50) return "Atenção necessária";
+  return "Risco alto";
+}
 
 const PESO_TAREFAS = 30;
 const PESO_FORNECEDORES = 25;
@@ -50,7 +65,11 @@ export function calcularSaudeEvento(input: SaudeInput): Saude {
       });
     }
   } else {
+    // Sem tarefa nenhuma não há o que dar errado, então o peso vem cheio —
+    // mas isso NÃO é "encaminhado". Vira alerta, e quem monta o rótulo
+    // sabe distinguir "nada errado" de "nada feito".
     score += PESO_TAREFAS;
+    alertas.push({ texto: "Nenhuma tarefa cadastrada", aba: "tarefas" });
   }
 
   // Fornecedores (25%) — sem fornecedores não penaliza.
@@ -66,6 +85,7 @@ export function calcularSaudeEvento(input: SaudeInput): Saude {
     }
   } else {
     score += PESO_FORNECEDORES;
+    alertas.push({ texto: "Nenhum fornecedor vinculado", aba: "fornecedores" });
   }
 
   // Financeiro (25%) — sem parcelas vencidas = saudável.
@@ -90,7 +110,19 @@ export function calcularSaudeEvento(input: SaudeInput): Saude {
   }
 
   const rounded = Math.round(score);
-  return { score: rounded, nivel: nivelDaSaude(rounded), alertas };
+  return {
+    score: rounded,
+    nivel: nivelDaSaude(rounded),
+    alertas,
+    // Um evento recém-criado marcava 100 e "Tudo encaminhado": sem tarefa,
+    // sem fornecedor e sem parcela vencida, os pesos vinham todos cheios.
+    // Nada estava errado — mas nada estava feito, e a frase prometia
+    // prontidão. Este campo separa as duas coisas.
+    semDados:
+      input.tarefasTotal === 0 &&
+      input.fornecedoresTotal === 0 &&
+      input.roteiroItens === 0,
+  };
 }
 
 // Tokens de cor da Saúde. Cor só no ponto (dot) e na barra fina; texto neutro.

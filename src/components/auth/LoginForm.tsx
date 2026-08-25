@@ -67,7 +67,19 @@ export function LoginForm() {
         },
       });
       if (error) {
-        setError("Não foi possível criar a conta. " + error.message);
+        // O ramo de login logo acima já traduz por código; este mostrava
+        // meia frase em português e meia em inglês ("User already
+        // registered") na PRIMEIRA tela do sistema.
+        console.error("[vela:cadastro]", error);
+        setError(
+          error.code === "user_already_exists" || /already registered/i.test(error.message)
+            ? "Já existe uma conta com este e-mail. Entre em vez de criar."
+            : error.code === "validation_failed"
+              ? "Confira o e-mail digitado."
+              : error.code === "weak_password"
+                ? "A senha precisa de pelo menos 6 caracteres."
+                : "Não foi possível criar a conta agora. Tente de novo em alguns instantes."
+        );
         setLoading(false);
         return;
       }

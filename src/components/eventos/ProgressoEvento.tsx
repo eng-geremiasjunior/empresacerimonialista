@@ -24,6 +24,7 @@ import type {
   FaseProgresso,
   FasesEvento,
 } from "@/lib/supabase/resumo-evento";
+import { saudeEmPalavras } from "@/lib/saude-evento";
 
 // Tokens do chrome do evento: no tema padrão é o teal de hoje; no tema
 // neutro do Planejamento vira a ameixa (um único destaque).
@@ -144,20 +145,20 @@ export function ProgressoEvento({
     <div className="grid gap-6 rounded-2xl border border-[color:var(--ev-card-border-soft)] bg-[color:var(--ev-card-bg)] p-6 shadow-sm sm:grid-cols-[auto,1fr] sm:items-center">
       <div className="sm:border-r sm:border-[color:var(--ev-card-border-soft)] sm:pr-6">
         <p className="text-sm text-[color:var(--ev-text-muted)]">Progresso geral</p>
+        {/* Era "{score}%" em 4xl: num evento recém-criado dizia 100% e
+            "Todo em dia" — sem tarefa, sem fornecedor e sem cronograma. A
+            frase carrega o mesmo dado sem prometer prontidão, e o CLAUDE.md
+            veta o "100%" de qualquer jeito. */}
         <p
-          className="text-4xl font-semibold tracking-tight"
+          className="text-2xl font-semibold tracking-tight"
           style={{ color: cor }}
         >
-          {saude.score}%
+          {saudeEmPalavras(saude)}
         </p>
         <p className="mt-0.5 text-sm text-[color:var(--ev-text-muted)]">
-          {saude.score >= 100
-            ? "Todo em dia"
-            : saude.score >= 80
-              ? "Sob controle"
-              : saude.alertas.length > 0
-                ? `${saude.alertas.length} ${saude.alertas.length === 1 ? "ponto" : "pontos"} de atenção`
-                : "Em andamento"}
+          {saude.alertas.length > 0
+            ? `${saude.alertas.length} ${saude.alertas.length === 1 ? "ponto" : "pontos"} de atenção`
+            : "Nada pendente"}
         </p>
       </div>
 

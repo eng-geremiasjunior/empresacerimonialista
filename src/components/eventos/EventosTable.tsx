@@ -21,7 +21,7 @@ import {
 } from "@/app/(app)/eventos/actions";
 import { buildEventosHref, type EventosParams } from "@/lib/eventos-url";
 import type { EventoRow } from "@/lib/supabase/eventos-list";
-import { SAUDE_UI, type Saude } from "@/lib/saude-evento";
+import { SAUDE_UI, type Saude, saudeEmPalavras } from "@/lib/saude-evento";
 import { formatDate } from "@/lib/format";
 import {
   EVENT_STATUS_LABELS,
@@ -261,11 +261,11 @@ export function EventosTable({
                         <div className="h-1.5 w-10 overflow-hidden rounded-full bg-gray-100">
                           <div
                             className={`h-full rounded-full ${SAUDE_UI[saude.nivel].bar}`}
-                            style={{ width: `${saude.score}%` }}
+                            style={{ width: `${saudeEmPalavras(saude)}` }}
                           />
                         </div>
                         <span className="text-xs font-medium text-gray-500 tabular-nums">
-                          {saude.score}%
+                          {saudeEmPalavras(saude)}
                         </span>
                       </div>
                     ) : (

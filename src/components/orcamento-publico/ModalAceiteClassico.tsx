@@ -133,12 +133,20 @@ export function ModalAceiteClassico({
       ({ data, error } = await supabase.rpc("registrar_aceite_proposta", base));
     }
 
-    const falha = error?.message ?? (data as { error?: string })?.error;
-    if (falha) {
+    // Duas naturezas diferentes de falha, e só uma serve para a noiva:
+    //   data.error  — regra de negócio, e a RPC já devolve em português
+    //                 ("esta proposta expirou", "pacote inválido")
+    //   error.message — transporte/Postgres, em inglês e com nome de
+    //                 tabela. Isso NÃO vai para a tela de fechamento dela.
+    const doNegocio = (data as { error?: string })?.error;
+    if (doNegocio || error) {
+      if (error) console.error("[vela:aceite]", error);
       jaEnviou.current = false;
       setEnviando(false);
       return setErro(
-        typeof falha === "string" ? falha : "Não foi possível registrar."
+        typeof doNegocio === "string" && doNegocio
+          ? doNegocio
+          : "Não conseguimos registrar agora. Tente de novo ou fale com a sua cerimonialista."
       );
     }
 
