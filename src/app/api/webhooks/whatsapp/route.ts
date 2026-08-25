@@ -113,6 +113,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'ok' }, { status: 200 });
     }
 
+    // Descarte por idade, aproveitando a visita: o payload cru guarda
+    // telefone e mensagem, e só serve para depurar por alguns dias.
+    // Fire-and-forget — a limpeza nunca atrasa a resposta à Meta.
+    void admin
+      .from('whatsapp_messages_log')
+      .delete()
+      .lt('created_at', new Date(Date.now() - 30 * 86_400_000).toISOString())
+      .then(({ error }) => {
+        if (error) console.error('[vela:webhook] descarte do log:', error.message);
+      });
+
     // Auditoria: guarda tudo que chega, processado ou não.
     const { data: logRow } = await admin
       .from('whatsapp_messages_log')

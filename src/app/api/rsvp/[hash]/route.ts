@@ -71,11 +71,21 @@ export async function POST(
     return NextResponse.json({ ok: false, erro: "corpo_invalido" }, { status: 400 });
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { auth: { persistSession: false } }
-  );
+  // Service role, não a chave publicável: a 120 fechou a RPC ao anônimo,
+  // porque com ela executável pelo anon qualquer um chamava o banco
+  // DIRETO e o limitador desta rota virava decoração.
+  const chave = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!chave) {
+    console.error("[vela:rsvp] SUPABASE_SERVICE_ROLE_KEY ausente");
+    return NextResponse.json({ ok: false, erro: "indisponivel" }, { status: 503 });
+  }
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, chave, {
+    auth: { persistSession: false },
+    global: {
+      // Next cacheia fetch GET em route handler; nunca aqui.
+      fetch: (i, x) => fetch(i, { ...x, cache: "no-store" }),
+    },
+  });
 
   const { data, error } = await supabase.rpc("autocadastrar_convidado", {
     p_hash: params.hash,
