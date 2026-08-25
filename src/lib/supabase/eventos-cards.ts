@@ -36,7 +36,7 @@ function group<T extends { event_id: string }>(rows: T[]) {
 }
 
 export async function getEventosCardData(
-  events: { id: string; date: string }[]
+  events: { id: string; date: string; status?: string; archived?: boolean | null }[]
 ): Promise<Record<string, EventoCardData>> {
   if (events.length === 0) return {};
   const supabase = createClient();
@@ -147,7 +147,19 @@ export async function getEventosCardData(
       )
       .sort((a, b) => (a.due_date ?? "").localeCompare(b.due_date ?? ""))[0];
 
-    const proximaAcao = calcularProximaAcao({
+    // Evento cancelado ou arquivado não pede nada. O cartão calculava a
+    // próxima ação sem nem receber o status — a lista mostra cancelado por
+    // padrão, então ela via "Confirmar o buffet" de um casamento que não
+    // vai acontecer.
+    const morto = ev.status === "cancelado" || ev.archived === true;
+    const proximaAcao = morto
+      ? {
+          texto: ev.archived === true ? "Evento arquivado" : "Evento cancelado",
+          acao: null as null,
+          urgencia: "baixa" as const,
+          botao: null,
+        }
+      : calcularProximaAcao({
       hojeIso: hoje,
       em2diasIso: em2,
       em7diasIso: em7,
@@ -156,7 +168,7 @@ export async function getEventosCardData(
       fornecedorPendenteNome: fornecedorPendente,
       tarefaUrgenteTitulo: tarefaUrgente?.title ?? null,
       cronogramaVazio: items.length === 0,
-    });
+        });
 
     // --- Financeiro resumido ---
     const receitas = tx.filter((t) => t.type === "receita");

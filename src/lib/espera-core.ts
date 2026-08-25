@@ -13,6 +13,7 @@ import {
   type StatusSolicitacao,
   type TipoSolicitacao,
 } from "@/lib/solicitacoes-core";
+import { plural } from "@/lib/format";
 
 /** O que uma linha da espera precisa saber (já lido do banco). */
 export type SolicitacaoEspera = {
@@ -68,9 +69,6 @@ function dias(deIso: string, agoraIso: string): number {
   return Math.max(0, Math.floor((Date.parse(agoraIso) - Date.parse(deIso)) / DIA));
 }
 
-function plural(n: number, um: string, muitos: string): string {
-  return n === 1 ? um : muitos;
-}
 
 export function haDias(n: number): string {
   if (n === 0) return "hoje";

@@ -13,6 +13,20 @@ import type {
   DinheiroDoFornecedor,
   Fornecedor,
 } from "@/lib/fornecedores-core";
+import { categoriaLabel } from "@/lib/fornecedores-shared";
+
+/**
+ * As categorias de um fornecedor viram UMA linha de texto. Um fornecedor
+ * pode ter várias (026); esta tela tem uma coluna só, então a primeira
+ * nomeia e o resto vira "+N" — o mesmo que /fornecedores faz.
+ */
+function rotuloDasCategorias(
+  cats: { categoria: string }[] | null | undefined
+): string | null {
+  const lista = (cats ?? []).map((c) => categoriaLabel(c.categoria));
+  if (lista.length === 0) return null;
+  return lista.length === 1 ? lista[0] : `${lista[0]} +${lista.length - 1}`;
+}
 
 type LinkRow = {
   supplier_id: string;
@@ -20,9 +34,9 @@ type LinkRow = {
   created_at: string | null;
   suppliers: {
     name: string;
-    category: string | null;
     email: string | null;
     whatsapp: string | null;
+    supplier_categorias: { categoria: string }[] | null;
   } | null;
 };
 
@@ -40,7 +54,13 @@ export const getFornecedoresDoEvento = cache(
       supabase
         .from("roteiro_links")
         .select(
-          "supplier_id, confirmed, created_at, suppliers(name, category, email, whatsapp)"
+          // supplier_categorias, NÃO suppliers.category: a coluna antiga foi
+          // aposentada na 026 e ninguém mais escreve nela (dbFields não a
+          // inclui). Esta tela ainda lia dali, então TODO fornecedor
+          // cadastrado depois da 026 aparecia aqui como "sem categoria" —
+          // enquanto a tela /fornecedores, que lê a fonte certa, mostrava
+          // a categoria dele normalmente.
+          "supplier_id, confirmed, created_at, suppliers(name, email, whatsapp, supplier_categorias(categoria))"
         )
         .eq("event_id", eventId),
       supabase
@@ -156,7 +176,7 @@ export const getFornecedoresDoEvento = cache(
       .map<Fornecedor>((l) => ({
         supplierId: l.supplier_id,
         nome: l.suppliers!.name,
-        categoria: l.suppliers!.category,
+        categoria: rotuloDasCategorias(l.suppliers!.supplier_categorias),
         email: l.suppliers!.email,
         whatsapp: l.suppliers!.whatsapp,
         confirmadoNoEvento: l.confirmed,

@@ -97,7 +97,8 @@ export async function criarLancamento(
     if (error.code === "42501" || error.message.includes("row-level security")) {
       return { error: "Você não tem permissão para lançar neste evento." };
     }
-    return { error: `Não foi possível lançar: ${error.message}` };
+    console.error("[vela:lancamento]", error);
+    return { error: "Não foi possível lançar. Confira os campos e tente de novo." };
   }
 
   revalidatePath(`/eventos/${eventId}/financeiro`);

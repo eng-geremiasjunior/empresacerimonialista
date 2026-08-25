@@ -34,7 +34,8 @@ function causa(error: { code?: string; message: string }, fallback: string): Res
   if (error.message.includes("mesmo_evento")) {
     return { error: "Essa mesa não é deste evento." };
   }
-  return { error: `${fallback}: ${error.message}` };
+  console.error("[vela:mesas]", error);
+  return { error: fallback };
 }
 
 const snapServidor = (cm: number) => Math.round(cm / SNAP_CM) * SNAP_CM;

@@ -27,3 +27,12 @@ export function formatCurrency(value: number) {
     maximumFractionDigits: value % 1 === 0 ? 0 : 2,
   }).format(value);
 }
+
+/**
+ * "1 tarefa" / "3 tarefas". Existia copiado em quatro arquivos, e a tela da
+ * Organização não usava nenhum deles — escrevia "1 tarefas abertas", que é
+ * o caso MAIS provável com uma testadora de poucos dados.
+ */
+export function plural(n: number, um: string, muitos: string): string {
+  return `${n} ${n === 1 ? um : muitos}`;
+}

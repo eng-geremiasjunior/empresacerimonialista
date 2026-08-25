@@ -1,3 +1,4 @@
+import { plural } from "@/lib/format";
 // O que o Copiloto conta.
 //
 // Ele contava ESTADO: "9 eventos precisam da sua atenção hoje", onde os 9
@@ -37,9 +38,6 @@ export function resumirPrazos(tipos: TipoPrazo[]): ResumoPrazos {
   return r;
 }
 
-function plural(n: number, um: string, muitos: string): string {
-  return `${n} ${n === 1 ? um : muitos}`;
-}
 
 /**
  * A linha do Copiloto. Dinheiro primeiro, depois o dia do evento, depois o

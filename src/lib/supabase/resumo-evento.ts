@@ -7,6 +7,7 @@ import { getSaudeEvento } from "@/lib/supabase/evento";
 import { calcularSaudeEvento, type Saude } from "@/lib/saude-evento";
 import type { EventStatus, EventType } from "@/lib/types";
 import { emDiasBR, hojeBR } from "@/lib/tempo";
+import { plural } from "@/lib/format";
 
 const iso = (d: Date) => format(d, "yyyy-MM-dd");
 
@@ -49,8 +50,6 @@ export type CabecalhoEvento = {
   contadores: EventoContadores;
 };
 
-const plural = (n: number, um: string, muitos: string) =>
-  `${n} ${n === 1 ? um : muitos}`;
 
 export async function getCabecalhoEvento(
   eventId: string,

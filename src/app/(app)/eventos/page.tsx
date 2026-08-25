@@ -52,7 +52,10 @@ export default async function EventosPage({
       getResumoRapidoEventos(),
     ]);
   const cardData = await getEventosCardData(
-    rows.map((r) => ({ id: r.id, date: r.date }))
+    // status vai junto: sem ele o cartão não sabe que o evento foi
+    // cancelado e inventa uma próxima ação para ele. (archived não entra
+    // porque a consulta da lista já filtra por ele.)
+    rows.map((r) => ({ id: r.id, date: r.date, status: r.status }))
   );
 
   const now = new Date();

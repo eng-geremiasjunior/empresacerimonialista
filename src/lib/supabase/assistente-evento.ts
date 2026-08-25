@@ -10,6 +10,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { inicioDoDiaBR } from "@/lib/tempo";
+import { categoriaLabel } from "@/lib/fornecedores-shared";
 
 export type ContextoEvento = {
   ok: boolean;
@@ -73,9 +74,17 @@ export async function montarContextoEvento(
       .select("description, type, value, due_date, paid, conta")
       .eq("event_id", eventId)
       .order("due_date", { ascending: true }),
+    // roteiro_links, NÃO event_suppliers: aquela tabela existe desde o
+    // começo e tem ZERO linhas — nada no sistema escreve nela. O assistente
+    // montava o bloco "FORNECEDORES DO EVENTO" a partir dela e, portanto,
+    // respondia que o evento não tinha fornecedor nenhum, mesmo com a aba
+    // cheia. E categoria vem de supplier_categorias, não da coluna
+    // aposentada.
     supabase
-      .from("event_suppliers")
-      .select("role, suppliers(name, category, phone, whatsapp)")
+      .from("roteiro_links")
+      .select(
+        "role, suppliers(name, phone, whatsapp, supplier_categorias(categoria))"
+      )
       .eq("event_id", eventId),
   ]);
 
@@ -233,13 +242,19 @@ export async function montarContextoEvento(
       `FORNECEDORES DO EVENTO:\n` +
         fornecedores
           .map((f) => {
-            const s = f.suppliers as
-              | { name: string; category: string | null; phone: string | null; whatsapp: string | null }
-              | { name: string; category: string | null; phone: string | null; whatsapp: string | null }[]
-              | null;
+            type Sup = {
+              name: string;
+              phone: string | null;
+              whatsapp: string | null;
+              supplier_categorias: { categoria: string }[] | null;
+            };
+            const s = f.suppliers as Sup | Sup[] | null;
             const sup = Array.isArray(s) ? s[0] : s;
             if (!sup) return null;
-            return `- ${sup.name}${f.role ? ` (${f.role})` : ""}${sup.category ? ` · ${sup.category}` : ""}${sup.whatsapp || sup.phone ? ` · ${sup.whatsapp || sup.phone}` : ""}`;
+            const cats = (sup.supplier_categorias ?? [])
+              .map((c) => categoriaLabel(c.categoria))
+              .join(", ");
+            return `- ${sup.name}${f.role ? ` (${f.role})` : ""}${cats ? ` · ${cats}` : ""}${sup.whatsapp || sup.phone ? ` · ${sup.whatsapp || sup.phone}` : ""}`;
           })
           .filter(Boolean)
           .join("\n")

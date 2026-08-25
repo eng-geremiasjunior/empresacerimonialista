@@ -67,6 +67,7 @@ import {
   TextField,
   type BadgeTone,
 } from "@/components/ui/celebra";
+import { plural } from "@/lib/format";
 
 type Vista = "lista" | "timeline" | "agenda";
 type Filtro = "todas" | "atrasadas" | "andamento" | "concluidas";
@@ -301,7 +302,8 @@ export function OrganizacaoEvento({
 
         {vista === "agenda" && (
           <span className="mono" style={{ marginLeft: "auto", fontFamily: "var(--font-mono)", fontSize: 11.5, color: "var(--text-muted)" }}>
-            {org.compromissos.length} compromissos · {abertas} tarefas abertas
+            {plural(org.compromissos.length, "compromisso", "compromissos")} ·{" "}
+              {plural(abertas, "tarefa aberta", "tarefas abertas")}
           </span>
         )}
       </div>

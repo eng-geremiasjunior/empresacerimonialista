@@ -100,10 +100,12 @@ export async function criarEventoCompleto(
   }
 
   if (error || !data) {
+    console.error("[vela:novo-evento]", error);
     return {
+      // O texto do Postgres não diz nada a ela e assusta — vai para o log,
+      // que é onde alguém consegue usar.
       error:
-        "Não foi possível criar o evento (nada foi salvo). Tente novamente." +
-        (error ? ` [${error.message}]` : ""),
+        "Não foi possível criar o evento (nada foi salvo). Tente novamente.",
     };
   }
 
