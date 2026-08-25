@@ -66,15 +66,4 @@ export const getSugestoesDoEvento = cache(
   }
 );
 
-/** Quantas sugestões esperam a cerimonialista (fila do cronograma). */
-export const contarSugestoesPendentes = cache(
-  async (eventId: string): Promise<number> => {
-    const supabase = createClient();
-    const { count } = await supabase
-      .from("roteiro_sugestao")
-      .select("id", { count: "exact", head: true })
-      .eq("event_id", eventId)
-      .eq("estado", "pendente");
-    return count ?? 0;
-  }
-);
+/** Quantas sugestões esperam a cerimonialista (fila do cronograma). */// contarSugestoesPendentes saiu: exportada, nunca montada em tela nenhuma.

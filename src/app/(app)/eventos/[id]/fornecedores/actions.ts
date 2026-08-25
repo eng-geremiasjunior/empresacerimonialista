@@ -89,6 +89,8 @@ export async function vincularFornecedor(
   revalidatePath(`/eventos/${eventId}/fornecedores`);
   revalidatePath(`/eventos/${eventId}/roteiro`);
   revalidatePath("/eventos/[id]", "layout");
+  // A frase da sidebar ("N fornecedores sem confirmar") nasce no layout raiz.
+  revalidatePath("/", "layout");
   return {};
 }
 
@@ -118,6 +120,8 @@ export async function desvincularFornecedor(
   revalidatePath(`/eventos/${eventId}/fornecedores`);
   revalidatePath(`/eventos/${eventId}/roteiro`);
   revalidatePath("/eventos/[id]", "layout");
+  // A frase da sidebar ("N fornecedores sem confirmar") nasce no layout raiz.
+  revalidatePath("/", "layout");
   return {};
 }
 

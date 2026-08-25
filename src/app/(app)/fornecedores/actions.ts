@@ -155,26 +155,8 @@ export async function editarFornecedor(
   revalidatePath("/fornecedores");
   revalidatePath(`/fornecedores/${id}`);
   return { id };
-}
-
-export async function setStatusFornecedor(
-  id: string,
-  status: string
-): Promise<Resultado> {
-  if (!STATUSES.includes(status as StatusFornecedor)) {
-    return { error: "Status inválido" };
-  }
-  const supabase = createClient();
-  const { error } = await supabase
-    .from("suppliers")
-    .update({ status })
-    .eq("id", id);
-  if (error) return { error: "Não foi possível alterar o status" };
-  revalidatePath("/fornecedores");
-  revalidatePath(`/fornecedores/${id}`);
-  return { id };
-}
-
+}// setStatusFornecedor era um atalho sem chamador: o modal do fornecedor
+// já troca o status pelo select alimentado por STATUS_LABELS.
 // ------------------------------------------------------------------
 // Ações da tela nova: favoritar em lote e vincular a evento
 // ------------------------------------------------------------------

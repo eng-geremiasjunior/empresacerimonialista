@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Calendar, AlertCircle } from "lucide-react";
 import type { CopilotoAlerta } from "@/lib/supabase/queries";
+import { PRAZOS_EM_DIA } from "@/lib/copiloto-prazos";
 
 type Props = {
   greeting: string;
@@ -57,7 +58,7 @@ export function CopilotoDia({
           <div className="flex items-center gap-2.5 text-sm">
             <AlertCircle size={18} className="shrink-0 text-gray-400" />
             <span className="text-gray-500">
-              Nenhuma pendência crítica no momento
+              {PRAZOS_EM_DIA}
             </span>
           </div>
         ) : (

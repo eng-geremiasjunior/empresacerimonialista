@@ -82,24 +82,8 @@ export async function getBriefingHoje(): Promise<BriefingHoje> {
   ]);
 
   return { eventosHoje: eventos.count ?? 0, tarefasHoje: tarefas.count ?? 0 };
-}
-
-// Fornecedores ainda não confirmados em eventos dos próximos 7 dias.
-export async function getFornecedoresPendentes(): Promise<number> {
-  const supabase = createClient();
-  const hoje = hojeBR();
-  const fim = emDiasBR(7);
-
-  const { count } = await supabase
-    .from("roteiro_links")
-    .select("id, events!inner(date)", { count: "exact", head: true })
-    .eq("confirmed", false)
-    .gte("events.date", hoje)
-    .lte("events.date", fim);
-
-  return count ?? 0;
-}
-
+}// getFornecedoresPendentes viveu aqui sem nenhum chamador — e contava com
+// régua própria, divergente do getAlertasCopiloto (a fonte única declarada).
 // Transações não pagas vencendo nos próximos 7 dias.
 export async function getPagamentosVencendo(): Promise<number> {
   const supabase = createClient();
@@ -361,7 +345,13 @@ export const getAlertasCopiloto = cache(async function (): Promise<
       .eq("type", "receita")
       .eq("paid", false)
       .not("due_date", "is", null)
-      .lte("due_date", fim),
+      // Piso de 180 dias: sem ele, uma parcela esquecida de anos atrás
+      // mora na sidebar para sempre — não há ação de "baixar" ainda. E
+      // teto de linhas com ordem, para a lista não virar despejo.
+      .gte("due_date", emDiasBR(-180))
+      .lte("due_date", fim)
+      .order("due_date")
+      .limit(200),
   ]);
 
   // Falha de leitura não pode virar "Nada vencendo hoje.". Essa frase é uma

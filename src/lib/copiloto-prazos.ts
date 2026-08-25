@@ -44,8 +44,17 @@ export function resumirPrazos(tipos: TipoPrazo[]): ResumoPrazos {
  * resto — e nunca um número solto: um contador sem substantivo é o que
  * transforma informação em alarme.
  */
+/**
+ * A frase do vazio, exportada para o dashboard usar A MESMA — antes cada
+ * superfície tinha o próprio texto ("Nada vencendo hoje." na sidebar,
+ * "Nenhuma pendência crítica no momento" no dashboard) para o mesmo zero.
+ * E sem o "hoje": a lista soma vencidos + próximos 7 dias, então
+ * "vencendo hoje" descrevia uma janela que a conta não usa.
+ */
+export const PRAZOS_EM_DIA = "Nada a cobrar por enquanto.";
+
 export function frasePrazos(r: ResumoPrazos): string {
-  if (r.total === 0) return "Nada vencendo hoje.";
+  if (r.total === 0) return PRAZOS_EM_DIA;
 
   const partes: string[] = [];
   if (r.pagamento > 0) {

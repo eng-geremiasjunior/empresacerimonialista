@@ -13,6 +13,10 @@ import { revalidatePath } from "next/cache";
  * Uma lista só, chamada dos dois lados.
  */
 export function revalidarTarefas(eventId?: string) {
+  // O layout raiz é onde nasce a frase do Copiloto da sidebar — sem
+  // esta linha, concluir a última tarefa atrasada deixava "1 tarefa
+  // atrasada" na tela até o F5.
+  revalidatePath("/", "layout");
   revalidatePath("/tarefas");
   revalidatePath("/calendario");
   // O hub do evento (saúde, fases, Copiloto) e o painel.

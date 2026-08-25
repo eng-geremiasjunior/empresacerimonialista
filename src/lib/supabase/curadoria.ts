@@ -130,15 +130,4 @@ export const getCuradoriaDaDecisao = cache(
   }
 );
 
-/** Quantas rodadas esperam resposta da cliente (para o bloco da home). */
-export const contarEscolhasAbertas = cache(
-  async (eventId: string): Promise<number> => {
-    const supabase = createClient();
-    const { count } = await supabase
-      .from("decisao_curadoria")
-      .select("id", { count: "exact", head: true })
-      .eq("event_id", eventId)
-      .eq("estado", "publicada");
-    return count ?? 0;
-  }
-);
+/** Quantas rodadas esperam resposta da cliente (para o bloco da home). */// contarEscolhasAbertas saiu: exportada, nunca montada em tela nenhuma.

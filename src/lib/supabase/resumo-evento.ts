@@ -360,58 +360,9 @@ export type EventoContadores = {
   financeiroVencendo: number;
   /** blocos do Planejamento com resposta da cliente sem conferir (091) */
   planejamentoDaCliente: number;
-};
-
-export async function getEventoContadores(
-  eventId: string
-): Promise<EventoContadores> {
-  const supabase = createClient();
-  const hoje = hojeBR();
-  const em7 = emDiasBR(7);
-
-  const [linksRes, msgRes, txRes, confRes] = await Promise.all([
-    // mesma régua da aba Fornecedores: vínculo sem cadastro legível não conta
-    supabase
-      .from("roteiro_links")
-      .select("confirmed, suppliers(id)")
-      .eq("event_id", eventId),
-    supabase
-      .from("event_messages")
-      .select("id", { count: "exact", head: true })
-      .eq("event_id", eventId)
-      .eq("sender_type", "fornecedor")
-      .is("read_at", null),
-    supabase
-      .from("transactions")
-      .select("id", { count: "exact", head: true })
-      .eq("event_id", eventId)
-      .eq("type", "receita")
-      .eq("paid", false)
-      .lte("due_date", em7),
-    supabase
-      .from("evento_campo_valor")
-      .select("evento_decisao_id")
-      .eq("event_id", eventId)
-      .eq("aguarda_conferencia", true),
-  ]);
-
-  const links = ((linksRes.data ?? []) as unknown as {
-    confirmed: boolean;
-    suppliers: { id: string } | null;
-  }[]).filter((l) => l.suppliers);
-
-  return {
-    fornecedoresPendentes: links.filter((l) => !l.confirmed).length,
-    comunicacaoNaoLidas: msgRes.count ?? 0,
-    financeiroVencendo: txRes.count ?? 0,
-    // financeiroVencendo já cobre "vencendo em 7 dias ou vencidas"
-    // (lte em7 inclui datas passadas).
-    planejamentoDaCliente: new Set(
-      (confRes.data ?? []).map((c: { evento_decisao_id: string }) => c.evento_decisao_id)
-    ).size,
-  };
-}
-
+};// getEventoContadores foi removida: ninguém a chamava e ela refazia, em 4
+// consultas separadas, o que getCabecalhoEvento já calcula. O type
+// EventoContadores fica — está na assinatura do cabeçalho.
 // ------------------------------------------------------------
 // Resumo completo (página)
 // ------------------------------------------------------------

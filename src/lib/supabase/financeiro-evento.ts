@@ -256,18 +256,6 @@ export const getNumerosDoFechamento = cache(async (eventId: string) => {
   } | null;
 });
 
-/** "Quanto esse fornecedor cobrou da última vez?" */
-export const getHistoricoPreco = cache(async (supplierId: string) => {
-  const supabase = createClient();
-  const { data } = await supabase.rpc("historico_preco_fornecedor", {
-    p_supplier_id: supplierId,
-  });
-  return ((data ?? []) as Linha[]).map((h) => ({
-    eventId: h.event_id as string,
-    evento: h.evento as string,
-    data: h.data_evento as string,
-    alocado: h.alocado === null ? null : Number(h.alocado),
-    pago: Number(h.pago ?? 0),
-    tipo: h.tipo_evento as string,
-  }));
-});
+/** "Quanto esse fornecedor cobrou da última vez?" */// getHistoricoPreco saiu do código: ninguém a chamava. A RPC
+// historico_preco_fornecedor continua no banco ("quanto ele cobrou da
+// última vez", pronta) — quando alguma tela quiser o número, é só chamar.

@@ -8,6 +8,8 @@ import { hojeBR } from "@/lib/tempo";
 export type FinanceiroFormState = { error: string } | { ok: true } | null;
 
 function revalidate(eventId: string) {
+  // A frase da sidebar ("N parcelas a cobrar") nasce no layout raiz.
+  revalidatePath("/", "layout");
   revalidatePath(`/eventos/${eventId}`, "layout");
   revalidatePath("/financeiro");
   revalidatePath("/eventos/dashboard");
