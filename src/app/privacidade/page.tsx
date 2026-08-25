@@ -52,6 +52,34 @@ export default function PrivacidadePage() {
             e recebidas, para acompanhar o status (enviado, respondido,
             reagendado).
           </li>
+          <li>
+            <b>Dados de convidados</b> informados pela cliente ou pelo próprio
+            convidado: nome, contato e, quando informadas voluntariamente,
+            <b> restrições alimentares e necessidades de acessibilidade</b> —
+            usadas apenas para o serviço do evento (cardápio e recepção) e
+            visíveis só à equipe do evento.
+          </li>
+        </ul>
+      </Secao>
+
+      <Secao titulo="Bases legais (LGPD)">
+        <ul style={lista}>
+          <li>
+            <b>Execução de contrato</b> (art. 7º, V): os dados da
+            cerimonialista, das clientes e dos fornecedores são tratados para
+            prestar o serviço contratado — organizar e executar o evento.
+          </li>
+          <li>
+            <b>Legítimo interesse</b> (art. 7º, IX): o contato operacional com
+            fornecedores escalados para um evento (confirmações, horários,
+            pendências), sempre restrito ao necessário e com opção de resposta.
+          </li>
+          <li>
+            <b>Consentimento</b> (art. 7º, I; art. 11 para dados sensíveis): o
+            convidado que preenche a própria confirmação de presença decide o
+            que informar — restrição alimentar e acessibilidade são campos
+            opcionais, tratados como dados sensíveis e usados só para o evento.
+          </li>
         </ul>
       </Secao>
 
@@ -81,6 +109,14 @@ export default function PrivacidadePage() {
       <Secao titulo="Seus direitos">
         Titulares de dados podem solicitar acesso, correção ou exclusão das
         suas informações. Basta entrar em contato pelo e-mail abaixo.
+      </Secao>
+
+      <Secao titulo="Quem responde pelos dados">
+        Para os dados dos eventos, a <b>controladora é a cerimonialista</b>{" "}
+        que os cadastrou — é ela quem decide o que coletar e para quê. O Vela
+        atua como <b>operador</b>, tratando os dados em nome dela e sob as
+        instruções desta política. Pedidos de titulares podem ser feitos à
+        cerimonialista responsável pelo seu evento ou pelo contato abaixo.
       </Secao>
 
       <Secao titulo="Contato">

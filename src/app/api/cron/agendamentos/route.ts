@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
     .eq("status", "enviado")
     .gt("prazo_ate", agora);
 
-  const reenvios: { conviteId: string; ok: boolean }[] = [];
+  const reenvios: { conviteId: string; ok: boolean; error?: string }[] = [];
   for (const c of paraReenviar ?? []) {
     const task = Array.isArray(c.tasks) ? c.tasks[0] : c.tasks;
     const horas = task?.reenvio_horas ?? 48;
@@ -203,6 +203,14 @@ export async function GET(request: NextRequest) {
         "convite_enviado"
       );
       reenvios.push({ conviteId: c.id, ok: true });
+    } else {
+      // O reenvio que falha não pode evaporar: sem este ramo, o convite
+      // ficava "enviado" para sempre e ninguém sabia que o canal caiu
+      // (com EMAIL_FROM no domínio de teste do Resend, TODOS caem).
+      console.error(
+        `[vela:cron] reenvio de convite ${c.id} falhou: ${envio.error ?? "sem motivo"}`
+      );
+      reenvios.push({ conviteId: c.id, ok: false, error: envio.error });
     }
   }
 

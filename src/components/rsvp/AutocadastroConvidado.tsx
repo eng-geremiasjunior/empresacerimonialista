@@ -251,6 +251,16 @@ export function AutocadastroConvidado({
           {erro}
         </p>
       )}
+
+      {/* LGPD: a política precisa aparecer ONDE o convidado entrega o dado
+          — inclusive restrição alimentar, que é dado sensível. Discreto de
+          propósito: uma linha, sem caixa. */}
+      <p className="rsvp-texto" style={{ fontSize: 12, opacity: 0.7, marginTop: 16 }}>
+        Seus dados são usados só para este evento.{" "}
+        <a href="/privacidade" target="_blank" rel="noreferrer" style={{ color: "inherit", textDecoration: "underline" }}>
+          Política de privacidade
+        </a>
+      </p>
     </div>
   );
 }
