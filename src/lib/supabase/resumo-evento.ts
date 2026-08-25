@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getSaudeEvento } from "@/lib/supabase/evento";
 import { calcularSaudeEvento, type Saude } from "@/lib/saude-evento";
 import type { EventStatus, EventType } from "@/lib/types";
+import { emDiasBR, hojeBR } from "@/lib/tempo";
 
 const iso = (d: Date) => format(d, "yyyy-MM-dd");
 
@@ -57,8 +58,8 @@ export async function getCabecalhoEvento(
   dataEvento?: string | null
 ): Promise<CabecalhoEvento> {
   const supabase = createClient();
-  const hoje = iso(new Date());
-  const em7 = iso(addDays(new Date(), 7));
+  const hoje = hojeBR();
+  const em7 = emDiasBR(7);
 
   const [tasksRes, linksRes, itemsRes, txRes, msgRes, confRes] = await Promise.all([
     // due_date entra para o Copiloto saber o que está vencido.
@@ -366,8 +367,8 @@ export async function getEventoContadores(
   eventId: string
 ): Promise<EventoContadores> {
   const supabase = createClient();
-  const hoje = iso(new Date());
-  const em7 = iso(addDays(new Date(), 7));
+  const hoje = hojeBR();
+  const em7 = emDiasBR(7);
 
   const [linksRes, msgRes, txRes, confRes] = await Promise.all([
     // mesma régua da aba Fornecedores: vínculo sem cadastro legível não conta

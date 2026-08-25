@@ -6,6 +6,7 @@ import { addDays, differenceInCalendarDays, format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { calcularSaudeEvento, type Saude } from "@/lib/saude-evento";
 import { calcularProximaAcao, type ProximaAcao } from "@/lib/proxima-acao";
+import { emDiasBR, hojeBR } from "@/lib/tempo";
 
 const iso = (d: Date) => format(d, "yyyy-MM-dd");
 
@@ -40,9 +41,9 @@ export async function getEventosCardData(
   if (events.length === 0) return {};
   const supabase = createClient();
   const ids = events.map((e) => e.id);
-  const hoje = iso(new Date());
-  const em2 = iso(addDays(new Date(), 2));
-  const em7 = iso(addDays(new Date(), 7));
+  const hoje = hojeBR();
+  const em2 = emDiasBR(2);
+  const em7 = emDiasBR(7);
 
   const [tasksRes, linksRes, txRes, itemsRes] = await Promise.all([
     supabase

@@ -3,6 +3,8 @@
 // organizacao-query.ts, para o componente client poder usar itensDoMes()
 // sem arrastar código server-only para o bundle.
 
+import { inicioDoDiaBR } from "@/lib/tempo";
+
 // Valores do CHECK real (003): em_progresso, não "em_andamento".
 export type TarefaStatus = "pendente" | "em_progresso" | "concluido";
 
@@ -135,16 +137,16 @@ export function marcoTemporal(
   dataEvento: string | null,
   concluida: boolean,
   // "hoje" vindo de fora (yyyy-MM-dd). Quem renderiza no servidor e
-  // hidrata no navegador precisa dos DOIS lados concordando: sem isto, a
-  // conta usa UTC no servidor e o fuso do aparelho no cliente, e das 21h
-  // à meia-noite os dois discordam sobre que dia é.
+  // hidrata no navegador precisa dos DOIS lados concordando. Sem isto cai
+  // no padrão, que agora é Brasília nos dois — antes era UTC no servidor
+  // e o fuso do aparelho no cliente, e das 21h à meia-noite discordavam.
   hojeIso?: string
 ): { label: string; vencida: boolean } {
   if (!dueDate) return { label: "sem prazo", vencida: false };
   const due = new Date(`${dueDate}T00:00:00`).getTime();
   const hoje = hojeIso
     ? new Date(`${hojeIso}T00:00:00`).getTime()
-    : new Date(new Date().toDateString()).getTime();
+    : inicioDoDiaBR().getTime();
   if (!concluida && due < hoje) return { label: "vencida", vencida: true };
   if (!dataEvento) return { label: "no prazo", vencida: false };
   const evento = new Date(`${dataEvento}T00:00:00`).getTime();

@@ -7,6 +7,7 @@
 // depois, reusando a mesma tela de confirmação.
 
 import { appUrl, enviarViaResend } from "@/lib/email";
+import { inicioDoDiaBR } from "@/lib/tempo";
 
 const MESES = [
   "janeiro", "fevereiro", "março", "abril", "maio", "junho",
@@ -36,7 +37,7 @@ export type EmailConvidado = {
 
 /** Quanto falta, em palavras — "é amanhã" cabe melhor que "em 1 dia". */
 function faltam(dataIso: string): string {
-  const hoje = new Date(new Date().toDateString()).getTime();
+  const hoje = inicioDoDiaBR().getTime();
   const alvo = new Date(`${dataIso}T00:00:00`).getTime();
   const dias = Math.round((alvo - hoje) / 86_400_000);
   if (dias <= 0) return "é hoje";

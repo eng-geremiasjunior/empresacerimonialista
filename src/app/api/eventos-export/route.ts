@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { getEventosParaExport } from "@/lib/supabase/eventos-list";
 import { gerarCsvEventos } from "@/lib/relatorio-eventos";
 import { parseEventosParams } from "@/lib/eventos-url";
+import { hojeBR } from "@/lib/tempo";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
   return new NextResponse(csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="eventos-${format(new Date(), "yyyy-MM-dd")}.csv"`,
+      "Content-Disposition": `attachment; filename="eventos-${hojeBR()}.csv"`,
     },
   });
 }

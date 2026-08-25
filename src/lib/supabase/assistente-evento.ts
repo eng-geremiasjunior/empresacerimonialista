@@ -9,6 +9,7 @@
 // nada (decisão de produto: automação é determinística, IA é consulta).
 
 import { createClient } from "@/lib/supabase/server";
+import { inicioDoDiaBR } from "@/lib/tempo";
 
 export type ContextoEvento = {
   ok: boolean;
@@ -85,7 +86,7 @@ export async function montarContextoEvento(
   const transacoes = transRes.data ?? [];
   const fornecedores = fornRes.data ?? [];
 
-  const hoje = new Date(new Date().toDateString());
+  const hoje = inicioDoDiaBR();
   const diasAte = ev.date
     ? Math.round(
         (new Date(`${ev.date}T00:00:00`).getTime() - hoje.getTime()) / 86_400_000

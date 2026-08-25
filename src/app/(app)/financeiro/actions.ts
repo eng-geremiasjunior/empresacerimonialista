@@ -6,6 +6,7 @@
 import { revalidatePath } from "next/cache";
 import { endOfMonth, format, startOfMonth } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
+import { fimDoMesBR, hojeBR, inicioDoMesBR } from "@/lib/tempo";
 
 const iso = (d: Date) => format(d, "yyyy-MM-dd");
 
@@ -115,8 +116,8 @@ export async function puxarReceitaEventosMes(): Promise<
   } = await supabase.auth.getUser();
   if (!user) return { error: "Não autenticado" };
 
-  const inicio = iso(startOfMonth(new Date()));
-  const fim = iso(endOfMonth(new Date()));
+  const inicio = inicioDoMesBR();
+  const fim = fimDoMesBR();
 
   const { data } = await supabase
     .from("transactions")
@@ -138,7 +139,7 @@ export async function puxarReceitaEventosMes(): Promise<
     category: "servico_prestado",
     description: `Receita dos eventos — ${mesLabel}`,
     value: total,
-    due_date: iso(new Date()),
+    due_date: hojeBR(),
     paid: true,
     paid_at: new Date().toISOString(),
     recurring: false,

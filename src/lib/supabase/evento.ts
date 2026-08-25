@@ -5,6 +5,7 @@ import {
   type Saude,
   type SaudeInput,
 } from "@/lib/saude-evento";
+import { hojeBR } from "@/lib/tempo";
 
 function groupByEvent<T extends { event_id: string }>(rows: T[]) {
   const map = new Map<string, T[]>();
@@ -24,7 +25,7 @@ export async function getSaudeBulk(
   if (eventIds.length === 0) return {};
 
   const supabase = createClient();
-  const todayIso = format(new Date(), "yyyy-MM-dd");
+  const todayIso = hojeBR();
 
   const [tasksRes, linksRes, txRes, itemsRes] = await Promise.all([
     supabase.from("tasks").select("event_id, status").in("event_id", eventIds),

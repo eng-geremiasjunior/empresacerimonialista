@@ -10,6 +10,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { enviarConviteAgendamentoWhatsapp } from "@/lib/whatsapp";
 import { enviarConviteAgendamentoEmail } from "@/lib/email";
+import { inicioDoDiaBR } from "@/lib/tempo";
 
 export type CanalConvite = "whatsapp" | "email";
 
@@ -70,7 +71,7 @@ export async function gerarSlotsLivres(
   const buffer = config?.buffer_min ?? 15;
   const diasBloqueados = new Set((excecoes ?? []).map((e) => e.data));
 
-  const inicio = new Date(new Date().toDateString());
+  const inicio = inicioDoDiaBR();
   inicio.setDate(inicio.getDate() + 1); // a partir de amanhã
   const fim = new Date(inicio);
   fim.setDate(fim.getDate() + HORIZ);

@@ -3,6 +3,7 @@
 import { addDays, addMonths, format } from "date-fns";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { hojeBR } from "@/lib/tempo";
 
 export type FinanceiroFormState = { error: string } | { ok: true } | null;
 
@@ -47,7 +48,7 @@ export async function gerarParcelas(
   }
 
   const supabase = createClient();
-  const hoje = format(new Date(), "yyyy-MM-dd");
+  const hoje = hojeBR();
   const restante = round2(total - entrada);
   const valorParcela = round2(restante / n);
   const ultimaParcela = round2(restante - valorParcela * (n - 1));

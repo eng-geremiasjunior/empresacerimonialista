@@ -13,6 +13,7 @@ import type {
   Tarefa,
   TarefaStatus,
 } from "@/lib/supabase/organizacao";
+import { inicioDoDiaBR } from "@/lib/tempo";
 
 const umObjeto = <T,>(v: T | T[] | null): T | null =>
   Array.isArray(v) ? v[0] ?? null : v;
@@ -238,7 +239,7 @@ export async function getOrganizacao(
   const diasAteEvento = dataEvento
     ? Math.round(
         (new Date(`${dataEvento}T00:00:00`).getTime() -
-          new Date(new Date().toDateString()).getTime()) /
+          inicioDoDiaBR().getTime()) /
           86_400_000
       )
     : null;

@@ -15,6 +15,7 @@ import {
   type EventStatus,
   type EventType,
 } from "@/lib/types";
+import { inicioDoDiaBR } from "@/lib/tempo";
 
 // Pílula de status: bolinha + rótulo, fundo bem sutil. As cores vêm dos
 // tokens --ev-st-* (default = as de hoje; no tema neutro do Planejamento
@@ -65,7 +66,7 @@ export default async function EventoLayout({
 
   const dias = differenceInCalendarDays(
     new Date(`${event.date}T00:00:00`),
-    new Date(new Date().toDateString())
+    inicioDoDiaBR()
   );
   const proximidade =
     dias > 0

@@ -12,6 +12,7 @@ import {
   type EventStatus,
   type EventType,
 } from "@/lib/types";
+import { emDiasBR, hojeBR, inicioDoMesBR, proximoMesBR } from "@/lib/tempo";
 
 const iso = (d: Date) => format(d, "yyyy-MM-dd");
 const monthRange = (monthsAgo: number) => {
@@ -65,7 +66,7 @@ export type BriefingHoje = { eventosHoje: number; tarefasHoje: number };
 
 export async function getBriefingHoje(): Promise<BriefingHoje> {
   const supabase = createClient();
-  const hoje = iso(new Date());
+  const hoje = hojeBR();
 
   const [eventos, tarefas] = await Promise.all([
     supabase
@@ -85,8 +86,8 @@ export async function getBriefingHoje(): Promise<BriefingHoje> {
 // Fornecedores ainda não confirmados em eventos dos próximos 7 dias.
 export async function getFornecedoresPendentes(): Promise<number> {
   const supabase = createClient();
-  const hoje = iso(new Date());
-  const fim = iso(addDays(new Date(), 7));
+  const hoje = hojeBR();
+  const fim = emDiasBR(7);
 
   const { count } = await supabase
     .from("roteiro_links")
@@ -101,8 +102,8 @@ export async function getFornecedoresPendentes(): Promise<number> {
 // Transações não pagas vencendo nos próximos 7 dias.
 export async function getPagamentosVencendo(): Promise<number> {
   const supabase = createClient();
-  const hoje = iso(new Date());
-  const fim = iso(addDays(new Date(), 7));
+  const hoje = hojeBR();
+  const fim = emDiasBR(7);
 
   const { count } = await supabase
     .from("transactions")
@@ -123,8 +124,8 @@ export type ResumoFinanceiro = {
 
 export async function getResumoFinanceiro(): Promise<ResumoFinanceiro> {
   const supabase = createClient();
-  const mesInicio = iso(startOfMonth(new Date()));
-  const proxMes = iso(startOfMonth(addDays(startOfMonth(new Date()), 40)));
+  const mesInicio = inicioDoMesBR();
+  const proxMes = proximoMesBR();
 
   const soma = (rows: { value: number | null }[] | null) =>
     (rows ?? []).reduce((s, r) => s + Number(r.value ?? 0), 0);
@@ -327,8 +328,8 @@ function eventoMorto(ev: { status?: string | null; archived?: boolean | null }):
  */
 export async function getAlertasCopiloto(): Promise<CopilotoAlerta[]> {
   const supabase = createClient();
-  const hoje = iso(new Date());
-  const fim = iso(addDays(new Date(), 7));
+  const hoje = hojeBR();
+  const fim = emDiasBR(7);
   const alertas: CopilotoAlerta[] = [];
 
   const [tarefasRes, fornecedoresRes, pagamentosRes] = await Promise.all([

@@ -43,6 +43,7 @@ import {
   type EventType,
 } from "@/lib/types";
 import type { DonutSlice, Kpi } from "@/lib/dashboard-mock";
+import { hojeBR, horaBR } from "@/lib/tempo";
 
 type UpcomingEvent = {
   id: string;
@@ -94,8 +95,11 @@ const TYPE_COLORS: Record<EventType, string> = {
 
 export default async function DashboardPage() {
   const supabase = createClient();
+  // "agora" em Brasília, não no fuso do processo. Na Vercel o runtime é
+  // UTC: sem isto a saudação diz "Boa noite" às 15h e "hoje" vira amanhã
+  // depois das 21h.
   const now = new Date();
-  const todayIso = format(now, "yyyy-MM-dd");
+  const todayIso = hojeBR(now);
 
   const { data } = await supabase
     .from("events")
@@ -141,7 +145,11 @@ export default async function DashboardPage() {
     upcoming.map((event, i) => ({ event, saude: saudes[i] }));
 
   const dateLabel = (() => {
-    const raw = format(now, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR });
+    // formata a DATA de Brasília, não a do processo — senão a linha embaixo
+    // da saudação anuncia o dia seguinte a partir das 21h
+    const raw = format(new Date(`${todayIso}T12:00:00`), "EEEE, d 'de' MMMM 'de' yyyy", {
+      locale: ptBR,
+    });
     return raw.charAt(0).toUpperCase() + raw.slice(1);
   })();
 
@@ -203,7 +211,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <CopilotoDia
-        greeting={greeting(now.getHours())}
+        greeting={greeting(horaBR(now))}
         dateLabel={dateLabel}
         eventosHoje={briefing.eventosHoje}
         tarefasHoje={briefing.tarefasHoje}

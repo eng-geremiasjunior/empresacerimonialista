@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
 import type { MembroEquipe } from "@/lib/equipe-shared";
+import { hojeBR } from "@/lib/tempo";
 
 const iso = (d: Date) => format(d, "yyyy-MM-dd");
 
@@ -46,7 +47,7 @@ function eventoLabel(ev: EventoRow): EventoResumo {
 // participante) para calcular status. Poucas queries, cálculo em memória.
 async function carregarBase() {
   const supabase = createClient();
-  const hoje = iso(new Date());
+  const hoje = hojeBR();
 
   const [membrosRes, eventosRes, participantesRes] = await Promise.all([
     supabase

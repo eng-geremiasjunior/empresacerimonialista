@@ -20,6 +20,7 @@ import { differenceInCalendarDays } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import type { EventType } from "@/lib/types";
 import { valorDoCampo, type Campo, type TipoCampo } from "@/lib/planejamento-shared";
+import { inicioDoDiaBR } from "@/lib/tempo";
 
 export type EventoDoPortal = {
   id: string;
@@ -108,7 +109,7 @@ function diasAte(data: string | null): number | null {
   if (!data) return null;
   return differenceInCalendarDays(
     new Date(`${data}T00:00:00`),
-    new Date(new Date().toDateString())
+    inicioDoDiaBR()
   );
 }
 

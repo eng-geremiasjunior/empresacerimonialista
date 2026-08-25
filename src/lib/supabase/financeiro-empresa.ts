@@ -15,6 +15,7 @@ import {
   type ResumoEmpresa,
   type SaldoEmpresaMes,
 } from "@/lib/financeiro-empresa-shared";
+import { fimDoMesBR, inicioDoMesBR } from "@/lib/tempo";
 
 export type {
   BusinessTransacao,
@@ -46,8 +47,8 @@ const isMigrationError = (code?: string) =>
 
 export async function getResumoEmpresa(): Promise<ResumoEmpresa> {
   const supabase = createClient();
-  const inicio = iso(startOfMonth(new Date()));
-  const fim = iso(endOfMonth(new Date()));
+  const inicio = inicioDoMesBR();
+  const fim = fimDoMesBR();
 
   const { data, error } = await supabase
     .from("business_transactions")
@@ -90,8 +91,8 @@ export async function getReceitasEmpresaMes(): Promise<BusinessTransacao[]> {
     .from("business_transactions")
     .select(COLUMNS)
     .eq("type", "receita")
-    .gte("due_date", iso(startOfMonth(new Date())))
-    .lte("due_date", iso(endOfMonth(new Date())))
+    .gte("due_date", inicioDoMesBR())
+    .lte("due_date", fimDoMesBR())
     .order("due_date", { ascending: false });
 
   return (data ?? []).map(mapRow);
@@ -167,8 +168,8 @@ export async function getHistoricoEmpresa(
 
   if (params.periodo === "mes") {
     query = query
-      .gte("due_date", iso(startOfMonth(new Date())))
-      .lte("due_date", iso(endOfMonth(new Date())));
+      .gte("due_date", inicioDoMesBR())
+      .lte("due_date", fimDoMesBR());
   } else if (
     params.periodo === "custom" &&
     /^\d{4}-\d{2}-\d{2}$/.test(params.from) &&

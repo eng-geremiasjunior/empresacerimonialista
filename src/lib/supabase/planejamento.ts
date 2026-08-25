@@ -13,6 +13,7 @@ import {
   type Campo,
   type TipoCampo,
 } from "@/lib/planejamento-shared";
+import { inicioDoDiaBR } from "@/lib/tempo";
 
 // Parte pura (tipos do campo + valorDoCampo) vive em planejamento-shared,
 // importável por componentes client. Re-exportada aqui para os consumidores
@@ -200,7 +201,7 @@ export async function getPlanejamento(
   const diasAteEvento = dataEvento
     ? differenceInCalendarDays(
         new Date(`${dataEvento}T00:00:00`),
-        new Date(new Date().toDateString())
+        inicioDoDiaBR()
       )
     : null;
 
@@ -290,7 +291,7 @@ export async function getPlanejamento(
     if (proximoPrazo) {
       faltamDias = differenceInCalendarDays(
         new Date(`${proximoPrazo}T00:00:00`),
-        new Date(new Date().toDateString())
+        inicioDoDiaBR()
       );
       janelaDias = faltamDias;
       bucket =

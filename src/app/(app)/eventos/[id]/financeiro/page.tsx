@@ -23,6 +23,7 @@ import type {
   ParcelaFornecedor,
   VerbaFornecedor,
 } from "@/lib/verba-fornecedores";
+import { hojeBR } from "@/lib/tempo";
 
 export default async function EventoFinanceiroPage({
   params,
@@ -31,7 +32,7 @@ export default async function EventoFinanceiroPage({
 }) {
   const eventId = params.id;
   const supabase = createClient();
-  const todayIso = format(new Date(), "yyyy-MM-dd");
+  const todayIso = hojeBR();
 
   const [fin, linksRes, orcRes, verbasRes, parcelasRes, pendRes] =
     await Promise.all([
