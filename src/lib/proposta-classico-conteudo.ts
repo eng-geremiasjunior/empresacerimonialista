@@ -54,7 +54,9 @@ export const BLOCOS_INCLUSO_CLASSICO: BlocoProposta[] = [
   {
     secao: "incluso",
     icone: "coracao",
-    titulo: "No Dia - 12h",
+    // "12h" era escopo de contrato — quantas horas de equipe no dia — e
+    // vinha pré-preenchido sem que ela tivesse escolhido nenhum número.
+    titulo: "No Dia",
     texto_curto:
       "Equipe completa cuidando de cada detalhe para vocês viverem.",
     texto_longo:

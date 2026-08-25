@@ -338,7 +338,6 @@ export function AbaFornecedores({
   if (migracaoPendente) {
     return (
       <div
-        data-migracao="063_financeiro_duas_contas.sql"
         className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
       >
         A verba por fornecedor ainda não foi liberada nesta conta.

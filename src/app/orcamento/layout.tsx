@@ -83,7 +83,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Sua proposta — Vela",
+  // O título real vem do generateMetadata da página, com o nome da
+  // empresa; este é só o fallback de quem cair no /orcamento sem hash.
+  title: "Sua proposta",
   // proposta comercial pessoal: fora do índice de buscadores
   robots: { index: false, follow: false },
 };

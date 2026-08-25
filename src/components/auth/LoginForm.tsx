@@ -255,15 +255,11 @@ export function LoginForm() {
         </div>
 
         {isLogin && (
-          <div className="flex items-center justify-between text-sm">
-            <label className="flex cursor-pointer items-center gap-2 text-gray-600">
-              <input
-                type="checkbox"
-                defaultChecked
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600 accent-indigo-600"
-              />
-              Continuar conectado
-            </label>
+          <div className="flex items-center justify-end text-sm">
+            {/* "Continuar conectado" saiu: era um checkbox sem name, sem estado e
+              sem leitura no submit — desmarcar não mudava nada, porque a
+              duração da sessão é sempre a do Supabase Auth. Controle que
+              promete uma escolha inexistente, na primeira tela do produto. */}
             <button
               type="button"
               onClick={handleForgotPassword}

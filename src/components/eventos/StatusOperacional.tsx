@@ -30,7 +30,7 @@ export function StatusOperacional({
     oks.push("Todos os fornecedores confirmados");
   }
   if (criterios.financeiroOk) oks.push("Financeiro em dia");
-  if (criterios.cronogramaOk) oks.push("Execução do evento definida");
+  if (criterios.cronogramaOk) oks.push("Roteiro do dia montado");
 
   return (
     <section>

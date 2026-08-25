@@ -31,7 +31,6 @@ export default async function ModelosPrecificacaoPage() {
     <div className="mx-auto max-w-5xl">
       {error && (
         <div
-          data-migracao="041_orcamentos_estrutura.sql"
           className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800"
         >
           Não foi possível carregar os modelos agora. Recarregue a página em

@@ -17,7 +17,9 @@ export const NAV_MAISON = [
 ];
 
 export const HERO_MAISON = {
-  badge: "VAGAS LIMITADAS",
+  // Escassez fabricada: nada no sistema sabe quantas datas ela tem livres,
+  // e o gatilho saía na proposta como se ela o tivesse escrito.
+  badge: "PROPOSTA PERSONALIZADA",
   paragrafo:
     "Uma celebração pensada como alta-costura: cada detalhe sob medida, equipe exclusiva e curadoria de fornecedores nível maison. Orçamento único, sem pacotes genéricos.",
   cardReferencia: {
@@ -77,7 +79,7 @@ export const COMO_FUNCIONA_MAISON = {
       quando: "Semana 1",
       titulo: "Assinatura + imersão",
       descricao:
-        "Contrato, pagamento da entrada, visita técnica e briefing de 3h no local.",
+        "Contrato, pagamento da entrada, visita técnica e briefing no local.",
     },
     {
       quando: "Semana 2-6",

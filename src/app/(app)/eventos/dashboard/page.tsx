@@ -173,7 +173,7 @@ export default async function DashboardPage() {
     {
       icon: FileText,
       kpi: {
-        title: "Cotações em aberto",
+        title: "Eventos em orçamento",
         value: String(cotacoesAbertas),
         sub: "aguardando confirmação",
         tone: "neutral",
@@ -204,7 +204,10 @@ export default async function DashboardPage() {
 
   const performanceItems: PerformanceItem[] = [
     { label: "Eventos realizados este mês", value: performance.eventosRealizados },
-    { label: "Cotações confirmadas este mês", value: performance.cotacoesConfirmadas },
+    // A consulta filtra por created_at, não por quando foi confirmado (não
+    // existe coluna para isso): são os eventos que ENTRARAM este mês e já
+    // estão confirmados. O rótulo passa a dizer isso.
+    { label: "Novos eventos já confirmados", value: performance.cotacoesConfirmadas },
     { label: "Tarefas concluídas este mês", value: performance.tarefasConcluidas },
   ];
 

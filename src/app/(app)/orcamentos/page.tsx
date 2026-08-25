@@ -212,7 +212,6 @@ export default async function OrcamentosPage({
 
       {error && (
         <div
-          data-migracao="041_orcamentos_estrutura.sql"
           className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800"
         >
           Não foi possível carregar os orçamentos agora. Recarregue a página em

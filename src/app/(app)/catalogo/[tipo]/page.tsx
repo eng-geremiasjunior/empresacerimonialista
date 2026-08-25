@@ -219,10 +219,9 @@ export default async function CatalogoTipoPage({
 
       {faltaMigracao ? (
         <p
-          data-migracao="057_catalogo_por_tipo_evento.sql"
           className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800"
         >
-          O catálogo por tipo de evento ainda não foi liberado nesta conta.
+          Esta parte ainda não está disponível. Avise a gente.
         </p>
       ) : (
         <>

@@ -125,7 +125,7 @@ export function RoteiroList({
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-[17px] font-bold text-[#17162A]">
-              Execução do evento
+              Roteiro do dia
             </h2>
             {/* seletor de visão */}
             <div className="flex rounded-[12px] bg-stone-100 p-1">

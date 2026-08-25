@@ -372,7 +372,7 @@ function VistaLista({
   if (tarefas.length === 0) {
     return (
       <p style={{ padding: "28px 4px", fontSize: 13.5, color: "var(--text-muted)" }}>
-        Nenhuma tarefa aqui. Elas nascem quando você decide no Planejamento — ou crie uma com “Nova tarefa”.
+        Nenhuma tarefa aqui ainda.
       </p>
     );
   }

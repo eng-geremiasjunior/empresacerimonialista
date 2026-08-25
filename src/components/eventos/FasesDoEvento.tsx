@@ -30,7 +30,7 @@ const SEGMENTO: Record<FaseId, string> = {
 const ROTULO: Record<FaseId, string> = {
   planejamento: "Planejamento",
   organizacao: "Organização",
-  execucao: "Execução do evento",
+  execucao: "Roteiro do dia",
 };
 
 export function FasesDoEvento({

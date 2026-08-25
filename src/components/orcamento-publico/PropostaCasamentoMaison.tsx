@@ -437,7 +437,7 @@ function SecaoHero({
       <div className="mx-auto grid max-w-[1320px] items-center gap-10 px-6 py-14 sm:px-[72px] lg:grid-cols-[1.08fr_0.92fr] lg:gap-20 lg:py-20">
         <div>
           <span
-            className="badge-pulse inline-block rounded-full px-3 py-1.5 text-[9.5px]"
+            className="inline-block rounded-full px-3 py-1.5 text-[9.5px]"
             style={{ border: `0.5px solid ${CAMEL}`, color: CAMEL, letterSpacing: "0.2em" }}
           >
             {HERO_MAISON.badge}

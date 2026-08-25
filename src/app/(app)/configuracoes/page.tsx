@@ -6,7 +6,7 @@ import {
   RoteiroPadraoSection,
   type ItemRoteiroPadrao,
 } from "@/components/configuracoes/RoteiroPadraoSection";
-import { whatsappConfigurado } from "@/lib/whatsapp";
+import { nomeTemplateLembrete, whatsappConfigurado } from "@/lib/whatsapp";
 import { CalendarClock } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -100,7 +100,12 @@ export default async function ConfiguracoesPage() {
         initialName={name}
         initialWhatsapp={whatsapp}
         initialAvisarWhatsapp={avisarWhatsapp}
-        transporteWhatsappAtivo={whatsappConfigurado()}
+        // token E template: com o token no ambiente e nenhum template
+        // criado na Meta, o interruptor aparecia habilitado e o aviso não
+        // chegava — a frase honesta já estava escrita e nunca aparecia
+        transporteWhatsappAtivo={
+          whatsappConfigurado() && nomeTemplateLembrete() !== null
+        }
         email={email}
         initials={initials}
       />

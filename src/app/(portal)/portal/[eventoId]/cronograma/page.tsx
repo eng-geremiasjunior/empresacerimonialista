@@ -26,7 +26,7 @@ export default async function PortalCronogramaPage({
     <div className="portal-tela">
       <TopoInterno
         eventoId={evento.id}
-        titulo="Cronograma do dia"
+        titulo="Roteiro do dia"
         apoio="O programa como está hoje. Se algum horário não servir, é só sugerir — quem ajusta é a sua cerimonialista."
       />
       <ProgramaDoDia

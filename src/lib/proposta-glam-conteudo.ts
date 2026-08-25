@@ -5,19 +5,19 @@
 // template clássico. Ver [[proposta-templates]] e [[proposta-debutante-conteudo]].
 
 export const INCLUSO_GLAM = [
-  { icone: "musica", titulo: "PISTA LIBERADA", descricao: "DJ profissa, playlist sua + 4h de festa sem parar" },
+  { icone: "musica", titulo: "PISTA LIBERADA", descricao: "DJ profissa, playlist sua, pista aberta a noite toda" },
   { icone: "coroa", titulo: "CERIMONIAL TOTAL", descricao: "Equipe cuida de tudo, você só curte e brilha" },
   { icone: "pessoas", titulo: "RECEPÇÃO VIP", descricao: "Recepção com tapete, painel neon e hostess" },
-  { icone: "camera", titulo: "FOTOGRAFIA HYPE", descricao: "Fotos que bombam no feed, entrega em 48h" },
+  { icone: "camera", titulo: "FOTOGRAFIA HYPE", descricao: "Fotos que bombam no feed" },
   { icone: "luz", titulo: "SOM E LUZ PRO", descricao: "Moving, laser, fumaça - balada de verdade" },
   { icone: "taca", titulo: "OPEN BAR JOVEM", descricao: "Drinks sem álcool + soda italiana liberada" },
 ];
 
 export const ETAPAS_GLAM = [
   { n: "01", titulo: "BRIEFING", descricao: "Definimos tema, cores e playlist juntas" },
-  { n: "02", titulo: "MONTAGEM", descricao: "Equipe monta tudo 6h antes, sem stress" },
+  { n: "02", titulo: "MONTAGEM", descricao: "Equipe monta tudo antes de você chegar, sem stress" },
   { n: "03", titulo: "CHEGADA", descricao: "Você chega rainha, tudo pronto pra foto" },
-  { n: "04", titulo: "FESTA", descricao: "4 horas de pura energia, pista lotada" },
+  { n: "04", titulo: "FESTA", descricao: "Pura energia, pista lotada" },
   { n: "05", titulo: "AFTER", descricao: "Desmontamos tudo, você só posta stories" },
 ];
 
@@ -46,7 +46,11 @@ export const CARDS_DIA_GLAM = [
 export const HERO_PARAGRAFO_GLAM =
   "Uma festa que vai parar o feed e ficar na memória pra sempre. Pista cheia, luz profissional, você no centro.";
 
+// O badge "FESTA REAL · CLIENTE ANTERIOR" ficava por cima da foto de capa
+// que ela subiu — ou, quando não subiu nenhuma, por cima de puro gradiente.
+// Rótulo de procedência para uma festa que pode nunca ter existido, na
+// proposta de uma cliente de verdade. O título fica; ele é entusiasmo do
+// template, não afirmação sobre um evento específico.
 export const VIDEO_LEGENDA_GLAM = {
-  badge: "FESTA REAL • CLIENTE ANTERIOR",
-  titulo: "Pista cheia até 2h da manhã. Essa é a energia que a gente entrega.",
+  titulo: "Pista cheia até o fim. Essa é a energia que a gente entrega.",
 };

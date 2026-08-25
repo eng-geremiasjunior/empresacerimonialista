@@ -68,6 +68,17 @@ async function carregarBase() {
       .select("event_id, membro_equipe_id"),
   ]);
 
+  // O `?? []` abaixo transforma erro em lista vazia, e a tela lê lista
+  // vazia como "não tem equipe". O diagnóstico precisa sair em algum
+  // lugar, e esse lugar é o log do servidor — não o texto que ela lê.
+  for (const [nome, res] of [
+    ["membros_equipe", membrosRes],
+    ["events", eventosRes],
+    ["evento_participantes", participantesRes],
+  ] as const) {
+    if (res.error) console.error(`[vela:equipe] ${nome}:`, res.error.message);
+  }
+
   const membros = (membrosRes.data ?? []) as MembroEquipe[];
   const eventos = (eventosRes.data ?? []) as unknown as EventoRow[];
   const participantes = (participantesRes.data ?? []) as {

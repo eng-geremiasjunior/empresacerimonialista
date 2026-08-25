@@ -14,6 +14,23 @@ const supabaseConfigured = Boolean(
 
 
 function SetupInstructions() {
+  // Em produção isto não pode aparecer: é passo a passo de instalação
+  // (criar projeto, copiar .env, rodar o schema) numa rota que qualquer
+  // visitante alcança. Se as variáveis faltarem no deploy, o app inteiro
+  // está fora do ar de qualquer jeito — o que ela precisa saber é isso.
+  if (process.env.NODE_ENV !== "development") {
+    return (
+      <div className="mx-auto max-w-md rounded-2xl border border-gray-200 bg-white p-8 text-center">
+        <h1 className="text-lg font-semibold text-gray-900">
+          Serviço temporariamente indisponível
+        </h1>
+        <p className="mt-2 text-sm text-gray-600">
+          Tente de novo em alguns minutos.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <main className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-8 shadow-sm">

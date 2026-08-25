@@ -230,7 +230,7 @@ export function ModoEvento({
             />
           </div>
 
-          <Section title="Cronograma do dia" sub={t.sub}>
+          <Section title="Roteiro do dia" sub={t.sub}>
             <TimelineModoEvento
               items={items}
               currentId={nextItem?.id ?? null}

@@ -116,7 +116,7 @@ export function StepDadosBasicos({
               onChange={(e) => onChange({ status: e.target.value })}
               className={inputClass}
             >
-              <option value="orcamento">Cotação</option>
+              <option value="orcamento">Orçamento</option>
               <option value="confirmado">Confirmado</option>
             </select>
           </div>

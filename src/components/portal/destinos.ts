@@ -44,7 +44,7 @@ export const visiveis = (itens: Destino[]) => itens.filter((d) => !d.emBreve);
 export const DURANTE: Destino[] = [
   { seg: "cortejo", rotulo: "Cortejo", icone: "Heart" },
   { seg: "informacoes", rotulo: "Informações importantes", icone: "Info", emBreve: true },
-  { seg: "cronograma", rotulo: "Cronograma do dia", icone: "Clock" },
+  { seg: "cronograma", rotulo: "Roteiro do dia", icone: "Clock" },
 ];
 
 /** Grupo "Investimento". */

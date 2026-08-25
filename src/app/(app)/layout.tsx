@@ -63,9 +63,9 @@ export default async function AppLayout({
   ) {
     try {
       const espera = await getEspera();
-      esperaFrase = espera ? fraseDoCopiloto(espera.resumo) : "Fornecedores: —";
+      esperaFrase = espera ? fraseDoCopiloto(espera.resumo) : "Não deu para checar os fornecedores agora.";
     } catch {
-      esperaFrase = "Fornecedores: —";
+      esperaFrase = "Não deu para checar os fornecedores agora.";
     }
   }
 

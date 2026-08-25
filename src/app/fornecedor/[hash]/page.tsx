@@ -4,15 +4,14 @@
 // abre no celular, mostra o que a cerimonialista precisa dele agora,
 // agrupado por evento, e some sozinha quando não há mais nada.
 
+import { cache } from "react";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { PendenciasFornecedor } from "@/components/fornecedor-publico/PendenciasFornecedor";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Suas pendências — Vela",
-};
+
 
 export type PendenciaPublica = {
   id: string;
@@ -32,15 +31,36 @@ export type PendenciasData = {
   pendencias: PendenciaPublica[];
 };
 
+// Duas leituras no mesmo render (título e página) viram uma só.
+const carregarPendencias = cache(async (hash: string) => {
+  const supabase = createClient();
+  const { data } = await supabase.rpc("consultar_pendencias_fornecedor", {
+    p_hash: hash,
+  });
+  return (data as unknown as PendenciasData) ?? null;
+});
+
+// Quem abre isto no celular, no dia do evento, é o fornecedor DELA — a aba
+// e a prévia do link precisam dizer o nome da empresa, não o da ferramenta.
+export async function generateMetadata({
+  params,
+}: {
+  params: { hash: string };
+}): Promise<Metadata> {
+  const data = await carregarPendencias(params.hash);
+  const empresa = data?.empresa?.nome?.trim();
+  return {
+    title: empresa ? `Suas pendências — ${empresa}` : "Suas pendências",
+    robots: { index: false, follow: false },
+  };
+}
+
 export default async function FornecedorPage({
   params,
 }: {
   params: { hash: string };
 }) {
-  const supabase = createClient();
-  const { data } = await supabase.rpc("consultar_pendencias_fornecedor", {
-    p_hash: params.hash,
-  });
+  const data = await carregarPendencias(params.hash);
 
   if (!data) {
     return (

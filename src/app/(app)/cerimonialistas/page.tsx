@@ -55,8 +55,7 @@ export default async function CerimonialistasPage() {
           </p>
         </div>
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-          Equipe indisponível — verifique se as migrações multiusuário (021+)
-          foram aplicadas no Supabase.
+          Não deu para carregar a equipe agora. Recarregue a página.
         </div>
       </div>
     );

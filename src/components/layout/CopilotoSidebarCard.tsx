@@ -51,7 +51,7 @@ export function CopilotoSidebarCard({
         >
           {esperaFrase}
           {esperaFrase !== "Fornecedores em dia." &&
-            esperaFrase !== "Fornecedores: —" && (
+            esperaFrase !== "Não deu para checar os fornecedores agora." && (
               <Link
                 href="/solicitacoes#espera"
                 className="mt-0.5 flex items-center gap-1 font-medium text-indigo-300 hover:text-indigo-200"
@@ -66,7 +66,7 @@ export function CopilotoSidebarCard({
       {eventId ? (
         <ContextoEvento eventId={eventId} />
       ) : prazosFrase === null ? (
-        <p className="mt-1.5 text-xs leading-snug text-stone-400">Prazos: —</p>
+        <p className="mt-1.5 text-xs leading-snug text-stone-400">Não deu para checar os prazos agora.</p>
       ) : prazosFrase === NADA_VENCENDO ? (
         <p className="mt-1.5 text-xs leading-snug text-stone-400">
           {prazosFrase}
@@ -120,7 +120,7 @@ function ContextoEvento({ eventId }: { eventId: string }) {
         href={`/eventos/${eventId}/roteiro`}
         className="mt-2 flex items-center gap-1 text-xs font-medium text-indigo-300 hover:text-indigo-200"
       >
-        Ver cronograma
+        Ver roteiro
         <ArrowRight size={12} />
       </Link>
     </>

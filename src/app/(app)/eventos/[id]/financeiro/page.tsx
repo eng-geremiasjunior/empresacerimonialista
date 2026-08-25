@@ -223,10 +223,9 @@ export default async function EventoFinanceiroPage({
 
           {fin.migrationPendente && (
             <div
-              data-migracao="017_financeiro.sql"
               className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
             >
-              O módulo Financeiro ainda não foi liberado nesta conta.
+              Esta parte ainda não está disponível. Avise a gente.
             </div>
           )}
 

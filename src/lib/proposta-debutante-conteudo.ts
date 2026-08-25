@@ -15,6 +15,11 @@ export const NAV_DEBUTANTE = [
   { id: "depoimentos", num: "06", label: "DEPOIMENTOS" },
 ];
 
+// Sem SLA numérico aqui. "Resposta em até 2h" e "roteiro de 8 páginas"
+// eram contrato: saíam assinados pela cerimonialista, numa proposta para
+// uma cliente de verdade, sem que ela jamais tivesse prometido nenhum dos
+// dois. Mesma razão que esvaziou DEPOIMENTOS_DEBUTANTE_PADRAO. O que ela
+// PODE comprovar tem lugar próprio: os stats do Catálogo.
 export const CUIDADOS_PADRAO = [
   {
     icone: "📅",
@@ -29,12 +34,12 @@ export const CUIDADOS_PADRAO = [
   {
     icone: "📋",
     titulo: "COORDENAÇÃO",
-    descricao: "Roteiro de 8 páginas para que nada falhe.",
+    descricao: "Roteiro do dia minuto a minuto, alinhado com cada fornecedor.",
   },
   {
     icone: "♡",
     titulo: "ACOMPANHAMENTO",
-    descricao: "Grupo VIP com resposta em até 2h.",
+    descricao: "Canal direto com a gente durante toda a preparação.",
   },
   {
     icone: "★",
@@ -80,7 +85,7 @@ export const DEPOIMENTOS_DEBUTANTE_PADRAO: {
 
 export const SELOS_CONFIANCA = [
   { icone: "🛡️", texto: "Contrato por escrito" },
-  { icone: "🕐", texto: "Suporte 2h" },
+  { icone: "🕐", texto: "Canal direto" },
   { icone: "✓", texto: "Sem surpresas" },
 ];
 

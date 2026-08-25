@@ -312,7 +312,7 @@ export async function getCabecalhoEvento(
     },
     {
       id: "execucao",
-      rotulo: "Execução",
+      rotulo: "Roteiro",
       pct: execucaoPct,
       // Enquanto o dia não chega, a contagem útil é o tempo restante —
       // é o que o mockup mostra ("Faltam 47 dias").

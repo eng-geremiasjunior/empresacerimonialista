@@ -357,9 +357,6 @@ function PainelVideo({ dados }: { dados: OrcamentoPublicoData }) {
 
       {/* legenda embaixo */}
       <div className="absolute inset-x-5 bottom-5 text-white">
-        <span className="inline-block rounded-full bg-white/15 px-3 py-1 text-[10px] font-bold backdrop-blur">
-          {VIDEO_LEGENDA_GLAM.badge}
-        </span>
         <p className="display mt-2.5 text-[20px] font-black leading-tight sm:text-[22px]">
           {VIDEO_LEGENDA_GLAM.titulo}
         </p>

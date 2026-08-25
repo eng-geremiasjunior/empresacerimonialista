@@ -118,10 +118,9 @@ export default async function EventosPage({
 
           {migrationPendente && (
             <div
-              data-migracao="015_eventos_arquivar.sql"
               className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
             >
-              Arquivar evento ainda não foi liberado nesta conta.
+              Arquivar ainda não está disponível. Avise a gente.
             </div>
           )}
 

@@ -56,10 +56,9 @@ export default async function FinanceiroEmpresaPage({
           </p>
         </div>
         <div
-          data-migracao="020_business_transactions.sql"
           className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
         >
-          O Financeiro da Empresa ainda não foi liberado nesta conta.
+          Esta parte ainda não está disponível. Avise a gente.
         </div>
       </div>
     );

@@ -1,3 +1,5 @@
+import { cache } from "react";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PropostaCasamentoClassico } from "@/components/orcamento-publico/PropostaCasamentoClassico";
@@ -14,19 +16,36 @@ export const dynamic = "force-dynamic";
 
 // Página pública (sem login): tudo vem da RPC por hash, a tabela nunca é
 // exposta. Mesmo padrão do roteiro público e da confirmação de fornecedor.
+// A RPC roda duas vezes por request (título + página); `cache` do React
+// junta as duas no mesmo render.
+const carregarProposta = cache(async (hash: string) => {
+  const supabase = createClient();
+  const { data } = await supabase.rpc("consultar_orcamento_publico", {
+    p_hash: hash,
+  });
+  return (data as unknown as OrcamentoPublicoData) ?? null;
+});
+
+// A aba do navegador e a prévia do link no WhatsApp dizem o nome de quem
+// está vendendo — não o da ferramenta. A noiva não contratou o Vela.
+export async function generateMetadata({
+  params,
+}: {
+  params: { hash: string };
+}): Promise<Metadata> {
+  const proposta = await carregarProposta(params.hash);
+  const empresa = proposta?.nome_empresa?.trim();
+  return { title: empresa ? `Sua proposta — ${empresa}` : "Sua proposta" };
+}
+
 export default async function OrcamentoPublicoPage({
   params,
 }: {
   params: { hash: string };
 }) {
-  const supabase = createClient();
-  const { data } = await supabase.rpc("consultar_orcamento_publico", {
-    p_hash: params.hash,
-  });
+  const proposta = await carregarProposta(params.hash);
 
-  if (!data) notFound();
-
-  const proposta = data as unknown as OrcamentoPublicoData;
+  if (!proposta) notFound();
 
   if (proposta.tipo_evento === "debutante") {
     // O template vem do orçamento (059); null cai no padrão do tipo.
