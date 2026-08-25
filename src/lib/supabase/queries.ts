@@ -357,6 +357,15 @@ export async function getAlertasCopiloto(): Promise<CopilotoAlerta[]> {
       .lte("due_date", fim),
   ]);
 
+  // Falha de leitura não pode virar "Nada vencendo hoje.". Essa frase é uma
+  // afirmação, e dizê-la porque a consulta quebrou é pior do que não dizer
+  // nada — o layout já sabe cair para "Prazos: —" quando isto lança.
+  const erro =
+    tarefasRes.error ?? fornecedoresRes.error ?? pagamentosRes.error ?? null;
+  if (erro) {
+    throw new Error(`[vela:copiloto] leitura dos prazos falhou: ${erro.message}`);
+  }
+
   for (const row of (tarefasRes.data ?? []) as unknown as {
     id: string;
     title: string;

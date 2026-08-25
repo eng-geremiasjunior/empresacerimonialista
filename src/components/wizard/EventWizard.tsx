@@ -25,9 +25,14 @@ import {
 } from "./StepCliente";
 import { StepDadosBasicos, type DadosBasicos } from "./StepDadosBasicos";
 import { StepEstruturacao } from "./StepEstruturacao";
-import { StepRevisao } from "./StepRevisao";
 
-const STEPS = ["Tipo", "Cliente", "Dados", "Configuração", "Revisão"];
+// O passo "Revisão" saiu. Ele mostrava um checklist para ela marcar,
+// desmarcar e até acrescentar item — e a action DESCARTAVA tudo
+// (`const tasks = []`, comentário da 076: tarefa nasce da decisão do
+// método, não de lista de títulos). A tela pedia uma decisão que o
+// servidor jogava fora. O gatilho de criação do evento já instancia o
+// método sozinho.
+const STEPS = ["Tipo", "Cliente", "Dados", "Configuração"];
 
 const DADOS_INICIAIS: DadosBasicos = {
   name: "",
@@ -74,11 +79,6 @@ export function EventWizard({ clients, preselected, membros, meuMembroId }: Prop
     ? `${EVENT_TYPE_LABELS[tipo]}${clientName ? ` — ${clientName}` : ""}`
     : "";
 
-  const checklistCompleto: TaskDraft[] = useMemo(
-    () => (tipo ? gerarChecklistPorTipo(resolverTemplate(tipo), respostas) : []),
-    [tipo, respostas]
-  );
-
   function patchDados(patch: Partial<DadosBasicos>) {
     setDados((d) => ({ ...d, ...patch }));
   }
@@ -86,10 +86,7 @@ export function EventWizard({ clients, preselected, membros, meuMembroId }: Prop
     setRespostas((r) => ({ ...r, ...patch }));
   }
 
-  async function submit(
-    tasks: { title: string; group: string }[],
-    incluirTimeline: boolean
-  ) {
+  async function submit(incluirTimeline: boolean) {
     if (!tipo) return;
     setCreating(true);
     setError(null);
@@ -109,7 +106,6 @@ export function EventWizard({ clients, preselected, membros, meuMembroId }: Prop
       status: dados.status,
       responsavelId,
       respostas,
-      tasks,
       incluirTimeline,
     };
     const res = await criarEventoCompleto(payload);
@@ -162,7 +158,7 @@ export function EventWizard({ clients, preselected, membros, meuMembroId }: Prop
           onResponsavel={setResponsavelId}
           creating={creating}
           error={error}
-          onQuick={() => submit(checklistMinimoRapido(), false)}
+          onQuick={() => submit(false)}
           onComplete={() => {
             setError(null);
             setStep(4);
@@ -176,21 +172,14 @@ export function EventWizard({ clients, preselected, membros, meuMembroId }: Prop
           respostas={respostas}
           fornecedores={fornecedoresDoTipo(tipo)}
           onChange={patchRespostas}
-          onNext={() => setStep(5)}
-          onSkip={() => setStep(5)}
-        />
-      )}
-
-      {step === 5 && (
-        <StepRevisao
-          checklist={checklistCompleto}
           creating={creating}
           error={error}
-          onCreate={(tasks) => submit(tasks, true)}
+          onNext={() => submit(true)}
+          onSkip={() => submit(true)}
         />
       )}
 
-      {step > 1 && step < 5 && (
+      {step > 1 && step < 4 && (
         <button
           onClick={() => setStep((s) => Math.max(1, s - 1))}
           className="text-sm text-stone-500 hover:text-stone-900"

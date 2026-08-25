@@ -21,6 +21,7 @@ export async function updateSession(request: NextRequest) {
       request.nextUrl.pathname === "/privacidade" ||
       request.nextUrl.pathname.startsWith("/portal/entrar") ||
       request.nextUrl.pathname.startsWith("/auth/confirm") ||
+      request.nextUrl.pathname.startsWith("/nova-senha") ||
       request.nextUrl.pathname.startsWith("/confirmar/") ||
       request.nextUrl.pathname.startsWith("/guia/") ||
       request.nextUrl.pathname.startsWith("/fornecedor/") ||
@@ -77,6 +78,10 @@ export async function updateSession(request: NextRequest) {
   const isPortalEntrar = pathname.startsWith("/portal/entrar");
   // Callback de OTP (reset de senha) — precisa rodar antes de haver sessão
   const isAuthConfirm = pathname.startsWith("/auth/confirm");
+  // A tela de senha nova: a sessão nasce em /auth/confirm e o formulário
+  // recusa sozinho quando não há. Precisa estar aqui porque o middleware
+  // roda antes de o cookie da troca existir.
+  const isNovaSenha = pathname.startsWith("/nova-senha");
   // Confirmação de presença do convidado — link público, sem login
   const isPublicConfirmar = pathname.startsWith("/confirmar/");
   // Guia de estilo na mão do fornecedor — o hash é a credencial, e a RPC
@@ -100,6 +105,7 @@ export async function updateSession(request: NextRequest) {
     !isRsvpApi &&
     !isPortalEntrar &&
     !isAuthConfirm &&
+    !isNovaSenha &&
     !isPublicConfirmar &&
     !isPublicGuia &&
     !isPublicFornecedor

@@ -32,9 +32,16 @@ export async function GET(request: NextRequest) {
   // aberto para qualquer domínio.
   const destino = next.startsWith("/") && !next.startsWith("//") ? next : "/";
 
+  // Quem errou o link volta para a porta DELA. Mandar a cerimonialista
+  // para /portal/entrar (a porta da cliente) fazia parecer que ela tinha
+  // errado de sistema.
+  const portaDeErro = destino.startsWith("/portal")
+    ? "/portal/entrar?erro=link"
+    : "/login?erro=link";
+
   // Link expirado/já usado chega com error na query — não é caso de trocar.
   if (searchParams.get("error")) {
-    return NextResponse.redirect(`${origin}/portal/entrar?erro=link`);
+    return NextResponse.redirect(`${origin}${portaDeErro}`);
   }
 
   const supabase = createClient();
@@ -44,7 +51,7 @@ export async function GET(request: NextRequest) {
     if (error) {
       // O caso mais comum: o e-mail foi aberto em OUTRO navegador/aparelho
       // (o code_verifier do PKCE mora no cookie de quem pediu o link).
-      return NextResponse.redirect(`${origin}/portal/entrar?erro=link`);
+      return NextResponse.redirect(`${origin}${portaDeErro}`);
     }
     return NextResponse.redirect(`${origin}${destino}`);
   }

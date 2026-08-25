@@ -5,7 +5,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { Building2, Eye, EyeOff, Lock, Mail, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const inputClass =
@@ -15,6 +15,7 @@ export function LoginForm() {
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [negocio, setNegocio] = useState("");
+  const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -54,7 +55,16 @@ export function LoginForm() {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { empresa: negocio.trim() } },
+        options: {
+          // 'empresa' vira o nome da empresa; 'name' vira o nome da PESSOA
+          // no membros_equipe (o gatilho já lê essa chave). Sem ele, toda
+          // conta nascia com a cerimonialista chamada "Proprietária" — e é
+          // esse nome que a noiva lê no portal e no rodapé da proposta.
+          data: { empresa: negocio.trim(), name: nome.trim() },
+          // Sem isto o link de confirmação sai com o Site URL do projeto,
+          // que aponta para localhost.
+          emailRedirectTo: `${window.location.origin}/auth/confirm?next=/eventos/dashboard`,
+        },
       });
       if (error) {
         setError("Não foi possível criar a conta. " + error.message);
@@ -80,7 +90,11 @@ export function LoginForm() {
       return;
     }
     const supabase = createClient();
-    await supabase.auth.resetPasswordForEmail(email);
+    // Sem redirectTo o link cai no Site URL do projeto (localhost) e,
+    // mesmo acertando, não havia tela para digitar a senha nova.
+    await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/confirm?next=/nova-senha`,
+    });
     setInfo(
       "Se este e-mail estiver cadastrado, você receberá um link para redefinir a senha."
     );
@@ -109,6 +123,36 @@ export function LoginForm() {
           endereço, no histórico do navegador e no log de acesso. Com POST,
           o pior caso vira um 405 sem vazamento. */}
       <form onSubmit={handleSubmit} method="post" className="mt-7 space-y-4">
+        {!isLogin && (
+          <div>
+            <label
+              htmlFor="nome"
+              className="mb-1.5 block text-sm font-medium text-gray-700"
+            >
+              Seu nome
+            </label>
+            <div className="relative">
+              <User
+                size={16}
+                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
+              />
+              <input
+                id="nome"
+                type="text"
+                required
+                autoComplete="name"
+                placeholder="Marina Alves"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <p className="mt-1.5 text-xs text-gray-500">
+              É como a cliente vê você no portal dela.
+            </p>
+          </div>
+        )}
+
         {!isLogin && (
           <div>
             <label

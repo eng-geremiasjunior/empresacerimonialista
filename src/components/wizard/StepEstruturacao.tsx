@@ -27,6 +27,8 @@ type Props = {
   onChange: (patch: Partial<WizardRespostas>) => void;
   onNext: () => void;
   onSkip: () => void;
+  creating: boolean;
+  error: string | null;
 };
 
 export function StepEstruturacao({
@@ -36,6 +38,8 @@ export function StepEstruturacao({
   onChange,
   onNext,
   onSkip,
+  creating,
+  error,
 }: Props) {
   const perguntas = PERGUNTAS[resolverTemplate(type)] ?? [];
   const contratados = respostas.fornecedoresContratados ?? [];
@@ -57,6 +61,7 @@ export function StepEstruturacao({
           </p>
         </div>
         <button
+          disabled={creating}
           onClick={onSkip}
           className="shrink-0 text-sm text-stone-500 underline underline-offset-2 hover:text-stone-900"
         >
@@ -122,13 +127,19 @@ export function StepEstruturacao({
         </div>
       </div>
 
-      <div className="mt-5">
+      <div className="mt-5 flex flex-col gap-2">
         <button
+          disabled={creating}
           onClick={onNext}
-          className="rounded-lg bg-stone-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-stone-700"
+          className="self-start rounded-lg bg-stone-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-50"
         >
-          Revisar checklist →
+          {creating ? "Criando…" : "Criar evento"}
         </button>
+        {error && (
+          <p role="alert" className="text-sm text-red-600">
+            {error}
+          </p>
+        )}
       </div>
     </div>
   );

@@ -28,7 +28,7 @@ export type WizardPayload = {
   status: string; // orcamento | confirmado
   responsavelId: string | null; // membro_equipe responsável
   respostas: WizardRespostas;
-  tasks: WizardTaskInput[]; // checklist final (já editado na revisão)
+
   incluirTimeline: boolean; // true no fluxo completo, false no rápido
 };
 
@@ -61,6 +61,11 @@ export async function criarEventoCompleto(
   // Checklist plano APOSENTADO (076): tarefa nasce da decisão do método
   // (trigger na criação do evento), não de lista de títulos sem prazo nem
   // responsável. p_tasks vai vazio — mesmo padrão de orcamento-para-evento.
+  //
+  // O wizard tinha um passo "Revisar checklist" que deixava ela marcar,
+  // desmarcar e acrescentar item — e tudo caía aqui, neste array vazio. O
+  // passo foi removido: a tela não pode pedir uma decisão que o servidor
+  // descarta.
   const tasks: { title: string; category: string; priority: string }[] = [];
 
   const supabase = createClient();
