@@ -77,7 +77,7 @@ export const COMO_FUNCIONA_MAISON = {
       quando: "Semana 1",
       titulo: "Assinatura + imersão",
       descricao:
-        "Contrato digital, pagamento da entrada, visita técnica e briefing de 3h no local.",
+        "Contrato, pagamento da entrada, visita técnica e briefing de 3h no local.",
     },
     {
       quando: "Semana 2-6",
@@ -139,29 +139,19 @@ export const INVESTIMENTO_MAISON = {
   selo: "MAIS ESCOLHIDO",
   rodape: (pct: number) =>
     `Entrada de ${pct}% garante equipe exclusiva • Restante parcelado sem juros`,
-  selos: ["✓ Contrato digital", "✓ Cronograma detalhado", "✓ Lista curada"],
+  selos: ["✓ Contrato por escrito", "✓ Cronograma detalhado", "✓ Lista curada"],
 };
 
-export const DEPOIMENTOS_MAISON = [
-  {
-    texto:
-      "Parecia desfile de alta-costura. Cada minuto cronometrado, zero estresse. Nunca vimos tanto cuidado.",
-    autor: "Ana & Rafael",
-    contexto: null,
-  },
-  {
-    texto:
-      "Lista curada salvou nosso casamento. Fornecedores impecáveis, sem pegadinhas. Equipe invisível.",
-    autor: "Juliana & Marcos",
-    contexto: null,
-  },
-  {
-    texto:
-      "Bem investido. Voltaríamos a pagar. Fotos entregues em 18 dias, álbum de museu.",
-    autor: "Camila & Eduardo",
-    contexto: null,
-  },
-];
+// VAZIO DE PROPÓSITO. Depoimento inventado é depoimento falso: sai
+// assinado por uma família que nunca existiu, numa proposta que a
+// cerimonialista manda para uma cliente de verdade. Quando ela cadastrar
+// os dela no Catálogo, eles aparecem; até lá a seção não existe — o mesmo
+// que DEPOIMENTOS_CLASSICO já fazia.
+export const DEPOIMENTOS_MAISON: {
+  texto: string;
+  autor: string;
+  contexto: string | null;
+}[] = [];
 
 export const PROXIMOS_MAISON = {
   eyebrow: "PRÓXIMOS PASSOS",

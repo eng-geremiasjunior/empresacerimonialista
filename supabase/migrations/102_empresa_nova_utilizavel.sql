@@ -205,36 +205,36 @@ begin
     insert into public.empresa_pacotes
       (empresa_id, tipo_evento, ordem, nome, subtitulo, preco, recomendado, ativo, inclui)
     values
-      (p_empresa_id, 'casamento', 1, 'Essencial',
-       'Para casais práticos', 1900, false, true,
+      -- Ponto de partida NEUTRO, para a calculadora da proposta existir
+      -- desde o primeiro minuto. Preço 0 de propósito: a proposta mostra
+      -- "A combinar" (precoDePacote em src/lib/proposta.ts) até ela
+      -- precificar no Catálogo. A versão anterior trazia o
+      -- posicionamento de outra agência, com termo em inglês e valor que
+      -- ninguém escolheu — e a noiva lia aquilo como se fosse dela.
+      (p_empresa_id, 'casamento', 1, 'Assessoria do dia',
+       'Acompanhamento na reta final', 0, false, true,
        array[
-         'Assessoria 30 dias antes',
-         'Reunião de alinhamento final',
-         'Checklist personalizado',
-         'Acompanhamento no dia (8h)',
-         'Coordenação de fornecedores no dia'
+         'Alinhamento nas semanas que antecedem',
+         'Checklist do dia',
+         'Coordenação dos fornecedores no evento',
+         'Acompanhamento durante a festa'
        ]),
-      (p_empresa_id, 'casamento', 2, 'Completa',
-       'DIAMANTE • Mais escolhido', 2500, true, true,
+      (p_empresa_id, 'casamento', 2, 'Assessoria completa',
+       'Do planejamento ao dia', 0, true, true,
        array[
-         'Assessoria completa 6 meses',
-         'Visitas técnicas ilimitadas',
-         'Curadoria completa de fornecedores',
-         '3 reuniões presenciais + online ilimitadas',
-         'Acompanhamento no dia (12h) com 2 cerimonialistas',
-         'Kit emergência noiva + RSVP + Cronograma',
-         'Ensaio fotográfico de acompanhamento'
+         'Planejamento desde a contratação',
+         'Curadoria e negociação com fornecedores',
+         'Reuniões de acompanhamento',
+         'Cronograma do dia e ensaio',
+         'Coordenação durante a festa'
        ]),
-      (p_empresa_id, 'casamento', 3, 'Premium',
-       'Experiência Platinum', 4200, false, true,
+      (p_empresa_id, 'casamento', 3, 'Assessoria completa +',
+       'Com equipe ampliada', 0, false, true,
        array[
-         'Tudo da Completa +',
-         'Assessoria desde o pedido até a lua de mel',
-         'Wedding Designer incluso',
-         'Equipe de 4 profissionais no dia',
-         'Assessoria de lua de mel completa',
-         'Gestão total de convidados e hospedagem',
-         'Coordenação do after-movie + álbum premium'
+         'Tudo da assessoria completa',
+         'Equipe ampliada no dia',
+         'Gestão de convidados e hospedagem',
+         'Acompanhamento estendido'
        ]);
   end if;
 
@@ -246,10 +246,11 @@ begin
     insert into public.empresa_extras
       (empresa_id, tipo_evento, ordem, nome, descricao, preco, ativo)
     values
+      -- também sem preço: quem define é ela
       (p_empresa_id, 'casamento', 1, 'Cerimônia ao ar livre',
-       'Estrutura e plano B de chuva', 600, true),
+       'Estrutura e plano B de chuva', 0, true),
       (p_empresa_id, 'casamento', 2, 'Assessoria de lua de mel',
-       'Roteiro e reservas', 450, true);
+       'Roteiro e reservas', 0, true);
   end if;
 end;
 $$;

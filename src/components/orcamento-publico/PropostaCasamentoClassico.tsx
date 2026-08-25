@@ -27,7 +27,7 @@ import {
   condicoesDoBanco,
   opcoesParcelamento,
   regraDoBanco,
-} from "@/lib/proposta";
+  precoDePacote, } from "@/lib/proposta";
 import {
   BLOCOS_INCLUSO_CLASSICO,
   BLOCOS_NO_DIA_CLASSICO,
@@ -956,7 +956,7 @@ export function PropostaCasamentoClassico({
                       </span>
                     </div>
                     <p style={{ margin: "14px 0 0", fontFamily: SERIF, fontSize: 34, fontWeight: 600 }}>
-                      {brlInteiro(p.preco)}
+                      {precoDePacote(p.preco)}
                       <span
                         style={{
                           fontFamily: SANS, fontSize: 11, fontWeight: 400,
@@ -1278,7 +1278,7 @@ export function PropostaCasamentoClassico({
                     color: "rgba(249,245,240,0.6)",
                   }}
                 >
-                  Contrato digital válido juridicamente • Assinatura na tela
+                  Aceite registrado com data, hora e assinatura na tela
                 </p>
               </div>
             </div>

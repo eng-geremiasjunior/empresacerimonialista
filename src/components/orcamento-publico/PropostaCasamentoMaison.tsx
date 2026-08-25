@@ -81,6 +81,11 @@ export function PropostaCasamentoMaison({
   const [modal, setModal] = useState(false);
   const [aceite, setAceite] = useState(dados.aceite ?? null);
   const [ativo, setAtivo] = useState(NAV_MAISON[0].id);
+  // sem depoimento a seção some; o índice tem que sumir junto
+  const nav = useMemo(
+    () => NAV_MAISON.filter((i) => i.id !== "depoimentos" || depoimentos.length > 0),
+    [depoimentos.length]
+  );
   const [progresso, setProgresso] = useState(0);
   const [rolou, setRolou] = useState(false);
 
@@ -109,7 +114,7 @@ export function PropostaCasamentoMaison({
       },
       { rootMargin: "-40% 0px -50% 0px" }
     );
-    for (const item of NAV_MAISON) {
+    for (const item of nav) {
       const el = document.getElementById(item.id);
       if (el) obs.observe(el);
     }
@@ -236,7 +241,7 @@ export function PropostaCasamentoMaison({
         </div>
 
         <nav className="mt-8 flex flex-col gap-0.5">
-          {NAV_MAISON.map((item) => {
+          {nav.map((item) => {
             const on = ativo === item.id;
             return (
               <button
@@ -299,7 +304,7 @@ export function PropostaCasamentoMaison({
           podeResponder={podeResponder}
         />
         <SecaoEventos fotos={fotos} />
-        <SecaoDepoimentos depoimentos={depoimentos} />
+        {depoimentos.length > 0 && <SecaoDepoimentos depoimentos={depoimentos} />}
         <SecaoProximos onAceitar={abrir} podeResponder={podeResponder} entradaPct={entradaPct} />
         <RodapeMaison nomeEmpresa={dados.nome_empresa} hash={hash} />
       </main>
@@ -464,7 +469,7 @@ function SecaoHero({
             ACEITAR PROPOSTA • {brl(valor)} <span>→</span>
           </button>
           <p className="mt-3 text-[10.5px]" style={{ color: TAUPE }}>
-            Entrada de {entradaPct}% • {parcelas}x sem juros • Contrato digital na hora do aceite
+            Entrada de {entradaPct}% • {parcelas}x sem juros • Contrato enviado após o aceite
           </p>
         </div>
 
@@ -919,7 +924,7 @@ function ReciboMaison({
           </a>
         )}
         <p className="mt-4 text-[10.5px]" style={{ color: TAUPE }}>
-          Guarde este código. O contrato digital chega em seguida.
+          Guarde este código. Sua cerimonialista entra em contato com o contrato.
         </p>
       </div>
     </div>

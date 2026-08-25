@@ -27,7 +27,7 @@ import { ModalAceiteProposta } from "@/components/orcamento-publico/ModalAceiteP
 import { useCountdownValidade } from "@/components/orcamento-publico/useCountdownValidade";
 import { formatDateBR } from "@/lib/orcamentos";
 import { expirado, type OrcamentoPublicoData } from "@/lib/orcamento-publico";
-import { calcularProposta } from "@/lib/proposta";
+import { calcularProposta, precoDePacote } from "@/lib/proposta";
 import { IMAGEM_PADRAO } from "@/lib/landing-imagens";
 import {
   NAV_DEBUTANTE,
@@ -68,6 +68,13 @@ export function PropostaDebutante({
     (dados.depoimentos ?? []).length > 0
       ? dados.depoimentos
       : DEPOIMENTOS_DEBUTANTE_PADRAO;
+
+  // Sem depoimento cadastrado a seção some, e o índice perde o item junto
+  // — senão o link levaria a uma âncora que não existe mais.
+  const nav = useMemo(
+    () => NAV_DEBUTANTE.filter((i) => i.id !== "depoimentos" || depoimentos.length > 0),
+    [depoimentos.length]
+  );
 
   const regra = {
     inclusos: inst?.convidados_inclusos ?? 150,
@@ -218,7 +225,7 @@ export function PropostaDebutante({
         <div style={{ borderTop: `1px solid ${BORDA}` }} />
 
         <nav className="flex flex-col gap-0.5">
-          {NAV_DEBUTANTE.map((item) => (
+          {nav.map((item) => (
             <button
               key={item.id}
               onClick={() => irPara(item.id)}
@@ -463,7 +470,7 @@ export function PropostaDebutante({
                       PACOTE {pacote.nome}
                     </div>
                     <div className="text-[11px]" style={{ color: "#9a948c" }}>
-                      {brl(Number(pacote.preco))}
+                      {precoDePacote(Number(pacote.preco))}
                     </div>
                   </div>
                 </div>
@@ -684,7 +691,7 @@ export function PropostaDebutante({
                     />
                   </div>
                   <div className="playfair mb-1 mt-[18px] text-[30px]">
-                    {brl(Number(p.preco))}
+                    {precoDePacote(Number(p.preco))}
                   </div>
                   <div className="mb-[18px] text-[11px]" style={{ color: "#A8A29A" }}>
                     à vista
@@ -893,7 +900,10 @@ export function PropostaDebutante({
           </div>
         </Secao>
 
-        {/* 6 — DEPOIMENTOS */}
+        {/* 6 — DEPOIMENTOS. Sem depoimento cadastrado a seção inteira
+            some, e o índice perde o item junto — senão o link levaria a
+            uma âncora que não existe. */}
+        {depoimentos.length > 0 && (
         <Secao id="depoimentos">
           <div className="mb-8 flex items-center justify-between">
             <h2 className="playfair m-0 text-[24px] sm:text-[30px]">
@@ -1009,6 +1019,7 @@ export function PropostaDebutante({
             </div>
           </div>
         </Secao>
+        )}
       </main>
 
       {/* Barra fixa no mobile: a sidebar some, o total não pode sumir junto */}

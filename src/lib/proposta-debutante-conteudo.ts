@@ -67,29 +67,19 @@ export const PROCESSO_DEBUTANTE_PADRAO: {
   { titulo: "O GRANDE DIA", descricao: "Você vive. Nós garantimos a magia." },
 ];
 
-export const DEPOIMENTOS_DEBUTANTE_PADRAO = [
-  {
-    texto:
-      "Fornecedores incríveis, decoração de revista. Todo mundo ainda comenta. Valeu cada centavo do Premium.",
-    autor: "Família Andrade",
-    contexto: "Debutante 2023 • 250 convidados",
-  },
-  {
-    texto:
-      "Tranquilidade do início ao fim. A equipe cuidou de tudo e nós só aproveitamos o dia.",
-    autor: "Família Lopes",
-    contexto: "Debutante 2024 • 150 convidados",
-  },
-  {
-    texto:
-      "Organização impecável, cronograma seguido à risca. Recomendo de olhos fechados.",
-    autor: "Família Ferreira",
-    contexto: "Debutante 2022 • 180 convidados",
-  },
-];
+// VAZIO DE PROPÓSITO. Depoimento inventado é depoimento falso: sai
+// assinado por uma família que nunca existiu, numa proposta que a
+// cerimonialista manda para uma cliente de verdade. Quando ela cadastrar
+// os dela no Catálogo, eles aparecem; até lá a seção não existe — o mesmo
+// que DEPOIMENTOS_CLASSICO já fazia.
+export const DEPOIMENTOS_DEBUTANTE_PADRAO: {
+  texto: string;
+  autor: string;
+  contexto: string | null;
+}[] = [];
 
 export const SELOS_CONFIANCA = [
-  { icone: "🛡️", texto: "Contrato digital" },
+  { icone: "🛡️", texto: "Contrato por escrito" },
   { icone: "🕐", texto: "Suporte 2h" },
   { icone: "✓", texto: "Sem surpresas" },
 ];

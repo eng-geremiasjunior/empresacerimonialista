@@ -1,3 +1,4 @@
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import {
   adminClient,
@@ -9,6 +10,18 @@ import { enviarMensagemWhatsapp } from '@/lib/whatsapp';
 
 // O webhook é chamado pela Meta (sem sessão). O bypass em src/middleware.ts
 // mantém esta rota pública — não alterar.
+//
+// "Sem sessão" NÃO quer dizer "sem autenticação". Quem prova que a
+// requisição veio da Meta é a assinatura HMAC no header
+// x-hub-signature-256, calculada com o App Secret do aplicativo.
+//
+// Sem essa conferência esta rota era uma máquina de enviar WhatsApp na
+// conta do dono: bastava um POST com um button_reply de id inválido para
+// cair no caminho de erro da linha ~116, que responde ao número que veio
+// no PRÓPRIO corpo da requisição. Num laço, envio ilimitado para qualquer
+// número, no custo dele e com risco de a Meta suspender o número. Também
+// dava para confirmar presença em nome de um fornecedor (bastava mandar
+// "sim" com o telefone dele) e injetar texto no sino da cerimonialista.
 export const dynamic = 'force-dynamic';
 
 const AFIRMATIVAS = ['sim', 'confirmado', 'confirmo', 'confirmar', 'ok'];
@@ -20,7 +33,14 @@ export async function GET(req: NextRequest) {
   const token = searchParams.get('hub.verify_token');
   const challenge = searchParams.get('hub.challenge');
 
-  const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'vela_teste_123';
+  // Sem token no ambiente, recusa — mesma postura das rotas de cron. O
+  // literal que estava aqui como padrão sobrevivia a um deploy sem a
+  // variável e deixava qualquer um assinar o webhook.
+  const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
+  if (!VERIFY_TOKEN) {
+    console.error('[vela:webhook] WHATSAPP_VERIFY_TOKEN ausente');
+    return new NextResponse('Forbidden', { status: 403 });
+  }
 
   if (mode === 'subscribe' && token === VERIFY_TOKEN) {
     console.log('Webhook verificado com sucesso!');
@@ -30,11 +50,47 @@ export async function GET(req: NextRequest) {
   }
 }
 
+/**
+ * A requisição veio mesmo da Meta?
+ *
+ * Assinatura HMAC-SHA256 do corpo CRU com o App Secret, no header
+ * x-hub-signature-256, no formato `sha256=<hex>`. Precisa ser calculada
+ * sobre o texto exato recebido — por isso o corpo é lido com .text() e só
+ * depois vira JSON.
+ */
+function assinaturaConfere(raw: string, cabecalho: string | null): boolean {
+  const segredo = process.env.META_APP_SECRET;
+  if (!segredo || !cabecalho) return false;
+
+  const recebida = cabecalho.startsWith('sha256=') ? cabecalho.slice(7) : cabecalho;
+  const esperada = createHmac('sha256', segredo).update(raw, 'utf8').digest('hex');
+
+  const a = Buffer.from(recebida, 'hex');
+  const b = Buffer.from(esperada, 'hex');
+  // timingSafeEqual exige o mesmo tamanho; comprimento diferente já é falha
+  if (a.length !== b.length || a.length === 0) return false;
+  return timingSafeEqual(a, b);
+}
+
 export async function POST(req: NextRequest) {
   let payload: unknown = null;
 
+  // Fail closed: sem o segredo configurado, ninguém entra. Preferir recusar
+  // a processar às cegas — a Meta reenvia, e o custo de um webhook parado é
+  // menor que o de um aberto.
+  if (!process.env.META_APP_SECRET) {
+    console.error('[vela:webhook] META_APP_SECRET ausente — POST recusado');
+    return new NextResponse('Forbidden', { status: 403 });
+  }
+
+  const raw = await req.text();
+  if (!assinaturaConfere(raw, req.headers.get('x-hub-signature-256'))) {
+    console.error('[vela:webhook] assinatura inválida');
+    return new NextResponse('Forbidden', { status: 403 });
+  }
+
   try {
-    payload = await req.json();
+    payload = JSON.parse(raw);
     const msg = extrairMensagem(payload);
     const admin = adminClient();
 

@@ -31,7 +31,7 @@ import {
   calcularProposta,
   condicoesDoBanco,
   regraDoBanco,
-} from "@/lib/proposta";
+  precoDePacote, } from "@/lib/proposta";
 import {
   GENEROS_CONVITE_VIVO,
   HORAS_CONVITE_VIVO,
@@ -873,7 +873,7 @@ export function PropostaConviteVivo({
                               className="cv-serif"
                               style={{ fontSize: 24, color: COR.champanhe, whiteSpace: "nowrap" }}
                             >
-                              R$ {brl(p.preco)}
+                              {precoDePacote(p.preco)}
                             </span>
                           </button>
                         );

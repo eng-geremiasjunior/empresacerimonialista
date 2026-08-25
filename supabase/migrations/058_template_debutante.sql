@@ -48,8 +48,12 @@ begin
       insert into public.empresa_pacotes
         (empresa_id, tipo_evento, ordem, nome, subtitulo, preco, recomendado, ativo, inclui)
       values
-        (e.id, 'debutante', 1, 'ESSENCIAL',
-         'Para quem quer o essencial com elegância', 4900, false, true,
+        -- Ponto de partida NEUTRO. Preço 0 de propósito: a proposta
+        -- mostra "A combinar" até ela precificar no Catálogo. A versão
+        -- anterior trazia o vocabulário de outra empresa, parte em
+        -- inglês, e a noiva lia aquilo assinado com o nome dela.
+        (e.id, 'debutante', 1, 'Assessoria do dia',
+         'Acompanhamento na reta final', 0, false, true,
          array[
            '3 reuniões de planejamento',
            'Curadoria de 5 fornecedores chave',
@@ -58,8 +62,8 @@ begin
            '1 assessora no dia',
            'Suporte por WhatsApp'
          ]),
-        (e.id, 'debutante', 2, 'COMPLETA',
-         'Equilíbrio perfeito entre tranquilidade e luxo', 6900, true, true,
+        (e.id, 'debutante', 2, 'Assessoria completa',
+         'Do planejamento ao dia', 0, true, true,
          array[
            'Reuniões ilimitadas',
            'Curadoria completa de fornecedores',
@@ -69,17 +73,17 @@ begin
            'Equipe de 2 assessores + kit emergência',
            'Suporte humanizado até o pós-evento'
          ]),
-        (e.id, 'debutante', 3, 'PREMIUM',
-         'Experiência white-glove inesquecível', 9700, false, true,
+        (e.id, 'debutante', 3, 'Assessoria completa +',
+         'Com equipe ampliada', 0, false, true,
          array[
            'Tudo da Completa +',
            'Conceito criativo e identidade visual',
            'Chá de debutante incluso (consultoria)',
-           'Roteiro cinematográfico do dia',
+           'Roteiro detalhado do dia',
            'Assessoria no dia (16h) + 3 assessoras',
-           'Cerimonialista bilíngue',
+           'Cerimonialista bilíngue (a combinar)',
            'Pós-evento com entrega de presentes e agradecimentos',
-           'Concierge 24h na semana do evento'
+           'Atendimento estendido na semana do evento'
          ]);
     end if;
 
@@ -92,7 +96,7 @@ begin
       insert into public.empresa_extras
         (empresa_id, tipo_evento, ordem, nome, descricao, preco, ativo)
       values (e.id, 'debutante', 1, 'Chá de debutante',
-              'Consultoria completa + lista + decór mini', 800, true);
+              'Consultoria completa + lista + decoração', 0, true);
     end if;
 
     -- etapas do processo

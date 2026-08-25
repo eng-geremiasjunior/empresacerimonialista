@@ -36,7 +36,7 @@ import {
   calcularProposta,
   condicoesDoBanco,
   regraDoBanco,
-} from "@/lib/proposta";
+  precoDePacote, } from "@/lib/proposta";
 import {
   CARTA_PRAIA,
   ESTILOS_PRAIA,
@@ -793,7 +793,7 @@ export function PropostaCasamentoPraia({
                           )}
                         </span>
                         <span className="praia-serif" style={{ fontSize: 20, color: on ? COR.coral : COR.oceano, whiteSpace: "nowrap" }}>
-                          {brl(p.preco)}
+                          {precoDePacote(p.preco)}
                         </span>
                         {on && <span style={{ color: COR.coral }}>✓</span>}
                       </button>
@@ -1217,7 +1217,7 @@ export function PropostaCasamentoPraia({
           rotuloAssinatura="Assinatura noiva"
           rotuloAssinatura2="Assinatura noivo"
           textoBotao="ASSINAR E TRAVAR A DATA →"
-          rodape="Li e aceito o contrato digital de assessoria e as condições de pagamento desta proposta."
+          rodape="Li e aceito as condições desta proposta. O contrato de assessoria é enviado em seguida."
           onFechar={() => setModal(false)}
           onAceito={(codigo, total) => {
             setModal(false);

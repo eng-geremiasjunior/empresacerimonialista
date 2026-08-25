@@ -219,3 +219,15 @@ export function tempoRestante(
     acabou: false,
   };
 }
+
+/**
+ * O preço de um pacote na proposta pública.
+ *
+ * Pacote com preço zero é pacote que a cerimonialista ainda não precificou
+ * — a conta nasce com três nomes de exemplo para a calculadora existir.
+ * Mostrar "R$ 0" faria a noiva ler um preço que ninguém definiu; "A
+ * combinar" diz a verdade e ainda empurra a conversa para onde ela
+ * pertence.
+ */
+export const precoDePacote = (n: number): string =>
+  Number(n) > 0 ? brlInteiro(Number(n)) : "A combinar";

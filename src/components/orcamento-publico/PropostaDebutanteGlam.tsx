@@ -35,7 +35,7 @@ import { ModalAceiteProposta } from "@/components/orcamento-publico/ModalAceiteP
 import { useCountdownValidade } from "@/components/orcamento-publico/useCountdownValidade";
 import { formatDateBR } from "@/lib/orcamentos";
 import { expirado, type OrcamentoPublicoData } from "@/lib/orcamento-publico";
-import { calcularProposta } from "@/lib/proposta";
+import { calcularProposta, precoDePacote } from "@/lib/proposta";
 import {
   INCLUSO_GLAM, ETAPAS_GLAM, CARDS_DIA_GLAM,
   HERO_PARAGRAFO_GLAM, VIDEO_LEGENDA_GLAM,
@@ -510,7 +510,7 @@ function InvestimentoSection({
             R$ {brl(valores.total)}
           </p>
           <p className="mt-3 text-center text-[13px] font-medium text-white/50">
-            Em até {parcelasMaximo}x no cartão • Trava de preço hoje • Contrato digital
+            Em até {parcelasMaximo}x no cartão • Trava de preço hoje • Contrato por escrito
           </p>
 
           {/* 3 botões de pacote */}
@@ -538,7 +538,7 @@ function InvestimentoSection({
                   )}
                   <div className="text-[15px] font-black">{p.nome}</div>
                   <div className="mt-1 text-[13px] font-bold" style={{ color: on ? INK : OURO }}>
-                    R$ {brl(Number(p.preco))}
+                    {precoDePacote(Number(p.preco))}
                   </div>
                   {p.subtitulo && (
                     <div className="mt-1.5 text-[11px] font-medium" style={{ color: on ? "rgba(0,0,0,.6)" : "rgba(255,255,255,.5)" }}>
@@ -611,7 +611,7 @@ function InvestimentoSection({
             GARANTIR MINHA DATA COM {nome} <ArrowRight size={16} />
           </button>
           <p className="mt-3 text-center text-[11px] font-medium text-white/40">
-            Sem compromisso agora • Você fecha quando quiser • Contrato digital
+            Sem compromisso agora • Você fecha quando quiser • Contrato por escrito
           </p>
 
           <div className="mt-5 flex flex-wrap justify-center gap-2">
