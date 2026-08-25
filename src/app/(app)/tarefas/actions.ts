@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidarTarefas } from "@/lib/revalidar-tarefas";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { TaskCategory, TaskPriority, TaskStatus } from "@/lib/types";
@@ -59,14 +59,6 @@ function validate(form: ReturnType<typeof readForm>): string | null {
   return null;
 }
 
-function revalidate() {
-  revalidatePath("/tarefas");
-  revalidatePath("/calendario");
-  // Atualiza o hub do evento (Saúde/Copiloto) e o dashboard.
-  revalidatePath("/eventos/[id]", "layout");
-  revalidatePath("/eventos/dashboard");
-}
-
 export async function createTask(
   _prev: TaskFormState,
   formData: FormData
@@ -96,79 +88,15 @@ export async function createTask(
     return { error: "Não foi possível salvar a tarefa. Tente novamente." };
   }
 
-  revalidate();
+  revalidarTarefas();
   return { success: true };
 }
 
-export async function updateTask(
-  taskId: string,
-  _prev: TaskFormState,
-  formData: FormData
-): Promise<TaskFormState> {
-  const form = readForm(formData);
-  const invalid = validate(form);
-  if (invalid) return { error: invalid };
-
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { error } = await supabase
-    .from("tasks")
-    .update({
-      event_id: form.eventId,
-      title: form.title,
-      description: form.description || null,
-      due_date: form.dueDate,
-      due_time: form.dueTime || null,
-      status: form.status,
-      priority: form.priority,
-      category: form.category,
-      // Editar a tarefa rearma AS DUAS notificações para o novo prazo:
-      // notified_at é o aviso de 5 minutos do navegador; notified é o
-      // lembrete de véspera da rotina diária. Réguas diferentes, marcas
-      // diferentes — mudar o prazo tem que zerar as duas.
-      notified_at: null,
-      notified: false,
-    })
-    .eq("id", taskId);
-
-  if (error) {
-    return { error: "Não foi possível salvar a tarefa. Tente novamente." };
-  }
-
-  revalidate();
-  return { success: true };
-}
-
-export async function deleteTask(taskId: string) {
-  const supabase = createClient();
-  const { error } = await supabase.from("tasks").delete().eq("id", taskId);
-
-  if (error) {
-    throw new Error("Não foi possível excluir a tarefa.");
-  }
-
-  revalidate();
-}
-
-// Checkbox: alterna entre concluído e pendente
-export async function toggleTask(taskId: string) {
-  const supabase = createClient();
-  const { data: task } = await supabase
-    .from("tasks")
-    .select("status")
-    .eq("id", taskId)
-    .single();
-
-  if (!task) return;
-
-  await supabase
-    .from("tasks")
-    .update({ status: task.status === "concluido" ? "pendente" : "concluido" })
-    .eq("id", taskId);
-
-  revalidate();
-}
+// updateTask, deleteTask e toggleTask viviam aqui e ninguém os
+// chamava: quem edita, apaga e alterna tarefa é
+// eventos/[id]/organizacao/actions.ts, e a versão de lá é a melhor das
+// duas (só rearma os lembretes quando a DATA muda de verdade, em vez de
+// a cada gravação do formulário). Duas implementações do mesmo CRUD é
+// como uma correção entra numa e não na outra.
+//
+// createTask fica: AcoesRapidas.tsx ainda a usa.

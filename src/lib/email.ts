@@ -14,25 +14,11 @@
 
 import { formatDate, formatTime } from "@/lib/format";
 
-/** Base dos links enviados por e-mail. */
-export function appUrl() {
-  const explicito = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/+$/, "");
-  const emDeploy = Boolean(process.env.VERCEL);
-  const apontaProLocal = explicito
-    ? /^https?:\/\/(localhost|127\.0\.0\.1)/i.test(explicito)
-    : false;
-
-  // localhost configurado num deploy é sempre esquecimento: o link chega
-  // ao fornecedor apontando para a máquina de quem programou. Nesse caso
-  // o endereço do próprio deploy vale mais que a variável.
-  if (explicito && !(emDeploy && apontaProLocal)) return explicito;
-
-  const producao = process.env.VERCEL_PROJECT_PRODUCTION_URL;
-  if (producao) return `https://${producao}`;
-  const deploy = process.env.VERCEL_URL;
-  if (deploy) return `https://${deploy}`;
-  return "http://localhost:3000";
-}
+// A base dos links mora em lib/app-url.ts: o WhatsApp também precisa
+// dela e não deve importar o módulo do Resend para isso.
+import { appUrl } from "@/lib/app-url";
+// Reexportado porque oito arquivos ja importavam daqui.
+export { appUrl };
 
 /** Remetente configurado. O padrão é o domínio de teste do Resend. */
 export function remetente() {

@@ -5,6 +5,7 @@
 // gravamos e revalidamos a rota.
 
 import { revalidatePath } from "next/cache";
+import { revalidarTarefas } from "@/lib/revalidar-tarefas";
 import { createClient } from "@/lib/supabase/server";
 import {
   enviarConfirmacaoCompromissoWhatsapp,
@@ -54,7 +55,7 @@ export async function alternarTarefa(
     .eq("event_id", eventId);
 
   if (error) return { error: "Não foi possível atualizar a tarefa." };
-  revalidatePath(`/eventos/${eventId}/organizacao`);
+  revalidarTarefas(eventId);
   return { success: true };
 }
 
@@ -143,7 +144,7 @@ export async function criarTarefa(
     .single();
 
   if (error || !data) return { error: "Não foi possível criar a tarefa." };
-  revalidatePath(`/eventos/${eventId}/organizacao`);
+  revalidarTarefas(eventId);
   return { success: true, id: data.id };
 }
 
@@ -184,7 +185,7 @@ export async function atualizarTarefa(
     .eq("event_id", eventId);
 
   if (error) return { error: "Não foi possível salvar a tarefa." };
-  revalidatePath(`/eventos/${eventId}/organizacao`);
+  revalidarTarefas(eventId);
   return { success: true };
 }
 
@@ -200,7 +201,7 @@ export async function excluirTarefa(
     .eq("event_id", eventId);
 
   if (error) return { error: "Não foi possível excluir a tarefa." };
-  revalidatePath(`/eventos/${eventId}/organizacao`);
+  revalidarTarefas(eventId);
   return { success: true };
 }
 

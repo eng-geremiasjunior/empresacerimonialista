@@ -5,6 +5,8 @@
 // devolvem { ok:false, configurado:false } e quem chama segue a vida.
 // O RECEBIMENTO do webhook não depende disto para funcionar.
 
+import { appUrl } from "@/lib/app-url";
+
 const API_VERSION = "v21.0";
 
 export type EnvioWhatsapp =
@@ -173,7 +175,7 @@ export async function enviarConviteAgendamentoWhatsapp(params: {
     };
   });
 
-  const link = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/agendar/${params.hash}`;
+  const link = `${appUrl()}/agendar/${params.hash}`;
 
   return enviar({
     to,

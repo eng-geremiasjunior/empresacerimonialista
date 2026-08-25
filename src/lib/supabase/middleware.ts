@@ -3,6 +3,53 @@ import { NextResponse, type NextRequest } from "next/server";
 
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
+/**
+ * Tudo que se alcança sem sessão.
+ *
+ * Havia DUAS listas neste arquivo — uma para o caso de o Supabase não
+ * estar configurado e outra para o caso normal — e elas já tinham
+ * divergido: /api/cron/ estava só na segunda. Uma rota nova esquecida na
+ * lista errada vira 302 para /login numa página que deveria abrir no
+ * celular do fornecedor, no dia do evento.
+ *
+ * O hash É a credencial nestas rotas: quem tem o link entra, e a RPC do
+ * outro lado devolve só a fatia dele.
+ */
+const ROTAS_PUBLICAS: ((p: string) => boolean)[] = [
+  (p) => p.startsWith("/login"),
+  // roteiro do fornecedor: /eventos/{id}/roteiro/publico/{hash}
+  (p) => new RegExp("^/eventos/[^/]+/roteiro/publico/").test(p),
+  (p) => p.startsWith("/confirmacao/"),
+  // convite de agendamento (Secretário): o fornecedor escolhe o horário
+  (p) => p.startsWith("/agendar/"),
+  // política de privacidade — pública, exigida pela Meta
+  (p) => p === "/privacidade",
+  // orçamento na mão da cliente (aprova ou recusa)
+  (p) => p.startsWith("/orcamento/"),
+  // as rotas de cron se protegem sozinhas com Bearer CRON_SECRET
+  (p) => p.startsWith("/api/cron/"),
+  // cadastro do convidado pelo link do evento
+  (p) => p.startsWith("/api/rsvp/"),
+  // Portal da Cliente: a porta é pública; o resto exige sessão
+  (p) => p.startsWith("/portal/entrar"),
+  // callback do OTP: roda ANTES de existir sessão
+  (p) => p.startsWith("/auth/confirm"),
+  // a tela de senha nova — a sessão nasce em /auth/confirm e o formulário
+  // recusa sozinho quando não há
+  (p) => p.startsWith("/nova-senha"),
+  // confirmação de presença do convidado
+  (p) => p.startsWith("/confirmar/"),
+  // guia de estilo na mão do fornecedor
+  (p) => p.startsWith("/guia/"),
+  // Central de Solicitações na mão do fornecedor
+  (p) => p.startsWith("/fornecedor/"),
+  (p) => p.startsWith("/api/fornecedor/"),
+];
+
+function ehPublica(pathname: string): boolean {
+  return ROTAS_PUBLICAS.some((casa) => casa(pathname));
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -12,22 +59,7 @@ export async function updateSession(request: NextRequest) {
   // Supabase ainda não configurado (.env.local ausente): manda tudo
   // para /login, que exibe as instruções de configuração.
   if (!supabaseUrl || !supabaseKey) {
-    if (
-      request.nextUrl.pathname.startsWith("/login") ||
-      request.nextUrl.pathname.includes("/roteiro/publico/") ||
-      request.nextUrl.pathname.startsWith("/confirmacao/") ||
-      request.nextUrl.pathname.startsWith("/orcamento/") ||
-      request.nextUrl.pathname.startsWith("/agendar/") ||
-      request.nextUrl.pathname === "/privacidade" ||
-      request.nextUrl.pathname.startsWith("/portal/entrar") ||
-      request.nextUrl.pathname.startsWith("/auth/confirm") ||
-      request.nextUrl.pathname.startsWith("/nova-senha") ||
-      request.nextUrl.pathname.startsWith("/confirmar/") ||
-      request.nextUrl.pathname.startsWith("/guia/") ||
-      request.nextUrl.pathname.startsWith("/fornecedor/") ||
-      request.nextUrl.pathname.startsWith("/api/fornecedor/") ||
-      request.nextUrl.pathname.startsWith("/api/rsvp/")
-    ) {
+    if (ehPublica(request.nextUrl.pathname)) {
       return supabaseResponse;
     }
     const url = request.nextUrl.clone();
@@ -59,63 +91,20 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname;
-  const isLoginPage = pathname.startsWith("/login");
-  // Link público do roteiro do fornecedor — acessível sem login
-  const isPublicRoteiro = /^\/eventos\/[^/]+\/roteiro\/publico\//.test(pathname);
-  // Página pública de confirmação do fornecedor — acessível sem login
-  const isPublicConfirmacao = pathname.startsWith("/confirmacao/");
-  // Convite de agendamento (Secretário) — fornecedor escolhe horário sem login
-  const isPublicAgendar = pathname.startsWith("/agendar/");
-  // Política de privacidade — pública (exigida pela Meta)
-  const isPublicPrivacidade = pathname === "/privacidade";
-  // Link público do orçamento (cliente aprova/recusa) — acessível sem login
-  const isPublicOrcamento = pathname.startsWith("/orcamento/");
-  // Rotas de cron protegem-se sozinhas com Bearer CRON_SECRET
-  const isCron = pathname.startsWith("/api/cron/");
-  // Cadastro do convidado pelo link do evento — sem login, por natureza
-  const isRsvpApi = pathname.startsWith("/api/rsvp/");
-  // Portal da Cliente: a porta de entrada é pública; o resto exige sessão
-  const isPortalEntrar = pathname.startsWith("/portal/entrar");
-  // Callback de OTP (reset de senha) — precisa rodar antes de haver sessão
-  const isAuthConfirm = pathname.startsWith("/auth/confirm");
-  // A tela de senha nova: a sessão nasce em /auth/confirm e o formulário
-  // recusa sozinho quando não há. Precisa estar aqui porque o middleware
-  // roda antes de o cookie da troca existir.
-  const isNovaSenha = pathname.startsWith("/nova-senha");
-  // Confirmação de presença do convidado — link público, sem login
-  const isPublicConfirmar = pathname.startsWith("/confirmar/");
-  // Guia de estilo na mão do fornecedor — o hash é a credencial, e a RPC
-  // só devolve a fatia dele, e só depois de o casal aprovar
-  const isPublicGuia = pathname.startsWith("/guia/");
-  // Central de Solicitações na mão do fornecedor — um link por fornecedor,
-  // atravessando os eventos dela; o hash é a credencial e a RPC devolve
-  // só as pendências dele.
-  const isPublicFornecedor =
-    pathname.startsWith("/fornecedor/") || pathname.startsWith("/api/fornecedor/");
-
-  if (
-    !user &&
-    !isLoginPage &&
-    !isPublicRoteiro &&
-    !isPublicConfirmacao &&
-    !isPublicAgendar &&
-    !isPublicPrivacidade &&
-    !isPublicOrcamento &&
-    !isCron &&
-    !isRsvpApi &&
-    !isPortalEntrar &&
-    !isAuthConfirm &&
-    !isNovaSenha &&
-    !isPublicConfirmar &&
-    !isPublicGuia &&
-    !isPublicFornecedor
-  ) {
+  if (!user && !ehPublica(pathname)) {
     const url = request.nextUrl.clone();
     // A cliente que abre um link do portal sem sessão volta para a porta
     // dela, não para o login da cerimonialista.
     url.pathname = pathname.startsWith("/portal") ? "/portal/entrar" : "/login";
     return NextResponse.redirect(url);
   }
+
+  // Quatro destas rotas voltam aqui embaixo por outro motivo: não é
+  // "quem entra sem sessão", é para onde vai quem JÁ tem uma.
+  const isLoginPage = pathname.startsWith("/login");
+  const isPortalEntrar = pathname.startsWith("/portal/entrar");
+  const isAuthConfirm = pathname.startsWith("/auth/confirm");
+  const isPublicConfirmar = pathname.startsWith("/confirmar/");
 
   // ------------------------------------------------------------------
   // As duas casas do sistema não se misturam.

@@ -1,6 +1,7 @@
 # Vela
 
-SaaS de gestão para cerimonialistas — do orçamento ao dia da festa, com simplicidade radical.
+SaaS de gestão para cerimonialistas — do orçamento ao dia da festa, com
+simplicidade radical.
 
 ## Stack
 
@@ -17,20 +18,23 @@ SaaS de gestão para cerimonialistas — do orçamento ao dia da festa, com simp
    npm install
    ```
 
-2. Crie um projeto no [Supabase](https://supabase.com) e copie a URL e a anon key
-   (Painel > Settings > API).
+2. Crie um projeto no [Supabase](https://supabase.com).
 
-3. Copie `.env.local.example` para `.env.local` e preencha:
+3. Copie `.env.local.example` para `.env.local` e preencha.
 
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=https://SEU-PROJETO.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-anon-key
-   ```
+   **Esse arquivo é a fonte da verdade das variáveis** — cada bloco explica
+   o que quebra sem ele, e vários módulos degradam em silêncio quando a
+   variável falta (WhatsApp, Copiloto, e-mail).
 
-4. Execute no **SQL Editor** do painel do Supabase, nesta ordem:
-   1. [`supabase/schema.sql`](supabase/schema.sql) — tabelas, índices e políticas de RLS
-   2. [`supabase/migrations/002_roteiro.sql`](supabase/migrations/002_roteiro.sql) — módulo Roteiro
-      (status dos itens, links públicos e função `roteiro_publico`)
+4. No **SQL Editor** do painel do Supabase, execute:
+
+   1. [`supabase/schema.sql`](supabase/schema.sql) — tabelas, índices e a RLS
+      original por `cerimonialista_id`
+   2. os arquivos de [`supabase/migrations/`](supabase/migrations) **em ordem
+      numérica**, do `002` ao mais alto
+
+   `supabase/rollbacks/` fica fora dessa ordem de propósito: são scripts que
+   desfazem uma migração, não que avançam o schema.
 
 5. Rode o servidor de desenvolvimento:
 
@@ -38,32 +42,43 @@ SaaS de gestão para cerimonialistas — do orçamento ao dia da festa, com simp
    npm run dev
    ```
 
-6. Acesse [http://localhost:3000](http://localhost:3000), crie uma conta e comece a usar.
+6. Acesse [http://localhost:3000](http://localhost:3000) e crie uma conta.
 
-> Dica: para testar sem precisar confirmar e-mail, desative "Confirm email" em
-> Authentication > Providers > Email no painel do Supabase.
+> O primeiro cadastro vira **proprietária** de uma empresa nova (um gatilho
+> em `auth.users` cuida disso). Logins criados pela tela de Cerimonialistas
+> entram como **equipe** da empresa existente, não ganham empresa própria.
 
 ## Estrutura
 
 ```
-supabase/schema.sql            Schema do banco (tabelas + RLS por cerimonialista_id)
-supabase/migrations/           Migrações incrementais (executar em ordem)
-src/middleware.ts              Proteção de rotas + renovação de sessão
-src/lib/supabase/              Clientes Supabase (browser, server e middleware)
-src/lib/types.ts               Tipos do domínio
-src/app/login/                 Login e criação de conta
-src/app/(app)/                 Área autenticada (layout com navegação)
-src/app/(app)/eventos/         Módulo de Eventos (listagem, criação, edição)
-src/app/(app)/eventos/[id]/roteiro/          Roteiro do evento (timeline do dia)
-src/app/eventos/[id]/roteiro/publico/[hash]/ Link público por fornecedor (sem login)
+supabase/schema.sql       Schema inicial (RLS por cerimonialista_id)
+supabase/migrations/      Migrações incrementais — rodar em ordem numérica
+supabase/rollbacks/       Scripts que DESFAZEM uma migração (fora da ordem)
+src/middleware.ts         Proteção de rotas + renovação de sessão
+src/lib/supabase/         Clientes Supabase (browser, server, middleware)
+src/lib/                  Regras puras (saúde, espera, avisos, propostas…)
+src/app/(app)/            Área profissional da cerimonialista
+src/app/(portal)/portal/  Portal da cliente (o casal / a debutante)
+src/app/orcamento/[hash]/ Proposta pública, sem login
+src/app/fornecedor/[hash]/Central de Solicitações do fornecedor, sem login
+src/app/api/cron/         Rotinas diárias (Bearer CRON_SECRET)
 ```
 
-## Módulos do MVP
+Quatro superfícies, quatro públicos: a **cerimonialista** (área
+profissional), a **cliente** (portal), o **fornecedor** (links por hash,
+abertos no celular no dia do evento) e as **rotinas** (cron).
 
-1. ✅ Autenticação (Supabase Auth, e-mail/senha)
-2. ✅ Eventos — CRUD com dados do cliente, data, local e status
-3. ✅ Roteiro do evento (timeline + link público por fornecedor)
-4. ⬜ Orçamento rápido
-5. ⬜ Fornecedores
-6. ⬜ Financeiro
-7. ⬜ Notificações
+## Módulos
+
+| | |
+|---|---|
+| ✅ | Autenticação e equipe por cargo (RLS multiusuário) |
+| ✅ | Eventos — CRUD, fases, saúde do evento |
+| ✅ | Roteiro do dia — timeline, link público por fornecedor, Modo Evento |
+| ✅ | Orçamentos — propostas públicas, seis templates, aceite da cliente |
+| ✅ | Fornecedores — agenda, categorias, histórico e valores praticados |
+| ✅ | Financeiro — receitas, despesas, parcelas, rentabilidade por evento |
+| ✅ | Central de Solicitações — cobrança de fornecedor e caixa de espera |
+| ✅ | Portal da cliente — convidados, cortejo, guia de estilo, pagamentos |
+| ✅ | Notificações — sino, e-mail e WhatsApp (template UTILITY da Meta) |
+| ✅ | Copiloto — radar do dia e assistente dentro do evento |
