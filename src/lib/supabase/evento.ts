@@ -19,6 +19,22 @@ function groupByEvent<T extends { event_id: string }>(rows: T[]) {
 
 // Saúde de VÁRIOS eventos em uma leva de 4 queries (não 4×N) — usado pela
 // listagem paginada de eventos, onde N pode ser até 100 por página.
+// PostgREST corta em 1000 linhas por padrão e NÃO avisa: a resposta
+// volta 200, com menos dados. Numa saúde calculada sobre listas
+// truncadas o resultado seria só um pouco errado, que é o pior tipo.
+// O teto explícito abaixo não resolve o problema — torna o corte
+// visível no log quando ele acontecer. A solução de verdade (view ou
+// RPC agregada por event_id) fica para quando a base crescer.
+const TETO_LINHAS = 5000;
+
+function avisarSeCortou(nome: string, linhas: unknown[] | null) {
+  if ((linhas?.length ?? 0) >= TETO_LINHAS) {
+    console.error(
+      `[vela:saude] ${nome} bateu o teto de ${TETO_LINHAS} linhas — o cálculo saiu incompleto`
+    );
+  }
+}
+
 export async function getSaudeBulk(
   eventIds: string[]
 ): Promise<Record<string, Saude>> {
@@ -28,11 +44,16 @@ export async function getSaudeBulk(
   const todayIso = hojeBR();
 
   const [tasksRes, linksRes, txRes, itemsRes] = await Promise.all([
-    supabase.from("tasks").select("event_id, status").in("event_id", eventIds),
+    supabase
+      .from("tasks")
+      .select("event_id, status")
+      .in("event_id", eventIds)
+      .limit(TETO_LINHAS),
     supabase
       .from("roteiro_links")
       .select("event_id, confirmed")
-      .in("event_id", eventIds),
+      .in("event_id", eventIds)
+      .limit(TETO_LINHAS),
     supabase
       .from("transactions")
       // só RECEITA: "parcela vencida" no texto da saúde sempre quis dizer
@@ -42,9 +63,19 @@ export async function getSaudeBulk(
       // anel 100 dentro da lista de "pendentes")
       .select("event_id, due_date, paid, type")
       .eq("type", "receita")
-      .in("event_id", eventIds),
-    supabase.from("roteiro_items").select("event_id").in("event_id", eventIds),
+      .in("event_id", eventIds)
+      .limit(TETO_LINHAS),
+    supabase
+      .from("roteiro_items")
+      .select("event_id")
+      .in("event_id", eventIds)
+      .limit(TETO_LINHAS),
   ]);
+
+  avisarSeCortou("tasks", tasksRes.data);
+  avisarSeCortou("roteiro_links", linksRes.data);
+  avisarSeCortou("transactions", txRes.data);
+  avisarSeCortou("roteiro_items", itemsRes.data);
 
   const tasksBy = groupByEvent(
     (tasksRes.data ?? []) as { event_id: string; status: string }[]

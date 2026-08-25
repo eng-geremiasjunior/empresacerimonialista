@@ -32,7 +32,15 @@ import {
   getRecentActivities,
   getResumoFinanceiro,
 } from "@/lib/supabase/queries";
-import { getSaudeEvento } from "@/lib/supabase/evento";
+import { getSaudeBulk } from "@/lib/supabase/evento";
+
+// Fallback do caso que não deveria existir (ver o comentário abaixo).
+const SAUDE_VAZIA: Saude = {
+  score: 0,
+  nivel: "vermelho",
+  alertas: [],
+  semDados: true,
+};
 import { getSaldoEmpresaMes } from "@/lib/supabase/financeiro-empresa";
 import { SAUDE_UI, type Saude } from "@/lib/saude-evento";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -126,7 +134,10 @@ export default async function DashboardPage() {
     performance,
     saldoEmpresa,
   ] = await Promise.all([
-    Promise.all(upcoming.map((e) => getSaudeEvento(e.id))),
+    // Eram 10 chamadas de getSaudeEvento e cada uma faz 4 consultas: 40
+    // idas ao banco para desenhar 10 anéis. getSaudeBulk faz as mesmas 4
+    // para o conjunto inteiro — a listagem de eventos já usava assim.
+    getSaudeBulk(upcoming.map((e) => e.id)),
     getBriefingHoje(),
     getAlertasCopiloto(),
     getResumoFinanceiro(),
@@ -141,8 +152,18 @@ export default async function DashboardPage() {
     getSaldoEmpresaMes(),
   ]);
 
+  // getSaudeBulk devolve uma entrada por id pedido (percorre eventIds,
+  // não as linhas), então a falta abaixo não deve acontecer. Se acontecer,
+  // o evento não some da lista em silêncio: aparece com saúde vazia e o
+  // motivo vai para o log.
   const eventsWithHealth: { event: UpcomingEvent; saude: Saude }[] =
-    upcoming.map((event, i) => ({ event, saude: saudes[i] }));
+    upcoming.map((event) => {
+      const saude = saudes[event.id];
+      if (!saude) {
+        console.error(`[vela:dashboard] sem saúde para o evento ${event.id}`);
+      }
+      return { event, saude: saude ?? SAUDE_VAZIA };
+    });
 
   const dateLabel = (() => {
     // formata a DATA de Brasília, não a do processo — senão a linha embaixo

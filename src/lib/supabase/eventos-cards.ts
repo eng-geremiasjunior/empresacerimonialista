@@ -38,6 +38,22 @@ function group<T extends { event_id: string }>(rows: T[]) {
 export async function getEventosCardData(
   events: { id: string; date: string; status?: string; archived?: boolean | null }[]
 ): Promise<Record<string, EventoCardData>> {
+// PostgREST corta em 1000 linhas por padrão e NÃO avisa: a resposta
+// volta 200, com menos dados. Numa saúde calculada sobre listas
+// truncadas o resultado seria só um pouco errado, que é o pior tipo.
+// O teto explícito abaixo não resolve o problema — torna o corte
+// visível no log quando ele acontecer. A solução de verdade (view ou
+// RPC agregada por event_id) fica para quando a base crescer.
+const TETO_LINHAS = 5000;
+
+function avisarSeCortou(nome: string, linhas: unknown[] | null) {
+  if ((linhas?.length ?? 0) >= TETO_LINHAS) {
+    console.error(
+      `[vela:saude] ${nome} bateu o teto de ${TETO_LINHAS} linhas — o cálculo saiu incompleto`
+    );
+  }
+}
+
   if (events.length === 0) return {};
   const supabase = createClient();
   const ids = events.map((e) => e.id);
@@ -49,17 +65,29 @@ export async function getEventosCardData(
     supabase
       .from("tasks")
       .select("event_id, status, priority, due_date, title")
-      .in("event_id", ids),
+      .in("event_id", ids)
+      .limit(TETO_LINHAS),
     supabase
       .from("roteiro_links")
       .select("event_id, confirmed, suppliers(name)")
-      .in("event_id", ids),
+      .in("event_id", ids)
+      .limit(TETO_LINHAS),
     supabase
       .from("transactions")
       .select("event_id, type, category, paid, due_date, value")
-      .in("event_id", ids),
-    supabase.from("roteiro_items").select("event_id").in("event_id", ids),
+      .in("event_id", ids)
+      .limit(TETO_LINHAS),
+    supabase
+      .from("roteiro_items")
+      .select("event_id")
+      .in("event_id", ids)
+      .limit(TETO_LINHAS),
   ]);
+
+  avisarSeCortou("tasks", tasksRes.data);
+  avisarSeCortou("roteiro_links", linksRes.data);
+  avisarSeCortou("transactions", txRes.data);
+  avisarSeCortou("roteiro_items", itemsRes.data);
 
   const tasksBy = group(
     (tasksRes.data ?? []) as {

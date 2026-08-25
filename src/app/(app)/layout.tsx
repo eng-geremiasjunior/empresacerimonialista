@@ -45,29 +45,29 @@ export default async function AppLayout({
   // eram duas contas diferentes (a sidebar somava saúde<80 + dois gatilhos;
   // o dashboard listava alertas por data) e os números discordavam na cara
   // dela. Erro não vira "tudo em dia" de mentira — vira traço.
-  let prazosFrase: string | null = null;
-  try {
-    const alertas = await getAlertasCopiloto();
-    prazosFrase = frasePrazos(resumirPrazos(alertas.map((a) => a.tipo)));
-  } catch {
-    prazosFrase = null;
-  }
-
   // A linha da espera no Copiloto — só para quem conduz. O erro não vira
-  // "em dia" de mentira: vira traço.
-  let esperaFrase: string | null = null;
-  if (
+  // "em dia" de mentira: vira a frase que diz que não deu para checar.
+  const conduz =
     cargo === "proprietaria" ||
     cargo === "coordenadora" ||
-    cargo === "cerimonialista"
-  ) {
-    try {
-      const espera = await getEspera();
-      esperaFrase = espera ? fraseDoCopiloto(espera.resumo) : "Não deu para checar os fornecedores agora.";
-    } catch {
-      esperaFrase = "Não deu para checar os fornecedores agora.";
-    }
-  }
+    cargo === "cerimonialista";
+
+  // Em série, cada navegação do app esperava as 3 consultas dos prazos
+  // TERMINAREM antes de começar as da espera. Nada aqui depende do outro.
+  const [prazosFrase, esperaFrase] = await Promise.all([
+    getAlertasCopiloto()
+      .then((alertas) => frasePrazos(resumirPrazos(alertas.map((a) => a.tipo))))
+      .catch(() => null),
+    conduz
+      ? getEspera()
+          .then((espera) =>
+            espera
+              ? fraseDoCopiloto(espera.resumo)
+              : "Não deu para checar os fornecedores agora."
+          )
+          .catch(() => "Não deu para checar os fornecedores agora.")
+      : Promise.resolve(null),
+  ]);
 
   return (
     <>

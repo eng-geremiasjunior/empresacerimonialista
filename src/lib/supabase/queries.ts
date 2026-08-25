@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { addDays, endOfMonth, format, startOfMonth, subMonths } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import type {
@@ -326,7 +327,13 @@ function eventoMorto(ev: { status?: string | null; archived?: boolean | null }):
  *  - tarefa atrasada: idem — tarefa de evento que já aconteceu é peso
  *    morto, não pendência.
  */
-export async function getAlertasCopiloto(): Promise<CopilotoAlerta[]> {
+// `cache` do React: no dashboard esta função é chamada duas vezes no
+// MESMO render — uma pelo layout (a linha de prazos do Copiloto) e outra
+// pela página (a lista de alertas). São 3 consultas cada. Sem argumentos e
+// só de leitura, então deduplicar não muda resposta nenhuma.
+export const getAlertasCopiloto = cache(async function (): Promise<
+  CopilotoAlerta[]
+> {
   const supabase = createClient();
   const hoje = hojeBR();
   const fim = emDiasBR(7);
@@ -433,4 +440,4 @@ export async function getAlertasCopiloto(): Promise<CopilotoAlerta[]> {
   }
 
   return alertas.sort((a, b) => a.ref.localeCompare(b.ref));
-}
+});
