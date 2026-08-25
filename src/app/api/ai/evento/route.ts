@@ -16,7 +16,7 @@ import { montarContextoEvento } from "@/lib/supabase/assistente-evento";
 
 export const dynamic = "force-dynamic";
 
-// Provedor e modelo vêm do ambiente (mesmas variáveis do lib/llama.ts), com
+// Provedor e modelo vêm do ambiente (LLAMA_BASE_URL/API_KEY/MODEL), com
 // o padrão atual como fallback. Assim trocar de provedor/modelo é config,
 // não deploy de código.
 const BASE_URL = process.env.LLAMA_BASE_URL || "https://api.groq.com/openai/v1";

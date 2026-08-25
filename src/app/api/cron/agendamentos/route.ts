@@ -17,6 +17,9 @@ import { enviarConviteAgendamentoWhatsapp } from "@/lib/whatsapp";
 import { enviarConviteAgendamentoEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
+// Sem isto cai no padrão do plano (10s no Hobby) e um 504 mata a rotina
+// no meio, em silêncio — o despachante nem saberia dizer qual parou.
+export const maxDuration = 60;
 export const fetchCache = "force-no-store";
 
 function serviceClient() {

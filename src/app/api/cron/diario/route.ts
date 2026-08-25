@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
   // sem depender de variável de endereço.
   const base = new URL(request.url).origin;
   const resultado: Record<string, unknown> = {};
+  const falharam: string[] = [];
 
   for (const rotina of ROTINAS) {
     try {
@@ -57,14 +58,36 @@ export async function GET(request: NextRequest) {
       });
       const corpo = await res.json().catch(() => ({}));
       resultado[rotina] = res.ok ? corpo : { status: res.status, ...corpo };
-      if (!res.ok) console.error(`[vela:cron] ${rotina} devolveu ${res.status}`);
+      if (!res.ok) {
+        falharam.push(`${rotina} (${res.status})`);
+        console.error(`[vela:cron] ${rotina} devolveu ${res.status}`);
+      }
     } catch (e) {
       // uma rotina que explode não pode impedir as outras de rodar
       const msg = e instanceof Error ? e.message : String(e);
       resultado[rotina] = { erro: msg };
+      falharam.push(`${rotina} (${msg.slice(0, 40)})`);
       console.error(`[vela:cron] ${rotina} falhou: ${msg}`);
     }
   }
 
-  return NextResponse.json(resultado);
+  // 200 mesmo com as sete falhando fazia a Vercel registrar a execução como
+  // SUCESSO, e os erros existiam só no Runtime Log — retenção curta e sem
+  // alerta nenhum. Devolvendo 500, a execução aparece como falha e a
+  // notificação de cron com erro chega por e-mail.
+  //
+  // O caso silencioso que isto pega: se Deployment Protection for ligada em
+  // Production, cada uma das 7 chamadas internas recebe 401 e NADA roda,
+  // todo dia, sem ninguém saber.
+  if (falharam.length > 0) {
+    console.error(
+      `[vela:cron] ${falharam.length} de ${ROTINAS.length} falharam: ${falharam.join(", ")}`
+    );
+    return NextResponse.json(
+      { ok: false, falharam, resultado },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ ok: true, resultado });
 }

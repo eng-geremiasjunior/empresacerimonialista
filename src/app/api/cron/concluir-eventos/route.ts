@@ -19,6 +19,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
+// Sem isto cai no padrão do plano (10s no Hobby) e um 504 mata a rotina
+// no meio, em silêncio — o despachante nem saberia dizer qual parou.
+export const maxDuration = 60;
 export const fetchCache = "force-no-store";
 
 function serviceClient() {

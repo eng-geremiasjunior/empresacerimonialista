@@ -17,6 +17,9 @@ import { createClient } from "@supabase/supabase-js";
 import { enviarLembreteConvidado } from "@/lib/email-convidado";
 
 export const dynamic = "force-dynamic";
+// Sem isto cai no padrão do plano (10s no Hobby) e um 504 mata a rotina
+// no meio, em silêncio — o despachante nem saberia dizer qual parou.
+export const maxDuration = 60;
 export const fetchCache = "force-no-store";
 
 const CONVITE_PARA: Record<string, string> = {
@@ -33,7 +36,11 @@ const CONVITE_PARA: Record<string, string> = {
 // Teto por execução: se uma lista tiver 800 pessoas, o job não estoura o
 // tempo da função nem a cota do provedor de e-mail. O que sobrar sai no
 // dia seguinte, porque a marca é por pessoa.
-const MAX_POR_EXECUCAO = 120;
+// 120 era um POST ao Resend por convidado, em série, mais um round-trip
+// ao banco a cada sucesso — com uma lista de casamento de verdade isso
+// estoura o tempo antes do fim. A fila sobrevive: a rotina devolve
+// `restam` e só marca depois do envio dar certo, então o resto sai amanhã.
+const MAX_POR_EXECUCAO = 40;
 
 type Linha = {
   convidado_id: string;
