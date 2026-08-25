@@ -170,7 +170,11 @@ export async function marcarPago(
   }
 
   const supabase = createClient();
-  const { error } = await supabase
+  // O `.select("id")` não é enfeite: quando a RLS filtra a linha, o
+  // PostgREST devolve error=null e zero linhas. Sem ele a ação respondia
+  // {ok:true}, a tela revalidava e o valor voltava em aberto — sucesso na
+  // mensagem, nada no banco.
+  const { data, error } = await supabase
     .from("transactions")
     .update({
       paid: true,
@@ -178,31 +182,59 @@ export async function marcarPago(
       payment_method: method || null,
     })
     .eq("id", transactionId)
-    .eq("event_id", eventId);
+    .eq("event_id", eventId)
+    .select("id");
 
-  if (error) return { error: "Não foi possível marcar como pago." };
+  if (error) {
+    console.error("[vela:financeiro] marcarPago:", error.message);
+    return { error: "Não foi possível marcar como pago." };
+  }
+  if (!data || data.length === 0) {
+    return { error: "Você não tem permissão para alterar este lançamento." };
+  }
 
   revalidate(eventId);
   return { ok: true };
 }
 
+// As duas abaixo são `form action`, então devolvem void — e por isso
+// nem liam o `error`. Engoliam gatilho, constraint e recusa da RLS, e
+// mostravam a tela recarregada como se tivesse dado certo. Sem canal de
+// retorno, o jeito honesto é lançar: o error.tsx da área logada mostra o
+// aviso, e a alternativa era o valor voltar sozinho sem explicação.
 export async function desmarcarPago(eventId: string, transactionId: string) {
   const supabase = createClient();
-  await supabase
+  const { data, error } = await supabase
     .from("transactions")
     .update({ paid: false, paid_at: null, payment_method: null })
     .eq("id", transactionId)
-    .eq("event_id", eventId);
+    .eq("event_id", eventId)
+    .select("id");
+  if (error) {
+    console.error("[vela:financeiro] desmarcarPago:", error.message);
+    throw new Error("Não foi possível desmarcar o pagamento.");
+  }
+  if (!data || data.length === 0) {
+    throw new Error("Você não tem permissão para alterar este lançamento.");
+  }
   revalidate(eventId);
 }
 
 export async function excluirTransacao(eventId: string, transactionId: string) {
   const supabase = createClient();
-  await supabase
+  const { data, error } = await supabase
     .from("transactions")
     .delete()
     .eq("id", transactionId)
-    .eq("event_id", eventId);
+    .eq("event_id", eventId)
+    .select("id");
+  if (error) {
+    console.error("[vela:financeiro] excluirTransacao:", error.message);
+    throw new Error("Não foi possível excluir o lançamento.");
+  }
+  if (!data || data.length === 0) {
+    throw new Error("Você não tem permissão para excluir este lançamento.");
+  }
   revalidate(eventId);
 }
 

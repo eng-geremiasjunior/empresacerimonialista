@@ -98,13 +98,27 @@ export async function criarAcessoPortal(params: {
   // O login já existe? (a mesma pessoa pode ter outro evento com a
   // cerimonialista, ou já ser da equipe — no Supabase um e-mail é UMA
   // conta.)
-  const { data: lista } = await admin.auth.admin.listUsers({
-    page: 1,
-    perPage: 200,
-  });
-  const existente = lista?.users.find(
-    (u) => (u.email ?? "").toLowerCase() === email
-  );
+  // A versão anterior listava os 200 primeiros usuários e procurava
+  // neles: a partir do usuário 201, um e-mail existente "não era
+  // encontrado", o código seguia para createUser e o erro que subia era
+  // o do Auth, cru. A Admin API do SDK não tem busca por e-mail (ela só
+  // envia page/per_page — qualquer outro parâmetro é descartado em
+  // silêncio), então o jeito garantido é paginar até achar ou acabar.
+  let existente: import("@supabase/supabase-js").User | undefined;
+  for (let pagina = 1; ; pagina++) {
+    const { data: lista, error: erroBusca } =
+      await admin.auth.admin.listUsers({ page: pagina, perPage: 1000 });
+    if (erroBusca) {
+      console.error("[vela:portal] busca de login:", erroBusca.message);
+      return {
+        error: "Não foi possível verificar o e-mail agora. Tente de novo.",
+      };
+    }
+    existente = lista.users.find(
+      (u) => (u.email ?? "").toLowerCase() === email
+    );
+    if (existente || lista.users.length < 1000) break;
+  }
 
   // ------------------------------------------------------------------
   // Equipe e cliente não podem ser a MESMA conta.

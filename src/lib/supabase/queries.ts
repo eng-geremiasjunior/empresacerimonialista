@@ -392,6 +392,7 @@ export const getAlertasCopiloto = cache(async function (): Promise<
 
   for (const row of (fornecedoresRes.data ?? []) as unknown as {
     event_id: string;
+    supplier_id: string;
     suppliers: { name: string } | null;
     events: {
       date: string;
@@ -403,7 +404,12 @@ export const getAlertasCopiloto = cache(async function (): Promise<
   }[]) {
     if (eventoMorto(row.events)) continue;
     alertas.push({
-      id: `fornecedor-${row.event_id}-${row.suppliers?.name}`,
+      // Pelo id, não pelo nome: dois fornecedores diferentes com o mesmo
+      // nome no mesmo evento ("DJ", "Buffet") geravam chave duplicada, o
+      // React montava um e engolia o outro em silêncio, e a contagem da
+      // sidebar (que conta o array, não o renderizado) ficava maior que a
+      // lista. O supplier_id já vinha na consulta, ignorado.
+      id: `fornecedor-${row.event_id}-${row.supplier_id}`,
       tipo: "fornecedor",
       texto: `${row.suppliers?.name ?? "Fornecedor"} não confirmou — ${eventLabel(row.events.type, row.events.clients?.name)}`,
       href: `/eventos/${row.event_id}/fornecedores`,

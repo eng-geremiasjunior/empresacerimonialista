@@ -69,6 +69,8 @@ function avisarSeCortou(nome: string, linhas: unknown[] | null) {
       .limit(TETO_LINHAS),
     supabase
       .from("roteiro_links")
+      // A mesma régua do hub: sem o cadastro do fornecedor, o vínculo
+      // não conta (o filter logo abaixo).
       .select("event_id, confirmed, suppliers(name)")
       .in("event_id", ids)
       .limit(TETO_LINHAS),
@@ -99,11 +101,13 @@ function avisarSeCortou(nome: string, linhas: unknown[] | null) {
     }[]
   );
   const linksBy = group(
-    (linksRes.data ?? []) as unknown as {
-      event_id: string;
-      confirmed: boolean;
-      suppliers: { name: string } | null;
-    }[]
+    (
+      (linksRes.data ?? []) as unknown as {
+        event_id: string;
+        confirmed: boolean;
+        suppliers: { name: string } | null;
+      }[]
+    ).filter((l) => l.suppliers)
   );
   const txBy = group(
     (txRes.data ?? []) as {

@@ -1,9 +1,19 @@
 // Dados da tela /agenda (Agenda de Fornecedores) — tudo real, nada mockado.
 //
-// Reuniões = compromissos com fornecedor vinculado, dos eventos em que ESTA
-// cerimonialista é a responsável (a mesma régua do motor de slots: a
-// ocupação é dela, atravessando todos os eventos). Nunca noivos: compromisso
-// sem fornecedor não entra aqui.
+// Reuniões = compromissos com fornecedor vinculado, dos eventos que ela
+// ENXERGA. Quem decide isso é a RLS por cargo (eventos_visiveis), como em
+// todo o resto do sistema — nunca noivos: compromisso sem fornecedor não
+// entra aqui.
+//
+// Antes havia um filtro manual por events.cerimonialista_id, que é quem
+// CRIOU o evento, não quem responde por ele (isso é
+// cerimonialista_responsavel_id, da 022). O comentário deste arquivo até
+// dizia "responsável" — e filtrava por criador. Para uma testadora
+// sozinha dá no mesmo; numa dupla, a reunião do evento que ela conduz mas
+// não criou simplesmente não aparecia na agenda dela.
+//
+// Já os horários LIVRES continuam pessoais: disponibilidade e exceções
+// filtram por user_id = quem está logado, e isso está certo.
 
 import { createClient } from "@/lib/supabase/server";
 import { gerarSlotsLivres, type SlotLivre } from "@/lib/agendamento";
@@ -72,9 +82,8 @@ export async function getAgendaFornecedores(): Promise<AgendaFornecedores | null
     supabase
       .from("compromisso")
       .select(
-        "id, event_id, titulo, data, hora, duracao_min, local, estado, suppliers!inner(name), events!inner(cerimonialista_id, date, clients(name))"
+        "id, event_id, titulo, data, hora, duracao_min, local, estado, suppliers!inner(name), events!inner(date, clients(name))"
       )
-      .eq("events.cerimonialista_id", user.id)
       .not("supplier_id", "is", null)
       .gte("data", hojeIso)
       .in("estado", ["agendado", "confirmado", "remarcado"])
@@ -83,9 +92,8 @@ export async function getAgendaFornecedores(): Promise<AgendaFornecedores | null
     supabase
       .from("agendamento_convite")
       .select(
-        "id, status, prazo_ate, tasks(title), suppliers(name), events!inner(cerimonialista_id)"
+        "id, status, prazo_ate, tasks(title), suppliers(name)"
       )
-      .eq("events.cerimonialista_id", user.id)
       .in("status", ["enviado", "reenviado"]),
     supabase
       .from("disponibilidade")
@@ -160,8 +168,7 @@ export async function getAgendaFornecedores(): Promise<AgendaFornecedores | null
   // Fornecedores frequentes: quem mais teve reunião (inclui histórico).
   const { data: todasComp } = await supabase
     .from("compromisso")
-    .select("suppliers!inner(name), events!inner(cerimonialista_id)")
-    .eq("events.cerimonialista_id", user.id)
+    .select("suppliers!inner(name)")
     .not("supplier_id", "is", null);
   const contagem = new Map<string, number>();
   for (const c of todasComp ?? []) {

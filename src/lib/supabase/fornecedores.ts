@@ -106,7 +106,11 @@ export async function getHistoricoFornecedor(
   }[];
 
   const eventos: EventoDoFornecedor[] = rows
-    .filter((r) => r.events)
+    // Evento cancelado não conta como atendido — mesma régua da lista
+    // /fornecedores (fornecedores-tela.ts). Sem este filtro, cancelar um
+    // evento separava os dois números: a lista dizia 3, a ficha dizia 4,
+    // e a taxa de confirmação dividia pelo total maior.
+    .filter((r) => r.events && r.events.status !== "cancelado")
     .map((r) => ({
       id: r.events!.id,
       label: `${EVENT_TYPE_LABELS[r.events!.type] ?? r.events!.type} — ${r.events!.clients?.name ?? "Sem cliente"}`,

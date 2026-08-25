@@ -225,8 +225,13 @@ begin
       updated_at = now()
   where id = v_sol.id;
 
-  -- Confirmação também atualiza o registro antigo, que é o que a tela de
-  -- fornecedores do evento e a saúde do evento já leem hoje.
+  -- Confirmação sincroniza os DOIS registros antigos, como a RPC da 019
+  -- sempre fez: supplier_confirmations (a aba de fornecedores do evento)
+  -- e roteiro_links.confirmed — que é o que a saúde do evento, os cards e
+  -- o alerta do Copiloto realmente leem. A primeira versão desta função
+  -- atualizava só o primeiro, e o comentário afirmava o contrário: o
+  -- fornecedor respondia pela Central e o anel do evento continuava
+  -- cobrando a confirmação que ele acabara de dar.
   if v_sol.tipo = 'confirmacao' then
     update public.supplier_confirmations
     set status = case
@@ -236,6 +241,10 @@ begin
         responded_at = now()
     where event_id = v_sol.event_id and supplier_id = v_sol.supplier_id;
     get diagnostics v_sincronizou = row_count;
+
+    update public.roteiro_links
+    set confirmed = (coalesce(p_resposta->>'confirmado', 'true') <> 'false')
+    where event_id = v_sol.event_id and supplier_id = v_sol.supplier_id;
   end if;
 
   -- Horário: a resposta vira estado operacional. Confirmar promove a
@@ -726,4 +735,8 @@ select 'responder escreve no cronograma',
 union all
 select 'escrever campo entende hora',
        pg_get_functiondef('public.portal_escrever_campo(uuid, jsonb, timestamptz)'::regprocedure)
-         like '%valor_hora%';
+         like '%valor_hora%'
+union all
+select 'confirmação sincroniza roteiro_links',
+       pg_get_functiondef('public.responder_solicitacao(text, uuid, jsonb)'::regprocedure)
+         like '%update public.roteiro_links%';

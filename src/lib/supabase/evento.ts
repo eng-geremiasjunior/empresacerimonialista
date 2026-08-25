@@ -51,7 +51,10 @@ export async function getSaudeBulk(
       .limit(TETO_LINHAS),
     supabase
       .from("roteiro_links")
-      .select("event_id, confirmed")
+      // suppliers(id) não é decoração: é a régua do hub. Vínculo cujo
+      // cadastro a RLS não devolve não conta como fornecedor — sem isso o
+      // anel daqui e o texto do hub discordavam na MESMA página.
+      .select("event_id, confirmed, suppliers(id)")
       .in("event_id", eventIds)
       .limit(TETO_LINHAS),
     supabase
@@ -81,7 +84,13 @@ export async function getSaudeBulk(
     (tasksRes.data ?? []) as { event_id: string; status: string }[]
   );
   const linksBy = groupByEvent(
-    (linksRes.data ?? []) as { event_id: string; confirmed: boolean }[]
+    (
+      (linksRes.data ?? []) as unknown as {
+        event_id: string;
+        confirmed: boolean;
+        suppliers: { id: string } | null;
+      }[]
+    ).filter((l) => l.suppliers)
   );
   const txBy = groupByEvent(
     (txRes.data ?? []) as {
