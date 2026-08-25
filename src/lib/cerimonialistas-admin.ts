@@ -18,6 +18,27 @@ function adminClient() {
   });
 }
 
+/**
+ * Derruba TODAS as sessões de um login (refresh tokens inclusive).
+ *
+ * Desativar um membro só mudava `membros_equipe.status`, e a RLS passa a
+ * negar quase tudo a partir daí — mas a sessão dele continuava válida e
+ * nada no Auth mudava. Sobrava um app aberto, e as duas superfícies que
+ * não passam por meu_cargo() (notifications e activities) seguiam
+ * entregando nome de fornecedor, valores e links para quem já saiu.
+ *
+ * Devolve o erro em vez de lançar: falhar aqui não pode desfazer a
+ * desativação, que é a parte que importa.
+ */
+export async function derrubarSessoes(
+  userId: string
+): Promise<{ error?: string }> {
+  const admin = adminClient();
+  if (!admin) return { error: "SUPABASE_SERVICE_ROLE_KEY não configurada" };
+  const { error } = await admin.auth.admin.signOut(userId, "global");
+  return error ? { error: error.message } : {};
+}
+
 export async function criarCerimonialista(params: {
   empresaId: string;
   nome: string;

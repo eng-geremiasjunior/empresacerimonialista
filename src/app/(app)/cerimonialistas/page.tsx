@@ -20,7 +20,7 @@ export default async function CerimonialistasPage() {
 
   const { cargo } = await getMeuCargo();
 
-  if (cargo !== null && cargo !== "proprietaria" && cargo !== "coordenadora") {
+  if (cargo !== "proprietaria" && cargo !== "coordenadora") {
     return (
       <div className="space-y-4">
         <div>

@@ -61,8 +61,7 @@ type NavItem = {
   label: string;
   icon: string;
   href: string;
-  // cargos que enxergam o item; ausente = todos. Cargo null (conta sem
-  // equipe/migração pendente) vê tudo, preservando o comportamento antigo.
+  // cargos que enxergam o item; ausente = todos.
   cargos?: string[];
 };
 
@@ -123,8 +122,14 @@ type Props = {
 };
 
 export function AppShell({ userEmail, avatarUrl, cargo, prazosFrase, esperaFrase, signOut, children }: Props) {
+  // Cargo null é quem meu_cargo() não reconhece: ex-membro desativada,
+  // ou conta sem vínculo. Antes via o menu inteiro "preservando o
+  // comportamento antigo" — só que as telas restritas vinham vazias de
+  // qualquer jeito (a RLS não devolve nada), então o que ela ganhava era
+  // um passeio por Financeiro e Catálogo em branco. Agora vê só o que
+  // não pede cargo; ninguém fica trancado fora do básico.
   const navVisivel = NAV.filter(
-    (item) => !item.cargos || cargo === null || item.cargos.includes(cargo)
+    (item) => !item.cargos || (cargo !== null && item.cargos.includes(cargo))
   );
   const pathname = usePathname();
   const [open, setOpen] = useState(false);

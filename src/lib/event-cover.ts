@@ -32,10 +32,9 @@ export async function uploadEventCover(
     .upload(path, file, { upsert: true, contentType: file.type });
 
   if (uploadError) {
-    return {
-      error:
-        "Não foi possível enviar a capa. Se o bucket ainda não existe, execute a migração 029_event_cover_image.sql.",
-    };
+    // O nome do arquivo .sql ficava na tela dela. Fica no log.
+    console.error("[vela:capa]", uploadError.message);
+    return { error: "Não foi possível enviar a capa. Tente de novo." };
   }
 
   const { data } = supabase.storage.from("event-covers").getPublicUrl(path);

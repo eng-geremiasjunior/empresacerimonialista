@@ -5,7 +5,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { criarCerimonialista } from "@/lib/cerimonialistas-admin";
+import { criarCerimonialista, derrubarSessoes } from "@/lib/cerimonialistas-admin";
 import { CARGOS_CADASTRO } from "@/lib/equipe-shared";
 import {
   getDetalheCerimonialista,
@@ -153,14 +153,25 @@ export async function setStatusMembro(
   if ("error" in ctx) return { error: ctx.error };
 
   // A proprietária nunca pode ser desativada
-  const { error } = await ctx.supabase
+  const { data, error } = await ctx.supabase
     .from("membros_equipe")
     .update({ status })
     .eq("id", membroId)
     .eq("empresa_id", ctx.empresaId)
-    .eq("is_owner", false);
+    .eq("is_owner", false)
+    .select("user_id")
+    .maybeSingle();
 
   if (error) return { error: "Não foi possível alterar o status" };
+
+  // Desativar sem derrubar a sessão deixava a pessoa dentro do app até o
+  // token expirar sozinho. A RLS já nega quase tudo nesse estado, mas
+  // "quase" não é a promessa do botão.
+  if (status === "inativo" && data?.user_id) {
+    const { error: saida } = await derrubarSessoes(data.user_id);
+    if (saida) console.error("[vela:equipe] signOut:", saida);
+  }
+
   revalidatePath("/cerimonialistas");
   return {};
 }

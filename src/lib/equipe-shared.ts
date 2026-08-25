@@ -36,11 +36,24 @@ export const CARGO_BADGE: Record<Cargo, string> = {
 };
 
 // Cargos selecionáveis no cadastro (proprietária só existe uma, criada
-// na fundação da empresa — Etapa 1)
-export const CARGOS_CADASTRO: Exclude<Cargo, "proprietaria">[] = [
+// na fundação da empresa — Etapa 1).
+//
+// 'assistente' saiu daqui, e o motivo é que cadastrar uma hoje produz o
+// INVERSO do que a tela promete. O único caminho de visibilidade da
+// assistente é ser participante do evento (024, participantes_insert), e
+// não existe tela que insira essa linha — evento_participantes está
+// vazia. Ela entrava e via zero eventos, zero tarefas, zero clientes… e a
+// agenda de fornecedores inteira, com telefone e e-mail de todos, porque
+// suppliers_select filtra por empresa e não por cargo.
+//
+// O tipo Cargo continua com 'assistente': o valor existe no banco, a RLS
+// o referencia e há linha de fixture com ele. O que sai é a OFERTA.
+// Volta quando existir a escala (seletor de participantes no evento) e a
+// decisão de produto sobre o que ela enxerga — ver a fatia "Acesso da
+// equipe" no plano.
+export const CARGOS_CADASTRO: Exclude<Cargo, "proprietaria" | "assistente">[] = [
   "coordenadora",
   "cerimonialista",
-  "assistente",
 ];
 
 // Opção enxuta para selects de responsável (wizard/edição de evento)

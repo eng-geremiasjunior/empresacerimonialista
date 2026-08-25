@@ -27,7 +27,8 @@ export default async function FinanceiroEmpresaPage({
   // Financeiro da empresa é exclusivo da proprietária (Etapa 4). Cargo
   // null (conta sem equipe/migração antiga) mantém o acesso de antes.
   const { cargo } = await getMeuCargo();
-  if (cargo !== null && cargo !== "proprietaria") {
+  // Sem o `cargo !== null`: quem meu_cargo() não reconhece não entra.
+  if (cargo !== "proprietaria") {
     return (
       <div className="space-y-4">
         <div>
