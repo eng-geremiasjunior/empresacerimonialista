@@ -22,7 +22,7 @@ export default async function EditarEventoPage({
   let { data, error } = await supabase
     .from("events")
     .select(
-      "id, client_id, type, date, time, location, status, cover_image_url, cerimonialista_responsavel_id, clients(id, name, phone, email)"
+      "id, client_id, type, date, time, location, name, city, guests, status, cover_image_url, cerimonialista_responsavel_id, clients(id, name, phone, email)"
     )
     .eq("id", params.id)
     .single();
@@ -32,7 +32,7 @@ export default async function EditarEventoPage({
     temResponsavel = false;
     ({ data } = await supabase
       .from("events")
-      .select("id, client_id, type, date, time, location, status, clients(id, name, phone, email)")
+      .select("id, client_id, type, date, time, location, name, city, guests, status, clients(id, name, phone, email)")
       .eq("id", params.id)
       .single());
   }
@@ -44,6 +44,12 @@ export default async function EditarEventoPage({
   responsavelId =
     (data as { cerimonialista_responsavel_id?: string | null })
       .cerimonialista_responsavel_id ?? null;
+
+  const extras = data as {
+    name?: string | null;
+    city?: string | null;
+    guests?: number | null;
+  };
 
   const equipe = temResponsavel
     ? await getMembrosSelecionaveis()
@@ -80,6 +86,11 @@ export default async function EditarEventoPage({
           date: event.date,
           time: (data as { time?: string | null }).time ?? null,
           location: event.location ?? "",
+          // Event (lib/types) e o tipo antigo e nao declara estas tres;
+          // a consulta acima traz, entao o acesso e por um shape local.
+          name: extras.name ?? "",
+          city: extras.city ?? "",
+          guests: extras.guests ?? null,
           status: event.status,
           responsavelId,
           coverUrl:

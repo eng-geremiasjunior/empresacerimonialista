@@ -12,6 +12,9 @@ const inputClass =
 
 type Initial = {
   eventId: string;
+  name?: string | null;
+  city?: string | null;
+  guests?: number | null;
   clientId: string | null;
   clientName: string;
   clientPhone: string;
@@ -133,6 +136,57 @@ export function EventForm({ action, initial, membros }: Props) {
             name="time"
             type="time"
             defaultValue={initial?.time ?? undefined}
+            className={inputClass}
+          />
+        </div>
+      </div>
+
+      {/* Nome, cidade e convidados: o assistente pede os três na criação,
+          e até agora não havia onde corrigir nenhum deles. O nome é o
+          título do cabeçalho do evento; a cidade filtra a lista. */}
+      <div>
+        <label htmlFor="ev_name" className="mb-1 block text-sm font-medium">
+          Nome do evento{" "}
+          <span className="font-normal text-stone-400">(opcional)</span>
+        </label>
+        <input
+          id="ev_name"
+          name="name"
+          type="text"
+          defaultValue={initial?.name ?? ""}
+          placeholder="Ex.: Casamento Marina e Rafael"
+          className={inputClass}
+        />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor="ev_city" className="mb-1 block text-sm font-medium">
+            Cidade{" "}
+            <span className="font-normal text-stone-400">(opcional)</span>
+          </label>
+          <input
+            id="ev_city"
+            name="city"
+            type="text"
+            defaultValue={initial?.city ?? ""}
+            placeholder="Ex.: Belo Horizonte"
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label htmlFor="ev_guests" className="mb-1 block text-sm font-medium">
+            Convidados{" "}
+            <span className="font-normal text-stone-400">(opcional)</span>
+          </label>
+          <input
+            id="ev_guests"
+            name="guests"
+            type="number"
+            min={0}
+            inputMode="numeric"
+            defaultValue={initial?.guests ?? ""}
+            placeholder="Ex.: 120"
             className={inputClass}
           />
         </div>

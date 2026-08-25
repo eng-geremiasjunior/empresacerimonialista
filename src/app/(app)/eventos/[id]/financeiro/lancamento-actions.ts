@@ -5,6 +5,7 @@
 // Tudo que a tela nova precisa escrever mora aqui. O que já existia
 // (marcarPago, criarTransacao) continua onde estava — não duplico ação.
 
+import { addMonths, format } from "date-fns";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
@@ -60,16 +61,27 @@ export async function criarLancamento(
       ? "fornecedor"
       : "assessoria";
 
+  // A divisão e a data seguem a mesma fórmula de gerarParcelas
+  // (financeiro/actions.ts) — só o lançamento avulso tinha ficado de fora.
+  //
+  //   · valor: dividir igual e arredondar dá R$ 1.000 em 3x = 999,99, e
+  //     R$ 100 em 7x = 100,03 — nesse ela cobrava MAIS do que combinou.
+  //     A sobra vai inteira para a última parcela.
+  //   · data: setMonth sobre 31/01 devolve 03/03, porque fevereiro não tem
+  //     31. addMonths grampeia no último dia do mês.
+  const valorParcela = Number((input.valor / n).toFixed(2));
+  const ultimaParcela = Number((input.valor - valorParcela * (n - 1)).toFixed(2));
+  const base = new Date(input.vencimento + "T00:00:00");
+
   const linhas = Array.from({ length: n }, (_, i) => {
-    const d = new Date(input.vencimento + "T00:00:00");
-    d.setMonth(d.getMonth() + i);
+    const d = addMonths(base, i);
     return {
       event_id: eventId,
       type: entrada ? "receita" : "despesa",
       description:
         n > 1 ? `${input.descricao.trim()} ${i + 1}/${n}` : input.descricao.trim(),
-      value: Number((input.valor / (n > 1 ? n : 1)).toFixed(2)),
-      due_date: d.toISOString().slice(0, 10),
+      value: i === n - 1 ? ultimaParcela : valorParcela,
+      due_date: format(d, "yyyy-MM-dd"),
       paid: i === 0 ? input.jaPago : false,
       paid_at: i === 0 && input.jaPago ? new Date().toISOString() : null,
       category: "outro",

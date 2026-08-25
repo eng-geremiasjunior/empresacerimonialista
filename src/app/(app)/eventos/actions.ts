@@ -19,6 +19,12 @@ function readForm(formData: FormData) {
     date: String(formData.get("date") ?? ""),
     time: String(formData.get("time") ?? "").trim(),
     location: String(formData.get("location") ?? "").trim(),
+    // nome, cidade e convidados eram coletados no assistente e nunca mais
+    // podiam ser corrigidos: nenhum UPDATE em events tocava nessas três
+    // colunas. Escreveu errado na criação, ficava errado para sempre.
+    name: String(formData.get("name") ?? "").trim(),
+    city: String(formData.get("city") ?? "").trim(),
+    guests: String(formData.get("guests") ?? "").trim(),
     status: String(formData.get("status") ?? ""),
     responsavelId: String(formData.get("responsavel_id") ?? "").trim(),
   };
@@ -34,61 +40,10 @@ function validate(form: ReturnType<typeof readForm>): string | null {
   return null;
 }
 
-export async function createEvent(
-  _prev: EventFormState,
-  formData: FormData
-): Promise<EventFormState> {
-  const form = readForm(formData);
-  const invalid = validate(form);
-  if (invalid) return { error: invalid };
-
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  // Cliente existente (selecionado no assistente) ou criação rápida.
-  let clientId = form.clientId;
-
-  if (!clientId) {
-    const { data: client, error: clientError } = await supabase
-      .from("clients")
-      .insert({
-        cerimonialista_id: user.id,
-        name: form.clientName,
-        phone: form.clientPhone || null,
-      })
-      .select("id")
-      .single();
-
-    if (clientError) {
-      return { error: "Não foi possível salvar o cliente. Tente novamente." };
-    }
-    clientId = client.id;
-  }
-
-  const { data: created, error: eventError } = await supabase
-    .from("events")
-    .insert({
-      cerimonialista_id: user.id,
-      client_id: clientId,
-      type: form.type,
-      date: form.date,
-      location: form.location || null,
-      status: "orcamento",
-    })
-    .select("id")
-    .single();
-
-  if (eventError) {
-    return { error: "Não foi possível criar o evento. Tente novamente." };
-  }
-
-  revalidatePath("/eventos");
-  redirect(`/eventos/${created.id}`);
-}
-
+// createEvent foi removida: nenhum chamador em todo o repositorio. O
+// wizard usa criarEventoCompleto (eventos/novo/actions.ts), que passa pela
+// RPC transacional. Manter uma action exportada e morta e o que fez uma
+// correcao de "notified" ir parar no updateTask errado mais cedo.
 export async function updateEvent(
   _prev: EventFormState,
   formData: FormData
@@ -145,6 +100,9 @@ export async function updateEvent(
     // da 112 recalcula os horários que ainda são estimativa.
     time: form.time || null,
     location: form.location || null,
+    name: form.name || null,
+    city: form.city || null,
+    guests: form.guests ? Math.max(0, Math.round(Number(form.guests))) || null : null,
     status: form.status,
   };
   // Só troca o responsável se o campo veio no formulário (a coluna pode
