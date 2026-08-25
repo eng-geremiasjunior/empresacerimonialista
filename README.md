@@ -68,6 +68,14 @@ Quatro superfícies, quatro públicos: a **cerimonialista** (área
 profissional), a **cliente** (portal), o **fornecedor** (links por hash,
 abertos no celular no dia do evento) e as **rotinas** (cron).
 
+## Backup
+
+Estratégia atual (fase de piloto): export completo das tabelas via API com
+a service role, salvo **fora do repositório** em
+`Documents/vela-backups/backup-AAAA-MM-DD.json`. Rodar antes de qualquer
+migração grande ou de convidar gente nova. Se o piloto virar produção
+paga, subir para o plano do Supabase com PITR.
+
 ## Módulos
 
 | | |

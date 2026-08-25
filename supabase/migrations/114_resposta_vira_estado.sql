@@ -98,9 +98,15 @@ begin
   if v_acesso.revogado_em is not null then return null; end if;
   if v_acesso.expira_em < now() then return null; end if;
 
+  -- Conta a abertura só quando faz diferença: sem o intervalo, cada F5 do
+  -- fornecedor era um UPDATE — e "abriu o link 47 vezes" viraria contador
+  -- de refresh, não sinal. Cinco minutos preservam o que o número afirma
+  -- ("entrou na página depois do envio") sem transformar consulta em
+  -- escrita a cada tecla.
   update public.fornecedor_acesso
   set aberturas = aberturas + 1, ultima_abertura = now()
-  where id = v_acesso.id;
+  where id = v_acesso.id
+    and (ultima_abertura is null or ultima_abertura < now() - interval '5 minutes');
 
   return (
     select json_build_object(
