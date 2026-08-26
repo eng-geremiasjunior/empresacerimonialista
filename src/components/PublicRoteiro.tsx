@@ -4,6 +4,7 @@
 // com ações Iniciar/Concluir/Reportar problema por item (Etapa 2 do
 // Cronograma dinâmico). Mobile-first, sem login. Polling de 20s.
 
+import { ComoChegar } from "@/components/ComoChegar";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Check,
@@ -158,6 +159,7 @@ export function PublicRoteiro({ initial, hash, children }: Props) {
           {formatDate(data.event.date)}
           {data.event.location ? ` · ${data.event.location}` : ""}
         </p>
+        <ComoChegar endereco={data.event.location} />
       </header>
 
       {data.items.length === 0 ? (

@@ -1,5 +1,6 @@
 "use client";
 
+import { ComoChegar } from "@/components/ComoChegar";
 import { useEffect, useMemo, useState } from "react";
 import { Calendar, Check, MapPin, Paperclip, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -153,6 +154,7 @@ export function PendenciasFornecedor({
                     </span>
                   )}
                 </div>
+                <ComoChegar endereco={g.ev.local} />
               </div>
 
               <div className="mt-3 space-y-3">

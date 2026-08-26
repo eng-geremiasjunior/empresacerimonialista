@@ -7,7 +7,10 @@ import type { PublicRoteiroData } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Roteiro do evento — Vela",
+  // Sem "Vela": esta aba abre no celular do fornecedor, em cima do
+  // trabalho que a cerimonialista assina. (O nome da empresa exigiria
+  // mudar a RPC; o neutro resolve o vazamento de marca.)
+  title: "Roteiro do evento",
 };
 
 export default async function PublicRoteiroPage({
