@@ -12,6 +12,7 @@
 // de revisão é a mesma, e quando a leitura automática entrar ela só
 // preenche esses dois campos antes — sem redesenho.
 
+import { mascararDinheiro } from "@/lib/format";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -51,7 +52,9 @@ export function DrawerLancamento({
   );
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [path, setPath] = useState<string | null>(null);
-  const [valor, setValor] = useState(String(lancamento.valor).replace(".", ","));
+  const [valor, setValor] = useState(
+    mascararDinheiro(String(lancamento.valor).replace(".", ","))
+  );
   const [data, setData] = useState(hoje);
   const [tipo, setTipo] = useState("PIX");
   const [erro, setErro] = useState<string | null>(null);
@@ -332,7 +335,7 @@ export function DrawerLancamento({
                   <input
                     className="fin-mono"
                     value={valor}
-                    onChange={(e) => setValor(e.target.value)}
+                    onChange={(e) => setValor(mascararDinheiro(e.target.value))}
                     inputMode="decimal"
                     style={campoStyle}
                   />

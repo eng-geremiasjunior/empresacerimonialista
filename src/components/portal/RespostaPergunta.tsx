@@ -10,6 +10,7 @@
 // salva, sem selo nenhum. O aviso de conferência é da tela da
 // cerimonialista.
 
+import { mascararDinheiro } from "@/lib/format";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -199,7 +200,13 @@ export function RespostaPergunta({
           inputMode="decimal"
           value={valor}
           disabled={ocupado}
-          onChange={(e) => setValor(e.target.value)}
+          onChange={(e) =>
+            setValor(
+              pergunta.tipo === "moeda"
+                ? mascararDinheiro(e.target.value)
+                : e.target.value
+            )
+          }
           onKeyDown={(e) => e.key === "Enter" && void gravar(valor)}
           style={campoStyle}
         />

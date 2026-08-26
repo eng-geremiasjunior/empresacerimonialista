@@ -9,6 +9,7 @@
 // Nenhum bloco daqui calcula status, total ou ordem: tudo vem pronto de
 // financeiro-core.ts. Isso é o que permite testar a regra sem browser.
 
+import { desmascararDinheiro, mascararDinheiro } from "@/lib/format";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -551,7 +552,9 @@ function CardVerba({
   const router = useRouter();
   const [editando, setEditando] = useState(false);
   const [texto, setTexto] = useState(
-    dados.verbaTotal == null ? "" : String(dados.verbaTotal).replace(".", ",")
+    dados.verbaTotal == null
+      ? ""
+      : mascararDinheiro(String(dados.verbaTotal).replace(".", ","))
   );
   const [salvando, setSalvando] = useState(false);
   const teto = dados.verbaTotal;
@@ -567,10 +570,8 @@ function CardVerba({
     const limpo = texto.trim();
     // campo vazio apaga o teto: sem verba definida é um estado legítimo,
     // e a tela mostra o alocado em vez de inventar um número
-    const valor = limpo
-      ? Number(limpo.replace(/\./g, "").replace(",", "."))
-      : null;
-    if (valor !== null && !Number.isFinite(valor)) {
+    const valor = limpo ? desmascararDinheiro(limpo) : null;
+    if (limpo && valor === null) {
       setSalvando(false);
       return;
     }
@@ -594,7 +595,7 @@ function CardVerba({
             <input
               className="fin-mono"
               value={texto}
-              onChange={(e) => setTexto(e.target.value)}
+              onChange={(e) => setTexto(mascararDinheiro(e.target.value))}
               inputMode="decimal"
               placeholder="0,00"
               autoFocus

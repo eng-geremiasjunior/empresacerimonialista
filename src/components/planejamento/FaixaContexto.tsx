@@ -9,6 +9,7 @@
 // jornada; o valor é editável inline (tudo permanece editável — a sugestão
 // nunca manda).
 
+import { desmascararDinheiro, mascararDinheiro } from "@/lib/format";
 import { useEffect, useRef, useState } from "react";
 import type { Objetivo, Verba } from "@/lib/supabase/planejamento";
 import {
@@ -190,8 +191,8 @@ function VerbaEditavel({
   compacta?: boolean;
 }) {
   const [editando, setEditando] = useState(false);
-  const [v, setV] = useState(total !== null ? String(total) : "");
-  useEffect(() => setV(total !== null ? String(total) : ""), [total]);
+  const [v, setV] = useState(total !== null ? mascararDinheiro(String(total)) : "");
+  useEffect(() => setV(total !== null ? mascararDinheiro(String(total)) : ""), [total]);
 
   function confirmar() {
     setEditando(false);
@@ -201,7 +202,7 @@ function VerbaEditavel({
   }
 
   function cancelar() {
-    setV(total !== null ? String(total) : "");
+    setV(total !== null ? mascararDinheiro(String(total)) : "");
     setEditando(false);
   }
 
@@ -214,7 +215,7 @@ function VerbaEditavel({
           type="text"
           inputMode="numeric"
           value={v}
-          onChange={(e) => setV(e.target.value.replace(/[^\d.,]/g, ""))}
+          onChange={(e) => setV(mascararDinheiro(e.target.value))}
           onBlur={cancelar}
           onKeyDown={(e) => {
             if (e.key === "Enter") confirmar();
@@ -304,8 +305,8 @@ function ReservaEditavel({
   onSalvar: (pct: number | null) => void;
 }) {
   const [editando, setEditando] = useState(false);
-  const [v, setV] = useState(valor ? String(valor) : "");
-  useEffect(() => setV(valor ? String(valor) : ""), [valor]);
+  const [v, setV] = useState(valor ? mascararDinheiro(String(valor)) : "");
+  useEffect(() => setV(valor ? mascararDinheiro(String(valor)) : ""), [valor]);
 
   const semVerba = verbaTotal === null || verbaTotal <= 0;
 
@@ -327,7 +328,7 @@ function ReservaEditavel({
   }
 
   function cancelar() {
-    setV(valor ? String(valor) : "");
+    setV(valor ? mascararDinheiro(String(valor)) : "");
     setEditando(false);
   }
 
@@ -342,7 +343,7 @@ function ReservaEditavel({
           type="text"
           inputMode="numeric"
           value={v}
-          onChange={(e) => setV(e.target.value.replace(/[^\d.,]/g, ""))}
+          onChange={(e) => setV(mascararDinheiro(e.target.value))}
           onBlur={cancelar}
           onKeyDown={(e) => {
             if (e.key === "Enter") confirmar();
@@ -451,17 +452,19 @@ function LinhaPrevisto({
 }) {
   const [editando, setEditando] = useState(false);
   const [v, setV] = useState(
-    objetivo.valorPrevisto !== null ? String(objetivo.valorPrevisto) : ""
+    objetivo.valorPrevisto !== null ? mascararDinheiro(String(objetivo.valorPrevisto)) : ""
   );
   useEffect(
     () =>
-      setV(objetivo.valorPrevisto !== null ? String(objetivo.valorPrevisto) : ""),
+      setV(objetivo.valorPrevisto !== null ? mascararDinheiro(String(objetivo.valorPrevisto)) : ""),
     [objetivo.valorPrevisto]
   );
 
   function confirmar() {
     setEditando(false);
-    const num = v === "" ? null : Number(v);
+    // Number("250.000") seria 250 (ponto decimal americano) — a
+    // máscara põe pontos de milhar, então o parse tem que tirá-los.
+    const num = desmascararDinheiro(v);
     const atual =
       objetivo.valorPrevisto !== null ? Number(objetivo.valorPrevisto) : null;
     if (num !== atual) onEditar(num);
@@ -540,17 +543,17 @@ function LinhaPrevisto({
           type="text"
           inputMode="numeric"
           value={v}
-          onChange={(e) => setV(e.target.value.replace(/[^\d]/g, ""))}
+          onChange={(e) => setV(mascararDinheiro(e.target.value))}
           onBlur={() => {
             // clicar fora CANCELA — confirmar é Enter ou o ✓
             setEditando(false);
-            setV(objetivo.valorPrevisto !== null ? String(objetivo.valorPrevisto) : "");
+            setV(objetivo.valorPrevisto !== null ? mascararDinheiro(String(objetivo.valorPrevisto)) : "");
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter") confirmar();
             if (e.key === "Escape") {
               setEditando(false);
-              setV(objetivo.valorPrevisto !== null ? String(objetivo.valorPrevisto) : "");
+              setV(objetivo.valorPrevisto !== null ? mascararDinheiro(String(objetivo.valorPrevisto)) : "");
             }
           }}
           style={{
@@ -570,7 +573,7 @@ function LinhaPrevisto({
           onOk={confirmar}
           onCancelar={() => {
             setEditando(false);
-            setV(objetivo.valorPrevisto !== null ? String(objetivo.valorPrevisto) : "");
+            setV(objetivo.valorPrevisto !== null ? mascararDinheiro(String(objetivo.valorPrevisto)) : "");
           }}
         />
         </span>
