@@ -513,14 +513,14 @@ end $$;
 -- ------------------------------------------------------------
 -- Eventos já criados NÃO são re-instanciados aqui (a instância é snapshot);
 -- para os de teste, o script de verificação limpa e re-instancia.
-do $
+do $$
 declare e record;
 begin
   for e in select id from public.empresas loop
     perform public.semear_metodo_casamento(e.id);
     perform public.semear_tarefas_metodo_casamento(e.id);
   end loop;
-end $;
+end $$;
 
 -- ------------------------------------------------------------
 -- 6b) Re-vincula as instâncias aos templates novos
@@ -567,7 +567,7 @@ where cv.evento_decisao_id = ed.id
 -- daqui em diante — e o casamento que motivou o ajuste ficaria sem.
 -- Convergente: o unique (event_id, objetivo_template_id) e o "not
 -- exists" seguram a segunda execução.
-do $
+do $$
 declare
   ev record;
   v_obj  public.metodo_objetivo%rowtype;
@@ -622,7 +622,7 @@ begin
       on ed.event_id = ev.id and ed.decisao_template_id = d.id
     where d.objetivo_id = v_obj.id;
   end loop;
-end $;
+end $$;
 
 -- ------------------------------------------------------------
 -- Conferência — todas as linhas devem voltar `true`.
