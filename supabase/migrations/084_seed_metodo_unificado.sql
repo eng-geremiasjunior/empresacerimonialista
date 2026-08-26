@@ -625,6 +625,41 @@ begin
 end $$;
 
 -- ------------------------------------------------------------
+-- 7b) A antiga "Contratar o celebrante" sai de Cerimônia religiosa
+-- ------------------------------------------------------------
+-- Ela era decisão daquele objetivo; agora vive sob Celebrante. Quem já
+-- tinha o evento instanciado ficou com AS DUAS — a velha, órfã de
+-- template (o re-vínculo do 6b casa por objetivo, e o objetivo dela
+-- mudou), e a nova. Duas linhas iguais no Planejamento, e a velha sem
+-- código, ou seja, sem as tarefas de contrato que o padrão gera.
+--
+-- Só apaga a que está VAZIA e só quando a nova existe: se ela já tinha
+-- preenchido fornecedor ou valor ali, a linha fica e quem decide é ela.
+delete from public.evento_decisao velha
+using public.evento_objetivo eo_velho,
+      public.evento_decisao nova,
+      public.evento_objetivo eo_novo
+where velha.evento_objetivo_id = eo_velho.id
+  and eo_velho.nome = 'Cerimônia religiosa'
+  and velha.titulo = 'Contratar o celebrante'
+  and velha.decisao_template_id is null
+  and velha.estado = 'pendente'
+  -- a nova, no mesmo evento, já vinculada
+  and nova.event_id = velha.event_id
+  and nova.evento_objetivo_id = eo_novo.id
+  and eo_novo.nome = 'Celebrante'
+  and nova.titulo = 'Contratar o celebrante'
+  and nova.decisao_template_id is not null
+  -- e nenhum campo da velha foi preenchido
+  and not exists (
+    select 1 from public.evento_campo_valor cv
+    where cv.evento_decisao_id = velha.id
+      and (cv.valor_texto is not null or cv.valor_numero is not null
+           or cv.valor_bool is not null or cv.valor_data is not null
+           or cv.valor_opcao is not null or cv.valor_supplier_id is not null)
+  );
+
+-- ------------------------------------------------------------
 -- Conferência — todas as linhas devem voltar `true`.
 -- ------------------------------------------------------------
 select 'todas as empresas têm o objetivo Celebrante' as item,
@@ -649,6 +684,15 @@ select 'decisões re-vinculadas (codigo volta a existir)',
          join public.events e on e.id = ed.event_id
          where e.type = 'casamento' and ed.decisao_template_id is null
            and ed.titulo in ('Definir a data do casamento', 'Contratar o espaço')
+       )
+union all
+select 'sem "Contratar o celebrante" duplicado e vazio',
+       not exists (
+         select 1 from public.evento_decisao ed
+         join public.evento_objetivo eo on eo.id = ed.evento_objetivo_id
+         where ed.titulo = 'Contratar o celebrante'
+           and eo.nome = 'Cerimônia religiosa'
+           and ed.decisao_template_id is null
        )
 union all
 select 'todo casamento instanciado ganhou o Celebrante',
