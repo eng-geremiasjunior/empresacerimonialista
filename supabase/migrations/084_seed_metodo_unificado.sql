@@ -523,6 +523,43 @@ begin
 end $;
 
 -- ------------------------------------------------------------
+-- 6b) Re-vincula as instâncias aos templates novos
+-- ------------------------------------------------------------
+-- O re-seed apaga os templates e os FKs das instâncias viram null
+-- (on delete set null). O codigo da decisão vem do template — e é ele
+-- que liga os casos especiais da tela ("data" sincroniza events.date,
+-- o guia abre o drawer próprio, a prévia de tarefas). Sem re-vincular,
+-- cada re-seed silenciosamente desligava isso nos eventos existentes.
+-- O casamento é por NOME dentro da empresa — os nomes são únicos por
+-- tipo de evento; título que mudou entre versões fica sem vínculo,
+-- como já ficava.
+update public.evento_objetivo eo
+set objetivo_template_id = o.id
+from public.events e, public.metodo_objetivo o
+where eo.event_id = e.id
+  and e.type = 'casamento'
+  and eo.objetivo_template_id is null
+  and o.empresa_id = e.empresa_id
+  and o.tipo_evento = 'casamento'
+  and o.nome = eo.nome;
+
+update public.evento_decisao ed
+set decisao_template_id = d.id
+from public.evento_objetivo eo, public.metodo_decisao d
+where ed.evento_objetivo_id = eo.id
+  and ed.decisao_template_id is null
+  and eo.objetivo_template_id = d.objetivo_id
+  and d.titulo = ed.titulo;
+
+update public.evento_campo_valor cv
+set campo_template_id = c.id
+from public.evento_decisao ed, public.metodo_campo c
+where cv.evento_decisao_id = ed.id
+  and cv.campo_template_id is null
+  and ed.decisao_template_id = c.decisao_id
+  and c.codigo = cv.codigo;
+
+-- ------------------------------------------------------------
 -- 7) Celebrante nos eventos JÁ instanciados
 -- ------------------------------------------------------------
 -- A instância é snapshot: re-semear o template não toca evento nenhum.
@@ -605,6 +642,14 @@ select 'celebrante tem as 3 decisões no template',
         from public.metodo_decisao d
         join public.metodo_objetivo o on o.id = d.objetivo_id
         where o.codigo = 'celebrante')
+union all
+select 'decisões re-vinculadas (codigo volta a existir)',
+       not exists (
+         select 1 from public.evento_decisao ed
+         join public.events e on e.id = ed.event_id
+         where e.type = 'casamento' and ed.decisao_template_id is null
+           and ed.titulo in ('Definir a data do casamento', 'Contratar o espaço')
+       )
 union all
 select 'todo casamento instanciado ganhou o Celebrante',
        not exists (
