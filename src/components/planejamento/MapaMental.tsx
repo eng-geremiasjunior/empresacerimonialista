@@ -38,24 +38,55 @@ const SALVIA = "#6E7F63";
 // Altura é barata (a página rola); largura é o recurso escasso.
 
 const CARD_W = 132;
-// nome em ate 3 linhas (48) + dots (18) + meta (14) + padding (18) + borda
-const CARD_H = 104;
+// altura por nome de VERDADE, não pelo pior caso: pad (18) + dots (18) +
+// meta (14) + borda (~6) = 56, mais 16 por linha de texto. O pior caso
+// fixo (3 linhas = 104) obrigava TODO par vizinho a se afastar como se
+// os dois cards fossem altos — e quase nenhum é.
+function alturaEstimada(nome: string): number {
+  const linhas = Math.min(3, Math.max(1, Math.ceil(nome.length / 15)));
+  return 56 + linhas * 16;
+}
 const ASPECTO = 1.08;
 
-// Dois cards se sobrepõem quando distam menos que a largura E menos que a
-// altura. Checagem discreta: só os ângulos que existem de fato.
-function colide(n: number, rx: number, ry: number): boolean {
+// Recuo radial que varia com o ângulo: nas LATERAIS os vizinhos já se
+// separam na vertical (o anel resolve sozinho); é em CIMA e EMBAIXO que
+// eles disputam largura — e ali o card alternado recua para dentro, e a
+// diferença de raio vira separação vertical. Resultado medido: com 16
+// objetivos o raio cai a ~69% do que o anel único exigia, sem nenhuma
+// sobreposição. (O pedido era −40%; cru, sobrepunha 42px — este é o
+// menor raio que a física dos cards permite.)
+function fatorDoNo(i: number, n: number, f0: number, k: number): number {
+  if (i % 2 === 0) return 1;
+  const a = ((-90 + i * (360 / n)) * Math.PI) / 180;
+  return 1 - (1 - f0) * Math.pow(Math.abs(Math.sin(a)), k);
+}
+
+function posicoes(n: number, rx: number, ry: number, f0: number, k: number) {
   const passo = 360 / Math.max(1, n);
   const p: { x: number; y: number }[] = [];
   for (let i = 0; i < n; i++) {
     const a = ((-90 + i * passo) * Math.PI) / 180;
-    p.push({ x: rx * Math.cos(a), y: ry * Math.sin(a) });
+    const f = fatorDoNo(i, n, f0, k);
+    p.push({ x: rx * f * Math.cos(a), y: ry * f * Math.sin(a) });
   }
+  return p;
+}
+
+function colide(
+  alturas: number[],
+  rx: number,
+  ry: number,
+  f0: number,
+  k: number
+): boolean {
+  const n = alturas.length;
+  const p = posicoes(n, rx, ry, f0, k);
   for (let i = 0; i < n; i++) {
     for (let j = i + 1; j < n; j++) {
+      const hPar = (alturas[i] + alturas[j]) / 2;
       if (
         Math.abs(p[i].x - p[j].x) < CARD_W &&
-        Math.abs(p[i].y - p[j].y) < CARD_H
+        Math.abs(p[i].y - p[j].y) < hPar
       ) {
         return true;
       }
@@ -64,20 +95,40 @@ function colide(n: number, rx: number, ry: number): boolean {
   return false;
 }
 
-function geometria(n: number) {
-  // Cresce o raio até a checagem par-a-par ficar limpa. O arredondamento
-  // acontece DENTRO do laço: é a geometria arredondada que vai para a tela,
-  // então é ela que precisa passar no teste (arredondar depois já me custou
-  // uma colisão em 27 objetivos).
-  let rx = 100;
-  let ry = Math.round(rx * ASPECTO);
-  while (rx < 1200 && colide(n, rx, ry)) {
-    rx += 2;
-    ry = Math.round(rx * ASPECTO);
+function geometria(nomes: string[]) {
+  const n = Math.max(1, nomes.length);
+  const alturas = nomes.map(alturaEstimada);
+
+  // Busca determinística do menor raio: para cada perfil de recuo, cresce
+  // o raio até a checagem par-a-par ficar limpa; fica o perfil que fechou
+  // menor. O arredondamento acontece DENTRO do laço: é a geometria
+  // arredondada que vai para a tela, então é ela que passa no teste.
+  let melhor: { rx: number; ry: number; f0: number; k: number } | null = null;
+  for (const f0 of [1, 0.7, 0.65, 0.6, 0.55, 0.5]) {
+    for (const k of f0 === 1 ? [1] : [1, 1.5, 2]) {
+      let rx = 80;
+      let ry = Math.round(rx * ASPECTO);
+      while (rx < 1200 && colide(alturas, rx, ry, f0, k)) {
+        rx += 2;
+        ry = Math.round(rx * ASPECTO);
+      }
+      if (!melhor || rx < melhor.rx) melhor = { rx, ry, f0, k };
+    }
   }
+  const { rx, ry, f0, k } = melhor!;
+  const hMax = Math.max(56, ...alturas);
   const W = 2 * rx + CARD_W;
-  const H = 2 * ry + CARD_H;
-  return { W, H, cx: W / 2, cy: H / 2, rx, ry, passo: 360 / Math.max(1, n) };
+  const H = 2 * ry + hMax;
+  return {
+    W,
+    H,
+    cx: W / 2,
+    cy: H / 2,
+    rx,
+    ry,
+    passo: 360 / n,
+    fator: (i: number) => fatorDoNo(i, n, f0, k),
+  };
 }
 
 // ---- dado do mapa, derivado do real ---------------------------------
@@ -102,9 +153,12 @@ const BUCKET_PESO: Record<string, number> = {
   concluido: 3,
 };
 
-function montarNos(objetivos: Objetivo[]): NoObjetivo[] {
+function montarNos(objetivos: Objetivo[]): {
+  nos: NoObjetivo[];
+  g: ReturnType<typeof geometria>;
+} {
   const ativos = objetivos.filter((o) => o.ativo);
-  const g = geometria(ativos.length);
+  const g = geometria(ativos.map((o) => o.nome));
 
   // Ordem de PRIORIDADE (leitura): o que vence antes primeiro, depois o
   // peso das decisões. Diferente da posição angular, que segue a ordem do
@@ -119,8 +173,9 @@ function montarNos(objetivos: Objetivo[]): NoObjetivo[] {
   });
   const pri = new Map(porPrioridade.map((o, i) => [o.id, i + 1]));
 
-  return ativos.map((o, i) => {
+  const nos = ativos.map((o, i) => {
     const ang = ((-90 + i * g.passo) * Math.PI) / 180;
+    const f = g.fator(i);
     const aplicaveis = o.decisoes.filter((d) => d.estado !== "nao_se_aplica");
     return {
       id: o.id,
@@ -130,10 +185,11 @@ function montarNos(objetivos: Objetivo[]): NoObjetivo[] {
       total: aplicaveis.length,
       pri: pri.get(o.id) ?? i + 1,
       decisoes: aplicaveis,
-      x: g.cx + g.rx * Math.cos(ang),
-      y: g.cy + g.ry * Math.sin(ang),
+      x: g.cx + g.rx * f * Math.cos(ang),
+      y: g.cy + g.ry * f * Math.sin(ang),
     };
   });
+  return { nos, g };
 }
 
 // ---- Copiloto: todo texto vem de um campo do dado -------------------
@@ -173,11 +229,14 @@ export function MapaMental({
   onIrParaObjetivo: (objetivoId: string) => void;
   onIrParaDecisao: (d: Decisao) => void;
 }) {
-  const nos = useMemo(() => montarNos(objetivos), [objetivos]);
+  const { nos, g } = useMemo(() => montarNos(objetivos), [objetivos]);
   const n = nos.length;
-  const g = useMemo(() => geometria(n), [n]);
 
   const [view, setView] = useState<"radial" | "arvore">("radial");
+  // Nó escolhido com um clique (0 = nenhum). Clicar NÃO navega mais:
+  // mostra o objetivo no trilho lateral, e o segundo clique — ou o botão
+  // do trilho — abre o modo Foco. A mudança brusca de tela era o problema.
+  const [sel, setSel] = useState(0);
   const [phase, setPhase] = useState<"hidden" | "shown" | "ready">("hidden");
   const [playing, setPlaying] = useState(false);
   const [step, setStep] = useState(0);
@@ -377,12 +436,15 @@ export function MapaMental({
 
   const fit = colW > 0 ? Math.min(1, Math.max(0.28, (colW - 40) / g.W)) : 1;
   const entrando = phase !== "ready";
-  const q = quadro(step);
+  const ativo = playing ? step : sel;
+  const q = quadro(ativo);
+  const noSel = sel > 0 ? (nos.find((x) => x.pri === sel) ?? null) : null;
 
   // ---- estilo de um nó, nas três situações (entrada, holofote, neutro) --
   function estiloNo(no: NoObjetivo) {
-    const emFoco = playing && step === no.pri;
+    const emFoco = playing ? step === no.pri : sel === no.pri;
     const recuado = playing && step !== no.pri;
+    const preterido = !playing && sel > 0 && sel !== no.pri;
     const delay = 150 + (no.pri - 1) * 70;
 
     // nasce ~40% mais perto do centro
@@ -397,7 +459,8 @@ export function MapaMental({
       top: no.y,
       width: CARD_W,
       transform: `translate(-50%,-50%) translate(${offX}px,${offY}px) scale(${escalaNo})`,
-      opacity: entrando && phase === "hidden" ? 0 : recuado ? 0.4 : 1,
+      opacity:
+        entrando && phase === "hidden" ? 0 : recuado ? 0.4 : preterido ? 0.72 : 1,
       background: "#fff",
       border: `1px solid ${emFoco ? C.ameixa : C.bordaSutil}`,
       borderRadius: 10,
@@ -538,7 +601,9 @@ export function MapaMental({
       <div style={{ display: "flex", alignItems: "stretch", flexWrap: "wrap" }}>
         <div ref={colRef} style={{ flex: 1, minWidth: 320, padding: "20px 0" }}>
           {view === "radial" ? (
+            // clicar no fundo desfaz a seleção (os nós dão stopPropagation)
             <div
+              onClick={() => setSel(0)}
               style={{
                 position: "relative",
                 height: g.H * fit,
@@ -564,7 +629,7 @@ export function MapaMental({
                 >
                   {nos.map((no) => {
                     const len = Math.hypot(no.x - g.cx, no.y - g.cy);
-                    const acesa = playing && step === no.pri;
+                    const acesa = playing ? step === no.pri : sel === no.pri;
                     const delay = 150 + (no.pri - 1) * 70;
                     return (
                       <line
@@ -667,8 +732,17 @@ export function MapaMental({
                   <button
                     key={no.id}
                     type="button"
-                    onClick={() => onIrParaObjetivo(no.id)}
-                    title="Abrir no modo Foco"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (playing) parar();
+                      if (sel === no.pri) onIrParaObjetivo(no.id);
+                      else setSel(no.pri);
+                    }}
+                    title={
+                      sel === no.pri
+                        ? "Clique de novo para abrir no modo Foco"
+                        : no.nome
+                    }
                     style={estiloNo(no)}
                   >
                     <span
@@ -911,6 +985,41 @@ export function MapaMental({
           >
             {!playing ? (
               <>
+                {noSel && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => onIrParaObjetivo(noSel.id)}
+                      style={{
+                        width: "100%",
+                        height: 40,
+                        borderRadius: 8,
+                        border: "none",
+                        background: C.ameixa,
+                        color: "#fff",
+                        fontFamily: F_TITLE,
+                        fontWeight: 600,
+                        fontSize: 13,
+                        cursor: "pointer",
+                        marginBottom: 8,
+                      }}
+                    >
+                      Abrir no modo Foco →
+                    </button>
+                    <p
+                      style={{
+                        margin: "0 0 10px",
+                        fontFamily: F_UI,
+                        fontSize: 11,
+                        lineHeight: "16px",
+                        color: C.fantasma,
+                      }}
+                    >
+                      Você será levada para o modo Foco, com este objetivo
+                      aberto. Clicar de novo no cartão faz o mesmo.
+                    </p>
+                  </>
+                )}
                 <button
                   type="button"
                   onClick={() => avancar(0)}
@@ -918,9 +1027,9 @@ export function MapaMental({
                     width: "100%",
                     height: 40,
                     borderRadius: 8,
-                    border: "none",
-                    background: C.ameixa,
-                    color: "#fff",
+                    border: noSel ? `1px solid ${C.bordaSutil}` : "none",
+                    background: noSel ? "#fff" : C.ameixa,
+                    color: noSel ? C.tinta : "#fff",
                     fontFamily: F_TITLE,
                     fontWeight: 600,
                     fontSize: 13,

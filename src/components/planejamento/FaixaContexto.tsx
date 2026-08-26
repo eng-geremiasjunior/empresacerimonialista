@@ -125,6 +125,56 @@ function ChipArquetipo({
 }
 
 // ------------------------------------------------------------------
+// Edição inline: digitou, CONFIRMA — nunca salva sozinho.
+//
+// A versão anterior gravava no blur: clicar em qualquer lugar da tela
+// era "enviar", sem a pessoa ter decidido nada. Regra da casa agora:
+// Enter ou ✓ confirmam; Esc, ✕ ou clicar fora cancelam e voltam o valor.
+// ------------------------------------------------------------------
+
+function BotoesConfirmar({
+  onOk,
+  onCancelar,
+}: {
+  onOk: () => void;
+  onCancelar: () => void;
+}) {
+  const base: React.CSSProperties = {
+    width: 26,
+    height: 26,
+    borderRadius: 6,
+    border: `1px solid ${C.bordaSutil}`,
+    fontSize: 13,
+    lineHeight: "24px",
+    cursor: "pointer",
+    padding: 0,
+    flexShrink: 0,
+  };
+  return (
+    <>
+      <button
+        type="button"
+        title="Confirmar (Enter)"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={onOk}
+        style={{ ...base, background: C.ameixa, borderColor: C.ameixa, color: "#fff" }}
+      >
+        ✓
+      </button>
+      <button
+        type="button"
+        title="Cancelar (Esc)"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={onCancelar}
+        style={{ ...base, background: "#fff", color: C.meta }}
+      >
+        ✕
+      </button>
+    </>
+  );
+}
+
+// ------------------------------------------------------------------
 // Verba total editável no lugar (é a cerimonialista quem informa; o
 // portal da cliente entra depois). Sem copy explicando de onde vem: o
 // número é o próprio controle.
@@ -150,6 +200,11 @@ function VerbaEditavel({
     if (novo !== total) onSalvar(novo);
   }
 
+  function cancelar() {
+    setV(total !== null ? String(total) : "");
+    setEditando(false);
+  }
+
   if (editando) {
     return (
       <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -160,13 +215,10 @@ function VerbaEditavel({
           inputMode="numeric"
           value={v}
           onChange={(e) => setV(e.target.value.replace(/[^\d.,]/g, ""))}
-          onBlur={confirmar}
+          onBlur={cancelar}
           onKeyDown={(e) => {
-            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-            if (e.key === "Escape") {
-              setV(total !== null ? String(total) : "");
-              setEditando(false);
-            }
+            if (e.key === "Enter") confirmar();
+            if (e.key === "Escape") cancelar();
           }}
           placeholder="0"
           style={{
@@ -182,6 +234,7 @@ function VerbaEditavel({
             boxShadow: "0 0 0 3px rgba(110,63,95,.18)",
           }}
         />
+        <BotoesConfirmar onOk={confirmar} onCancelar={cancelar} />
       </span>
     );
   }
@@ -256,6 +309,28 @@ function ReservaEditavel({
 
   const semVerba = verbaTotal === null || verbaTotal <= 0;
 
+  function confirmar() {
+    setEditando(false);
+    const n =
+      v.trim() === "" ? null : Number(v.replace(/\./g, "").replace(",", "."));
+    if (n === null || Number.isNaN(n)) {
+      onSalvar(null);
+      return;
+    }
+    // a reserva nunca pode passar da verba inteira
+    const limitado = Math.max(0, Math.min(verbaTotal ?? 0, n));
+    const pct =
+      verbaTotal && verbaTotal > 0
+        ? Math.round((limitado / verbaTotal) * 1000) / 10
+        : null;
+    onSalvar(pct);
+  }
+
+  function cancelar() {
+    setV(valor ? String(valor) : "");
+    setEditando(false);
+  }
+
   if (editando) {
     return (
       <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
@@ -268,30 +343,10 @@ function ReservaEditavel({
           inputMode="numeric"
           value={v}
           onChange={(e) => setV(e.target.value.replace(/[^\d.,]/g, ""))}
-          onBlur={() => {
-            setEditando(false);
-            const n =
-              v.trim() === ""
-                ? null
-                : Number(v.replace(/\./g, "").replace(",", "."));
-            if (n === null || Number.isNaN(n)) {
-              onSalvar(null);
-              return;
-            }
-            // a reserva nunca pode passar da verba inteira
-            const limitado = Math.max(0, Math.min(verbaTotal ?? 0, n));
-            const pct =
-              verbaTotal && verbaTotal > 0
-                ? Math.round((limitado / verbaTotal) * 1000) / 10
-                : null;
-            onSalvar(pct);
-          }}
+          onBlur={cancelar}
           onKeyDown={(e) => {
-            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-            if (e.key === "Escape") {
-              setV(valor ? String(valor) : "");
-              setEditando(false);
-            }
+            if (e.key === "Enter") confirmar();
+            if (e.key === "Escape") cancelar();
           }}
           style={{
             width: 110,
@@ -306,6 +361,7 @@ function ReservaEditavel({
             boxShadow: "0 0 0 3px rgba(110,63,95,.18)",
           }}
         />
+        <BotoesConfirmar onOk={confirmar} onCancelar={cancelar} />
       </span>
     );
   }
@@ -403,6 +459,14 @@ function LinhaPrevisto({
     [objetivo.valorPrevisto]
   );
 
+  function confirmar() {
+    setEditando(false);
+    const num = v === "" ? null : Number(v);
+    const atual =
+      objetivo.valorPrevisto !== null ? Number(objetivo.valorPrevisto) : null;
+    if (num !== atual) onEditar(num);
+  }
+
   const valor = objetivo.valorPrevisto !== null ? Number(objetivo.valorPrevisto) : 0;
   const pct = base && base > 0 ? Math.round((valor / base) * 100) : null;
   const larguraBarra = maiorValor > 0 ? (valor / maiorValor) * 100 : 0;
@@ -470,6 +534,7 @@ function LinhaPrevisto({
         {pct !== null ? `${pct}%` : "—"}
       </span>
       {editando ? (
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
         <input
           autoFocus
           type="text"
@@ -477,15 +542,17 @@ function LinhaPrevisto({
           value={v}
           onChange={(e) => setV(e.target.value.replace(/[^\d]/g, ""))}
           onBlur={() => {
+            // clicar fora CANCELA — confirmar é Enter ou o ✓
             setEditando(false);
-            const num = v === "" ? null : Number(v);
-            const atual =
-              objetivo.valorPrevisto !== null ? Number(objetivo.valorPrevisto) : null;
-            if (num !== atual) onEditar(num);
+            setV(objetivo.valorPrevisto !== null ? String(objetivo.valorPrevisto) : "");
           }}
-          onKeyDown={(e) =>
-            e.key === "Enter" && (e.target as HTMLInputElement).blur()
-          }
+          onKeyDown={(e) => {
+            if (e.key === "Enter") confirmar();
+            if (e.key === "Escape") {
+              setEditando(false);
+              setV(objetivo.valorPrevisto !== null ? String(objetivo.valorPrevisto) : "");
+            }
+          }}
           style={{
             width: 86,
             textAlign: "right",
@@ -499,6 +566,14 @@ function LinhaPrevisto({
             flexShrink: 0,
           }}
         />
+        <BotoesConfirmar
+          onOk={confirmar}
+          onCancelar={() => {
+            setEditando(false);
+            setV(objetivo.valorPrevisto !== null ? String(objetivo.valorPrevisto) : "");
+          }}
+        />
+        </span>
       ) : (
         <button
           type="button"

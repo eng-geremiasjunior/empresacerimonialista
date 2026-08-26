@@ -105,12 +105,12 @@ create index if not exists idx_whatsapp_log_empresa
 -- Todas com 0 linhas, medido em 25/08/2026. events.fase_atual (062) tem
 -- backfill antigo mas nenhum leitor no código — a fase é derivada.
 --
--- ANTES dos drops: instanciar_metodo_evento (065) roda por GATILHO em
--- todo INSERT de events e o último bloco dela insere em evento_guia
--- lendo metodo_guia. Dropar as tabelas sem redefinir a função quebraria
--- a criação de qualquer evento. A redefinição abaixo é a 065 idêntica,
--- menos o bloco dos guias — evento_objetivo e evento_decisao continuam
--- vivos (o Planejamento os usa).
+-- A função que roda por GATILHO em todo INSERT de events é a da 083
+-- (campos tipados) e NÃO toca em evento_guia/metodo_guia em código — o
+-- guia virou os campos lá atrás. Uma versão anterior DESTA migração a
+-- substituiu por engano por uma cópia da 065 sem faixas, sem ativo e sem
+-- campos; o bloco abaixo é a 083 verbatim, restaurando quem aplicou
+-- aquela versão. (Medido antes: nenhum evento criado no intervalo.)
 create or replace function public.instanciar_metodo_evento(p_event_id uuid)
 returns void
 language plpgsql
@@ -119,10 +119,6 @@ set search_path = public
 as $$
 declare
   v_empresa uuid;
-  -- text, não o domínio: castar events.type para tipo_evento_catalogo
-  -- lançaria erro e abortaria a criação do evento se algum type estivesse
-  -- fora dos 9 valores. Comparando como texto, um tipo desconhecido apenas
-  -- não casa nenhum template (no-op), nunca quebra o insert.
   v_tipo    text;
 begin
   select empresa_id, type into v_empresa, v_tipo
@@ -132,31 +128,45 @@ begin
     return;
   end if;
 
-  -- já instanciado?
   if exists (select 1 from public.evento_objetivo where event_id = p_event_id) then
     return;
   end if;
 
-  -- Objetivos
   insert into public.evento_objetivo
-    (event_id, empresa_id, objetivo_template_id, nome, descricao, ordem)
-  select p_event_id, v_empresa, o.id, o.nome, o.descricao, o.ordem
+    (event_id, empresa_id, objetivo_template_id, nome, descricao, ordem,
+     ativo, faixa_pct_min, faixa_pct_ideal, faixa_pct_max)
+  select p_event_id, v_empresa, o.id, o.nome, o.descricao, o.ordem,
+         o.ativo_padrao, o.faixa_pct_min, o.faixa_pct_ideal, o.faixa_pct_max
   from public.metodo_objetivo o
   where o.empresa_id = v_empresa and o.tipo_evento::text = v_tipo;
 
-  -- Decisões, ligadas ao objetivo instanciado correspondente
   insert into public.evento_decisao
     (evento_objetivo_id, event_id, empresa_id, decisao_template_id,
-     titulo, descricao, responsavel, offset_ideal_dias, prioridade, ordem)
+     titulo, descricao, responsavel, offset_ideal_dias,
+     offset_min_dias, offset_max_dias, prioridade, ordem)
   select eo.id, p_event_id, v_empresa, d.id,
-         d.titulo, d.descricao, d.responsavel, d.offset_ideal_dias, d.prioridade, d.ordem
+         d.titulo, d.descricao, d.responsavel, d.offset_ideal_dias,
+         d.offset_min_dias, d.offset_max_dias, d.prioridade, d.ordem
   from public.metodo_decisao d
   join public.metodo_objetivo o on o.id = d.objetivo_id
   join public.evento_objetivo eo
     on eo.event_id = p_event_id and eo.objetivo_template_id = o.id
   where o.empresa_id = v_empresa and o.tipo_evento::text = v_tipo;
 
-  -- (o bloco dos guias saiu junto com metodo_guia/evento_guia — 120)
+  -- Campos tipados nascem vazios: o formulário É o roteiro de conversa.
+  -- (evento_guia não é mais copiado — o guia virou os campos.)
+  insert into public.evento_campo_valor
+    (evento_decisao_id, event_id, empresa_id, campo_template_id,
+     codigo, label, tipo, opcoes, unidade, ordem)
+  select ed.id, p_event_id, v_empresa, c.id,
+         c.codigo, c.label, c.tipo, c.opcoes, c.unidade, c.ordem
+  from public.metodo_campo c
+  join public.evento_decisao ed
+    on ed.event_id = p_event_id and ed.decisao_template_id = c.decisao_id;
+
+  -- Aplica deltas de arquétipo (se o evento já nasceu com escala/cenário) e
+  -- redistribui prazos (a aplicação chama a 4D no final).
+  perform public.aplicar_arquetipos_evento(p_event_id);
 end $$;
 
 drop table if exists public.budget_items cascade;
@@ -217,6 +227,6 @@ select 'fase_atual saiu',
                    where table_schema = 'public' and table_name = 'events'
                      and column_name = 'fase_atual')
 union all
-select 'criar evento continua funcionando (gatilho sem guias)',
+select 'criar evento instancia campos tipados (versão 083)',
        (pg_get_functiondef('public.instanciar_metodo_evento(uuid)'::regprocedure)
-         not like '%evento_guia%');
+         like '%evento_campo_valor%');

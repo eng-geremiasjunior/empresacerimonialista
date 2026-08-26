@@ -54,6 +54,9 @@ export function RespostaPergunta({
     pergunta.valor === null ? "" : String(pergunta.valor)
   );
   const [salvo, setSalvo] = useState(pergunta.valor !== null);
+  const [valorSalvo, setValorSalvo] = useState(
+    pergunta.valor === null ? "" : String(pergunta.valor)
+  );
   const [ocupado, setOcupado] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
 
@@ -101,6 +104,7 @@ export function RespostaPergunta({
       if (r.conflito) {
         // alguém gravou primeiro: mostra o valor novo, não sobrescreve
         setValor(r.valor_atual ?? "");
+        setValorSalvo(r.valor_atual ?? "");
         setVersao(r.updated_at ?? versao);
         setAviso("Sua cerimonialista atualizou esta resposta agora há pouco — confira o valor novo antes de mudar.");
         return;
@@ -110,10 +114,13 @@ export function RespostaPergunta({
     }
     setVersao(r.updated_at);
     setSalvo(r.valor !== null);
+    setValorSalvo(r.valor === null ? "" : String(r.valor));
     router.refresh();
   }
 
   const prazo = prazoPortal(pergunta.prazoPrevisto);
+  // há algo diferente do que está salvo?
+  const sujo = valor.trim() !== valorSalvo.trim();
 
   return (
     <div
@@ -183,7 +190,6 @@ export function RespostaPergunta({
           value={valor}
           disabled={ocupado}
           onChange={(e) => setValor(e.target.value)}
-          onBlur={(e) => void gravar(e.target.value)}
           style={campoStyle}
         />
       ) : pergunta.tipo === "numero" || pergunta.tipo === "moeda" ? (
@@ -194,7 +200,7 @@ export function RespostaPergunta({
           value={valor}
           disabled={ocupado}
           onChange={(e) => setValor(e.target.value)}
-          onBlur={(e) => void gravar(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && void gravar(valor)}
           style={campoStyle}
         />
       ) : (
@@ -205,14 +211,44 @@ export function RespostaPergunta({
           maxLength={4000}
           disabled={ocupado}
           onChange={(e) => setValor(e.target.value)}
-          onBlur={(e) => void gravar(e.target.value)}
           style={{ ...campoStyle, resize: "vertical" }}
         />
+      )}
+
+      {/* Digitou, decide quando manda. Antes o campo gravava no blur —
+          na prática, "encostou fora, foi": ela parava para pensar no meio
+          da frase e a resposta viajava incompleta para a cerimonialista.
+          Só os selects continuam imediatos: escolher numa lista JÁ É o
+          gesto de confirmação. */}
+      {pergunta.tipo !== "sim_nao" && pergunta.tipo !== "escolha" && sujo && (
+        <button
+          type="button"
+          disabled={ocupado}
+          onClick={() => void gravar(valor)}
+          style={{
+            alignSelf: "flex-start",
+            minHeight: "var(--toque-min)",
+            border: "1px solid var(--cor-borda-botao-ouro)",
+            borderRadius: "var(--raio-botao)",
+            background: "var(--cor-card-suave)",
+            padding: "10px 22px",
+            fontSize: "var(--ts-botao)",
+            fontFamily: "var(--fonte-corpo)",
+            color: "var(--cor-ouro-texto-hover)",
+            cursor: ocupado ? "wait" : "pointer",
+          }}
+        >
+          {ocupado ? "Enviando…" : "Enviar"}
+        </button>
       )}
 
       {aviso ? (
         <span style={{ fontSize: "var(--ts-desc)", color: "var(--cor-atencao)" }}>
           {aviso}
+        </span>
+      ) : sujo && pergunta.tipo !== "sim_nao" && pergunta.tipo !== "escolha" ? (
+        <span style={{ fontSize: "var(--ts-desc)", color: "var(--cor-texto-suave)" }}>
+          Ainda não enviado.
         </span>
       ) : salvo ? (
         <span style={{ fontSize: "var(--ts-desc)", color: "var(--cor-texto-rotulo)" }}>
