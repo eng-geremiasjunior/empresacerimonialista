@@ -6,7 +6,12 @@
 -- categoria de orçamento (faixas %), prazo é faixa (min/ideal/max) e
 -- arquétipos aplicam delta (ESCALA × CENÁRIO).
 --
--- 16 objetivos-com-decisões (blocos 1–16 do método). NÃO entram:
+-- 17 objetivos-com-decisões (blocos 1–16 do método + Celebrante). O
+-- Celebrante era decisão DENTRO de "Cerimônia religiosa", que nasce
+-- desligada e só liga no cenário igreja — um casamento na praia ficava
+-- sem celebrante em lugar nenhum, e é a primeira pergunta de custo que
+-- a noiva faz. Virou objetivo próprio, sempre ativo, com faixa 1–3%.
+-- NÃO entram:
 --   #17 Reserva de imprevistos — é fatia da verba (campo reserva_pct do
 --       budget), não objetivo. #18 Semana/Dia D e #19 Pós-casamento — são
 --       tarefa/timeline (Organização/Execução), ficam para a próxima etapa.
@@ -52,21 +57,24 @@ begin
     ('cerimonia',  'Cerimônia religiosa',
      'Nasce desligada — liga pelo cenário igreja ou pelo tipo de cerimônia.',
      4,  false, 2,  3,  5),
-    ('decoracao',  'Decoração e flores',             null, 5,  true,  8,  12, 15),
-    ('foto',       'Foto e vídeo',                   null, 6,  true,  10, 12, 15),
-    ('musica',     'Música e atrações',              null, 7,  true,  5,  10, 15),
-    ('noiva',      'Trajes e beleza — noiva',        null, 8,  true,  7,  8,  10),
-    ('noivo',      'Trajes — noivo, padrinhos e daminhas', null, 9, true, 3, 4, 5),
-    ('papelaria',  'Papelaria e convites',           null, 10, true,  3,  4,  5),
-    ('doces',      'Doces, bolo e lembrancinhas',    null, 11, true,  2,  3,  5),
-    ('convidados', 'Convidados e RSVP',              null, 12, true,  null, null, null),
-    ('infra',      'Infraestrutura e logística',     null, 13, true,  3,  5,  8),
-    ('civil',      'Documentação civil',             null, 14, true,  1,  1,  2),
+    ('celebrante', 'Celebrante',
+     'Quem conduz a cerimônia — civil, religiosa ou simbólica.',
+     5,  true,  1,  2,  3),
+    ('decoracao',  'Decoração e flores',             null, 6,  true,  8,  12, 15),
+    ('foto',       'Foto e vídeo',                   null, 7,  true,  10, 12, 15),
+    ('musica',     'Música e atrações',              null, 8,  true,  5,  10, 15),
+    ('noiva',      'Trajes e beleza — noiva',        null, 9,  true,  7,  8,  10),
+    ('noivo',      'Trajes — noivo, padrinhos e daminhas', null, 10, true, 3, 4, 5),
+    ('papelaria',  'Papelaria e convites',           null, 11, true,  3,  4,  5),
+    ('doces',      'Doces, bolo e lembrancinhas',    null, 12, true,  2,  3,  5),
+    ('convidados', 'Convidados e RSVP',              null, 13, true,  null, null, null),
+    ('infra',      'Infraestrutura e logística',     null, 14, true,  3,  5,  8),
+    ('civil',      'Documentação civil',             null, 15, true,  1,  1,  2),
     ('lua_mel',    'Lua de mel',
-     'Fora da verba do evento — rastrear separado.', 15, true, null, null, null),
+     'Fora da verba do evento — rastrear separado.', 16, true, null, null, null),
     ('satelites',  'Eventos satélite',
      'Noivado, chás, despedida, jantar com padrinhos. Fora da verba principal.',
-     16, true,  null, null, null)
+     17, true,  null, null, null)
   ) as v(codigo, nome, descricao, ordem, ativo, fmin, fideal, fmax);
 
   -- ------------------------------------------------------------
@@ -102,12 +110,15 @@ begin
     -- cerimônia religiosa (nasce desligada)
     ('cerimonia', 'igreja_escolher',      'Escolher a igreja',                        'noivos', 300, 270, 365, 85, 1),
     ('cerimonia', 'igreja_reservar',      'Reservar a data na igreja',                'ambos',  290, 260, 350, 84, 2),
-    ('cerimonia', 'celebrante_contratar', 'Contratar o celebrante',                   'ambos',  270, 180, 270, 80, 3),
-    ('cerimonia', 'coral_contratar',      'Contratar coral ou músicos da cerimônia',  'ambos',  180, 120, 240, 60, 4),
-    ('cerimonia', 'curso_noivos',         'Fazer o curso de noivos',                  'noivos', 120,  60, 180, 42, 5),
-    ('cerimonia', 'cerimonia_musicas',    'Definir as músicas da cerimônia',          'noivos',  60,  45,  90, 30, 6),
-    ('cerimonia', 'leituras',             'Escolher leituras e salmos',               'noivos',  45,  30,  60, 25, 7),
-    ('cerimonia', 'ensaio_igreja',        'Fazer o ensaio na igreja',                 'ambos',    7,   7,  14, 12, 8),
+    ('cerimonia', 'coral_contratar',      'Contratar coral ou músicos da cerimônia',  'ambos',  180, 120, 240, 60, 3),
+    ('cerimonia', 'curso_noivos',         'Fazer o curso de noivos',                  'noivos', 120,  60, 180, 42, 4),
+    ('cerimonia', 'cerimonia_musicas',    'Definir as músicas da cerimônia',          'noivos',  60,  45,  90, 30, 5),
+    ('cerimonia', 'leituras',             'Escolher leituras e salmos',               'noivos',  45,  30,  60, 25, 6),
+    ('cerimonia', 'ensaio_igreja',        'Fazer o ensaio na igreja',                 'ambos',    7,   7,  14, 12, 7),
+    -- celebrante (objetivo próprio — casamento civil e simbólico também têm)
+    ('celebrante', 'celebrante_orcar',     'Buscar referências e orçar celebrantes',        'ambos', 300, 240, 330, 82, 1),
+    ('celebrante', 'celebrante_contratar', 'Contratar o celebrante',                        'ambos', 270, 180, 300, 80, 2),
+    ('celebrante', 'roteiro_cerimonia',    'Alinhar o roteiro da cerimônia com o celebrante','ambos',  60,  45,  90, 30, 3),
     -- decoração (briefing → orçar/portfólio → contratar)
     ('decoracao', 'decoracao_briefing',  'Fazer o briefing de decoração',            'ambos',  280, 240, 300, 83, 1),
     ('decoracao', 'decoracao_orcar',     'Conhecer portfólios e orçar decoração',    'ambos',  270, 240, 300, 82, 2),
@@ -247,8 +258,10 @@ begin
     ('igreja_escolher', 'igreja_em_obras',       'A igreja está em obras',                'sim_nao', '', '', 4, '', ''),
     ('igreja_escolher', 'documentacao_exigida',  'Documentação exigida',                  'texto',   '', '', 5, '', ''),
     ('igreja_reservar', 'data_reserva', 'Data reservada', 'data', '', '', 1, '', ''),
+    ('celebrante_orcar', 'referencias_celebrante', 'Referências de celebrantes', 'texto', '', '', 1, '', ''),
     ('celebrante_contratar', 'fornecedor',       'Fornecedor',       'fornecedor', '', '', 1, '', ''),
     ('celebrante_contratar', 'valor_contratado', 'Valor contratado', 'moeda',      '', '', 2, '', ''),
+    ('roteiro_cerimonia', 'roteiro_aprovado', 'Roteiro aprovado', 'anexo', '', '', 1, '', ''),
     ('coral_contratar', 'fornecedor',       'Fornecedor',       'fornecedor', '', '', 1, '', ''),
     ('coral_contratar', 'valor_contratado', 'Valor contratado', 'moeda',      '', '', 2, '', ''),
     ('cerimonia_musicas', 'lista_musicas', 'Músicas (entrada, cortejo, alianças, saída)', 'texto', '', '', 1, '', ''),
@@ -500,11 +513,106 @@ end $$;
 -- ------------------------------------------------------------
 -- Eventos já criados NÃO são re-instanciados aqui (a instância é snapshot);
 -- para os de teste, o script de verificação limpa e re-instancia.
-do $$
+do $
 declare e record;
 begin
   for e in select id from public.empresas loop
     perform public.semear_metodo_casamento(e.id);
     perform public.semear_tarefas_metodo_casamento(e.id);
   end loop;
-end $$;
+end $;
+
+-- ------------------------------------------------------------
+-- 7) Celebrante nos eventos JÁ instanciados
+-- ------------------------------------------------------------
+-- A instância é snapshot: re-semear o template não toca evento nenhum.
+-- Sem este bloco, o objetivo novo só existiria para eventos criados
+-- daqui em diante — e o casamento que motivou o ajuste ficaria sem.
+-- Convergente: o unique (event_id, objetivo_template_id) e o "not
+-- exists" seguram a segunda execução.
+do $
+declare
+  ev record;
+  v_obj  public.metodo_objetivo%rowtype;
+  v_novo uuid;
+begin
+  for ev in
+    select e.id, e.empresa_id
+    from public.events e
+    where e.type = 'casamento'
+      and exists (select 1 from public.evento_objetivo eo where eo.event_id = e.id)
+      -- pelo NOME, não pelo template: o re-seed apaga os templates e o
+      -- FK das instâncias vira null (on delete set null) — checar pelo
+      -- join deixaria um segundo Celebrante entrar na execução seguinte
+      and not exists (
+        select 1 from public.evento_objetivo eo
+        where eo.event_id = e.id and eo.nome = 'Celebrante'
+      )
+  loop
+    select o.* into v_obj
+    from public.metodo_objetivo o
+    where o.empresa_id = ev.empresa_id
+      and o.tipo_evento = 'casamento'
+      and o.codigo = 'celebrante';
+    if v_obj.id is null then continue; end if;
+
+    insert into public.evento_objetivo
+      (event_id, empresa_id, objetivo_template_id, nome, descricao, ordem,
+       ativo, faixa_pct_min, faixa_pct_ideal, faixa_pct_max)
+    values
+      (ev.id, ev.empresa_id, v_obj.id, v_obj.nome, v_obj.descricao, v_obj.ordem,
+       v_obj.ativo_padrao, v_obj.faixa_pct_min, v_obj.faixa_pct_ideal, v_obj.faixa_pct_max)
+    returning id into v_novo;
+
+    insert into public.evento_decisao
+      (evento_objetivo_id, event_id, empresa_id, decisao_template_id,
+       titulo, descricao, responsavel, offset_ideal_dias,
+       offset_min_dias, offset_max_dias, prioridade, ordem)
+    select v_novo, ev.id, ev.empresa_id, d.id,
+           d.titulo, d.descricao, d.responsavel, d.offset_ideal_dias,
+           d.offset_min_dias, d.offset_max_dias, d.prioridade, d.ordem
+    from public.metodo_decisao d
+    where d.objetivo_id = v_obj.id;
+
+    insert into public.evento_campo_valor
+      (event_id, empresa_id, evento_decisao_id, campo_template_id,
+       codigo, label, tipo, opcoes, unidade, ordem)
+    select ev.id, ev.empresa_id, ed.id, c.id,
+           c.codigo, c.label, c.tipo, c.opcoes, c.unidade, c.ordem
+    from public.metodo_campo c
+    join public.metodo_decisao d on d.id = c.decisao_id
+    join public.evento_decisao ed
+      on ed.event_id = ev.id and ed.decisao_template_id = d.id
+    where d.objetivo_id = v_obj.id;
+  end loop;
+end $;
+
+-- ------------------------------------------------------------
+-- Conferência — todas as linhas devem voltar `true`.
+-- ------------------------------------------------------------
+select 'todas as empresas têm o objetivo Celebrante' as item,
+       not exists (
+         select 1 from public.empresas e
+         where not exists (
+           select 1 from public.metodo_objetivo o
+           where o.empresa_id = e.id and o.tipo_evento = 'casamento'
+             and o.codigo = 'celebrante'
+         )
+       ) as ok
+union all
+select 'celebrante tem as 3 decisões no template',
+       (select count(*) = 3 * (select count(*) from public.empresas)
+        from public.metodo_decisao d
+        join public.metodo_objetivo o on o.id = d.objetivo_id
+        where o.codigo = 'celebrante')
+union all
+select 'todo casamento instanciado ganhou o Celebrante',
+       not exists (
+         select 1 from public.events e
+         where e.type = 'casamento'
+           and exists (select 1 from public.evento_objetivo eo where eo.event_id = e.id)
+           and not exists (
+             select 1 from public.evento_objetivo eo
+             where eo.event_id = e.id and eo.nome = 'Celebrante'
+           )
+       );
