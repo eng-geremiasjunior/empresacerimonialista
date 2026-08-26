@@ -205,6 +205,7 @@ type Quadro = {
 };
 
 export function MapaMental({
+  tipoEvento,
   objetivos,
   clienteNome,
   localEvento,
@@ -217,6 +218,7 @@ export function MapaMental({
   onIrParaObjetivo,
   onIrParaDecisao,
 }: {
+  tipoEvento: string;
   objetivos: Objetivo[];
   clienteNome: string | null;
   localEvento: string | null;
@@ -229,6 +231,21 @@ export function MapaMental({
   onIrParaObjetivo: (objetivoId: string) => void;
   onIrParaDecisao: (d: Decisao) => void;
 }) {
+  // "Casamento" era fixo no título e no nó central — numa debutante lia
+  // errado. O rótulo agora vem do tipo do evento.
+  const ROTULO_TIPO: Record<string, string> = {
+    casamento: "Casamento",
+    debutante: "15 anos",
+    bodas: "Bodas",
+    aniversario: "Aniversário",
+    formatura: "Formatura",
+    batizado: "Batizado",
+    cha_revelacao: "Chá revelação",
+    corporativo: "Evento",
+    outro: "Evento",
+  };
+  const rotuloTipo = ROTULO_TIPO[tipoEvento] ?? "Evento";
+
   const { nos, g } = useMemo(() => montarNos(objetivos), [objetivos]);
   const n = nos.length;
 
@@ -305,7 +322,7 @@ export function MapaMental({
         }
         return {
           eyebrow: playing ? "Panorama" : "Panorama · só leitura",
-          titulo: clienteNome ? `Casamento ${clienteNome}` : "Panorama do evento",
+          titulo: clienteNome ? `${rotuloTipo} ${clienteNome}` : "Panorama do evento",
           linhas,
           plain: linhas.map((l) => l.texto).join(" "),
         };
@@ -700,7 +717,7 @@ export function MapaMental({
                       color: "#fff",
                     }}
                   >
-                    {clienteNome ?? "Casamento"}
+                    {clienteNome ?? rotuloTipo}
                   </div>
                   {(dataEvento || localEvento) && (
                     <div style={linhaCentro}>
@@ -786,6 +803,7 @@ export function MapaMental({
             </div>
           ) : (
             <ArvoreLista
+              rotuloTipo={rotuloTipo}
               nos={nos}
               clienteNome={clienteNome}
               verbaTotal={verba.total}
@@ -1199,6 +1217,7 @@ function IconeCopiloto() {
 // Sub-modo árvore: mesma informação em lista, na ordem de prioridade, e
 // recebendo o mesmo holofote da apresentação.
 function ArvoreLista({
+  rotuloTipo,
   nos,
   clienteNome,
   verbaTotal,
@@ -1208,6 +1227,7 @@ function ArvoreLista({
   reduzir,
   onIr,
 }: {
+  rotuloTipo: string;
   nos: NoObjetivo[];
   clienteNome: string | null;
   verbaTotal: number | null;
@@ -1242,7 +1262,7 @@ function ArvoreLista({
             color: "#fff",
           }}
         >
-          {clienteNome ?? "Casamento"}
+          {clienteNome ?? rotuloTipo}
         </span>
         <span style={{ fontFamily: F_MONO, fontSize: 11, color: "rgba(255,255,255,.7)" }}>
           {[

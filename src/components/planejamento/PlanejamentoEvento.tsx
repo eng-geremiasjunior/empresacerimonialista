@@ -89,6 +89,7 @@ export function PlanejamentoEvento({
   escala,
   cenario,
   clienteNome,
+  tipoEvento,
   localEvento,
 }: {
   eventId: string;
@@ -98,6 +99,7 @@ export function PlanejamentoEvento({
   escala: string | null;
   cenario: string | null;
   clienteNome: string | null;
+  tipoEvento: string;
   localEvento: string | null;
 }) {
   const router = useRouter();
@@ -577,6 +579,7 @@ export function PlanejamentoEvento({
       {/* miolo — só ele troca */}
       {mapaAberto ? (
         <MapaMental
+          tipoEvento={tipoEvento}
           objetivos={plano.objetivos}
           clienteNome={clienteNome}
           localEvento={localEvento}
@@ -591,6 +594,7 @@ export function PlanejamentoEvento({
         />
       ) : modo === "foco" ? (
         <ModoFoco
+          tipoEvento={tipoEvento}
           criticas={plano.criticas}
           objetivos={plano.objetivos}
           mesAtualRotulo={mesAtualRotulo}
@@ -646,11 +650,15 @@ export function PlanejamentoEvento({
       {/* drawer da decisão (§10) — a timeline atrás não se move */}
       {drawer && (
         <DrawerDecisao
+          tipoEvento={tipoEvento}
           decisao={drawer.decisao}
           objetivoNome={drawer.objetivoNome}
           eventId={eventId}
           suppliers={suppliers}
-          ehDataDoCasamento={drawer.decisao.codigo === "data"}
+          ehDataDoCasamento={
+            drawer.decisao.codigo === "data" ||
+            drawer.decisao.codigo === "deb_data"
+          }
           dataEvento={plano.dataEvento}
           onFechar={fecharDrawer}
           onSalvarCampo={acaoSalvarCampo}

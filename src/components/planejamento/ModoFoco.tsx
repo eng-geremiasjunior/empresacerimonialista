@@ -25,11 +25,14 @@ import {
 } from "./celebra";
 import { resumoCampos, type SupplierRef } from "./DrawerDecisao";
 
-const RESP: Record<string, string> = {
-  noivos: "noivos",
-  cerimonialista: "cerimonialista",
-  ambos: "ambos",
-};
+// "noivos" é o vocabulário do CHECK no banco; o rótulo é por tipo de
+// evento — numa debutante, quem decide é a família.
+function respLabel(resp: string, tipoEvento: string): string {
+  if (resp === "noivos") {
+    return tipoEvento === "casamento" ? "noivos" : "família";
+  }
+  return resp;
+}
 
 // ------------------------------------------------------------------
 // Fila "Decidir agora"
@@ -131,11 +134,13 @@ function CardCritica({
 // ------------------------------------------------------------------
 
 function LinhaDecisao({
+  tipoEvento,
   decisao,
   suppliers,
   onAbrir,
   onReativar,
 }: {
+  tipoEvento: string;
   decisao: Decisao;
   suppliers: SupplierRef[];
   onAbrir: () => void;
@@ -158,7 +163,7 @@ function LinhaDecisao({
           ? vazios > 0
             ? `${vazios} de ${decisao.campos.length} campos vazios`
             : `${decisao.campos.length} campos preenchidos`
-          : RESP[decisao.responsavel] ?? "");
+          : respLabel(decisao.responsavel, tipoEvento));
   const prazo = na || ev === "decidida" ? null : prazoRelativo(decisao.prazoPrevisto);
 
   return (
@@ -270,6 +275,7 @@ function LinhaDecisao({
 // ------------------------------------------------------------------
 
 function LinhaObjetivo({
+  tipoEvento,
   objetivo,
   expandido,
   suppliers,
@@ -280,6 +286,7 @@ function LinhaObjetivo({
   onDesligar,
   compactar,
 }: {
+  tipoEvento: string;
   objetivo: Objetivo;
   expandido: boolean;
   suppliers: SupplierRef[];
@@ -353,7 +360,7 @@ function LinhaObjetivo({
             }}
           >
             objetivo + categoria de verba ·{" "}
-            {RESP[objetivo.responsavelDominante] ?? "ambos"} · previsto{" "}
+            {respLabel(objetivo.responsavelDominante, tipoEvento)} · previsto{" "}
             {brl(objetivo.valorPrevisto)}
           </span>
         </div>
@@ -417,6 +424,7 @@ function LinhaObjetivo({
         >
           {objetivo.decisoes.map((d) => (
             <LinhaDecisao
+              tipoEvento={tipoEvento}
               key={d.id}
               decisao={d}
               suppliers={suppliers}
@@ -557,6 +565,7 @@ function LinhaObjetivo({
 // ------------------------------------------------------------------
 
 export function ModoFoco({
+  tipoEvento,
   criticas,
   objetivos,
   mesAtualRotulo,
@@ -570,6 +579,7 @@ export function ModoFoco({
   onCriarObjetivo,
   onAlternarObjetivo,
 }: {
+  tipoEvento: string;
   criticas: DecisaoCritica[];
   objetivos: Objetivo[];
   mesAtualRotulo: string;
@@ -706,6 +716,7 @@ export function ModoFoco({
                   </div>
                   {g.lista.map((o) => (
                     <LinhaObjetivo
+                      tipoEvento={tipoEvento}
                       key={o.id}
                       objetivo={o}
                       expandido={objetivosExpandidos.has(o.id)}

@@ -40,11 +40,14 @@ import type { GuiaDeEstilo } from "@/lib/guia-shared";
  */
 export const CODIGO_DECISAO_GUIA = "decoracao_briefing";
 
-const RESP: Record<string, string> = {
-  noivos: "noivos",
-  cerimonialista: "cerimonialista",
-  ambos: "ambos",
-};
+// "noivos" é o vocabulário do CHECK no banco; o rótulo é por tipo de
+// evento — numa debutante, quem decide é a família.
+function respLabel(resp: string, tipoEvento: string): string {
+  if (resp === "noivos") {
+    return tipoEvento === "casamento" ? "noivos" : "família";
+  }
+  return resp;
+}
 
 export type SupplierRef = { id: string; name: string };
 
@@ -619,6 +622,7 @@ export type LinhaDiffDrawer = {
 };
 
 export function DrawerDecisao({
+  tipoEvento,
   decisao,
   objetivoNome,
   eventId,
@@ -640,6 +644,7 @@ export function DrawerDecisao({
   guia,
   acoesGuia,
 }: {
+  tipoEvento: string;
   decisao: Decisao;
   objetivoNome: string;
   eventId: string;
@@ -691,7 +696,7 @@ export function DrawerDecisao({
 
   const metaPartes = [
     idCurto(decisao.id),
-    RESP[decisao.responsavel] ?? decisao.responsavel,
+    respLabel(decisao.responsavel, tipoEvento),
   ];
   if (na) {
     metaPartes.push("marcada como não se aplica");

@@ -18,7 +18,7 @@ export default async function EventoPlanejamentoPage({
     // contexto); a data alimenta os prazos relativos.
     supabase
       .from("events")
-      .select("date, escala, cenario, location, city, clients(name)")
+      .select("type, date, escala, cenario, location, city, clients(name)")
       .eq("id", eventId)
       .single(),
     // para os campos tipo "fornecedor" das decisões de contratar
@@ -42,6 +42,7 @@ export default async function EventoPlanejamentoPage({
         escala={ev?.escala ?? null}
         cenario={ev?.cenario ?? null}
         clienteNome={cliente?.name ?? null}
+        tipoEvento={(ev?.type as string) ?? "casamento"}
         localEvento={ev?.location ?? ev?.city ?? null}
       />
     </>
