@@ -76,7 +76,7 @@ export async function criarModelo(
   });
 
   if (error) return { error: "Não foi possível salvar o modelo." };
-  revalidatePath("/orcamentos/modelos");
+  revalidatePath("/catalogo/precificacao");
   return { success: true };
 }
 
@@ -108,7 +108,7 @@ export async function editarModelo(
     .eq("id", modeloId);
 
   if (error) return { error: "Não foi possível salvar o modelo." };
-  revalidatePath("/orcamentos/modelos");
+  revalidatePath("/catalogo/precificacao");
   return { success: true };
 }
 
@@ -118,7 +118,7 @@ export async function setModeloAtivo(modeloId: string, ativo: boolean) {
     .from("modelos_precificacao")
     .update({ ativo })
     .eq("id", modeloId);
-  revalidatePath("/orcamentos/modelos");
+  revalidatePath("/catalogo/precificacao");
 }
 
 // Excluir SÓ quando o modelo nunca foi usado num orçamento (a UI já
@@ -146,6 +146,6 @@ export async function excluirModelo(
     .eq("id", modeloId);
 
   if (error) return { error: "Não foi possível excluir o modelo." };
-  revalidatePath("/orcamentos/modelos");
+  revalidatePath("/catalogo/precificacao");
   return { success: true };
 }

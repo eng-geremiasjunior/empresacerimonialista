@@ -59,8 +59,25 @@ export default async function CatalogoPage() {
         </p>
       )}
 
-      {/* Paletas ficam FORA da divisão por tipo: a mesma combinação de
-          cor serve casamento e debutante, e é a empresa que a define. */}
+      {/* Precificação e Paletas ficam FORA da divisão por tipo: valem
+          para a empresa inteira. */}
+      <Link
+        href="/catalogo/precificacao"
+        className="group flex items-start gap-3 rounded-xl border border-gray-200 bg-white p-5 transition-colors hover:border-gray-300 hover:bg-gray-50"
+      >
+        <span className="text-xl" aria-hidden>
+          🧮
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-sm font-semibold text-gray-900">
+            Precificação de orçamento
+          </h2>
+          <p className="mt-0.5 text-xs text-gray-500">
+            Blocos de preço para montar orçamentos — a cliente não vê
+          </p>
+        </div>
+      </Link>
+
       <Link
         href="/catalogo/paletas"
         className="group flex items-start gap-3 rounded-xl border border-gray-200 bg-white p-5 transition-colors hover:border-gray-300 hover:bg-gray-50"

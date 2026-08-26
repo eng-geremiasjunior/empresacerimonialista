@@ -10,7 +10,7 @@ import {
   criarModelo,
   editarModelo,
   type ModeloFormState,
-} from "@/app/(app)/orcamentos/modelos/actions";
+} from "@/app/(app)/catalogo/precificacao/actions";
 import {
   CATEGORIAS_MODELO,
   calcularValorModelo,

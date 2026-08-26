@@ -19,7 +19,7 @@ import { ModeloPrecificacaoFormModal } from "@/components/orcamentos/ModeloPreci
 import {
   excluirModelo,
   setModeloAtivo,
-} from "@/app/(app)/orcamentos/modelos/actions";
+} from "@/app/(app)/catalogo/precificacao/actions";
 import { categoriaLabel } from "@/lib/fornecedores-shared";
 import {
   CATEGORIAS_MODELO,

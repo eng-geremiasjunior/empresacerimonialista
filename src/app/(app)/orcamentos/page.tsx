@@ -193,13 +193,11 @@ export default async function OrcamentosPage({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href="/orcamentos/modelos"
-            className="rounded-[9px] border bg-white px-3.5 py-2 text-[13.5px] transition-colors hover:bg-[#F7F7F5]"
-            style={{ borderColor: CORES.borda, color: CORES.texto }}
-          >
-            Modelos de precificação
-          </Link>
+          {/* "Modelos de precificação" morava aqui e competia com o menu
+              Catálogo — duas portas com nomes diferentes para a mesma
+              pergunta ("o que eu vendo e por quanto?"). Agora é a seção
+              Precificação DENTRO do Catálogo; o construtor de orçamento
+              continua oferecendo os modelos na hora de montar. */}
           <Link
             href="/orcamentos/novo"
             className="rounded-[9px] px-4 py-2 text-[13.5px] transition-colors hover:bg-black"
