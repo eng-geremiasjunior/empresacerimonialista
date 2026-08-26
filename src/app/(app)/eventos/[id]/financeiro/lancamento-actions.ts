@@ -138,12 +138,42 @@ export async function salvarVerbaTotal(
   valor: number | null
 ): Promise<Resultado> {
   const supabase = createClient();
-  const { error } = await supabase
-    .from("events")
-    .update({ verba_total: valor })
-    .eq("id", eventId);
-  if (error) return { error: "Não foi possível salvar a verba." };
+
+  // Uma verba só (121): quando o Planejamento está instanciado, a fonte
+  // da verdade é o campo tipado 'verba_total' — gravar por ele mantém a
+  // versão, o conflito com a noiva e o termômetro, e o gatilho espelha
+  // para events.verba_total. Antes cada tela escrevia num lugar e os
+  // dois números divergiam de verdade (medido: 1.500.000 × 450.000 no
+  // mesmo evento).
+  const { data: campo } = await supabase
+    .from("evento_campo_valor")
+    .select("id")
+    .eq("event_id", eventId)
+    .eq("codigo", "verba_total")
+    .maybeSingle();
+
+  if (campo) {
+    const { data, error } = await supabase.rpc("portal_escrever_campo", {
+      p_campo_id: campo.id,
+      p_valor: valor,
+      p_updated_at_visto: null,
+    });
+    const r = data as { ok?: boolean } | null;
+    if (error || !r?.ok) {
+      if (error) console.error("[vela:verba]", error.message);
+      return { error: "Não foi possível salvar a verba." };
+    }
+  } else {
+    // Evento sem Planejamento instanciado: só existe a coluna mesmo.
+    const { error } = await supabase
+      .from("events")
+      .update({ verba_total: valor })
+      .eq("id", eventId);
+    if (error) return { error: "Não foi possível salvar a verba." };
+  }
+
   revalidatePath(`/eventos/${eventId}/financeiro`);
+  revalidatePath(`/eventos/${eventId}/planejamento`);
   return { success: true };
 }
 
