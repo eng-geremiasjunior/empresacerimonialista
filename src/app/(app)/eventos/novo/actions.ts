@@ -109,6 +109,35 @@ export async function criarEventoCompleto(
     };
   }
 
+  // Formatura: a resposta "juntos ou separados" vira o campo
+  // celebracao_formato do método (125) — é dele que o hub decide se
+  // oferece a colação em evento próprio, e o checklist do dia decide
+  // quais blocos semear. O instanciar (trigger da criação) já criou a
+  // linha do campo com valor vazio; aqui só se preenche. Se a 125 ainda
+  // não rodou, zero linhas casam e nada quebra.
+  //
+  // undefined = ela NÃO respondeu (o toggle é Sim/Não sem estado
+  // inicial, e "Pular esta etapa" chega aqui sem tocar nele) — o campo
+  // fica em branco para ela decidir no Planejamento. Gravar "Separados"
+  // por omissão registraria uma decisão que ninguém tomou.
+  if (
+    payload.type === "formatura" &&
+    payload.incluirTimeline &&
+    payload.respostas.colacaoJunto !== undefined
+  ) {
+    const formato = payload.respostas.colacaoJunto
+      ? "Juntos (mesmo dia e local)"
+      : "Separados (a colação em outra data)";
+    const { error: erroCampo } = await supabase
+      .from("evento_campo_valor")
+      .update({ valor_opcao: formato })
+      .eq("event_id", data as string)
+      .eq("codigo", "celebracao_formato");
+    if (erroCampo) {
+      console.error("[vela:novo-evento] celebracao_formato:", erroCampo.message);
+    }
+  }
+
   revalidatePath("/eventos");
   revalidatePath("/eventos/dashboard");
   redirect(`/eventos/${data as string}`);

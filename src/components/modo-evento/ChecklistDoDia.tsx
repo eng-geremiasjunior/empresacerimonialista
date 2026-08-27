@@ -11,7 +11,7 @@ import type { ModoTheme } from "@/lib/modo-tema";
 
 export type ItemChecklistDia = {
   id: string;
-  bloco: "montagem" | "cerimonia" | "recepcao" | "desmontagem";
+  bloco: "montagem" | "colacao" | "cerimonia" | "recepcao" | "desmontagem";
   titulo: string;
   ordem: number;
   horario: string | null;
@@ -22,6 +22,7 @@ export type ItemChecklistDia = {
 
 const BLOCOS: { key: ItemChecklistDia["bloco"]; label: string }[] = [
   { key: "montagem", label: "Montagem" },
+  { key: "colacao", label: "Colação" },
   { key: "cerimonia", label: "Cerimônia" },
   { key: "recepcao", label: "Recepção" },
   { key: "desmontagem", label: "Desmontagem" },
@@ -48,9 +49,19 @@ function blocoSugerido(
       const [h, m] = ancora.split(":").map(Number);
       const minAncora = h * 60 + m;
       const minAgora = agora.getHours() * 60 + agora.getMinutes();
+      const temItens = (b: ItemChecklistDia["bloco"]) =>
+        itens.some((i) => i.bloco === b);
       if (minAgora < minAncora - 45) return "montagem";
-      if (minAgora <= minAncora + 90) return "cerimonia";
-      return "recepcao";
+      if (minAgora <= minAncora + 90) {
+        // o bloco solene em torno da âncora: cerimônia no casamento,
+        // colação na formatura; num baile sem parte solene (colação em
+        // outra data), a âncora é a abertura — recepção
+        if (temItens("cerimonia")) return "cerimonia";
+        if (temItens("colacao")) return "colacao";
+        if (temItens("recepcao")) return "recepcao";
+      } else if (temItens("recepcao")) {
+        return "recepcao";
+      }
     }
   }
   for (const b of BLOCOS) if (pendentesEm(b.key)) return b.key;
@@ -166,7 +177,9 @@ export function ChecklistDoDia({
   return (
     <div>
       <div className="flex flex-wrap gap-2">
-        {BLOCOS.map((b) => {
+        {/* só blocos que existem NESTE evento: casamento não tem colação,
+            colação não tem o bloco do baile */}
+        {BLOCOS.filter((b) => itens.some((i) => i.bloco === b.key)).map((b) => {
           const ativo = bloco === b.key;
           const pendentes = pendentesPorBloco[b.key];
           return (

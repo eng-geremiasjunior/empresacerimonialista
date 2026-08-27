@@ -20,7 +20,10 @@ export type {
 } from "@/lib/portal-pessoas-shared";
 export {
   PAPEIS,
+  PAPEIS_POR_TIPO,
   PAPEL_ROTULO,
+  papeisDoTipo,
+  rotuloDoPapel,
   resumirConvidados,
   agruparCortejo,
 } from "@/lib/portal-pessoas-shared";
@@ -57,14 +60,28 @@ export const getConvidados = cache(
 export const getCortejo = cache(
   async (eventId: string): Promise<PessoaCortejo[]> => {
     const supabase = createClient();
-    const { data } = await supabase
+    // `pronuncia` pode não existir ainda (125 pendente) — pede as colunas
+    // uma a uma e degrada sem a nota em vez de derrubar a lista inteira.
+    const res = await supabase
       .from("evento_cortejo_pessoa")
-      .select("id, papel, nome, contato, o_que_leva, responsavel, chegada, ordem")
+      .select(
+        "id, papel, nome, contato, o_que_leva, responsavel, chegada, pronuncia, ordem"
+      )
       .eq("event_id", eventId)
       .order("ordem")
       .order("nome");
+    let data: Record<string, unknown>[] | null = res.data;
+    if (res.error) {
+      const alt = await supabase
+        .from("evento_cortejo_pessoa")
+        .select("id, papel, nome, contato, o_que_leva, responsavel, chegada, ordem")
+        .eq("event_id", eventId)
+        .order("ordem")
+        .order("nome");
+      data = alt.data;
+    }
 
-    return (data ?? []).map((p) => ({
+    return (data ?? []).map((p: Record<string, unknown>) => ({
       id: p.id,
       papel: p.papel,
       nome: p.nome,
@@ -72,7 +89,8 @@ export const getCortejo = cache(
       oQueLeva: p.o_que_leva,
       responsavel: p.responsavel,
       chegada: p.chegada,
-      ordem: p.ordem ?? 0,
+      pronuncia: (p.pronuncia as string | null) ?? null,
+      ordem: (p.ordem as number | null) ?? 0,
     })) as PessoaCortejo[];
   }
 );

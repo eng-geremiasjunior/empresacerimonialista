@@ -22,6 +22,7 @@ export const dynamic = "force-dynamic";
 
 const BLOCOS: { key: string; label: string }[] = [
   { key: "montagem", label: "Montagem" },
+  { key: "colacao", label: "Colação" },
   { key: "cerimonia", label: "Cerimônia" },
   { key: "recepcao", label: "Recepção" },
   { key: "desmontagem", label: "Desmontagem" },

@@ -11,7 +11,9 @@ const PERGUNTAS: Record<string, { key: BoolKey; label: string }[]> = {
     { key: "luaDeMel", label: "Vai planejar a lua de mel? (opcional)" },
   ],
   debutante: [{ key: "cabineFotos", label: "Terá cabine de fotos?" }],
-  formatura: [{ key: "colacaoNoLocal", label: "Colação de grau no local?" }],
+  formatura: [
+    { key: "colacaoJunto", label: "Colação e baile juntos (mesmo dia e local)?" },
+  ],
   corporativo: [{ key: "palestrantes", label: "Terá palestrantes?" }],
   maternidade: [
     { key: "chaRevelacao", label: "É chá revelação (revelação do sexo)?" },

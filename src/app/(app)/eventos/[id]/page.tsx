@@ -22,6 +22,7 @@ import { avatarPublicUrl } from "@/lib/avatar";
 import { StatusOperacional } from "@/components/eventos/StatusOperacional";
 import { ResumoOperacional } from "@/components/eventos/ResumoOperacional";
 import { AcoesRapidas } from "@/components/eventos/AcoesRapidas";
+import { ColacaoLigada, type ElosColacao } from "@/components/eventos/ColacaoLigada";
 import { ProximasAtividades } from "@/components/eventos/ProximasAtividades";
 import { NotasRapidas } from "@/components/eventos/NotasRapidas";
 import { AssistenteEvento } from "@/components/eventos/AssistenteEvento";
@@ -51,6 +52,51 @@ export default async function ResumoPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // Formatura: o elo baile ↔ colação (125). Filho aponta o pai; pai com
+  // colação própria ganha o atalho; turma "separados" sem o evento ainda
+  // ganha o formulário de criar. Fora disso, nada aparece.
+  let elosColacao: ElosColacao | null = null;
+  if (resumo.event.type === "formatura") {
+    const [{ data: euMesmo }, { data: filho }] = await Promise.all([
+      supabase
+        .from("events")
+        .select("evento_pai_id")
+        .eq("id", eventId)
+        .maybeSingle(),
+      supabase
+        .from("events")
+        .select("id, date, name")
+        .eq("evento_pai_id", eventId)
+        .maybeSingle(),
+    ]);
+    if (euMesmo?.evento_pai_id) {
+      const { data: pai } = await supabase
+        .from("events")
+        .select("id, name")
+        .eq("id", euMesmo.evento_pai_id)
+        .maybeSingle();
+      if (pai) {
+        elosColacao = {
+          modo: "filho",
+          paiId: pai.id,
+          paiNome: pai.name ?? "o baile da turma",
+        };
+      }
+    } else if (filho) {
+      elosColacao = { modo: "tem", filhoId: filho.id, filhoData: filho.date };
+    } else {
+      const { data: campo } = await supabase
+        .from("evento_campo_valor")
+        .select("valor_opcao")
+        .eq("event_id", eventId)
+        .eq("codigo", "celebracao_formato")
+        .maybeSingle();
+      if (campo?.valor_opcao === "Separados (a colação em outra data)") {
+        elosColacao = { modo: "oferecer" };
+      }
+    }
+  }
 
   // Notas (degrada se a migração 028 ainda não rodou).
   let notas: NotaEvento[] = [];
@@ -235,7 +281,12 @@ export default async function ResumoPage({
 
       {/* Coluna lateral */}
       <div className="space-y-6">
-        <AcoesRapidas eventId={eventId} eventLabel={eventLabel} />
+        {elosColacao && <ColacaoLigada eventId={eventId} elo={elosColacao} />}
+        <AcoesRapidas
+          eventId={eventId}
+          eventLabel={eventLabel}
+          tipo={resumo.event.type}
+        />
         <AssistenteEvento eventId={eventId} />
         <ProximasAtividades eventId={eventId} proximas={resumo.proximas} />
       </div>

@@ -14,7 +14,7 @@ import {
 
 export type ItemChecklistAjuste = {
   id: string;
-  bloco: "montagem" | "cerimonia" | "recepcao" | "desmontagem";
+  bloco: "montagem" | "colacao" | "cerimonia" | "recepcao" | "desmontagem";
   titulo: string;
   ordem: number;
   horario: string | null;
@@ -27,6 +27,7 @@ export type MembroDaEquipe = { id: string; nome: string };
 
 const BLOCOS: { key: ItemChecklistAjuste["bloco"]; label: string }[] = [
   { key: "montagem", label: "Montagem" },
+  { key: "colacao", label: "Colação" },
   { key: "cerimonia", label: "Cerimônia" },
   { key: "recepcao", label: "Recepção" },
   { key: "desmontagem", label: "Desmontagem" },
@@ -91,7 +92,11 @@ export function ChecklistDoDiaAjuste({
       </p>
 
       <div className="mt-4 grid gap-6 md:grid-cols-2">
-        {BLOCOS.map((b) => {
+        {/* colacao só aparece onde foi semeado (formatura) — nos outros
+            tipos seria uma seção vazia oferecendo itens de outro rito */}
+        {BLOCOS.filter(
+          (b) => b.key !== "colacao" || (porBloco.get("colacao")?.length ?? 0) > 0
+        ).map((b) => {
           const lista = (porBloco.get(b.key) ?? []).filter(
             (i) => i.ativo || mostrarEscondidos
           );

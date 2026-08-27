@@ -8,7 +8,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
-const BLOCOS = ["montagem", "cerimonia", "recepcao", "desmontagem"] as const;
+const BLOCOS = ["montagem", "colacao", "cerimonia", "recepcao", "desmontagem"] as const;
 export type BlocoDia = (typeof BLOCOS)[number];
 
 type Resultado = { error: string } | { success: true };

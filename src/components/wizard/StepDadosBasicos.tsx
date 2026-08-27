@@ -18,7 +18,17 @@ const inputClass =
   "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm focus:border-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-200";
 const labelClass = "mb-1 block text-sm font-medium text-stone-700";
 
+// A âncora do roteiro muda de nome por tipo: no casamento é a cerimônia,
+// na debutante é a entrada dela, na formatura é o início do protocolo
+// (colação, ou o baile quando a colação é em outra data).
+const ROTULO_HORA: Record<string, string> = {
+  casamento: "Hora da cerimônia",
+  debutante: "Hora da entrada",
+  formatura: "Hora de início",
+};
+
 type Props = {
+  tipo: string;
   value: DadosBasicos;
   suggestedName: string;
   onChange: (patch: Partial<DadosBasicos>) => void;
@@ -32,6 +42,7 @@ type Props = {
 };
 
 export function StepDadosBasicos({
+  tipo,
   value,
   suggestedName,
   onChange,
@@ -83,7 +94,7 @@ export function StepDadosBasicos({
           </div>
           <div>
             <label htmlFor="ev_time" className={labelClass}>
-              Hora da cerimônia
+              {ROTULO_HORA[tipo] ?? "Hora de início"}
             </label>
             <input
               id="ev_time"

@@ -7,8 +7,9 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
-  PAPEIS,
-  PAPEL_ROTULO,
+  agruparCortejo,
+  papeisDoTipo,
+  rotuloDoPapel,
   type PessoaCortejo,
 } from "@/lib/portal-pessoas-shared";
 import {
@@ -66,27 +67,32 @@ function Campo({ rotulo, valor }: { rotulo: string; valor: string | null }) {
 
 export function ListaCortejo({
   eventoId,
+  tipo,
   pessoas,
 }: {
   eventoId: string;
+  tipo: string;
   pessoas: PessoaCortejo[];
 }) {
   const router = useRouter();
   const [pendente, iniciar] = useTransition();
+  const papeis = papeisDoTipo(tipo);
+  const ehFormatura = tipo === "formatura";
   const [novo, setNovo] = useState({
-    papel: "padrinho" as PessoaCortejo["papel"],
+    papel: papeis[0],
     nome: "",
     contato: "",
     oQueLeva: "",
     chegada: "",
+    pronuncia: "",
   });
   const [editando, setEditando] = useState<string | null>(null);
 
-  const grupos = PAPEIS.map((papel) => ({
-    papel,
-    rotulo: PAPEL_ROTULO[papel],
-    lista: pessoas.filter((p) => p.papel === papel),
-  })).filter((g) => g.lista.length > 0);
+  const grupos = agruparCortejo(pessoas, tipo).map((g) => ({
+    papel: g.papel,
+    rotulo: g.rotulo,
+    lista: g.pessoas,
+  }));
 
   function adicionar() {
     if (!novo.nome.trim()) return;
@@ -97,8 +103,16 @@ export function ListaCortejo({
         contato: novo.contato,
         oQueLeva: novo.oQueLeva,
         chegada: novo.chegada,
+        pronuncia: novo.pronuncia,
       });
-      setNovo({ ...novo, nome: "", contato: "", oQueLeva: "", chegada: "" });
+      setNovo({
+        ...novo,
+        nome: "",
+        contato: "",
+        oQueLeva: "",
+        chegada: "",
+        pronuncia: "",
+      });
       router.refresh();
     });
   }
@@ -111,13 +125,11 @@ export function ListaCortejo({
           <select
             style={campoStyle}
             value={novo.papel}
-            onChange={(e) =>
-              setNovo({ ...novo, papel: e.target.value as PessoaCortejo["papel"] })
-            }
+            onChange={(e) => setNovo({ ...novo, papel: e.target.value })}
           >
-            {PAPEIS.map((p) => (
+            {papeis.map((p) => (
               <option key={p} value={p}>
-                {PAPEL_ROTULO[p].replace(/s$/, "")}
+                {rotuloDoPapel(p).replace(/s$/, "")}
               </option>
             ))}
           </select>
@@ -128,18 +140,28 @@ export function ListaCortejo({
             onChange={(e) => setNovo({ ...novo, nome: e.target.value })}
             onKeyDown={(e) => e.key === "Enter" && adicionar()}
           />
+          {ehFormatura && (
+            <input
+              style={campoStyle}
+              placeholder="Como se pronuncia (opcional)"
+              value={novo.pronuncia}
+              onChange={(e) => setNovo({ ...novo, pronuncia: e.target.value })}
+            />
+          )}
           <input
             style={campoStyle}
             placeholder="Contato (opcional)"
             value={novo.contato}
             onChange={(e) => setNovo({ ...novo, contato: e.target.value })}
           />
-          <input
-            style={campoStyle}
-            placeholder="O que leva (opcional)"
-            value={novo.oQueLeva}
-            onChange={(e) => setNovo({ ...novo, oQueLeva: e.target.value })}
-          />
+          {!ehFormatura && (
+            <input
+              style={campoStyle}
+              placeholder="O que leva (opcional)"
+              value={novo.oQueLeva}
+              onChange={(e) => setNovo({ ...novo, oQueLeva: e.target.value })}
+            />
+          )}
         </div>
         <button
           type="button"
@@ -172,6 +194,7 @@ export function ListaCortejo({
                   key={p.id}
                   eventoId={eventoId}
                   pessoa={p}
+                  ehFormatura={ehFormatura}
                   ultima={i === g.lista.length - 1}
                   editando={editando === p.id}
                   aoEditar={() => setEditando(editando === p.id ? null : p.id)}
@@ -188,12 +211,14 @@ export function ListaCortejo({
 function PessoaLinha({
   eventoId,
   pessoa,
+  ehFormatura,
   ultima,
   editando,
   aoEditar,
 }: {
   eventoId: string;
   pessoa: PessoaCortejo;
+  ehFormatura: boolean;
   ultima: boolean;
   editando: boolean;
   aoEditar: () => void;
@@ -206,14 +231,24 @@ function PessoaLinha({
     oQueLeva: pessoa.oQueLeva ?? "",
     responsavel: pessoa.responsavel ?? "",
     chegada: pessoa.chegada ?? "",
+    pronuncia: pessoa.pronuncia ?? "",
   });
 
+  const [erroSalvar, setErroSalvar] = useState<string | null>(null);
+
   function salvar() {
+    setErroSalvar(null);
     iniciar(async () => {
-      await atualizarPessoaCortejo(eventoId, pessoa.id, {
+      const r = await atualizarPessoaCortejo(eventoId, pessoa.id, {
         papel: pessoa.papel,
         ...form,
       });
+      // fechar o formulário com o salvamento recusado apagaria a edição
+      // em silêncio
+      if (r.error) {
+        setErroSalvar(r.error);
+        return;
+      }
       aoEditar();
       router.refresh();
     });
@@ -248,6 +283,14 @@ function PessoaLinha({
               onChange={(e) => setForm({ ...form, nome: e.target.value })}
               placeholder="Nome"
             />
+            {ehFormatura && (
+              <input
+                style={campoStyle}
+                value={form.pronuncia}
+                onChange={(e) => setForm({ ...form, pronuncia: e.target.value })}
+                placeholder="Como se pronuncia"
+              />
+            )}
             <input
               style={campoStyle}
               value={form.contato}
@@ -267,6 +310,11 @@ function PessoaLinha({
               placeholder="Quando chega"
             />
           </div>
+          {erroSalvar && (
+            <p style={{ fontSize: "var(--ts-item-desc)", color: "var(--cor-atencao)" }}>
+              {erroSalvar}
+            </p>
+          )}
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             <button type="button" style={botaoStyle} onClick={salvar} disabled={pendente}>
               Salvar
@@ -292,6 +340,7 @@ function PessoaLinha({
       ) : (
         <>
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--esp-2)" }}>
+            <Campo rotulo="Pronúncia" valor={pessoa.pronuncia} />
             <Campo rotulo="Contato" valor={pessoa.contato} />
             <Campo rotulo="Vai levar" valor={pessoa.oQueLeva} />
             <Campo rotulo="Responsável" valor={pessoa.responsavel} />

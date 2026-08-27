@@ -30,33 +30,68 @@ export type ResumoConvidados = {
   comRestricao: number;
 };
 
+// O papel virou texto livre no banco (125) — a lista OFERECIDA é por
+// tipo de evento, aqui. No casamento é o cortejo de entrada; na
+// formatura são as listas da colação (formandos, mesa de honra, quem
+// discursa) e é delas que sai a chamada nominal.
 export type PessoaCortejo = {
   id: string;
-  papel: "padrinho" | "madrinha" | "dama" | "pajem" | "porta_alianca";
+  papel: string;
   nome: string;
   contato: string | null;
   oQueLeva: string | null;
   responsavel: string | null;
   chegada: string | null;
+  /** anotação interna de pronúncia — NUNCA sai em rota pública */
+  pronuncia: string | null;
   ordem: number;
 };
 
-export const PAPEL_ROTULO: Record<PessoaCortejo["papel"], string> = {
+export const PAPEL_ROTULO: Record<string, string> = {
+  // casamento
   padrinho: "Padrinhos",
   madrinha: "Madrinhas",
   dama: "Damas",
   pajem: "Pajens",
   porta_alianca: "Porta-alianças",
+  // formatura
+  formando: "Formandos",
+  paraninfo: "Paraninfo",
+  patrono: "Patrono",
+  orador: "Orador",
+  juramentista: "Juramentista",
+  homenageado: "Homenageados",
+  docente: "Docentes",
+  madrinha_anel: "Madrinha/Padrinho do anel",
+  mesa_de_honra: "Mesa de honra",
 };
 
-/** A ordem em que os grupos aparecem na tela. */
-export const PAPEIS: PessoaCortejo["papel"][] = [
-  "padrinho",
-  "madrinha",
-  "dama",
-  "pajem",
-  "porta_alianca",
-];
+export function rotuloDoPapel(papel: string): string {
+  return PAPEL_ROTULO[papel] ?? papel.replace(/_/g, " ");
+}
+
+/** A ordem em que os grupos aparecem na tela, por tipo de evento. */
+export const PAPEIS_POR_TIPO: Record<string, string[]> = {
+  casamento: ["padrinho", "madrinha", "dama", "pajem", "porta_alianca"],
+  formatura: [
+    "formando",
+    "paraninfo",
+    "patrono",
+    "orador",
+    "juramentista",
+    "homenageado",
+    "docente",
+    "madrinha_anel",
+    "mesa_de_honra",
+  ],
+};
+
+export function papeisDoTipo(tipo: string | null | undefined): string[] {
+  return PAPEIS_POR_TIPO[tipo ?? ""] ?? PAPEIS_POR_TIPO.casamento;
+}
+
+/** @deprecated ordem fixa de casamento — prefira papeisDoTipo(tipo). */
+export const PAPEIS: string[] = PAPEIS_POR_TIPO.casamento;
 
 /** Os números que a cliente (e a cerimonialista) precisam ver. */
 export function resumirConvidados(lista: Convidado[]): ResumoConvidados {
@@ -74,13 +109,26 @@ export function resumirConvidados(lista: Convidado[]): ResumoConvidados {
   };
 }
 
-/** Agrupa por papel, mantendo a ordem dos grupos e omitindo os vazios. */
+/**
+ * Agrupa por papel na ordem do tipo, omitindo os vazios. Papéis fora da
+ * lista do tipo (legado ou texto livre) entram no fim, sem sumir.
+ */
 export function agruparCortejo(
-  lista: PessoaCortejo[]
-): { papel: PessoaCortejo["papel"]; rotulo: string; pessoas: PessoaCortejo[] }[] {
-  return PAPEIS.map((papel) => ({
-    papel,
-    rotulo: PAPEL_ROTULO[papel],
-    pessoas: lista.filter((p) => p.papel === papel),
-  })).filter((g) => g.pessoas.length > 0);
+  lista: PessoaCortejo[],
+  tipo?: string | null
+): { papel: string; rotulo: string; pessoas: PessoaCortejo[] }[] {
+  const conhecidos = papeisDoTipo(tipo);
+  const extras = Array.from(
+    new Set(lista.map((p) => p.papel).filter((p) => !conhecidos.includes(p)))
+  );
+  return [...conhecidos, ...extras]
+    .map((papel) => ({
+      papel,
+      rotulo: rotuloDoPapel(papel),
+      pessoas: lista
+        .filter((p) => p.papel === papel)
+        .slice()
+        .sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome)),
+    }))
+    .filter((g) => g.pessoas.length > 0);
 }

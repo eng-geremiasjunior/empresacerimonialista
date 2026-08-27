@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   ListPlus,
   MessageSquare,
+  ScrollText,
   Users,
   Wallet,
   StickyNote,
@@ -57,9 +58,11 @@ function ItemBotao({
 export function AcoesRapidas({
   eventId,
   eventLabel,
+  tipo,
 }: {
   eventId: string;
   eventLabel: string;
+  tipo?: string;
 }) {
   const router = useRouter();
   const [tarefa, setTarefa] = useState(false);
@@ -113,6 +116,16 @@ export function AcoesRapidas({
           titulo="Abrir financeiro"
           descricao="Contratos, parcelas e despesas"
           href={`/eventos/${eventId}/financeiro`}
+        />
+        <ItemBotao
+          icon={ScrollText}
+          titulo={tipo === "formatura" ? "Papéis e chamada" : "Cortejo"}
+          descricao={
+            tipo === "formatura"
+              ? "Formandos, mesa de honra e a chamada"
+              : "Quem entra, na ordem de entrada"
+          }
+          href={`/eventos/${eventId}/cortejo`}
         />
         <ItemBotao
           icon={StickyNote}

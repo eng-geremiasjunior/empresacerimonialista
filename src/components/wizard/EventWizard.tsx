@@ -150,6 +150,7 @@ export function EventWizard({ clients, preselected, membros, meuMembroId }: Prop
 
       {step === 3 && (
         <StepDadosBasicos
+          tipo={tipo ?? ""}
           value={dados}
           suggestedName={suggestedName}
           onChange={patchDados}

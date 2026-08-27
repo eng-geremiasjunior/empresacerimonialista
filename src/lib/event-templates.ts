@@ -24,7 +24,7 @@ export type WizardRespostas = {
   hasDanceFloor?: boolean; // casamento
   luaDeMel?: boolean; // casamento (opcional)
   cabineFotos?: boolean; // debutante
-  colacaoNoLocal?: boolean; // formatura
+  colacaoJunto?: boolean; // formatura: colação e baile no mesmo dia e local
   palestrantes?: boolean; // corporativo
   chaRevelacao?: boolean; // maternidade
 };
@@ -151,14 +151,17 @@ const TEMPLATES: Record<TemplateEventType, EventTemplate> = {
       "Baile",
       "Pós-evento",
     ],
+    // Fallback (migração 125 pendente). Colação e baile juntos = os dois
+    // blocos; separados = o evento principal é o baile.
     timelineSugerida: [
-      { titulo: "Chegada dos formandos" },
-      { titulo: "Colação de grau", condicao: "colacaoNoLocal" },
-      { titulo: "Juramento" },
-      { titulo: "Entrega de canudos" },
+      { titulo: "Entrada dos formandos", condicao: "colacaoJunto" },
+      { titulo: "Juramento", condicao: "colacaoJunto" },
+      { titulo: "Outorga de grau e chamada nominal", condicao: "colacaoJunto" },
+      { titulo: "Recepção e coquetel" },
+      { titulo: "Abertura oficial do baile" },
       { titulo: "Homenagens" },
-      { titulo: "Baile" },
-      { titulo: "Fotos" },
+      { titulo: "Valsa dos formandos" },
+      { titulo: "Abertura da pista" },
     ],
   },
 
