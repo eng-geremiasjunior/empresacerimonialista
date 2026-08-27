@@ -6,7 +6,7 @@
 // fornecedores (Etapa 2) via polling leve.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Printer } from "lucide-react";
 import {
   createRoteiroItem,
   updateRoteiroItem,
@@ -150,17 +150,30 @@ export function RoteiroList({
               ))}
             </div>
           </div>
-          {!adding && (
-            <button
-              onClick={() => {
-                setAdding(true);
-                setEditingId(null);
-              }}
-              className="flex items-center gap-1.5 rounded-[9px] bg-[#17162A] px-3.5 py-2.5 text-[13px] font-bold text-white transition-opacity hover:opacity-90"
+          <div className="flex items-center gap-2">
+            {/* A prancha de papel: abre a folha do dia numa aba, para ela
+                imprimir na véspera e levar. Não é fallback de internet —
+                é o gesto que ela já faz hoje, com a folha certa. */}
+            <a
+              href={`/imprimir/roteiro/${eventId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 rounded-[9px] border border-stone-300 bg-white px-3 py-2.5 text-[13px] font-semibold text-stone-700 transition-colors hover:bg-stone-50"
             >
-              <Plus size={16} /> Adicionar item
-            </button>
-          )}
+              <Printer size={15} /> Imprimir
+            </a>
+            {!adding && (
+              <button
+                onClick={() => {
+                  setAdding(true);
+                  setEditingId(null);
+                }}
+                className="flex items-center gap-1.5 rounded-[9px] bg-[#17162A] px-3.5 py-2.5 text-[13px] font-bold text-white transition-opacity hover:opacity-90"
+              >
+                <Plus size={16} /> Adicionar item
+              </button>
+            )}
+          </div>
         </div>
 
         {adding && (
