@@ -39,6 +39,8 @@ const ROTAS_PUBLICAS: ((p: string) => boolean)[] = [
   (p) => p.startsWith("/nova-senha"),
   // confirmação de presença do convidado
   (p) => p.startsWith("/confirmar/"),
+  // o site do casamento pelo endereço bonito (/c/ana-e-bruno)
+  (p) => p.startsWith("/c/"),
   // guia de estilo na mão do fornecedor
   (p) => p.startsWith("/guia/"),
   // Central de Solicitações na mão do fornecedor
@@ -104,7 +106,10 @@ export async function updateSession(request: NextRequest) {
   const isLoginPage = pathname.startsWith("/login");
   const isPortalEntrar = pathname.startsWith("/portal/entrar");
   const isAuthConfirm = pathname.startsWith("/auth/confirm");
-  const isPublicConfirmar = pathname.startsWith("/confirmar/");
+  // /c/ junto: a noiva LOGADA no portal abre o próprio site do casamento
+  // pelos dois endereços — sem isto seria expulsa para /portal
+  const isPublicConfirmar =
+    pathname.startsWith("/confirmar/") || pathname.startsWith("/c/");
 
   // ------------------------------------------------------------------
   // As duas casas do sistema não se misturam.

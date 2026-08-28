@@ -1,5 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
 import { ConfirmacaoConvidado } from "@/components/rsvp/ConfirmacaoConvidado";
+import { clienteAnonimoPublico } from "@/lib/supabase/anon-publico";
 import { convitePara, quandoLegivel } from "@/lib/rsvp-convite";
 
 export const dynamic = "force-dynamic";
@@ -30,11 +30,10 @@ export default async function ConfirmarPage({
 }: {
   params: { hash: string };
 }) {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { auth: { persistSession: false } }
-  );
+  // no-store obrigatório: sem ele o Next congela a resposta da RPC e o
+  // convite continua servindo o estado antigo (medido em produção na
+  // porta do evento; mesma classe do bug do guia)
+  const supabase = clienteAnonimoPublico();
 
   const { data } = await supabase.rpc("consultar_convite_convidado", {
     p_hash: params.hash,

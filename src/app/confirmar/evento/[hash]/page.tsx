@@ -1,6 +1,10 @@
-import { createClient } from "@supabase/supabase-js";
+import { cache } from "react";
+import type { Metadata } from "next";
 import { AutocadastroConvidado } from "@/components/rsvp/AutocadastroConvidado";
+import { SiteCasamento } from "@/components/convite/SiteCasamento";
+import { clienteAnonimoPublico } from "@/lib/supabase/anon-publico";
 import { convitePara, quandoLegivel } from "@/lib/rsvp-convite";
+import type { SitePublico } from "@/lib/site-publico-tipos";
 
 export const dynamic = "force-dynamic";
 
@@ -15,25 +19,59 @@ type EventoRsvp = {
 };
 
 /**
- * O link ÚNICO do evento — o que a cliente espalha no WhatsApp ou
- * imprime no convite. Quem chega aqui ainda não está na lista: preenche
- * os próprios dados e entra.
+ * O link ÚNICO do evento — a página que a cliente espalha no WhatsApp.
  *
- * A consulta não devolve a lista nem quantos já confirmaram. Quem abre
- * este endereço vê o evento, não os outros convidados.
+ * Ela cresce em camadas: com o site do casamento PUBLICADO (128), este
+ * endereço vira o site inteiro — informações, mensagem do casal e o RSVP
+ * dentro. Sem site publicado, continua o cartão de confirmação de
+ * sempre. O mesmo link melhora sozinho; nada que já circula quebra.
+ *
+ * A consulta não devolve a lista nem quantos confirmaram — quem abre vê
+ * o evento, nunca os outros convidados.
  */
+const carregarSite = cache(async (hash: string): Promise<SitePublico | null> => {
+  const { data } = await clienteAnonimoPublico().rpc("site_publico", {
+    p_ref: hash,
+  });
+  return (data as SitePublico | null) ?? null;
+});
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { hash: string };
+}): Promise<Metadata> {
+  const site = await carregarSite(params.hash);
+  if (!site) return { title: "Confirmar presença" };
+  const titulo = `${site.evento.anfitrioes} — ${quandoLegivel(site.evento.data, site.evento.hora)}`;
+  return {
+    title: titulo,
+    description: [
+      `Você está convidado para ${convitePara(site.evento.tipo)} ${site.evento.anfitrioes}.`,
+      [site.evento.local, site.evento.cidade].filter(Boolean).join(" · "),
+    ]
+      .filter(Boolean)
+      .join(" "),
+    // aparecer em buscador é decisão do casal, nunca padrão do sistema
+    robots: { index: false, follow: false },
+    openGraph: {
+      title: titulo,
+      images: site.evento.capa_url ? [site.evento.capa_url] : [],
+    },
+  };
+}
+
 export default async function ConfirmarEventoPage({
   params,
 }: {
   params: { hash: string };
 }) {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { auth: { persistSession: false } }
-  );
+  // 1ª camada: o site publicado
+  const site = await carregarSite(params.hash);
+  if (site) return <SiteCasamento dados={site} />;
 
-  const { data } = await supabase.rpc("consultar_rsvp_evento", {
+  // 2ª camada: o cartão de RSVP de sempre
+  const { data } = await clienteAnonimoPublico().rpc("consultar_rsvp_evento", {
     p_hash: params.hash,
   });
   const evento = (data as EventoRsvp[] | null)?.[0] ?? null;

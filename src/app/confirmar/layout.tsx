@@ -1,29 +1,17 @@
 import type { Metadata } from "next";
-import { EB_Garamond, Jost } from "next/font/google";
+import { garamond, jost } from "@/lib/fontes-convite";
 import "../(portal)/portal.css";
 import "./confirmar.css";
+import "./site.css";
 
 // As telas do convidado — a individual (/confirmar/[hash]) e a do link
-// do evento (/confirmar/evento/[hash]).
+// do evento (/confirmar/evento/[hash]), que com o site publicado (128)
+// vira o site do casamento inteiro.
 //
-// As fontes ficam AQUI, no layout, e não em cada página: next/font
-// resolve a fonte na compilação do módulo, e declarar a mesma família em
-// vários arquivos irmãos quebra o build de produção (o dev não reclama).
-
-const garamond = EB_Garamond({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  style: ["normal", "italic"],
-  variable: "--fonte-portal-titulo",
-  display: "swap",
-});
-
-const jost = Jost({
-  subsets: ["latin"],
-  weight: ["300", "400", "500"],
-  variable: "--fonte-portal-corpo",
-  display: "swap",
-});
+// As fontes moram em lib/fontes-convite, declaradas UMA vez e usadas
+// também pelo layout de /c: next/font resolve a fonte na compilação do
+// módulo, e declarar a mesma família em vários arquivos quebra o build
+// de produção (o dev não reclama).
 
 export const metadata: Metadata = {
   title: "Confirmar presença",
