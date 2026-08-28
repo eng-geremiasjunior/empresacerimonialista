@@ -17,7 +17,7 @@ import {
 import { EditarFornecedorButton } from "@/components/fornecedores/EditarFornecedorButton";
 import { LinkDoFornecedor } from "@/components/fornecedores/LinkDoFornecedor";
 import { createClient } from "@/lib/supabase/server";
-import { appUrl } from "@/lib/email";
+import { publicBase } from "@/lib/app-url";
 import { formatCurrency, formatDate } from "@/lib/format";
 import {
   FAIXA_PRECO_CIFRAO,
@@ -139,7 +139,7 @@ export default async function FornecedorDetalhePage({
         supplierId={params.id}
         hashInicial={acesso?.hash ?? null}
         aberturas={acesso?.aberturas ?? 0}
-        baseUrl={appUrl()}
+        baseUrl={publicBase()}
       />
 
       {/* O que ela já pagou a ele, somando os eventos. É o valor praticado

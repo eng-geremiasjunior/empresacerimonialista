@@ -16,7 +16,7 @@ import { formatDate, formatTime } from "@/lib/format";
 
 // A base dos links mora em lib/app-url.ts: o WhatsApp também precisa
 // dela e não deve importar o módulo do Resend para isso.
-import { appUrl } from "@/lib/app-url";
+import { appUrl, linkPublico } from "@/lib/app-url";
 // Reexportado porque oito arquivos ja importavam daqui.
 export { appUrl };
 
@@ -97,7 +97,7 @@ export type EmailConfirmacao = {
 export async function enviarEmailConfirmacao(
   dados: EmailConfirmacao
 ): Promise<{ ok: boolean; error?: string }> {
-  const link = `${appUrl()}/confirmacao/${dados.hash}`;
+  const link = linkPublico(`/confirmacao/${dados.hash}`);
   const detalhes = [
     `<strong>Data:</strong> ${formatDate(dados.eventDate)}`,
     dados.eventTime ? `<strong>Horário:</strong> ${formatTime(dados.eventTime)}` : null,
@@ -150,7 +150,7 @@ export type EmailConviteAgendamento = {
 export async function enviarConviteAgendamentoEmail(
   dados: EmailConviteAgendamento
 ): Promise<{ ok: boolean; error?: string }> {
-  const link = `${appUrl()}/agendar/${dados.hash}`;
+  const link = linkPublico(`/agendar/${dados.hash}`);
   const DIAS = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
   const previa = dados.slots
     .slice(0, 4)

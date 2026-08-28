@@ -6,7 +6,8 @@
 // O e-mail leva o link INDIVIDUAL dele — é assim que ele muda de ideia
 // depois, reusando a mesma tela de confirmação.
 
-import { appUrl, enviarViaResend } from "@/lib/email";
+import { enviarViaResend } from "@/lib/email";
+import { linkPublico } from "@/lib/app-url";
 import { inicioDoDiaBR } from "@/lib/tempo";
 
 const MESES = [
@@ -57,7 +58,7 @@ export async function enviarLembreteConvidado(
   d: EmailConvidado
 ): Promise<{ ok: boolean; error?: string }> {
 
-  const link = `${appUrl()}/confirmar/${d.hash}`;
+  const link = linkPublico(`/confirmar/${d.hash}`);
   const quando = dataLonga(d.data) + (d.hora ? ` · ${d.hora.slice(0, 5)}` : "");
   const onde = [d.local, d.cidade].filter(Boolean).join(" · ");
   const quanto = faltam(d.data);
@@ -112,7 +113,7 @@ export async function enviarEmailConvidado(
   d: EmailConvidado
 ): Promise<{ ok: boolean; error?: string }> {
 
-  const link = `${appUrl()}/confirmar/${d.hash}`;
+  const link = linkPublico(`/confirmar/${d.hash}`);
   const quando = dataLonga(d.data) + (d.hora ? ` · ${d.hora.slice(0, 5)}` : "");
   const onde = [d.local, d.cidade].filter(Boolean).join(" · ");
 

@@ -1,5 +1,5 @@
-import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import { publicBase } from "@/lib/app-url";
 import { createClient } from "@/lib/supabase/server";
 import { getEventoDoPortal } from "@/lib/supabase/portal";
 import { getConvidados, resumirConvidados } from "@/lib/supabase/portal-pessoas";
@@ -24,12 +24,10 @@ export default async function PortalConvidadosPage({
   const convidados = await getConvidados(evento.id);
   const resumo = resumirConvidados(convidados);
 
-  // a origem para montar o link individual (o hash não deriva de nada
-  // pessoal, então pode circular por WhatsApp sem expor a lista)
-  const h = headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
-  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  const baseUrl = host ? `${proto}://${host}` : "";
+  // a base dos links que ela espalha: fonte única (app-url), não o host
+  // da requisição — com o domínio próprio do portal, o cabeçalho
+  // apontaria para o domínio em que ELA abriu a tela, não o público
+  const baseUrl = publicBase();
 
   // o link ÚNICO do evento — o caminho principal: ela espalha, cada um
   // se cadastra sozinho

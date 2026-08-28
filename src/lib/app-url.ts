@@ -27,3 +27,26 @@ export function appUrl() {
   if (deploy) return `https://${deploy}`;
   return "http://localhost:3000";
 }
+
+/**
+ * Base dos links PÚBLICOS — o que convidado, fornecedor e cliente sem
+ * sessão recebem. Hoje é o mesmo host do app; quando o domínio próprio
+ * do portal existir, NEXT_PUBLIC_PUBLIC_URL passa a valer e SÓ este
+ * arquivo sabe disso.
+ *
+ * Env vence cabeçalho de host de propósito: `x-forwarded-host` devolve o
+ * host em que a página FOI ABERTA — com app e superfícies públicas em
+ * domínios distintos, um link montado dentro do app apontaria para o
+ * domínio errado. Link que sai do sistema nasce daqui, sempre.
+ *
+ * Exceção anotada: o link da PROPOSTA (/orcamento/[hash]) continua em
+ * appUrl() — proposta é venda da cerimonialista, mora no domínio do app.
+ */
+export function publicBase(): string {
+  const dominio = process.env.NEXT_PUBLIC_PUBLIC_URL?.trim().replace(/\/+$/, "");
+  return dominio || appUrl();
+}
+
+export function linkPublico(caminho: `/${string}`): string {
+  return `${publicBase()}${caminho}`;
+}

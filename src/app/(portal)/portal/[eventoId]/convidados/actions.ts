@@ -108,13 +108,23 @@ export async function definirLembrete(
     return { error: "Escolha entre 1 e 60 dias." };
   }
 
+  // RPC, não update direto: o portal não tem policy de update em events
+  // (decisão da 086) — o update com a sessão da cliente afetava ZERO
+  // linhas em silêncio e esta action respondia "ok". O lembrete nunca
+  // chegou a ser salvo por aqui até a 127.
   const supabase = createClient();
-  const { error } = await supabase
-    .from("events")
-    .update({ rsvp_lembrete_dias: dias })
-    .eq("id", eventoId);
+  const { error } = await supabase.rpc("portal_definir_lembrete", {
+    p_event_id: eventoId,
+    p_dias: dias,
+  });
 
-  if (error) return { error: "Não foi possível salvar agora." };
+  if (error) {
+    console.error("[vela:portal] lembrete:", error.code, error.message);
+    if (error.code === "PGRST202") {
+      return { error: "O lembrete ainda não está disponível nesta conta." };
+    }
+    return { error: "Não foi possível salvar agora." };
+  }
   revalidar(eventoId);
   return { ok: true };
 }
@@ -128,13 +138,21 @@ export async function fecharOuAbrirLink(
   eventoId: string,
   aberto: boolean
 ): Promise<Retorno> {
+  // Mesmo motivo do lembrete acima: sem RPC, a válvula não fechava nada
+  // e a tela confirmava o encerramento que não aconteceu.
   const supabase = createClient();
-  const { error } = await supabase
-    .from("events")
-    .update({ rsvp_aberto: aberto })
-    .eq("id", eventoId);
+  const { error } = await supabase.rpc("portal_definir_rsvp_aberto", {
+    p_event_id: eventoId,
+    p_aberto: aberto,
+  });
 
-  if (error) return { error: "Não foi possível alterar agora." };
+  if (error) {
+    console.error("[vela:portal] rsvp_aberto:", error.code, error.message);
+    if (error.code === "PGRST202") {
+      return { error: "O controle do link ainda não está disponível nesta conta." };
+    }
+    return { error: "Não foi possível alterar agora." };
+  }
   revalidar(eventoId);
   return { ok: true };
 }

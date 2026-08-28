@@ -6,7 +6,7 @@
 // antes de soltar, senão a automação vira aposta.
 
 import { createClient } from "@/lib/supabase/server";
-import { appUrl } from "@/lib/email";
+import { publicBase } from "@/lib/app-url";
 import { textoDaBatida, type Solicitacao } from "@/lib/solicitacoes-core";
 
 export type ItemDaFila = {
@@ -63,7 +63,7 @@ export async function getFilaDoDia(): Promise<ItemDaFila[]> {
     (acessos ?? []).map((a) => [a.supplier_id, a.hash])
   );
 
-  const base = appUrl();
+  const base = publicBase();
   const fila: ItemDaFila[] = [];
 
   for (const b of batidas) {
