@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { OrcamentosTable } from "@/components/orcamentos/OrcamentosTable";
 import { type Orcamento, validadeVencida } from "@/lib/orcamentos";
 import { CORES } from "@/lib/orcamentos-ui";
+import { hojeBR } from "@/lib/tempo";
 
 // Serif do redesign. Carregada só nesta rota (não no layout) para não
 // pesar no resto do painel, que segue com a tipografia atual.
@@ -79,7 +80,7 @@ export default async function OrcamentosPage({
   // Trilho "vencendo o prazo": só proposta enviada e ainda dentro da
   // validade, da mais urgente para a menos. Consulta própria porque não
   // pode depender do filtro nem da página em que ela está.
-  const hojeIso = new Date().toISOString().slice(0, 10);
+  const hojeIso = hojeBR();
 
   const [{ data, count, error }, { data: todos }, { data: aVencer }] =
     await Promise.all([

@@ -25,6 +25,7 @@ import {
   type Orcamento,
   type OrcamentoItem,
 } from "@/lib/orcamentos";
+import { hojeBR } from "@/lib/tempo";
 
 const inputClass =
   "w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-100";
@@ -109,7 +110,7 @@ export function OrcamentoForm({
     [itens]
   );
 
-  const dataCriacao = orcamento?.data_criacao ?? new Date().toISOString().slice(0, 10);
+  const dataCriacao = orcamento?.data_criacao ?? hojeBR();
   const validoAte = useMemo(() => {
     const d = new Date(`${dataCriacao}T00:00:00`);
     d.setDate(d.getDate() + validadeDias);

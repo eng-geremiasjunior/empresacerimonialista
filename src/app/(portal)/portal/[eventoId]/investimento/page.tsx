@@ -12,6 +12,7 @@ import {
   Wallet,
 } from "@/components/portal/icones";
 import { diaEMes } from "@/components/portal/datas";
+import { hojeBR } from "@/lib/tempo";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ export default async function PortalInvestimentoPage({
 
   const investimento = await getInvestimento(evento.id);
   const parcelas = investimento?.parcelas ?? [];
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = hojeBR();
 
   const estadoDe = (paid: boolean, due: string) => {
     const s = txStatus(paid, due, hoje);

@@ -28,6 +28,7 @@ import {
   type DespesaFixaInfo,
 } from "@/lib/financeiro-empresa-shared";
 import { formatCurrency } from "@/lib/format";
+import { hojeBR } from "@/lib/tempo";
 
 const ICONS: Record<string, LucideIcon> = {
   agua: Droplets,
@@ -54,7 +55,7 @@ function MiniModal({
   info: DespesaFixaInfo | undefined;
   onClose: () => void;
 }) {
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = hojeBR();
   const [valor, setValor] = useState(
     info?.ultimoValor ? String(info.ultimoValor) : ""
   );
@@ -158,7 +159,7 @@ export function DespesasFixas({ fixas }: { fixas: DespesaFixaInfo[] }) {
   const [aberta, setAberta] = useState<string | null>(null);
   const [outra, setOutra] = useState(false);
   const [pending, startTransition] = useTransition();
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = hojeBR();
 
   const info = (slug: string) => fixas.find((f) => f.slug === slug);
 

@@ -1,3 +1,4 @@
+import { hojeBR } from "@/lib/tempo";
 // Tipos e helpers da página pública do orçamento. O shape vem da RPC
 // consultar_orcamento_publico — a tabela nunca é exposta. A Etapa 9
 // ampliou a RPC para trazer também o conteúdo institucional, o processo,
@@ -137,7 +138,7 @@ export function expirado(d: OrcamentoPublicoData): boolean {
   return (
     d.status === "expirado" ||
     (d.status === "enviado" &&
-      d.data_validade < new Date().toISOString().slice(0, 10))
+      d.data_validade < hojeBR())
   );
 }
 

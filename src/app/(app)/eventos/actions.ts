@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { EVENT_TYPE_LABELS } from "@/lib/types";
+import { hojeBR } from "@/lib/tempo";
 
 export type EventFormState = { error: string } | null;
 
@@ -179,7 +180,7 @@ export async function duplicateEvent(eventId: string) {
 
   if (!original) return;
 
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = hojeBR();
   const { data: created } = await supabase
     .from("events")
     .insert({

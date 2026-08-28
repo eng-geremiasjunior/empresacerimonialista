@@ -2,6 +2,7 @@
 // listagem, no formulário e na visualização.
 
 import { formatBRL } from "@/lib/modelos-precificacao";
+import { hojeBR } from "@/lib/tempo";
 
 export type OrcamentoStatus =
   | "rascunho"
@@ -87,7 +88,7 @@ export function formatDateBR(iso: string | null): string {
 }
 
 export function validadeVencida(o: Pick<Orcamento, "data_validade">): boolean {
-  return o.data_validade < new Date().toISOString().slice(0, 10);
+  return o.data_validade < hojeBR();
 }
 
 // Linha descritiva de um item (card do formulário e visualização).

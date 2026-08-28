@@ -26,6 +26,7 @@ import {
   Wallet,
 } from "@/components/portal/icones";
 import { dataLonga, diaEMes, prazoPortal } from "@/components/portal/datas";
+import { hojeBR } from "@/lib/tempo";
 
 export const dynamic = "force-dynamic";
 
@@ -57,7 +58,7 @@ export default async function PortalEventoPage({
   const nome = nomeDeExibicao(evento);
 
   // resumo do investimento: a próxima parcela em aberto
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = hojeBR();
   const abertas = (home.investimento?.parcelas ?? []).filter((p) => !p.paid);
   const proxima = abertas.find((p) => p.dueDate >= hoje) ?? abertas[0] ?? null;
 

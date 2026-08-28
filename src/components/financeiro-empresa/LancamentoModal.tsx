@@ -15,6 +15,7 @@ import {
   RECEITA_CATEGORIAS,
   type BusinessTransacao,
 } from "@/lib/financeiro-empresa-shared";
+import { hojeBR } from "@/lib/tempo";
 
 const inputClass =
   "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100";
@@ -30,7 +31,7 @@ export function LancamentoModal({
   editar?: BusinessTransacao; // presente = modo edição
   onClose: () => void;
 }) {
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = hojeBR();
   const categorias = tipo === "receita" ? RECEITA_CATEGORIAS : DESPESA_CATEGORIAS;
 
   const [categoria, setCategoria] = useState(

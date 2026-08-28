@@ -16,6 +16,7 @@ import type {
   OrigemPagamento,
   TipoLancamento,
 } from "@/lib/financeiro-core";
+import { hojeBR } from "@/lib/tempo";
 
 type Linha = Record<string, unknown>;
 
@@ -81,7 +82,7 @@ const rotuloCategoria = (c: string | null) =>
 export const getFinanceiroDoEvento = cache(
   async (eventId: string): Promise<FinanceiroDoEvento> => {
     const supabase = createClient();
-    const hoje = new Date().toISOString().slice(0, 10);
+    const hoje = hojeBR();
 
     const [evRes, txRes, verbaRes, saldoRes, vinculoRes, objetivosRes] =
       await Promise.all([

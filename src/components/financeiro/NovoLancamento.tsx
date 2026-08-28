@@ -13,6 +13,7 @@ import {
   criarLancamento,
   type NovoLancamentoInput,
 } from "@/app/(app)/eventos/[id]/financeiro/lancamento-actions";
+import { hojeBR } from "@/lib/tempo";
 
 const campo: React.CSSProperties = {
   width: "100%",
@@ -42,7 +43,7 @@ export function NovoLancamento({
     direcao: "saida",
     descricao: "",
     valor: 0,
-    vencimento: new Date().toISOString().slice(0, 10),
+    vencimento: hojeBR(),
     supplierId: null,
     objetivoId: null,
     tipo: "parcela",

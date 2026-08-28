@@ -13,6 +13,7 @@ import {
   fornecedoresDoEvento,
   type EventoParaConfirmar,
 } from "@/lib/confirmacoes";
+import { hojeBR, somarDias } from "@/lib/tempo";
 
 export const dynamic = "force-dynamic";
 // Sem isto cai no padrão do plano (10s no Hobby) e um 504 mata a rotina
@@ -58,11 +59,9 @@ export async function GET(request: NextRequest) {
   // Janela de disparo: hoje já entrou no prazo do evento e o evento ainda
   // não aconteceu. Como days_before é configurável por evento, filtramos
   // grosseiramente no SQL (maior janela possível) e refinamos em código.
-  const hoje = new Date();
-  const hojeIso = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}-${String(hoje.getDate()).padStart(2, "0")}`;
-  const limite = new Date(hoje);
-  limite.setDate(limite.getDate() + 60); // teto: ninguém configura mais que 60 dias
-  const limiteIso = limite.toISOString().slice(0, 10);
+  const hojeIso = hojeBR();
+  // teto: ninguém configura mais que 60 dias
+  const limiteIso = somarDias(hojeIso, 60);
 
   const { data: eventos, error } = await supabase
     .from("events")
@@ -100,12 +99,11 @@ export async function GET(request: NextRequest) {
       clients: { name: string } | null;
     };
 
-    // Refino: hoje >= data - days_before?
+    // Refino: hoje já entrou na janela (data - days_before)? Comparação
+    // por string ISO — sem Date e sem o fuso do runtime no meio.
     const diasAntes = ev.confirmation_days_before ?? 7;
-    const dataEvento = new Date(`${ev.date}T00:00:00`);
-    const disparo = new Date(dataEvento);
-    disparo.setDate(disparo.getDate() - diasAntes);
-    if (hoje < disparo) continue;
+    const disparoIso = somarDias(ev.date, -diasAntes);
+    if (hojeIso < disparoIso) continue;
 
     const evento: EventoParaConfirmar = {
       id: ev.id,
