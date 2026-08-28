@@ -64,6 +64,8 @@ export type ReferenciaDoGuia = {
   fotoUrl: string | null;
   storagePath: string;
   origem: "cliente" | "equipe";
+  /** a equipe levou esta imagem para o guia — é o filtro do link do fornecedor */
+  noGuia: boolean;
 };
 
 export type EventoHistorico = {
@@ -82,6 +84,8 @@ export type GuiaDeEstilo = {
   situacao: SituacaoGuia;
   aprovadoEm: string | null;
   aprovadoNome: string | null;
+  /** o que não pode mudar na execução — vai junto com qualquer fatia */
+  restricoes: string | null;
   papelaria: {
     fontes: string | null;
     nomeCasal: string | null;

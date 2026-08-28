@@ -227,6 +227,26 @@
 /* ---------- deixamos de fora ---------- */
 /* Moldura tracejada, nome um tom abaixo, nada de vermelho: distinto sem
  * alarme. Não usar não é erro. */
+/* O que não pode mudar: a regra de execução, no tom de atenção do ouro
+   (nunca vermelho — não é erro, é limite combinado). Aparece no portal
+   do casal e no link do fornecedor, que dividem esta folha de estilo. */
+.guia-restricoes {
+  border: 1px solid var(--g-ouro-borda);
+  border-radius: 12px;
+  background: var(--g-ouro-fundo);
+  padding: 14px 16px;
+  margin-bottom: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.guia-restricoes p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  white-space: pre-line;
+}
+
 .guia-veto {
   border: 1px dashed var(--g-borda-veto);
   border-radius: 12px;

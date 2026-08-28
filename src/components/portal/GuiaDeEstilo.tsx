@@ -291,6 +291,15 @@ export function GuiaDeEstilo({
             {guia.sensacao && <p className="guia-abertura-texto">{guia.sensacao}</p>}
           </header>
 
+          {/* O que a cerimonialista combinou que não muda — vai junto com
+              o guia para quem executa, e é parte do que ela aprova. */}
+          {guia.restricoes && (
+            <div className="guia-restricoes">
+              <span className="guia-rotulo-ouro">O que não pode mudar</span>
+              <p>{guia.restricoes}</p>
+            </div>
+          )}
+
           {guia.cores.length > 0 && (
             <Secao
               id="cores"
@@ -523,7 +532,12 @@ export function GuiaDeEstilo({
                       altura="100%"
                     />
                     <div className="guia-referencia-texto">
-                      <span className="guia-rotulo">{r.assunto}</span>
+                      <span className="guia-rotulo">
+                        {r.assunto}
+                        {/* a devolutiva de que a imagem virou decisão:
+                            está no guia que vai para quem executa */}
+                        {r.noGuia && " · no guia"}
+                      </span>
                       {r.agradou && (
                         <>
                           <span className="guia-rotulo-ouro">O que agradou</span>

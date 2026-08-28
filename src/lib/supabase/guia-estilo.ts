@@ -39,15 +39,27 @@ export const getGuiaDoEvento = cache(
   async (eventId: string): Promise<GuiaDeEstilo | null> => {
     const supabase = createClient();
 
-    const { data: base } = await supabase
+    // `restricoes` e `no_guia` (126) podem não existir ainda: o PostgREST
+    // recusa o select inteiro quando uma coluna falta, e o guia sumiria
+    // da tela. Pede com as novas e repete sem elas se der erro.
+    const COLUNAS_BASE = `id, event_id, evento_decisao_id, nome, sensacao,
+      situacao, aprovado_em, aprovado_nome, papelaria_fontes,
+      papelaria_nome_casal, papelaria_data, papelaria_local, papelaria_nota`;
+
+    const baseRes = await supabase
       .from("evento_guia_estilo")
-      .select(
-        `id, event_id, evento_decisao_id, nome, sensacao, situacao,
-         aprovado_em, aprovado_nome, papelaria_fontes, papelaria_nome_casal,
-         papelaria_data, papelaria_local, papelaria_nota`
-      )
+      .select(`${COLUNAS_BASE}, restricoes`)
       .eq("event_id", eventId)
       .maybeSingle();
+    let base: Linha | null = baseRes.data as Linha | null;
+    if (baseRes.error) {
+      const alt = await supabase
+        .from("evento_guia_estilo")
+        .select(COLUNAS_BASE)
+        .eq("event_id", eventId)
+        .maybeSingle();
+      base = alt.data as Linha | null;
+    }
 
     if (!base) return null;
     const g = base as Linha;
@@ -79,9 +91,18 @@ export const getGuiaDoEvento = cache(
         // as referências são as inspirações do evento — mesma tabela de sempre
         supabase
           .from("evento_inspiracao")
-          .select("id, assunto, legenda, autor, storage_path, origem")
+          .select("id, assunto, legenda, autor, storage_path, origem, no_guia")
           .eq("event_id", eventId)
-          .order("created_at"),
+          .order("created_at")
+          .then((r) =>
+            r.error
+              ? supabase
+                  .from("evento_inspiracao")
+                  .select("id, assunto, legenda, autor, storage_path, origem")
+                  .eq("event_id", eventId)
+                  .order("created_at")
+              : r
+          ),
         supabase
           .from("evento_guia_historico")
           .select("id, tipo, texto, created_at")
@@ -110,6 +131,7 @@ export const getGuiaDoEvento = cache(
       situacao: g.situacao as GuiaDeEstilo["situacao"],
       aprovadoEm: (g.aprovado_em as string) ?? null,
       aprovadoNome: (g.aprovado_nome as string) ?? null,
+      restricoes: (g.restricoes as string) ?? null,
       papelaria: {
         fontes: (g.papelaria_fontes as string) ?? null,
         nomeCasal: (g.papelaria_nome_casal as string) ?? null,
@@ -162,6 +184,7 @@ export const getGuiaDoEvento = cache(
         fotoUrl: urls.get(r.storage_path as string) ?? null,
         storagePath: r.storage_path as string,
         origem: r.origem as "cliente" | "equipe",
+        noGuia: Boolean(r.no_guia),
       })),
       historico: ((historico.data ?? []) as Linha[]).map((h) => ({
         id: h.id as string,

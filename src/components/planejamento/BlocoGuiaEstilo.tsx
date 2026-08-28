@@ -24,6 +24,9 @@ export type AcoesGuia = {
     id: string
   ) => Promise<void>;
   onEnviar: () => Promise<string | null>;
+  /** curadoria: a imagem da cliente entra (ou sai) do guia */
+  onMarcarReferencia: (referenciaId: string, noGuia: boolean) => Promise<string | null>;
+  onSalvarRestricoes: (texto: string) => Promise<string | null>;
   onCompartilhar: (supplierId: string, secoes: string[]) => Promise<string | null>;
   onPararCompartilhar: (supplierId: string) => Promise<void>;
   carregarPaletas: () => Promise<PaletaDaBiblioteca[]>;
@@ -330,6 +333,20 @@ export function BlocoGuiaEstilo({
             onRemover={(id) => rodar(() => acoes.onRemoverItem("material", id))}
           />
 
+          <Referencias
+            referencias={guia.referencias}
+            pendente={pendente}
+            onMarcar={(id, noGuia) =>
+              rodar(() => acoes.onMarcarReferencia(id, noGuia))
+            }
+          />
+
+          <Restricoes
+            valor={guia.restricoes}
+            pendente={pendente}
+            onSalvar={(texto) => rodar(() => acoes.onSalvarRestricoes(texto))}
+          />
+
           {guia.situacao === "montagem" && (
             <button
               type="button"
@@ -375,6 +392,140 @@ const erroStyle: React.CSSProperties = {
   fontSize: 12,
   color: C.atrasadaFg,
 };
+
+// As imagens que a cliente guardou no portal. Antes disto, a equipe não
+// as via aqui — e o link do fornecedor mandava todas, inclusive as que a
+// conversa já tinha descartado. Marcar é o que decide o que sai.
+function Referencias({
+  referencias,
+  pendente,
+  onMarcar,
+}: {
+  referencias: GuiaDeEstilo["referencias"];
+  pendente: boolean;
+  onMarcar: (id: string, noGuia: boolean) => void;
+}) {
+  if (referencias.length === 0) return null;
+  const dentro = referencias.filter((r) => r.noGuia).length;
+
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <span style={{ ...monoLabel, fontSize: 10 }}>
+        Referências da cliente · {dentro} de {referencias.length} no guia
+      </span>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(84px, 1fr))",
+          gap: 6,
+          marginTop: 6,
+        }}
+      >
+        {referencias.map((r) => (
+          <button
+            key={r.id}
+            type="button"
+            disabled={pendente}
+            onClick={() => onMarcar(r.id, !r.noGuia)}
+            title={r.agradou ?? r.assunto}
+            aria-pressed={r.noGuia}
+            style={{
+              position: "relative",
+              padding: 0,
+              border: r.noGuia
+                ? `2px solid ${C.ameixa}`
+                : `1px solid ${C.bordaSutil}`,
+              borderRadius: 8,
+              overflow: "hidden",
+              background: C.bordaSutil,
+              aspectRatio: "1 / 1",
+              cursor: pendente ? "default" : "pointer",
+              opacity: r.noGuia ? 1 : 0.55,
+            }}
+          >
+            {r.fotoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={r.fotoUrl}
+                alt={r.agradou ?? r.assunto}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            ) : null}
+            {r.noGuia && (
+              <span
+                style={{
+                  position: "absolute",
+                  right: 3,
+                  bottom: 3,
+                  background: C.ameixa,
+                  color: "#fff",
+                  fontFamily: F_UI,
+                  fontSize: 9,
+                  lineHeight: 1,
+                  padding: "3px 5px",
+                  borderRadius: 4,
+                }}
+              >
+                no guia
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+      <p style={{ ...notaStyle, marginTop: 5 }}>
+        Toque para levar ao guia. Só as marcadas vão no link do fornecedor.
+      </p>
+    </div>
+  );
+}
+
+// A regra de execução que viaja com qualquer fatia do guia.
+function Restricoes({
+  valor,
+  pendente,
+  onSalvar,
+}: {
+  valor: string | null;
+  pendente: boolean;
+  onSalvar: (texto: string) => void;
+}) {
+  const [texto, setTexto] = useState(valor ?? "");
+  const mudou = texto.trim() !== (valor ?? "").trim();
+
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <span style={{ ...monoLabel, fontSize: 10 }}>O que não pode mudar</span>
+      <textarea
+        value={texto}
+        onChange={(e) => setTexto(e.target.value)}
+        rows={3}
+        placeholder="Centro de mesa até 20 cm de altura"
+        style={{
+          ...campo,
+          height: "auto",
+          padding: "7px 8px",
+          lineHeight: 1.5,
+          resize: "vertical",
+          marginTop: 5,
+        }}
+      />
+      <p style={{ ...notaStyle, marginTop: 4 }}>
+        Escreva a regra, não o motivo — isto sai no link de todos os
+        fornecedores do evento, não só de quem decora.
+      </p>
+      {mudou && (
+        <button
+          type="button"
+          style={{ ...botao(), marginTop: 6 }}
+          disabled={pendente}
+          onClick={() => onSalvar(texto)}
+        >
+          Salvar
+        </button>
+      )}
+    </div>
+  );
+}
 
 function ListaSimples({
   rotulo,

@@ -11,6 +11,8 @@ type GuiaPublico = {
   evento_data: string;
   aprovado_em: string | null;
   secoes: string[];
+  /** a regra de execução — fora do sistema de seções (126) */
+  restricoes: string | null;
   cores: { nome: string; papel: string; hex: string; nota: string | null; foto_path: string | null }[] | null;
   flores: { nome: string; epoca: string | null; nota: string | null; foto_path: string | null }[] | null;
   vetadas: { nome: string; motivo: string }[] | null;
@@ -116,6 +118,15 @@ export default async function GuiaPublicoPage({
         <h1 className="guia-h1">{guia.guia_nome}</h1>
         {guia.sensacao && <p className="guia-abertura-texto">{guia.sensacao}</p>}
       </header>
+
+      {/* Antes das seções de propósito: é o limite de execução, e vem
+          com qualquer fatia — inclusive para quem só recebeu as cores. */}
+      {guia.restricoes && (
+        <div className="guia-restricoes">
+          <span className="guia-rotulo-ouro">O que não pode mudar</span>
+          <p>{guia.restricoes}</p>
+        </div>
+      )}
 
       {guia.cores && guia.cores.length > 0 && (
         <section className="guia-secao">

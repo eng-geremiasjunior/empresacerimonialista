@@ -104,7 +104,7 @@ export async function criarGuia(
 export async function salvarCabecalhoGuia(
   eventId: string,
   guiaId: string,
-  campos: { nome?: string; sensacao?: string }
+  campos: { nome?: string; sensacao?: string; restricoes?: string }
 ): Promise<ResultadoGuia> {
   const supabase = createClient();
   const { error } = await supabase
@@ -114,10 +114,55 @@ export async function salvarCabecalhoGuia(
       ...(campos.sensacao !== undefined
         ? { sensacao: campos.sensacao.trim() || null }
         : {}),
+      ...(campos.restricoes !== undefined
+        ? { restricoes: campos.restricoes.trim() || null }
+        : {}),
       updated_at: new Date().toISOString(),
     })
     .eq("id", guiaId);
-  if (error) return { error: "Não foi possível salvar." };
+  if (error) {
+    console.error("[vela:guia] cabecalho:", error.code, error.message);
+    // 42703 = coluna inexistente: a 126 ainda não rodou nesta conta
+    if (error.code === "42703" && campos.restricoes !== undefined) {
+      return { error: "As restrições ainda não estão disponíveis nesta conta." };
+    }
+    return { error: "Não foi possível salvar." };
+  }
+  await marcarAlterado(eventId, guiaId);
+  return { success: true };
+}
+
+/**
+ * A curadoria da referência: a imagem que a cliente subiu entra (ou sai)
+ * do guia. É este marcador que decide o que vai no link do fornecedor —
+ * sem ele, o mural inteiro viajava.
+ */
+export async function marcarReferenciaNoGuia(
+  eventId: string,
+  guiaId: string,
+  referenciaId: string,
+  noGuia: boolean
+): Promise<ResultadoGuia> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("evento_inspiracao")
+    .update({ no_guia: noGuia })
+    .eq("id", referenciaId)
+    .eq("event_id", eventId)
+    .select("id");
+
+  if (error) {
+    console.error("[vela:guia] referencia:", error.code, error.message);
+    if (error.code === "42703") {
+      return { error: "A curadoria de referências ainda não está disponível nesta conta." };
+    }
+    return { error: "Não foi possível salvar." };
+  }
+  // zero linhas com error null = a RLS recusou em silêncio
+  if (!data || data.length === 0) {
+    return { error: "Você não tem permissão para editar este evento." };
+  }
+
   await marcarAlterado(eventId, guiaId);
   return { success: true };
 }

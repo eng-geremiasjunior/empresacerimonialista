@@ -50,8 +50,10 @@ import {
   compartilharGuia,
   criarGuia,
   enviarGuiaParaCliente,
+  marcarReferenciaNoGuia,
   pararDeCompartilharGuia,
   removerItemGuia,
+  salvarCabecalhoGuia,
   salvarItemGuia,
 } from "@/app/(app)/eventos/[id]/planejamento/guia-actions";
 import type { Curadoria } from "@/lib/supabase/curadoria";
@@ -230,6 +232,25 @@ export function PlanejamentoEvento({
       onEnviar: async () => {
         if (!guia) return "Monte o guia primeiro.";
         const r = await enviarGuiaParaCliente(eventId, guia.id);
+        await recarregarGuia();
+        return "error" in r ? r.error : null;
+      },
+      onMarcarReferencia: async (referenciaId, noGuia) => {
+        if (!guia) return "Monte o guia primeiro.";
+        const r = await marcarReferenciaNoGuia(
+          eventId,
+          guia.id,
+          referenciaId,
+          noGuia
+        );
+        await recarregarGuia();
+        return "error" in r ? r.error : null;
+      },
+      onSalvarRestricoes: async (texto) => {
+        if (!guia) return "Monte o guia primeiro.";
+        const r = await salvarCabecalhoGuia(eventId, guia.id, {
+          restricoes: texto,
+        });
         await recarregarGuia();
         return "error" in r ? r.error : null;
       },
