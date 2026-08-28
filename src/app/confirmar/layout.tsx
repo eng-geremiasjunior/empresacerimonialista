@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { garamond, jost } from "@/lib/fontes-convite";
 import "../(portal)/portal.css";
 import "./confirmar.css";
-import "./site.css";
+import "./convite.css";
 
 // As telas do convidado — a individual (/confirmar/[hash]) e a do link
 // do evento (/confirmar/evento/[hash]), que com o site publicado (128)

@@ -30,6 +30,8 @@ const ROTAS_PUBLICAS: ((p: string) => boolean)[] = [
   (p) => p.startsWith("/api/cron/"),
   // cadastro do convidado pelo link do evento
   (p) => p.startsWith("/api/rsvp/"),
+  // as fotos do álbum do convite (token assinado emitido pela rota)
+  (p) => p.startsWith("/api/album/"),
   // Portal da Cliente: a porta é pública; o resto exige sessão
   (p) => p.startsWith("/portal/entrar"),
   // callback do OTP: roda ANTES de existir sessão

@@ -1,0 +1,784 @@
+/* O convite digital — do design aprovado (Lya e Jhon).
+   Fontes: Cormorant Garamond (serifada) e Karla (sem serifa), do layout.
+   Três cores mandam na página e vêm do evento: acento, tinta e fundo.
+   Todo o resto é derivação fixa — trocar as três troca o convite inteiro. */
+
+.cv {
+  --cv-fundo: #faf6f0;
+  --cv-fundo-2: #f4efe7;
+  --cv-fundo-presente: #f1eae0;
+  --cv-tinta: #3a342c;
+  --cv-acento: #b06b4a;
+
+  /* derivações: nascem das três acima */
+  --cv-corpo: color-mix(in srgb, var(--cv-tinta) 78%, #fff);
+  --cv-apoio: color-mix(in srgb, var(--cv-tinta) 58%, #fff);
+  --cv-rotulo: color-mix(in srgb, var(--cv-tinta) 42%, #fff);
+  --cv-placeholder: color-mix(in srgb, var(--cv-tinta) 32%, #fff);
+  --cv-linha: color-mix(in srgb, var(--cv-tinta) 12%, var(--cv-fundo));
+  --cv-borda: color-mix(in srgb, var(--cv-tinta) 20%, var(--cv-fundo));
+  --cv-borda-2: color-mix(in srgb, var(--cv-tinta) 26%, var(--cv-fundo));
+  --cv-acento-claro: color-mix(in srgb, var(--cv-acento) 62%, #fff);
+  --cv-acento-escuro: color-mix(in srgb, var(--cv-acento) 78%, #000);
+  --cv-selecionado: color-mix(in srgb, var(--cv-acento) 16%, var(--cv-fundo));
+  --cv-sobre-escuro: var(--cv-fundo);
+  --cv-ok: #7c8a6b;
+
+  --serif: "Cormorant Garamond", Georgia, serif;
+  --sans: "Karla", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+
+  position: relative;
+  max-width: 1120px;
+  margin: 0 auto;
+  background: var(--cv-fundo);
+  font-family: var(--sans);
+  color: var(--cv-corpo);
+  overflow: hidden;
+}
+
+.cv *,
+.cv *::before,
+.cv *::after {
+  box-sizing: border-box;
+}
+
+/* ---------- peças repetidas ---------- */
+.cv-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--cv-acento);
+}
+.cv-titulo {
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: 46px;
+  line-height: 1.1;
+  color: var(--cv-tinta);
+  margin: 12px 0 0;
+}
+.cv-texto {
+  font-weight: 300;
+  font-size: 16px;
+  line-height: 1.9;
+  color: var(--cv-corpo);
+  margin: 20px 0 0;
+  text-wrap: pretty;
+}
+.cv-rotulo {
+  font-size: 9.5px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--cv-rotulo);
+}
+.cv-botao {
+  cursor: pointer;
+  border: 1px solid var(--cv-acento);
+  background: var(--cv-acento);
+  color: var(--cv-fundo);
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  padding: 19px 40px;
+  transition: background 0.2s, color 0.2s;
+}
+.cv-botao:hover:not(:disabled) {
+  background: transparent;
+  color: var(--cv-acento);
+}
+.cv-botao:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.cv-botao-leve {
+  display: inline-block;
+  cursor: pointer;
+  border: 1px solid var(--cv-borda-2);
+  background: transparent;
+  color: var(--cv-corpo);
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 15px 32px;
+  text-decoration: none;
+  transition: border-color 0.2s, color 0.2s;
+}
+.cv-botao-leve:hover {
+  border-color: var(--cv-acento);
+  color: var(--cv-acento);
+}
+
+/* ---------- envelope ---------- */
+.cv-envelope {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: linear-gradient(165deg, #e8dccb 0%, #dcc9ad 100%);
+}
+.cv-envelope-moldura {
+  position: absolute;
+  inset: 32px;
+  border: 1px solid rgba(58, 52, 44, 0.18);
+}
+.cv-envelope-conteudo {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+  text-align: center;
+  padding: 0 32px;
+}
+.cv-envelope-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.44em;
+  text-transform: uppercase;
+  color: #8a7358;
+}
+.cv-envelope-nomes {
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: 66px;
+  line-height: 1;
+  color: var(--cv-tinta);
+}
+.cv-envelope-filete {
+  width: 44px;
+  height: 1px;
+  background: rgba(58, 52, 44, 0.3);
+}
+.cv-envelope-quando {
+  font-size: 11px;
+  letter-spacing: 0.34em;
+  color: #6f6255;
+  text-transform: uppercase;
+}
+.cv-envelope-botao {
+  margin-top: 10px;
+  border-radius: 999px;
+  padding: 17px 40px;
+}
+
+/* ---------- capa ---------- */
+.cv-capa {
+  position: relative;
+  height: 900px;
+  overflow: hidden;
+  background: repeating-linear-gradient(135deg, #cfc2ae 0 14px, #c6b8a3 14px 28px);
+}
+.cv-capa-foto {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cv-capa-veu {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(38, 32, 26, 0.46) 0%,
+    rgba(38, 32, 26, 0.14) 34%,
+    rgba(38, 32, 26, 0.66) 100%
+  );
+}
+.cv-capa-conteudo {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 64px;
+}
+.cv-capa-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.44em;
+  text-transform: uppercase;
+  color: rgba(250, 246, 240, 0.85);
+}
+.cv-capa-para {
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: 40px;
+  line-height: 1;
+  color: #faf6f0;
+  margin-top: 26px;
+}
+.cv-capa-nomes {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 104px;
+  line-height: 1.02;
+  color: #faf6f0;
+  margin-top: 8px;
+}
+.cv-cartao {
+  position: absolute;
+  left: 50%;
+  bottom: 56px;
+  transform: translateX(-50%);
+  background: var(--cv-fundo);
+  padding: 34px 56px;
+  display: flex;
+  gap: 44px;
+  align-items: center;
+  box-shadow: 0 30px 60px -32px rgba(38, 32, 26, 0.55);
+  white-space: nowrap;
+}
+.cv-cartao-valor {
+  font-family: var(--serif);
+  font-size: 25px;
+  line-height: 1.2;
+  color: var(--cv-tinta);
+  margin-top: 6px;
+}
+.cv-cartao-divisor {
+  width: 1px;
+  align-self: stretch;
+  background: var(--cv-linha);
+}
+
+/* ---------- contagem ---------- */
+.cv-contagem {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 96px 0 0;
+}
+.cv-contagem-celula {
+  text-align: center;
+  border-right: 1px solid var(--cv-linha);
+}
+.cv-contagem-celula:last-child {
+  border-right: none;
+}
+.cv-contagem-numero {
+  font-family: var(--serif);
+  font-size: 56px;
+  line-height: 1;
+  color: var(--cv-tinta);
+  font-variant-numeric: tabular-nums;
+}
+.cv-contagem-rotulo {
+  margin-top: 10px;
+}
+
+/* ---------- mensagem ---------- */
+.cv-mensagem {
+  padding: 120px 180px 130px;
+  text-align: center;
+}
+.cv-mensagem-texto {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 300;
+  font-size: 34px;
+  line-height: 1.55;
+  color: var(--cv-tinta);
+  text-wrap: pretty;
+  margin: 0;
+}
+.cv-mensagem-assinatura {
+  font-size: 10px;
+  letter-spacing: 0.36em;
+  text-transform: uppercase;
+  color: var(--cv-acento);
+  margin-top: 34px;
+}
+
+/* ---------- história ---------- */
+.cv-historia {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: stretch;
+}
+.cv-historia-foto {
+  min-height: 480px;
+  width: 100%;
+  object-fit: cover;
+  background: repeating-linear-gradient(135deg, #e2d7c6 0 12px, #dacfbc 12px 24px);
+}
+.cv-historia-texto {
+  padding: 96px 88px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.cv-historia-titulo {
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: 38px;
+  line-height: 1.2;
+  color: var(--cv-tinta);
+  margin: 14px 0 0;
+}
+
+/* ---------- local ---------- */
+.cv-local {
+  padding: 130px 120px;
+  text-align: center;
+}
+.cv-local-endereco {
+  font-weight: 300;
+  font-size: 15px;
+  color: var(--cv-apoio);
+  margin: 8px 0 0;
+}
+.cv-local-mapa {
+  height: 380px;
+  margin-top: 34px;
+  border: 1px solid var(--cv-borda);
+  background: repeating-linear-gradient(135deg, #eee6d9 0 12px, #e7ded0 12px 24px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cv-rotulo);
+}
+.cv-local-acoes {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  margin-top: 28px;
+  flex-wrap: wrap;
+}
+
+/* ---------- blocos escuros (dress code, recados) ---------- */
+.cv-escuro {
+  background: var(--cv-tinta);
+  padding: 110px 120px;
+  text-align: center;
+}
+.cv-escuro .cv-eyebrow {
+  color: var(--cv-acento-claro);
+}
+.cv-escuro-titulo {
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: 56px;
+  line-height: 1.1;
+  color: var(--cv-fundo);
+  margin: 16px 0 0;
+}
+.cv-escuro-texto {
+  font-weight: 300;
+  font-size: 16px;
+  line-height: 1.85;
+  color: color-mix(in srgb, var(--cv-fundo) 72%, transparent);
+  margin: 16px auto 0;
+  max-width: 520px;
+  text-wrap: pretty;
+}
+
+/* ---------- formulários (RSVP, recado, música) ---------- */
+.cv-secao {
+  padding: 130px 200px 120px;
+}
+.cv-secao-centro {
+  text-align: center;
+}
+.cv-campo {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--cv-borda);
+  background: transparent;
+  padding: 16px 2px;
+  font-family: var(--sans);
+  font-size: 15px;
+  color: var(--cv-tinta);
+  outline: none;
+}
+.cv-campo::placeholder {
+  color: var(--cv-placeholder);
+}
+.cv-campo:focus {
+  border-bottom-color: var(--cv-acento);
+}
+.cv-campo-caixa {
+  border: 1px solid var(--cv-borda);
+  background: #fff;
+  padding: 15px 16px;
+}
+.cv-grade-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.cv-grade-menu {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 14px;
+}
+.cv-escolha {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 30px 0 26px;
+}
+.cv-escolha-botao {
+  cursor: pointer;
+  border: 1px solid var(--cv-borda-2);
+  background: transparent;
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  padding: 18px 10px;
+  color: var(--cv-corpo);
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+.cv-escolha-botao[aria-pressed="true"] {
+  background: var(--cv-selecionado);
+  border-color: var(--cv-acento);
+  color: var(--cv-acento-escuro);
+}
+.cv-acompanhantes {
+  border: 1px solid var(--cv-linha);
+  background: var(--cv-fundo-2);
+  padding: 26px 26px 28px;
+  margin-top: 6px;
+  text-align: left;
+}
+.cv-acompanhantes-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.cv-acompanhante-linha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+.cv-remover {
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--cv-placeholder);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 8px;
+}
+.cv-remover:hover {
+  color: var(--cv-acento);
+}
+.cv-adicionar {
+  margin-top: 16px;
+  cursor: pointer;
+  border: 1px dashed var(--cv-borda-2);
+  background: #fff;
+  color: var(--cv-apoio);
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 14px 26px;
+}
+.cv-nota {
+  font-weight: 300;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--cv-rotulo);
+  margin-top: 14px;
+}
+.cv-enviar {
+  width: 100%;
+  margin-top: 12px;
+  padding: 19px 0;
+}
+.cv-agenda {
+  text-align: center;
+  padding-top: 24px;
+  margin-top: 24px;
+  border-top: 1px solid var(--cv-linha);
+}
+.cv-agenda-acoes {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.cv-obrigado {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 26px;
+  line-height: 1.5;
+  color: var(--cv-tinta);
+  margin: 24px 0 0;
+}
+.cv-erro {
+  font-size: 13.5px;
+  color: #a8452f;
+  margin-top: 12px;
+}
+
+/* ---------- presentes ---------- */
+.cv-presentes {
+  background: var(--cv-fundo-presente);
+  padding: 120px 200px;
+  text-align: center;
+}
+.cv-presentes-frase {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 300;
+  font-size: 30px;
+  line-height: 1.55;
+  color: var(--cv-tinta);
+  margin: 18px auto 0;
+  max-width: 620px;
+  text-wrap: pretty;
+}
+.cv-pix {
+  max-width: 560px;
+  margin: 34px auto 0;
+  border: 1px solid var(--cv-borda);
+  background: var(--cv-fundo);
+  padding: 32px 34px;
+}
+.cv-pix-linha {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 12px;
+}
+.cv-pix-chave {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--cv-tinta);
+  word-break: break-all;
+  text-align: left;
+}
+.cv-copiar {
+  cursor: pointer;
+  border: 1px solid var(--cv-acento);
+  background: transparent;
+  color: var(--cv-acento);
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 12px 20px;
+  white-space: nowrap;
+}
+.cv-copiar[data-copiado="sim"] {
+  border-color: var(--cv-ok);
+  color: var(--cv-ok);
+}
+.cv-pix-titular {
+  font-size: 13px;
+  color: var(--cv-apoio);
+  margin-top: 14px;
+}
+
+/* ---------- vindo de fora ---------- */
+.cv-hospedagens {
+  padding: 120px 200px;
+  text-align: center;
+}
+.cv-hospedagem-lista {
+  list-style: none;
+  margin: 34px 0 0;
+  padding: 0;
+  text-align: left;
+}
+.cv-hospedagem {
+  padding: 22px 0;
+  border-top: 1px solid var(--cv-linha);
+}
+.cv-hospedagem:last-child {
+  border-bottom: 1px solid var(--cv-linha);
+}
+.cv-hospedagem-nome {
+  font-family: var(--serif);
+  font-size: 27px;
+  line-height: 1.2;
+  color: var(--cv-tinta);
+  margin: 0;
+}
+.cv-hospedagem-nome a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid var(--cv-borda-2);
+}
+.cv-hospedagem-nome a:hover {
+  color: var(--cv-acento);
+  border-color: var(--cv-acento);
+}
+.cv-hospedagem-info {
+  font-size: 13.5px;
+  line-height: 1.8;
+  color: var(--cv-apoio);
+  margin: 6px 0 0;
+}
+
+/* ---------- álbum ---------- */
+.cv-album {
+  padding: 120px 120px;
+  text-align: center;
+}
+.cv-album-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  margin-top: 34px;
+}
+.cv-album-foto {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: var(--cv-fundo-2);
+}
+.cv-album-envio {
+  margin-top: 30px;
+}
+.cv-album-vazio {
+  font-weight: 300;
+  font-size: 15px;
+  color: var(--cv-apoio);
+  margin-top: 20px;
+}
+
+/* ---------- música ---------- */
+.cv-musica {
+  padding: 120px 200px;
+  text-align: center;
+}
+.cv-musica-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 30px;
+}
+
+/* ---------- rodapé ---------- */
+.cv-rodape {
+  padding: 64px 0;
+  text-align: center;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 24px;
+  color: var(--cv-rotulo);
+}
+
+/* ---------- celular ---------- */
+@media (max-width: 640px) {
+  .cv-capa {
+    height: 640px;
+  }
+  .cv-capa-nomes {
+    font-size: 48px;
+  }
+  .cv-capa-para {
+    font-size: 26px;
+  }
+  .cv-capa-conteudo {
+    padding: 0 24px;
+  }
+  .cv-envelope-nomes {
+    font-size: 40px;
+  }
+  .cv-cartao {
+    flex-direction: column;
+    gap: 18px;
+    padding: 24px 32px;
+    bottom: 32px;
+    width: calc(100% - 48px);
+    white-space: normal;
+    text-align: center;
+  }
+  .cv-cartao-divisor {
+    width: 100%;
+    height: 1px;
+    align-self: auto;
+  }
+  .cv-contagem {
+    grid-template-columns: repeat(2, 1fr);
+    padding-top: 64px;
+    row-gap: 28px;
+  }
+  .cv-contagem-celula:nth-child(2n) {
+    border-right: none;
+  }
+  .cv-contagem-numero {
+    font-size: 42px;
+  }
+  .cv-mensagem {
+    padding: 72px 24px;
+  }
+  .cv-mensagem-texto {
+    font-size: 24px;
+  }
+  .cv-historia {
+    grid-template-columns: 1fr;
+  }
+  .cv-historia-foto {
+    min-height: 320px;
+  }
+  .cv-historia-texto {
+    padding: 64px 24px;
+  }
+  .cv-historia-titulo {
+    font-size: 30px;
+  }
+  .cv-local,
+  .cv-escuro,
+  .cv-secao,
+  .cv-presentes,
+  .cv-hospedagens,
+  .cv-album,
+  .cv-musica {
+    padding-left: 24px;
+    padding-right: 24px;
+    padding-top: 72px;
+    padding-bottom: 72px;
+  }
+  .cv-titulo {
+    font-size: 32px;
+  }
+  .cv-escuro-titulo {
+    font-size: 36px;
+  }
+  .cv-local-mapa {
+    height: 260px;
+  }
+  .cv-grade-2,
+  .cv-grade-menu,
+  .cv-escolha,
+  .cv-musica-form {
+    grid-template-columns: 1fr;
+  }
+  .cv-texto,
+  .cv-escuro-texto {
+    font-size: 15px;
+  }
+  .cv-botao,
+  .cv-botao-leve,
+  .cv-escolha-botao,
+  .cv-adicionar,
+  .cv-copiar {
+    min-height: 44px;
+  }
+}
+
+/* quem pediu menos movimento não recebe movimento */
+@media (prefers-reduced-motion: reduce) {
+  .cv * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

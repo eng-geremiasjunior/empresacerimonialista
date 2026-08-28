@@ -1,7 +1,8 @@
 import { cache } from "react";
 import type { Metadata } from "next";
 import { AutocadastroConvidado } from "@/components/rsvp/AutocadastroConvidado";
-import { SiteCasamento } from "@/components/convite/SiteCasamento";
+import { ConviteCompleto } from "@/components/convite/ConviteCompleto";
+import { assinarMidiaDoConvite } from "@/lib/supabase/assinar-midia-convite";
 import { clienteAnonimoPublico } from "@/lib/supabase/anon-publico";
 import { convitePara, quandoLegivel } from "@/lib/rsvp-convite";
 import type { SitePublico } from "@/lib/site-publico-tipos";
@@ -68,7 +69,18 @@ export default async function ConfirmarEventoPage({
 }) {
   // 1ª camada: o site publicado
   const site = await carregarSite(params.hash);
-  if (site) return <SiteCasamento dados={site} />;
+  if (site) {
+    // as fotos vivem em bucket privado: o servidor assina antes de
+    // entregar, e só os caminhos que a RPC autorizou
+    const midia = await assinarMidiaDoConvite(site);
+    return (
+      <ConviteCompleto
+        dados={site}
+        fotosAlbum={midia.fotosAlbum}
+        fotoCasalUrl={midia.fotoCasalUrl}
+      />
+    );
+  }
 
   // 2ª camada: o cartão de RSVP de sempre
   const { data } = await clienteAnonimoPublico().rpc("consultar_rsvp_evento", {

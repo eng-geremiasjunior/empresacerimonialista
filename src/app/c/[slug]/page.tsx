@@ -1,7 +1,8 @@
 import { cache } from "react";
 import type { Metadata } from "next";
 import { permanentRedirect } from "next/navigation";
-import { SiteCasamento } from "@/components/convite/SiteCasamento";
+import { ConviteCompleto } from "@/components/convite/ConviteCompleto";
+import { assinarMidiaDoConvite } from "@/lib/supabase/assinar-midia-convite";
 import { clienteAnonimoPublico } from "@/lib/supabase/anon-publico";
 import { convitePara, quandoLegivel } from "@/lib/rsvp-convite";
 import type { SitePublico } from "@/lib/site-publico-tipos";
@@ -66,5 +67,12 @@ export default async function ConviteSlugPage({
     permanentRedirect(`/c/${site.slug_atual}`);
   }
 
-  return <SiteCasamento dados={site} />;
+  const midia = await assinarMidiaDoConvite(site);
+  return (
+    <ConviteCompleto
+      dados={site}
+      fotosAlbum={midia.fotosAlbum}
+      fotoCasalUrl={midia.fotoCasalUrl}
+    />
+  );
 }

@@ -64,6 +64,11 @@ export async function POST(
     criancas?: number;
     restricao?: string;
     telefone?: string;
+    // o convite (129) manda também: os acompanhantes COM NOME, o menu
+    // escolhido e o recado ao casal. O cartão simples segue sem eles.
+    acompanhantesNomes?: { nome?: string; crianca?: boolean }[];
+    menu?: string | null;
+    recado?: string | null;
   };
   try {
     corpo = await request.json();
@@ -104,6 +109,34 @@ export async function POST(
       { ok: false, erro: r?.erro ?? "falhou" },
       { status: r?.erro ? 400 : 500 }
     );
+  }
+
+  // Os nomes dos acompanhantes e o que o convite acrescentou. Vão
+  // DEPOIS do cadastro e sem travar a resposta: a presença já está
+  // registrada, e o gatilho da 129 mantém a contagem em dia.
+  const nomes = (corpo.acompanhantesNomes ?? [])
+    .map((a) => ({ nome: (a?.nome ?? "").trim(), crianca: a?.crianca === true }))
+    .filter((a) => a.nome);
+  if (nomes.length > 0) {
+    const { error: erroNomes } = await supabase.rpc("registrar_acompanhantes", {
+      p_hash: r.hash,
+      p_nomes: nomes,
+    });
+    if (erroNomes) {
+      console.error("[vela:rsvp] acompanhantes:", erroNomes.code, erroNomes.message);
+    }
+  }
+  if (corpo.menu || corpo.recado) {
+    const { error: erroExtra } = await supabase
+      .from("evento_convidado")
+      .update({
+        menu_escolhido: corpo.menu?.slice(0, 60) || null,
+        recado: corpo.recado?.slice(0, 500) || null,
+      })
+      .eq("hash", r.hash);
+    if (erroExtra) {
+      console.error("[vela:rsvp] menu/recado:", erroExtra.code, erroExtra.message);
+    }
   }
 
   // O e-mail é cortesia, não parte do cadastro: se o Resend falhar, a

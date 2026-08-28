@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { garamond, jost } from "@/lib/fontes-convite";
 import "../(portal)/portal.css";
 import "../confirmar/confirmar.css";
-import "../confirmar/site.css";
+import "../confirmar/convite.css";
 
 // O endereço bonito do site do casamento (/c/ana-e-bruno). Mesmo visual
 // e mesmas fontes da porta do hash — as fontes vêm de lib/fontes-convite
