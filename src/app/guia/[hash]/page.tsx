@@ -44,7 +44,18 @@ export default async function GuiaPublicoPage({
   const anon = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { auth: { persistSession: false } }
+    {
+      auth: { persistSession: false },
+      global: {
+        // Sem isto o Next guarda a resposta da RPC e serve a MESMA versão
+        // para sempre: medido em produção, o guia despublicado continuava
+        // aberto no link e mudanças no banco não chegavam. As outras
+        // rotas públicas escapam porque usam o cliente com cookies (que
+        // marca a requisição como dinâmica); esta é a única sem sessão.
+        fetch: (i: RequestInfo | URL, x?: RequestInit) =>
+          fetch(i, { ...x, cache: "no-store" }),
+      },
+    }
   );
 
   const { data } = await anon.rpc("guia_publico", { p_hash: params.hash });
