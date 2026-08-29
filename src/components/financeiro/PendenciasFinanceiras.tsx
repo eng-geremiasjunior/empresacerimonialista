@@ -8,6 +8,8 @@
 // e data: a automação abre o rascunho, quem decide o dinheiro é ela.
 
 import { useState, useTransition } from "react";
+import { InputMoeda } from "@/components/ui/InputMoeda";
+import { mascararDinheiro } from "@/lib/format";
 import { useRouter } from "next/navigation";
 import { CircleAlert, X } from "lucide-react";
 import {
@@ -82,6 +84,13 @@ function ItemPendencia({
   const router = useRouter();
   const [erro, setErro] = useState<string | null>(null);
   const [pend, start] = useTransition();
+  // Já nasce com o valor que a origem sabia (a compra do recurso, o valor
+  // da tarefa) — antes disso ela redigitava um número que o sistema tinha.
+  const [valor, setValor] = useState(() =>
+    pendencia.valorSugerido != null
+      ? mascararDinheiro(pendencia.valorSugerido.toFixed(2).replace(".", ","))
+      : ""
+  );
 
   const ehRevisao = pendencia.tipo === "revisao";
 
@@ -163,15 +172,10 @@ function ItemPendencia({
             placeholder="Descrição"
             className={`${input} sm:col-span-2`}
           />
-          <input
+          <InputMoeda
             name="value"
-            inputMode="decimal"
-            defaultValue={
-              pendencia.valorSugerido != null
-                ? pendencia.valorSugerido.toFixed(2).replace(".", ",")
-                : ""
-            }
-            placeholder="Valor (ex.: 1800,00)"
+            valor={valor}
+            onChange={setValor}
             className={input}
           />
           <input name="due_date" type="date" className={input} />

@@ -9,6 +9,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { InputMoeda } from "@/components/ui/InputMoeda";
 import {
   criarLancamento,
   type NovoLancamentoInput,
@@ -140,13 +141,11 @@ export function NovoLancamento({
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <label>
               <span className="fin-rotulo">Valor total</span>
-              <input
+              <InputMoeda
                 className="fin-mono"
                 style={campo}
-                inputMode="decimal"
-                placeholder="0,00"
-                value={valorTexto}
-                onChange={(e) => setValorTexto(e.target.value)}
+                valor={valorTexto}
+                onChange={setValorTexto}
               />
             </label>
             <label>

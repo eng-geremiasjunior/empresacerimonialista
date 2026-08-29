@@ -6,6 +6,8 @@
 // planilha.
 
 import { useState } from "react";
+import { InputMoeda } from "@/components/ui/InputMoeda";
+import { mascararDinheiro } from "@/lib/format";
 import { useFormState, useFormStatus } from "react-dom";
 import { Plus, Trash2 } from "lucide-react";
 import {
@@ -66,6 +68,16 @@ export function FormVerbaFornecedor({
     (inicial?.itens ?? []).map((i) => ({ ...i, key: `item-${++seq}` }))
   );
   const [detalhando, setDetalhando] = useState((inicial?.itens ?? []).length > 0);
+  const [estimado, setEstimado] = useState(() =>
+    inicial?.valorEstimadoInicial != null
+      ? mascararDinheiro(String(inicial.valorEstimadoInicial).replace(".", ","))
+      : ""
+  );
+  const [alocado, setAlocado] = useState(() =>
+    inicial?.valorAlocado != null
+      ? mascararDinheiro(String(inicial.valorAlocado).replace(".", ","))
+      : ""
+  );
 
   const [state, formAction] = useFormState<VerbaFormState, FormData>(
     async (prev, formData) => {
@@ -121,12 +133,11 @@ export function FormVerbaFornecedor({
             Estimativa inicial{" "}
             <span className="font-normal text-gray-400">(opcional)</span>
           </label>
-          <input
+          <InputMoeda
             id="valor_estimado_inicial"
             name="valor_estimado_inicial"
-            inputMode="decimal"
-            defaultValue={inicial?.valorEstimadoInicial ?? ""}
-            placeholder="Ex.: 10000"
+            valor={estimado}
+            onChange={setEstimado}
             className={inputClass}
           />
           <p className="mt-1 text-xs text-gray-400">
@@ -138,12 +149,11 @@ export function FormVerbaFornecedor({
           <label htmlFor="valor_alocado" className={labelClass}>
             Valor alocado *
           </label>
-          <input
+          <InputMoeda
             id="valor_alocado"
             name="valor_alocado"
-            inputMode="decimal"
-            defaultValue={inicial?.valorAlocado ?? ""}
-            placeholder="Ex.: 8500"
+            valor={alocado}
+            onChange={setAlocado}
             disabled={detalhando && itens.length > 0}
             className={`${inputClass} disabled:bg-gray-50 disabled:text-gray-400`}
           />

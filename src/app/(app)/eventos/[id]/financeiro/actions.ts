@@ -3,6 +3,7 @@
 import { addDays, addMonths, format } from "date-fns";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { desmascararDinheiro } from "@/lib/format";
 import { hojeBR } from "@/lib/tempo";
 
 export type FinanceiroFormState = { error: string } | { ok: true } | null;
@@ -118,7 +119,7 @@ export async function criarTransacao(
   const tipo = String(formData.get("tipo") ?? "");
   const description = String(formData.get("description") ?? "").trim();
   const category = String(formData.get("category") ?? "outro");
-  const value = Number(String(formData.get("value") ?? "").replace(",", "."));
+  const value = desmascararDinheiro(String(formData.get("value") ?? "")) ?? NaN;
   const dueDate = String(formData.get("due_date") ?? "");
   const paid = String(formData.get("paid") ?? "") === "true";
   const supplierId = String(formData.get("supplier_id") ?? "");
@@ -254,7 +255,7 @@ export async function resolverPendenciaComLancamento(
   formData: FormData
 ): Promise<FinanceiroFormState> {
   const description = String(formData.get("description") ?? "").trim();
-  const value = Number(String(formData.get("value") ?? "").replace(",", "."));
+  const value = desmascararDinheiro(String(formData.get("value") ?? "")) ?? NaN;
   const dueDate = String(formData.get("due_date") ?? "");
   const supplierId = String(formData.get("supplier_id") ?? "");
   const paid = String(formData.get("paid") ?? "") === "true";

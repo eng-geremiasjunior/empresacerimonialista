@@ -4,6 +4,8 @@
 // receitas/despesas de business_transactions.
 
 import { useState, useTransition } from "react";
+import { InputMoeda } from "@/components/ui/InputMoeda";
+import { desmascararDinheiro } from "@/lib/format";
 import { X } from "lucide-react";
 import {
   criarLancamentoEmpresa,
@@ -50,7 +52,7 @@ export function LancamentoModal({
       type: tipo,
       category: categoria,
       description: descricao || null,
-      value: Number(valor.replace(",", ".")),
+      value: desmascararDinheiro(valor) ?? NaN,
       due_date: data,
       recurring: recorrente,
     };
@@ -124,14 +126,9 @@ export function LancamentoModal({
               <label className="mb-1 block text-xs font-medium text-gray-600">
                 Valor (R$)
               </label>
-              <input
-                type="number"
-                inputMode="decimal"
-                min="0.01"
-                step="0.01"
-                value={valor}
-                onChange={(e) => setValor(e.target.value)}
-                placeholder="0,00"
+              <InputMoeda
+                valor={valor}
+                onChange={setValor}
                 className={inputClass}
               />
             </div>

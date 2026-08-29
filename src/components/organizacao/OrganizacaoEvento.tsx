@@ -14,6 +14,7 @@ import { createContext, useContext, useMemo, useRef, useState, useTransition } f
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { rotuloResponsavelTitulo } from "@/lib/papel";
+import { mascararDinheiro } from "@/lib/format";
 import type { Recurso } from "@/lib/recursos-core";
 import { PainelQuantidades } from "./PainelQuantidades";
 import {
@@ -1163,7 +1164,7 @@ function TarefaDrawer({
                 ]}
               />
             </div>
-            <TextField label="Valor" mono inputMode="decimal" placeholder="R$ 0,00" value={valor} onChange={(e) => setValor(e.target.value)} />
+            <TextField label="Valor" mono inputMode="decimal" placeholder="R$ 0,00" value={valor} onChange={(e) => setValor(mascararDinheiro(e.target.value))} />
             <TextField label="Local" value={local} onChange={(e) => setLocal(e.target.value)} placeholder="Onde acontece" />
             <div style={{ gridColumn: "1 / -1" }}>
               <Select label="Categoria" value={categoria ?? "geral"} onChange={(e) => setCategoria(e.target.value)}>

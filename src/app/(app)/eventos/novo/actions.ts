@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { desmascararDinheiro } from "@/lib/format";
 import { montarTimelineDoPlaybook } from "@/lib/supabase/roteiro-template";
 import {
   gerarFasesPorTipo,
@@ -33,8 +34,10 @@ export type WizardPayload = {
 };
 
 function toNumber(v: string): number | null {
-  const n = Number(String(v).replace(",", "."));
-  return Number.isFinite(n) && n > 0 ? n : null;
+  // O campo de dinheiro entrega mascarado ("350.000,00"); o de convidados
+  // entrega dígito puro. desmascararDinheiro dá conta dos dois.
+  const n = desmascararDinheiro(String(v));
+  return n != null && n > 0 ? n : null;
 }
 
 export type CriarEventoState = { error: string } | null;

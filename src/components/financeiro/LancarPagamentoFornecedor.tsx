@@ -11,6 +11,7 @@
 // pagamento futuro desmarca.
 
 import { useEffect, useState } from "react";
+import { InputMoeda } from "@/components/ui/InputMoeda";
 import { useFormState, useFormStatus } from "react-dom";
 import type { FinanceiroFormState } from "@/app/(app)/eventos/[id]/financeiro/actions";
 import { criarTransacao } from "@/app/(app)/eventos/[id]/financeiro/actions";
@@ -52,6 +53,7 @@ export function LancarPagamentoFornecedor({
     null as FinanceiroFormState
   );
   const [jaPago, setJaPago] = useState(true);
+  const [valor, setValor] = useState("");
 
   useEffect(() => {
     if (state && "ok" in state) {
@@ -93,13 +95,12 @@ export function LancarPagamentoFornecedor({
           <label htmlFor={`lp_valor_${supplierId}`} className={labelClass}>
             Valor
           </label>
-          <input
+          <InputMoeda
             id={`lp_valor_${supplierId}`}
             name="value"
-            type="text"
-            inputMode="decimal"
             required
-            placeholder="0,00"
+            valor={valor}
+            onChange={setValor}
             className={inputClass}
           />
         </div>

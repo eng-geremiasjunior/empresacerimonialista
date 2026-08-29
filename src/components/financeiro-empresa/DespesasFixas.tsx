@@ -5,6 +5,8 @@
 // Recorrentes destacam o último valor com o atalho "Lançar mesmo valor".
 
 import { useState, useTransition } from "react";
+import { InputMoeda } from "@/components/ui/InputMoeda";
+import { desmascararDinheiro } from "@/lib/format";
 import {
   Coffee,
   Cookie,
@@ -69,7 +71,7 @@ function MiniModal({
     startTransition(async () => {
       const r = await lancarDespesaFixa(
         slug,
-        Number(valor.replace(",", ".")),
+        desmascararDinheiro(valor) ?? NaN,
         data,
         recorrente
       );
@@ -99,15 +101,10 @@ function MiniModal({
             <label className="mb-1 block text-xs font-medium text-gray-600">
               Valor (R$)
             </label>
-            <input
-              type="number"
-              inputMode="decimal"
-              min="0.01"
-              step="0.01"
+            <InputMoeda
               autoFocus
-              value={valor}
-              onChange={(e) => setValor(e.target.value)}
-              placeholder="0,00"
+              valor={valor}
+              onChange={setValor}
               className={inputClass}
             />
           </div>

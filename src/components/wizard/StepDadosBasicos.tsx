@@ -2,6 +2,7 @@
 
 import { membroOptionLabel, type MembroOption } from "@/lib/equipe-shared";
 import { rotuloPublico } from "@/lib/capacidades";
+import { InputMoeda } from "@/components/ui/InputMoeda";
 
 export type DadosBasicos = {
   name: string;
@@ -193,29 +194,23 @@ export function StepDadosBasicos({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="ev_contract" className={labelClass}>
-              Valor do contrato (R$)
+              Valor do contrato
             </label>
-            <input
+            <InputMoeda
               id="ev_contract"
-              type="number"
-              min={0}
-              step="0.01"
-              value={value.contractValue}
-              onChange={(e) => onChange({ contractValue: e.target.value })}
+              valor={value.contractValue}
+              onChange={(v) => onChange({ contractValue: v })}
               className={inputClass}
             />
           </div>
           <div>
             <label htmlFor="ev_entrada" className={labelClass}>
-              Entrada já recebida (R$)
+              Entrada já recebida
             </label>
-            <input
+            <InputMoeda
               id="ev_entrada"
-              type="number"
-              min={0}
-              step="0.01"
-              value={value.entrada}
-              onChange={(e) => onChange({ entrada: e.target.value })}
+              valor={value.entrada}
+              onChange={(v) => onChange({ entrada: v })}
               className={inputClass}
             />
           </div>

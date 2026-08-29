@@ -21,6 +21,7 @@ import {
   veredito,
   type Recurso,
 } from "@/lib/recursos-core";
+import { desmascararDinheiro, mascararDinheiro } from "@/lib/format";
 import {
   criarRecurso,
   definirFornecedor,
@@ -324,7 +325,7 @@ function LinhaRecurso({
           valor={r.custoUnitario}
           rodar={rodar}
           pendente={pendente}
-          prefixo="R$"
+          moeda
         />
 
         <td className="py-2 pl-3">
@@ -412,7 +413,7 @@ function Numero({
   valor,
   rodar,
   pendente,
-  prefixo,
+  moeda,
 }: {
   eventId: string;
   r: Recurso;
@@ -420,25 +421,47 @@ function Numero({
   valor: number | null;
   rodar: (fn: () => Promise<Resultado>) => void;
   pendente: boolean;
-  prefixo?: string;
+  /** dinheiro escreve 1.250,00; quantidade escreve 1250 */
+  moeda?: boolean;
 }) {
   return (
     <td className="px-2 py-2 text-right">
       <div className="flex items-center justify-end gap-1">
-        {prefixo && <span className="text-xs text-stone-300">{prefixo}</span>}
+        {moeda && <span className="text-xs text-stone-300">R$</span>}
         <input
           // O input é não controlado: sem esta key, "Recalcular previsto"
           // mudaria o banco e a tela continuaria mostrando o número velho.
           key={`${campo}-${valor ?? ""}`}
-          type="number"
-          min={0}
-          step="any"
+          type={moeda ? "text" : "number"}
+          min={moeda ? undefined : 0}
+          step={moeda ? undefined : "any"}
           inputMode="decimal"
-          defaultValue={valor ?? ""}
+          defaultValue={
+            valor == null
+              ? ""
+              : moeda
+                ? mascararDinheiro(valor.toFixed(2).replace(".", ","))
+                : valor
+          }
           disabled={pendente}
+          onChange={
+            // O input é não controlado (a key o remonta quando o servidor
+            // muda). Para o dinheiro sair 4.590,00 enquanto ela digita, a
+            // máscara é aplicada no próprio elemento.
+            moeda
+              ? (e) => {
+                  e.target.value = mascararDinheiro(e.target.value);
+                }
+              : undefined
+          }
           onBlur={(e) => {
             const bruto = e.target.value.trim();
-            const novo = bruto === "" ? null : Number(bruto.replace(",", "."));
+            const novo =
+              bruto === ""
+                ? null
+                : moeda
+                  ? desmascararDinheiro(bruto)
+                  : Number(bruto.replace(",", "."));
             if (novo === valor) return;
             if (novo != null && !Number.isFinite(novo)) return;
             rodar(() => salvarNumero(eventId, r.id, campo, novo));

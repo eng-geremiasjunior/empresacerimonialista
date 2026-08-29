@@ -8,6 +8,7 @@
 // com o fornecedor escolhido.
 
 import { useState, useTransition } from "react";
+import { desmascararDinheiro, mascararDinheiro } from "@/lib/format";
 import type { Curadoria, OpcaoCurada } from "@/lib/supabase/curadoria";
 import { C, F_TITLE, F_UI, brl, dataBr, monoLabel } from "./celebra";
 import type { OpcaoInput } from "@/app/(app)/eventos/[id]/planejamento/curadoria-actions";
@@ -472,7 +473,7 @@ function FormOpcao({
           placeholder="Valor"
           inputMode="decimal"
           value={valor}
-          onChange={(e) => setValor(e.target.value)}
+          onChange={(e) => setValor(mascararDinheiro(e.target.value))}
         />
         <input
           style={campo}
@@ -501,7 +502,7 @@ function FormOpcao({
           onClick={() =>
             onSalvar({
               nome,
-              valor: valor.trim() ? Number(valor.replace(",", ".")) : null,
+              valor: valor.trim() ? desmascararDinheiro(valor) : null,
               inclui: inclui.split(",").map((i) => i.trim()),
               prazoReserva: prazo || null,
               nota,
