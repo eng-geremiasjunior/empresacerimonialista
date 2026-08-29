@@ -36,6 +36,10 @@ export type EspacoLinha = {
   endereco: string | null;
   cidade: string | null;
   transporte: string | null;
+  liberacao_montagem: string | null;
+  termino_som: string | null;
+  desmontagem_ate: string | null;
+  restricoes: string | null;
 };
 
 export type HospedagemLinha = {
@@ -95,6 +99,10 @@ export function SiteDoConvite({
     endereco: espacoAtual?.endereco ?? "",
     cidade: espacoAtual?.cidade ?? "",
     transporte: espacoAtual?.transporte ?? "",
+    liberacaoMontagem: espacoAtual?.liberacao_montagem?.slice(0, 5) ?? "",
+    terminoSom: espacoAtual?.termino_som?.slice(0, 5) ?? "",
+    desmontagemAte: espacoAtual?.desmontagem_ate?.slice(0, 5) ?? "",
+    restricoes: espacoAtual?.restricoes ?? "",
   });
   const [formHosp, setFormHosp] = useState({
     nome: "",
@@ -115,6 +123,10 @@ export function SiteDoConvite({
       endereco: espacoAtual?.endereco ?? "",
       cidade: espacoAtual?.cidade ?? "",
       transporte: espacoAtual?.transporte ?? "",
+    liberacaoMontagem: espacoAtual?.liberacao_montagem?.slice(0, 5) ?? "",
+    terminoSom: espacoAtual?.termino_som?.slice(0, 5) ?? "",
+    desmontagemAte: espacoAtual?.desmontagem_ate?.slice(0, 5) ?? "",
+    restricoes: espacoAtual?.restricoes ?? "",
     });
   }, [espacoAtualId, espacoAtual, novoEspaco]);
 
@@ -263,7 +275,7 @@ export function SiteDoConvite({
               const v = e.target.value;
               if (v === "__novo") {
                 setNovoEspaco(true);
-                setFormEspaco({ nome: "", endereco: "", cidade: "", transporte: "" });
+                setFormEspaco({ nome: "", endereco: "", cidade: "", transporte: "", liberacaoMontagem: "", terminoSom: "", desmontagemAte: "", restricoes: "" });
               } else {
                 setNovoEspaco(false);
                 rodar(() => vincularEspaco(eventId, v || null));
@@ -307,7 +319,40 @@ export function SiteDoConvite({
             <textarea
               value={formEspaco.transporte}
               onChange={(e) => setFormEspaco({ ...formEspaco, transporte: e.target.value })}
-              placeholder="Transporte e transfer (sai no site, na seção Vindo de fora)"
+              placeholder="Transporte e transfer (sai no convite, na seção Vindo de fora)"
+              rows={2}
+              className={inputCls}
+            />
+
+            {/* os horários do LUGAR: descobertos uma vez, valem para todo
+                evento aqui — e é daqui que o cronograma vai puxar */}
+            <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+              Horários do espaço
+              <span className="ml-1.5 normal-case tracking-normal text-gray-400">
+                (uso interno — não saem no convite)
+              </span>
+            </p>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {[
+                { k: "liberacaoMontagem" as const, r: "Libera montagem" },
+                { k: "terminoSom" as const, r: "Som até" },
+                { k: "desmontagemAte" as const, r: "Desmontar até" },
+              ].map((c) => (
+                <label key={c.k} className="text-xs text-gray-500">
+                  {c.r}
+                  <input
+                    type="time"
+                    value={formEspaco[c.k]}
+                    onChange={(e) => setFormEspaco({ ...formEspaco, [c.k]: e.target.value })}
+                    className={inputCls}
+                  />
+                </label>
+              ))}
+            </div>
+            <textarea
+              value={formEspaco.restricoes}
+              onChange={(e) => setFormEspaco({ ...formEspaco, restricoes: e.target.value })}
+              placeholder="Restrições do lugar (ex.: carga a 80m, não furar parede)"
               rows={2}
               className={inputCls}
             />

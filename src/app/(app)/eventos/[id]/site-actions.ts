@@ -114,7 +114,16 @@ export async function vincularEspaco(
 
 export async function criarEspaco(
   eventId: string,
-  dados: { nome: string; endereco?: string; cidade?: string; transporte?: string }
+  dados: {
+    nome: string;
+    endereco?: string;
+    cidade?: string;
+    transporte?: string;
+    liberacaoMontagem?: string;
+    terminoSom?: string;
+    desmontagemAte?: string;
+    restricoes?: string;
+  }
 ): Promise<Resultado & { id?: string }> {
   const nome = dados.nome.trim();
   if (!nome) return { error: "Informe o nome do espaço." };
@@ -132,6 +141,10 @@ export async function criarEspaco(
       endereco: dados.endereco?.trim() || null,
       cidade: dados.cidade?.trim() || null,
       transporte: dados.transporte?.trim() || null,
+      liberacao_montagem: dados.liberacaoMontagem || null,
+      termino_som: dados.terminoSom || null,
+      desmontagem_ate: dados.desmontagemAte || null,
+      restricoes: dados.restricoes?.trim() || null,
     })
     .select("id")
     .single();
@@ -151,7 +164,16 @@ export async function criarEspaco(
 export async function salvarEspaco(
   eventId: string,
   espacoId: string,
-  dados: { nome: string; endereco?: string; cidade?: string; transporte?: string }
+  dados: {
+    nome: string;
+    endereco?: string;
+    cidade?: string;
+    transporte?: string;
+    liberacaoMontagem?: string;
+    terminoSom?: string;
+    desmontagemAte?: string;
+    restricoes?: string;
+  }
 ): Promise<Resultado> {
   const nome = dados.nome.trim();
   if (!nome) return { error: "Informe o nome do espaço." };
@@ -163,6 +185,10 @@ export async function salvarEspaco(
       endereco: dados.endereco?.trim() || null,
       cidade: dados.cidade?.trim() || null,
       transporte: dados.transporte?.trim() || null,
+      liberacao_montagem: dados.liberacaoMontagem || null,
+      termino_som: dados.terminoSom || null,
+      desmontagem_ate: dados.desmontagemAte || null,
+      restricoes: dados.restricoes?.trim() || null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", espacoId)

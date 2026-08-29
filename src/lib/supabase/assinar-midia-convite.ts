@@ -55,3 +55,23 @@ export async function assinarMidiaDoConvite(dados: SitePublico): Promise<{
 
   return { fotosAlbum, fotoCasalUrl };
 }
+
+/**
+ * As URLs de um punhado de caminhos do álbum — para as telas internas
+ * (a moderação do casal e a folha da equipe), que também não podem ler
+ * bucket privado direto do navegador.
+ */
+export async function assinarFotosDoAlbum(
+  caminhos: string[]
+): Promise<Map<string, string>> {
+  const limpos = [...new Set(caminhos.filter(Boolean))];
+  if (limpos.length === 0) return new Map();
+  const { data } = await servico().storage
+    .from("album")
+    .createSignedUrls(limpos, HORA);
+  const mapa = new Map<string, string>();
+  for (const d of data ?? []) {
+    if (d.path && d.signedUrl) mapa.set(d.path, d.signedUrl);
+  }
+  return mapa;
+}

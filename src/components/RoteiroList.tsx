@@ -155,6 +155,15 @@ export function RoteiroList({
                 imprimir na véspera e levar. Não é fallback de internet —
                 é o gesto que ela já faz hoje, com a folha certa. */}
             <a
+              href={`/imprimir/musica/${eventId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="A folha do som: o que tocar e o que não pode tocar"
+              className="flex items-center gap-1.5 rounded-[9px] border border-stone-300 bg-white px-3 py-2.5 text-[13px] font-semibold text-stone-700 transition-colors hover:bg-stone-50"
+            >
+              <Printer size={15} /> Música
+            </a>
+            <a
               href={`/imprimir/roteiro/${eventId}`}
               target="_blank"
               rel="noopener noreferrer"

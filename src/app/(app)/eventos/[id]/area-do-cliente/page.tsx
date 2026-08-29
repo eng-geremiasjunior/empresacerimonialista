@@ -45,7 +45,10 @@ export default async function AreaDoClientePage({
       )
       .eq("event_id", params.id)
       .maybeSingle(),
-    supabase.from("espacos").select("id, nome, endereco, cidade, transporte").order("nome"),
+    supabase
+      .from("espacos")
+      .select("id, nome, endereco, cidade, transporte, liberacao_montagem, termino_som, desmontagem_ate, restricoes")
+      .order("nome"),
   ]);
 
   const espacos = (espacosData ?? []) as EspacoLinha[];
