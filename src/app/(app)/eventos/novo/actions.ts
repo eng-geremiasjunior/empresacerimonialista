@@ -101,6 +101,14 @@ export async function criarEventoCompleto(
 
   if (error || !data) {
     console.error("[vela:novo-evento]", error);
+    // O limite do plano gratuito (131) não é falha: é uma resposta, e
+    // ela precisa saber o caminho de saída, não "tente novamente".
+    if (error?.message?.includes("plano_gratuito_no_limite")) {
+      return {
+        error:
+          "Seu primeiro evento é por nossa conta — e ele já está criado. Para começar o próximo, ative a assinatura em Assinatura, no menu.",
+      };
+    }
     return {
       // O texto do Postgres não diz nada a ela e assusta — vai para o log,
       // que é onde alguém consegue usar.
