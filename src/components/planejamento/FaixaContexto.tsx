@@ -624,6 +624,8 @@ export function FaixaContexto({
   onEditarPrevisto,
   onIrParaObjetivo,
   onManterAviso,
+  temVerba,
+  temArquetipo,
 }: {
   verba: Verba;
   objetivos: Objetivo[];
@@ -642,6 +644,11 @@ export function FaixaContexto({
   onEditarPrevisto: (objetivoId: string, valor: number | null) => void;
   onIrParaObjetivo: (objetivoId: string) => void;
   onManterAviso: () => void;
+  /** o método deste tipo de evento tem campo de verba (casamento sim,
+      formatura não — lá o dinheiro é da turma) */
+  temVerba: boolean;
+  /** e tem escala/cenário (só casamento e debutante têm) */
+  temArquetipo: boolean;
 }) {
   const [previstoAberto, setPrevistoAberto] = useState(true);
   const [verTodos, setVerTodos] = useState(false);
@@ -774,24 +781,40 @@ export function FaixaContexto({
             flexWrap: "wrap",
           }}
         >
-          <VerbaEditavel total={verba.total} onSalvar={onSalvarVerba} compacta />
-          <BarraVerba verba={verba} altura={10} largura={190} />
-          <span
-            style={{
-              fontFamily: F_MONO,
-              fontSize: 12,
-              color: C.corpo,
-              whiteSpace: "nowrap",
-            }}
-          >
-            {brl(previstoSemReserva)} previsto · {brl(verba.reservaValor)}{" "}
-            reserva ·{" "}
-            {verba.saldo !== null ? `${brl(verba.saldo)} livre` : "sem verba"}
-          </span>
-          <div
-            style={{ width: 1, alignSelf: "stretch", background: C.bordaSutil }}
-          />
-          {chips}
+          {temVerba && (
+            <>
+              <VerbaEditavel
+                total={verba.total}
+                onSalvar={onSalvarVerba}
+                compacta
+              />
+              <BarraVerba verba={verba} altura={10} largura={190} />
+              <span
+                style={{
+                  fontFamily: F_MONO,
+                  fontSize: 12,
+                  color: C.corpo,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {brl(previstoSemReserva)} previsto · {brl(verba.reservaValor)}{" "}
+                reserva ·{" "}
+                {verba.saldo !== null
+                  ? `${brl(verba.saldo)} livre`
+                  : "sem verba"}
+              </span>
+            </>
+          )}
+          {temVerba && temArquetipo && (
+            <div
+              style={{
+                width: 1,
+                alignSelf: "stretch",
+                background: C.bordaSutil,
+              }}
+            />
+          )}
+          {temArquetipo && chips}
           <div style={{ flex: 1 }} />
           <button
             type="button"
@@ -833,7 +856,9 @@ export function FaixaContexto({
           flexWrap: "wrap",
         }}
       >
-        {/* esquerda: verba */}
+        {/* esquerda: verba — some onde o método não tem verba (a
+            formatura e o show não administram dinheiro de cliente) */}
+        {temVerba && (
         <div
           style={{
             flex: 1,
@@ -877,12 +902,16 @@ export function FaixaContexto({
             </div>
           </div>
         </div>
+        )}
 
+        {temVerba && (temArquetipo || temVerba) && (
         <div
           style={{ width: 1, alignSelf: "stretch", background: C.bordaSutil }}
         />
+        )}
 
         {/* direita: arquétipo */}
+        {(temArquetipo || temVerba) && (
         <div
           style={{
             width: 310,
@@ -892,19 +921,24 @@ export function FaixaContexto({
             gap: 9,
           }}
         >
-          <span style={monoLabel}>arquétipo do casamento</span>
-          <div style={{ display: "flex", gap: 8 }}>{chips}</div>
-          <span
-            style={{
-              fontFamily: F_UI,
-              fontSize: 11,
-              lineHeight: "16px",
-              color: C.meta,
-            }}
-          >
-            Escala e cenário definem quais objetivos existem, os prazos e os %
-            de referência.
-          </span>
+          {temArquetipo && (
+            <>
+              <span style={monoLabel}>arquétipo do evento</span>
+              <div style={{ display: "flex", gap: 8 }}>{chips}</div>
+              <span
+                style={{
+                  fontFamily: F_UI,
+                  fontSize: 11,
+                  lineHeight: "16px",
+                  color: C.meta,
+                }}
+              >
+                Escala e cenário definem quais objetivos existem, os prazos e
+                os % de referência.
+              </span>
+            </>
+          )}
+          {temVerba && (
           <button
             type="button"
             onClick={onSugerir}
@@ -927,6 +961,7 @@ export function FaixaContexto({
           >
             {sugerindo ? "Sugerindo…" : "Sugerir distribuição"}
           </button>
+          )}
           {erroSugerir && (
             <span
               style={{ fontFamily: F_UI, fontSize: 12, color: C.atrasadaFg }}
@@ -935,6 +970,7 @@ export function FaixaContexto({
             </span>
           )}
         </div>
+        )}
       </div>
 
       {/* linha 2 — previsto por objetivo (a própria lista de objetivos) */}

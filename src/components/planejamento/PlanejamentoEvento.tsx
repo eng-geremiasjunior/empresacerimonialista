@@ -352,7 +352,14 @@ export function PlanejamentoEvento({
     valor: string | number | boolean | null
   ) {
     const campo = campoPorCodigo(codigo);
-    if (!campo) return;
+    // Sem o campo no método deste tipo, não há onde gravar. A tela já
+    // esconde o controle (temVerba/temArquetipo); se algum caminho ainda
+    // chegar aqui, some no log — nunca em silêncio, que foi como a verba
+    // do show engoliu o clique.
+    if (!campo) {
+      console.warn("[vela:planejamento] sem campo", codigo, "neste método");
+      return;
+    }
     startTransition(async () => {
       await salvarCampo(eventId, campo.id, campo.tipo, campo.codigo, valor);
       router.refresh();
@@ -485,6 +492,8 @@ export function PlanejamentoEvento({
           setAvisoFechado(false);
           salvarCampoPorCodigo(eixo, valor);
         }}
+        temVerba={campoPorCodigo("verba_total") !== null}
+        temArquetipo={campoPorCodigo("escala") !== null}
         onSalvarVerba={(valor) => salvarCampoPorCodigo("verba_total", valor)}
         onSalvarReserva={(pct) => salvarCampoPorCodigo("reserva_pct", pct)}
         onSugerir={() => {
