@@ -1,6 +1,7 @@
 "use client";
 
 import { membroOptionLabel, type MembroOption } from "@/lib/equipe-shared";
+import { rotuloPublico } from "@/lib/capacidades";
 
 export type DadosBasicos = {
   name: string;
@@ -18,6 +19,8 @@ const inputClass =
   "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm focus:border-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-200";
 const labelClass = "mb-1 block text-sm font-medium text-stone-700";
 
+const capitalizar = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+
 // A âncora do roteiro muda de nome por tipo: no casamento é a cerimônia,
 // na debutante é a entrada dela, na formatura é o início do protocolo
 // (colação, ou o baile quando a colação é em outra data).
@@ -25,6 +28,7 @@ const ROTULO_HORA: Record<string, string> = {
   casamento: "Hora da cerimônia",
   debutante: "Hora da entrada",
   formatura: "Hora de início",
+  show: "Abertura dos portões",
 };
 
 type Props = {
@@ -106,7 +110,10 @@ export function StepDadosBasicos({
           </div>
           <div>
             <label htmlFor="ev_guests" className={labelClass}>
-              Convidados
+              {/* Sem lista nominal (show), o numero e publico esperado — e
+                  e ele que dimensiona bebida, gelo e pulseira. O rotulo
+                  vem da capacidade do tipo, nunca de um if pelo nome. */}
+              {capitalizar(rotuloPublico(tipo))}
             </label>
             <input
               id="ev_guests"

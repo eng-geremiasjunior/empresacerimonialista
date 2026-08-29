@@ -29,6 +29,7 @@ export const TYPE_CHIP: Record<EventType, string> = {
   cha_revelacao: "bg-gray-100 text-gray-700",
   batizado: "bg-gray-100 text-gray-700",
   bodas: "bg-gray-100 text-gray-700",
+  show: "bg-gray-100 text-gray-700",
   outro: "bg-gray-100 text-gray-700",
 };
 

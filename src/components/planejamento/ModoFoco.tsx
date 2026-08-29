@@ -24,15 +24,11 @@ import {
   tituloStyle,
 } from "./celebra";
 import { resumoCampos, type SupplierRef } from "./DrawerDecisao";
+import { rotuloResponsavel } from "@/lib/papel";
 
-// "noivos" é o vocabulário do CHECK no banco; o rótulo é por tipo de
-// evento — numa debutante, quem decide é a família.
-function respLabel(resp: string, tipoEvento: string): string {
-  if (resp === "noivos") {
-    return tipoEvento === "casamento" ? "noivos" : "família";
-  }
-  return resp;
-}
+// O rótulo do papel mora em lib/papel.ts — era esta função, duplicada
+// aqui e no ModoFoco, e ausente na Organização.
+const respLabel = rotuloResponsavel;
 
 // ------------------------------------------------------------------
 // Fila "Decidir agora"

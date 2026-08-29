@@ -88,7 +88,7 @@ const STATUS_COLORS: Record<EventStatus, string> = {
   cancelado: "#f87171", // red-400
 };
 
-// Paleta categórica dos 9 tipos reais — tons médios, não neon.
+// Paleta categórica dos 10 tipos reais — tons médios, não neon.
 const TYPE_COLORS: Record<EventType, string> = {
   casamento: "#fb7185", // rose-400
   debutante: "#a78bfa", // violet-400
@@ -98,6 +98,7 @@ const TYPE_COLORS: Record<EventType, string> = {
   cha_revelacao: "#2dd4bf", // teal-400
   batizado: "#818cf8", // indigo-400
   bodas: "#22d3ee", // cyan-400
+  show: "#f97316", // orange-500
   outro: "#9ca3af", // gray-400
 };
 

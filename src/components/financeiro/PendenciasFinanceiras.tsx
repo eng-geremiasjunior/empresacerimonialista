@@ -20,6 +20,12 @@ export type Pendencia = {
   titulo: string;
   tipo: "pagamento" | "revisao";
   criadaEm: string;
+  /** o que a origem já sabia — o formulário nasce preenchido */
+  valorSugerido?: number | null;
+  supplierId?: string | null;
+  quantidade?: number | null;
+  /** true = veio de um item comprado na Operação, não de uma tarefa */
+  daOperacao?: boolean;
 };
 
 export function PendenciasFinanceiras({
@@ -144,7 +150,9 @@ function ItemPendencia({
       <p className="mt-0.5 text-[11.5px] text-gray-500">
         {ehRevisao
           ? "a contagem mudou — confira o custo de buffet e bar"
-          : "vindo da Organização"}
+          : pendencia.daOperacao
+            ? "vindo da Operação"
+            : "vindo da Organização"}
       </p>
 
       {aberta && !ehRevisao && (
@@ -158,11 +166,20 @@ function ItemPendencia({
           <input
             name="value"
             inputMode="decimal"
+            defaultValue={
+              pendencia.valorSugerido != null
+                ? pendencia.valorSugerido.toFixed(2).replace(".", ",")
+                : ""
+            }
             placeholder="Valor (ex.: 1800,00)"
             className={input}
           />
           <input name="due_date" type="date" className={input} />
-          <select name="supplier_id" className={`${input} sm:col-span-2`}>
+          <select
+            name="supplier_id"
+            defaultValue={pendencia.supplierId ?? ""}
+            className={`${input} sm:col-span-2`}
+          >
             <option value="">Sem fornecedor (conta da assessoria)</option>
             {fornecedores.map((f) => (
               <option key={f.id} value={f.id}>

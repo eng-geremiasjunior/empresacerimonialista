@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { tem, type Capacidade } from "@/lib/capacidades";
 
 export type TabCounters = {
   fornecedores: number;
@@ -15,9 +16,18 @@ export type TabCounters = {
 // FasesDoEvento, logo acima. O que sobra nesta barra é consulta — e é
 // isso que a torna calma: ela deixou de disputar atenção com o motor de
 // trabalho.
-const TABS: { label: string; seg: string; counter?: keyof TabCounters }[] = [
+const TABS: {
+  label: string;
+  seg: string;
+  counter?: keyof TabCounters;
+  /** aba que só existe em tipo de evento que declara a capacidade */
+  requer?: Capacidade;
+}[] = [
   { label: "Resumo", seg: "" },
-  { label: "Mesas", seg: "mesas" },
+  // A Operação vale para todo tipo: buffet de casamento tem a mesma
+  // pergunta do bar de um show, em outra escala.
+  { label: "Operação", seg: "operacao" },
+  { label: "Mesas", seg: "mesas", requer: "mesas" },
   { label: "Fornecedores", seg: "fornecedores", counter: "fornecedores" },
   { label: "Comunicação", seg: "comunicacao", counter: "comunicacao" },
   { label: "Financeiro", seg: "financeiro", counter: "financeiro" },
@@ -29,17 +39,20 @@ const TABS: { label: string; seg: string; counter?: keyof TabCounters }[] = [
 
 export function EventTabs({
   eventId,
+  tipoEvento,
   counters,
 }: {
   eventId: string;
+  tipoEvento?: string | null;
   counters?: TabCounters;
 }) {
   const pathname = usePathname();
   const base = `/eventos/${eventId}`;
+  const visiveis = TABS.filter((t) => !t.requer || tem(tipoEvento, t.requer));
 
   return (
     <nav className="-mb-px flex gap-1 overflow-x-auto border-b border-[color:var(--ev-card-border-soft)]">
-      {TABS.map((tab) => {
+      {visiveis.map((tab) => {
         const href = tab.seg ? `${base}/${tab.seg}` : base;
         const active = tab.seg ? pathname.startsWith(href) : pathname === base;
         const n = tab.counter ? counters?.[tab.counter] ?? 0 : 0;

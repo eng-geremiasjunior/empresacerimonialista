@@ -175,6 +175,7 @@ export default async function EventoLayout({
 
       <EventTabs
         eventId={event.id}
+        tipoEvento={event.type}
         counters={{
           fornecedores: contadores.fornecedoresPendentes,
           comunicacao: contadores.comunicacaoNaoLidas,

@@ -10,9 +10,12 @@
 //
 // Tokens do Celebra Pro em globals.css; primitivos em ui/celebra.
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import { createContext, useContext, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { rotuloResponsavelTitulo } from "@/lib/papel";
+import type { Recurso } from "@/lib/recursos-core";
+import { PainelQuantidades } from "./PainelQuantidades";
 import {
   CalendarClock,
   Check,
@@ -128,12 +131,24 @@ const CATEGORIAS = [
 
 /* ================================================================ */
 
+// O tipo do evento decide como a tela chama o cliente ("noivos",
+// "produtor", "comissão"). Dois formulários fundos precisam disso; o
+// contexto evita atravessar prop por componentes que não usam.
+const TipoEventoCtx = createContext<string | null>(null);
+
+function useRotuloCliente(): string {
+  return rotuloResponsavelTitulo("noivos", useContext(TipoEventoCtx));
+}
+
 export function OrganizacaoEvento({
   inicial,
   eventId,
   fornecedores,
   tarefaInicial,
   hoje,
+  tipoEvento,
+  recursos,
+  publico,
 }: {
   inicial: Organizacao;
   eventId: string;
@@ -141,6 +156,10 @@ export function OrganizacaoEvento({
   tarefaInicial?: string | null;
   /** yyyy-MM-dd em Brasília, vindo do servidor (ver page.tsx) */
   hoje: string;
+  /** decide como esta tela chama o cliente do evento */
+  tipoEvento?: string | null;
+  recursos?: Recurso[];
+  publico?: { quantidade: number; origem: string } | null;
 }) {
   const [vista, setVista] = useState<Vista>("lista");
   const [filtro, setFiltro] = useState<Filtro>("todas");
@@ -197,6 +216,7 @@ export function OrganizacaoEvento({
   const abertas = org.tarefas.filter((t) => t.status !== "concluido").length;
 
   return (
+    <TipoEventoCtx.Provider value={tipoEvento ?? null}>
     <div style={{ fontFamily: "var(--font-ui)", color: "var(--text-strong)" }}>
       {!org.dataEvento && <BannerDataOrg eventId={eventId} />}
       {org.pendencias.length > 0 && (
@@ -227,6 +247,12 @@ export function OrganizacaoEvento({
           Nova tarefa
         </Button>
       </div>
+
+      <PainelQuantidades
+        eventId={eventId}
+        recursos={recursos ?? []}
+        publico={publico ?? null}
+      />
 
       {/* toolbar */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
@@ -345,6 +371,7 @@ export function OrganizacaoEvento({
         />
       )}
     </div>
+    </TipoEventoCtx.Provider>
   );
 }
 
@@ -1131,7 +1158,7 @@ function TarefaDrawer({
                 onChange={setResponsavel}
                 options={[
                   { value: "cerimonialista", label: "Cerimonial" },
-                  { value: "noivos", label: "Noivos" },
+                  { value: "noivos", label: useRotuloCliente() },
                   { value: "ambos", label: "Ambos" },
                 ]}
               />
@@ -1797,7 +1824,7 @@ function NovoCompromisso({
           onChange={(e) => setResponsavel(e.target.value)}
         >
           <option value="ambos">Ambos</option>
-          <option value="noivos">Noivos</option>
+          <option value="noivos">{useRotuloCliente()}</option>
           <option value="cerimonialista">Cerimonialista</option>
         </Select>
         <div style={{ gridColumn: "1 / -1" }}>

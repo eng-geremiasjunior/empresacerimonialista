@@ -33,6 +33,7 @@ import { BlocoCuradoria, type AcoesCuradoria } from "./BlocoCuradoria";
 import { BlocoGuiaEstilo, type AcoesGuia } from "./BlocoGuiaEstilo";
 import type { Curadoria } from "@/lib/supabase/curadoria";
 import type { GuiaDeEstilo } from "@/lib/guia-shared";
+import { rotuloResponsavel } from "@/lib/papel";
 
 /**
  * O guia de estilo é o produto DESTA decisão — não é área nova do
@@ -40,14 +41,9 @@ import type { GuiaDeEstilo } from "@/lib/guia-shared";
  */
 export const CODIGO_DECISAO_GUIA = "decoracao_briefing";
 
-// "noivos" é o vocabulário do CHECK no banco; o rótulo é por tipo de
-// evento — numa debutante, quem decide é a família.
-function respLabel(resp: string, tipoEvento: string): string {
-  if (resp === "noivos") {
-    return tipoEvento === "casamento" ? "noivos" : "família";
-  }
-  return resp;
-}
+// O rótulo do papel mora em lib/papel.ts — era esta função, duplicada
+// aqui e no ModoFoco, e ausente na Organização.
+const respLabel = rotuloResponsavel;
 
 export type SupplierRef = { id: string; name: string };
 

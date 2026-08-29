@@ -17,6 +17,7 @@ const ORDER: EventType[] = [
   "cha_revelacao",
   "batizado",
   "bodas",
+  "show",
   "outro",
 ];
 

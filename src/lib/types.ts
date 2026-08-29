@@ -7,6 +7,7 @@ export type EventType =
   | "cha_revelacao"
   | "batizado"
   | "bodas"
+  | "show"
   | "outro";
 
 export type EventStatus = "orcamento" | "confirmado" | "concluido" | "cancelado";
@@ -183,6 +184,7 @@ export const EVENT_TYPE_LABELS: Record<EventType, string> = {
   cha_revelacao: "Chá Revelação",
   batizado: "Batizado",
   bodas: "Bodas",
+  show: "Show / Grande porte",
   outro: "Outro",
 };
 

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getOrganizacao } from "@/lib/supabase/organizacao-query";
 import { OrganizacaoEvento } from "@/components/organizacao/OrganizacaoEvento";
+import { getPublico, getRecursos } from "@/lib/supabase/recursos";
 
 export default async function EventoOrganizacaoPage({
   params,
@@ -14,7 +15,7 @@ export default async function EventoOrganizacaoPage({
 
   const { data: ev } = await supabase
     .from("events")
-    .select("date")
+    .select("date, type")
     .eq("id", eventId)
     .single();
 
@@ -32,6 +33,13 @@ export default async function EventoOrganizacaoPage({
 
   const organizacao = await getOrganizacao(eventId, ev?.date ?? null);
 
+  // As quantidades entram AQUI, não só numa aba: quem coordena precisa
+  // saber quantos doces e quantos salgados na mesma tela em que trabalha.
+  const [recursos, publico] = await Promise.all([
+    getRecursos(eventId),
+    getPublico(eventId),
+  ]);
+
   // "Hoje" nasce aqui, em Brasília, e desce como dado. A lista agrupa por
   // tempo, então a resposta muda a tela inteira — calcular nos dois lados
   // faria servidor e navegador discordarem depois das 21h.
@@ -46,6 +54,9 @@ export default async function EventoOrganizacaoPage({
       fornecedores={fornecedores}
       tarefaInicial={searchParams?.tarefa ?? null}
       hoje={hoje}
+      tipoEvento={ev?.type ?? null}
+      recursos={recursos}
+      publico={publico}
     />
   );
 }

@@ -7,6 +7,7 @@ import {
   Gift,
   Droplet,
   Wine,
+  Mic,
   CalendarPlus,
   type LucideIcon,
 } from "lucide-react";
@@ -21,6 +22,7 @@ const ICONS: Record<EventType, LucideIcon> = {
   cha_revelacao: Gift,
   batizado: Droplet,
   bodas: Wine,
+  show: Mic,
   outro: CalendarPlus,
 };
 

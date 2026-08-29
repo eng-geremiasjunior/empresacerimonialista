@@ -67,17 +67,26 @@ export default async function EventoFinanceiroPage({
     // migração ainda não rodou.
     supabase
       .from("financeiro_pendencia")
-      .select("id, titulo, tipo, created_at")
+      .select(
+        "id, titulo, tipo, created_at, valor_sugerido, supplier_id, quantidade, evento_recurso_id"
+      )
       .eq("event_id", eventId)
       .eq("status", "aberta")
       .order("created_at", { ascending: true }),
   ]);
 
+  // A pendência passou a carregar o que já se sabe (132): valor,
+  // fornecedor e a quantidade comprada. Antes vinha só o título, e ela
+  // redigitava tudo.
   const pendencias: Pendencia[] = (pendRes.data ?? []).map((p) => ({
     id: p.id,
     titulo: p.titulo,
     tipo: p.tipo as Pendencia["tipo"],
     criadaEm: p.created_at,
+    valorSugerido: p.valor_sugerido == null ? null : Number(p.valor_sugerido),
+    supplierId: (p.supplier_id as string | null) ?? null,
+    quantidade: p.quantidade == null ? null : Number(p.quantidade),
+    daOperacao: Boolean(p.evento_recurso_id),
   }));
 
   const orcamento = orcRes.data as {

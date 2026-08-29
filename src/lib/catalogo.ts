@@ -18,6 +18,7 @@ export const TIPOS_CATALOGO: EventType[] = [
   "cha_revelacao",
   "batizado",
   "corporativo",
+  "show",
   "outro",
 ];
 
@@ -34,6 +35,7 @@ export const TIPO_DESCRICAO: Record<EventType, string> = {
   cha_revelacao: "Chá revelação e chá de bebê",
   batizado: "Batizado e celebrações religiosas",
   corporativo: "Confraternizações e eventos de empresa",
+  show: "Shows, festas universitárias e eventos de grande porte",
   outro: "Para o que não se encaixa nos demais",
 };
 
@@ -46,6 +48,7 @@ export const TIPO_EMOJI: Record<EventType, string> = {
   cha_revelacao: "🎈",
   batizado: "🕊️",
   corporativo: "🏢",
+  show: "🎤",
   outro: "✨",
 };
 

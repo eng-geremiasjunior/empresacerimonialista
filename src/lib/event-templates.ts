@@ -8,6 +8,7 @@ export type TemplateEventType =
   | "debutante"
   | "formatura"
   | "corporativo"
+  | "show"
   | "religioso"
   | "maternidade"
   | "outro";
@@ -26,6 +27,7 @@ export type WizardRespostas = {
   cabineFotos?: boolean; // debutante
   colacaoJunto?: boolean; // formatura: colação e baile no mesmo dia e local
   palestrantes?: boolean; // corporativo
+  atracaoAbertura?: boolean; // show: tem atração de abertura antes da principal
   chaRevelacao?: boolean; // maternidade
 };
 
@@ -202,6 +204,58 @@ const TEMPLATES: Record<TemplateEventType, EventTemplate> = {
     ],
   },
 
+  // Show / grande porte. O que manda aqui é licenca e estrutura: o que
+  // atrasa num casamento adia; num show, fecha o portao. A timeline
+  // abaixo e fallback — quem manda e o roteiro por ancora da 132
+  // (abertura dos portoes = offset 0).
+  show: {
+    documentacao: [
+      "Contrato da atração assinado",
+      "Alvará do evento",
+      "AVCB / vistoria dos bombeiros",
+      "ECAD recolhido",
+      "Apólice de seguro",
+    ],
+    fornecedoresPadrao: [
+      "Estrutura (palco/som/luz)",
+      "Bebidas",
+      "Segurança",
+      "Ambulância/APH",
+      "Banheiros químicos",
+      "Limpeza",
+    ],
+    evento: [
+      "Rider técnico conferido",
+      "Passagem de som agendada",
+      "Gerador testado com carga",
+      "Saídas de emergência desobstruídas",
+      "Brigadistas em posto",
+      "Rádios distribuídos e testados",
+      "Bar abastecido e contagem de entrada registrada",
+      "Pulseiras e cortesias na portaria",
+    ],
+    eventoCondicional: [
+      { condicao: "atracaoAbertura", item: "Atração de abertura confirmada" },
+    ],
+    fases: [
+      "Contratação",
+      "Licenças",
+      "Produção",
+      "Evento",
+      "Prestação de contas",
+    ],
+    timelineSugerida: [
+      { titulo: "Montagem de palco, som e luz" },
+      { titulo: "Passagem de som" },
+      { titulo: "Briefing da equipe e postos" },
+      { titulo: "Abertura dos portões" },
+      { titulo: "Atração de abertura", condicao: "atracaoAbertura" },
+      { titulo: "Atração principal" },
+      { titulo: "Encerramento e esvaziamento" },
+      { titulo: "Desmontagem e devoluções" },
+    ],
+  },
+
   religioso: {
     documentacao: ["Contrato assinado", "Documentação religiosa em dia"],
     fornecedoresPadrao: ["Celebrante", "Som", "Recepção/Buffet", "Ornamentação"],
@@ -246,7 +300,7 @@ const TEMPLATES: Record<TemplateEventType, EventTemplate> = {
   },
 };
 
-// Os 9 tipos de evento do app mapeiam para 7 arquétipos de template.
+// Os 10 tipos de evento do app mapeiam para 8 arquétipos de template.
 // (aniversario/bodas/outro → outro; cha_revelacao → maternidade;
 //  batizado → religioso). Mantém event-templates.ts autossuficiente.
 export function resolverTemplate(tipoEvento: string): TemplateEventType {
@@ -259,6 +313,8 @@ export function resolverTemplate(tipoEvento: string): TemplateEventType {
       return "formatura";
     case "corporativo":
       return "corporativo";
+    case "show":
+      return "show";
     case "cha_revelacao":
       return "maternidade";
     case "batizado":
