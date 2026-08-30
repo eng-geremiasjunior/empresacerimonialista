@@ -26,6 +26,7 @@ import {
   type TemaModal,
 } from "@/components/orcamento-publico/ModalAceiteProposta";
 import { useCountdownValidade } from "@/components/orcamento-publico/useCountdownValidade";
+import { VideoDeFundo } from "@/components/orcamento-publico/VideoDeFundo";
 import { expirado, type OrcamentoPublicoData } from "@/lib/orcamento-publico";
 import {
   calcularProposta,
@@ -264,11 +265,14 @@ export function PropostaConviteVivo({
         .cv-drift-a{animation:cvDrift 9s ease-in-out infinite}
         .cv-drift-b{animation:cvDrift 11s ease-in-out infinite reverse}
         .cv-grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(480px,100%),1fr));gap:34px}
-        .cv-grid-momentos{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+        .cv-grid-momentos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));gap:12px}
         .cv-grid-trad{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr));gap:12px}
         .cv-grid-corrente{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr));row-gap:44px;column-gap:34px}
-        .cv-grid-timeline{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:26px}
-        .cv-grid-prova{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:22px}
+        /* sem o min(...,100%) a coluna nunca encolhe abaixo do próprio
+           mínimo: num iPhone SE (320px de tela, menos o padding) estas
+           três empurravam a página para o lado */
+        .cv-grid-timeline{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:26px}
+        .cv-grid-prova{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:22px}
         .cv-scroll::-webkit-scrollbar{height:8px}
         .cv-scroll::-webkit-scrollbar-thumb{background:${marfim(0.2)};border-radius:99px}
         .cv-slider{-webkit-appearance:none;appearance:none;height:6px;border-radius:999px;outline:none}
@@ -396,18 +400,11 @@ export function PropostaConviteVivo({
             alignItems: "center", justifyContent: "center", overflow: "hidden",
           }}
         >
-          <video
+          {/* fallback na paleta da festa, para o hero nunca ficar preto */}
+          <VideoDeFundo
             src={MIDIA_CONVITE_VIVO.video}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="metadata"
-            aria-hidden
-            style={{
-              position: "absolute", inset: 0, width: "100%", height: "100%",
-              objectFit: "cover", filter: "saturate(1.1) contrast(1.05)",
-            }}
+            fallback={`radial-gradient(ellipse at 30% 20%, ${rosa(0.5)}, transparent 60%), linear-gradient(180deg, #2a0f24 0%, ${COR.ameixa} 100%)`}
+            filtro="saturate(1.1) contrast(1.05)"
           />
           <div
             aria-hidden
@@ -483,7 +480,9 @@ export function PropostaConviteVivo({
                 style={{
                   width: "100%", background: "transparent", border: "none",
                   outline: "none", textAlign: "center", color: COR.marfim,
-                  fontSize: "clamp(48px, 11vw, 104px)", lineHeight: 0.86,
+                  // piso de 48px num celular de 320px empurrava o nome
+                  // para quatro linhas; 11vw já cuida do crescimento
+                  fontSize: "clamp(34px, 11vw, 104px)", lineHeight: 0.86,
                   letterSpacing: "-.03em",
                 }}
               />

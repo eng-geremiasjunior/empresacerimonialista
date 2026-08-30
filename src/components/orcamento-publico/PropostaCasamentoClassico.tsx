@@ -321,15 +321,32 @@ export function PropostaCasamentoClassico({
         .kd-lg-show{display:none}
         .kd-grid2a{display:grid;grid-template-columns:1fr;gap:40px}
         .kd-grid2b{display:grid;grid-template-columns:1fr;gap:40px}
-        .kd-grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-        .kd-grid6{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
-        .kd-grid2c{display:grid;grid-template-columns:1.2fr 0.8fr;gap:24px}
+        /* Estes cinco estavam com as colunas de DESKTOP na camada base —
+           o oposto do que o comentário acima promete. No celular, três
+           cartões de pacote de 168px + gaps davam 548px dentro de 327px:
+           a proposta abria rolando de lado. Agora nascem empilhados e
+           ganham colunas conforme a tela cresce. */
+        .kd-grid3{display:grid;grid-template-columns:1fr;gap:16px}
+        .kd-grid6{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+        .kd-grid2c{display:grid;grid-template-columns:1fr;gap:24px}
         .kd-sm2{display:grid;grid-template-columns:1fr;gap:12px}
         .kd-hero{display:grid;grid-template-columns:1fr;gap:40px}
-        .kd-dia2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+        .kd-dia2{display:grid;grid-template-columns:1fr;gap:12px}
         .kd-fotos3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-        .kd-eventos{display:grid;grid-template-columns:1.1fr 0.9fr;gap:40px}
-        @media (min-width:640px){ .kd-sm2{grid-template-columns:repeat(2,1fr)} }
+        .kd-eventos{display:grid;grid-template-columns:1fr;gap:28px}
+        /* Filho de grid tem min-width:auto por padrão e se recusa a
+           encolher além do próprio conteúdo — é assim que uma coluna
+           "1fr" estoura a tela mesmo com a conta certa. */
+        .kd-grid2a>*,.kd-grid2b>*,.kd-grid3>*,.kd-grid6>*,.kd-grid2c>*,
+        .kd-sm2>*,.kd-hero>*,.kd-dia2>*,.kd-fotos3>*,.kd-eventos>*{min-width:0}
+        @media (min-width:640px){
+          .kd-sm2{grid-template-columns:repeat(2,1fr)}
+          .kd-grid3{grid-template-columns:repeat(3,1fr)}
+          .kd-grid6{grid-template-columns:repeat(3,1fr)}
+          .kd-grid2c{grid-template-columns:1.2fr 0.8fr}
+          .kd-dia2{grid-template-columns:repeat(2,1fr)}
+          .kd-eventos{grid-template-columns:1.1fr 0.9fr;gap:40px}
+        }
         @media (min-width:1024px){
           .kd-aside{display:flex}
           .kd-mobilebar{display:none}
@@ -337,6 +354,7 @@ export function PropostaCasamentoClassico({
           .kd-lg-show{display:block}
           .kd-grid2a{grid-template-columns:0.9fr 1.1fr}
           .kd-grid2b{grid-template-columns:1.1fr 0.9fr}
+          .kd-grid6{grid-template-columns:repeat(6,1fr)}
           .kd-hero{grid-template-columns:1.1fr 0.9fr}
         }
         @keyframes kdFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}

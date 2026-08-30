@@ -644,7 +644,12 @@ function NoDiaSection() {
                 <div className="absolute right-6 top-6 h-16 w-16 rounded-full" style={{ background: card.acento, filter: "blur(28px)", opacity: 0.7 }} />
                 <div className="absolute left-8 top-10 h-px w-24" style={{ background: card.acento, opacity: 0.5, transform: "rotate(-18deg)" }} />
                 <span className="absolute right-6 top-6 h-2 w-2 rounded-full" style={{ background: card.acento, boxShadow: `0 0 16px ${card.acento}` }} />
-                <h3 className="display relative text-[22px] font-black leading-tight text-white">{card.titulo}</h3>
+                {/* min-w-0: filho de flex não encolhe abaixo do próprio
+                    conteúdo sem isso, e num aparelho de 320px o título
+                    vazava para fora do cartão */}
+                <h3 className="display relative min-w-0 text-[19px] font-black leading-tight text-white sm:text-[22px]">
+                  {card.titulo}
+                </h3>
               </div>
               <ul className="space-y-2.5 p-5">
                 {card.itens.map((it) => (

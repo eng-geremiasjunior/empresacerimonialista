@@ -31,6 +31,7 @@ import {
   type TemaModal,
 } from "@/components/orcamento-publico/ModalAceiteProposta";
 import { useCountdownValidade } from "@/components/orcamento-publico/useCountdownValidade";
+import { VideoDeFundo } from "@/components/orcamento-publico/VideoDeFundo";
 import { expirado, type OrcamentoPublicoData } from "@/lib/orcamento-publico";
 import {
   calcularProposta,
@@ -434,18 +435,10 @@ export function PropostaCasamentoPraia({
           padding: "72px 32px", overflow: "hidden", color: COR.claro,
         }}
       >
-        <video
+        {/* fallback: o mar em degradê, para o hero nunca ficar preto */}
+        <VideoDeFundo
           src={MIDIA_PRAIA.video}
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          aria-hidden
-          style={{
-            position: "absolute", inset: 0, width: "100%", height: "100%",
-            objectFit: "cover",
-          }}
+          fallback="linear-gradient(180deg, #7fb3c4 0%, #4f8ba0 42%, #25383f 100%)"
         />
         <div
           aria-hidden
@@ -499,7 +492,17 @@ export function PropostaCasamentoPraia({
               style={{
                 width: "100%", background: "transparent", border: "none",
                 outline: "none", textAlign: "center", color: COR.claro,
-                fontSize: "clamp(36px, 6vw, 64px)", lineHeight: 1.15,
+                // O nome do casal é um <input>, e input não quebra linha:
+                // o que não couber some pela direita. Com o piso antigo de
+                // 36px, "Marina & João" pedia 369px numa tela de 375 e
+                // aparecia cortado. Agora o piso acompanha a tela — e
+                // encolhe mais um passo quando o nome é longo, que é o
+                // caso em que a tela pequena não perdoa.
+                fontSize:
+                  nome.length > 18
+                    ? "clamp(20px, 6.4vw, 52px)"
+                    : "clamp(26px, 8vw, 64px)",
+                lineHeight: 1.15,
               }}
             />
           </label>
