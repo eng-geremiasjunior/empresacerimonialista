@@ -58,13 +58,25 @@ export function OperacaoEvento({
   const [erro, setErro] = useState<string | null>(null);
   const [aberto, setAberto] = useState<string | null>(null);
   const [novoAberto, setNovoAberto] = useState(false);
+  const [salvoEm, setSalvoEm] = useState<string | null>(null);
 
   function rodar(fn: () => Promise<Resultado>) {
     setErro(null);
     iniciar(async () => {
       const r = await fn();
-      if (typeof r.error === "string") setErro(r.error);
-      else router.refresh();
+      if (typeof r.error === "string") {
+        setErro(r.error);
+        return;
+      }
+      // Um número gravado num campo sem borda não muda nada na tela — e
+      // sem sinal nenhum a pessoa fica sem saber se aconteceu.
+      setSalvoEm(
+        new Date().toLocaleTimeString("pt-BR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      );
+      router.refresh();
     });
   }
 
@@ -162,6 +174,9 @@ export function OperacaoEvento({
       )}
 
       {erro && <p className="mt-3 text-sm text-red-600">{erro}</p>}
+      {!erro && salvoEm && (
+        <p className="mt-2 text-xs text-stone-400">salvo às {salvoEm}</p>
+      )}
 
       {recursos.length === 0 ? (
         <div className="mt-6 rounded-xl border border-dashed border-stone-200 px-5 py-8 text-center">
@@ -424,6 +439,20 @@ function Numero({
   /** dinheiro escreve 1.250,00; quantidade escreve 1250 */
   moeda?: boolean;
 }) {
+  // Um caminho só para gravar, usado pelo Enter e por sair do campo.
+  function gravar(bruto: string) {
+    const texto = bruto.trim();
+    const novo =
+      texto === ""
+        ? null
+        : moeda
+          ? desmascararDinheiro(texto)
+          : Number(texto.replace(",", "."));
+    if (novo === valor) return;
+    if (novo != null && !Number.isFinite(novo)) return;
+    rodar(() => salvarNumero(eventId, r.id, campo, novo));
+  }
+
   return (
     <td className="px-2 py-2 text-right">
       <div className="flex items-center justify-end gap-1">
@@ -443,7 +472,8 @@ function Numero({
                 ? mascararDinheiro(valor.toFixed(2).replace(".", ","))
                 : valor
           }
-          disabled={pendente}
+          // Sem `disabled` de propósito: desativar os 60 campos a cada
+          // gravação engolia o que ela digitasse no campo seguinte.
           onChange={
             // O input é não controlado (a key o remonta quando o servidor
             // muda). Para o dinheiro sair 4.590,00 enquanto ela digita, a
@@ -454,18 +484,31 @@ function Numero({
                 }
               : undefined
           }
-          onBlur={(e) => {
-            const bruto = e.target.value.trim();
-            const novo =
-              bruto === ""
-                ? null
-                : moeda
-                  ? desmascararDinheiro(bruto)
-                  : Number(bruto.replace(",", "."));
-            if (novo === valor) return;
-            if (novo != null && !Number.isFinite(novo)) return;
-            rodar(() => salvarNumero(eventId, r.id, campo, novo));
+          onKeyDown={(e) => {
+            // Numa tabela de números, o gesto é digitar e apertar Enter.
+            // Sem isto, o valor só era gravado ao SAIR do campo — quem
+            // apertava Enter via o número na tela, ia embora e perdia
+            // tudo, sem nenhum aviso.
+            //
+            // E o Enter grava DIRETO, não por blur(): blur depende de a
+            // janela ter foco, e "depende" não é palavra que se queira
+            // entre a contagem do bar e o banco.
+            if (e.key === "Enter") {
+              e.preventDefault();
+              gravar(e.currentTarget.value);
+              e.currentTarget.blur();
+            }
+            if (e.key === "Escape") {
+              e.currentTarget.value =
+                valor == null
+                  ? ""
+                  : moeda
+                    ? mascararDinheiro(valor.toFixed(2).replace(".", ","))
+                    : String(valor);
+              e.currentTarget.blur();
+            }
           }}
+          onBlur={(e) => gravar(e.target.value)}
           className="w-full rounded-md border border-transparent bg-transparent px-1.5 py-1 text-right tabular-nums text-stone-800 hover:border-stone-200 focus:border-stone-300 focus:bg-white focus:outline-none disabled:opacity-50"
         />
       </div>

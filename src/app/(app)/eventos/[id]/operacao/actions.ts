@@ -44,15 +44,22 @@ export async function salvarNumero(
   }
 
   const supabase = createClient();
-  const { error } = await supabase
+  // `select` depois do update para saber QUANTAS linhas mudaram: com RLS,
+  // um update barrado volta sem erro e sem linhas — e sem isto a tela
+  // diria "salvo" para uma gravação que nunca aconteceu.
+  const { data, error } = await supabase
     .from("evento_recurso")
     .update({ [campo]: valor })
     .eq("id", recursoId)
-    .eq("event_id", eventId);
+    .eq("event_id", eventId)
+    .select("id");
 
   if (error) {
     console.error("[vela:operacao]", error.message);
     return { error: "Não foi possível salvar." };
+  }
+  if (!data || data.length === 0) {
+    return { error: "Você não tem permissão para editar este evento." };
   }
   revalidar(eventId);
   return { success: true };
