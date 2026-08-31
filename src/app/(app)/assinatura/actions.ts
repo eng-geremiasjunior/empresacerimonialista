@@ -176,6 +176,9 @@ export async function assinar(
     cardToken,
     valorCentavos: valor,
     descricao: "Assinatura mensal",
+    // o endereço do formulário é também o de cobrança do cartão — pedir
+    // duas vezes o mesmo endereço seria burocracia sem ganho
+    enderecoCobranca: pagador.endereco,
   });
   if (!ass.ok) return { error: ass.erro };
 

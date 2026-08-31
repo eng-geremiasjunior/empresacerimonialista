@@ -173,12 +173,38 @@ export async function criarAssinatura(dados: {
   cardToken: string;
   valorCentavos: number;
   descricao: string;
+  /** endereço de cobrança do CARTÃO — o terceiro campo descoberto no
+      susto: `validation_error | billing | "value" is required`. O token
+      só carrega os dados do plástico; o billing_address vai aqui, junto
+      do card_token, na criação da assinatura. */
+  enderecoCobranca: {
+    cep: string;
+    rua: string;
+    numero: string;
+    complemento?: string;
+    bairro: string;
+    cidade: string;
+    estado: string;
+  };
 }) {
+  const e = dados.enderecoCobranca;
   return chamar<AssinaturaGateway>("/subscriptions", {
     method: "POST",
     body: JSON.stringify({
       customer_id: dados.clienteId,
-      card_token: dados.cardToken,
+      // conferido na doc: card_token e billing_address vão JUNTOS dentro
+      // de card; line_1 é "Número, Rua, Bairro", nesta ordem
+      card: {
+        card_token: dados.cardToken,
+        billing_address: {
+          line_1: [e.numero, e.rua, e.bairro].filter(Boolean).join(", "),
+          line_2: e.complemento || "",
+          zip_code: e.cep.replace(/\D/g, ""),
+          city: e.cidade,
+          state: e.estado.toUpperCase(),
+          country: "BR",
+        },
+      },
       payment_method: "credit_card",
       billing_type: "prepaid",
       interval: "month",
