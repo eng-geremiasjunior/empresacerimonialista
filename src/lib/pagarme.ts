@@ -90,45 +90,76 @@ export type ClienteGateway = { id: string; name?: string; email?: string };
 
 /** O cliente no gateway — um por empresa, reaproveitado nas trocas. */
 /**
- * Cliente que já existe e nasceu SEM documento: o gateway recusa a
- * cobrança dele para sempre, e reaproveitá-lo faria a segunda tentativa
- * falhar igual à primeira, com a mesma mensagem, sem ninguém entender.
+ * Os dados de quem paga, como o gateway quer.
+ *
+ * Foram descobertos um a um, no susto, cada um custando uma cobrança
+ * recusada: primeiro o documento ("The customer Document is required"),
+ * depois o telefone ("At least one customer phone is required"). Por
+ * isso agora vai tudo de uma vez — inclusive o endereço, que o
+ * antifraude usa e que a nota fiscal vai querer um dia.
  */
-export async function atualizarCliente(
-  clienteId: string,
-  dados: { nome: string; email: string; documento: string }
-) {
-  const d = dados.documento.replace(/\D/g, "");
+export type DadosDoPagador = {
+  nome: string;
+  email: string;
+  documento: string;
+  telefone: string;
+  endereco: {
+    cep: string;
+    rua: string;
+    numero: string;
+    complemento?: string;
+    bairro: string;
+    cidade: string;
+    estado: string;
+  };
+};
+
+function corpoDoCliente(d: DadosDoPagador) {
+  const doc = d.documento.replace(/\D/g, "");
+  const tel = d.telefone.replace(/\D/g, "");
+  const cep = d.endereco.cep.replace(/\D/g, "");
+  return {
+    name: d.nome,
+    email: d.email,
+    document: doc,
+    document_type: doc.length > 11 ? "CNPJ" : "CPF",
+    type: doc.length > 11 ? "company" : "individual",
+    phones: {
+      mobile_phone: {
+        country_code: "55",
+        area_code: tel.slice(0, 2),
+        number: tel.slice(2),
+      },
+    },
+    address: {
+      line_1: [d.endereco.numero, d.endereco.rua, d.endereco.bairro]
+        .filter(Boolean)
+        .join(", "),
+      line_2: d.endereco.complemento || "",
+      zip_code: cep,
+      city: d.endereco.cidade,
+      state: d.endereco.estado.toUpperCase(),
+      country: "BR",
+    },
+  };
+}
+
+/**
+ * Cliente que já existe e nasceu incompleto: o gateway recusa a cobrança
+ * dele para sempre, e reaproveitá-lo faria a segunda tentativa falhar
+ * igual à primeira, com a mesma mensagem, sem ninguém entender.
+ */
+export async function atualizarCliente(clienteId: string, dados: DadosDoPagador) {
   return chamar<ClienteGateway>(`/customers/${clienteId}`, {
     method: "PUT",
-    body: JSON.stringify({
-      name: dados.nome,
-      email: dados.email,
-      document: d,
-      document_type: d.length > 11 ? "CNPJ" : "CPF",
-      type: d.length > 11 ? "company" : "individual",
-    }),
+    body: JSON.stringify(corpoDoCliente(dados)),
   });
 }
 
-export async function criarCliente(dados: {
-  nome: string;
-  email: string;
-  documento?: string | null;
-}) {
+export async function criarCliente(dados: DadosDoPagador) {
   return chamar<ClienteGateway>("/customers", {
     method: "POST",
-    body: JSON.stringify({
-      name: dados.nome,
-      email: dados.email,
-      ...(dados.documento
-        ? {
-            document: dados.documento.replace(/\D/g, ""),
-            document_type: dados.documento.replace(/\D/g, "").length > 11 ? "CNPJ" : "CPF",
-            type: dados.documento.replace(/\D/g, "").length > 11 ? "company" : "individual",
-          }
-        : {}),
-    }),
+    body: JSON.stringify(corpoDoCliente(dados)),
   });
 }
 

@@ -20,5 +20,23 @@ export default async function AssinaturaPage() {
 
   if (!estado) redirect("/eventos/dashboard");
 
-  return <AssinaturaTela estado={estado} valorMensal={valorMensalReais()} />;
+  // O formulário de cobrança começa com o que a conta já sabe — ela troca
+  // se quem paga for outra pessoa (o financeiro da empresa, por exemplo).
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: membro } = await supabase
+    .from("membros_equipe")
+    .select("nome")
+    .eq("user_id", user?.id ?? "")
+    .maybeSingle();
+
+  return (
+    <AssinaturaTela
+      estado={estado}
+      valorMensal={valorMensalReais()}
+      emailDaConta={user?.email ?? ""}
+      nomeDaConta={membro?.nome ?? ""}
+    />
+  );
 }

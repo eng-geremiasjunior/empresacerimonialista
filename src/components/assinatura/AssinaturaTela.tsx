@@ -13,7 +13,13 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { assinar, atualizarCartao, cancelar } from "@/app/(app)/assinatura/actions";
-import { documentoValido, mascararDocumento } from "@/lib/documento";
+import { documentoValido } from "@/lib/documento";
+import { cepValido, telefoneValido, ufValida } from "@/lib/contato";
+import {
+  COBRANCA_VAZIA,
+  DadosDeCobranca,
+  type Cobranca,
+} from "@/components/assinatura/DadosDeCobranca";
 
 export type EstadoAssinatura = {
   status: string;
@@ -85,9 +91,14 @@ async function tokenizar(cartao: {
 export function AssinaturaTela({
   estado,
   valorMensal,
+  emailDaConta,
+  nomeDaConta,
 }: {
   estado: EstadoAssinatura;
   valorMensal: number;
+  /** só para começar o formulário preenchido — ela pode trocar */
+  emailDaConta?: string;
+  nomeDaConta?: string;
 }) {
   const router = useRouter();
   const [pendente, iniciar] = useTransition();
@@ -96,7 +107,11 @@ export function AssinaturaTela({
   // required"). O sistema nao guarda esse dado em lugar nenhum, entao ele
   // e pedido aqui, na hora de assinar -- e nao fica no nosso banco: vai
   // para o gateway e acabou.
-  const [documento, setDocumento] = useState("");
+  const [cobranca, setCobranca] = useState<Cobranca>({
+    ...COBRANCA_VAZIA,
+    nome: nomeDaConta ?? "",
+    email: emailDaConta ?? "",
+  });
   const [mostrarForm, setMostrarForm] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
@@ -128,13 +143,12 @@ export function AssinaturaTela({
       }
       const r = troca
         ? await atualizarCartao(t.token)
-        : await assinar(t.token, documento);
+        : await assinar(t.token, cobranca);
       if (r.error) {
         setErro(r.error);
         return;
       }
       setForm({ numero: "", nome: "", mes: "", ano: "", cvv: "" });
-      setDocumento("");
       setMostrarForm(false);
       setOk(troca ? "Cartão atualizado." : "Assinatura ativa. Obrigado!");
       router.refresh();
@@ -241,8 +255,8 @@ export function AssinaturaTela({
               setForm={setForm}
               pendente={pendente}
               onEnviar={() => enviarCartao(false)}
-              documento={documento}
-              setDocumento={setDocumento}
+              cobranca={cobranca}
+              setCobranca={setCobranca}
               onCancelar={() => setMostrarForm(false)}
               rotulo="Assinar"
             />
@@ -337,8 +351,8 @@ export function AssinaturaTela({
 function FormCartao({
   form,
   setForm,
-  documento,
-  setDocumento,
+  cobranca,
+  setCobranca,
   pendente,
   onEnviar,
   onCancelar,
@@ -351,18 +365,33 @@ function FormCartao({
   onCancelar: () => void;
   rotulo: string;
   /** so no fluxo de assinar: trocar cartao nao recadastra o pagador */
-  documento?: string;
-  setDocumento?: (v: string) => void;
+  cobranca?: Cobranca;
+  setCobranca?: (c: Cobranca) => void;
 }) {
-  const pedeDocumento = typeof setDocumento === "function";
-  const docOk = !pedeDocumento || documentoValido(documento ?? "");
+  const pedeCobranca = typeof setCobranca === "function";
+  const c = cobranca;
+  const cobrancaOk =
+    !pedeCobranca ||
+    Boolean(
+      c &&
+        c.nome.trim() &&
+        c.email.trim().includes("@") &&
+        documentoValido(c.documento) &&
+        telefoneValido(c.telefone) &&
+        cepValido(c.cep) &&
+        c.rua.trim() &&
+        c.numero.trim() &&
+        c.bairro.trim() &&
+        c.cidade.trim() &&
+        ufValida(c.estado)
+    );
   const completo =
     form.numero.replace(/\s/g, "").length >= 13 &&
     form.nome.trim() &&
     form.mes &&
     form.ano &&
     form.cvv.length >= 3 &&
-    docOk;
+    cobrancaOk;
 
   return (
     <div className="mt-3 space-y-2">
@@ -418,20 +447,13 @@ function FormCartao({
           onChange={(e) => setForm({ ...form, cvv: e.target.value.replace(/\D/g, "") })}
         />
       </div>
-      {pedeDocumento && (
-        <div>
-          <input
-            className={input}
-            inputMode="numeric"
-            placeholder="CPF ou CNPJ de quem paga"
-            value={documento ?? ""}
-            onChange={(e) => setDocumento!(mascararDocumento(e.target.value))}
+      {pedeCobranca && c && (
+        <div className="rounded-lg border border-stone-200 bg-stone-50 p-3">
+          <DadosDeCobranca
+            valor={c}
+            onChange={setCobranca!}
+            desabilitado={pendente}
           />
-          {(documento ?? "").length > 0 && !docOk && (
-            <p className="mt-1 text-xs text-amber-700">
-              Confira o número — não bate com um CPF nem com um CNPJ.
-            </p>
-          )}
         </div>
       )}
       <div className="flex gap-2">

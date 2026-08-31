@@ -11,6 +11,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServico } from "@supabase/supabase-js";
 import { documentoValido } from "@/lib/documento";
+import { cepValido, telefoneValido, ufValida } from "@/lib/contato";
 import {
   atualizarCliente,
   cancelarAssinatura,
@@ -71,17 +72,53 @@ async function donaLogada(): Promise<
   };
 }
 
+export type DadosCobranca = {
+  nome: string;
+  email: string;
+  documento: string;
+  telefone: string;
+  cep: string;
+  rua: string;
+  numero: string;
+  complemento: string;
+  bairro: string;
+  cidade: string;
+  estado: string;
+};
+
+/**
+ * Tudo o que o gateway exige de quem paga, validado aqui antes de sair
+ * daqui. Cada campo abaixo já custou uma cobrança recusada com mensagem
+ * em inglês — validar antes é a diferença entre "confira o telefone" e
+ * "At least one customer phone is required".
+ */
+function conferirCobranca(d: DadosCobranca): string | null {
+  if (!d.nome.trim()) return "Informe o nome de quem vai pagar.";
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email.trim())) {
+    return "Informe um e-mail válido para a cobrança.";
+  }
+  if (!documentoValido(d.documento)) {
+    return "Informe um CPF ou CNPJ válido de quem vai pagar.";
+  }
+  if (!telefoneValido(d.telefone)) {
+    return "Informe um telefone válido, com DDD.";
+  }
+  if (!cepValido(d.cep)) return "Informe um CEP válido.";
+  if (!d.rua.trim()) return "Informe a rua.";
+  if (!d.numero.trim()) return "Informe o número.";
+  if (!d.bairro.trim()) return "Informe o bairro.";
+  if (!d.cidade.trim()) return "Informe a cidade.";
+  if (!ufValida(d.estado)) return "Informe o estado (sigla de duas letras).";
+  return null;
+}
+
 export async function assinar(
   cardToken: string,
-  documento: string
+  cobranca: DadosCobranca
 ): Promise<ResultadoAssinatura> {
   if (!cardToken) return { error: "Não recebemos os dados do cartão." };
-  // O gateway recusa a cobrança sem CPF/CNPJ do pagador. Validar aqui
-  // evita ir até a operadora para voltar com "The customer Document is
-  // required" — mensagem que ninguém fora daqui entende.
-  if (!documentoValido(documento)) {
-    return { error: "Informe um CPF ou CNPJ válido de quem vai pagar." };
-  }
+  const problema = conferirCobranca(cobranca);
+  if (problema) return { error: problema };
   const valor = valorMensalCentavos();
   if (valor <= 0) {
     return { error: "O plano ainda não está configurado. Fale com o suporte." };
@@ -106,20 +143,30 @@ export async function assinar(
   // Cliente no gateway: reaproveita se já existe — mas ATUALIZANDO o
   // documento. Um cliente criado sem CPF/CNPJ (era o caso antes deste
   // conserto) faria toda tentativa seguinte falhar igual, para sempre.
+  const pagador = {
+    // o nome e o e-mail vêm do formulário: quem paga a conta nem sempre
+    // é a pessoa que está logada, e a cobrança pode ir para o financeiro
+    nome: cobranca.nome.trim(),
+    email: cobranca.email.trim(),
+    documento: cobranca.documento,
+    telefone: cobranca.telefone,
+    endereco: {
+      cep: cobranca.cep,
+      rua: cobranca.rua.trim(),
+      numero: cobranca.numero.trim(),
+      complemento: cobranca.complemento.trim(),
+      bairro: cobranca.bairro.trim(),
+      cidade: cobranca.cidade.trim(),
+      estado: cobranca.estado,
+    },
+  };
+
   let clienteId = atual?.gateway_customer_id ?? null;
   if (clienteId) {
-    const upd = await atualizarCliente(clienteId, {
-      nome: ctx.nome,
-      email: ctx.email,
-      documento,
-    });
+    const upd = await atualizarCliente(clienteId, pagador);
     if (!upd.ok) return { error: upd.erro };
   } else {
-    const cli = await criarCliente({
-      nome: ctx.nome,
-      email: ctx.email,
-      documento,
-    });
+    const cli = await criarCliente(pagador);
     if (!cli.ok) return { error: cli.erro };
     clienteId = cli.dados.id;
   }
