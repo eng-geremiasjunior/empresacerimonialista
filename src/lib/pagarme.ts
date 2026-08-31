@@ -27,10 +27,69 @@ function autorizacao(): string {
   return "Basic " + Buffer.from(`${chave()}:`).toString("base64");
 }
 
+/**
+ * A caixa-preta: cada chamada ao gateway fica em gateway_log, e a tela
+ * /admin/gateway mostra. Nasceu porque três cobranças recusadas foram
+ * diagnosticadas por print do painel — o corpo do erro morria no console
+ * da Vercel, que o dono não abre.
+ *
+ * Disparo-e-esquece de verdade: falha do log NUNCA falha o pagamento.
+ * Em sucesso o corpo não é guardado (tem documento e endereço de gente
+ * dentro); em erro é o corpo que diagnostica, então ele fica.
+ */
+function registrarChamada(linha: {
+  metodo: string;
+  caminho: string;
+  status: number | null;
+  ok: boolean;
+  resposta: unknown;
+  excecao: string | null;
+  duracaoMs: number;
+}) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return;
+  // Truncar JSON pelo meio produz JSON inválido — se o corpo for grande,
+  // ele vira texto dentro de um objeto, nunca um parse quebrado.
+  let resposta: unknown = null;
+  if (!linha.ok) {
+    try {
+      const s = JSON.stringify(linha.resposta ?? null);
+      resposta =
+        s && s.length > 4000
+          ? { truncado: s.slice(0, 4000) }
+          : (linha.resposta ?? null);
+    } catch {
+      resposta = { erro_ao_serializar: true };
+    }
+  }
+  void fetch(`${url}/rest/v1/gateway_log`, {
+    method: "POST",
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify({
+      gateway: "pagarme",
+      metodo: linha.metodo,
+      caminho: linha.caminho,
+      status: linha.status,
+      ok: linha.ok,
+      resposta,
+      excecao: linha.excecao,
+      duracao_ms: Math.round(linha.duracaoMs),
+    }),
+  }).catch(() => {});
+}
+
 async function chamar<T>(
   caminho: string,
   init?: RequestInit
 ): Promise<{ ok: true; dados: T } | { ok: false; erro: string; cru?: unknown }> {
+  const metodo = init?.method ?? "GET";
+  const inicio = Date.now();
   try {
     const r = await fetch(`${BASE}${caminho}`, {
       ...init,
@@ -42,12 +101,30 @@ async function chamar<T>(
       },
     });
     const corpo = (await r.json().catch(() => null)) as unknown;
+    registrarChamada({
+      metodo,
+      caminho,
+      status: r.status,
+      ok: r.ok,
+      resposta: corpo,
+      excecao: null,
+      duracaoMs: Date.now() - inicio,
+    });
     if (!r.ok) {
       console.error("[vela:pagarme]", caminho, r.status, JSON.stringify(corpo)?.slice(0, 500));
       return { ok: false, erro: mensagemDoErro(r.status, corpo), cru: corpo };
     }
     return { ok: true, dados: corpo as T };
   } catch (e) {
+    registrarChamada({
+      metodo,
+      caminho,
+      status: null,
+      ok: false,
+      resposta: null,
+      excecao: String(e).slice(0, 300),
+      duracaoMs: Date.now() - inicio,
+    });
     console.error("[vela:pagarme] rede:", caminho, e);
     return { ok: false, erro: "Não conseguimos falar com a operadora agora. Tente de novo." };
   }
@@ -56,17 +133,22 @@ async function chamar<T>(
 function mensagemDoErro(status: number, corpo: unknown): string {
   const c = corpo as { message?: string; errors?: Record<string, string[]> } | null;
   const primeiro = c?.errors ? Object.values(c.errors)[0]?.[0] : null;
+  // O detalhe cru da operadora vai junto, entre parênteses. Três cobranças
+  // recusadas foram diagnosticadas por print do painel porque a tela só
+  // dizia "não foi possível" — o campo que faltava estava no corpo do
+  // erro o tempo todo, e ninguém via.
+  const detalhe = primeiro ? ` (detalhe da operadora: ${primeiro.slice(0, 140)})` : "";
   if (status === 401 || status === 403) {
     return "A integração de pagamento não está configurada corretamente.";
   }
   if (status === 422) {
     // o mais comum aqui é cartão recusado ou dado inválido
     return primeiro?.toLowerCase().includes("card")
-      ? "O cartão não foi aceito. Confira os dados ou tente outro."
-      : "Não foi possível concluir. Confira os dados e tente de novo.";
+      ? `O cartão não foi aceito. Confira os dados ou tente outro.${detalhe}`
+      : `Não foi possível concluir. Confira os dados e tente de novo.${detalhe}`;
   }
   if (status >= 500) return "A operadora está instável agora. Tente em alguns minutos.";
-  return "Não foi possível concluir o pagamento.";
+  return `Não foi possível concluir o pagamento.${detalhe}`;
 }
 
 // ------------------------------------------------------------------
@@ -192,10 +274,13 @@ export async function criarAssinatura(dados: {
     method: "POST",
     body: JSON.stringify({
       customer_id: dados.clienteId,
-      // conferido na doc: card_token e billing_address vão JUNTOS dentro
-      // de card; line_1 é "Número, Rua, Bairro", nesta ordem
+      // A doc sugere o token dentro de `card`; a EVIDÊNCIA diz outra
+      // coisa: as quatro assinaturas que chegaram a existir no gateway
+      // foram criadas com card_token no topo — e a única tentativa com
+      // ele dentro de `card` foi recusada na validação, sem nem criar
+      // cobrança. O topo fica; só o endereço de cobrança vive em `card`.
+      card_token: dados.cardToken,
       card: {
-        card_token: dados.cardToken,
         billing_address: {
           line_1: [e.numero, e.rua, e.bairro].filter(Boolean).join(", "),
           line_2: e.complemento || "",

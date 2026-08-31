@@ -46,6 +46,12 @@ export default async function AdminLayout({
               >
                 Contas
               </Link>
+              <Link
+                href="/admin/gateway"
+                className="text-stone-600 hover:text-stone-900"
+              >
+                Gateway
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-4 text-sm text-stone-500">
