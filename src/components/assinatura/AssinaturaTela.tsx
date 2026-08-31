@@ -13,6 +13,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { assinar, atualizarCartao, cancelar } from "@/app/(app)/assinatura/actions";
+import { documentoValido, mascararDocumento } from "@/lib/documento";
 
 export type EstadoAssinatura = {
   status: string;
@@ -91,6 +92,11 @@ export function AssinaturaTela({
   const router = useRouter();
   const [pendente, iniciar] = useTransition();
   const [form, setForm] = useState({ numero: "", nome: "", mes: "", ano: "", cvv: "" });
+  // O gateway exige CPF/CNPJ de quem paga ("The customer Document is
+  // required"). O sistema nao guarda esse dado em lugar nenhum, entao ele
+  // e pedido aqui, na hora de assinar -- e nao fica no nosso banco: vai
+  // para o gateway e acabou.
+  const [documento, setDocumento] = useState("");
   const [mostrarForm, setMostrarForm] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
@@ -105,6 +111,11 @@ export function AssinaturaTela({
   // dentro. Amarrar isso a "ativa" deixou uma assinatura real presa,
   // cobrando por fora, sem botao de saida na tela.
   const temAssinaturaLa = estado.tem_gateway;
+  const jaCancelada = estado.status === "cancelada";
+  // Assinatura encerrada nao pode virar um segundo beco: quem cancelou
+  // precisa poder voltar. E nao faz sentido oferecer "cancelar" de novo.
+  const podeAssinar = !ativa && !inadimplente && (!temAssinaturaLa || jaCancelada);
+  const podeCancelar = temAssinaturaLa && !jaCancelada;
 
   function enviarCartao(troca: boolean) {
     setErro(null);
@@ -115,12 +126,15 @@ export function AssinaturaTela({
         setErro(t.erro ?? "Não foi possível validar o cartão.");
         return;
       }
-      const r = troca ? await atualizarCartao(t.token) : await assinar(t.token);
+      const r = troca
+        ? await atualizarCartao(t.token)
+        : await assinar(t.token, documento);
       if (r.error) {
         setErro(r.error);
         return;
       }
       setForm({ numero: "", nome: "", mes: "", ano: "", cvv: "" });
+      setDocumento("");
       setMostrarForm(false);
       setOk(troca ? "Cartão atualizado." : "Assinatura ativa. Obrigado!");
       router.refresh();
@@ -185,7 +199,7 @@ export function AssinaturaTela({
       {/* Enquanto o preço não está configurado, a tela não inventa um:
           mostrar "R$ 0,00" seria mentira, e esconder sem explicar seria
           pior. A conta segue funcionando; quem destrava é o suporte. */}
-      {!ativa && !inadimplente && !temAssinaturaLa && valorMensal <= 0 && (
+      {podeAssinar && valorMensal <= 0 && (
         <section className="rounded-xl border border-stone-200 bg-white p-4">
           <h2 className="text-sm font-semibold text-gray-900">
             A assinatura ainda não está aberta
@@ -205,7 +219,7 @@ export function AssinaturaTela({
           conta liberada nunca era oferecida a assinar, e quando a
           cortesia acabasse a pessoa ficaria olhando "liberada como
           cortesia" para sempre. Cortesia é um presente, não uma tranca. */}
-      {!ativa && !inadimplente && !temAssinaturaLa && valorMensal > 0 && (
+      {podeAssinar && valorMensal > 0 && (
         <section className="rounded-xl border border-stone-200 bg-white p-4">
           <h2 className="text-sm font-semibold text-gray-900">
             {cortesia
@@ -227,6 +241,8 @@ export function AssinaturaTela({
               setForm={setForm}
               pendente={pendente}
               onEnviar={() => enviarCartao(false)}
+              documento={documento}
+              setDocumento={setDocumento}
               onCancelar={() => setMostrarForm(false)}
               rotulo="Assinar"
             />
@@ -234,7 +250,7 @@ export function AssinaturaTela({
         </section>
       )}
 
-      {temAssinaturaLa && (
+      {temAssinaturaLa && !jaCancelada && (
         <section className="rounded-xl border border-stone-200 bg-white p-4">
           <h2 className="text-sm font-semibold text-gray-900">Forma de pagamento</h2>
           {!mostrarForm ? (
@@ -257,7 +273,7 @@ export function AssinaturaTela({
       {erro && <p className="text-sm text-rose-600">{erro}</p>}
       {ok && <p className="text-sm text-emerald-700">{ok}</p>}
 
-      {temAssinaturaLa && (
+      {podeCancelar && (
         <section className="rounded-xl border border-stone-200 bg-white p-4">
           <h2 className="text-sm font-semibold text-gray-900">Cancelar assinatura</h2>
           <p className="mt-1 text-sm text-gray-500">
@@ -282,12 +298,20 @@ export function AssinaturaTela({
                   disabled={pendente}
                   onClick={() =>
                     iniciar(async () => {
+                      // limpar antes: sem isto, a mensagem vermelha de uma
+                      // tentativa anterior fica na tela e o cancelamento
+                      // que deu certo parece ter falhado
+                      setErro(null);
+                      setOk(null);
                       const r = await cancelar(motivo);
-                      if (r.error) setErro(r.error);
-                      else {
-                        setCancelando(false);
-                        router.refresh();
+                      if (r.error) {
+                        setErro(r.error);
+                        return;
                       }
+                      setCancelando(false);
+                      setMotivo("");
+                      setOk("Assinatura cancelada. Você pode voltar quando quiser.");
+                      router.refresh();
                     })
                   }
                 >
@@ -313,6 +337,8 @@ export function AssinaturaTela({
 function FormCartao({
   form,
   setForm,
+  documento,
+  setDocumento,
   pendente,
   onEnviar,
   onCancelar,
@@ -324,13 +350,19 @@ function FormCartao({
   onEnviar: () => void;
   onCancelar: () => void;
   rotulo: string;
+  /** so no fluxo de assinar: trocar cartao nao recadastra o pagador */
+  documento?: string;
+  setDocumento?: (v: string) => void;
 }) {
+  const pedeDocumento = typeof setDocumento === "function";
+  const docOk = !pedeDocumento || documentoValido(documento ?? "");
   const completo =
     form.numero.replace(/\s/g, "").length >= 13 &&
     form.nome.trim() &&
     form.mes &&
     form.ano &&
-    form.cvv.length >= 3;
+    form.cvv.length >= 3 &&
+    docOk;
 
   return (
     <div className="mt-3 space-y-2">
@@ -386,6 +418,22 @@ function FormCartao({
           onChange={(e) => setForm({ ...form, cvv: e.target.value.replace(/\D/g, "") })}
         />
       </div>
+      {pedeDocumento && (
+        <div>
+          <input
+            className={input}
+            inputMode="numeric"
+            placeholder="CPF ou CNPJ de quem paga"
+            value={documento ?? ""}
+            onChange={(e) => setDocumento!(mascararDocumento(e.target.value))}
+          />
+          {(documento ?? "").length > 0 && !docOk && (
+            <p className="mt-1 text-xs text-amber-700">
+              Confira o número — não bate com um CPF nem com um CNPJ.
+            </p>
+          )}
+        </div>
+      )}
       <div className="flex gap-2">
         <button className={botao} disabled={pendente || !completo} onClick={onEnviar}>
           {pendente ? "Processando…" : rotulo}

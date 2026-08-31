@@ -89,6 +89,28 @@ export type ClienteGateway = { id: string; name?: string; email?: string };
 // ------------------------------------------------------------------
 
 /** O cliente no gateway — um por empresa, reaproveitado nas trocas. */
+/**
+ * Cliente que já existe e nasceu SEM documento: o gateway recusa a
+ * cobrança dele para sempre, e reaproveitá-lo faria a segunda tentativa
+ * falhar igual à primeira, com a mesma mensagem, sem ninguém entender.
+ */
+export async function atualizarCliente(
+  clienteId: string,
+  dados: { nome: string; email: string; documento: string }
+) {
+  const d = dados.documento.replace(/\D/g, "");
+  return chamar<ClienteGateway>(`/customers/${clienteId}`, {
+    method: "PUT",
+    body: JSON.stringify({
+      name: dados.nome,
+      email: dados.email,
+      document: d,
+      document_type: d.length > 11 ? "CNPJ" : "CPF",
+      type: d.length > 11 ? "company" : "individual",
+    }),
+  });
+}
+
 export async function criarCliente(dados: {
   nome: string;
   email: string;

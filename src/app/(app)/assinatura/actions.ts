@@ -10,7 +10,9 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServico } from "@supabase/supabase-js";
+import { documentoValido } from "@/lib/documento";
 import {
+  atualizarCliente,
   cancelarAssinatura,
   criarAssinatura,
   criarCliente,
@@ -69,8 +71,17 @@ async function donaLogada(): Promise<
   };
 }
 
-export async function assinar(cardToken: string): Promise<ResultadoAssinatura> {
+export async function assinar(
+  cardToken: string,
+  documento: string
+): Promise<ResultadoAssinatura> {
   if (!cardToken) return { error: "Não recebemos os dados do cartão." };
+  // O gateway recusa a cobrança sem CPF/CNPJ do pagador. Validar aqui
+  // evita ir até a operadora para voltar com "The customer Document is
+  // required" — mensagem que ninguém fora daqui entende.
+  if (!documentoValido(documento)) {
+    return { error: "Informe um CPF ou CNPJ válido de quem vai pagar." };
+  }
   const valor = valorMensalCentavos();
   if (valor <= 0) {
     return { error: "O plano ainda não está configurado. Fale com o suporte." };
@@ -92,10 +103,23 @@ export async function assinar(cardToken: string): Promise<ResultadoAssinatura> {
     return { error: "Esta conta já tem uma assinatura ativa." };
   }
 
-  // cliente no gateway: reaproveita se já existe
+  // Cliente no gateway: reaproveita se já existe — mas ATUALIZANDO o
+  // documento. Um cliente criado sem CPF/CNPJ (era o caso antes deste
+  // conserto) faria toda tentativa seguinte falhar igual, para sempre.
   let clienteId = atual?.gateway_customer_id ?? null;
-  if (!clienteId) {
-    const cli = await criarCliente({ nome: ctx.nome, email: ctx.email });
+  if (clienteId) {
+    const upd = await atualizarCliente(clienteId, {
+      nome: ctx.nome,
+      email: ctx.email,
+      documento,
+    });
+    if (!upd.ok) return { error: upd.erro };
+  } else {
+    const cli = await criarCliente({
+      nome: ctx.nome,
+      email: ctx.email,
+      documento,
+    });
     if (!cli.ok) return { error: cli.erro };
     clienteId = cli.dados.id;
   }
