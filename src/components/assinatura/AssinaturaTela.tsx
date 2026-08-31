@@ -100,6 +100,11 @@ export function AssinaturaTela({
   const ativa = estado.status === "ativa";
   const inadimplente = estado.status === "inadimplente";
   const cortesia = estado.status === "pausada";
+  // A regra que faltava: se existe assinatura no GATEWAY, ela precisa
+  // poder trocar o cartao e CANCELAR -- qualquer que seja o status aqui
+  // dentro. Amarrar isso a "ativa" deixou uma assinatura real presa,
+  // cobrando por fora, sem botao de saida na tela.
+  const temAssinaturaLa = estado.tem_gateway;
 
   function enviarCartao(troca: boolean) {
     setErro(null);
@@ -180,7 +185,7 @@ export function AssinaturaTela({
       {/* Enquanto o preço não está configurado, a tela não inventa um:
           mostrar "R$ 0,00" seria mentira, e esconder sem explicar seria
           pior. A conta segue funcionando; quem destrava é o suporte. */}
-      {!ativa && !inadimplente && valorMensal <= 0 && (
+      {!ativa && !inadimplente && !temAssinaturaLa && valorMensal <= 0 && (
         <section className="rounded-xl border border-stone-200 bg-white p-4">
           <h2 className="text-sm font-semibold text-gray-900">
             A assinatura ainda não está aberta
@@ -200,7 +205,7 @@ export function AssinaturaTela({
           conta liberada nunca era oferecida a assinar, e quando a
           cortesia acabasse a pessoa ficaria olhando "liberada como
           cortesia" para sempre. Cortesia é um presente, não uma tranca. */}
-      {!ativa && !inadimplente && valorMensal > 0 && (
+      {!ativa && !inadimplente && !temAssinaturaLa && valorMensal > 0 && (
         <section className="rounded-xl border border-stone-200 bg-white p-4">
           <h2 className="text-sm font-semibold text-gray-900">
             {cortesia
@@ -229,7 +234,7 @@ export function AssinaturaTela({
         </section>
       )}
 
-      {(ativa || inadimplente) && (
+      {temAssinaturaLa && (
         <section className="rounded-xl border border-stone-200 bg-white p-4">
           <h2 className="text-sm font-semibold text-gray-900">Forma de pagamento</h2>
           {!mostrarForm ? (
@@ -252,7 +257,7 @@ export function AssinaturaTela({
       {erro && <p className="text-sm text-rose-600">{erro}</p>}
       {ok && <p className="text-sm text-emerald-700">{ok}</p>}
 
-      {(ativa || inadimplente) && (
+      {temAssinaturaLa && (
         <section className="rounded-xl border border-stone-200 bg-white p-4">
           <h2 className="text-sm font-semibold text-gray-900">Cancelar assinatura</h2>
           <p className="mt-1 text-sm text-gray-500">

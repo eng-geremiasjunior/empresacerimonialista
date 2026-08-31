@@ -82,7 +82,9 @@ export async function assinar(cardToken: string): Promise<ResultadoAssinatura> {
 
   const { data: atual } = await db
     .from("assinaturas")
-    .select("id, gateway_customer_id, gateway_subscription_id, status")
+    .select(
+      "id, gateway_customer_id, gateway_subscription_id, status, plano, valor_mensal, falhas_seguidas"
+    )
     .eq("empresa_id", ctx.empresaId)
     .maybeSingle();
 
@@ -107,12 +109,32 @@ export async function assinar(cardToken: string): Promise<ResultadoAssinatura> {
   if (!ass.ok) return { error: ass.erro };
 
   const g = ass.dados;
+
+  // O gateway CRIAR a assinatura não quer dizer que ela está paga. Medido
+  // em teste: cartão recusado devolve a assinatura com status de falha, e
+  // a versão anterior daqui gravava "trial" e a tela dizia "Assinatura
+  // ativa. Obrigado!". A pessoa saía achando que assinou.
+  const virouAtiva = g.status === "active";
+  const foiCancelada = g.status === "canceled";
+
+  // Estado anterior: se a cobrança não passou, não é para destruí-lo. Uma
+  // conta em cortesia que tentou assinar e teve o cartão recusado perdia a
+  // cortesia — pagava o preço de uma tentativa que nem virou cobrança.
+  const statusNovo = virouAtiva
+    ? "ativa"
+    : foiCancelada
+      ? "cancelada"
+      : (atual?.status ?? "inadimplente");
+
   const { error } = await db.from("assinaturas").upsert(
     {
       empresa_id: ctx.empresaId,
-      plano: "mensal",
-      valor_mensal: valor / 100,
-      status: g.status === "active" ? "ativa" : "trial",
+      plano: virouAtiva ? "mensal" : (atual?.plano ?? "mensal"),
+      valor_mensal: virouAtiva ? valor / 100 : (atual?.valor_mensal ?? valor / 100),
+      status: statusNovo,
+      // Os dados do gateway são gravados SEMPRE, inclusive na falha: é o
+      // que permite cancelar e trocar o cartão depois. Sem eles a
+      // assinatura existiria lá fora sem botão de saída aqui dentro.
       gateway: "pagarme",
       gateway_customer_id: clienteId,
       gateway_subscription_id: g.id,
@@ -120,7 +142,7 @@ export async function assinar(cardToken: string): Promise<ResultadoAssinatura> {
         g.next_billing_at?.slice(0, 10) ?? g.current_cycle?.end_at?.slice(0, 10) ?? null,
       cartao_final: g.card?.last_four_digits ?? null,
       cartao_bandeira: g.card?.brand ?? null,
-      falhas_seguidas: 0,
+      falhas_seguidas: virouAtiva ? 0 : (atual?.falhas_seguidas ?? 0) + 1,
       cancelada_em: null,
       updated_at: new Date().toISOString(),
     },
@@ -136,6 +158,22 @@ export async function assinar(cardToken: string): Promise<ResultadoAssinatura> {
     };
   }
 
+  revalidatePath("/assinatura");
+  revalidatePath("/", "layout");
+
+  // Cobrança não aprovada: dizer a verdade. O cadastro ficou gravado, o
+  // cartão dá para trocar e a assinatura dá para cancelar — mas ninguém
+  // sai daqui achando que assinou.
+  if (!virouAtiva) {
+    console.error("[vela:assinatura] gateway devolveu status", g.status, "sub:", g.id);
+    return {
+      error:
+        "O cartão não foi aprovado pela operadora. Nada foi cobrado. Tente outro cartão em “Forma de pagamento”, ou cancele a assinatura logo abaixo.",
+    };
+  }
+
+  // Só uma assinatura que de fato começou entra no histórico — é dele que
+  // o painel do dono tira o MRR, e tentativa recusada não é receita.
   const { data: linha } = await db
     .from("assinaturas")
     .select("id")
@@ -151,8 +189,6 @@ export async function assinar(cardToken: string): Promise<ResultadoAssinatura> {
     });
   }
 
-  revalidatePath("/assinatura");
-  revalidatePath("/", "layout");
   return { ok: true };
 }
 
