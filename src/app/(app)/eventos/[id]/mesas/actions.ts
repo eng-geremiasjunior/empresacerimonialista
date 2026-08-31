@@ -556,6 +556,112 @@ export async function removerRelacao(
  * Convidado novo direto na tela de mesas (a equipe também monta lista)
  * ---------------------------------------------------------------- */
 
+export type ResultadoLote =
+  | { error: string }
+  | { success: true; criados: number; repetidos: number };
+
+/** Nome sem acento e sem caixa — só para comparar, nunca para gravar. */
+function chaveDoNome(n: string): string {
+  return n
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * A lista da noiva chega pronta — por WhatsApp, por planilha, por print.
+ * Digitar 200 nomes um a um é o motivo mais comum para o Excel continuar
+ * aberto do lado. Aqui ela cola a lista inteira, um nome por linha.
+ *
+ * O que a linha pode trazer, porque é assim que as listas vêm escritas:
+ *   "João Silva"          → João Silva
+ *   "João Silva + 2"      → João Silva, com 2 acompanhantes
+ *   "3. João Silva"       → a numeração da planilha sai
+ *   "- João Silva"        → o marcador sai
+ * Qualquer outra coisa vira nome, sem adivinhação.
+ */
+export async function adicionarConvidadosEmLote(
+  eventId: string,
+  texto: string
+): Promise<ResultadoLote> {
+  const MAX = 500;
+
+  const linhas = texto
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .slice(0, MAX);
+
+  if (linhas.length === 0) return { error: "Cole ao menos um nome." };
+
+  const novos: { nome: string; acompanhantes: number }[] = [];
+  const vistos = new Set<string>();
+
+  for (const linha of linhas) {
+    // numeração e marcadores de planilha/lista
+    const limpa = linha.replace(/^\s*(?:\d+[.)-]|[-–—•*])\s*/, "").trim();
+    // "+ 2", "(2)", "+2 acompanhantes" no fim da linha
+    const m = limpa.match(/^(.*?)\s*(?:\+\s*(\d{1,2})|\((\d{1,2})\))\s*(?:acompanhantes?)?$/i);
+    // Só corta o sufixo quando o número faz sentido como acompanhante.
+    // "Zé + 99" fica "Zé + 99" inteiro: descartar em silêncio um pedaço
+    // do que ela colou é pior do que deixar um nome estranho na lista.
+    const contado = m ? Number(m[2] ?? m[3]) : 0;
+    const valido = Number.isFinite(contado) && contado > 0 && contado <= 20;
+    const nome = (valido && m ? m[1] : limpa).trim().slice(0, 120);
+    const acomp = valido ? contado : 0;
+    if (!nome) continue;
+
+    const chave = chaveDoNome(nome);
+    if (vistos.has(chave)) continue; // repetido dentro da própria colagem
+    vistos.add(chave);
+    novos.push({ nome, acompanhantes: acomp });
+  }
+
+  if (novos.length === 0) return { error: "Não encontrei nenhum nome nessas linhas." };
+
+  const supabase = createClient();
+
+  // Colar duas vezes é acidente comum: quem já está na lista não entra de
+  // novo. A comparação ignora acento e caixa, que é como a mesma pessoa
+  // aparece escrita de dois jeitos.
+  const { data: existentes, error: erroLer } = await supabase
+    .from("evento_convidado")
+    .select("nome")
+    .eq("event_id", eventId);
+
+  if (erroLer) return causa(erroLer, "Não foi possível ler a lista") as ResultadoLote;
+
+  const jaTem = new Set((existentes ?? []).map((c) => chaveDoNome(c.nome as string)));
+  const paraInserir = novos.filter((n) => !jaTem.has(chaveDoNome(n.nome)));
+  const repetidos = novos.length - paraInserir.length;
+
+  if (paraInserir.length === 0) {
+    return { success: true, criados: 0, repetidos };
+  }
+
+  const { data, error } = await supabase
+    .from("evento_convidado")
+    .insert(
+      paraInserir.map((n) => ({
+        event_id: eventId,
+        nome: n.nome,
+        acompanhantes: n.acompanhantes,
+        origem: "equipe",
+      }))
+    )
+    .select("id");
+
+  if (error) return causa(error, "Não foi possível adicionar a lista") as ResultadoLote;
+  if (!data || data.length === 0) {
+    return { error: "Você não tem permissão para editar este evento." };
+  }
+
+  revalidar(eventId);
+  return { success: true, criados: data.length, repetidos };
+}
+
 export async function adicionarConvidadoEquipe(
   eventId: string,
   nome: string

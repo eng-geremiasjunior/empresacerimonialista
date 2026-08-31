@@ -36,6 +36,7 @@ import type { Relacao, Salao } from "@/lib/supabase/mesas";
 import { Croqui } from "@/components/mesas/Croqui";
 import {
   adicionarConvidadoEquipe,
+  adicionarConvidadosEmLote,
   ajustarPlanta,
   alocarConvidado,
   atualizarConvidadoCroqui,
@@ -916,6 +917,15 @@ function ListaLateral({
   const [filtro, setFiltro] = useState<"para_sentar" | "sem_mesa" | "nao_vai">("para_sentar");
   const [busca, setBusca] = useState("");
   const [novo, setNovo] = useState("");
+  const [colando, setColando] = useState(false);
+  const [loteTexto, setLoteTexto] = useState("");
+  const [resumoLote, setResumoLote] = useState<string | null>(null);
+  // quebra por linha sem literal de regex: o shell que gerou este
+  // arquivo comia as barras, e um escape errado aqui derruba o build
+  const nomesDoLote = loteTexto
+    .split(String.fromCharCode(10))
+    .map((l) => l.trim())
+    .filter(Boolean).length;
   const [expandido, setExpandido] = useState<string | null>(null);
 
   const lista = useMemo(() => {
@@ -997,6 +1007,71 @@ function ListaLateral({
           <Plus size={14} />
         </button>
       </div>
+
+      {/* A lista da noiva chega pronta. Digitar 200 nomes um a um era o
+          motivo mais comum para a planilha continuar aberta do lado. */}
+      {!colando ? (
+        <button
+          type="button"
+          onClick={() => setColando(true)}
+          className="mt-1 self-start text-xs text-gray-400 underline underline-offset-2 hover:text-gray-600"
+        >
+          colar uma lista inteira
+        </button>
+      ) : (
+        <div className="mt-1 rounded-xl border border-gray-200 bg-white p-3">
+          <textarea
+            autoFocus
+            rows={6}
+            value={loteTexto}
+            onChange={(e) => setLoteTexto(e.target.value)}
+            placeholder={"Um nome por linha\n\nJoão Silva\nMaria Souza + 2\nAna Lima"}
+            className="w-full resize-y rounded-lg border border-gray-200 px-2.5 py-2 text-sm outline-none focus:border-gray-400"
+          />
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={pendente || nomesDoLote === 0}
+              onClick={() =>
+                rodar(async () => {
+                  const r = await adicionarConvidadosEmLote(eventId, loteTexto);
+                  if (!("error" in r)) {
+                    setLoteTexto("");
+                    setColando(false);
+                    setResumoLote(
+                      r.repetidos > 0
+                        ? `${r.criados} adicionados · ${r.repetidos} já estavam na lista`
+                        : `${r.criados} adicionados`
+                    );
+                  }
+                  return r;
+                })
+              }
+              className="rounded-lg bg-gray-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+            >
+              Adicionar {nomesDoLote > 0 ? `${nomesDoLote} ` : ""}
+              {nomesDoLote === 1 ? "nome" : "nomes"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setColando(false);
+                setLoteTexto("");
+              }}
+              className="text-sm text-gray-400 hover:text-gray-700"
+            >
+              cancelar
+            </button>
+            <span className="text-xs text-gray-400">
+              &quot;+ 2&quot; no fim da linha vira acompanhantes
+            </span>
+          </div>
+        </div>
+      )}
+
+      {resumoLote && (
+        <p className="text-xs text-gray-500">{resumoLote}</p>
+      )}
 
       <ul className="divide-y divide-gray-100 rounded-xl border border-gray-200 bg-white px-3">
         {lista.length === 0 && (
