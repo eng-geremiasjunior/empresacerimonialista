@@ -180,27 +180,37 @@ export function AssinaturaTela({
       {/* Enquanto o preço não está configurado, a tela não inventa um:
           mostrar "R$ 0,00" seria mentira, e esconder sem explicar seria
           pior. A conta segue funcionando; quem destrava é o suporte. */}
-      {!ativa && !inadimplente && !cortesia && valorMensal <= 0 && (
+      {!ativa && !inadimplente && valorMensal <= 0 && (
         <section className="rounded-xl border border-stone-200 bg-white p-4">
           <h2 className="text-sm font-semibold text-gray-900">
             A assinatura ainda não está aberta
           </h2>
           <p className="mt-1 text-sm text-gray-500">
-            {estado.pode_criar_evento
-              ? "Seu primeiro evento continua liberado. Quando a assinatura abrir, você verá o valor aqui."
-              : "Fale com a gente para liberar os próximos eventos — a assinatura abre em breve."}
+            {cortesia
+              ? "Sua conta segue liberada como cortesia. Quando a assinatura abrir, você verá o valor aqui."
+              : estado.pode_criar_evento
+                ? "Seu primeiro evento continua liberado. Quando a assinatura abrir, você verá o valor aqui."
+                : "Fale com a gente para liberar os próximos eventos — a assinatura abre em breve."}
           </p>
         </section>
       )}
 
-      {/* o que fazer agora */}
-      {!ativa && !inadimplente && !cortesia && valorMensal > 0 && (
+      {/* o que fazer agora
+          A cortesia também vê este bloco. Ela era uma porta sem saída: a
+          conta liberada nunca era oferecida a assinar, e quando a
+          cortesia acabasse a pessoa ficaria olhando "liberada como
+          cortesia" para sempre. Cortesia é um presente, não uma tranca. */}
+      {!ativa && !inadimplente && valorMensal > 0 && (
         <section className="rounded-xl border border-stone-200 bg-white p-4">
           <h2 className="text-sm font-semibold text-gray-900">
-            Assine por R$ {valorMensal.toFixed(2).replace(".", ",")} por mês
+            {cortesia
+              ? `Assinar por R$ ${valorMensal.toFixed(2).replace(".", ",")} por mês`
+              : `Assine por R$ ${valorMensal.toFixed(2).replace(".", ",")} por mês`}
           </h2>
           <p className="mt-1 text-sm text-gray-500">
-            Eventos ilimitados. Cancele quando quiser, sem multa.
+            {cortesia
+              ? "Sua cortesia continua valendo. Assine quando quiser — a cobrança começa no dia em que você assinar."
+              : "Eventos ilimitados. Cancele quando quiser, sem multa."}
           </p>
           {!mostrarForm ? (
             <button className={`mt-3 ${botao}`} onClick={() => setMostrarForm(true)}>
