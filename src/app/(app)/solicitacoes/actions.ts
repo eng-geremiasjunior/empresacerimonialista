@@ -3,8 +3,19 @@
 import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { enviarEmailSolicitacao } from "@/lib/email";
 
 export type FilaState = { error: string } | { success: true } | null;
+
+/**
+ * O que aconteceu com o e-mail do pedido. Decisão de produto: e-mail é o
+ * canal AUTOMÁTICO da solicitação (WhatsApp automático exigiria template
+ * aprovado pela Meta por variação); sem e-mail cadastrado, o pedido fica
+ * na fila para ela mandar por WhatsApp à mão, como sempre.
+ */
+export type ResultadoPedido =
+  | { error: string }
+  | { success: true; email: "enviado" | "sem_email" | "falhou"; motivo?: string };
 
 const TITULOS: Record<"confirmacao" | "contrato", string> = {
   confirmacao: "Confirmar presença no evento",
@@ -24,7 +35,7 @@ export async function pedirAoFornecedor(
   eventId: string,
   supplierId: string,
   tipo: "confirmacao" | "contrato"
-): Promise<{ error: string } | { success: true }> {
+): Promise<ResultadoPedido> {
   return criarPedido(eventId, supplierId, tipo, TITULOS[tipo], null);
 }
 
@@ -36,7 +47,7 @@ export async function pedirAoFornecedor(
 export async function pedirHorarioAoFornecedor(
   eventId: string,
   supplierId: string
-): Promise<{ error: string } | { success: true }> {
+): Promise<ResultadoPedido> {
   const supabase = createClient();
   // o item dele no dia: o mais cedo com fornecedor vinculado
   const { data: item } = await supabase
@@ -66,12 +77,12 @@ async function criarPedido(
   tipo: "confirmacao" | "contrato" | "horario",
   titulo: string,
   roteiroItemId: string | null
-): Promise<{ error: string } | { success: true }> {
+): Promise<ResultadoPedido> {
   const supabase = createClient();
 
   const { data: evento } = await supabase
     .from("events")
-    .select("id, date, empresa_id, cerimonialista_responsavel_id")
+    .select("id, name, type, date, empresa_id, cerimonialista_responsavel_id, clients(name)")
     .eq("id", eventId)
     .maybeSingle();
   if (!evento?.empresa_id) return { error: "Evento não encontrado." };
@@ -116,6 +127,12 @@ async function criarPedido(
     };
   }
 
+  const { data: forn } = await supabase
+    .from("suppliers")
+    .select("name, whatsapp, phone, email")
+    .eq("id", supplierId)
+    .maybeSingle();
+
   const { data: batidaViva } = await supabase
     .from("batida")
     .select("id")
@@ -125,13 +142,8 @@ async function criarPedido(
     .maybeSingle();
 
   let batidaId = batidaViva?.id ?? null;
+  const batidaNova = !batidaId;
   if (!batidaId) {
-    const { data: forn } = await supabase
-      .from("suppliers")
-      .select("whatsapp, phone, email")
-      .eq("id", supplierId)
-      .maybeSingle();
-
     const { data: nova } = await supabase
       .from("batida")
       .insert({
@@ -164,9 +176,60 @@ async function criarPedido(
     { onConflict: "empresa_id,supplier_id", ignoreDuplicates: true }
   );
 
+  // E-mail é o canal automático do pedido: sai AGORA, com o link sem
+  // login. Sem e-mail cadastrado, o pedido fica na fila (WhatsApp manual
+  // dela, como sempre). Falha de envio não desfaz o pedido — vira aviso.
+  let email: "enviado" | "sem_email" | "falhou" = "sem_email";
+  let motivo: string | undefined;
+  if (forn?.email) {
+    const { data: acesso } = await supabase
+      .from("fornecedor_acesso")
+      .select("hash")
+      .eq("empresa_id", evento.empresa_id)
+      .eq("supplier_id", supplierId)
+      .maybeSingle();
+    if (acesso?.hash) {
+      const cliente = Array.isArray(evento.clients)
+        ? (evento.clients[0] as { name: string } | undefined)
+        : (evento.clients as { name: string } | null | undefined);
+      const rotulo =
+        (evento.name as string | null) ||
+        (cliente?.name ? `${evento.type} de ${cliente.name}` : evento.type) ||
+        "Evento";
+      const envio = await enviarEmailSolicitacao({
+        to: forn.email,
+        supplierName: forn.name ?? "Fornecedor",
+        titulo,
+        eventLabel: rotulo,
+        eventDate: (evento.date as string | null) ?? null,
+        hash: acesso.hash as string,
+      });
+      if (envio.ok) {
+        email = "enviado";
+        await supabase
+          .from("solicitacao_fornecedor")
+          .update({ status: "enviada", enviada_em: new Date().toISOString() })
+          .eq("id", sol.id);
+        // batida criada só para este pedido e ele já saiu: não cobra a fila
+        if (batidaNova && batidaId) {
+          await supabase
+            .from("batida")
+            .update({ status: "enviada" })
+            .eq("id", batidaId);
+        }
+      } else {
+        email = "falhou";
+        motivo = envio.error;
+      }
+    } else {
+      email = "falhou";
+      motivo = "o link do fornecedor não foi gerado.";
+    }
+  }
+
   revalidatePath("/solicitacoes");
   revalidatePath(`/eventos/${eventId}/fornecedores`);
-  return { success: true };
+  return { success: true, email, motivo };
 }
 
 /**

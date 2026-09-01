@@ -14,7 +14,7 @@
 // Nada aqui calcula status, grupo ou contagem: tudo vem de
 // fornecedores-core.
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/celebra";
 import {
@@ -50,6 +50,11 @@ import {
   pedirAoFornecedor,
   pedirHorarioAoFornecedor,
 } from "@/app/(app)/solicitacoes/actions";
+import {
+  confirmarAnexoContrato,
+  prepararAnexoContrato,
+} from "@/app/(app)/eventos/[id]/fornecedores/anexo-actions";
+import { enviarArquivo } from "@/lib/contratos-cliente";
 
 const F_UI = "var(--font-ui)";
 const F_MONO = "var(--font-mono)";
@@ -61,6 +66,18 @@ const GRID =
   "minmax(120px,1.1fr) minmax(200px,1.8fr) minmax(104px,130px) minmax(104px,130px) 20px";
 
 const DIAS = [3, 5, 7, 10, 14, 21, 30];
+
+/** O que dizer depois de um pedido: a verdade sobre o e-mail. */
+function msgDoPedido(r: unknown): string {
+  const p = r as { email?: string; motivo?: string } | void;
+  if (p && p.email === "enviado") {
+    return "Pedido enviado por e-mail ao fornecedor.";
+  }
+  if (p && p.email === "falhou") {
+    return `Pedido criado, mas o e-mail não saiu${p.motivo ? ` — ${p.motivo}` : "."} Ele está na fila, em Solicitações.`;
+  }
+  return "Pedido criado. Sem e-mail cadastrado — mande pelo WhatsApp na fila, em Solicitações.";
+}
 
 const FILTROS: { key: Filtro; label: string }[] = [
   { key: "todos", label: "Todos" },
@@ -108,7 +125,7 @@ export function FornecedoresDoEvento({
 
   function rodar(
     acao: () => Promise<{ error?: string } | { success: true } | void>,
-    sucesso?: string
+    sucesso?: string | ((r: unknown) => string)
   ) {
     iniciar(async () => {
       const r = await acao();
@@ -117,7 +134,9 @@ export function FornecedoresDoEvento({
         setFeito(null);
       } else {
         setAviso(null);
-        setFeito(sucesso ?? null);
+        setFeito(
+          typeof sucesso === "function" ? sucesso(r) : (sucesso ?? null)
+        );
         router.refresh();
       }
     });
@@ -521,7 +540,7 @@ function Linha({
   aoAbrir: () => void;
   rodar: (
     a: () => Promise<{ error?: string } | { success: true } | void>,
-    sucesso?: string
+    sucesso?: string | ((r: unknown) => string)
   ) => void;
   setAviso: (s: string | null) => void;
 }) {
@@ -679,17 +698,43 @@ function Detalhe({
   pendente: boolean;
   rodar: (
     a: () => Promise<{ error?: string } | { success: true } | void>,
-    sucesso?: string
+    sucesso?: string | ((r: unknown) => string)
   ) => void;
   setAviso: (s: string | null) => void;
 }) {
   const [editandoEmail, setEditandoEmail] = useState(false);
   const [email, setEmail] = useState(f.email ?? "");
+  const inputArquivo = useRef<HTMLInputElement>(null);
   const convite = estadoConvite(f);
   const presenca = estadoPresenca(f);
   const historico = historicoDe(f);
   const acoes = acoesDe(f);
   const envio = podeEnviarConvite(f, canais);
+
+  async function anexar(arquivo: File) {
+    rodar(
+      async () => {
+        const prep = await prepararAnexoContrato(
+          eventId,
+          f.supplierId,
+          arquivo.name,
+          arquivo.type
+        );
+        if ("error" in prep) return prep;
+        const envio = await enviarArquivo(prep.permissao, arquivo);
+        if (!envio.ok) return { error: envio.erro };
+        return confirmarAnexoContrato(
+          eventId,
+          prep.solicitacaoId,
+          prep.permissao.caminho,
+          arquivo.name
+        );
+      },
+      arquivo.type === "application/pdf"
+        ? "Contrato anexado. A leitura espera você na caixa no topo da tela."
+        : "Contrato anexado. A leitura automática só lê PDF — este fica disponível para abrir."
+    );
+  }
 
   function executar(a: Acao) {
     if (a.id === "editar-email") {
@@ -705,17 +750,20 @@ function Detalhe({
       return;
     }
     if (a.id === "pedir-horario") {
-      rodar(
-        () => pedirHorarioAoFornecedor(eventId, f.supplierId),
-        "Pedido criado. A mensagem está na fila, em Solicitações."
-      );
+      rodar(() => pedirHorarioAoFornecedor(eventId, f.supplierId), msgDoPedido);
       return;
     }
     if (a.id === "pedir-contrato") {
       rodar(
         () => pedirAoFornecedor(eventId, f.supplierId, "contrato"),
-        "Pedido criado. A mensagem está na fila, em Solicitações."
+        msgDoPedido
       );
+      return;
+    }
+    if (a.id === "anexar-contrato") {
+      // o contrato chegou por outro caminho (WhatsApp, papel): ela mesma
+      // anexa, pelo mesmo balde e mesma solicitação do fluxo do fornecedor
+      inputArquivo.current?.click();
       return;
     }
     if (a.id === "confirmar") {
@@ -862,6 +910,18 @@ function Detalhe({
         </div>
       ) : (
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          {/* o seletor de arquivo do "Anexar contrato" — invisível, um por linha */}
+          <input
+            ref={inputArquivo}
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const arq = e.target.files?.[0];
+              e.target.value = "";
+              if (arq) anexar(arq);
+            }}
+          />
           {acoes.map((a) => (
             <Button
               key={a.id}

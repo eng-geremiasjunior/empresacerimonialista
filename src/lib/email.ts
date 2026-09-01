@@ -133,6 +133,53 @@ export async function enviarEmailConfirmacao(
   });
 }
 
+// Pedido ao fornecedor (contrato assinado, horário de chegada,
+// confirmação) por e-mail. Decisão de produto: o E-MAIL é o canal
+// automático das solicitações — WhatsApp automático exigiria template
+// aprovado pela Meta para cada variação, então o wa.me continua manual,
+// pela fila de Solicitações. O link abre a MESMA página pública
+// /fornecedor/<hash> onde ele responde sem login.
+export type EmailSolicitacao = {
+  to: string;
+  supplierName: string;
+  /** o pedido, do jeito que a fila o chama: "Enviar contrato assinado" */
+  titulo: string;
+  eventLabel: string;
+  eventDate: string | null;
+  hash: string;
+};
+
+export async function enviarEmailSolicitacao(
+  dados: EmailSolicitacao
+): Promise<{ ok: boolean; error?: string }> {
+  const link = linkPublico(`/fornecedor/${dados.hash}`);
+  const html = `
+  <div style="font-family:system-ui,-apple-system,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#111827">
+    <h2 style="font-size:18px;margin:0 0 4px">${dados.titulo}</h2>
+    <p style="color:#6b7280;margin:0 0 20px">Vela — gestão de eventos</p>
+    <p>Olá, <strong>${dados.supplierName}</strong>!</p>
+    <p>A cerimonialista do evento abaixo pediu: <strong>${dados.titulo.toLowerCase()}</strong>.</p>
+    <div style="border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin:16px 0">
+      <p style="margin:0 0 8px;font-weight:600">${dados.eventLabel}</p>
+      ${dados.eventDate ? `<p style="margin:0;color:#374151"><strong>Data:</strong> ${formatDate(dados.eventDate)}</p>` : ""}
+    </div>
+    <p>Responda pelo link abaixo — não precisa de senha:</p>
+    <p style="margin:20px 0">
+      <a href="${link}"
+         style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600">
+        Ver o pedido e responder
+      </a>
+    </p>
+    <p style="color:#9ca3af;font-size:12px">Se o botão não funcionar, copie e cole este endereço no navegador:<br/>${link}</p>
+  </div>`;
+
+  return enviarViaResend({
+    to: dados.to,
+    subject: `${dados.titulo} — ${dados.eventLabel}`,
+    html,
+  });
+}
+
 // Convite de agendamento por e-mail (Secretário). Abre a MESMA página
 // pública /agendar/<hash> — não depende do webhook da Meta, então é o
 // canal mais robusto enquanto o WhatsApp de produção não está liberado.

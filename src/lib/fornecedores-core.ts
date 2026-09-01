@@ -266,6 +266,7 @@ export type AcaoId =
   | "desmarcar"
   | "editar-email"
   | "pedir-contrato"
+  | "anexar-contrato"
   | "pedir-horario"
   | "remover";
 
@@ -281,6 +282,7 @@ export function acoesDe(f: Fornecedor, agora = Date.now()): Acao[] {
     return [
       { id: "desmarcar", label: "Desmarcar confirmação", variante: "ghost" },
       { id: "pedir-contrato", label: "Pedir contrato assinado", variante: "secondary" },
+    { id: "anexar-contrato", label: "Anexar contrato", variante: "secondary" },
       ...(f.itemRoteiro && f.itemRoteiro.horario
         ? [{ id: "pedir-horario", label: "Confirmar horário de chegada", variante: "secondary" } as Acao]
         : []),
@@ -291,6 +293,7 @@ export function acoesDe(f: Fornecedor, agora = Date.now()): Acao[] {
     return [
       { id: "editar-email", label: "Cadastrar e-mail", variante: "primary" },
       { id: "pedir-contrato", label: "Pedir contrato assinado", variante: "secondary" },
+    { id: "anexar-contrato", label: "Anexar contrato", variante: "secondary" },
       ...(f.itemRoteiro && f.itemRoteiro.horario
         ? [{ id: "pedir-horario", label: "Confirmar horário de chegada", variante: "secondary" } as Acao]
         : []),
@@ -310,6 +313,7 @@ export function acoesDe(f: Fornecedor, agora = Date.now()): Acao[] {
       variante: "primary",
     },
     { id: "pedir-contrato", label: "Pedir contrato assinado", variante: "secondary" },
+    { id: "anexar-contrato", label: "Anexar contrato", variante: "secondary" },
       ...(f.itemRoteiro && f.itemRoteiro.horario
         ? [{ id: "pedir-horario", label: "Confirmar horário de chegada", variante: "secondary" } as Acao]
         : []),
