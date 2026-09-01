@@ -7,6 +7,16 @@
 //
 // Só LEITURA. O assistente responde sobre o evento; não cria nem altera
 // nada (decisão de produto: automação é determinística, IA é consulta).
+//
+// GATE DE SAÍDA — primeira camada: este texto vai INTEIRO para um
+// provedor externo, então dado pessoal NEM É BUSCADO — o que não é
+// buscado não vaza. Fora do contexto, de propósito:
+//   nome e contato da cliente   — o evento é dito pelo tipo, não pelo nome;
+//   telefone de fornecedor      — nome e categoria bastam para consulta;
+//   descrição e valor por lançamento — o financeiro sai agregado, e a
+//                                 parcela individual só com data e conta.
+// A segunda camada (assistente-gate.ts, aplicada na rota) redige contato
+// digitado em texto livre antes do envio.
 
 import { createClient } from "@/lib/supabase/server";
 import { inicioDoDiaBR } from "@/lib/tempo";
@@ -42,7 +52,7 @@ export async function montarContextoEvento(
   // A RLS decide se este usuário enxerga o evento.
   const { data: ev } = await supabase
     .from("events")
-    .select("id, type, date, time, location, city, guests, contract_value, status, client_id")
+    .select("id, type, date, time, location, city, guests, contract_value, status")
     .eq("id", eventId)
     .single();
 
@@ -50,10 +60,7 @@ export async function montarContextoEvento(
     return { ok: false, texto: "" };
   }
 
-  const [cliRes, decRes, tarRes, compRes, transRes, fornRes] = await Promise.all([
-    ev.client_id
-      ? supabase.from("clients").select("name, phone, whatsapp, email").eq("id", ev.client_id).single()
-      : Promise.resolve({ data: null }),
+  const [decRes, tarRes, compRes, transRes, fornRes] = await Promise.all([
     supabase
       .from("evento_decisao")
       .select("id, titulo, estado, prazo_previsto, responsavel")
@@ -71,7 +78,7 @@ export async function montarContextoEvento(
       .order("data", { ascending: true }),
     supabase
       .from("transactions")
-      .select("description, type, value, due_date, paid, conta")
+      .select("type, value, due_date, paid, conta")
       .eq("event_id", eventId)
       .order("due_date", { ascending: true }),
     // roteiro_links, NÃO event_suppliers: aquela tabela existe desde o
@@ -82,13 +89,10 @@ export async function montarContextoEvento(
     // aposentada.
     supabase
       .from("roteiro_links")
-      .select(
-        "role, suppliers(name, phone, whatsapp, supplier_categorias(categoria))"
-      )
+      .select("role, suppliers(name, supplier_categorias(categoria))")
       .eq("event_id", eventId),
   ]);
 
-  const cliente = cliRes.data as { name: string; phone: string | null; whatsapp: string | null; email: string | null } | null;
   const decisoes = decRes.data ?? [];
   const tarefas = tarRes.data ?? [];
   const compromissos = compRes.data ?? [];
@@ -118,7 +122,7 @@ export async function montarContextoEvento(
   const partes: string[] = [];
 
   partes.push(
-    `EVENTO: ${ev.type}${cliente ? ` de ${cliente.name}` : ""}\n` +
+    `EVENTO: ${ev.type}\n` +
       linha(
         `data ${dataBR(ev.date)}`,
         tempo,
@@ -129,12 +133,6 @@ export async function montarContextoEvento(
         `status ${ev.status}`
       )
   );
-
-  if (cliente) {
-    partes.push(
-      `CLIENTE: ${cliente.name} · ${linha(cliente.whatsapp || cliente.phone, cliente.email) || "sem contato"}`
-    );
-  }
 
   // O que cada decisão definiu: campos tipados preenchidos (5A), no lugar
   // do antigo texto livre "resultado".
@@ -222,6 +220,9 @@ export async function montarContextoEvento(
     const pagar = transacoes.filter((t) => t.type === "despesa");
     const soma = (arr: typeof transacoes, pago: boolean) =>
       arr.filter((t) => t.paid === pago).reduce((s, t) => s + Number(t.value || 0), 0);
+    // Agregado + datas. A parcela individual sai SEM descrição e SEM
+    // valor: para "quanto?" as somas respondem; para "qual?" a tela do
+    // Financeiro é o lugar.
     partes.push(
       `FINANCEIRO:\n` +
         `- a receber: ${moeda(soma(receber, false))} · já recebido: ${moeda(soma(receber, true))}\n` +
@@ -231,7 +232,7 @@ export async function montarContextoEvento(
           .slice(0, 20)
           .map(
             (t) =>
-              `- [${t.type}] ${t.description ?? "sem descrição"} ${moeda(Number(t.value))} vence ${dataBR(t.due_date)} (${t.conta})`
+              `- ${t.type === "receita" ? "parcela a receber" : "parcela a pagar"} vence ${dataBR(t.due_date)} (conta ${t.conta})`
           )
           .join("\n")
     );
@@ -244,8 +245,6 @@ export async function montarContextoEvento(
           .map((f) => {
             type Sup = {
               name: string;
-              phone: string | null;
-              whatsapp: string | null;
               supplier_categorias: { categoria: string }[] | null;
             };
             const s = f.suppliers as Sup | Sup[] | null;
@@ -254,7 +253,7 @@ export async function montarContextoEvento(
             const cats = (sup.supplier_categorias ?? [])
               .map((c) => categoriaLabel(c.categoria))
               .join(", ");
-            return `- ${sup.name}${f.role ? ` (${f.role})` : ""}${cats ? ` · ${cats}` : ""}${sup.whatsapp || sup.phone ? ` · ${sup.whatsapp || sup.phone}` : ""}`;
+            return `- ${sup.name}${f.role ? ` (${f.role})` : ""}${cats ? ` · ${cats}` : ""}`;
           })
           .filter(Boolean)
           .join("\n")
