@@ -37,9 +37,12 @@ export default async function RoteiroPage({
     checklistResult,
     membrosResult,
   ] = await Promise.all([
+    // espacos(liberacao_montagem): a borda do dia agora mora no LUGAR
+    // (129, preenchida pela extração do contrato do espaço) — o campo do
+    // Planejamento continua valendo como fallback
     supabase
       .from("events")
-      .select("id, date")
+      .select("id, date, espacos(liberacao_montagem)")
       .eq("id", params.id)
       .single(),
     // Leitura rica dos itens (status_novo, horários reais, responsável,
@@ -153,8 +156,23 @@ export default async function RoteiroPage({
         items={items}
         suppliers={suppliers}
         liberacaoEspaco={
-          (liberacaoResult.data as { valor_hora: string | null } | null)
-            ?.valor_hora ?? null
+          (() => {
+            const esp = (eventData as unknown as {
+              espacos?:
+                | { liberacao_montagem: string | null }
+                | { liberacao_montagem: string | null }[]
+                | null;
+            } | null)?.espacos;
+            const doLugar = Array.isArray(esp)
+              ? esp[0]?.liberacao_montagem
+              : esp?.liberacao_montagem;
+            return (
+              doLugar ??
+              (liberacaoResult.data as { valor_hora: string | null } | null)
+                ?.valor_hora ??
+              null
+            );
+          })()
         }
       />
 

@@ -23,6 +23,14 @@ export type EscolhasAplicacao = {
   quantidades: { nome: string; quantidade: number; unidade: string | null }[];
   /** aplica no item mais cedo do fornecedor no roteiro; null = não aplicar */
   horario: { hora: string } | null;
+  /** a borda do dia vinda do contrato do ESPAÇO (aposta 2); só os campos
+   *  marcados chegam aqui — undefined em escolhas anteriores */
+  espaco?: {
+    liberacao_montagem: string | null;
+    termino_som: string | null;
+    desmontagem_ate: string | null;
+    restricoes: string | null;
+  } | null;
 };
 
 export type ResultadoExtracao = { error: string } | { success: true };
@@ -51,10 +59,19 @@ export async function aplicarExtracao(
   const sup = Array.isArray(ext.suppliers) ? ext.suppliers[0] : ext.suppliers;
   const fornecedorNome = (sup as { name: string } | null)?.name ?? "Fornecedor";
 
+  const espacoMarcado =
+    !!escolhas.espaco &&
+    !!(
+      escolhas.espaco.liberacao_montagem ||
+      escolhas.espaco.termino_som ||
+      escolhas.espaco.desmontagem_ate ||
+      escolhas.espaco.restricoes
+    );
   const total =
     escolhas.parcelas.length +
     escolhas.quantidades.length +
-    (escolhas.horario ? 1 : 0);
+    (escolhas.horario ? 1 : 0) +
+    (espacoMarcado ? 1 : 0);
   if (total === 0) {
     return { error: "Nada marcado para aplicar." };
   }
@@ -77,6 +94,14 @@ export async function aplicarExtracao(
   }
   if (escolhas.horario && !RE_HORA.test(escolhas.horario.hora)) {
     return { error: "O horário precisa estar no formato HH:MM." };
+  }
+  if (espacoMarcado) {
+    const e = escolhas.espaco!;
+    for (const h of [e.liberacao_montagem, e.termino_som, e.desmontagem_ate]) {
+      if (h && !RE_HORA.test(h)) {
+        return { error: "Os horários do espaço precisam estar no formato HH:MM." };
+      }
+    }
   }
 
   const feitos: string[] = [];
@@ -159,6 +184,76 @@ export async function aplicarExtracao(
       return { error: erroParcial(feitos, "o horário no roteiro.") };
     }
     feitos.push(`horário ${escolhas.horario.hora} em "${item.title}"`);
+  }
+
+  // ---- a borda do dia do ESPAÇO (aposta 2) → tabela espacos ----
+  // O destino é o LUGAR (espacos.*, 129), que o Roteiro passa a ler para
+  // o aviso de conflito. Só as colunas marcadas são tocadas — endereço,
+  // transporte e o resto do cadastro ficam como estão.
+  if (espacoMarcado) {
+    const e = escolhas.espaco!;
+    const { data: evRow } = await supabase
+      .from("events")
+      .select("espaco_id, location")
+      .eq("id", eventId)
+      .maybeSingle();
+
+    let espacoId: string | null = evRow?.espaco_id ?? null;
+
+    // sem espaço vinculado: o cadastro do fornecedor pode já SER um
+    // espaço (espacos.supplier_id); senão nasce um, com o nome dele
+    if (!espacoId && ext.supplier_id) {
+      const { data: doFornecedor } = await supabase
+        .from("espacos")
+        .select("id")
+        .eq("supplier_id", ext.supplier_id)
+        .limit(1)
+        .maybeSingle();
+      espacoId = doFornecedor?.id ?? null;
+    }
+    if (!espacoId) {
+      const { data: cargo } = await supabase.rpc("meu_cargo");
+      const empresaId = (cargo as { empresa_id: string }[] | null)?.[0]?.empresa_id;
+      if (!empresaId) {
+        return { error: erroParcial(feitos, "o espaço: sessão sem empresa.") };
+      }
+      const { data: novo, error: errNovo } = await supabase
+        .from("espacos")
+        .insert({
+          empresa_id: empresaId,
+          nome: fornecedorNome,
+          cidade: null,
+          supplier_id: ext.supplier_id,
+        })
+        .select("id")
+        .single();
+      if (errNovo || !novo) {
+        return { error: erroParcial(feitos, "o espaço: não consegui criar o cadastro.") };
+      }
+      espacoId = novo.id;
+    }
+
+    const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (e.liberacao_montagem) patch.liberacao_montagem = e.liberacao_montagem;
+    if (e.termino_som) patch.termino_som = e.termino_som;
+    if (e.desmontagem_ate) patch.desmontagem_ate = e.desmontagem_ate;
+    if (e.restricoes) patch.restricoes = e.restricoes.slice(0, 500);
+
+    const { data: upEsp, error: errEsp } = await supabase
+      .from("espacos")
+      .update(patch)
+      .eq("id", espacoId)
+      .select("id");
+    if (errEsp || !upEsp?.length) {
+      return { error: erroParcial(feitos, "os horários do espaço.") };
+    }
+
+    // o evento passa a apontar para o espaço (se ainda não apontava) —
+    // é por esse vínculo que o Roteiro acha a borda do dia
+    if (!evRow?.espaco_id) {
+      await supabase.from("events").update({ espaco_id: espacoId }).eq("id", eventId);
+    }
+    feitos.push("horários do espaço");
   }
 
   // ---- tudo entrou: agora sim, conferida (com autoria — 140) ----

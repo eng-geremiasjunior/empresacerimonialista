@@ -76,6 +76,20 @@ export function ConferenciaExtracao({
   const [horarioIdx, setHorarioIdx] = useState<number>(
     itemRoteiroTitulo && payload.horarios.length > 0 ? 0 : -1
   );
+  // a borda do dia do ESPAÇO (aposta 2): cada campo com seu interruptor
+  const esp = payload.espaco ?? null;
+  const [espacoManter, setEspacoManter] = useState({
+    liberacao_montagem: !!esp?.liberacao_montagem,
+    termino_som: !!esp?.termino_som,
+    desmontagem_ate: !!esp?.desmontagem_ate,
+    restricoes: !!esp?.restricoes,
+  });
+  const [espacoValores, setEspacoValores] = useState({
+    liberacao_montagem: esp?.liberacao_montagem ?? "",
+    termino_som: esp?.termino_som ?? "",
+    desmontagem_ate: esp?.desmontagem_ate ?? "",
+    restricoes: esp?.restricoes ?? "",
+  });
 
   const somaMarcada = parcelas
     .filter((p) => p.manter)
@@ -105,6 +119,27 @@ export function ConferenciaExtracao({
       horario:
         horarioIdx >= 0 && payload.horarios[horarioIdx]
           ? { hora: payload.horarios[horarioIdx].hora }
+          : null,
+      espaco:
+        esp &&
+        (espacoManter.liberacao_montagem ||
+          espacoManter.termino_som ||
+          espacoManter.desmontagem_ate ||
+          espacoManter.restricoes)
+          ? {
+              liberacao_montagem: espacoManter.liberacao_montagem
+                ? espacoValores.liberacao_montagem || null
+                : null,
+              termino_som: espacoManter.termino_som
+                ? espacoValores.termino_som || null
+                : null,
+              desmontagem_ate: espacoManter.desmontagem_ate
+                ? espacoValores.desmontagem_ate || null
+                : null,
+              restricoes: espacoManter.restricoes
+                ? espacoValores.restricoes.trim() || null
+                : null,
+            }
           : null,
     };
     const faltaData = escolhas.parcelas.some(
@@ -278,6 +313,70 @@ export function ConferenciaExtracao({
               entrar.
             </p>
           )}
+        </div>
+      )}
+
+      {esp && (
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+            Horários do espaço → Evento
+          </p>
+          <div className="mt-1.5 space-y-1.5">
+            {(
+              [
+                ["liberacao_montagem", "Fornecedores entram a partir de"],
+                ["termino_som", "Som até"],
+                ["desmontagem_ate", "Desmontagem até"],
+              ] as const
+            ).map(([campo, rotulo]) =>
+              esp[campo] ? (
+                <label
+                  key={campo}
+                  className="flex flex-wrap items-center gap-2 rounded-md border border-gray-100 px-2 py-1.5 text-[12px] text-gray-700"
+                >
+                  <input
+                    type="checkbox"
+                    checked={espacoManter[campo]}
+                    onChange={(e) =>
+                      setEspacoManter({ ...espacoManter, [campo]: e.target.checked })
+                    }
+                  />
+                  <span className="min-w-0 flex-1">{rotulo}</span>
+                  <input
+                    type="time"
+                    className={input}
+                    value={espacoValores[campo]}
+                    disabled={!espacoManter[campo]}
+                    onChange={(e) =>
+                      setEspacoValores({ ...espacoValores, [campo]: e.target.value })
+                    }
+                  />
+                </label>
+              ) : null
+            )}
+            {esp.restricoes && (
+              <label className="flex flex-wrap items-start gap-2 rounded-md border border-gray-100 px-2 py-1.5 text-[12px] text-gray-700">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={espacoManter.restricoes}
+                  onChange={(e) =>
+                    setEspacoManter({ ...espacoManter, restricoes: e.target.checked })
+                  }
+                />
+                <span className="shrink-0">Restrições</span>
+                <input
+                  className={`${input} min-w-0 flex-1`}
+                  value={espacoValores.restricoes}
+                  disabled={!espacoManter.restricoes}
+                  onChange={(e) =>
+                    setEspacoValores({ ...espacoValores, restricoes: e.target.value })
+                  }
+                />
+              </label>
+            )}
+          </div>
+          {trechoEl(esp.trecho)}
         </div>
       )}
 

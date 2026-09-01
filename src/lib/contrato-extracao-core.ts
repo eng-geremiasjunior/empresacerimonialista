@@ -80,6 +80,23 @@ export type HorarioExtraido = {
   trecho: string | null;
 };
 
+/**
+ * O que só o contrato do ESPAÇO diz: a borda do dia para os fornecedores.
+ * Preenche o slot origem_horario='espaco' que a 112 previu e ninguém
+ * produzia. Null quando o contrato não é de espaço (buffet, som…).
+ */
+export type EspacoExtraido = {
+  /** HH:MM — a partir de quando os fornecedores podem entrar para montar */
+  liberacao_montagem: string | null;
+  /** HH:MM — horário limite do som */
+  termino_som: string | null;
+  /** HH:MM — até quando a desmontagem tem que terminar */
+  desmontagem_ate: string | null;
+  /** regras do espaço que afetam a operação (texto curto) */
+  restricoes: string | null;
+  trecho: string | null;
+};
+
 export type PropostaExtracao = {
   schema: 1;
   valor_total: number | null;
@@ -87,6 +104,8 @@ export type PropostaExtracao = {
   parcelas: ParcelaExtraida[];
   quantidades: QuantidadeExtraida[];
   horarios: HorarioExtraido[];
+  /** ausente em propostas anteriores à aposta 2 */
+  espaco?: EspacoExtraido | null;
 };
 
 const RE_DATA = /^\d{4}-\d{2}-\d{2}$/;
@@ -156,6 +175,31 @@ export function normalizarProposta(bruto: unknown): PropostaExtracao {
     }
   }
 
+  // o bloco do espaço só existe se ao menos um campo válido veio
+  let espaco: EspacoExtraido | null = null;
+  if (b.espaco && typeof b.espaco === "object") {
+    const e = b.espaco as Record<string, unknown>;
+    const hora = (v: unknown) => {
+      const h = txt(v, 5);
+      return h && RE_HORA.test(h) ? h : null;
+    };
+    const candidato: EspacoExtraido = {
+      liberacao_montagem: hora(e.liberacao_montagem),
+      termino_som: hora(e.termino_som),
+      desmontagem_ate: hora(e.desmontagem_ate),
+      restricoes: txt(e.restricoes, 500),
+      trecho: txt(e.trecho, 300),
+    };
+    if (
+      candidato.liberacao_montagem ||
+      candidato.termino_som ||
+      candidato.desmontagem_ate ||
+      candidato.restricoes
+    ) {
+      espaco = candidato;
+    }
+  }
+
   return {
     schema: 1,
     valor_total: num(b.valor_total),
@@ -163,6 +207,7 @@ export function normalizarProposta(bruto: unknown): PropostaExtracao {
     parcelas,
     quantidades,
     horarios,
+    espaco,
   };
 }
 
@@ -172,6 +217,7 @@ export function propostaVazia(p: PropostaExtracao): boolean {
     p.valor_total === null &&
     p.parcelas.length === 0 &&
     p.quantidades.length === 0 &&
-    p.horarios.length === 0
+    p.horarios.length === 0 &&
+    !p.espaco
   );
 }
