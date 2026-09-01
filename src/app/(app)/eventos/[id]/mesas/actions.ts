@@ -8,6 +8,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { analisarLista, chaveDoNome } from "@/lib/convidados-colar";
 import {
   MEDIDA_ELEMENTO,
   MEDIDA_PADRAO,
@@ -560,64 +561,22 @@ export type ResultadoLote =
   | { error: string }
   | { success: true; criados: number; repetidos: number };
 
-/** Nome sem acento e sem caixa — só para comparar, nunca para gravar. */
-function chaveDoNome(n: string): string {
-  return n
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 /**
  * A lista da noiva chega pronta — por WhatsApp, por planilha, por print.
  * Digitar 200 nomes um a um é o motivo mais comum para o Excel continuar
- * aberto do lado. Aqui ela cola a lista inteira, um nome por linha.
- *
- * O que a linha pode trazer, porque é assim que as listas vêm escritas:
- *   "João Silva"          → João Silva
- *   "João Silva + 2"      → João Silva, com 2 acompanhantes
- *   "3. João Silva"       → a numeração da planilha sai
- *   "- João Silva"        → o marcador sai
- * Qualquer outra coisa vira nome, sem adivinhação.
+ * aberto do lado. Aqui ela cola a lista inteira: um nome por linha, ou a
+ * planilha com cabeçalho (aí grupo, mesa, telefone, lado e restrição
+ * entram junto — aposta 3, determinística). A leitura mora em
+ * src/lib/convidados-colar.ts, pura e testável; aqui só se grava.
  */
 export async function adicionarConvidadosEmLote(
   eventId: string,
   texto: string
 ): Promise<ResultadoLote> {
-  const MAX = 500;
+  if (!texto.trim()) return { error: "Cole ao menos um nome." };
 
-  const linhas = texto
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter(Boolean)
-    .slice(0, MAX);
-
-  if (linhas.length === 0) return { error: "Cole ao menos um nome." };
-
-  const novos: { nome: string; acompanhantes: number }[] = [];
-  const vistos = new Set<string>();
-
-  for (const linha of linhas) {
-    // numeração e marcadores de planilha/lista
-    const limpa = linha.replace(/^\s*(?:\d+[.)-]|[-–—•*])\s*/, "").trim();
-    // "+ 2", "(2)", "+2 acompanhantes" no fim da linha
-    const m = limpa.match(/^(.*?)\s*(?:\+\s*(\d{1,2})|\((\d{1,2})\))\s*(?:acompanhantes?)?$/i);
-    // Só corta o sufixo quando o número faz sentido como acompanhante.
-    // "Zé + 99" fica "Zé + 99" inteiro: descartar em silêncio um pedaço
-    // do que ela colou é pior do que deixar um nome estranho na lista.
-    const contado = m ? Number(m[2] ?? m[3]) : 0;
-    const valido = Number.isFinite(contado) && contado > 0 && contado <= 20;
-    const nome = (valido && m ? m[1] : limpa).trim().slice(0, 120);
-    const acomp = valido ? contado : 0;
-    if (!nome) continue;
-
-    const chave = chaveDoNome(nome);
-    if (vistos.has(chave)) continue; // repetido dentro da própria colagem
-    vistos.add(chave);
-    novos.push({ nome, acompanhantes: acomp });
-  }
+  const analise = analisarLista(texto);
+  const novos = analise.convidados;
 
   if (novos.length === 0) return { error: "Não encontrei nenhum nome nessas linhas." };
 
@@ -648,6 +607,12 @@ export async function adicionarConvidadosEmLote(
         event_id: eventId,
         nome: n.nome,
         acompanhantes: n.acompanhantes,
+        criancas: n.criancas,
+        grupo: n.grupo,
+        telefone: n.telefone,
+        email: n.email,
+        lado: n.lado,
+        restricao_alimentar: n.restricao_alimentar,
         origem: "equipe",
       }))
     )

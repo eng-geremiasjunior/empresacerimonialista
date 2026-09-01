@@ -56,6 +56,7 @@ import {
 } from "@/app/(app)/eventos/[id]/mesas/actions";
 import { ModalMesa } from "@/components/mesas/ModalMesa";
 import { ImportarPlanta } from "@/components/mesas/ImportarPlanta";
+import { analisarLista, ROTULO_COLUNA } from "@/lib/convidados-colar";
 
 const TIPOS_ELEMENTO: TipoElemento[] = [
   "pista", "palco", "bar", "praca_alimentacao", "porta", "banheiro", "coluna", "saida_emergencia",
@@ -920,12 +921,10 @@ function ListaLateral({
   const [colando, setColando] = useState(false);
   const [loteTexto, setLoteTexto] = useState("");
   const [resumoLote, setResumoLote] = useState<string | null>(null);
-  // quebra por linha sem literal de regex: o shell que gerou este
-  // arquivo comia as barras, e um escape errado aqui derruba o build
-  const nomesDoLote = loteTexto
-    .split(String.fromCharCode(10))
-    .map((l) => l.trim())
-    .filter(Boolean).length;
+  // a mesma leitura do servidor, aqui em memória: o botão já diz quantos
+  // nomes vão entrar e quais colunas da planilha foram reconhecidas
+  const analiseLote = useMemo(() => analisarLista(loteTexto), [loteTexto]);
+  const nomesDoLote = analiseLote.convidados.length;
   const [expandido, setExpandido] = useState<string | null>(null);
 
   const lista = useMemo(() => {
@@ -1025,7 +1024,9 @@ function ListaLateral({
             rows={6}
             value={loteTexto}
             onChange={(e) => setLoteTexto(e.target.value)}
-            placeholder={"Um nome por linha\n\nJoão Silva\nMaria Souza + 2\nAna Lima"}
+            placeholder={
+              "Um nome por linha — ou a planilha inteira, com o cabeçalho\n\nJoão Silva\nMaria Souza + 2\nAna Lima"
+            }
             className="w-full resize-y rounded-lg border border-gray-200 px-2.5 py-2 text-sm outline-none focus:border-gray-400"
           />
           <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -1063,7 +1064,15 @@ function ListaLateral({
               cancelar
             </button>
             <span className="text-xs text-gray-400">
-              &quot;+ 2&quot; no fim da linha vira acompanhantes
+              {analiseLote.modo === "tabela"
+                ? `planilha: entram ${analiseLote.colunas
+                    .map((c) => ROTULO_COLUNA[c])
+                    .join(", ")}${
+                    analiseLote.ignoradas.length > 0
+                      ? ` · ignoro ${analiseLote.ignoradas.join(", ")}`
+                      : ""
+                  }`
+                : "\"+ 2\" no fim da linha vira acompanhantes · planilha com cabeçalho (nome, grupo, mesa, telefone…) entra com as colunas"}
             </span>
           </div>
         </div>
