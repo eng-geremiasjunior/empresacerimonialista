@@ -24,7 +24,7 @@ const COLUNAS = `id, event_id, type, value, due_date, paid, paid_at, description
   category, supplier_id, conta, origem_pagamento, tipo_lancamento, objetivo_id,
   payment_method, installment_number, installment_total,
   comprovante_path, comprovante_nome, comprovante_dados,
-  suppliers(name)`;
+  suppliers(name, cpf)`;
 
 export type FinanceiroDoEvento = {
   lancamentos: Lancamento[];
@@ -37,7 +37,8 @@ export type FinanceiroDoEvento = {
 };
 
 function mapearLancamento(t: Linha, nomeCliente: string): Lancamento {
-  const forn = (t.suppliers as { name: string } | null)?.name ?? null;
+  const sup = t.suppliers as { name: string; cpf?: string | null } | null;
+  const forn = sup?.name ?? null;
   const entrada = t.type === "receita";
   return {
     id: t.id as string,
@@ -61,6 +62,7 @@ function mapearLancamento(t: Linha, nomeCliente: string): Lancamento {
         }
       : null,
     formaPagamento: (t.payment_method as string) ?? null,
+    cnpj: sup?.cpf ?? null,
   };
 }
 

@@ -23,6 +23,8 @@ const ICONS: Record<string, string> = {
   tarefas: "M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
   solicitacoes:
     "M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5",
+  contratos:
+    "M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9zM8.25 15h4.5m-4.5 3l1.5-.375c.375-.094.71-.306.955-.605l3.795-4.645",
   agenda:
     "M6.75 3v2.25M17.25 3v2.25M3 8.25h18M5.25 5.25h13.5A2.25 2.25 0 0121 7.5v3.75M3 18.75V7.5a2.25 2.25 0 012.25-2.25M3 18.75A2.25 2.25 0 005.25 21h6.375M3 18.75v-7.5m14.625 4.125v2.25l1.5 1.125m2.625-1.125a4.125 4.125 0 11-8.25 0 4.125 4.125 0 018.25 0z",
   calendario:
@@ -83,6 +85,13 @@ const NAV: NavItem[] = [
     label: "Solicitações",
     icon: "solicitacoes",
     href: "/solicitacoes",
+    cargos: ["proprietaria", "coordenadora", "cerimonialista"],
+  },
+  // contrato é o produto da solicitação — vizinhos de propósito
+  {
+    label: "Contratos",
+    icon: "contratos",
+    href: "/contratos",
     cargos: ["proprietaria", "coordenadora", "cerimonialista"],
   },
   { label: "Agenda de Fornecedores", icon: "agenda", href: "/agenda" },

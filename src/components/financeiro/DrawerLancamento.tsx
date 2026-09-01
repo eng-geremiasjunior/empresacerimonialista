@@ -7,14 +7,16 @@
 // o toque dela, nem quando o valor bate exatamente. O sistema lê, mostra
 // o que leu, e espera.
 //
-// Nesta versão o passo de leitura é preenchimento assistido: ela anexa e
-// digita valor e data. A conferência contra a parcela é a mesma, a tela
-// de revisão é a mesma, e quando a leitura automática entrar ela só
-// preenche esses dois campos antes — sem redesenho.
+// A leitura automática (140): comprovante em PDF é lido AQUI, no
+// navegador — pdfjs extrai o texto e a regex do financeiro-core
+// (normalizarComprovante) faz o resto. Zero rede além do upload que já
+// existia, zero IA: dado bancário não sai desta máquina. Print (imagem)
+// segue o fluxo digitado, com aviso honesto.
 
 import { mascararDinheiro } from "@/lib/format";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { extrairTextoDePdf } from "@/lib/pdf-texto-cliente";
 import {
   camposExtraidos,
   conferir,
@@ -59,6 +61,15 @@ export function DrawerLancamento({
   const [tipo, setTipo] = useState("PIX");
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  // o que a leitura automática achou no PDF (null = fluxo digitado)
+  const [autoLido, setAutoLido] = useState<{
+    confianca: Record<string, number>;
+    hora: string | null;
+    txId: string | null;
+    destinatario: string | null;
+    cnpj: string | null;
+  } | null>(null);
+  const [avisoLeitura, setAvisoLeitura] = useState<string | null>(null);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -76,7 +87,11 @@ export function DrawerLancamento({
     valor: Number(valor.replace(/\./g, "").replace(",", ".")) || 0,
     data: data ? fmtData(data) : null,
     tipo,
-    confianca: {},
+    hora: autoLido?.hora ?? null,
+    txId: autoLido?.txId ?? null,
+    destinatario: autoLido?.destinatario ?? null,
+    cnpj: autoLido?.cnpj ?? null,
+    confianca: autoLido?.confianca ?? {},
   });
   const conf = conferir(lido, lancamento);
   const campos = camposExtraidos(lido, lancamento, conf);
@@ -98,9 +113,51 @@ export function DrawerLancamento({
       setArquivo(file);
       setPath(caminho);
       setPasso("reading");
-      // sem leitura automática ainda: o passo existe para ela conferir o
-      // arquivo e informar o que consta nele
-      setTimeout(() => setPasso("review"), 400);
+
+      // a leitura automática: PDF com camada de texto é lido AQUI, no
+      // navegador — o texto nunca sai desta máquina
+      setAutoLido(null);
+      setAvisoLeitura(null);
+      if (file.type === "application/pdf") {
+        try {
+          const texto = await extrairTextoDePdf(await file.arrayBuffer());
+          if (texto.trim().length >= 50) {
+            const auto = normalizarComprovante({ texto, confianca: {} });
+            // confiança determinística: 1 = a regex achou; 0.5 = não —
+            // e a tabela de revisão anota "confira este campo" (gate <0.8)
+            const confianca: Record<string, number> = {
+              valor: auto.valor != null ? 1 : 0.5,
+              data: auto.data ? 1 : 0.5,
+              tipo: /pix|ted|transfer/i.test(texto) ? 1 : 0.5,
+              destinatario: auto.destinatario ? 1 : 0.5,
+              cnpj: auto.cnpj ? 1 : 0.5,
+            };
+            if (auto.valor != null) {
+              setValor(mascararDinheiro(auto.valor.toFixed(2).replace(".", ",")));
+            }
+            if (auto.data) setData(auto.data.split("/").reverse().join("-"));
+            setTipo(auto.tipo);
+            setAutoLido({
+              confianca,
+              hora: auto.hora,
+              txId: auto.txId,
+              destinatario: auto.destinatario,
+              cnpj: auto.cnpj,
+            });
+          } else {
+            setAvisoLeitura(
+              "Este PDF parece digitalizado (imagem) — confira o arquivo e preencha."
+            );
+          }
+        } catch {
+          setAvisoLeitura("Não consegui ler este PDF — confira o arquivo e preencha.");
+        }
+      } else {
+        setAvisoLeitura(
+          "A leitura automática só lê PDF — confira o print e preencha."
+        );
+      }
+      setPasso("review");
     } finally {
       setOcupado(false);
     }
@@ -118,7 +175,19 @@ export function DrawerLancamento({
             valor: lido.valor,
             data: lido.data,
             tipo: lido.tipo,
-            origem: "digitado",
+            origem: autoLido ? "lido" : "digitado",
+            // o que a leitura achou, antes de qualquer edição dela —
+            // confirmado vs extraído fica auditável
+            ...(autoLido
+              ? {
+                  lido: {
+                    hora: autoLido.hora,
+                    tx_id: autoLido.txId,
+                    destinatario: autoLido.destinatario,
+                    cnpj: autoLido.cnpj,
+                  },
+                }
+              : {}),
           },
         });
       }
@@ -287,7 +356,7 @@ export function DrawerLancamento({
           {passo === "reading" && (
             <div style={{ textAlign: "center", padding: "40px 0" }}>
               <p style={{ fontSize: 16, fontWeight: 600, color: "var(--tinta)" }}>
-                Abrindo o comprovante…
+                Lendo o comprovante aqui no navegador…
               </p>
               <p
                 className="fin-mono"
@@ -309,8 +378,15 @@ export function DrawerLancamento({
                 }}
               >
                 <p style={{ fontSize: 14, color: "var(--ameixa-800)" }}>
-                  Confira antes de marcar como pago.
+                  {autoLido
+                    ? "Lido do comprovante, aqui no navegador — confira antes de marcar como pago."
+                    : "Confira antes de marcar como pago."}
                 </p>
+                {avisoLeitura && (
+                  <p style={{ marginTop: 4, fontSize: 12.5, color: "var(--ameixa-800)" }}>
+                    {avisoLeitura}
+                  </p>
+                )}
                 {arquivo && (
                   <p
                     className="fin-mono"

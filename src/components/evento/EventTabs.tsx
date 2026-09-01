@@ -10,6 +10,8 @@ export type TabCounters = {
   financeiro: number;
   /** blocos com resposta da cliente esperando conferência */
   planejamento: number;
+  /** contratos recebidos sem leitura fechada (138/140) */
+  contratos: number;
 };
 
 // As três fases da jornada saíram daqui: viraram os cartões de
@@ -29,6 +31,7 @@ const TABS: {
   { label: "Operação", seg: "operacao" },
   { label: "Mesas", seg: "mesas", requer: "mesas" },
   { label: "Fornecedores", seg: "fornecedores", counter: "fornecedores" },
+  { label: "Contratos", seg: "contratos", counter: "contratos" },
   { label: "Comunicação", seg: "comunicacao", counter: "comunicacao" },
   { label: "Financeiro", seg: "financeiro", counter: "financeiro" },
   // O que a cliente enxerga do evento. Por ora: quem tem acesso e o

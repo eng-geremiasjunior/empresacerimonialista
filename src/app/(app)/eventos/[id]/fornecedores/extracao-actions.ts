@@ -161,12 +161,16 @@ export async function aplicarExtracao(
     feitos.push(`horário ${escolhas.horario.hora} em "${item.title}"`);
   }
 
-  // ---- tudo entrou: agora sim, conferida ----
+  // ---- tudo entrou: agora sim, conferida (com autoria — 140) ----
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const { data: fechada, error: errFechar } = await supabase
     .from("contrato_extracao")
     .update({
       status: "conferida",
       conferida_em: new Date().toISOString(),
+      conferida_por: user?.id ?? null,
       aplicado: escolhas,
     })
     .eq("id", extracaoId)
@@ -191,13 +195,69 @@ export async function descartarExtracao(
   const supabase = createClient();
   const { data, error } = await supabase
     .from("contrato_extracao")
-    .update({ status: "descartada", conferida_em: new Date().toISOString() })
+    // descartada_em, não conferida_em: a tela de histórico lista os dois
+    // estados e não pode adivinhar qual é qual (140)
+    .update({ status: "descartada", descartada_em: new Date().toISOString() })
     .eq("id", extracaoId)
     .eq("event_id", eventId)
     .eq("status", "proposta")
     .select("id");
   if (error || !data?.length) {
     return { error: "Não foi possível descartar." };
+  }
+  revalidar(eventId);
+  return { success: true };
+}
+
+/**
+ * Tira da fila um contrato que não vai passar pela leitura automática:
+ * arquivo sem camada de texto (foto, docx) ou dados que ela já lançou à
+ * mão. Nasce uma extração descartada com payload vazio — o unique de
+ * solicitacao_id garante que a fila não cobra de novo. Se já existe
+ * proposta, o caminho é descartarExtracao.
+ */
+export async function arquivarContratoSemLeitura(
+  eventId: string,
+  solicitacaoId: string
+): Promise<ResultadoExtracao> {
+  const supabase = createClient();
+
+  const { data: sol } = await supabase
+    .from("solicitacao_fornecedor")
+    .select("id, supplier_id")
+    .eq("id", solicitacaoId)
+    .eq("event_id", eventId)
+    .eq("tipo", "contrato")
+    .maybeSingle();
+  if (!sol) return { error: "Contrato não encontrado neste evento." };
+
+  const { data, error } = await supabase
+    .from("contrato_extracao")
+    .insert({
+      event_id: eventId,
+      solicitacao_id: solicitacaoId,
+      supplier_id: sol.supplier_id,
+      payload: {
+        schema: 1,
+        valor_total: null,
+        trecho_valor: null,
+        parcelas: [],
+        quantidades: [],
+        horarios: [],
+      },
+      status: "descartada",
+      descartada_em: new Date().toISOString(),
+    })
+    .select("id");
+  if (error) {
+    if (error.code === "23505") {
+      return { error: "Este contrato já tem uma leitura — descarte-a por lá." };
+    }
+    console.error("[vela:extracao] arquivar:", error.message);
+    return { error: "Não foi possível tirar da fila." };
+  }
+  if (!data?.length) {
+    return { error: "Você não tem permissão para editar este evento." };
   }
   revalidar(eventId);
   return { success: true };
@@ -214,4 +274,7 @@ function revalidar(eventId: string) {
   revalidatePath(`/eventos/${eventId}/financeiro`);
   revalidatePath(`/eventos/${eventId}/operacao`);
   revalidatePath(`/eventos/${eventId}/roteiro`);
+  // a área de Contratos (140): a fila global e a aba do evento
+  revalidatePath("/contratos");
+  revalidatePath(`/eventos/${eventId}/contratos`);
 }

@@ -70,6 +70,9 @@ export type Lancamento = {
   objetivoId: string | null;
   comprovante: { nome: string; path: string } | null;
   formaPagamento: string | null;
+  /** documento do fornecedor no cadastro (CPF/CNPJ) — liga a conferência
+   *  "igual ao cadastro" do comprovante lido */
+  cnpj?: string | null;
 };
 
 /**
@@ -566,8 +569,11 @@ export function conferir(
     pagoParcial: diferenca < 0,
     pagoAMais: diferenca > 0,
     dentroDoPrazo: dataISO ? diasAte(lancamento.vencimento, dataISO) >= 0 : null,
+    // por dígitos: o comprovante traz pontuado, o cadastro pode não trazer
     fornecedorConfere: Boolean(
-      lido.cnpj && lancamento.cnpj && lido.cnpj === lancamento.cnpj
+      lido.cnpj &&
+        lancamento.cnpj &&
+        lido.cnpj.replace(/\D/g, "") === lancamento.cnpj.replace(/\D/g, "")
     ),
     precisaAtencao: baixa || diferenca !== 0,
     mensagem:
@@ -627,7 +633,13 @@ export function camposExtraidos(
     {
       label: "CNPJ",
       value: lido.cnpj ?? "—",
-      note: conf.fornecedorConfere ? "igual ao cadastro" : "diferente do cadastro",
+      note: !lido.cnpj
+        ? null
+        : conf.fornecedorConfere
+          ? "igual ao cadastro"
+          : lancamento.cnpj
+            ? "diferente do cadastro"
+            : "sem documento no cadastro do fornecedor",
     },
     {
       label: "Tipo",

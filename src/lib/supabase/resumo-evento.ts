@@ -60,7 +60,7 @@ export async function getCabecalhoEvento(
   const hoje = hojeBR();
   const em7 = emDiasBR(7);
 
-  const [tasksRes, linksRes, itemsRes, txRes, msgRes, confRes] = await Promise.all([
+  const [tasksRes, linksRes, itemsRes, txRes, msgRes, confRes, contratoRes] = await Promise.all([
     // due_date entra para o Copiloto saber o que está vencido.
     supabase.from("tasks").select("status, due_date").eq("event_id", eventId),
     // suppliers(id) junto de propósito: um vínculo cujo cadastro a
@@ -93,6 +93,15 @@ export async function getCabecalhoEvento(
       .select("evento_decisao_id")
       .eq("event_id", eventId)
       .eq("aguarda_conferencia", true),
+    // contratos recebidos sem leitura fechada (138/140) — a MESMA conta
+    // da visão "Esperando conferência" da aba Contratos, para o badge
+    // nunca divergir da tela. Degrada para vazio se a 138 não rodou.
+    supabase
+      .from("solicitacao_fornecedor")
+      .select("id, contrato_extracao(status)")
+      .eq("event_id", eventId)
+      .eq("tipo", "contrato")
+      .eq("status", "respondida"),
   ]);
 
   const tasks = (tasksRes.data ?? []) as {
@@ -341,6 +350,20 @@ export async function getCabecalhoEvento(
     (confRes.data ?? []).map((c: { evento_decisao_id: string }) => c.evento_decisao_id)
   ).size;
 
+  // recebidos cuja leitura ainda não fechou (proposta pendente ou nunca
+  // lida) — o trabalho que a aba Contratos cobra
+  const contratosAguardando = (
+    (contratoRes.data ?? []) as unknown as {
+      // unique em solicitacao_id: o embed vem como OBJETO, não array
+      contrato_extracao: { status: string } | { status: string }[] | null;
+    }[]
+  ).filter((s) => {
+    const ext = Array.isArray(s.contrato_extracao)
+      ? s.contrato_extracao[0]
+      : s.contrato_extracao;
+    return !ext || ext.status === "proposta";
+  }).length;
+
   return {
     saude,
     fases: { lista, sugerida },
@@ -349,6 +372,7 @@ export async function getCabecalhoEvento(
       comunicacaoNaoLidas: msgRes.count ?? 0,
       financeiroVencendo: receberContador,
       planejamentoDaCliente: decisoesDaCliente,
+      contratosAguardando,
     },
   };
 }
@@ -360,6 +384,8 @@ export type EventoContadores = {
   financeiroVencendo: number;
   /** blocos do Planejamento com resposta da cliente sem conferir (091) */
   planejamentoDaCliente: number;
+  /** contratos recebidos sem leitura fechada (138/140) */
+  contratosAguardando: number;
 };// getEventoContadores foi removida: ninguém a chamava e ela refazia, em 4
 // consultas separadas, o que getCabecalhoEvento já calcula. O type
 // EventoContadores fica — está na assinatura do cabeçalho.

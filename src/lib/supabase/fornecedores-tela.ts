@@ -44,7 +44,7 @@ const COLUNAS =
  * evita retrabalho nenhum, só deixa um alarme aceso para sempre. Mesma
  * regra do Copiloto: depois da festa, só o dinheiro sobrevive.
  */
-function cobraContrato(
+export function cobraContrato(
   ev: { date: string; status: string; archived: boolean | null },
   hoje: string
 ): boolean {
