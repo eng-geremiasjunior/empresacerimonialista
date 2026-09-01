@@ -17,20 +17,37 @@ import {
   montarPayloadCasal,
   SECOES_NOTA,
   type ItemDiaPrestacao,
+  type OcorrenciaPrestacao,
   type ParcelaPrestacao,
   type PrestacaoPayload,
 } from "@/lib/prestacao-core";
 
 const hhmm = (t: string | null): string | null => (t ? t.slice(0, 5) : null);
 
+/** A linha da conferência pós-evento (139), para a revisão. */
+export type ConferenciaFornecedor = {
+  orcamentoId: string;
+  fornecedor: string;
+  contratado: number;
+  realizado: number | null;
+};
+
+/** Ocorrência completa (139), para a revisão — com o interruptor dela. */
+export type OcorrenciaEvento = OcorrenciaPrestacao & {
+  id: string;
+  visivelAoCasal: boolean;
+};
+
 /** O documento como está AGORA (o rascunho vivo que ela revisa). */
 export async function getPrestacaoAoVivo(eventId: string): Promise<{
   payload: PrestacaoPayload;
   notas: Record<string, string>;
+  conferencia: ConferenciaFornecedor[];
+  ocorrencias: OcorrenciaEvento[];
 } | null> {
   const supabase = createClient();
 
-  const [evRes, verbaRes, parcRes, roteiroRes, notasRes, publicoRes] =
+  const [evRes, verbaRes, parcRes, roteiroRes, notasRes, publicoRes, ocorRes] =
     await Promise.all([
       supabase
         .from("events")
@@ -40,7 +57,7 @@ export async function getPrestacaoAoVivo(eventId: string): Promise<{
       supabase
         .from("evento_fornecedor_orcamento")
         .select(
-          "id, supplier_id, valor_estimado_inicial, valor_alocado, suppliers(name), evento_fornecedor_item(id, descricao, valor_estimado_inicial, valor_negociado)"
+          "id, supplier_id, valor_estimado_inicial, valor_alocado, valor_realizado, suppliers(name), evento_fornecedor_item(id, descricao, valor_estimado_inicial, valor_negociado)"
         )
         .eq("event_id", eventId),
       supabase
@@ -61,6 +78,14 @@ export async function getPrestacaoAoVivo(eventId: string): Promise<{
         .select("secao, texto")
         .eq("event_id", eventId),
       supabase.rpc("publico_do_evento", { p_event_id: eventId }),
+      // ocorrências (139) — degrada para vazio se a migração não rodou
+      supabase
+        .from("evento_ocorrencia")
+        .select(
+          "id, tipo, descricao, valor, resolvida, visivel_ao_casal, suppliers(name)"
+        )
+        .eq("event_id", eventId)
+        .order("criada_em", { ascending: true }),
     ]);
 
   const ev = evRes.data as {
@@ -75,8 +100,21 @@ export async function getPrestacaoAoVivo(eventId: string): Promise<{
 
   const clientes = Array.isArray(ev.clients) ? ev.clients[0] : ev.clients;
 
+  // 42703 = a 139 ainda não rodou (valor_realizado não existe): busca de
+  // novo sem a coluna, para o documento não perder os fornecedores
+  let verbaData = verbaRes.data as any[] | null;
+  if (verbaRes.error?.code === "42703") {
+    const denovo = await supabase
+      .from("evento_fornecedor_orcamento")
+      .select(
+        "id, supplier_id, valor_estimado_inicial, valor_alocado, suppliers(name), evento_fornecedor_item(id, descricao, valor_estimado_inicial, valor_negociado)"
+      )
+      .eq("event_id", eventId);
+    verbaData = denovo.data as any[] | null;
+  }
+
   // ---- fornecedores, pelas réguas da aba (montarLinhas/resumoVerba) ----
-  const verbas: VerbaFornecedor[] = ((verbaRes.data ?? []) as any[]).map((v) => ({
+  const verbas: VerbaFornecedor[] = ((verbaData ?? []) as any[]).map((v) => ({
     id: v.id,
     supplier_id: v.supplier_id,
     fornecedor: (Array.isArray(v.suppliers) ? v.suppliers[0] : v.suppliers)?.name ?? "Fornecedor",
@@ -107,6 +145,28 @@ export async function getPrestacaoAoVivo(eventId: string): Promise<{
 
   const linhas = montarLinhas(verbas, parcelasFornecedor);
   const resumo = resumoVerba(linhas);
+
+  // o valor conferido pós-evento (139), por orçamento de fornecedor
+  const realizadoPorOrcamento = new Map<string, number | null>(
+    ((verbaData ?? []) as any[]).map((v) => [
+      v.id as string,
+      v.valor_realizado == null ? null : Number(v.valor_realizado),
+    ])
+  );
+
+  // ---- ocorrências (139): a lista completa para a revisão ----
+  const ocorrencias: OcorrenciaEvento[] = ((ocorRes.data ?? []) as any[]).map(
+    (o) => ({
+      id: o.id,
+      tipo: o.tipo,
+      descricao: o.descricao,
+      valor: o.valor == null ? null : Number(o.valor),
+      resolvida: Boolean(o.resolvida),
+      visivelAoCasal: Boolean(o.visivel_ao_casal),
+      fornecedor:
+        (Array.isArray(o.suppliers) ? o.suppliers[0] : o.suppliers)?.name ?? null,
+    })
+  );
 
   // ---- parcelas como o casal as verá (nome do fornecedor, nunca id) ----
   const nomePorSupplier = new Map(
@@ -173,8 +233,13 @@ export async function getPrestacaoAoVivo(eventId: string): Promise<{
       nome: l.fornecedor,
       estimado: l.valor_estimado_inicial,
       contratado: l.total,
+      realizado: realizadoPorOrcamento.get(l.id) ?? null,
       pago: l.pago,
     })),
+    // ao casal, só o que ela marcou visível
+    ocorrencias: ocorrencias
+      .filter((o) => o.visivelAoCasal)
+      .map(({ id: _id, visivelAoCasal: _v, ...resto }) => resto),
     parcelas,
     dia,
     diaConcluidos,
@@ -184,7 +249,14 @@ export async function getPrestacaoAoVivo(eventId: string): Promise<{
     notas,
   });
 
-  return { payload, notas };
+  const conferencia: ConferenciaFornecedor[] = linhas.map((l) => ({
+    orcamentoId: l.id,
+    fornecedor: l.fornecedor,
+    contratado: l.total,
+    realizado: realizadoPorOrcamento.get(l.id) ?? null,
+  }));
+
+  return { payload, notas, conferencia, ocorrencias };
 }
 
 export type VersaoEntregue = { versao: number; entregue_em: string };

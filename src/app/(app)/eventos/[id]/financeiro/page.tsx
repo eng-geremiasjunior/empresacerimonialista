@@ -228,6 +228,8 @@ export default async function EventoFinanceiroPage({
               payload={prestacaoViva.payload}
               notas={prestacaoViva.notas}
               versoes={versoesEntregues}
+              conferencia={prestacaoViva.conferencia}
+              ocorrencias={prestacaoViva.ocorrencias}
             />
           ) : null
         }

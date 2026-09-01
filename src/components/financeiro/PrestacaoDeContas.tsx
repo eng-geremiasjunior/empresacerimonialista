@@ -13,15 +13,26 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { FileCheck2, Send } from "lucide-react";
+import { FileCheck2, Send, X } from "lucide-react";
 import type { PrestacaoPayload } from "@/lib/prestacao-core";
 import { SECOES_NOTA, type SecaoNota } from "@/lib/prestacao-core";
 import {
+  conferirValorFornecedor,
   entregarPrestacao,
   salvarNotaPrestacao,
-  type ResultadoPrestacao,
 } from "@/app/(app)/eventos/[id]/financeiro/prestacao-actions";
-import type { VersaoEntregue } from "@/lib/supabase/prestacao";
+import {
+  atualizarOcorrencia,
+  criarOcorrencia,
+  excluirOcorrencia,
+  TIPOS_OCORRENCIA,
+} from "@/app/(app)/eventos/[id]/ocorrencia-actions";
+import type {
+  ConferenciaFornecedor,
+  OcorrenciaEvento,
+  VersaoEntregue,
+} from "@/lib/supabase/prestacao";
+import { mascararDinheiro, desmascararDinheiro } from "@/lib/format";
 
 const brl = (v: number | null | undefined) =>
   v == null
@@ -32,6 +43,9 @@ const dataBR = (iso: string) => {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
   return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
 };
+
+/** união larga: as actions da prestação e das ocorrências cabem aqui */
+type Resultado = { error: string } | { success: true; versao?: number };
 
 const ROTULO_SECAO: Record<SecaoNota, string> = {
   resumo: "Observação sobre o resumo",
@@ -46,11 +60,15 @@ export function PrestacaoDeContas({
   payload,
   notas,
   versoes,
+  conferencia,
+  ocorrencias,
 }: {
   eventId: string;
   payload: PrestacaoPayload;
   notas: Record<string, string>;
   versoes: VersaoEntregue[];
+  conferencia: ConferenciaFornecedor[];
+  ocorrencias: OcorrenciaEvento[];
 }) {
   const router = useRouter();
   const [pendente, iniciar] = useTransition();
@@ -60,7 +78,7 @@ export function PrestacaoDeContas({
 
   const ultima = versoes[0] ?? null;
 
-  function rodar(fn: () => Promise<ResultadoPrestacao>) {
+  function rodar(fn: () => Promise<Resultado>) {
     setErro(null);
     setOk(null);
     iniciar(async () => {
@@ -154,11 +172,13 @@ export function PrestacaoDeContas({
                       </td>
                       <td className="px-2 py-1.5 text-right tabular-nums text-stone-800">
                         {brl(f.contratado)}
-                        {!f.conferido && (
-                          <span className="block text-[10px] leading-tight text-stone-400">
-                            não conferido
-                          </span>
-                        )}
+                        <span className="block text-[10px] leading-tight text-stone-400">
+                          {f.conferido
+                            ? f.realizado !== null && f.realizado !== f.contratado
+                              ? `valor final ${brl(f.realizado)}`
+                              : "conferido"
+                            : "não conferido"}
+                        </span>
                       </td>
                       <td className="px-2 py-1.5 text-right tabular-nums text-stone-800">
                         {brl(f.pago)}
@@ -182,6 +202,38 @@ export function PrestacaoDeContas({
             </div>
             <Nota eventId={eventId} secao="fornecedores" inicial={notas.fornecedores ?? ""} rodar={rodar} pendente={pendente} />
           </div>
+
+          {/* ---------------- conferência pós-evento (139) ---------------- */}
+          {conferencia.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-400">
+                Conferência pós-evento
+              </p>
+              <p className="mt-1 text-xs text-stone-500">
+                O valor final acertado com cada fornecedor. Conferido, o
+                documento troca &quot;não conferido&quot; por &quot;conferido&quot;.
+              </p>
+              <div className="mt-2 space-y-1.5">
+                {conferencia.map((c) => (
+                  <LinhaConferencia
+                    key={c.orcamentoId}
+                    eventId={eventId}
+                    linha={c}
+                    rodar={rodar}
+                    pendente={pendente}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ---------------- ocorrências (139) ---------------- */}
+          <PainelOcorrencias
+            eventId={eventId}
+            ocorrencias={ocorrencias}
+            rodar={rodar}
+            pendente={pendente}
+          />
 
           {/* ---------------- pendências, ditas ---------------- */}
           {payload.pendencias.parcelas_abertas > 0 && (
@@ -265,6 +317,214 @@ function Kpi({
   );
 }
 
+const ROTULO_TIPO: Record<string, string> = {
+  avaria: "Avaria",
+  perda: "Perda",
+  pertence: "Pertence",
+  outro: "Outro",
+};
+
+function LinhaConferencia({
+  eventId,
+  linha,
+  rodar,
+  pendente,
+}: {
+  eventId: string;
+  linha: ConferenciaFornecedor;
+  rodar: (fn: () => Promise<Resultado>) => void;
+  pendente: boolean;
+}) {
+  const inicial =
+    linha.realizado ?? linha.contratado;
+  const [valor, setValor] = useState(() =>
+    mascararDinheiro(inicial.toFixed(2).replace(".", ","))
+  );
+  const conferido = linha.realizado !== null;
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-md border border-stone-100 px-2 py-1.5 text-sm">
+      <span className="min-w-0 flex-1 text-stone-800">{linha.fornecedor}</span>
+      <span className="text-xs text-stone-400">
+        contratado {brl(linha.contratado)}
+      </span>
+      <input
+        className="w-28 rounded-md border border-stone-200 px-2 py-1 text-right text-[12.5px] tabular-nums outline-none focus:border-stone-400"
+        value={valor}
+        disabled={pendente}
+        onChange={(e) => setValor(mascararDinheiro(e.target.value))}
+      />
+      <button
+        onClick={() => {
+          const v = desmascararDinheiro(valor);
+          if (v === null) return;
+          rodar(() => conferirValorFornecedor(eventId, linha.orcamentoId, v));
+        }}
+        disabled={pendente}
+        className={`rounded-md px-2.5 py-1 text-[12px] font-medium ${
+          conferido
+            ? "border border-stone-200 text-stone-500"
+            : "bg-stone-900 text-white"
+        } disabled:opacity-50`}
+      >
+        {conferido ? "Conferir de novo" : "Conferir"}
+      </button>
+      {conferido && (
+        <button
+          onClick={() =>
+            rodar(() => conferirValorFornecedor(eventId, linha.orcamentoId, null))
+          }
+          disabled={pendente}
+          className="text-[11px] text-stone-400 underline underline-offset-2"
+        >
+          desfazer
+        </button>
+      )}
+    </div>
+  );
+}
+
+function PainelOcorrencias({
+  eventId,
+  ocorrencias,
+  rodar,
+  pendente,
+}: {
+  eventId: string;
+  ocorrencias: OcorrenciaEvento[];
+  rodar: (fn: () => Promise<Resultado>) => void;
+  pendente: boolean;
+}) {
+  const [tipo, setTipo] = useState<string>("avaria");
+  const [descricao, setDescricao] = useState("");
+  const [valor, setValor] = useState("");
+
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-wide text-stone-400">
+        Ocorrências
+      </p>
+      <p className="mt-1 text-xs text-stone-500">
+        Só as marcadas com &quot;o casal vê&quot; entram no documento.
+      </p>
+
+      {ocorrencias.length > 0 && (
+        <div className="mt-2 space-y-1.5">
+          {ocorrencias.map((o) => (
+            <div
+              key={o.id}
+              className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-stone-100 px-2 py-1.5 text-sm"
+            >
+              <span className="text-[11px] font-medium uppercase tracking-wide text-stone-400">
+                {ROTULO_TIPO[o.tipo] ?? o.tipo}
+              </span>
+              <span className="min-w-0 flex-1 text-stone-800">
+                {o.descricao}
+                {o.fornecedor && (
+                  <span className="text-stone-400"> · {o.fornecedor}</span>
+                )}
+                {o.valor !== null && (
+                  <span className="text-stone-500"> · {brl(o.valor)}</span>
+                )}
+              </span>
+              <label className="flex items-center gap-1 text-[11.5px] text-stone-500">
+                <input
+                  type="checkbox"
+                  checked={o.resolvida}
+                  disabled={pendente}
+                  onChange={(e) =>
+                    rodar(() =>
+                      atualizarOcorrencia(eventId, o.id, {
+                        resolvida: e.target.checked,
+                      })
+                    )
+                  }
+                />
+                resolvida
+              </label>
+              <label className="flex items-center gap-1 text-[11.5px] font-medium text-stone-600">
+                <input
+                  type="checkbox"
+                  checked={o.visivelAoCasal}
+                  disabled={pendente}
+                  onChange={(e) =>
+                    rodar(() =>
+                      atualizarOcorrencia(eventId, o.id, {
+                        visivelAoCasal: e.target.checked,
+                      })
+                    )
+                  }
+                />
+                o casal vê
+              </label>
+              <button
+                onClick={() => {
+                  if (window.confirm("Excluir esta ocorrência?")) {
+                    rodar(() => excluirOcorrencia(eventId, o.id));
+                  }
+                }}
+                disabled={pendente}
+                aria-label="Excluir ocorrência"
+                className="rounded p-0.5 text-stone-300 hover:bg-stone-100 hover:text-stone-500"
+              >
+                <X size={13} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <select
+          value={tipo}
+          onChange={(e) => setTipo(e.target.value)}
+          className="rounded-md border border-stone-200 px-2 py-1 text-[12.5px] outline-none focus:border-stone-400"
+        >
+          {TIPOS_OCORRENCIA.map((t) => (
+            <option key={t} value={t}>
+              {ROTULO_TIPO[t]}
+            </option>
+          ))}
+        </select>
+        <input
+          className="min-w-0 flex-1 rounded-md border border-stone-200 px-2 py-1 text-[12.5px] outline-none focus:border-stone-400"
+          placeholder="o que aconteceu"
+          value={descricao}
+          onChange={(e) => setDescricao(e.target.value)}
+        />
+        <input
+          className="w-24 rounded-md border border-stone-200 px-2 py-1 text-right text-[12.5px] tabular-nums outline-none focus:border-stone-400"
+          placeholder="valor"
+          value={valor}
+          onChange={(e) => setValor(mascararDinheiro(e.target.value))}
+        />
+        <button
+          onClick={() => {
+            if (!descricao.trim()) return;
+            rodar(async () => {
+              const r = await criarOcorrencia(eventId, {
+                tipo,
+                descricao,
+                valor: desmascararDinheiro(valor),
+                supplierId: null,
+              });
+              if ("success" in r) {
+                setDescricao("");
+                setValor("");
+              }
+              return r;
+            });
+          }}
+          disabled={pendente || !descricao.trim()}
+          className="rounded-md border border-stone-200 px-2.5 py-1 text-[12px] font-medium text-stone-700 hover:border-stone-300 disabled:opacity-50"
+        >
+          Registrar
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function Nota({
   eventId,
   secao,
@@ -275,7 +535,7 @@ function Nota({
   eventId: string;
   secao: SecaoNota;
   inicial: string;
-  rodar: (fn: () => Promise<ResultadoPrestacao>) => void;
+  rodar: (fn: () => Promise<Resultado>) => void;
   pendente: boolean;
 }) {
   return (

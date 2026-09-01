@@ -104,7 +104,14 @@ export default async function ImprimirPrestacaoPage({
                   <td style={{ textAlign: "right" }}>
                     {f.estimado == null ? "—" : brl(f.estimado)}
                   </td>
-                  <td style={{ textAlign: "right" }}>{brl(f.contratado)}</td>
+                  <td style={{ textAlign: "right" }}>
+                    {brl(f.contratado)}
+                    {f.conferido && f.realizado != null && f.realizado !== f.contratado && (
+                      <span style={{ display: "block", fontSize: 10 }}>
+                        valor final {brl(f.realizado)}
+                      </span>
+                    )}
+                  </td>
                   <td style={{ textAlign: "right" }}>{brl(f.pago)}</td>
                   <td style={{ textAlign: "right" }}>{brl(f.em_aberto)}</td>
                 </tr>
@@ -178,6 +185,46 @@ export default async function ImprimirPrestacaoPage({
             </table>
           )}
           {nota(p.notas.dia)}
+        </section>
+      )}
+
+      {/* ocorrências (v2) */}
+      {(p.ocorrencias ?? []).length > 0 && (
+        <section style={{ marginBottom: 18 }}>
+          <p className="imp-titulo" style={{ fontSize: 14 }}>Ocorrências</p>
+          <table className="imp-tabela">
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>O que aconteceu</th>
+                <th>Situação</th>
+                <th style={{ textAlign: "right" }}>Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(p.ocorrencias ?? []).map((o, i) => (
+                <tr key={`${o.descricao}-${i}`}>
+                  <td>
+                    {o.tipo === "avaria"
+                      ? "Avaria"
+                      : o.tipo === "perda"
+                        ? "Perda"
+                        : o.tipo === "pertence"
+                          ? "Pertence"
+                          : "Outro"}
+                  </td>
+                  <td>
+                    {o.descricao}
+                    {o.fornecedor ? ` (${o.fornecedor})` : ""}
+                  </td>
+                  <td>{o.resolvida ? "Resolvida" : "Em tratamento"}</td>
+                  <td style={{ textAlign: "right" }}>
+                    {o.valor == null ? "—" : brl(o.valor)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </section>
       )}
 

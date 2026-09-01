@@ -7,8 +7,9 @@
 // As três regras do documento:
 //   - pendência aparece como pendência (parcela em aberto é dita em
 //     aberto, nunca omitida);
-//   - estimado nunca se veste de realizado ("valor contratado (não
-//     conferido)" enquanto a conferência pós-evento não existir);
+//   - estimado nunca se veste de realizado: "valor contratado" enquanto
+//     a conferência pós-evento (139) não preencher o valor_realizado
+//     daquele fornecedor — conferido é fato, não promessa;
 //   - o que é DELA não entra: o validador no fim deste arquivo recusa
 //     qualquer chave fora da allowlist — receita_assessoria, custos,
 //     lucro, notes e afins não têm como passar despercebidos.
@@ -17,10 +18,21 @@ export type FornecedorPrestacao = {
   nome: string;
   estimado: number | null;
   contratado: number;
+  /** o valor final conferido pós-evento (139); null = não conferido */
+  realizado: number | null;
   pago: number;
   em_aberto: number;
-  /** v1: sempre false — a conferência pós-evento é a v2 */
+  /** true quando o valor realizado foi conferido (139) */
   conferido: boolean;
+};
+
+/** Ocorrência que ELA marcou como visível ao casal (139). */
+export type OcorrenciaPrestacao = {
+  tipo: "avaria" | "perda" | "pertence" | "outro";
+  descricao: string;
+  valor: number | null;
+  resolvida: boolean;
+  fornecedor: string | null;
 };
 
 export type ParcelaPrestacao = {
@@ -57,6 +69,8 @@ export type PrestacaoPayload = {
     fornecedores_com_estimativa: number;
   };
   fornecedores: FornecedorPrestacao[];
+  /** só as visíveis ao casal; ausente em fotografias anteriores à v2 */
+  ocorrencias?: OcorrenciaPrestacao[];
   parcelas: ParcelaPrestacao[];
   dia: {
     itens: ItemDiaPrestacao[];
@@ -102,7 +116,8 @@ const CHAVES_PERMITIDAS = new Set([
   "evento", "nome", "data", "local",
   "resumo", "verba", "contratado", "pago", "em_aberto", "economia",
   "fornecedores_com_estimativa",
-  "fornecedores", "estimado", "conferido",
+  "fornecedores", "estimado", "conferido", "realizado",
+  "ocorrencias", "tipo", "resolvida",
   "parcelas", "fornecedor", "descricao", "valor", "vencimento",
   "paga", "paga_em",
   "dia", "itens", "titulo", "previsto", "previsto_original",
@@ -158,8 +173,12 @@ export type EntradaMontagem = {
     nome: string;
     estimado: number | null;
     contratado: number;
+    /** valor conferido pós-evento (139); null = ainda não conferido */
+    realizado: number | null;
     pago: number;
   }[];
+  /** só as que ela marcou visíveis ao casal */
+  ocorrencias: OcorrenciaPrestacao[];
   parcelas: ParcelaPrestacao[];
   dia: ItemDiaPrestacao[];
   diaConcluidos: number;
@@ -171,8 +190,11 @@ export type EntradaMontagem = {
 
 export function montarPayloadCasal(e: EntradaMontagem): PrestacaoPayload {
   const contratado = soma(e.fornecedores.map((f) => f.contratado));
+  // o realizado conferido manda; sem conferência, o contratado responde
+  const efetivo = soma(e.fornecedores.map((f) => f.realizado ?? f.contratado));
   const pago = soma(e.fornecedores.map((f) => f.pago));
   const parcelasAbertas = e.parcelas.filter((p) => !p.paga);
+  const naoConferidos = e.fornecedores.some((f) => f.realizado === null);
 
   // só as notas de seções conhecidas e não vazias entram na fotografia
   const notas: Record<string, string> = {};
@@ -188,7 +210,7 @@ export function montarPayloadCasal(e: EntradaMontagem): PrestacaoPayload {
       verba: e.evento.verba,
       contratado: arred(contratado),
       pago: arred(pago),
-      em_aberto: arred(Math.max(0, contratado - pago)),
+      em_aberto: arred(Math.max(0, efetivo - pago)),
       economia: arred(e.economia),
       fornecedores_com_estimativa: e.fornecedoresComEstimativa,
     },
@@ -197,11 +219,19 @@ export function montarPayloadCasal(e: EntradaMontagem): PrestacaoPayload {
         nome: f.nome,
         estimado: f.estimado,
         contratado: arred(f.contratado),
+        realizado: f.realizado === null ? null : arred(f.realizado),
         pago: arred(f.pago),
-        em_aberto: arred(Math.max(0, f.contratado - f.pago)),
-        conferido: false, // v1: a conferência pós-evento ainda não existe
+        em_aberto: arred(Math.max(0, (f.realizado ?? f.contratado) - f.pago)),
+        conferido: f.realizado !== null,
       }))
       .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
+    ocorrencias: e.ocorrencias.slice(0, 40).map((o) => ({
+      tipo: o.tipo,
+      descricao: o.descricao.trim().slice(0, 500),
+      valor: o.valor === null ? null : arred(o.valor),
+      resolvida: o.resolvida,
+      fornecedor: o.fornecedor,
+    })),
     parcelas: [...e.parcelas].sort((a, b) =>
       a.vencimento.localeCompare(b.vencimento)
     ),
@@ -213,7 +243,9 @@ export function montarPayloadCasal(e: EntradaMontagem): PrestacaoPayload {
     pendencias: {
       parcelas_abertas: parcelasAbertas.length,
       valor_em_aberto: arred(soma(parcelasAbertas.map((p) => p.valor))),
-      valores_nao_conferidos: true, // v1: sempre — e o documento diz isso
+      // v2: reflete a conferência de verdade — algum fornecedor sem
+      // valor realizado conferido ainda deixa o aviso de pé
+      valores_nao_conferidos: naoConferidos,
     },
     notas,
   };

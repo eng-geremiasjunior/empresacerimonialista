@@ -53,6 +53,43 @@ export async function salvarNotaPrestacao(
   return { success: true };
 }
 
+/**
+ * A conferência pós-evento (139): o valor final acertado com o
+ * fornecedor. Preenchido, o documento do casal troca "valor contratado"
+ * por "conferido" e o em-aberto passa a ser calculado sobre ele.
+ * p_valor null desfaz a conferência (volta a "não conferido").
+ */
+export async function conferirValorFornecedor(
+  eventId: string,
+  orcamentoId: string,
+  valor: number | null
+): Promise<ResultadoPrestacao> {
+  if (valor !== null && (!Number.isFinite(valor) || valor < 0)) {
+    return { error: "Informe um valor válido." };
+  }
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data, error } = await supabase
+    .from("evento_fornecedor_orcamento")
+    .update({
+      valor_realizado: valor,
+      conferido_em: valor === null ? null : new Date().toISOString(),
+      conferido_por: valor === null ? null : (user?.id ?? null),
+    })
+    .eq("id", orcamentoId)
+    .eq("event_id", eventId)
+    .select("id");
+  if (error || !data?.length) {
+    console.error("[vela:prestacao] conferir valor:", error?.message);
+    return { error: "Não foi possível conferir o valor." };
+  }
+  revalidar(eventId);
+  return { success: true };
+}
+
 export async function entregarPrestacao(
   eventId: string
 ): Promise<ResultadoPrestacao> {

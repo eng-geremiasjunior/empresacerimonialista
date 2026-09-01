@@ -160,11 +160,13 @@ export default async function PortalPrestacaoPage({
                 >
                   {brl(f.contratado)}
                 </div>
-                {!f.conferido && (
-                  <div style={{ fontSize: 11, color: "var(--cor-texto-suave)" }}>
-                    valor contratado
-                  </div>
-                )}
+                <div style={{ fontSize: 11, color: "var(--cor-texto-suave)" }}>
+                  {!f.conferido
+                    ? "valor contratado"
+                    : f.realizado != null && f.realizado !== f.contratado
+                      ? `valor final ${brl(f.realizado)}`
+                      : "conferido"}
+                </div>
               </div>
             </div>
           ))}
@@ -287,6 +289,61 @@ export default async function PortalPrestacaoPage({
             </>
           )}
           {notaDela(p.notas.dia)}
+        </Cartao>
+      )}
+
+      {/* ---------------- ocorrências (v2) ---------------- */}
+      {(p.ocorrencias ?? []).length > 0 && (
+        <Cartao padding="var(--esp-8)">
+          <TituloSecao titulo="Ocorrências" />
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {(p.ocorrencias ?? []).map((o, i) => (
+              <div
+                key={`${o.descricao}-${i}`}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  gap: "var(--esp-4)",
+                  padding: "var(--esp-4) 0",
+                  borderBottom:
+                    i === (p.ocorrencias ?? []).length - 1
+                      ? "none"
+                      : "1px solid var(--cor-borda-linha)",
+                }}
+              >
+                <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                  <span style={{ fontSize: "var(--ts-meta)", color: "var(--cor-texto-forte)" }}>
+                    {o.descricao}
+                  </span>
+                  <span style={{ fontSize: "var(--ts-desc)", color: "var(--cor-texto-suave)" }}>
+                    {o.tipo === "avaria"
+                      ? "avaria"
+                      : o.tipo === "perda"
+                        ? "perda"
+                        : o.tipo === "pertence"
+                          ? "pertence"
+                          : "ocorrência"}
+                    {o.fornecedor ? ` · ${o.fornecedor}` : ""}
+                    {" · "}
+                    {o.resolvida ? "resolvida" : "em tratamento"}
+                  </span>
+                </div>
+                {o.valor != null && (
+                  <span
+                    style={{
+                      fontFamily: "var(--fonte-titulo)",
+                      fontSize: "var(--ts-titulo-lateral)",
+                      whiteSpace: "nowrap",
+                      color: "var(--cor-texto-forte)",
+                    }}
+                  >
+                    {brl(o.valor)}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
         </Cartao>
       )}
 

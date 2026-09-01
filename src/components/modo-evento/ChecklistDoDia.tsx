@@ -8,6 +8,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { ModoTheme } from "@/lib/modo-tema";
+import { OcorrenciasDoDia } from "./OcorrenciasDoDia";
 
 export type ItemChecklistDia = {
   id: string;
@@ -268,6 +269,10 @@ export function ChecklistDoDia({
           );
         })}
       </ul>
+
+      {/* "Ocorrências e avarias registradas" deixa de ser checkbox mudo:
+          a avaria é registrada aqui mesmo, no bloco da desmontagem */}
+      {bloco === "desmontagem" && <OcorrenciasDoDia eventId={eventId} t={t} />}
     </div>
   );
 }
