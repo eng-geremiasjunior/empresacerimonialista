@@ -74,12 +74,15 @@ export function FornecedoresDoEvento({
   fornecedores,
   automacao,
   botaoAdicionar,
+  extracao,
 }: {
   eventId: string;
   fornecedores: Fornecedor[];
   automacao: Automacao;
   /** o botão de vincular vem pronto do servidor (abre o modal de busca) */
   botaoAdicionar: React.ReactNode;
+  /** a caixa de contratos recebidos → conferir extração (138) */
+  extracao?: React.ReactNode;
 }) {
   const router = useRouter();
   const [pendente, iniciar] = useTransition();
@@ -152,6 +155,9 @@ export function FornecedoresDoEvento({
         </div>
         {botaoAdicionar}
       </div>
+
+      {/* o que a automação deixou aqui, antes de tudo (molde do Financeiro) */}
+      {extracao}
 
       {fornecedores.length === 0 ? (
         <VazioInicial botaoAdicionar={botaoAdicionar} />

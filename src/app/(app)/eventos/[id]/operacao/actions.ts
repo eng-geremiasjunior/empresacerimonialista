@@ -10,7 +10,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
-export type AcaoResult = { error: string } | { success: true };
+export type AcaoResult = { error: string } | { success: true; id?: string };
 
 const CAMPOS_NUMERICOS = [
   "previsto",
@@ -193,22 +193,28 @@ export async function criarRecurso(
   let codigo = base;
   for (let i = 2; tomados.has(codigo); i++) codigo = `${base}_${i}`;
 
-  const { error } = await supabase.from("evento_recurso").insert({
-    event_id: eventId,
-    codigo,
-    nome,
-    unidade: dados.unidade.trim().slice(0, 20) || "unidades",
-    regra: dados.regra,
-    indice: dados.indice,
-    ordem: 900,
-  });
+  const { data: criado, error } = await supabase
+    .from("evento_recurso")
+    .insert({
+      event_id: eventId,
+      codigo,
+      nome,
+      unidade: dados.unidade.trim().slice(0, 20) || "unidades",
+      regra: dados.regra,
+      indice: dados.indice,
+      ordem: 900,
+    })
+    .select("id")
+    .single();
 
-  if (error) {
-    console.error("[vela:operacao] criar:", error.message);
+  if (error || !criado) {
+    console.error("[vela:operacao] criar:", error?.message);
     return { error: "Não foi possível criar o item." };
   }
   revalidar(eventId);
-  return { success: true };
+  // o id volta para quem cria em lote (a extração de contrato) poder
+  // gravar o comprado na sequência
+  return { success: true, id: criado.id };
 }
 
 export async function removerRecurso(
