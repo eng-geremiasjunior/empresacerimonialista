@@ -13,13 +13,15 @@ const inputClass =
 
 type Props = {
   clients: ClientOption[];
+  /** pré-preenchido (ex.: lido do briefing) — ela confere e continua */
+  inicial?: { name: string; phone: string } | null;
   onChoose: (c: ClienteEscolhido) => void;
 };
 
-export function StepCliente({ clients, onChoose }: Props) {
+export function StepCliente({ clients, inicial, onChoose }: Props) {
   const [search, setSearch] = useState("");
-  const [newName, setNewName] = useState("");
-  const [newPhone, setNewPhone] = useState("");
+  const [newName, setNewName] = useState(inicial?.name ?? "");
+  const [newPhone, setNewPhone] = useState(inicial?.phone ?? "");
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();

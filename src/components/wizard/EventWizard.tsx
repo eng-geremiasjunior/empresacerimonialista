@@ -25,6 +25,9 @@ import {
 } from "./StepCliente";
 import { StepDadosBasicos, type DadosBasicos } from "./StepDadosBasicos";
 import { StepEstruturacao } from "./StepEstruturacao";
+import { ColarBriefing } from "./ColarBriefing";
+import type { PropostaBriefing } from "@/lib/briefing-core";
+import { mascararDinheiro } from "@/lib/format";
 
 // O passo "Revisão" saiu. Ele mostrava um checklist para ela marcar,
 // desmarcar e até acrescentar item — e a action DESCARTAVA tudo
@@ -67,6 +70,47 @@ export function EventWizard({ clients, preselected, membros, meuMembroId }: Prop
   const [respostas, setRespostas] = useState<WizardRespostas>({});
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [doBriefing, setDoBriefing] = useState<string | null>(null);
+
+  // A proposta do briefing preenche o estado; os passos do wizard SÃO a
+  // conferência — ela caminha confirmando o que a leitura propôs.
+  function aplicarBriefing(p: PropostaBriefing) {
+    const preenchidos: string[] = [];
+    if (p.tipo) {
+      setTipo(p.tipo as EventType);
+      preenchidos.push("tipo");
+    }
+    if (p.nome_cliente) {
+      setCliente({
+        kind: "new",
+        name: p.nome_cliente,
+        phone: p.telefone ?? "",
+      });
+      preenchidos.push(p.telefone ? "cliente e telefone" : "cliente");
+    }
+    setDados((d) => ({
+      ...d,
+      date: p.data ?? d.date,
+      time: p.hora ?? d.time,
+      city: p.cidade ?? d.city,
+      location: p.local ?? d.location,
+      guests: p.convidados != null ? String(p.convidados) : d.guests,
+      contractValue:
+        p.valor_contrato != null
+          ? mascararDinheiro(String(Math.round(p.valor_contrato)))
+          : d.contractValue,
+    }));
+    if (p.data) preenchidos.push("data");
+    if (p.hora) preenchidos.push("hora");
+    if (p.cidade || p.local) preenchidos.push("local");
+    if (p.convidados != null) preenchidos.push("convidados");
+    if (p.valor_contrato != null) preenchidos.push("valor");
+    setDoBriefing(
+      preenchidos.length > 0
+        ? `Do briefing: ${preenchidos.join(", ")}. Confira cada passo antes de criar.`
+        : null
+    );
+  }
 
   const clientName =
     cliente?.kind === "existing"
@@ -129,18 +173,29 @@ export function EventWizard({ clients, preselected, membros, meuMembroId }: Prop
       </div>
 
       {step === 1 && (
-        <StepTipoEvento
-          selected={tipo}
-          onSelect={(t) => {
-            setTipo(t);
-            setStep(cliente ? 3 : 2);
-          }}
-        />
+        <>
+          <ColarBriefing aoProposta={aplicarBriefing} />
+          {doBriefing && (
+            <p className="text-sm text-stone-600">{doBriefing}</p>
+          )}
+          <StepTipoEvento
+            selected={tipo}
+            onSelect={(t) => {
+              setTipo(t);
+              setStep(cliente ? 3 : 2);
+            }}
+          />
+        </>
       )}
 
       {step === 2 && (
         <StepCliente
           clients={clients}
+          inicial={
+            cliente?.kind === "new"
+              ? { name: cliente.name, phone: cliente.phone }
+              : null
+          }
           onChoose={(c) => {
             setCliente(c);
             setStep(3);
