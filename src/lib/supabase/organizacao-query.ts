@@ -224,7 +224,7 @@ export async function getOrganizacao(
   // ainda não rodou, degrada para lista vazia em vez de quebrar a tela.
   const { data: pend } = await supabase
     .from("financeiro_pendencia")
-    .select("id, titulo, tipo, created_at")
+    .select("id, titulo, tipo, created_at, task_id, evento_recurso_id")
     .eq("event_id", eventId)
     .eq("status", "aberta")
     .order("created_at", { ascending: false });
@@ -234,6 +234,9 @@ export async function getOrganizacao(
     titulo: p.titulo,
     tipo: p.tipo as "pagamento" | "revisao",
     criadaEm: p.created_at,
+    // sem tarefa e sem recurso: é a defasagem do público (137)
+    daDefasagem:
+      p.tipo === "revisao" && !p.task_id && !p.evento_recurso_id,
   }));
 
   const diasAteEvento = dataEvento

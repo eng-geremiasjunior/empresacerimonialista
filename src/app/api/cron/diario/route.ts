@@ -26,6 +26,9 @@ const ROTINAS = [
   "agendamentos",
   "lembretes-convidados",
   "concluir-eventos",
+  // depois de concluir-eventos: a defasagem só olha eventos que ainda
+  // vão acontecer, então os que acabaram ontem já saíram de cena
+  "defasagem-publico",
   "solicitacoes",
   // por último de propósito: só avisa do que vence amanhã depois que
   // concluir-eventos já tirou de cena os eventos que acabaram ontem

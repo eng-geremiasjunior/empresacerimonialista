@@ -14,6 +14,7 @@ import { ChevronDown, Plus, Printer, RefreshCw, Trash2 } from "lucide-react";
 import {
   consumido,
   custoComprado,
+  defasagemDoPublico,
   numero,
   reais,
   textoDaBase,
@@ -91,6 +92,7 @@ export function OperacaoEvento({
   }, [recursos]);
 
   const t = totais(recursos);
+  const defasagem = defasagemDoPublico(recursos, publico);
 
   return (
     <section className="mt-6">
@@ -101,14 +103,45 @@ export function OperacaoEvento({
           </h2>
           <p className="mt-1 text-sm text-stone-500">
             {publico && publico.quantidade > 0 ? (
-              <>
-                Dimensionado por{" "}
-                <strong className="font-medium text-stone-700">
-                  {publico.quantidade}{" "}
-                  {publico.origem === "confirmados" ? "confirmados" : "estimados"}
-                </strong>
-                .
-              </>
+              defasagem ? (
+                // o público mudou depois do dimensionamento — dizer os
+                // dois números, ao lado do botão que resolve
+                <span className="text-amber-700">
+                  {defasagem.baseAntiga != null ? (
+                    <>
+                      Dimensionado por{" "}
+                      <strong className="font-medium">{defasagem.baseAntiga}</strong>
+                      {" — hoje são "}
+                      <strong className="font-medium">
+                        {publico.quantidade}{" "}
+                        {publico.origem === "confirmados" ? "confirmados" : "estimados"}
+                      </strong>
+                      {defasagem.itens === 1
+                        ? " (1 item pelo número antigo)."
+                        : ` (${defasagem.itens} itens pelo número antigo).`}
+                    </>
+                  ) : (
+                    <>
+                      {defasagem.itens} itens dimensionados por um público antigo
+                      {" — hoje são "}
+                      <strong className="font-medium">
+                        {publico.quantidade}{" "}
+                        {publico.origem === "confirmados" ? "confirmados" : "estimados"}
+                      </strong>
+                      .
+                    </>
+                  )}
+                </span>
+              ) : (
+                <>
+                  Dimensionado por{" "}
+                  <strong className="font-medium text-stone-700">
+                    {publico.quantidade}{" "}
+                    {publico.origem === "confirmados" ? "confirmados" : "estimados"}
+                  </strong>
+                  .
+                </>
+              )
             ) : (
               "Sem público informado — os itens por pessoa ficam em zero até o evento ter um número."
             )}

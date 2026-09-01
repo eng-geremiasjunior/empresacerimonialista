@@ -115,6 +115,8 @@ export type PendenciaFinanceira = {
   titulo: string;
   tipo: "pagamento" | "revisao";
   criadaEm: string;
+  /** o público mudou depois do dimensionamento (137) — a ação é na Operação */
+  daDefasagem?: boolean;
 };
 
 export type Organizacao = {

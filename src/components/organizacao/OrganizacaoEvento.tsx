@@ -1657,11 +1657,21 @@ function PendenciasFinanceiras({
           <li key={p.id} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 12px", fontSize: 12.5 }}>
             <span style={{ color: "var(--text-strong)" }}>{p.titulo}</span>
             <span style={{ fontSize: 11.5, color: "var(--text-muted)" }}>
-              {p.tipo === "revisao" ? "revisar custo de buffet e bar" : "lançar o pagamento"}
+              {p.tipo !== "revisao"
+                ? "lançar o pagamento"
+                : p.daDefasagem
+                  ? "rever o dimensionamento"
+                  : "revisar custo de buffet e bar"}
             </span>
-            <Link href={`/eventos/${eventId}/financeiro`} style={{ fontWeight: 600, color: "var(--accent)", fontSize: 12.5 }}>
-              Abrir Financeiro →
-            </Link>
+            {p.daDefasagem ? (
+              <Link href={`/eventos/${eventId}/operacao`} style={{ fontWeight: 600, color: "var(--accent)", fontSize: 12.5 }}>
+                Abrir Operação →
+              </Link>
+            ) : (
+              <Link href={`/eventos/${eventId}/financeiro`} style={{ fontWeight: 600, color: "var(--accent)", fontSize: 12.5 }}>
+                Abrir Financeiro →
+              </Link>
+            )}
             <button
               onClick={() =>
                 start(async () => {

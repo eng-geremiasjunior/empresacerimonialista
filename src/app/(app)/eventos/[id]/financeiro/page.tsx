@@ -77,7 +77,7 @@ export default async function EventoFinanceiroPage({
     supabase
       .from("financeiro_pendencia")
       .select(
-        "id, titulo, tipo, created_at, valor_sugerido, supplier_id, quantidade, evento_recurso_id"
+        "id, titulo, tipo, created_at, valor_sugerido, supplier_id, quantidade, evento_recurso_id, task_id"
       )
       .eq("event_id", eventId)
       .eq("status", "aberta")
@@ -96,6 +96,9 @@ export default async function EventoFinanceiroPage({
     supplierId: (p.supplier_id as string | null) ?? null,
     quantidade: p.quantidade == null ? null : Number(p.quantidade),
     daOperacao: Boolean(p.evento_recurso_id),
+    // sem tarefa e sem recurso: é a defasagem do público (137)
+    daDefasagem:
+      p.tipo === "revisao" && !p.task_id && !p.evento_recurso_id,
   }));
 
   const orcamento = orcRes.data as {

@@ -8,6 +8,7 @@
 // e data: a automação abre o rascunho, quem decide o dinheiro é ela.
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { InputMoeda } from "@/components/ui/InputMoeda";
 import { mascararDinheiro } from "@/lib/format";
 import { useRouter } from "next/navigation";
@@ -28,6 +29,8 @@ export type Pendencia = {
   quantidade?: number | null;
   /** true = veio de um item comprado na Operação, não de uma tarefa */
   daOperacao?: boolean;
+  /** true = o público mudou depois do dimensionamento (137) — a ação é na Operação */
+  daDefasagem?: boolean;
 };
 
 export function PendenciasFinanceiras({
@@ -48,8 +51,8 @@ export function PendenciasFinanceiras({
       <h3 className="flex items-center gap-1.5 text-sm font-semibold text-amber-900">
         <CircleAlert size={15} />
         {pendencias.length === 1
-          ? "1 tarefa concluída espera lançamento"
-          : `${pendencias.length} tarefas concluídas esperam lançamento`}
+          ? "1 pendência espera sua decisão"
+          : `${pendencias.length} pendências esperam sua decisão`}
       </h3>
 
       <div className="mt-3 space-y-2">
@@ -157,11 +160,22 @@ function ItemPendencia({
       </div>
 
       <p className="mt-0.5 text-[11.5px] text-gray-500">
-        {ehRevisao
-          ? "a contagem mudou — confira o custo de buffet e bar"
-          : pendencia.daOperacao
-            ? "vindo da Operação"
-            : "vindo da Organização"}
+        {ehRevisao ? (
+          pendencia.daDefasagem ? (
+            <Link
+              href={`/eventos/${eventId}/operacao`}
+              className="font-medium text-amber-700 underline underline-offset-2"
+            >
+              rever na Operação →
+            </Link>
+          ) : (
+            "a contagem mudou — confira o custo de buffet e bar"
+          )
+        ) : pendencia.daOperacao ? (
+          "vindo da Operação"
+        ) : (
+          "vindo da Organização"
+        )}
       </p>
 
       {aberta && !ehRevisao && (

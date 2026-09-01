@@ -96,6 +96,38 @@ export function calcularPrevisto(
   return Math.round(indice * base * 100) / 100;
 }
 
+export type DefasagemPublico = {
+  /** quantos itens por pessoa foram dimensionados por outro número */
+  itens: number;
+  /** a base antiga, quando todos os itens compartilham a mesma; null se divergem entre si */
+  baseAntiga: number | null;
+  publico: number;
+};
+
+/**
+ * A defasagem: itens por pessoa cuja base não é o público de hoje.
+ * Mesma régua da varredura do banco (137) — mudou lá, muda aqui.
+ */
+export function defasagemDoPublico(
+  lista: Recurso[],
+  publico: { quantidade: number } | null
+): DefasagemPublico | null {
+  if (!publico || publico.quantidade <= 0) return null;
+  const defasados = lista.filter(
+    (r) =>
+      r.regra === "por_pessoa" &&
+      r.baseQuantidade != null &&
+      r.baseQuantidade !== publico.quantidade
+  );
+  if (defasados.length === 0) return null;
+  const bases = new Set(defasados.map((r) => r.baseQuantidade));
+  return {
+    itens: defasados.length,
+    baseAntiga: bases.size === 1 ? defasados[0].baseQuantidade : null,
+    publico: publico.quantidade,
+  };
+}
+
 /** "para 180 confirmados" / "para 200 estimados" / "12 mesas" */
 export function textoDaBase(r: Recurso): string | null {
   if (r.regra === "fixo") return null;
