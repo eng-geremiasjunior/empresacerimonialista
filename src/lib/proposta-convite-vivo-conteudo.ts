@@ -181,7 +181,7 @@ export const TEXTOS_CONVITE_VIVO = {
   montadorTitulo: "Seis escolhas e o orçamento está pronto.",
   inclusoEyebrow: "O QUE ESTÁ INCLUSO",
   inclusoTitulo: "Você não contrata uma lista.",
-  inclusoTituloItalico: "Contrata quem carrega a festa nas costas.",
+  inclusoTituloItalico: "Contrata quem faz a festa acontecer.",
   inclusoParagrafo:
     "Estes seis itens são o trabalho da cerimonialista, e eles já estão no valor que você vê ao lado. Espaço, buffet, decoração e demais fornecedores são cotados à parte, direto com cada um, sem comissão nenhuma no meio.",
   foraDoValorRotulo: "Fora deste valor:",

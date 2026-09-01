@@ -156,7 +156,7 @@ export const TEXTOS_PRAIA = {
   extrasDica: "Itens que só fazem sentido no litoral. Entram no total na hora.",
   inclusoEyebrow: "O QUE ESTÁ INCLUSO",
   inclusoTitulo:
-    "Vocês não contratam uma lista. Contratam quem carrega o casamento nas costas quando o vento vira e a maré sobe.",
+    "Vocês não contratam uma lista. Contratam quem faz o casamento acontecer, mesmo quando o vento vira e a maré sobe.",
   foraDoValor:
     "Fora deste valor: espaço, buffet, bar, decoração, foto e vídeo — negociamos e acompanhamos cada um, mas a contratação é direta com o fornecedor.",
   roteiroEyebrow: "O ROTEIRO DA CERIMÔNIA",
