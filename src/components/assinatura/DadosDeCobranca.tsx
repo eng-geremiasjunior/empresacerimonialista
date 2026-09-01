@@ -2,14 +2,16 @@
 
 // Os dados de quem paga.
 //
-// Eles foram descobertos um a um, no susto: primeiro o gateway recusou
-// por falta de documento, depois por falta de telefone. Em vez de
-// esperar o próximo campo obrigatório aparecer numa cobrança recusada,
-// aqui se pede tudo de uma vez — e o endereço, que o antifraude usa e
-// que a nota fiscal vai querer um dia, vem junto.
+// Foram descobertos um a um, no susto: primeiro o gateway recusou por
+// falta de documento, depois por falta de telefone, depois pelo endereço
+// de cobrança do cartão. Aqui se pede tudo de uma vez.
 //
 // Nada disto fica no nosso banco: vai para o gateway e acaba. Guardar
 // documento e endereço de alguém sem precisar é passivo, não recurso.
+//
+// Visual: usa as classes .subx-* definidas pela AssinaturaTela (este
+// componente só é renderizado dentro dela) — labels 12.5px Instrument,
+// inputs 44px raio 10, dado técnico (telefone, documento, CEP) em mono.
 
 import { useState } from "react";
 import { mascararDocumento } from "@/lib/documento";
@@ -43,9 +45,9 @@ export const COBRANCA_VAZIA: Cobranca = {
   estado: "",
 };
 
-const campo =
-  "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm focus:border-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-200";
-const rotulo = "mb-1 block text-xs font-medium text-stone-600";
+const F_UI = "var(--font-ui), 'Instrument Sans', sans-serif";
+const label: React.CSSProperties = { font: `500 12.5px ${F_UI}`, color: "#5B6167" };
+const grupo: React.CSSProperties = { display: "flex", flexDirection: "column", gap: 6 };
 
 export function DadosDeCobranca({
   valor,
@@ -93,145 +95,134 @@ export function DadosDeCobranca({
   }
 
   return (
-    <div className="space-y-2">
-      <p className="text-xs font-semibold uppercase tracking-wide text-stone-400">
-        Dados de cobrança
-      </p>
-
-      <div>
-        <label className={rotulo}>Nome ou razão social de quem paga</label>
+    <div className="subx-form-grid" style={{ marginTop: 14 }}>
+      <div style={{ ...grupo, gridColumn: "1 / -1" }}>
+        <label style={label}>Nome ou razão social de quem paga</label>
         <input
-          className={campo}
+          className="subx-in"
           disabled={desabilitado}
           value={valor.nome}
           onChange={(e) => set({ nome: e.target.value })}
         />
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-2">
-        <div>
-          <label className={rotulo}>E-mail da cobrança</label>
-          <input
-            className={campo}
-            type="email"
-            inputMode="email"
-            disabled={desabilitado}
-            value={valor.email}
-            onChange={(e) => set({ email: e.target.value })}
-          />
-        </div>
-        <div>
-          <label className={rotulo}>Telefone com DDD</label>
-          <input
-            className={campo}
-            inputMode="numeric"
-            placeholder="(33) 99999-9999"
-            disabled={desabilitado}
-            value={valor.telefone}
-            onChange={(e) => set({ telefone: mascararTelefone(e.target.value) })}
-          />
-        </div>
+      <div style={grupo}>
+        <label style={label}>E-mail da cobrança</label>
+        <input
+          className="subx-in"
+          type="email"
+          inputMode="email"
+          disabled={desabilitado}
+          value={valor.email}
+          onChange={(e) => set({ email: e.target.value })}
+        />
+      </div>
+      <div style={grupo}>
+        <label style={label}>Telefone com DDD</label>
+        <input
+          className="subx-in subx-in--mono"
+          inputMode="numeric"
+          placeholder="(33) 99999-9999"
+          disabled={desabilitado}
+          value={valor.telefone}
+          onChange={(e) => set({ telefone: mascararTelefone(e.target.value) })}
+        />
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-2">
-        <div>
-          <label className={rotulo}>CPF ou CNPJ</label>
-          <input
-            className={campo}
-            inputMode="numeric"
-            placeholder="000.000.000-00"
-            disabled={desabilitado}
-            value={valor.documento}
-            onChange={(e) => set({ documento: mascararDocumento(e.target.value) })}
-          />
-        </div>
-        <div>
-          <label className={rotulo}>
-            CEP {buscandoCep && <span className="text-stone-400">buscando…</span>}
-          </label>
-          <input
-            className={campo}
-            inputMode="numeric"
-            placeholder="00000-000"
-            disabled={desabilitado}
-            value={valor.cep}
-            onChange={(e) => {
-              const v = mascararCep(e.target.value);
-              set({ cep: v });
-              if (v.replace(/\D/g, "").length === 8) void buscarCep(v);
-            }}
-          />
-        </div>
+      <div style={grupo}>
+        <label style={label}>CPF ou CNPJ</label>
+        <input
+          className="subx-in subx-in--mono"
+          inputMode="numeric"
+          placeholder="000.000.000-00"
+          disabled={desabilitado}
+          value={valor.documento}
+          onChange={(e) => set({ documento: mascararDocumento(e.target.value) })}
+        />
+      </div>
+      <div style={grupo}>
+        <label style={label}>
+          CEP{" "}
+          {buscandoCep && (
+            <span style={{ color: "#A9AEB3", fontWeight: 400 }}>buscando…</span>
+          )}
+        </label>
+        <input
+          className="subx-in subx-in--mono"
+          inputMode="numeric"
+          placeholder="00000-000"
+          disabled={desabilitado}
+          value={valor.cep}
+          onChange={(e) => {
+            const v = mascararCep(e.target.value);
+            set({ cep: v });
+            if (v.replace(/\D/g, "").length === 8) void buscarCep(v);
+          }}
+        />
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-[1fr_110px]">
-        <div>
-          <label className={rotulo}>Rua</label>
-          <input
-            className={campo}
-            disabled={desabilitado}
-            value={valor.rua}
-            onChange={(e) => set({ rua: e.target.value })}
-          />
-        </div>
-        <div>
-          <label className={rotulo}>Número</label>
-          <input
-            className={campo}
-            disabled={desabilitado}
-            value={valor.numero}
-            onChange={(e) => set({ numero: e.target.value })}
-          />
-        </div>
+      <div style={grupo}>
+        <label style={label}>Rua</label>
+        <input
+          className="subx-in"
+          disabled={desabilitado}
+          value={valor.rua}
+          onChange={(e) => set({ rua: e.target.value })}
+        />
+      </div>
+      <div style={grupo}>
+        <label style={label}>Número</label>
+        <input
+          className="subx-in subx-in--mono"
+          disabled={desabilitado}
+          value={valor.numero}
+          onChange={(e) => set({ numero: e.target.value })}
+        />
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-2">
-        <div>
-          <label className={rotulo}>Complemento (opcional)</label>
-          <input
-            className={campo}
-            disabled={desabilitado}
-            value={valor.complemento}
-            onChange={(e) => set({ complemento: e.target.value })}
-          />
-        </div>
-        <div>
-          <label className={rotulo}>Bairro</label>
-          <input
-            className={campo}
-            disabled={desabilitado}
-            value={valor.bairro}
-            onChange={(e) => set({ bairro: e.target.value })}
-          />
-        </div>
+      <div style={grupo}>
+        <label style={label}>Complemento (opcional)</label>
+        <input
+          className="subx-in"
+          disabled={desabilitado}
+          value={valor.complemento}
+          onChange={(e) => set({ complemento: e.target.value })}
+        />
+      </div>
+      <div style={grupo}>
+        <label style={label}>Bairro</label>
+        <input
+          className="subx-in"
+          disabled={desabilitado}
+          value={valor.bairro}
+          onChange={(e) => set({ bairro: e.target.value })}
+        />
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-[1fr_110px]">
-        <div>
-          <label className={rotulo}>Cidade</label>
-          <input
-            className={campo}
-            disabled={desabilitado}
-            value={valor.cidade}
-            onChange={(e) => set({ cidade: e.target.value })}
-          />
-        </div>
-        <div>
-          <label className={rotulo}>Estado</label>
-          <select
-            className={campo}
-            disabled={desabilitado}
-            value={valor.estado}
-            onChange={(e) => set({ estado: e.target.value })}
-          >
-            <option value="">—</option>
-            {UFS.map((uf) => (
-              <option key={uf} value={uf}>
-                {uf}
-              </option>
-            ))}
-          </select>
-        </div>
+      <div style={grupo}>
+        <label style={label}>Cidade</label>
+        <input
+          className="subx-in"
+          disabled={desabilitado}
+          value={valor.cidade}
+          onChange={(e) => set({ cidade: e.target.value })}
+        />
+      </div>
+      <div style={grupo}>
+        <label style={label}>Estado</label>
+        <select
+          className="subx-in"
+          disabled={desabilitado}
+          value={valor.estado}
+          onChange={(e) => set({ estado: e.target.value })}
+        >
+          <option value="">—</option>
+          {UFS.map((uf) => (
+            <option key={uf} value={uf}>
+              {uf}
+            </option>
+          ))}
+        </select>
       </div>
     </div>
   );
