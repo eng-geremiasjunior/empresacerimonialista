@@ -62,6 +62,10 @@ export default async function EventoFinanceiroPage({
       .select("id, supplier_id, description, value, due_date, paid, paid_at")
       .eq("event_id", eventId)
       .eq("conta", "fornecedor")
+      // A regra canônica (135): pago ao fornecedor = despesa. Sem este
+      // filtro, um repasse da cliente ao caixa (receita em conta
+      // fornecedor) inflava o gráfico de pagos por mês.
+      .eq("type", "despesa")
       .order("due_date", { ascending: true }),
     // Pendências abertas pela automação (074). Degrada em silêncio se a
     // migração ainda não rodou.

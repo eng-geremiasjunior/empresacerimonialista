@@ -2,6 +2,12 @@
 //
 // Separado da tela porque são as contas que a cerimonialista confere: se
 // os cards mentirem, ela paga errado. Testado à parte.
+//
+// REGRA CANÔNICA (135): "pago ao fornecedor" = conta='fornecedor' AND
+// type='despesa' AND paid. Quem chama estas funções é responsável por
+// entregar `parcelas` já filtradas assim (a query da página filtra) —
+// repasse da cliente ao caixa é entrada NO caixa, não saída PARA
+// fornecedor, e não pode inflar pago nem gráfico.
 
 export type ItemDetalhe = {
   id: string;
