@@ -12,6 +12,11 @@ import {
 } from "@/lib/supabase/financeiro-evento";
 import { linhasParaConciliar } from "./lancamento-actions";
 import {
+  getPrestacaoAoVivo,
+  getVersoesEntregues,
+} from "@/lib/supabase/prestacao";
+import { PrestacaoDeContas } from "@/components/financeiro/PrestacaoDeContas";
+import {
   PendenciasFinanceiras,
   type Pendencia,
 } from "@/components/financeiro/PendenciasFinanceiras";
@@ -147,24 +152,33 @@ export default async function EventoFinanceiroPage({
   const parcelasFornecedor = ((parcelasRes.data ?? []) as unknown as
     ParcelaFornecedor[]).map((p) => ({ ...p, value: Number(p.value) }));
 
-  const [dadosNovos, { data: evInfo }, numFech, { data: fechRow }, extrato] =
-    await Promise.all([
-      getFinanceiroDoEvento(eventId),
-      supabase
-        .from("events")
-        .select("name, date, clients(name)")
-        .eq("id", eventId)
-        .maybeSingle(),
-      getNumerosDoFechamento(eventId),
-      supabase
-        .from("evento_fechamento")
-        .select(
-          "fechado_em, sobra_destino, observacao, verba_realizada, receita_assessoria, custos_diretos"
-        )
-        .eq("event_id", eventId)
-        .maybeSingle(),
-      linhasParaConciliar(eventId),
-    ]);
+  const [
+    dadosNovos,
+    { data: evInfo },
+    numFech,
+    { data: fechRow },
+    extrato,
+    prestacaoViva,
+    versoesEntregues,
+  ] = await Promise.all([
+    getFinanceiroDoEvento(eventId),
+    supabase
+      .from("events")
+      .select("name, date, clients(name)")
+      .eq("id", eventId)
+      .maybeSingle(),
+    getNumerosDoFechamento(eventId),
+    supabase
+      .from("evento_fechamento")
+      .select(
+        "fechado_em, sobra_destino, observacao, verba_realizada, receita_assessoria, custos_diretos"
+      )
+      .eq("event_id", eventId)
+      .maybeSingle(),
+    linhasParaConciliar(eventId),
+    getPrestacaoAoVivo(eventId),
+    getVersoesEntregues(eventId),
+  ]);
 
   const dataEvento = (evInfo?.date as string) ?? todayIso;
   // o embed do PostgREST devolve array quando a relação não é única
@@ -204,6 +218,16 @@ export default async function EventoFinanceiroPage({
             : null
         }
         linhasExtrato={extrato}
+        prestacao={
+          prestacaoViva ? (
+            <PrestacaoDeContas
+              eventId={eventId}
+              payload={prestacaoViva.payload}
+              notas={prestacaoViva.notas}
+              versoes={versoesEntregues}
+            />
+          ) : null
+        }
       />
 
       {/*

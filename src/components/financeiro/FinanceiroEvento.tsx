@@ -50,6 +50,7 @@ export function FinanceiroEvento({
   numerosFechamento,
   fechamento,
   linhasExtrato,
+  prestacao,
 }: {
   eventId: string;
   dados: FinanceiroDoEvento;
@@ -58,6 +59,8 @@ export function FinanceiroEvento({
   numerosFechamento: NumerosFechamento | null;
   fechamento: React.ComponentProps<typeof PainelFechamento>["fechamento"];
   linhasExtrato: React.ComponentProps<typeof PainelConciliacao>["pendentes"];
+  /** a prestação de contas do casal — montada pelo servidor, mora aqui embaixo */
+  prestacao?: React.ReactNode;
 }) {
   const router = useRouter();
   const [screen, setScreen] = useState<Screen>("fornecedores");
@@ -501,6 +504,7 @@ export function FinanceiroEvento({
               fechamento={fechamento}
             />
           )}
+          {prestacao}
         </>
       )}
 

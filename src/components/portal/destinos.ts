@@ -52,7 +52,18 @@ export const DURANTE: Destino[] = [
 export const INVESTIMENTO: Destino[] = [
   { seg: "investimento", rotulo: "Resumo financeiro", icone: "CircleDollarSign" },
   { seg: "pagamentos", rotulo: "Pagamentos", icone: "CreditCard", emBreve: true },
+  { seg: "prestacao-de-contas", rotulo: "Prestação de contas", rotuloCurto: "Prestação", icone: "FileText" },
 ];
+
+/**
+ * O grupo Investimento COMO ESTE EVENTO o vê: a prestação de contas só
+ * entra no menu depois de entregue — antes disso seria link morto, e a
+ * regra da casa é não anunciar o que não existe.
+ */
+export const investimentoDoEvento = (temPrestacao: boolean): Destino[] =>
+  visiveis(INVESTIMENTO).filter(
+    (d) => d.seg !== "prestacao-de-contas" || temPrestacao
+  );
 
 /**
  * Barra inferior do celular — cinco alvos, os mesmos do handoff.

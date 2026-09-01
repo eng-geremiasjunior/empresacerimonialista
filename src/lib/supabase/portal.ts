@@ -20,6 +20,7 @@ import { differenceInCalendarDays } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import type { EventType } from "@/lib/types";
 import { valorDoCampo, type Campo, type TipoCampo } from "@/lib/planejamento-shared";
+import type { PrestacaoPayload } from "@/lib/prestacao-core";
 import { inicioDoDiaBR } from "@/lib/tempo";
 
 export type EventoDoPortal = {
@@ -416,6 +417,37 @@ export const getInvestimento = cache(
         paid: p.paid,
         paidAt: p.paid_at,
       })),
+    };
+  }
+);
+
+/**
+ * A prestação de contas entregue — a FOTOGRAFIA da versão mais recente,
+ * nunca o dado vivo. A RPC (136) devolve null quando nada foi entregue
+ * ou quando este acesso não alcança o evento.
+ */
+export const getPrestacaoDeContas = cache(
+  async (
+    eventId: string
+  ): Promise<{
+    versao: number;
+    entregueEm: string;
+    conteudo: PrestacaoPayload;
+  } | null> => {
+    const supabase = createClient();
+    const { data } = await supabase.rpc("portal_prestacao_de_contas", {
+      p_event_id: eventId,
+    });
+    const bruto = data as unknown as {
+      versao: number;
+      entregue_em: string;
+      conteudo: PrestacaoPayload;
+    } | null;
+    if (!bruto?.conteudo) return null;
+    return {
+      versao: Number(bruto.versao),
+      entregueEm: bruto.entregue_em,
+      conteudo: bruto.conteudo,
     };
   }
 );

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import {
   getContatoCerimonialista,
   getEventoDoPortal,
+  getPrestacaoDeContas,
   nomeDeExibicao,
 } from "@/lib/supabase/portal";
 import { waLink } from "@/lib/fornecedores-shared";
@@ -31,8 +32,13 @@ export default async function PortalEventoLayout({
   if (!evento) notFound();
 
   // cache(): as páginas pedem o mesmo contato e o banco responde uma vez
-  const contato = await getContatoCerimonialista(evento.id);
+  const [contato, prestacao] = await Promise.all([
+    getContatoCerimonialista(evento.id),
+    // a prestação de contas só entra no menu depois de entregue
+    getPrestacaoDeContas(evento.id),
+  ]);
   const zap = waLink(contato.whatsapp);
+  const temPrestacao = prestacao !== null;
 
   return (
     <div className="portal-raiz">
@@ -44,6 +50,7 @@ export default async function PortalEventoLayout({
             marcaLogoUrl={evento.marca?.logoUrl ?? null}
             cerimonialistaNome={contato.nome}
             cerimonialistaZap={zap}
+            temPrestacao={temPrestacao}
           />
 
           <div className="portal-conteudo">
@@ -53,6 +60,7 @@ export default async function PortalEventoLayout({
                 nomeEvento={nomeDeExibicao(evento)}
                 marcaNome={evento.marca?.nome ?? null}
                 marcaLogoUrl={evento.marca?.logoUrl ?? null}
+                temPrestacao={temPrestacao}
               />
             </div>
 

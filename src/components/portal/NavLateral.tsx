@@ -11,7 +11,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as Icones from "./icones";
-import { DURANTE, INVESTIMENTO, PRINCIPAIS, visiveis, type Destino } from "./destinos";
+import {
+  DURANTE,
+  investimentoDoEvento,
+  PRINCIPAIS,
+  visiveis,
+  type Destino,
+} from "./destinos";
 import { Rotulo } from "./Nucleo";
 
 function Icone({ nome, tamanho }: { nome: string; tamanho?: number }) {
@@ -61,12 +67,15 @@ export function NavLateral({
   marcaLogoUrl,
   cerimonialistaNome,
   cerimonialistaZap,
+  temPrestacao = false,
 }: {
   eventoId: string;
   marcaNome: string | null;
   marcaLogoUrl: string | null;
   cerimonialistaNome: string | null;
   cerimonialistaZap: string | null;
+  /** a prestação de contas só entra no menu depois de entregue */
+  temPrestacao?: boolean;
 }) {
   const pathname = usePathname();
   const base = `/portal/${eventoId}`;
@@ -115,7 +124,7 @@ export function NavLateral({
       </nav>
 
       <Grupo titulo="Durante o evento" itens={visiveis(DURANTE)} base={base} pathname={pathname} />
-      <Grupo titulo="Investimento" itens={visiveis(INVESTIMENTO)} base={base} pathname={pathname} />
+      <Grupo titulo="Investimento" itens={investimentoDoEvento(temPrestacao)} base={base} pathname={pathname} />
 
       {/* cerimonialista, ancorada no rodapé */}
       {cerimonialistaNome && (

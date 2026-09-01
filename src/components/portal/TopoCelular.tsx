@@ -9,7 +9,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as Icones from "./icones";
-import { DURANTE, INVESTIMENTO, PRINCIPAIS, visiveis, type Destino } from "./destinos";
+import {
+  DURANTE,
+  investimentoDoEvento,
+  PRINCIPAIS,
+  visiveis,
+  type Destino,
+} from "./destinos";
 import { Rotulo } from "./Nucleo";
 
 function Icone({ nome }: { nome: string }) {
@@ -63,11 +69,14 @@ export function TopoCelular({
   nomeEvento,
   marcaNome,
   marcaLogoUrl,
+  temPrestacao = false,
 }: {
   eventoId: string;
   nomeEvento: string;
   marcaNome: string | null;
   marcaLogoUrl: string | null;
+  /** a prestação de contas só entra no menu depois de entregue */
+  temPrestacao?: boolean;
 }) {
   const [aberta, setAberta] = useState(false);
   const pathname = usePathname();
@@ -193,7 +202,7 @@ export function TopoCelular({
             </div>
             <GrupoGaveta itens={visiveis(PRINCIPAIS)} base={base} aoNavegar={fechar} />
             <GrupoGaveta titulo="Durante o evento" itens={visiveis(DURANTE)} base={base} aoNavegar={fechar} />
-            <GrupoGaveta titulo="Investimento" itens={visiveis(INVESTIMENTO)} base={base} aoNavegar={fechar} />
+            <GrupoGaveta titulo="Investimento" itens={investimentoDoEvento(temPrestacao)} base={base} aoNavegar={fechar} />
           </div>
           <button
             type="button"
