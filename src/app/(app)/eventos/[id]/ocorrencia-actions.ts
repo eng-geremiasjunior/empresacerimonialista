@@ -8,9 +8,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-
-export const TIPOS_OCORRENCIA = ["avaria", "perda", "pertence", "outro"] as const;
-export type TipoOcorrencia = (typeof TIPOS_OCORRENCIA)[number];
+import { TIPOS_OCORRENCIA } from "@/lib/ocorrencia";
 
 export type ResultadoOcorrencia = { error: string } | { success: true };
 

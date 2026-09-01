@@ -25,8 +25,8 @@ import {
   atualizarOcorrencia,
   criarOcorrencia,
   excluirOcorrencia,
-  TIPOS_OCORRENCIA,
 } from "@/app/(app)/eventos/[id]/ocorrencia-actions";
+import { TIPOS_OCORRENCIA } from "@/lib/ocorrencia";
 import type {
   ConferenciaFornecedor,
   OcorrenciaEvento,

@@ -9,10 +9,8 @@
 import { useEffect, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { ModoTheme } from "@/lib/modo-tema";
-import {
-  criarOcorrencia,
-  TIPOS_OCORRENCIA,
-} from "@/app/(app)/eventos/[id]/ocorrencia-actions";
+import { criarOcorrencia } from "@/app/(app)/eventos/[id]/ocorrencia-actions";
+import { TIPOS_OCORRENCIA } from "@/lib/ocorrencia";
 
 const ROTULO: Record<string, string> = {
   avaria: "Avaria",
