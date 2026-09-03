@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getContatoCerimonialista, getEventoDoPortal } from "@/lib/supabase/portal";
 import { getCuradoriasDoPortal } from "@/lib/supabase/curadoria";
+import { rotuloEscolhas } from "@/lib/papel";
 import { TopoInterno } from "@/components/portal/TopoInterno";
 import { Cartao } from "@/components/portal/Nucleo";
 import { SelecaoCurada } from "@/components/portal/SelecaoCurada";
@@ -29,7 +30,7 @@ export default async function PortalEscolhasPage({
     <div className="portal-tela">
       <TopoInterno
         eventoId={evento.id}
-        titulo="Escolhas do casal"
+        titulo={rotuloEscolhas(evento.tipo)}
         apoio={
           abertas.length > 0
             ? "O que já foi pesquisado para vocês. Escolham com calma — e se nada agradar, é só dizer."

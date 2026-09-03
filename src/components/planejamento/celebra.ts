@@ -143,26 +143,22 @@ export const PILULA: Record<
   decidida: { bg: C.decididaBg, fg: C.decididaFg, rotulo: "decidida" },
 };
 
-// Rótulos dos arquétipos (eixos ESCALA × CENÁRIO, 083/084)
-export const ESCALAS: { valor: string; rotulo: string }[] = [
-  { valor: "tradicional", rotulo: "Tradicional" },
-  { valor: "mini_wedding", rotulo: "Mini wedding" },
-  { valor: "elopement", rotulo: "Elopement" },
-];
+// Arquétipos (eixos ESCALA × CENÁRIO, 083): as opções vêm de
+// metodo_arquetipo do tipo do evento — nenhum espelho do seed aqui.
+export type OpcaoArquetipo = { valor: string; rotulo: string };
+export type Arquetipos = { escala: OpcaoArquetipo[]; cenario: OpcaoArquetipo[] };
 
-export const CENARIOS: { valor: string; rotulo: string }[] = [
-  { valor: "igreja", rotulo: "Igreja" },
-  { valor: "salao_urbano", rotulo: "Salão urbano" },
-  { valor: "praia", rotulo: "Praia" },
-  { valor: "campo_chacara", rotulo: "Campo & chácara" },
-  { valor: "destination", rotulo: "Destination" },
-];
-
-export function rotuloArquetipo(valor: string | null): string | null {
+export function rotuloArquetipo(
+  valor: string | null,
+  opcoes: OpcaoArquetipo[]
+): string | null {
   if (!valor) return null;
-  return (
-    [...ESCALAS, ...CENARIOS].find((a) => a.valor === valor)?.rotulo ?? valor
-  );
+  const achado = opcoes.find((a) => a.valor === valor)?.rotulo;
+  if (achado) return achado;
+  // token sem opção no método (valor antigo, seed ainda não rodou):
+  // humaniza em vez de mostrar o cru
+  const texto = valor.replace(/_/g, " ");
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
 // Id curto exibível (#a1b2) — os ids reais são uuid.
@@ -178,6 +174,7 @@ export const TIPO_ROTULO: Record<string, string> = {
   sim_nao: "sim/não",
   escolha: "escolha",
   data: "data",
+  hora: "hora",
   anexo: "anexo",
   fornecedor: "fornecedor",
 };

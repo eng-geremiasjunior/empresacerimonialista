@@ -18,7 +18,7 @@ export default async function PortalPerguntasPage({
   const evento = await getEventoDoPortal(params.eventoId);
   if (!evento) notFound();
 
-  const { abertas, respondidas } = await getPerguntas(evento.id);
+  const { abertas, respondidas } = await getPerguntas(evento.id, evento.data);
   const doMomento = abertas.slice(0, 5);
 
   return (

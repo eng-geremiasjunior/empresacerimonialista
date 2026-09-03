@@ -67,6 +67,10 @@ export type PrestacaoPayload = {
     em_aberto: number;
     economia: number;
     fornecedores_com_estimativa: number;
+    /** o efetivo dividido por quem veio (presentes; sem toque no dia,
+     *  confirmados); null quando não há por quem dividir — ausente em
+     *  fotografias anteriores à 141 */
+    custo_por_pessoa: number | null;
   };
   fornecedores: FornecedorPrestacao[];
   /** só as visíveis ao casal; ausente em fotografias anteriores à v2 */
@@ -81,6 +85,8 @@ export type PrestacaoPayload = {
     confirmados: number;
     /** de onde veio o número — o rótulo honesto da tela */
     origem: "confirmados" | "estimados";
+    /** quem foi marcado presente no dia (141); null = sem a marcação */
+    presentes: number | null;
   };
   pendencias: {
     parcelas_abertas: number;
@@ -115,14 +121,14 @@ const CHAVES_PERMITIDAS = new Set([
   "schema",
   "evento", "nome", "data", "local",
   "resumo", "verba", "contratado", "pago", "em_aberto", "economia",
-  "fornecedores_com_estimativa",
+  "fornecedores_com_estimativa", "custo_por_pessoa",
   "fornecedores", "estimado", "conferido", "realizado",
   "ocorrencias", "tipo", "resolvida",
   "parcelas", "fornecedor", "descricao", "valor", "vencimento",
   "paga", "paga_em",
   "dia", "itens", "titulo", "previsto", "previsto_original",
   "realizado_inicio", "variacao", "concluidos", "total",
-  "convidados", "confirmados", "origem",
+  "convidados", "confirmados", "origem", "presentes",
   "pendencias", "parcelas_abertas", "valor_em_aberto",
   "valores_nao_conferidos",
   "notas", ...SECOES_NOTA,
@@ -182,7 +188,12 @@ export type EntradaMontagem = {
   parcelas: ParcelaPrestacao[];
   dia: ItemDiaPrestacao[];
   diaConcluidos: number;
-  convidados: { quantidade: number; origem: "confirmados" | "estimados" };
+  convidados: {
+    quantidade: number;
+    origem: "confirmados" | "estimados";
+    /** marcados presentes no dia; null quando a presença não foi lida */
+    presentes: number | null;
+  };
   economia: number;
   fornecedoresComEstimativa: number;
   notas: Record<string, string>;
@@ -195,6 +206,12 @@ export function montarPayloadCasal(e: EntradaMontagem): PrestacaoPayload {
   const pago = soma(e.fornecedores.map((f) => f.pago));
   const parcelasAbertas = e.parcelas.filter((p) => !p.paga);
   const naoConferidos = e.fornecedores.some((f) => f.realizado === null);
+
+  // por pessoa: quem de fato veio manda; sem toque no dia, os confirmados
+  const presentes = e.convidados.presentes ?? 0;
+  const porQuemDividir =
+    presentes > 0 ? presentes : e.convidados.quantidade > 0 ? e.convidados.quantidade : null;
+  const custoPorPessoa = porQuemDividir === null ? null : arred(efetivo / porQuemDividir);
 
   // só as notas de seções conhecidas e não vazias entram na fotografia
   const notas: Record<string, string> = {};
@@ -213,6 +230,7 @@ export function montarPayloadCasal(e: EntradaMontagem): PrestacaoPayload {
       em_aberto: arred(Math.max(0, efetivo - pago)),
       economia: arred(e.economia),
       fornecedores_com_estimativa: e.fornecedoresComEstimativa,
+      custo_por_pessoa: custoPorPessoa,
     },
     fornecedores: e.fornecedores
       .map((f) => ({
@@ -239,6 +257,7 @@ export function montarPayloadCasal(e: EntradaMontagem): PrestacaoPayload {
     convidados: {
       confirmados: e.convidados.quantidade,
       origem: e.convidados.origem,
+      presentes: e.convidados.presentes,
     },
     pendencias: {
       parcelas_abertas: parcelasAbertas.length,

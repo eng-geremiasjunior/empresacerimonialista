@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/format";
 import { EVENT_TYPE_LABELS } from "@/lib/types";
+import { tem } from "@/lib/capacidades";
 import {
   agruparCortejo,
   type PessoaCortejo,
@@ -47,6 +48,7 @@ export default async function ImprimirChamadaPage({
     .single();
 
   if (!eventData) notFound();
+  if (!tem((eventData as { type?: string | null }).type, "cortejo")) notFound();
 
   // Colação em evento próprio: a folha sai com a data e o local DELA,
   // mas a lista é a da turma — que mora no evento principal.

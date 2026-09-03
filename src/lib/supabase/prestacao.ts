@@ -47,7 +47,7 @@ export async function getPrestacaoAoVivo(eventId: string): Promise<{
 } | null> {
   const supabase = createClient();
 
-  const [evRes, verbaRes, parcRes, roteiroRes, notasRes, publicoRes, ocorRes] =
+  const [evRes, verbaRes, parcRes, roteiroRes, notasRes, publicoRes, ocorRes, presRes] =
     await Promise.all([
       supabase
         .from("events")
@@ -86,6 +86,12 @@ export async function getPrestacaoAoVivo(eventId: string): Promise<{
         )
         .eq("event_id", eventId)
         .order("criada_em", { ascending: true }),
+      // presença no dia (141): quem foi marcado "chegou", com quem trouxe
+      supabase
+        .from("evento_convidado")
+        .select("acompanhantes, criancas")
+        .eq("event_id", eventId)
+        .not("presente_em", "is", null),
     ]);
 
   const ev = evRes.data as {
@@ -209,11 +215,18 @@ export async function getPrestacaoAoVivo(eventId: string): Promise<{
 
   // ---- convidados (o número canônico, com a origem dita) ----
   const pub = (publicoRes.data as { quantidade: number; origem: string }[] | null)?.[0];
+  // presentes conta gente como publico_do_evento conta confirmados
+  // (1 + acompanhantes + crianças) — senão o "por pessoa" divide maçã por pera
+  const presentes = presRes.error
+    ? null
+    : ((presRes.data ?? []) as { acompanhantes: number | null; criancas: number | null }[])
+        .reduce((s, c) => s + 1 + (c.acompanhantes ?? 0) + (c.criancas ?? 0), 0);
   const convidados = {
     quantidade: pub?.quantidade ?? 0,
     origem: (pub?.origem === "confirmados" ? "confirmados" : "estimados") as
       | "confirmados"
       | "estimados",
+    presentes,
   };
 
   // ---- notas dela ----

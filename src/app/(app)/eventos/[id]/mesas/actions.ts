@@ -458,6 +458,29 @@ export async function ordenarMesa(
 }
 
 /* ------------------------------------------------------------------
+ * Presença no dia (141): o toque "chegou" — e o desfazer
+ * ---------------------------------------------------------------- */
+
+export async function marcarPresenca(
+  eventId: string,
+  convidadoId: string,
+  presente: boolean
+): Promise<Resultado> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("evento_convidado")
+    .update({
+      presente_em: presente ? new Date().toISOString() : null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", convidadoId)
+    .eq("event_id", eventId);
+  if (error) return causa(error, "Não foi possível marcar a chegada");
+  revalidar(eventId);
+  return { success: true };
+}
+
+/* ------------------------------------------------------------------
  * O convidado no contexto da mesa (criança, responsável, restrições)
  * ---------------------------------------------------------------- */
 

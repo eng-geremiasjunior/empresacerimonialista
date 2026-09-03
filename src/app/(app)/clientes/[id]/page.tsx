@@ -38,7 +38,7 @@ export default async function ClienteDetalhePage({
     supabase
       .from("clients")
       .select(
-        "id, name, phone, whatsapp, email, cpf, instagram, address, city, birthday, notes"
+        "id, name, phone, whatsapp, email, cpf, cnpj, razao_social, instagram, address, city, birthday, notes"
       )
       .eq("id", params.id)
       .single(),

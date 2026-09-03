@@ -22,7 +22,7 @@ import {
   pegadaDaMesa,
   NOME_ELEMENTO,
   NOME_RESTRICAO,
-  NOME_TIPO_MESA,
+  nomeTipoMesa,
   problemasDeCirculacao,
   saudeDaMesa,
   type ConvidadoCroqui,
@@ -32,7 +32,8 @@ import {
   type TipoElemento,
   type TipoRestricao,
 } from "@/lib/croqui-core";
-import type { Relacao, Salao } from "@/lib/supabase/mesas";
+import type { ConvidadoDaLista, Relacao, Salao } from "@/lib/supabase/mesas";
+import { hojeBR } from "@/lib/tempo";
 import { Croqui } from "@/components/mesas/Croqui";
 import {
   adicionarConvidadoEquipe,
@@ -43,6 +44,7 @@ import {
   atualizarMesa,
   criarElemento,
   criarMesas,
+  marcarPresenca,
   moverElemento,
   moverMesa,
   ordenarMesa,
@@ -72,6 +74,8 @@ const botaoForte =
 
 export function MesasDoEvento({
   eventId,
+  tipoEvento,
+  eventDate,
   salao,
   mesas: mesasProp,
   elementos: elementosProp,
@@ -79,10 +83,14 @@ export function MesasDoEvento({
   relacoes,
 }: {
   eventId: string;
+  /** tipo do evento — como esta festa chama a mesa 'noivos' */
+  tipoEvento: string;
+  /** data do evento (ISO) — a partir dela a lista ganha o toque "chegou" */
+  eventDate: string;
   salao: Salao | null;
   mesas: Mesa[];
   elementos: Elemento[];
-  convidados: ConvidadoCroqui[];
+  convidados: ConvidadoDaLista[];
   relacoes: Relacao[];
 }) {
   const router = useRouter();
@@ -94,6 +102,11 @@ export function MesasDoEvento({
   const [convidados, setConvidados] = useState(convidadosProp);
   useEffect(() => setMesas(mesasProp), [mesasProp]);
   useEffect(() => setConvidados(convidadosProp), [convidadosProp]);
+
+  // "hoje" só depois de montar: relógio no 1º render quebra a hidratação
+  const [hoje, setHoje] = useState<string | null>(null);
+  useEffect(() => setHoje(hojeBR()), []);
+  const diaDoEvento = hoje !== null && hoje >= eventDate;
 
   const [selecionada, setSelecionada] = useState<string | null>(null);
 
@@ -158,6 +171,11 @@ export function MesasDoEvento({
   }, [mesas, saude]);
 
   const cont = useMemo(() => contadores(convidados), [convidados]);
+  // quem chegou, contando gente como `contadores` conta (1 + acompanhantes)
+  const chegaram = useMemo(
+    () => convidados.filter((c) => c.presenteEm).reduce((s, c) => s + 1 + c.acompanhantes, 0),
+    [convidados]
+  );
   const rotuloDe = useMemo(() => new Map(mesas.map((m) => [m.id, m.rotulo])), [mesas]);
   const nomeDe = useMemo(() => new Map(convidados.map((c) => [c.id, c.nome])), [convidados]);
 
@@ -201,6 +219,17 @@ export function MesasDoEvento({
     rodar(() => alocarConvidado(eventId, convidadoId, mesaId));
   }
 
+  function marcarChegada(convidadoId: string, presente: boolean) {
+    setConvidados((atual) =>
+      atual.map((c) =>
+        c.id === convidadoId
+          ? { ...c, presenteEm: presente ? new Date().toISOString() : null }
+          : c
+      )
+    );
+    rodar(() => marcarPresenca(eventId, convidadoId, presente));
+  }
+
   /* ---------- sem salão ainda: o primeiro passo ---------- */
 
   if (!salao) {
@@ -214,6 +243,11 @@ export function MesasDoEvento({
       {/* contadores fixos + ações */}
       <div className="sticky top-0 z-10 -mx-1 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-gray-200 bg-white/95 px-4 py-2.5 backdrop-blur">
         <p className="text-sm text-gray-600">
+          {diaDoEvento && (
+            <>
+              <b className="text-gray-900">{chegaram}</b> chegaram de{" "}
+            </>
+          )}
           <b className="text-gray-900">{cont.confirmados}</b> confirmados
           <span className="mx-1.5 text-gray-300">·</span>
           <b className="text-gray-900">{cont.alocados}</b> com mesa
@@ -239,6 +273,7 @@ export function MesasDoEvento({
         <div className="min-w-0 space-y-3">
           <Ferramentas
             eventId={eventId}
+            tipoEvento={tipoEvento}
             salao={salao}
             proximoNumero={proximoNumero}
             rodar={rodar}
@@ -296,6 +331,7 @@ export function MesasDoEvento({
           {mesaAtiva && (
             <PainelMesa
               eventId={eventId}
+              tipoEvento={tipoEvento}
               mesa={mesaAtiva}
               convidados={convidados}
               rodar={rodar}
@@ -317,10 +353,13 @@ export function MesasDoEvento({
         {/* coluna da lista */}
         <ListaLateral
           eventId={eventId}
+          tipoEvento={tipoEvento}
           convidados={convidados}
           mesas={mesas}
           rotuloDe={rotuloDe}
+          diaDoEvento={diaDoEvento}
           alocar={alocar}
+          marcarChegada={marcarChegada}
           rodar={rodar}
           pendente={pendente}
         />
@@ -420,12 +459,14 @@ function FormSalao({
 
 function Ferramentas({
   eventId,
+  tipoEvento,
   salao,
   proximoNumero,
   rodar,
   pendente,
 }: {
   eventId: string;
+  tipoEvento: string;
   salao: Salao;
   proximoNumero: number;
   rodar: (a: () => Promise<{ error?: string } | { success: true }>) => void;
@@ -541,6 +582,7 @@ function Ferramentas({
       {modalMesa && (
         <ModalMesa
           proximoNumero={proximoNumero}
+          tipoEvento={tipoEvento}
           pendente={pendente}
           aoFechar={() => setModalMesa(false)}
           aoSalvar={(input) => {
@@ -637,6 +679,7 @@ function AvisosAoVivo({
 
 function PainelMesa({
   eventId,
+  tipoEvento,
   mesa,
   convidados,
   rodar,
@@ -644,6 +687,7 @@ function PainelMesa({
   aoFechar,
 }: {
   eventId: string;
+  tipoEvento: string;
   mesa: Mesa;
   convidados: ConvidadoCroqui[];
   rodar: (a: () => Promise<{ error?: string } | { success: true }>) => void;
@@ -678,7 +722,7 @@ function PainelMesa({
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-sm font-semibold text-gray-900">
           Mesa {mesa.rotulo}
-          <span className="ml-2 font-normal text-gray-400">{NOME_TIPO_MESA[mesa.tipo]}</span>
+          <span className="ml-2 font-normal text-gray-400">{nomeTipoMesa(mesa.tipo, tipoEvento)}</span>
         </h3>
         <button type="button" onClick={aoFechar} className="text-gray-400 hover:text-gray-600">
           <X size={16} />
@@ -900,18 +944,24 @@ function Relacoes({
 
 function ListaLateral({
   eventId,
+  tipoEvento,
   convidados,
   mesas,
   rotuloDe,
+  diaDoEvento,
   alocar,
+  marcarChegada,
   rodar,
   pendente,
 }: {
   eventId: string;
-  convidados: ConvidadoCroqui[];
+  tipoEvento: string;
+  convidados: ConvidadoDaLista[];
   mesas: Mesa[];
   rotuloDe: Map<string, string>;
+  diaDoEvento: boolean;
   alocar: (convidadoId: string, mesaId: string | null) => void;
+  marcarChegada: (convidadoId: string, presente: boolean) => void;
   rodar: (a: () => Promise<{ error?: string } | { success: true }>) => void;
   pendente: boolean;
 }) {
@@ -1092,13 +1142,16 @@ function ListaLateral({
           <LinhaConvidado
             key={c.id}
             eventId={eventId}
+            tipoEvento={tipoEvento}
             convidado={c}
             convidados={convidados}
             mesas={mesasOrdenadas}
             rotuloDe={rotuloDe}
             expandido={expandido === c.id}
             aoExpandir={() => setExpandido(expandido === c.id ? null : c.id)}
+            diaDoEvento={diaDoEvento}
             alocar={alocar}
+            marcarChegada={marcarChegada}
             rodar={rodar}
             pendente={pendente}
           />
@@ -1113,24 +1166,30 @@ function ListaLateral({
 
 function LinhaConvidado({
   eventId,
+  tipoEvento,
   convidado: c,
   convidados,
   mesas,
   rotuloDe,
   expandido,
   aoExpandir,
+  diaDoEvento,
   alocar,
+  marcarChegada,
   rodar,
   pendente,
 }: {
   eventId: string;
-  convidado: ConvidadoCroqui;
+  tipoEvento: string;
+  convidado: ConvidadoDaLista;
   convidados: ConvidadoCroqui[];
   mesas: Mesa[];
   rotuloDe: Map<string, string>;
   expandido: boolean;
   aoExpandir: () => void;
+  diaDoEvento: boolean;
   alocar: (convidadoId: string, mesaId: string | null) => void;
+  marcarChegada: (convidadoId: string, presente: boolean) => void;
   rodar: (a: () => Promise<{ error?: string } | { success: true }>) => void;
   pendente: boolean;
 }) {
@@ -1164,6 +1223,22 @@ function LinhaConvidado({
             <p className="truncate text-xs text-gray-400">{detalhes.join(" · ")}</p>
           )}
         </button>
+        {/* no dia, o toque "chegou" — de novo, desfaz */}
+        {podeSentar && diaDoEvento && (
+          <button
+            type="button"
+            disabled={pendente}
+            onClick={() => marcarChegada(c.id, !c.presenteEm)}
+            title={c.presenteEm ? "Desfazer" : "Marcar chegada"}
+            className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${
+              c.presenteEm
+                ? "bg-gray-900 text-white"
+                : "border border-gray-200 text-gray-500 hover:border-gray-300"
+            }`}
+          >
+            chegou
+          </button>
+        )}
         {podeSentar && (
           <span className="shrink-0 text-gray-300">
             {c.mesaId ? <Armchair size={14} /> : <UserRound size={14} />}
@@ -1184,7 +1259,7 @@ function LinhaConvidado({
                 <option value="">Sem mesa</option>
                 {mesas.map((m) => (
                   <option key={m.id} value={m.id}>
-                    {m.rotulo} · {NOME_TIPO_MESA[m.tipo]}
+                    {m.rotulo} · {nomeTipoMesa(m.tipo, tipoEvento)}
                   </option>
                 ))}
               </select>

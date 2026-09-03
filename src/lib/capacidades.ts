@@ -38,7 +38,36 @@ export function tem(tipo: string | null | undefined, cap: Capacidade): boolean {
   return capacidadesDoTipo(tipo).includes(cap);
 }
 
+// Só quem chama diferente aparece aqui. O resto tem convidados.
+const PUBLICO_POR_TIPO: Partial<Record<EventType, string>> = {
+  show: "público esperado",
+  corporativo: "participantes",
+};
+
 /** Como a tela chama o número de pessoas deste evento. */
 export function rotuloPublico(tipo?: string | null): string {
-  return tem(tipo, "listaNominal") ? "convidados" : "público esperado";
+  return PUBLICO_POR_TIPO[tipo as EventType] ?? "convidados";
+}
+
+// Porte derivado do público: o wizard não pergunta a escala, deriva dela.
+// Os tokens espelham metodo_arquetipo.codigo do seed (141).
+const PORTE_POR_PUBLICO: Partial<
+  Record<EventType, { ate: number; escala: string }[]>
+> = {
+  corporativo: [
+    { ate: 100, escala: "ate_100" },
+    { ate: 400, escala: "100_a_400" },
+    { ate: Infinity, escala: "acima_400" },
+  ],
+};
+
+/** null quando o tipo não deriva porte do público ou o número não presta. */
+export function escalaPorPublico(
+  tipo: string | null | undefined,
+  guests: number | null | undefined
+): string | null {
+  const faixas = PORTE_POR_PUBLICO[tipo as EventType];
+  if (!faixas || guests == null || !Number.isFinite(guests) || guests <= 0)
+    return null;
+  return faixas.find((f) => guests <= f.ate)?.escala ?? null;
 }

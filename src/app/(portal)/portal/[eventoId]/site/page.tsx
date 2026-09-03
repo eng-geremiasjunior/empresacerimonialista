@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getEventoDoPortal } from "@/lib/supabase/portal";
 import { publicBase } from "@/lib/app-url";
 import { assinarFotosDoAlbum } from "@/lib/supabase/assinar-midia-convite";
+import { tem } from "@/lib/capacidades";
 import { TopoInterno } from "@/components/portal/TopoInterno";
 import {
   EditorSiteCasal,
@@ -24,6 +25,7 @@ export default async function PortalSitePage({
 }) {
   const evento = await getEventoDoPortal(params.eventoId);
   if (!evento) notFound();
+  if (!tem(evento.tipo, "siteDoEvento")) notFound();
 
   const supabase = createClient();
   const [{ data: site }, { data: ev }, { data: fotosRaw }, { data: musicas }, { data: recados }] =

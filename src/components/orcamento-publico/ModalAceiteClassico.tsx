@@ -16,6 +16,11 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { criarEventoAPartirDoOrcamento } from "@/lib/orcamento-para-evento";
 import { formatDateBR } from "@/lib/orcamentos";
+import {
+  assinantesDoTipo,
+  rotuloAssinante,
+  rotuloDocumentoAssinante,
+} from "@/lib/papel";
 import { brl } from "@/lib/proposta";
 
 const SERIF = "var(--font-titulo), 'Cormorant Garamond', serif";
@@ -84,12 +89,16 @@ export function ModalAceiteClassico({
   const [assinouNoiva, setAssinouNoiva] = useState(false);
   const [assinouNoivo, setAssinouNoivo] = useState(false);
 
+  // Um casal assina em dois; uma empresa (ou qualquer outro contratante)
+  // assina em um. A RPC é a mesma — o 2º assinante vai null.
+  const umAssinante = assinantesDoTipo(tipoEvento) === 1;
+
   const podeConfirmar =
     noiva.trim() !== "" &&
-    noivo.trim() !== "" &&
+    (umAssinante || noivo.trim() !== "") &&
     cpf.trim() !== "" &&
     assinouNoiva &&
-    assinouNoivo &&
+    (umAssinante || assinouNoivo) &&
     aceitouTermos &&
     !enviando;
 
@@ -290,7 +299,9 @@ export function ModalAceiteClassico({
           <div style={{ padding: 32 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <label style={rotulo}>
-                NOME DA NOIVA
+                {umAssinante
+                  ? rotuloAssinante(tipoEvento).toUpperCase()
+                  : "NOME DA NOIVA"}
                 <input
                   value={noiva}
                   onChange={(e) => setNoiva(e.target.value)}
@@ -298,22 +309,28 @@ export function ModalAceiteClassico({
                   style={campo}
                 />
               </label>
-              <label style={rotulo}>
-                NOME DO NOIVO
-                <input
-                  value={noivo}
-                  onChange={(e) => setNoivo(e.target.value)}
-                  placeholder="Nome completo"
-                  style={campo}
-                />
-              </label>
+              {!umAssinante && (
+                <label style={rotulo}>
+                  NOME DO NOIVO
+                  <input
+                    value={noivo}
+                    onChange={(e) => setNoivo(e.target.value)}
+                    placeholder="Nome completo"
+                    style={campo}
+                  />
+                </label>
+              )}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <label style={rotulo}>
-                  CPF
+                  {rotuloDocumentoAssinante(tipoEvento).toUpperCase()}
                   <input
                     value={cpf}
                     onChange={(e) => setCpf(e.target.value)}
-                    placeholder="000.000.000-00"
+                    placeholder={
+                      rotuloDocumentoAssinante(tipoEvento) === "CPF"
+                        ? "000.000.000-00"
+                        : undefined
+                    }
                     inputMode="numeric"
                     style={campo}
                   />
@@ -341,17 +358,22 @@ export function ModalAceiteClassico({
               </label>
             </div>
 
-            <div className="kd-modal-assin" style={{ marginTop: 16 }}>
+            <div
+              className="kd-modal-assin"
+              style={{ marginTop: 16, gridTemplateColumns: umAssinante ? "1fr" : undefined }}
+            >
               <Assinatura
                 refCanvas={canvasNoiva}
-                rotulo="ASSINATURA NOIVA"
+                rotulo={umAssinante ? "ASSINATURA" : "ASSINATURA NOIVA"}
                 onMudou={setAssinouNoiva}
               />
-              <Assinatura
-                refCanvas={canvasNoivo}
-                rotulo="ASSINATURA NOIVO"
-                onMudou={setAssinouNoivo}
-              />
+              {!umAssinante && (
+                <Assinatura
+                  refCanvas={canvasNoivo}
+                  rotulo="ASSINATURA NOIVO"
+                  onMudou={setAssinouNoivo}
+                />
+              )}
             </div>
 
             <label

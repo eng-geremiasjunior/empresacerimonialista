@@ -323,7 +323,16 @@ export async function getPlanejamento(
 
   // Progresso PONDERADO por importância (prioridade), não por contagem.
   // nao_se_aplica sai do cálculo — não é dívida nem conquista.
-  const aplic = todasDecisoes.filter((d) => d.estado !== "nao_se_aplica");
+  // Objetivo desligado (pelo cenário ou pelo porte) não conta: nem no
+  // progresso, nem no pódio das críticas — o mesmo filtro do portal.
+  const inativos = new Set(
+    objsRaw
+      .filter((o) => (o as { ativo?: boolean | null }).ativo === false)
+      .map((o) => o.id)
+  );
+  const aplic = todasDecisoes.filter(
+    (d) => d.estado !== "nao_se_aplica" && !inativos.has(d.objetivoId)
+  );
   const pesoTotal = aplic.reduce((s, d) => s + d.prioridade, 0);
   const pesoFeito = aplic
     .filter((d) => d.estado === "decidida")
@@ -333,7 +342,7 @@ export async function getPlanejamento(
 
   // 3 decisões mais críticas AGORA: pendentes, maior prioridade primeiro.
   const criticas: DecisaoCritica[] = todasDecisoes
-    .filter((d) => d.estado === "pendente")
+    .filter((d) => d.estado === "pendente" && !inativos.has(d.objetivoId))
     .sort((a, b) => b.prioridade - a.prioridade || a.ordem - b.ordem)
     .slice(0, 3)
     .map((d) => ({

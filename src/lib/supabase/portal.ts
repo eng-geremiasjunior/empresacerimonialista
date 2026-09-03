@@ -21,7 +21,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { EventType } from "@/lib/types";
 import { valorDoCampo, type Campo, type TipoCampo } from "@/lib/planejamento-shared";
 import type { PrestacaoPayload } from "@/lib/prestacao-core";
-import { inicioDoDiaBR } from "@/lib/tempo";
+import { hojeBR, inicioDoDiaBR } from "@/lib/tempo";
 
 export type EventoDoPortal = {
   id: string;
@@ -268,10 +268,13 @@ type LinhaCampo = {
   valor_opcao: string | null;
   valor_supplier_id: string | null;
   evento_decisao: {
+    id: string;
     titulo: string;
     prazo_previsto: string | null;
     estado: string;
     responsavel: string;
+    /** ≤ 0 = decisão do dia ou de depois dele (a nota de 0 a 10, por exemplo) */
+    offset_ideal_dias: number | null;
   } | null;
 };
 
@@ -325,46 +328,65 @@ const getDecisoesPendentes = cache(async (eventId: string) => {
  * profissional como se fosse pergunta.
  *
  * CUIDADO: false é resposta (sim_nao) — o vazio é valorDoCampo === null.
+ *
+ * Duas peneiras além do filtro da query (141):
+ *   - só decisões de objetivo ATIVO — os ids vêm da mesma RPC da home
+ *     (portal_falta_decidir), que é quem sabe de evento_objetivo.ativo;
+ *   - decisão do dia do evento em diante (offset_ideal_dias <= 0) só
+ *     pergunta quando a data já chegou — a nota de 0 a 10 não aparece
+ *     no dia 1.
  */
-const getPerguntasDaCliente = cache(async (eventId: string) => {
-  const supabase = createClient();
-  const { data } = await supabase
-    .from("evento_campo_valor")
-    .select(
-      `${COLUNAS_CAMPO}, updated_at, evento_decisao!inner(titulo, prazo_previsto, estado, responsavel)`
-    )
-    .eq("event_id", eventId)
-    .eq("visivel_portal", true)
-    .eq("pergunta_cliente", true)
-    .eq("evento_decisao.estado", "pendente")
-    .in("evento_decisao.responsavel", ["noivos", "ambos"]);
+const getPerguntasDaCliente = cache(
+  async (eventId: string, dataEvento: string) => {
+    const supabase = createClient();
+    const [{ data }, ativas] = await Promise.all([
+      supabase
+        .from("evento_campo_valor")
+        .select(
+          `${COLUNAS_CAMPO}, updated_at, evento_decisao!inner(id, titulo, prazo_previsto, estado, responsavel, offset_ideal_dias)`
+        )
+        .eq("event_id", eventId)
+        .eq("visivel_portal", true)
+        .eq("pergunta_cliente", true)
+        .eq("evento_decisao.estado", "pendente")
+        .in("evento_decisao.responsavel", ["noivos", "ambos"]),
+      getDecisoesPendentes(eventId),
+    ]);
 
-  const linhas = (data ?? []) as unknown as (LinhaCampo & {
-    updated_at: string;
-  })[];
-  const todas = linhas
-    .filter((l) => l.evento_decisao)
-    .map((l) => ({
-      campoId: l.id,
-      // o mesmo campo dito na voz dela; sem rótulo próprio, o interno serve
-      label: l.label_portal?.trim() || l.label,
-      tipo: l.tipo,
-      opcoes: l.opcoes,
-      unidade: l.unidade,
-      valor: valorDoCampo(comoCampo(l)),
-      updatedAt: l.updated_at,
-      decisaoTitulo: l.evento_decisao!.titulo,
-      prazoPrevisto: l.evento_decisao!.prazo_previsto,
-    }))
-    .sort((a, b) =>
-      (a.prazoPrevisto ?? "9999").localeCompare(b.prazoPrevisto ?? "9999")
-    ) as PerguntaDoPortal[];
+    const idsAtivos = new Set(ativas.map((d) => d.id));
+    const diaChegou = dataEvento <= hojeBR();
 
-  return {
-    abertas: todas.filter((p) => p.valor === null),
-    respondidas: todas.filter((p) => p.valor !== null),
-  };
-});
+    const linhas = (data ?? []) as unknown as (LinhaCampo & {
+      updated_at: string;
+    })[];
+    const todas = linhas
+      .filter((l) => l.evento_decisao && idsAtivos.has(l.evento_decisao.id))
+      .filter((l) => {
+        const offset = l.evento_decisao!.offset_ideal_dias;
+        return offset === null || offset > 0 || diaChegou;
+      })
+      .map((l) => ({
+        campoId: l.id,
+        // o mesmo campo dito na voz dela; sem rótulo próprio, o interno serve
+        label: l.label_portal?.trim() || l.label,
+        tipo: l.tipo,
+        opcoes: l.opcoes,
+        unidade: l.unidade,
+        valor: valorDoCampo(comoCampo(l)),
+        updatedAt: l.updated_at,
+        decisaoTitulo: l.evento_decisao!.titulo,
+        prazoPrevisto: l.evento_decisao!.prazo_previsto,
+      }))
+      .sort((a, b) =>
+        (a.prazoPrevisto ?? "9999").localeCompare(b.prazoPrevisto ?? "9999")
+      ) as PerguntaDoPortal[];
+
+    return {
+      abertas: todas.filter((p) => p.valor === null),
+      respondidas: todas.filter((p) => p.valor !== null),
+    };
+  }
+);
 
 const getContratados = cache(async (eventId: string) => {
   const supabase = createClient();
@@ -468,18 +490,24 @@ export const getLinhaDoTempo = cache(
   }
 );
 
-export async function getPerguntas(eventId: string): Promise<{
+export async function getPerguntas(
+  eventId: string,
+  dataEvento: string
+): Promise<{
   abertas: PerguntaDoPortal[];
   respondidas: PerguntaDoPortal[];
 }> {
-  return getPerguntasDaCliente(eventId);
+  return getPerguntasDaCliente(eventId, dataEvento);
 }
 
 /** Tudo da home, em paralelo. */
-export async function getHomePortal(eventId: string): Promise<HomeDoPortal> {
+export async function getHomePortal(
+  eventId: string,
+  dataEvento: string
+): Promise<HomeDoPortal> {
   const [pendentes, perguntas, contratados, investimento] = await Promise.all([
     getDecisoesPendentes(eventId),
-    getPerguntasDaCliente(eventId),
+    getPerguntasDaCliente(eventId, dataEvento),
     getContratados(eventId),
     getInvestimento(eventId),
   ]);

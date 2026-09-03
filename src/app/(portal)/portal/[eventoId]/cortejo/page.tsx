@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getEventoDoPortal } from "@/lib/supabase/portal";
 import { getCortejo } from "@/lib/supabase/portal-pessoas";
+import { tem } from "@/lib/capacidades";
 import { TopoInterno } from "@/components/portal/TopoInterno";
 import { ListaCortejo } from "@/components/portal/ListaCortejo";
 
@@ -14,6 +15,7 @@ export default async function PortalCortejoPage({
 }) {
   const evento = await getEventoDoPortal(params.eventoId);
   if (!evento) notFound();
+  if (!tem(evento.tipo, "cortejo")) notFound();
 
   // Evento ligado (a colação de uma formatura): a lista da turma é UMA e
   // vive no evento principal. Gravar aqui criaria uma segunda lista que a

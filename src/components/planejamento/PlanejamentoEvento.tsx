@@ -30,7 +30,15 @@ import {
   verDiffDecisao,
 } from "@/app/(app)/eventos/[id]/planejamento/actions";
 import type { TipoCampo, Campo } from "@/lib/supabase/planejamento";
-import { C, F_MONO, F_TITLE, F_UI, monoLabel, tituloStyle } from "./celebra";
+import {
+  C,
+  F_MONO,
+  F_TITLE,
+  F_UI,
+  monoLabel,
+  tituloStyle,
+  type Arquetipos,
+} from "./celebra";
 import { FaixaContexto } from "./FaixaContexto";
 import { ModoFoco } from "./ModoFoco";
 import { ModoAmplo } from "./ModoAmplo";
@@ -90,6 +98,7 @@ export function PlanejamentoEvento({
   decisaoInicial,
   escala,
   cenario,
+  arquetipos,
   clienteNome,
   tipoEvento,
   localEvento,
@@ -100,6 +109,8 @@ export function PlanejamentoEvento({
   decisaoInicial: string | null;
   escala: string | null;
   cenario: string | null;
+  /** opções dos chips, lidas de metodo_arquetipo do tipo */
+  arquetipos: Arquetipos;
   clienteNome: string | null;
   tipoEvento: string;
   localEvento: string | null;
@@ -484,6 +495,11 @@ export function PlanejamentoEvento({
         objetivos={plano.objetivos}
         escala={escala}
         cenario={cenario}
+        arquetipos={arquetipos}
+        placeholders={{
+          escala: campoPorCodigo("escala")?.label ?? "Escala",
+          cenario: campoPorCodigo("cenario")?.label ?? "Cenário",
+        }}
         compacta={modo === "amplo"}
         avisoVisivel={avisoVisivel}
         onArquetipo={(eixo, valor) => {
@@ -493,7 +509,9 @@ export function PlanejamentoEvento({
           salvarCampoPorCodigo(eixo, valor);
         }}
         temVerba={campoPorCodigo("verba_total") !== null}
-        temArquetipo={campoPorCodigo("escala") !== null}
+        temArquetipo={
+          campoPorCodigo("escala") !== null && arquetipos.escala.length > 0
+        }
         onSalvarVerba={(valor) => salvarCampoPorCodigo("verba_total", valor)}
         onSalvarReserva={(pct) => salvarCampoPorCodigo("reserva_pct", pct)}
         onSugerir={() => {
@@ -617,6 +635,7 @@ export function PlanejamentoEvento({
           diasAteEvento={plano.diasAteEvento}
           escala={escala}
           cenario={cenario}
+          arquetipos={arquetipos}
           verba={plano.verba}
           onFechar={() => setMapaAberto(false)}
           onIrParaObjetivo={irParaObjetivo}
@@ -681,6 +700,7 @@ export function PlanejamentoEvento({
       {drawer && (
         <DrawerDecisao
           tipoEvento={tipoEvento}
+          arquetipos={arquetipos}
           decisao={drawer.decisao}
           objetivoNome={drawer.objetivoNome}
           eventId={eventId}

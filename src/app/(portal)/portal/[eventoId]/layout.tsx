@@ -46,6 +46,7 @@ export default async function PortalEventoLayout({
         <div className="portal-painel">
           <NavLateral
             eventoId={evento.id}
+            tipo={evento.tipo}
             marcaNome={evento.marca?.nome ?? null}
             marcaLogoUrl={evento.marca?.logoUrl ?? null}
             cerimonialistaNome={contato.nome}
@@ -57,6 +58,7 @@ export default async function PortalEventoLayout({
             <div className="portal-so-celular">
               <TopoCelular
                 eventoId={evento.id}
+                tipo={evento.tipo}
                 nomeEvento={nomeDeExibicao(evento)}
                 marcaNome={evento.marca?.nome ?? null}
                 marcaLogoUrl={evento.marca?.logoUrl ?? null}
@@ -69,7 +71,7 @@ export default async function PortalEventoLayout({
             </main>
 
             <div className="portal-so-celular">
-              <NavPortal eventoId={evento.id} />
+              <NavPortal eventoId={evento.id} tipo={evento.tipo} />
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-// A barra inferior do celular: cinco destinos, ícone + rótulo de 11px.
+// A barra inferior do celular: até cinco destinos, ícone + rótulo de 11px.
 // O ativo é dito pela cor (champagne), sem fundo e sem marcador — o
 // mesmo vocabulário discreto da sidebar.
 //
@@ -10,15 +10,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as Icones from "./icones";
-import { ABAS_CELULAR } from "./destinos";
+import { abasCelularDoTipo } from "./destinos";
 
-export function NavPortal({ eventoId }: { eventoId: string }) {
+export function NavPortal({ eventoId, tipo }: { eventoId: string; tipo: string }) {
   const pathname = usePathname();
   const base = `/portal/${eventoId}`;
 
   return (
     <nav className="portal-abas" aria-label="Navegação do portal">
-      {ABAS_CELULAR.map((d) => {
+      {abasCelularDoTipo(tipo).map((d) => {
         const href = d.seg ? `${base}/${d.seg}` : base;
         const ativa =
           d.seg === ""

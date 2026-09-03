@@ -19,6 +19,9 @@ export type Client = {
   whatsapp: string | null;
   email: string | null;
   cpf: string | null;
+  /** contratante PJ (141): name continua sendo como ela é chamada */
+  cnpj: string | null;
+  razao_social: string | null;
   instagram: string | null;
   address: string | null;
   city: string | null;

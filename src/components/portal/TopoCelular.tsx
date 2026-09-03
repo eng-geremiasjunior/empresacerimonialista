@@ -10,9 +10,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as Icones from "./icones";
 import {
-  DURANTE,
+  duranteDoTipo,
   investimentoDoEvento,
-  PRINCIPAIS,
+  principaisDoTipo,
   visiveis,
   type Destino,
 } from "./destinos";
@@ -66,12 +66,15 @@ function GrupoGaveta({
 
 export function TopoCelular({
   eventoId,
+  tipo,
   nomeEvento,
   marcaNome,
   marcaLogoUrl,
   temPrestacao = false,
 }: {
   eventoId: string;
+  /** tipo do evento — decide quais destinos existem e como se chamam */
+  tipo: string;
   nomeEvento: string;
   marcaNome: string | null;
   marcaLogoUrl: string | null;
@@ -200,8 +203,8 @@ export function TopoCelular({
             >
               {(marcaNome ?? "Vela").toUpperCase()}
             </div>
-            <GrupoGaveta itens={visiveis(PRINCIPAIS)} base={base} aoNavegar={fechar} />
-            <GrupoGaveta titulo="Durante o evento" itens={visiveis(DURANTE)} base={base} aoNavegar={fechar} />
+            <GrupoGaveta itens={visiveis(principaisDoTipo(tipo))} base={base} aoNavegar={fechar} />
+            <GrupoGaveta titulo="Durante o evento" itens={visiveis(duranteDoTipo(tipo))} base={base} aoNavegar={fechar} />
             <GrupoGaveta titulo="Investimento" itens={investimentoDoEvento(temPrestacao)} base={base} aoNavegar={fechar} />
           </div>
           <button

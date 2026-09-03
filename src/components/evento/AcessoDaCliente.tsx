@@ -9,6 +9,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { PAPEL_PORTAL_LABELS, type PapelPortal } from "@/lib/portal-admin";
+import { papeisPortalDoTipo } from "@/lib/papel";
 import {
   criarAcessoDaCliente,
   novaSenhaProvisoria,
@@ -28,10 +29,13 @@ const PAPEIS = Object.keys(PAPEL_PORTAL_LABELS) as PapelPortal[];
 
 export function AcessoDaCliente({
   eventId,
+  tipo,
   acessos,
   clienteSugerido,
 }: {
   eventId: string;
+  /** tipo do evento — decide os papéis oferecidos; sem ele, a lista completa */
+  tipo?: string | null;
   acessos: AcessoLinha[];
   clienteSugerido: { id: string; nome: string; email: string | null } | null;
 }) {
@@ -40,7 +44,8 @@ export function AcessoDaCliente({
   const [abrindo, setAbrindo] = useState(false);
   const [nome, setNome] = useState(clienteSugerido?.nome ?? "");
   const [email, setEmail] = useState(clienteSugerido?.email ?? "");
-  const [papel, setPapel] = useState<PapelPortal>("noiva");
+  const papeis = tipo === undefined ? PAPEIS : papeisPortalDoTipo(tipo);
+  const [papel, setPapel] = useState<PapelPortal>(papeis[0]);
   const [erro, setErro] = useState<string | null>(null);
   const [senha, setSenha] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -140,20 +145,22 @@ export function AcessoDaCliente({
               />
             </label>
           </div>
-          <label className="block">
-            <span className="text-xs text-gray-500">Papel no evento</span>
-            <select
-              value={papel}
-              onChange={(e) => setPapel(e.target.value as PapelPortal)}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-            >
-              {PAPEIS.map((p) => (
-                <option key={p} value={p}>
-                  {PAPEL_PORTAL_LABELS[p]}
-                </option>
-              ))}
-            </select>
-          </label>
+          {papeis.length > 1 && (
+            <label className="block">
+              <span className="text-xs text-gray-500">Papel no evento</span>
+              <select
+                value={papel}
+                onChange={(e) => setPapel(e.target.value as PapelPortal)}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              >
+                {papeis.map((p) => (
+                  <option key={p} value={p}>
+                    {PAPEL_PORTAL_LABELS[p]}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <div className="flex gap-2 pt-1">
             <button
               type="button"

@@ -19,6 +19,11 @@
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { criarEventoAPartirDoOrcamento } from "@/lib/orcamento-para-evento";
+import {
+  assinantesDoTipo,
+  rotuloAssinante,
+  rotuloDocumentoAssinante,
+} from "@/lib/papel";
 
 export type TemaModal = {
   fundo: string;
@@ -98,11 +103,16 @@ export function ModalAceiteProposta({
   const [assinou1, setAssinou1] = useState(false);
   const [assinou2, setAssinou2] = useState(false);
 
+  // Quem assina em um (empresa, família…) nunca vê o 2º assinante, mesmo
+  // que o template peça assinatura dupla — a RPC recebe o 2º como null.
+  const umAssinante = assinantesDoTipo(tipoEvento) === 1;
+  const dupla = assinaturaDupla && !umAssinante;
+
   const podeConfirmar =
     nome.trim() !== "" &&
     cpf.trim() !== "" &&
     assinou1 &&
-    (!assinaturaDupla || assinou2) &&
+    (!dupla || assinou2) &&
     !enviando;
 
   async function confirmar() {
@@ -126,7 +136,7 @@ export function ModalAceiteProposta({
       p_nome_noiva: nome.trim(),
       p_nome_noivo: nome2.trim() || null,
       p_assinatura_noiva: canvas1.current?.toDataURL("image/png") ?? null,
-      p_assinatura_noivo: assinaturaDupla
+      p_assinatura_noivo: dupla
         ? canvas2.current?.toDataURL("image/png") ?? null
         : null,
       p_observacoes: null,
@@ -226,7 +236,9 @@ export function ModalAceiteProposta({
 
         <div className="mt-5 grid gap-3.5 sm:grid-cols-2">
           <div className="sm:col-span-2">
-            <Rotulo tema={tema}>NOME COMPLETO *</Rotulo>
+            <Rotulo tema={tema}>
+              {`${rotuloAssinante(tipoEvento).toUpperCase()} *`}
+            </Rotulo>
             <input
               value={nome}
               onChange={(e) => setNome(e.target.value)}
@@ -235,7 +247,7 @@ export function ModalAceiteProposta({
             />
           </div>
 
-          {assinaturaDupla && (
+          {dupla && (
             <div className="sm:col-span-2">
               <Rotulo tema={tema}>NOME DA 2ª PESSOA</Rotulo>
               <input
@@ -248,11 +260,17 @@ export function ModalAceiteProposta({
           )}
 
           <div>
-            <Rotulo tema={tema}>CPF *</Rotulo>
+            <Rotulo tema={tema}>
+              {`${rotuloDocumentoAssinante(tipoEvento).toUpperCase()} *`}
+            </Rotulo>
             <input
               value={cpf}
               onChange={(e) => setCpf(e.target.value)}
-              placeholder="000.000.000-00"
+              placeholder={
+                rotuloDocumentoAssinante(tipoEvento) === "CPF"
+                  ? "000.000.000-00"
+                  : undefined
+              }
               inputMode="numeric"
               className="mt-1.5 w-full rounded-lg px-3 py-2.5 text-[13.5px] outline-none"
               style={campoStyle}
@@ -287,7 +305,7 @@ export function ModalAceiteProposta({
           rotulo={`${rotuloAssinatura} *`}
           onMudou={setAssinou1}
         />
-        {assinaturaDupla && (
+        {dupla && (
           <Assinatura
             refCanvas={canvas2}
             tema={tema}

@@ -17,6 +17,8 @@ function readForm(formData: FormData) {
     whatsapp: get("whatsapp"),
     email: get("email"),
     cpf: get("cpf"),
+    cnpj: get("cnpj"),
+    razao_social: get("razao_social"),
     instagram: get("instagram"),
     address: get("address"),
     city: get("city"),

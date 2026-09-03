@@ -2,7 +2,10 @@
 
 import { resolverTemplate, type WizardRespostas } from "@/lib/event-templates";
 
-type BoolKey = Exclude<keyof WizardRespostas, "fornecedoresContratados">;
+type BoolKey = Exclude<
+  keyof WizardRespostas,
+  "fornecedoresContratados" | "cenario"
+>;
 
 const PERGUNTAS: Record<string, { key: BoolKey; label: string }[]> = {
   casamento: [
@@ -14,7 +17,7 @@ const PERGUNTAS: Record<string, { key: BoolKey; label: string }[]> = {
   formatura: [
     { key: "colacaoJunto", label: "Colação e baile juntos (mesmo dia e local)?" },
   ],
-  corporativo: [{ key: "palestrantes", label: "Terá palestrantes?" }],
+  corporativo: [],
   maternidade: [
     { key: "chaRevelacao", label: "É chá revelação (revelação do sexo)?" },
   ],
@@ -22,10 +25,25 @@ const PERGUNTAS: Record<string, { key: BoolKey; label: string }[]> = {
   outro: [],
 };
 
+// O subtipo é o arquétipo do eixo cenario: as opções vêm do método do
+// tipo (metodo_arquetipo), pela página. Só quem tem pergunta aparece aqui.
+const PERGUNTA_CENARIO: Partial<Record<string, string>> = {
+  corporativo: "Que tipo de evento é?",
+};
+
+const opcaoClass = (ativa: boolean) =>
+  `rounded-lg border px-3 py-1 text-sm font-medium ${
+    ativa
+      ? "border-stone-900 bg-stone-900 text-white"
+      : "border-stone-300 bg-white text-stone-600 hover:border-stone-500"
+  }`;
+
 type Props = {
   type: string;
   respostas: WizardRespostas;
   fornecedores: string[];
+  /** opções do eixo cenario do tipo; vazio = sem a pergunta */
+  cenarios: { valor: string; rotulo: string }[];
   onChange: (patch: Partial<WizardRespostas>) => void;
   onNext: () => void;
   onSkip: () => void;
@@ -37,6 +55,7 @@ export function StepEstruturacao({
   type,
   respostas,
   fornecedores,
+  cenarios,
   onChange,
   onNext,
   onSkip,
@@ -44,6 +63,8 @@ export function StepEstruturacao({
   error,
 }: Props) {
   const perguntas = PERGUNTAS[resolverTemplate(type)] ?? [];
+  const perguntaCenario =
+    cenarios.length > 0 ? PERGUNTA_CENARIO[type] : undefined;
   const contratados = respostas.fornecedoresContratados ?? [];
 
   function toggleContratado(cat: string) {
@@ -71,8 +92,29 @@ export function StepEstruturacao({
         </button>
       </div>
 
-      {perguntas.length > 0 && (
+      {(perguntas.length > 0 || perguntaCenario) && (
         <div className="mt-4 space-y-2 rounded-xl border border-stone-200 bg-white p-5 shadow-sm">
+          {perguntaCenario && (
+            <div className="py-1">
+              <span className="text-sm">{perguntaCenario}</span>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {cenarios.map((c) => {
+                  const ativa = respostas.cenario === c.valor;
+                  return (
+                    <button
+                      key={c.valor}
+                      onClick={() =>
+                        onChange({ cenario: ativa ? undefined : c.valor })
+                      }
+                      className={opcaoClass(ativa)}
+                    >
+                      {c.rotulo}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           {perguntas.map((p) => {
             const val = respostas[p.key] === true;
             return (
@@ -89,11 +131,9 @@ export function StepEstruturacao({
                     <button
                       key={opt.t}
                       onClick={() => onChange({ [p.key]: opt.v } as Partial<WizardRespostas>)}
-                      className={`rounded-lg border px-3 py-1 text-sm font-medium ${
+                      className={opcaoClass(
                         (opt.v && val) || (!opt.v && respostas[p.key] === false)
-                          ? "border-stone-900 bg-stone-900 text-white"
-                          : "border-stone-300 bg-white text-stone-600 hover:border-stone-500"
-                      }`}
+                      )}
                     >
                       {opt.t}
                     </button>

@@ -15,13 +15,13 @@ import type { Objetivo, Verba } from "@/lib/supabase/planejamento";
 import {
   brl,
   C,
-  CENARIOS,
-  ESCALAS,
   F_MONO,
   F_TITLE,
   F_UI,
   monoLabel,
   rotuloArquetipo,
+  type Arquetipos,
+  type OpcaoArquetipo,
 } from "./celebra";
 
 // ------------------------------------------------------------------
@@ -37,7 +37,7 @@ function ChipArquetipo({
 }: {
   valor: string | null;
   placeholder: string;
-  opcoes: { valor: string; rotulo: string }[];
+  opcoes: OpcaoArquetipo[];
   onEscolher: (valor: string) => void;
   disabled?: boolean;
 }) {
@@ -76,7 +76,7 @@ function ChipArquetipo({
           whiteSpace: "nowrap",
         }}
       >
-        {rotuloArquetipo(valor) ?? placeholder}
+        {rotuloArquetipo(valor, opcoes) ?? placeholder}
         <span style={{ color: C.meta }}>▾</span>
       </button>
       {aberto && (
@@ -613,6 +613,8 @@ export function FaixaContexto({
   objetivos,
   escala,
   cenario,
+  arquetipos,
+  placeholders,
   compacta,
   avisoVisivel,
   onArquetipo,
@@ -631,6 +633,10 @@ export function FaixaContexto({
   objetivos: Objetivo[];
   escala: string | null;
   cenario: string | null;
+  /** opções dos chips (metodo_arquetipo do tipo); eixo vazio não renderiza */
+  arquetipos: Arquetipos;
+  /** rótulo do campo do método: o chip vazio mostra ele */
+  placeholders: { escala: string; cenario: string };
   /** Modo Amplo: a faixa encolhe para uma linha (§4.4). */
   compacta: boolean;
   avisoVisivel: boolean;
@@ -647,7 +653,7 @@ export function FaixaContexto({
   /** o método deste tipo de evento tem campo de verba (casamento sim,
       formatura não — lá o dinheiro é da turma) */
   temVerba: boolean;
-  /** e tem escala/cenário (só casamento e debutante têm) */
+  /** e tem escala/cenário no método, com opções no banco */
   temArquetipo: boolean;
 }) {
   const [previstoAberto, setPrevistoAberto] = useState(true);
@@ -676,18 +682,22 @@ export function FaixaContexto({
 
   const chips = (
     <>
-      <ChipArquetipo
-        valor={escala}
-        placeholder="Escala"
-        opcoes={ESCALAS}
-        onEscolher={(v) => onArquetipo("escala", v)}
-      />
-      <ChipArquetipo
-        valor={cenario}
-        placeholder="Cenário"
-        opcoes={CENARIOS}
-        onEscolher={(v) => onArquetipo("cenario", v)}
-      />
+      {arquetipos.escala.length > 0 && (
+        <ChipArquetipo
+          valor={escala}
+          placeholder={placeholders.escala}
+          opcoes={arquetipos.escala}
+          onEscolher={(v) => onArquetipo("escala", v)}
+        />
+      )}
+      {arquetipos.cenario.length > 0 && (
+        <ChipArquetipo
+          valor={cenario}
+          placeholder={placeholders.cenario}
+          opcoes={arquetipos.cenario}
+          onEscolher={(v) => onArquetipo("cenario", v)}
+        />
+      )}
     </>
   );
 
@@ -716,7 +726,10 @@ export function FaixaContexto({
         {cenario ? (
           <>
             O cenário mudou para{" "}
-            <strong>{rotuloArquetipo(cenario)?.toLowerCase()}</strong> — a
+            <strong>
+              {rotuloArquetipo(cenario, arquetipos.cenario)?.toLowerCase()}
+            </strong>{" "}
+            — a
             distribuição ficou desatualizada.
           </>
         ) : (
@@ -933,8 +946,9 @@ export function FaixaContexto({
                   color: C.meta,
                 }}
               >
-                Escala e cenário definem quais objetivos existem, os prazos e
-                os % de referência.
+                {placeholders.escala} e {placeholders.cenario.toLowerCase()}{" "}
+                definem quais objetivos existem, os prazos e os % de
+                referência.
               </span>
             </>
           )}

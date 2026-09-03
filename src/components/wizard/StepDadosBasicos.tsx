@@ -30,6 +30,7 @@ const ROTULO_HORA: Record<string, string> = {
   debutante: "Hora da entrada",
   formatura: "Hora de início",
   show: "Abertura dos portões",
+  corporativo: "Hora da abertura",
 };
 
 type Props = {

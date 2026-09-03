@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { desmascararDinheiro } from "@/lib/format";
+import { escalaPorPublico } from "@/lib/capacidades";
 import { montarTimelineDoPlaybook } from "@/lib/supabase/roteiro-template";
 import {
   gerarFasesPorTipo,
@@ -53,12 +54,19 @@ export async function criarEventoCompleto(
 
   const arquetipo = resolverTemplate(payload.type);
 
+  // O subtipo escolhido (token do cenário) vira chave booleana: a condicao
+  // dos extras do roteiro casa pelo próprio token, sem literal aqui.
+  const cenario = payload.respostas.cenario || null;
+  const respostas: WizardRespostas = cenario
+    ? { ...payload.respostas, [cenario]: true }
+    : payload.respostas;
+
   // Fases: sempre do template do tipo. Timeline: só no fluxo completo —
   // e do Playbook da empresa (deslocamentos vs. hora da cerimônia), com
   // fallback na constante TS enquanto a 112 não existe.
   const phases = gerarFasesPorTipo(arquetipo);
   const timeline = payload.incluirTimeline
-    ? await montarTimelineDoPlaybook(payload.type, payload.respostas)
+    ? await montarTimelineDoPlaybook(payload.type, respostas)
     : [];
 
   // Checklist plano APOSENTADO (076): tarefa nasce da decisão do método
@@ -146,6 +154,34 @@ export async function criarEventoCompleto(
       .eq("codigo", "celebracao_formato");
     if (erroCampo) {
       console.error("[vela:novo-evento] celebracao_formato:", erroCampo.message);
+    }
+  }
+
+  // Arquétipo do método: o porte deriva do público (o wizard não pergunta
+  // a escala), o subtipo é o cenário escolhido. Gravar em events dispara os
+  // deltas do arquétipo (083); o campo tipado é o que a faixa de contexto
+  // lê. Erro aqui não desfaz o evento — vai para o log.
+  const escala = escalaPorPublico(payload.type, args.p_guests);
+  if (escala || cenario) {
+    const patch: Record<string, string> = {};
+    if (escala) patch.escala = escala;
+    if (cenario) patch.cenario = cenario;
+    const { error: erroEvento } = await supabase
+      .from("events")
+      .update(patch)
+      .eq("id", data as string);
+    if (erroEvento) {
+      console.error("[vela:novo-evento] arquétipo:", erroEvento.message);
+    }
+    for (const [codigo, token] of Object.entries(patch)) {
+      const { error: erroCampo } = await supabase
+        .from("evento_campo_valor")
+        .update({ valor_opcao: token })
+        .eq("event_id", data as string)
+        .eq("codigo", codigo);
+      if (erroCampo) {
+        console.error(`[vela:novo-evento] ${codigo}:`, erroCampo.message);
+      }
     }
   }
 

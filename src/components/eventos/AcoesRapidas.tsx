@@ -13,6 +13,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { tem } from "@/lib/capacidades";
 import { TaskForm } from "@/components/tasks/TaskForm";
 import { BuscarVincularFornecedorModal } from "@/components/fornecedores/BuscarVincularFornecedorModal";
 import { createTask } from "@/app/(app)/tarefas/actions";
@@ -117,16 +118,18 @@ export function AcoesRapidas({
           descricao="Contratos, parcelas e despesas"
           href={`/eventos/${eventId}/financeiro`}
         />
-        <ItemBotao
-          icon={ScrollText}
-          titulo={tipo === "formatura" ? "Papéis e chamada" : "Cortejo"}
-          descricao={
-            tipo === "formatura"
-              ? "Formandos, mesa de honra e a chamada"
-              : "Quem entra, na ordem de entrada"
-          }
-          href={`/eventos/${eventId}/cortejo`}
-        />
+        {tem(tipo, "cortejo") && (
+          <ItemBotao
+            icon={ScrollText}
+            titulo={tipo === "formatura" ? "Papéis e chamada" : "Cortejo"}
+            descricao={
+              tipo === "formatura"
+                ? "Formandos, mesa de honra e a chamada"
+                : "Quem entra, na ordem de entrada"
+            }
+            href={`/eventos/${eventId}/cortejo`}
+          />
+        )}
         <ItemBotao
           icon={StickyNote}
           titulo="Adicionar observação"

@@ -16,11 +16,12 @@ import {
   caixaDaMesa,
   LARGURA_CADEIRA_CM,
   MEDIDA_PADRAO,
-  NOME_TIPO_MESA,
+  nomeTipoMesa,
   posicoesDasCadeiras,
   type Mesa,
   type TipoMesa,
 } from "@/lib/croqui-core";
+import { rotuloMesaPrincipalCurto } from "@/lib/papel";
 
 const TIPOS: TipoMesa[] = [
   "redonda_8",
@@ -110,11 +111,14 @@ export function MiniMesa({
 
 export function ModalMesa({
   proximoNumero,
+  tipoEvento,
   pendente,
   aoSalvar,
   aoFechar,
 }: {
   proximoNumero: number;
+  /** tipo do evento — como esta festa chama a mesa 'noivos' */
+  tipoEvento: string;
   pendente: boolean;
   aoSalvar: (input: {
     tipo: TipoMesa;
@@ -133,7 +137,7 @@ export function ModalMesa({
   function escolherTipo(t: TipoMesa) {
     setTipo(t);
     setLugares(MEDIDA_PADRAO[t].lugares);
-    if (t === "noivos") setRotulo("Noivos");
+    if (t === "noivos") setRotulo(rotuloMesaPrincipalCurto(tipoEvento));
     else if (t === "bolo") setRotulo("Bolo");
     else setRotulo(String(proximoNumero).padStart(2, "0"));
   }
@@ -193,7 +197,7 @@ export function ModalMesa({
                   <span
                     className={`text-[11px] leading-tight ${tipo === t ? "text-gray-900" : "text-gray-500"}`}
                   >
-                    {NOME_TIPO_MESA[t]}
+                    {nomeTipoMesa(t, tipoEvento)}
                   </span>
                 </button>
               ))}

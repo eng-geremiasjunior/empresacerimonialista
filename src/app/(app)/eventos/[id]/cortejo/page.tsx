@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCortejo } from "@/lib/supabase/portal-pessoas";
+import { tem } from "@/lib/capacidades";
 import { CortejoEquipe } from "@/components/eventos/CortejoEquipe";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +23,7 @@ export default async function CortejoEquipePage({
     .eq("id", params.id)
     .maybeSingle();
   if (!data) notFound();
+  if (!tem(data.type as string, "cortejo")) notFound();
 
   // A lista é UMA por turma e mora no evento principal. Aberto pelo
   // evento da colação (filho), esta tela lê e edita a lista do pai —

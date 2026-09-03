@@ -98,6 +98,9 @@ export function ClientForm({
         <Field name="instagram" label="Instagram" defaultValue={client?.instagram} placeholder="@usuario" />
         <Field name="cpf" label="CPF" defaultValue={client?.cpf} />
         <Field name="birthday" label="Nascimento" type="date" defaultValue={client?.birthday} />
+        {/* contratante PJ: a empresa que fecha o evento corporativo */}
+        <Field name="cnpj" label="CNPJ" defaultValue={client?.cnpj} placeholder="00.000.000/0000-00" />
+        <Field name="razao_social" label="Razão social" defaultValue={client?.razao_social} />
         <Field name="city" label="Cidade" defaultValue={client?.city} />
         <Field name="address" label="Endereço" defaultValue={client?.address} />
       </div>

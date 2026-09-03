@@ -100,6 +100,7 @@ export default async function EditarEventoPage({
       />
 
       <AcessoDaCliente
+        tipo={event.type}
         eventId={event.id}
         acessos={acessos}
         clienteSugerido={

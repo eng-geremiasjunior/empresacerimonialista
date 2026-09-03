@@ -155,7 +155,9 @@ export default async function ImprimirPrestacaoPage({
       )}
 
       {/* o dia */}
-      {(p.dia.total > 0 || p.convidados.confirmados > 0) && (
+      {(p.dia.total > 0 ||
+        p.convidados.confirmados > 0 ||
+        (p.resumo.custo_por_pessoa ?? 0) > 0) && (
         <section style={{ marginBottom: 18 }}>
           <p className="imp-titulo" style={{ fontSize: 14 }}>O dia</p>
           <p className="imp-sub">
@@ -164,6 +166,14 @@ export default async function ImprimirPrestacaoPage({
             {p.dia.total > 0 &&
               `${p.dia.concluidos} de ${p.dia.total} momentos do roteiro concluídos.`}
           </p>
+          {(p.resumo.custo_por_pessoa ?? 0) > 0 && (
+            <p className="imp-sub">
+              {brl(p.resumo.custo_por_pessoa)} por pessoa
+              {(p.convidados.presentes ?? 0) > 0
+                ? ` · ${p.convidados.presentes} presentes`
+                : ""}
+            </p>
+          )}
           {p.dia.itens.length > 0 && (
             <table className="imp-tabela">
               <thead>

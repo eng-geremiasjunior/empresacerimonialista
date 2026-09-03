@@ -241,7 +241,9 @@ export default async function PortalPrestacaoPage({
       </Cartao>
 
       {/* ---------------- o dia ---------------- */}
-      {(p.dia.total > 0 || p.convidados.confirmados > 0) && (
+      {(p.dia.total > 0 ||
+        p.convidados.confirmados > 0 ||
+        (p.resumo.custo_por_pessoa ?? 0) > 0) && (
         <Cartao padding="var(--esp-8)">
           <TituloSecao titulo="O dia" />
           <p style={{ fontSize: "var(--ts-desc)", color: "var(--cor-texto)" }}>
@@ -250,6 +252,14 @@ export default async function PortalPrestacaoPage({
             {p.dia.total > 0 &&
               `${p.dia.concluidos} de ${p.dia.total} momentos do roteiro concluídos.`}
           </p>
+          {(p.resumo.custo_por_pessoa ?? 0) > 0 && (
+            <p style={{ fontSize: "var(--ts-desc)", color: "var(--cor-texto)" }}>
+              {brl(p.resumo.custo_por_pessoa)} por pessoa
+              {(p.convidados.presentes ?? 0) > 0
+                ? ` · ${p.convidados.presentes} presentes`
+                : ""}
+            </p>
+          )}
           {p.dia.itens.length > 0 && (
             <>
               <Divisor margem="var(--esp-4) 0" />

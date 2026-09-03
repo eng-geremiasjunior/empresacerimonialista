@@ -23,7 +23,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { X } from "lucide-react";
 import type { Decisao, Objetivo, Verba } from "@/lib/supabase/planejamento";
-import { brl, C, dataBr, F_MONO, F_TITLE, F_UI, rotuloArquetipo } from "./celebra";
+import {
+  brl,
+  C,
+  dataBr,
+  F_MONO,
+  F_TITLE,
+  F_UI,
+  rotuloArquetipo,
+  type Arquetipos,
+} from "./celebra";
 
 const SALVIA = "#6E7F63";
 
@@ -213,6 +222,7 @@ export function MapaMental({
   diasAteEvento,
   escala,
   cenario,
+  arquetipos,
   verba,
   onFechar,
   onIrParaObjetivo,
@@ -226,6 +236,7 @@ export function MapaMental({
   diasAteEvento: number | null;
   escala: string | null;
   cenario: string | null;
+  arquetipos: Arquetipos;
   verba: Verba;
   onFechar: () => void;
   onIrParaObjetivo: (objetivoId: string) => void;
@@ -283,8 +294,8 @@ export function MapaMental({
     (s: number): Quadro => {
       if (s === 0) {
         const contexto = [
-          rotuloArquetipo(escala),
-          rotuloArquetipo(cenario),
+          rotuloArquetipo(escala, arquetipos.escala),
+          rotuloArquetipo(cenario, arquetipos.cenario),
           localEvento,
         ]
           .filter(Boolean)
@@ -365,7 +376,7 @@ export function MapaMental({
           .join(" ")}`,
       };
     },
-    [nos, n, agg, verba, escala, cenario, localEvento, diasAteEvento, clienteNome, playing]
+    [nos, n, agg, verba, escala, cenario, arquetipos, localEvento, diasAteEvento, clienteNome, playing]
   );
 
   // ---- ritmo: tempo de LEITURA do quadro ----
@@ -728,7 +739,10 @@ export function MapaMental({
                   )}
                   {(escala || cenario) && (
                     <div style={linhaCentro}>
-                      {[rotuloArquetipo(escala), rotuloArquetipo(cenario)]
+                      {[
+                        rotuloArquetipo(escala, arquetipos.escala),
+                        rotuloArquetipo(cenario, arquetipos.cenario),
+                      ]
                         .filter(Boolean)
                         .join(" · ")
                         .toLowerCase()}

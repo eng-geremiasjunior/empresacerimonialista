@@ -27,15 +27,9 @@ import {
 } from "@/components/portal/icones";
 import { dataLonga, diaEMes, prazoPortal } from "@/components/portal/datas";
 import { hojeBR } from "@/lib/tempo";
+import { EVENT_TYPE_LABELS } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
-
-const TIPO_ROTULO: Record<string, string> = {
-  casamento: "Casamento",
-  debutante: "Debutante",
-  aniversario: "Aniversário",
-  corporativo: "Evento corporativo",
-};
 
 // Visão geral (handoff "luxo silencioso"): cabeçalho + contagem,
 // Próximas decisões, faixa de assinatura, e a coluna direita com Meu
@@ -51,7 +45,7 @@ export default async function PortalEventoPage({
   if (!evento) notFound();
 
   const [home, contato] = await Promise.all([
-    getHomePortal(evento.id),
+    getHomePortal(evento.id, evento.data),
     getContatoCerimonialista(evento.id),
   ]);
   const base = `/portal/${evento.id}`;
@@ -193,7 +187,7 @@ export default async function PortalEventoPage({
             href={base}
             icone={<CalendarCheck size={TAMANHO} strokeWidth={TRACO} />}
             titulo="Meu evento"
-            resumo={`${nome} · ${TIPO_ROTULO[evento.tipo] ?? evento.tipo}`}
+            resumo={`${nome} · ${EVENT_TYPE_LABELS[evento.tipo] ?? evento.tipo}`}
           />
           <CartaoEntrada
             href={`${base}/perguntas`}

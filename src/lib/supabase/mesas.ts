@@ -130,13 +130,18 @@ export const getElementos = cache(async (eventId: string): Promise<Elemento[]> =
 /** convidados como o croqui precisa — SEM telefone e SEM e-mail, que a
  *  alocação não usa. restricao_alimentar (texto livre) também fica de
  *  fora: aqui circula só a categoria, que vira contagem. */
+/** O convidado da lista da aba Mesas: o croqui + a presença no dia (141).
+ *  Fica fora de ConvidadoCroqui de propósito — o croqui e os impressos
+ *  não precisam saber quem chegou. */
+export type ConvidadoDaLista = ConvidadoCroqui & { presenteEm: string | null };
+
 export const getConvidadosCroqui = cache(
-  async (eventId: string): Promise<ConvidadoCroqui[]> => {
+  async (eventId: string): Promise<ConvidadoDaLista[]> => {
     const supabase = createClient();
     const { data } = await supabase
       .from("evento_convidado")
       .select(
-        "id, nome, confirmacao, mesa_id, ordem_na_mesa, eh_crianca, responsavel_id, restricao_tipo, acessibilidade, acompanhantes"
+        "id, nome, confirmacao, mesa_id, ordem_na_mesa, eh_crianca, responsavel_id, restricao_tipo, acessibilidade, acompanhantes, presente_em"
       )
       .eq("event_id", eventId)
       .order("nome");
@@ -151,7 +156,8 @@ export const getConvidadosCroqui = cache(
       restricaoTipo: c.restricao_tipo ?? [],
       acessibilidade: c.acessibilidade,
       acompanhantes: c.acompanhantes ?? 0,
-    })) as ConvidadoCroqui[];
+      presenteEm: c.presente_em ?? null,
+    })) as ConvidadoDaLista[];
   }
 );
 

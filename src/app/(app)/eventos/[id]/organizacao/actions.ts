@@ -6,6 +6,7 @@
 
 import { revalidatePath } from "next/cache";
 import { revalidarTarefas } from "@/lib/revalidar-tarefas";
+import { rotuloEventoPossessivo } from "@/lib/papel";
 import { createClient } from "@/lib/supabase/server";
 import {
   enviarConfirmacaoCompromissoWhatsapp,
@@ -545,8 +546,7 @@ export async function enviarConfirmacaoCompromisso(
 
   // event_label é montado no banco em outros fluxos; aqui uma legenda simples
   // basta para a mensagem.
-  const eventLabel =
-    ev?.type === "casamento" ? "seu casamento" : "sua festa";
+  const eventLabel = rotuloEventoPossessivo(ev?.type);
 
   const res = await enviarConfirmacaoCompromissoWhatsapp({
     telefone,

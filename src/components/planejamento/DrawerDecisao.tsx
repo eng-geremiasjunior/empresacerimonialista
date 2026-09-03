@@ -28,6 +28,7 @@ import {
   tempoAtras,
   TIPO_ROTULO,
   tituloStyle,
+  type Arquetipos,
 } from "./celebra";
 import { BlocoCuradoria, type AcoesCuradoria } from "./BlocoCuradoria";
 import { BlocoGuiaEstilo, type AcoesGuia } from "./BlocoGuiaEstilo";
@@ -230,10 +231,13 @@ function CampoEscolha({
   campo,
   salvar,
   disabled,
+  rotulos,
 }: {
   campo: Campo;
   salvar: Salvar;
   disabled?: boolean;
+  /** token → nome (arquétipos do método); sem ele, o token humanizado */
+  rotulos?: Record<string, string>;
 }) {
   const foco = useCampoFoco();
   return (
@@ -254,7 +258,7 @@ function CampoEscolha({
         <option value="">selecionar</option>
         {(campo.opcoes ?? []).map((o) => (
           <option key={o} value={o}>
-            {o.replace(/_/g, " ")}
+            {rotulos?.[o] ?? o.replace(/_/g, " ")}
           </option>
         ))}
       </select>
@@ -548,12 +552,14 @@ function Controle({
   salvar,
   suppliers,
   disabled,
+  rotulosOpcao,
 }: {
   campo: Campo;
   eventId: string;
   salvar: Salvar;
   suppliers: SupplierRef[];
   disabled?: boolean;
+  rotulosOpcao?: Record<string, string>;
 }) {
   switch (campo.tipo) {
     case "numero":
@@ -565,7 +571,14 @@ function Controle({
     case "sim_nao":
       return <CampoSimNao campo={campo} salvar={salvar} disabled={disabled} />;
     case "escolha":
-      return <CampoEscolha campo={campo} salvar={salvar} disabled={disabled} />;
+      return (
+        <CampoEscolha
+          campo={campo}
+          salvar={salvar}
+          disabled={disabled}
+          rotulos={rotulosOpcao}
+        />
+      );
     case "data":
       return <CampoData campo={campo} salvar={salvar} disabled={disabled} />;
     case "hora":
@@ -619,6 +632,7 @@ export type LinhaDiffDrawer = {
 
 export function DrawerDecisao({
   tipoEvento,
+  arquetipos,
   decisao,
   objetivoNome,
   eventId,
@@ -641,6 +655,8 @@ export function DrawerDecisao({
   acoesGuia,
 }: {
   tipoEvento: string;
+  /** opções dos eixos escala/cenário, com o nome do banco (o chip usa o mesmo) */
+  arquetipos?: Arquetipos;
   decisao: Decisao;
   objetivoNome: string;
   eventId: string;
@@ -1036,6 +1052,14 @@ export function DrawerDecisao({
                 salvar={onSalvarCampo}
                 suppliers={suppliers}
                 disabled={na}
+                rotulosOpcao={
+                  arquetipos &&
+                  (campo.codigo === "escala" || campo.codigo === "cenario")
+                    ? Object.fromEntries(
+                        arquetipos[campo.codigo].map((a) => [a.valor, a.rotulo])
+                      )
+                    : undefined
+                }
               />
             </div>
           ))}

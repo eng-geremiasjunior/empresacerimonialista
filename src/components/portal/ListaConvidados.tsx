@@ -10,6 +10,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { Convidado, ResumoConvidados } from "@/lib/portal-pessoas-shared";
+import { ladosDoTipo, type LadoConvidado } from "@/lib/papel";
 import {
   adicionarConvidado,
   atualizarConvidado,
@@ -18,12 +19,6 @@ import {
 } from "@/app/(portal)/portal/[eventoId]/convidados/actions";
 import { Cartao, ChipIcone, Rotulo } from "./Nucleo";
 import { TAMANHO_PEQUENO, TRACO, Users } from "./icones";
-
-const LADOS = [
-  { valor: "todos", rotulo: "Todos" },
-  { valor: "noiva", rotulo: "Noiva" },
-  { valor: "noivo", rotulo: "Noivo" },
-] as const;
 
 const ESTADO = {
   confirmado: { rotulo: "Confirmado", cor: "var(--cor-texto-rotulo)" },
@@ -87,11 +82,14 @@ function Numero({ n, rotulo }: { n: number; rotulo: string }) {
 
 export function ListaConvidados({
   eventoId,
+  tipo,
   convidados,
   resumo,
   baseUrl,
 }: {
   eventoId: string;
+  /** tipo do evento — diz se a lista tem lados (noiva/noivo) */
+  tipo: string;
   convidados: Convidado[];
   resumo: ResumoConvidados;
   /** origem para montar o link de confirmação */
@@ -99,7 +97,8 @@ export function ListaConvidados({
 }) {
   const router = useRouter();
   const [pendente, iniciar] = useTransition();
-  const [lado, setLado] = useState<(typeof LADOS)[number]["valor"]>("todos");
+  const lados = ladosDoTipo(tipo);
+  const [lado, setLado] = useState<string>("todos");
   const [novo, setNovo] = useState({ nome: "", lado: "", grupo: "", telefone: "" });
   const [editando, setEditando] = useState<string | null>(null);
   const [copiado, setCopiado] = useState<string | null>(null);
@@ -172,25 +171,27 @@ export function ListaConvidados({
         </div>
       </Cartao>
 
-      {/* filtro por lado — três botões, nunca um menu */}
-      <div style={{ display: "flex", gap: 6 }}>
-        {LADOS.map((l) => (
-          <button
-            key={l.valor}
-            type="button"
-            onClick={() => setLado(l.valor)}
-            style={{
-              ...botaoStyle,
-              flex: 1,
-              background:
-                lado === l.valor ? "var(--cor-nav-ativo)" : "var(--cor-card-suave)",
-              color: lado === l.valor ? "var(--cor-texto)" : "var(--cor-texto-suave)",
-            }}
-          >
-            {l.rotulo}
-          </button>
-        ))}
-      </div>
+      {/* filtro por lado — três botões, nunca um menu; só quando há lados */}
+      {lados.length > 0 && (
+        <div style={{ display: "flex", gap: 6 }}>
+          {[{ valor: "todos", rotulo: "Todos" }, ...lados].map((l) => (
+            <button
+              key={l.valor}
+              type="button"
+              onClick={() => setLado(l.valor)}
+              style={{
+                ...botaoStyle,
+                flex: 1,
+                background:
+                  lado === l.valor ? "var(--cor-nav-ativo)" : "var(--cor-card-suave)",
+                color: lado === l.valor ? "var(--cor-texto)" : "var(--cor-texto-suave)",
+              }}
+            >
+              {l.rotulo}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* adicionar */}
       <Cartao padding="var(--esp-6)">
@@ -203,15 +204,20 @@ export function ListaConvidados({
             onChange={(e) => setNovo({ ...novo, nome: e.target.value })}
             onKeyDown={(e) => e.key === "Enter" && adicionar()}
           />
-          <select
-            style={campoStyle}
-            value={novo.lado}
-            onChange={(e) => setNovo({ ...novo, lado: e.target.value })}
-          >
-            <option value="">Lado (opcional)</option>
-            <option value="noiva">Noiva</option>
-            <option value="noivo">Noivo</option>
-          </select>
+          {lados.length > 0 && (
+            <select
+              style={campoStyle}
+              value={novo.lado}
+              onChange={(e) => setNovo({ ...novo, lado: e.target.value })}
+            >
+              <option value="">Lado (opcional)</option>
+              {lados.map((l) => (
+                <option key={l.valor} value={l.valor}>
+                  {l.rotulo}
+                </option>
+              ))}
+            </select>
+          )}
           <input
             style={campoStyle}
             placeholder="Grupo (Família, Trabalho…)"
@@ -262,6 +268,7 @@ export function ListaConvidados({
                   key={c.id}
                   eventoId={eventoId}
                   convidado={c}
+                  lados={lados}
                   ultima={i === pessoas.length - 1}
                   editando={editando === c.id}
                   aoEditar={() => setEditando(editando === c.id ? null : c.id)}
@@ -280,6 +287,7 @@ export function ListaConvidados({
 function LinhaConvidado({
   eventoId,
   convidado,
+  lados,
   ultima,
   editando,
   aoEditar,
@@ -288,6 +296,7 @@ function LinhaConvidado({
 }: {
   eventoId: string;
   convidado: Convidado;
+  lados: LadoConvidado[];
   ultima: boolean;
   editando: boolean;
   aoEditar: () => void;
@@ -386,15 +395,20 @@ function LinhaConvidado({
               onChange={(ev) => setForm({ ...form, nome: ev.target.value })}
               placeholder="Nome"
             />
-            <select
-              style={campoStyle}
-              value={form.lado}
-              onChange={(ev) => setForm({ ...form, lado: ev.target.value })}
-            >
-              <option value="">Lado</option>
-              <option value="noiva">Noiva</option>
-              <option value="noivo">Noivo</option>
-            </select>
+            {lados.length > 0 && (
+              <select
+                style={campoStyle}
+                value={form.lado}
+                onChange={(ev) => setForm({ ...form, lado: ev.target.value })}
+              >
+                <option value="">Lado</option>
+                {lados.map((l) => (
+                  <option key={l.valor} value={l.valor}>
+                    {l.rotulo}
+                  </option>
+                ))}
+              </select>
+            )}
             <input
               style={campoStyle}
               value={form.grupo}

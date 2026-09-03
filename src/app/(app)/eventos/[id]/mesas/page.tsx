@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { tem } from "@/lib/capacidades";
 import { MesasDoEvento } from "@/components/mesas/MesasDoEvento";
 import {
   getConvidadosCroqui,
@@ -17,10 +18,11 @@ export default async function MesasPage({ params }: { params: { id: string } }) 
   const supabase = createClient();
   const { data: evento } = await supabase
     .from("events")
-    .select("id")
+    .select("id, type, date")
     .eq("id", params.id)
     .maybeSingle();
   if (!evento) notFound();
+  if (!tem(evento.type as string, "mesas")) notFound();
 
   const [salao, mesas, elementos, convidados, relacoes] = await Promise.all([
     getSalao(params.id),
@@ -33,6 +35,8 @@ export default async function MesasPage({ params }: { params: { id: string } }) 
   return (
     <MesasDoEvento
       eventId={params.id}
+      tipoEvento={evento.type as string}
+      eventDate={evento.date as string}
       salao={salao}
       mesas={mesas}
       elementos={elementos}

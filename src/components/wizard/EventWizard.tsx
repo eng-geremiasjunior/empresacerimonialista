@@ -54,9 +54,17 @@ type Props = {
   preselected: ClientOption | null;
   membros: MembroOption[];
   meuMembroId: string | null;
+  /** opções do eixo cenario por tipo de evento (metodo_arquetipo) */
+  cenarios: Record<string, { valor: string; rotulo: string }[]>;
 };
 
-export function EventWizard({ clients, preselected, membros, meuMembroId }: Props) {
+export function EventWizard({
+  clients,
+  preselected,
+  membros,
+  meuMembroId,
+  cenarios,
+}: Props) {
   const [step, setStep] = useState(1);
   const [tipo, setTipo] = useState<EventType | null>(null);
   const [cliente, setCliente] = useState<ClienteEscolhido | null>(
@@ -227,6 +235,7 @@ export function EventWizard({ clients, preselected, membros, meuMembroId }: Prop
           type={tipo}
           respostas={respostas}
           fornecedores={fornecedoresDoTipo(tipo)}
+          cenarios={cenarios[tipo] ?? []}
           onChange={patchRespostas}
           creating={creating}
           error={error}

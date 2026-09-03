@@ -66,6 +66,7 @@ export default async function PortalConvidadosPage({
 
       <ListaConvidados
         eventoId={evento.id}
+        tipo={evento.tipo}
         convidados={convidados}
         resumo={resumo}
         baseUrl={baseUrl}

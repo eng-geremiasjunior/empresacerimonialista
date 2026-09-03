@@ -10,15 +10,31 @@ export default async function NovoEventoPage({
 }) {
   const supabase = createClient();
 
-  const [{ data }, equipe] = await Promise.all([
+  const [{ data }, equipe, { data: arqs }] = await Promise.all([
     supabase
       .from("clients")
       .select("id, name, phone")
       .order("name", { ascending: true }),
     getMembrosSelecionaveis(),
+    // subtipo por tipo (eixo cenario do método) — o wizard só pergunta a
+    // quem tem
+    supabase
+      .from("metodo_arquetipo")
+      .select("tipo_evento, codigo, nome, ordem")
+      .eq("eixo", "cenario")
+      .order("ordem"),
   ]);
 
   const clients = (data ?? []) as ClientOption[];
+
+  const cenarios: Record<string, { valor: string; rotulo: string }[]> = {};
+  for (const a of (arqs ?? []) as {
+    tipo_evento: string;
+    codigo: string;
+    nome: string;
+  }[]) {
+    (cenarios[a.tipo_evento] ??= []).push({ valor: a.codigo, rotulo: a.nome });
+  }
 
   // Veio de /clientes/[id] → cliente já pré-selecionado.
   const preselectedId = searchParams?.cliente;
@@ -32,6 +48,7 @@ export default async function NovoEventoPage({
         preselected={preselected}
         membros={equipe.membros}
         meuMembroId={equipe.meuMembroId}
+        cenarios={cenarios}
       />
     </div>
   );

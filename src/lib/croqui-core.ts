@@ -8,6 +8,8 @@
 // segurança testável: a contagem do buffet sai de contagemPorMesa e
 // NUNCA carrega nome; motivo_interno não entra em NENHUM tipo daqui.
 
+import { rotuloMesaPrincipal } from "@/lib/papel";
+
 /* ---------------- constantes ---------------- */
 
 /** passo do snap ao soltar uma mesa (25 cm) */
@@ -70,6 +72,11 @@ export const NOME_TIPO_MESA: Record<TipoMesa, string> = {
   noivos: "Mesa dos noivos",
   bolo: "Mesa do bolo",
 };
+
+/** O nome do tipo como ESTE evento o chama — só a 'noivos' muda (o valor no banco, não). */
+export function nomeTipoMesa(tipoMesa: TipoMesa, tipoEvento?: string | null): string {
+  return tipoMesa === "noivos" ? rotuloMesaPrincipal(tipoEvento) : NOME_TIPO_MESA[tipoMesa];
+}
 
 export const NOME_ELEMENTO: Record<TipoElemento, string> = {
   porta: "Porta",

@@ -29,6 +29,9 @@ export type WizardRespostas = {
   palestrantes?: boolean; // corporativo
   atracaoAbertura?: boolean; // show: tem atração de abertura antes da principal
   chaRevelacao?: boolean; // maternidade
+  // Token do arquétipo (eixo cenario) escolhido no wizard — o subtipo do
+  // evento. A action o espelha como chave booleana para o roteiro casar.
+  cenario?: string;
 };
 
 export type TaskDraft = {

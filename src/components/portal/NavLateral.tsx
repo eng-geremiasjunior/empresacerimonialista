@@ -12,9 +12,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as Icones from "./icones";
 import {
-  DURANTE,
+  duranteDoTipo,
   investimentoDoEvento,
-  PRINCIPAIS,
+  principaisDoTipo,
   visiveis,
   type Destino,
 } from "./destinos";
@@ -63,6 +63,7 @@ function Grupo({
 
 export function NavLateral({
   eventoId,
+  tipo,
   marcaNome,
   marcaLogoUrl,
   cerimonialistaNome,
@@ -70,6 +71,8 @@ export function NavLateral({
   temPrestacao = false,
 }: {
   eventoId: string;
+  /** tipo do evento — decide quais destinos existem e como se chamam */
+  tipo: string;
   marcaNome: string | null;
   marcaLogoUrl: string | null;
   cerimonialistaNome: string | null;
@@ -110,7 +113,7 @@ export function NavLateral({
       </div>
 
       <nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        {visiveis(PRINCIPAIS).map((d) => (
+        {visiveis(principaisDoTipo(tipo)).map((d) => (
           <Link
             key={d.seg}
             href={d.seg ? `${base}/${d.seg}` : base}
@@ -123,7 +126,7 @@ export function NavLateral({
         ))}
       </nav>
 
-      <Grupo titulo="Durante o evento" itens={visiveis(DURANTE)} base={base} pathname={pathname} />
+      <Grupo titulo="Durante o evento" itens={visiveis(duranteDoTipo(tipo))} base={base} pathname={pathname} />
       <Grupo titulo="Investimento" itens={investimentoDoEvento(temPrestacao)} base={base} pathname={pathname} />
 
       {/* cerimonialista, ancorada no rodapé */}

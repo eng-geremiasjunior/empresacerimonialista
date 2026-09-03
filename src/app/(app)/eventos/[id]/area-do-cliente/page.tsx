@@ -11,6 +11,7 @@ import {
   type HospedagemLinha,
 } from "@/components/evento/SiteDoConvite";
 import { publicBase } from "@/lib/app-url";
+import { tem } from "@/lib/capacidades";
 import { dataLonga } from "@/lib/rsvp-convite";
 
 export const dynamic = "force-dynamic";
@@ -29,11 +30,12 @@ export default async function AreaDoClientePage({
 
   const { data: evento } = await supabase
     .from("events")
-    .select("id, date, time, location, rsvp_hash, espaco_id, clients(id, name, email)")
+    .select("id, type, date, time, location, rsvp_hash, espaco_id, clients(id, name, email)")
     .eq("id", params.id)
     .maybeSingle();
 
   if (!evento) notFound();
+  const tipo = (evento as { type?: string | null }).type ?? null;
 
   // O site do casamento (128) e o conhecimento do espaço. Se a migração
   // ainda não rodou, tudo degrada para "montar o site" sem quebrar.
@@ -154,6 +156,7 @@ export default async function AreaDoClientePage({
 
       <AcessoDaCliente
         eventId={params.id}
+        tipo={tipo}
         acessos={acessos}
         clienteSugerido={
           cliente
@@ -162,7 +165,7 @@ export default async function AreaDoClientePage({
         }
       />
 
-      {rsvpHash && (
+      {rsvpHash && tem(tipo, "siteDoEvento") && (
         <SiteDoConvite
           eventId={params.id}
           site={{

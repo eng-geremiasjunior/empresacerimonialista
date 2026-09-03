@@ -257,6 +257,14 @@ export function PrestacaoDeContas({
                 ? `${payload.dia.concluidos} de ${payload.dia.total} etapas concluídas · ${payload.convidados.confirmados} ${payload.convidados.origem}`
                 : `Sem roteiro registrado · ${payload.convidados.confirmados} ${payload.convidados.origem}`}
             </p>
+            {(payload.resumo.custo_por_pessoa ?? 0) > 0 && (
+              <p className="mt-0.5 text-sm text-stone-600">
+                {brl(payload.resumo.custo_por_pessoa)} por pessoa
+                {(payload.convidados.presentes ?? 0) > 0
+                  ? ` · ${payload.convidados.presentes} presentes`
+                  : ""}
+              </p>
+            )}
             <Nota eventId={eventId} secao="dia" inicial={notas.dia ?? ""} rodar={rodar} pendente={pendente} />
           </div>
 
