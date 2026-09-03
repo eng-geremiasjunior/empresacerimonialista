@@ -36,6 +36,7 @@ import { criarLancamento } from "@/app/(app)/eventos/[id]/financeiro/lancamento-
 import {
   registrarEstimativaFornecedor,
   salvarVerbaFornecedor,
+  type ItemVerba,
 } from "@/app/(app)/eventos/[id]/financeiro/verba-actions";
 import {
   criarRecurso,
@@ -306,10 +307,17 @@ export async function aplicarBriefingExtracao(
       continue;
     }
 
+    // Sem valor não há o que escrever no financeiro — mas ela MARCOU a
+    // linha, e sumir calado com o que ela marcou é a única coisa que a
+    // caixa promete não fazer ("só entra o que está marcado"). O nome e o
+    // trecho ficam na proveniência, e o resumo diz o que ficou de fora.
     if (f.valor == null) {
-      if (f.estado === "contratado") {
-        avisos.push(`${nome} não entrou: contratado, mas sem valor no texto.`);
-      }
+      avisos.push(
+        f.estado === "contratado"
+          ? `${nome} não entrou: contratado, mas sem valor no texto.`
+          : `${nome} não entrou: o texto não diz o valor. Anotei no histórico do evento.`
+      );
+      await anotar("verba_fornecedor", null, `Citado — ${nome}`, ESTADO_DITO[f.estado], trecho);
       continue;
     }
 
@@ -319,13 +327,32 @@ export async function aplicarBriefingExtracao(
       // a estimativa que já estava lá volta no formulário: é dela que sai
       // a economia (estimado − alocado), e o formulário grava o que recebe
       const antes = await verbaAtual(supabase, eventId, f.supplierId!);
+
+      // Verba já detalhada em itens: o total dela é a SOMA dos itens (regra
+      // do formulário). Gravar o número do briefing por cima significaria
+      // apagar o detalhamento para depois ser corrigido pela soma — ou
+      // pior, mudar o total sem que nada na tela explique. Não sobrescreve
+      // e diz por quê; o número do briefing continua no histórico.
+      if (antes && antes.itens.length > 0 && antes.somaItens !== f.valor) {
+        avisos.push(
+          `A verba de ${nome} já está detalhada em ${antes.itens.length} ${
+            antes.itens.length === 1 ? "item" : "itens"
+          } (${formatCurrency(antes.somaItens ?? 0)}). Não troquei pelo valor do briefing (${formatCurrency(
+            f.valor
+          )}) — confira no Financeiro.`
+        );
+        continue;
+      }
+
       const fd = new FormData();
       fd.set("supplier_id", f.supplierId!);
       fd.set("valor_alocado", emReais(f.valor));
       if (antes?.estimado != null) {
         fd.set("valor_estimado_inicial", emReais(antes.estimado));
       }
-      const r = await salvarVerbaFornecedor(eventId, [], null, fd);
+      // a observação dela volta como estava: sem isto o upsert a zeraria
+      if (antes?.observacao) fd.set("observacao", antes.observacao);
+      const r = await salvarVerbaFornecedor(eventId, antes?.itens ?? [], null, fd);
       if (!r || "error" in r) {
         const msg = r && "error" in r ? r.error : "não foi possível salvar.";
         return { error: erroParcial(feitos, `a verba de ${nome}: ${msg}`) };
@@ -339,7 +366,16 @@ export async function aplicarBriefingExtracao(
         trecho
       );
 
-      if (f.lancarParcela) {
+      // Uma segunda tentativa depois de falha parcial (ou dois cliques, ou
+      // duas abas) não pode virar R$ 65.000 a pagar num contrato de
+      // R$ 32.500: criarLancamento é INSERT puro, sem dedup.
+      const jaLancada = f.lancarParcela
+        ? await parcelaJaLancada(supabase, eventId, f.supplierId!, f.valor, `Contrato ${nome}`)
+        : false;
+
+      if (f.lancarParcela && jaLancada) {
+        feitos.push(`a parcela de ${nome} (já estava lançada)`);
+      } else if (f.lancarParcela) {
         const rl = await criarLancamento(eventId, {
           direcao: "saida",
           descricao: `Contrato ${nome}`,
@@ -348,7 +384,12 @@ export async function aplicarBriefingExtracao(
           supplierId: f.supplierId,
           objetivoId: null,
           tipo: "saldo",
-          origem: "caixa",
+          // "cliente_direto" é o único que NÃO afirma nada: o briefing diz
+          // que o buffet custa 32.500, nunca de qual bolso sai. Marcar
+          // "caixa" faria o evento cobrar dela, 30 dias antes da festa, um
+          // repasse que a cliente talvez pague direto ao fornecedor
+          // ("Peça R$ 32.500 à cliente" aparecendo sozinho na tela).
+          origem: "cliente_direto",
           jaPago: false,
           parcelas: 1,
         });
@@ -384,16 +425,41 @@ export async function aplicarBriefingExtracao(
   // ---- quantidades: o que oferecem e o que ela quer, lado a lado ----
   for (const q of quantidades) {
     const item = q.item.trim();
-    const r = await criarRecurso(eventId, {
-      nome: item,
-      unidade: q.unidade?.trim() || "unidades",
-      regra: "fixo",
-      indice: q.desejado ?? q.ofertado ?? 0,
-    });
-    if ("error" in r || !r.id) {
-      const msg = "error" in r ? r.error : "o item não devolveu id.";
-      return { error: erroParcial(feitos, `o item "${item}": ${msg}`) };
+
+    // Todo evento nasce com os recursos do método já instanciados. Criar
+    // sem procurar fazia o número do briefing entrar numa SEGUNDA linha, e
+    // a Operação passava a contar o mesmo item duas vezes (2.200 salgados
+    // viravam 4.400 na lista de compras).
+    const achado = await recursoDoEvento(supabase, eventId, item);
+    let recursoId = achado.exato?.id ?? null;
+
+    if (!recursoId) {
+      const r = await criarRecurso(eventId, {
+        nome: item,
+        unidade: q.unidade?.trim() || "unidades",
+        regra: "fixo",
+        indice: q.desejado ?? q.ofertado ?? 0,
+      });
+      if ("error" in r || !r.id) {
+        const msg = "error" in r ? r.error : "o item não devolveu id.";
+        return { error: erroParcial(feitos, `o item "${item}": ${msg}`) };
+      }
+      recursoId = r.id;
+      // parecido não é o mesmo: juntar "doces" com "Doces finos" por conta
+      // própria erraria uma hora. Cria e conta, para ela decidir.
+      if (achado.parecidos.length > 0) {
+        avisos.push(
+          `Criei o item "${item}". A Operação já tem ${achado.parecidos
+            .map((p) => `"${p}"`)
+            .join(" e ")} — se for a mesma coisa, junte os dois lá.`
+        );
+      }
     }
+
+    if (!recursoId) {
+      return { error: erroParcial(feitos, `o item "${item}": sem id.`) };
+    }
+    const r = { id: recursoId };
     if (q.ofertado != null) {
       const rc = await salvarNumero(eventId, r.id, "comprado", q.ofertado);
       if ("error" in rc) {
@@ -606,22 +672,131 @@ async function campoPorCodigo(
   return data ? { id: data.id as string, tipo: data.tipo as TipoCampo } : null;
 }
 
+/**
+ * Esta parcela já está no financeiro? criarLancamento é INSERT puro: sem
+ * esta pergunta, repetir a aplicação (falha no meio, dois cliques, duas
+ * abas) dobraria o valor a pagar de um contrato que não mudou.
+ */
+async function parcelaJaLancada(
+  supabase: ReturnType<typeof createClient>,
+  eventId: string,
+  supplierId: string,
+  valor: number,
+  descricao: string
+): Promise<boolean> {
+  const { data } = await supabase
+    .from("transactions")
+    .select("id")
+    .eq("event_id", eventId)
+    .eq("supplier_id", supplierId)
+    .eq("description", descricao)
+    .eq("value", valor)
+    .eq("paid", false)
+    .limit(1);
+  return (data ?? []).length > 0;
+}
+
+/** O estado do fornecedor dito em português, para a linha do histórico. */
+const ESTADO_DITO: Record<string, string> = {
+  contratado: "contratado, sem valor no texto",
+  em_conversa: "em conversa",
+  pendente: "citado, ainda não fechado",
+  nao_teremos: "não teremos",
+};
+
+// O código do recurso é derivado do nome, do mesmo jeito em toda a casa
+// (criarRecurso, em operacao/actions.ts). A faixa de acentos vai em
+// escape unicode, não em caractere literal.
+function codigoDoNome(nome: string): string {
+  return (
+    nome
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_|_$/g, "")
+      .slice(0, 40) || "item"
+  );
+}
+
+/**
+ * O item do briefing já existe neste evento? `exato` é o mesmo item (mesmo
+ * código ou mesmo nome normalizado) — nele se escreve, sem criar linha
+ * nova. `parecidos` são vizinhos de nome ("doces" × "doces_finos"): não
+ * dá para juntá-los sozinho sem errar um dia, então viram aviso.
+ */
+async function recursoDoEvento(
+  supabase: ReturnType<typeof createClient>,
+  eventId: string,
+  nome: string
+): Promise<{ exato: { id: string; nome: string } | null; parecidos: string[] }> {
+  const base = codigoDoNome(nome);
+  const { data } = await supabase
+    .from("evento_recurso")
+    .select("id, nome, codigo")
+    .eq("event_id", eventId);
+
+  const linhas = (data ?? []) as { id: string; nome: string; codigo: string }[];
+  const exato =
+    linhas.find((l) => l.codigo === base || codigoDoNome(l.nome) === base) ?? null;
+
+  return {
+    exato: exato ? { id: exato.id, nome: exato.nome } : null,
+    parecidos: exato
+      ? []
+      : linhas
+          .filter(
+            (l) => l.codigo.startsWith(`${base}_`) || base.startsWith(`${l.codigo}_`)
+          )
+          .map((l) => l.nome),
+  };
+}
+
+// Lê a verba que já existe INTEIRA — não só o estimado. salvarVerbaFornecedor
+// é a action do formulário completo: ela apaga todos os itens do orçamento e
+// regrava a observação com o que receber. Escrever um campo só por essa porta
+// custaria o detalhamento e a nota que ela digitou no Financeiro.
 async function verbaAtual(
   supabase: ReturnType<typeof createClient>,
   eventId: string,
   supplierId: string
-): Promise<{ id: string; estimado: number | null } | null> {
+): Promise<{
+  id: string;
+  estimado: number | null;
+  observacao: string | null;
+  itens: ItemVerba[];
+  somaItens: number | null;
+} | null> {
   const { data } = await supabase
     .from("evento_fornecedor_orcamento")
-    .select("id, valor_estimado_inicial")
+    .select("id, valor_estimado_inicial, observacao")
     .eq("event_id", eventId)
     .eq("supplier_id", supplierId)
     .maybeSingle();
   if (!data) return null;
+
+  const id = data.id as string;
+  const { data: linhas } = await supabase
+    .from("evento_fornecedor_item")
+    .select("descricao, valor_estimado_inicial, valor_negociado")
+    .eq("evento_fornecedor_orcamento_id", id);
+
+  const itens: ItemVerba[] = (linhas ?? []).map((l) => ({
+    descricao: String(l.descricao ?? ""),
+    valorEstimadoInicial:
+      l.valor_estimado_inicial == null ? null : Number(l.valor_estimado_inicial),
+    valorNegociado: l.valor_negociado == null ? null : Number(l.valor_negociado),
+  }));
+
   const estimado = data.valor_estimado_inicial;
   return {
-    id: data.id as string,
+    id,
     estimado: estimado == null ? null : Number(estimado),
+    observacao: (data.observacao as string | null) ?? null,
+    itens,
+    somaItens: itens.length
+      ? itens.reduce((s, i) => s + (i.valorNegociado ?? 0), 0)
+      : null,
   };
 }
 
@@ -657,7 +832,11 @@ async function decisaoDeContratar(
 function erroParcial(feitos: string[], falhou: string): string {
   return feitos.length === 0
     ? `Nada foi aplicado — falhou ${falhou}`
-    : `Aplicação INCOMPLETA: entrou ${feitos.join(", ")}; falhou ${falhou} A proposta continua aberta — desmarque o que já entrou antes de tentar de novo.`;
+    : // "desmarque o que já entrou" era impossível de seguir: verba e
+      // parcela dividem uma caixinha só, e desmarcá-la perderia a parcela.
+      // Agora a repetição é inofensiva — verba é upsert, o item encontra o
+      // que já existe e a parcela reconhece a que acabou de lançar.
+      `Aplicação INCOMPLETA: entrou ${feitos.join(", ")}; falhou ${falhou} A proposta continua aberta — pode tentar de novo, o que já entrou não entra duas vezes.`;
 }
 
 function revalidar(eventId: string) {

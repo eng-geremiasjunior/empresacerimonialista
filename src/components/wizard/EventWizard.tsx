@@ -115,7 +115,12 @@ export function EventWizard({
       preenchidos.push(id.telefone ? "cliente e telefone" : "cliente");
     }
     setEmailCliente(id.email ?? "");
-    if (id.email) preenchidos.push("e-mail");
+    // O e-mail é o único dado que vai ao banco sem passar por um campo na
+    // tela: o wizard não pede e-mail, e o passo Cliente é pulado quando a
+    // leitura já preencheu o cliente. Dizer só "e-mail" esconderia QUAL —
+    // e o texto da noiva costuma ter o endereço do buffet junto. Aqui ela
+    // lê o endereço antes de o evento existir.
+    if (id.email) preenchidos.push(`e-mail ${id.email}`);
     setDados((d) => ({
       ...d,
       date: id.data ?? d.date,

@@ -480,9 +480,18 @@ export function identidadeDaProposta(p: PropostaBriefingV2): IdentidadeBriefing 
     local: p.evento.local?.valor ?? null,
     convidados: p.evento.convidados.atual,
     guestsMax: p.evento.convidados.ate,
-    // cinto e suspensório: o normalizador já matou honorário sem trecho
+    // Dois portões, não um. O da CITAÇÃO responde "de quem é este
+    // dinheiro?" — sem trecho o normalizador já matou. O da MODALIDADE
+    // responde "isto é um preço ou um desejo?": "pra assessoria eu queria
+    // gastar uns 5 mil" tem atribuição explícita e citação, e mesmo assim
+    // não é honorário nenhum — é o teto que a cliente sonha. Entrando no
+    // campo, viraria receita prevista dela na lista de eventos.
     honorario:
-      h && h.valor !== null && h.valor > 0 && h.trecho
+      h &&
+      h.valor !== null &&
+      h.valor > 0 &&
+      h.trecho &&
+      (h.status === "confirmado" || h.status === "estimado")
         ? { valor: h.valor, trecho: h.trecho }
         : null,
   };

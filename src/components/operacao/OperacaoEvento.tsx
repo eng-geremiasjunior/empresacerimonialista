@@ -162,7 +162,7 @@ export function OperacaoEvento({
               // Único caminho do sistema que apaga número digitado à mão.
               // Um clique só seria perder trabalho sem aviso.
               const ok = window.confirm(
-                "Refazer o previsto de todos os itens pelo público de hoje? O que a cliente pediu fica como está."
+                "Refazer o previsto de todos os itens pelo público de hoje? Os números definidos à mão ficam como estão."
               );
               if (ok) rodar(() => recalcularPrevisto(eventId, true));
             }}
