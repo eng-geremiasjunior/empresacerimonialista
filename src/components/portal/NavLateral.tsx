@@ -104,7 +104,7 @@ export function NavLateral({
               lineHeight: 1,
             }}
           >
-            {(marcaNome ?? "Vela").toUpperCase()}
+            {(marcaNome ?? "eOrganizei").toUpperCase()}
           </div>
         )}
         <div style={{ fontSize: 12, color: "var(--cor-texto-suave)" }}>

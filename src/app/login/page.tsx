@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { BrandShowcase, VelaLogo } from "@/components/auth/BrandShowcase";
+import { BrandShowcase, Logo } from "@/components/auth/BrandShowcase";
 import { LoginForm } from "@/components/auth/LoginForm";
 
 export const metadata: Metadata = {
-  title: "Entrar — Vela",
+  title: "Entrar — eOrganizei",
 };
 
 const supabaseConfigured = Boolean(
@@ -72,7 +72,7 @@ export default function LoginPage() {
         <section className="flex flex-col items-center justify-center gap-8 px-4 py-10 sm:px-8">
           {/* versão resumida da marca no mobile */}
           <div className="flex flex-col items-center gap-2 lg:hidden">
-            <VelaLogo compact />
+            <Logo compact />
             <p className="text-center text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600">
               Gestão inteligente para cerimonialistas
             </p>
@@ -85,7 +85,7 @@ export default function LoginPage() {
       {/* Rodapé full width */}
       <footer className="border-t border-gray-200 bg-white px-6 py-4">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 text-sm text-gray-500 sm:flex-row">
-          <p>© 2026 Vela. Todos os direitos reservados.</p>
+          <p>© 2026 eOrganizei. Todos os direitos reservados.</p>
           <nav className="flex items-center gap-4">
             <a href="/privacidade" className="hover:text-gray-900">
               Política de Privacidade

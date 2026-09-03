@@ -1,6 +1,6 @@
 // Lembrete de véspera.
 //
-// Até esta rotina existir, o Vela nunca avisou a cerimonialista de nada.
+// Até esta rotina existir, o eOrganizei nunca avisou a cerimonialista de nada.
 // As tarefas nasciam com prazo, venciam, atrasavam — e a única forma de
 // descobrir era abrir a tela. O verificador do navegador (5 minutos)
 // exige due_time, e as tarefas do método nascem sem hora: a tarefa

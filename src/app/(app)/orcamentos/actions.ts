@@ -295,7 +295,7 @@ export async function enviarOrcamento(
     const envio = await enviarEmailOrcamento({
       to: orc.contato_email,
       contatoNome: orc.contato_nome,
-      nomeEmpresa: empresa?.nome ?? "Vela",
+      nomeEmpresa: empresa?.nome ?? "eOrganizei",
       hash: orc.hash_publico,
     });
     emailEnviado = envio.ok;

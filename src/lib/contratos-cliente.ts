@@ -1,7 +1,7 @@
 // O lado do navegador da mesma costura.
 //
 // O arquivo vai do aparelho do fornecedor direto para o armazenamento,
-// sem passar pelo Vela: contrato de casamento passa fácil dos 4,5 MB que
+// sem passar pelo eOrganizei: contrato de casamento passa fácil dos 4,5 MB que
 // uma função serverless aguenta no corpo da requisição.
 //
 // Este arquivo já sabe executar os dois modos de envio. Quando o

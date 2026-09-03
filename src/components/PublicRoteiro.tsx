@@ -269,7 +269,7 @@ export function PublicRoteiro({ initial, hash, children }: Props) {
             ? ` Última atualização às ${pad(updatedAt.getHours())}:${pad(updatedAt.getMinutes())}.`
             : ""}
         </p>
-        <p className="mt-1">Vela — gestão para cerimonialistas</p>
+        <p className="mt-1">eOrganizei — gestão para cerimonialistas</p>
       </footer>
     </div>
   );

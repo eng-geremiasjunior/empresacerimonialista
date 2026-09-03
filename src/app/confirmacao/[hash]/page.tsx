@@ -5,7 +5,7 @@ import { ConfirmacaoCard } from "@/components/confirmacao/ConfirmacaoCard";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Confirmação de presença — Vela",
+  title: "Confirmação de presença — eOrganizei",
 };
 
 export type ConfirmacaoData = {

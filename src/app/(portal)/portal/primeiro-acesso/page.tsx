@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PortalSenhaForm } from "@/components/portal/PortalSenhaForm";
 import "../entrar/acesso.css";
 
-export const metadata = { title: "Primeiro acesso — Vela" };
+export const metadata = { title: "Primeiro acesso — eOrganizei" };
 
 // Rota AUTENTICADA (não é pública): quem chega aqui já entrou com a senha
 // provisória que a cerimonialista passou. O middleware prende a navegação

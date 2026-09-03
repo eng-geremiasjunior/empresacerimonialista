@@ -7,7 +7,7 @@ import type { ModeloPrecificacao } from "@/lib/modelos-precificacao";
 import type { Orcamento, OrcamentoItem } from "@/lib/orcamentos";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Editar orçamento — Vela" };
+export const metadata = { title: "Editar orçamento — eOrganizei" };
 
 export default async function EditarOrcamentoPage({
   params,

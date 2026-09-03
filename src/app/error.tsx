@@ -8,7 +8,7 @@
 // has occurred" na tela em que a noiva estava fechando contrato.
 //
 // Aqui o texto não pode falar como se ela fosse do time: quem lê pode ser
-// a noiva, um convidado ou um fornecedor que nunca ouviu falar do Vela.
+// a noiva, um convidado ou um fornecedor que nunca ouviu falar do eOrganizei.
 
 import { useEffect } from "react";
 
@@ -27,7 +27,7 @@ export default function Erro({
     <main className="flex min-h-screen items-center justify-center bg-stone-50 px-6 py-16">
       <div className="max-w-md">
         <p className="font-mono text-xs uppercase tracking-[0.14em] text-stone-400">
-          Vela
+          eOrganizei
         </p>
         <h1 className="mt-3 text-xl font-semibold text-stone-900">
           Esta página não carregou

@@ -853,7 +853,7 @@ export function MapaMental({
                   color: C.tinta,
                 }}
               >
-                Copiloto Vela
+                Copiloto
               </span>
             </div>
             <span

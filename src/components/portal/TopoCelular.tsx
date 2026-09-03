@@ -138,7 +138,7 @@ export function TopoCelular({
               color: "var(--cor-texto-forte)",
             }}
           >
-            {(marcaNome ?? "Vela").toUpperCase()}
+            {(marcaNome ?? "eOrganizei").toUpperCase()}
           </div>
         )}
 
@@ -201,7 +201,7 @@ export function TopoCelular({
                 padding: "0 14px",
               }}
             >
-              {(marcaNome ?? "Vela").toUpperCase()}
+              {(marcaNome ?? "eOrganizei").toUpperCase()}
             </div>
             <GrupoGaveta itens={visiveis(principaisDoTipo(tipo))} base={base} aoNavegar={fechar} />
             <GrupoGaveta titulo="Durante o evento" itens={visiveis(duranteDoTipo(tipo))} base={base} aoNavegar={fechar} />

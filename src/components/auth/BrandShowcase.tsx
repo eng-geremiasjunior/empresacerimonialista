@@ -34,7 +34,7 @@ const DIFERENCIAIS = [
   },
 ];
 
-export function VelaLogo({ compact = false }: { compact?: boolean }) {
+export function Logo({ compact = false }: { compact?: boolean }) {
   return (
     <div className="flex items-center gap-2">
       <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white">
@@ -45,7 +45,7 @@ export function VelaLogo({ compact = false }: { compact?: boolean }) {
           compact ? "text-xl" : "text-2xl"
         }`}
       >
-        Vela
+        eOrganizei
       </span>
     </div>
   );
@@ -61,7 +61,7 @@ function DashboardMock() {
           <span className="flex h-4 w-4 items-center justify-center rounded bg-indigo-600 text-white">
             <Flame size={9} />
           </span>
-          <span className="text-[8px] font-semibold text-gray-900">Vela</span>
+          <span className="text-[8px] font-semibold text-gray-900">eOrganizei</span>
         </div>
         {["Dashboard", "Eventos", "Calendário", "Tarefas", "Financeiro"].map(
           (item, i) => (
@@ -179,7 +179,7 @@ export function BrandShowcase() {
   return (
     <div className="flex h-full flex-col justify-between gap-10 bg-gradient-to-br from-gray-50 via-indigo-50/40 to-gray-50 px-10 py-10 xl:px-16">
       <div>
-        <VelaLogo />
+        <Logo />
 
         <p className="mt-10 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600">
           Gestão inteligente para cerimonialistas

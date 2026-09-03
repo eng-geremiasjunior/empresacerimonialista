@@ -5,7 +5,7 @@ import { OrcamentoForm } from "@/components/orcamentos/OrcamentoForm";
 import type { ModeloPrecificacao } from "@/lib/modelos-precificacao";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Novo orçamento — Vela" };
+export const metadata = { title: "Novo orçamento — eOrganizei" };
 
 export default async function NovoOrcamentoPage() {
   const supabase = createClient();

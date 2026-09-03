@@ -36,7 +36,7 @@ export function CopilotoSidebarCard({
     <div className="rounded-xl border border-stone-700 bg-stone-800/60 p-3">
       <p className="flex items-center gap-1.5 text-xs font-semibold text-white">
         <Sparkles size={13} className="text-indigo-400" />
-        Copiloto Vela
+        Copiloto
       </p>
 
       {/* A pergunta das onze da noite não some dentro do evento: a linha

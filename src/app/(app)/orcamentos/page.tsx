@@ -20,7 +20,7 @@ const serif = Newsreader({
 });
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Orçamentos — Vela" };
+export const metadata = { title: "Orçamentos — eOrganizei" };
 
 const PER_PAGE = 20;
 

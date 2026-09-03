@@ -69,7 +69,7 @@ function CartaoBatida({ item }: { item: ItemDaFila }) {
   }
 
   // O envio é em dois tempos por natureza: o WhatsApp abre no aparelho
-  // dela com o texto pronto, ela toca em enviar lá, e só então o Vela
+  // dela com o texto pronto, ela toca em enviar lá, e só então o eOrganizei
   // registra que saiu. Registrar antes seria mentir sobre o que aconteceu.
   function enviar() {
     if (item.linkWhatsapp) window.open(item.linkWhatsapp, "_blank");

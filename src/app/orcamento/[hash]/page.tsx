@@ -27,7 +27,7 @@ const carregarProposta = cache(async (hash: string) => {
 });
 
 // A aba do navegador e a prévia do link no WhatsApp dizem o nome de quem
-// está vendendo — não o da ferramenta. A noiva não contratou o Vela.
+// está vendendo — não o da ferramenta. A noiva não contratou o eOrganizei.
 export async function generateMetadata({
   params,
 }: {

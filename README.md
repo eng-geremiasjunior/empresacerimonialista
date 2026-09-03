@@ -1,4 +1,4 @@
-# Vela
+# eOrganizei
 
 SaaS de gestão para cerimonialistas — do orçamento ao dia da festa, com
 simplicidade radical.

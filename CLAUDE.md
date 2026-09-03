@@ -1,4 +1,9 @@
-# Vela — SaaS de gestão para cerimonialistas
+# eOrganizei — SaaS de gestão para cerimonialistas
+
+> O produto se chama **eOrganizei** desde 01/09/2026, e roda em
+> `eorganizei.com.br` desde 03/09/2026. "Vela" foi um nome provisório
+> inventado por IA e nunca foi marca — se aparecer no código, é resíduo.
+> O repositório continua chamado `empresacerimonialista` por herança.
 
 ## Visão do produto
 Ferramenta de gestão simples para cerimonialistas que atuam sozinhas (ou em dupla), cobrindo o ciclo do evento do orçamento até o dia da festa. Filosofia central: **simplicidade radical** — nada de dashboards inchados, configurações desnecessárias ou telas com excesso de campos. O público-alvo tem baixa tolerância a curva de aprendizado.

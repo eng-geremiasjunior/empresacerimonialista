@@ -20,9 +20,18 @@ import { appUrl, linkPublico } from "@/lib/app-url";
 // Reexportado porque oito arquivos ja importavam daqui.
 export { appUrl };
 
-/** Remetente configurado. O padrão é o domínio de teste do Resend. */
+/**
+ * Remetente configurado. O padrão é o domínio próprio, verificado no
+ * Resend em 03/09/2026 (DKIM e SPF) — antes disso era o domínio de teste,
+ * que a API recusava para qualquer destinatário que não fosse o dono da
+ * conta. EMAIL_FROM continua vencendo quando existe.
+ *
+ * O endereço envia, mas ainda não recebe: o MX de entrada está pendente.
+ * Resposta da cliente a este e-mail não chega a lugar nenhum enquanto
+ * isso — decisão consciente, anotada aqui para não virar surpresa.
+ */
 export function remetente() {
-  return process.env.EMAIL_FROM?.trim() || "Vela <onboarding@resend.dev>";
+  return process.env.EMAIL_FROM?.trim() || "eOrganizei <contato@eorganizei.com.br>";
 }
 
 /** true quando ainda estamos no domínio de teste (não entrega a terceiros). */
@@ -109,7 +118,7 @@ export async function enviarEmailConfirmacao(
   const html = `
   <div style="font-family:system-ui,-apple-system,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#111827">
     <h2 style="font-size:18px;margin:0 0 4px">Confirmação de presença</h2>
-    <p style="color:#6b7280;margin:0 0 20px">Vela — gestão de eventos</p>
+    <p style="color:#6b7280;margin:0 0 20px">eOrganizei — gestão de eventos</p>
     <p>Olá, <strong>${dados.supplierName}</strong>!</p>
     <p>Você está escalado para o evento:</p>
     <div style="border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin:16px 0">
@@ -156,7 +165,7 @@ export async function enviarEmailSolicitacao(
   const html = `
   <div style="font-family:system-ui,-apple-system,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#111827">
     <h2 style="font-size:18px;margin:0 0 4px">${dados.titulo}</h2>
-    <p style="color:#6b7280;margin:0 0 20px">Vela — gestão de eventos</p>
+    <p style="color:#6b7280;margin:0 0 20px">eOrganizei — gestão de eventos</p>
     <p>Olá, <strong>${dados.supplierName}</strong>!</p>
     <p>A cerimonialista do evento abaixo pediu: <strong>${dados.titulo.toLowerCase()}</strong>.</p>
     <div style="border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin:16px 0">
@@ -211,7 +220,7 @@ export async function enviarConviteAgendamentoEmail(
   const html = `
   <div style="font-family:system-ui,-apple-system,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#111827">
     <h2 style="font-size:18px;margin:0 0 4px">Escolha um horário</h2>
-    <p style="color:#6b7280;margin:0 0 20px">Vela — agendamento de reunião</p>
+    <p style="color:#6b7280;margin:0 0 20px">eOrganizei — agendamento de reunião</p>
     <p>Olá, <strong>${dados.supplierName}</strong>!</p>
     <p>Para <strong>${dados.tarefa}</strong> (${dados.eventLabel}), escolha um horário com a cerimonialista — reunião de ${dados.duracaoMin} minutos.</p>
     <div style="border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;margin:16px 0;color:#374151">

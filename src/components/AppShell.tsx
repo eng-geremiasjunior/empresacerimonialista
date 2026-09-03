@@ -170,7 +170,7 @@ export function AppShell({ userEmail, avatarUrl, cargo, prazosFrase, esperaFrase
     <div className="flex h-full flex-col">
       <div className="flex h-14 items-center justify-between px-5">
         <span className="text-lg font-semibold tracking-tight text-white">
-          Vela
+          eOrganizei
         </span>
         <button
           onClick={() => setOpen(false)}
