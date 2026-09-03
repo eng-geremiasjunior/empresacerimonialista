@@ -108,6 +108,56 @@ export async function salvarVerbaFornecedor(
   return { ok: true };
 }
 
+/**
+ * O fornecedor que ainda está em conversa: o valor que ele falou entra
+ * como ESTIMATIVA, e `valor_alocado` continua nulo — nulo é o que diz
+ * "não contratado" (083). Só a assinatura vira comprometimento; um
+ * orçamento por telefone, não.
+ */
+export async function registrarEstimativaFornecedor(
+  eventId: string,
+  supplierId: string,
+  estimado: number
+): Promise<{ error: string } | { ok: true; id: string }> {
+  if (!supplierId) return { error: "Escolha o fornecedor." };
+  if (!Number.isFinite(estimado) || estimado <= 0) {
+    return { error: "Informe o valor estimado." };
+  }
+
+  const supabase = createClient();
+
+  // Se já existe verba deste fornecedor, o alocado dela é dinheiro já
+  // negociado: a estimativa entra ao lado, nunca por cima.
+  const { data: atual } = await supabase
+    .from("evento_fornecedor_orcamento")
+    .select("valor_alocado")
+    .eq("event_id", eventId)
+    .eq("supplier_id", supplierId)
+    .maybeSingle();
+
+  const { data: salvo, error } = await supabase
+    .from("evento_fornecedor_orcamento")
+    .upsert(
+      {
+        event_id: eventId,
+        supplier_id: supplierId,
+        valor_estimado_inicial: estimado,
+        valor_alocado: atual?.valor_alocado == null ? null : Number(atual.valor_alocado),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "event_id,supplier_id" }
+    )
+    .select("id")
+    .single();
+
+  if (error || !salvo) {
+    return { error: "Não foi possível registrar a estimativa." };
+  }
+
+  revalidate(eventId);
+  return { ok: true, id: (salvo as { id: string }).id };
+}
+
 export async function excluirVerbaFornecedor(
   eventId: string,
   orcamentoId: string

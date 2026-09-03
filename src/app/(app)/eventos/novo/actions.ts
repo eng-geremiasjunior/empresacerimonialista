@@ -7,6 +7,14 @@ import { desmascararDinheiro } from "@/lib/format";
 import { escalaPorPublico } from "@/lib/capacidades";
 import { montarTimelineDoPlaybook } from "@/lib/supabase/roteiro-template";
 import {
+  normalizarBriefingV2,
+  propostaParaConferencia,
+  type PropostaBriefingV2,
+} from "@/lib/briefing-core";
+import { itensDaProposta } from "@/lib/briefing-aplicacao";
+import { salvarCampo } from "@/app/(app)/eventos/[id]/planejamento/actions";
+import type { TipoCampo } from "@/lib/planejamento-shared";
+import {
   gerarFasesPorTipo,
   resolverTemplate,
   type WizardRespostas,
@@ -18,6 +26,8 @@ export type WizardPayload = {
   clientId: string | null;
   newClientName: string;
   newClientPhone: string;
+  /** só do briefing: o passo Cliente não pede e-mail */
+  newClientEmail: string;
   type: string;
   name: string;
   date: string;
@@ -25,11 +35,15 @@ export type WizardPayload = {
   city: string;
   location: string;
   guests: string;
+  /** teto mencionado pela cliente; não dimensiona nada (143) */
+  guestsMax: string;
   contractValue: string;
   entrada: string;
   status: string; // orcamento | confirmado
   responsavelId: string | null; // membro_equipe responsável
   respostas: WizardRespostas;
+  /** o resto da leitura do briefing — nasce proposta, nunca aplicado aqui */
+  briefing: PropostaBriefingV2 | null;
 
   incluirTimeline: boolean; // true no fluxo completo, false no rápido
 };
@@ -39,6 +53,41 @@ function toNumber(v: string): number | null {
   // entrega dígito puro. desmascararDinheiro dá conta dos dois.
   const n = desmascararDinheiro(String(v));
   return n != null && n > 0 ? n : null;
+}
+
+// A porta única de escrita de campo tipado é portal_escrever_campo (091),
+// e ela pede o id da LINHA — aqui só traduzimos código → linha do evento.
+// UPDATE direto em evento_campo_valor gravava sem deixar rastro de quem
+// escreveu, e era o buraco que sobrava na conferência.
+async function campoPorCodigo(
+  supabase: ReturnType<typeof createClient>,
+  eventId: string,
+  codigo: string
+): Promise<{ id: string; tipo: TipoCampo } | null> {
+  const { data } = await supabase
+    .from("evento_campo_valor")
+    .select("id, tipo")
+    .eq("event_id", eventId)
+    .eq("codigo", codigo)
+    .maybeSingle();
+  return data ? { id: data.id as string, tipo: data.tipo as TipoCampo } : null;
+}
+
+// Escrita de campo na criação do evento: erro aqui vira log, nunca desfaz
+// o evento (ele já existe e é dela).
+async function escreverCampo(
+  supabase: ReturnType<typeof createClient>,
+  eventId: string,
+  codigo: string,
+  valor: string
+) {
+  const campo = await campoPorCodigo(supabase, eventId, codigo);
+  if (!campo) {
+    console.error(`[vela:novo-evento] ${codigo}: campo não instanciado`);
+    return;
+  }
+  const r = await salvarCampo(eventId, campo.id, campo.tipo, codigo, valor);
+  if ("error" in r) console.error(`[vela:novo-evento] ${codigo}:`, r.error);
 }
 
 export type CriarEventoState = { error: string } | null;
@@ -128,6 +177,8 @@ export async function criarEventoCompleto(
     };
   }
 
+  const eventId = data as string;
+
   // Formatura: a resposta "juntos ou separados" vira o campo
   // celebracao_formato do método (125) — é dele que o hub decide se
   // oferece a colação em evento próprio, e o checklist do dia decide
@@ -147,45 +198,101 @@ export async function criarEventoCompleto(
     const formato = payload.respostas.colacaoJunto
       ? "Juntos (mesmo dia e local)"
       : "Separados (a colação em outra data)";
-    const { error: erroCampo } = await supabase
-      .from("evento_campo_valor")
-      .update({ valor_opcao: formato })
-      .eq("event_id", data as string)
-      .eq("codigo", "celebracao_formato");
-    if (erroCampo) {
-      console.error("[vela:novo-evento] celebracao_formato:", erroCampo.message);
-    }
+    await escreverCampo(supabase, eventId, "celebracao_formato", formato);
   }
 
   // Arquétipo do método: o porte deriva do público (o wizard não pergunta
-  // a escala), o subtipo é o cenário escolhido. Gravar em events dispara os
-  // deltas do arquétipo (083); o campo tipado é o que a faixa de contexto
-  // lê. Erro aqui não desfaz o evento — vai para o log.
+  // a escala), o subtipo é o cenário escolhido. O reflexo em events — que
+  // é o que dispara os deltas do arquétipo (083) — mora dentro de
+  // salvarCampo, para escala/cenario; por isso não se grava events aqui.
   const escala = escalaPorPublico(payload.type, args.p_guests);
-  if (escala || cenario) {
-    const patch: Record<string, string> = {};
-    if (escala) patch.escala = escala;
-    if (cenario) patch.cenario = cenario;
-    const { error: erroEvento } = await supabase
-      .from("events")
-      .update(patch)
-      .eq("id", data as string);
-    if (erroEvento) {
-      console.error("[vela:novo-evento] arquétipo:", erroEvento.message);
-    }
-    for (const [codigo, token] of Object.entries(patch)) {
-      const { error: erroCampo } = await supabase
-        .from("evento_campo_valor")
-        .update({ valor_opcao: token })
-        .eq("event_id", data as string)
-        .eq("codigo", codigo);
-      if (erroCampo) {
-        console.error(`[vela:novo-evento] ${codigo}:`, erroCampo.message);
+  const eixos: Record<string, string> = {};
+  if (escala) eixos.escala = escala;
+  if (cenario) eixos.cenario = cenario;
+  for (const [codigo, token] of Object.entries(eixos)) {
+    await escreverCampo(supabase, eventId, codigo, token);
+  }
+
+  // Daqui para baixo o evento já existe: nada pode desfazê-lo. Cada bloco
+  // falha para o log e segue.
+  //
+  // (a) e-mail do cliente novo: criar_evento_completo não recebe e-mail, e
+  // sem isto o contato que ela colou morria no wizard.
+  const emailNovo = (payload.newClientEmail ?? "").trim();
+  if (!payload.clientId && emailNovo) {
+    try {
+      const { data: ev } = await supabase
+        .from("events")
+        .select("client_id")
+        .eq("id", eventId)
+        .maybeSingle();
+      if (ev?.client_id) {
+        const { error: erroEmail } = await supabase
+          .from("clients")
+          .update({ email: emailNovo })
+          .eq("id", ev.client_id)
+          // nunca por cima de um contato que já existe
+          .is("email", null);
+        if (erroEmail) {
+          console.error("[vela:novo-evento] e-mail do cliente:", erroEmail.message);
+        }
       }
+    } catch (e) {
+      console.error("[vela:novo-evento] e-mail do cliente:", e);
+    }
+  }
+
+  // (b) o teto do público ("220, talvez 240"): guests continua sendo o
+  // número que dimensiona; guests_max só guarda a possibilidade — e só
+  // existe se for maior que a estimativa.
+  const teto = toNumber(payload.guestsMax);
+  if (teto && (args.p_guests == null || teto > args.p_guests)) {
+    try {
+      const { error: erroTeto } = await supabase
+        .from("events")
+        .update({ guests_max: Math.round(teto) })
+        .eq("id", eventId);
+      if (erroTeto) {
+        console.error("[vela:novo-evento] teto do público:", erroTeto.message);
+      }
+    } catch (e) {
+      console.error("[vela:novo-evento] teto do público:", e);
+    }
+  }
+
+  // (c) o resto da leitura vira PROPOSTA (143): dinheiro de fornecedor,
+  // quantidade, verba e estilo esperam a conferência item a item. O
+  // payload vem do navegador — reconstruído aqui pela allowlist, sem
+  // identidade e com os trechos redigidos antes de virar linha no banco.
+  if (payload.briefing) {
+    try {
+      const proposta = propostaParaConferencia(
+        normalizarBriefingV2(payload.briefing)
+      );
+      // só nasce proposta se sobrou algo para conferir: o que o wizard já
+      // gravou (identidade, convidados) não vira caixa na tela do evento
+      if (itensDaProposta(proposta).length > 0) {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        const { error: erroProposta } = await supabase
+          .from("briefing_extracao")
+          .insert({
+            event_id: eventId,
+            payload: proposta,
+            status: "proposta",
+            criada_por: user?.id ?? null,
+          });
+        if (erroProposta) {
+          console.error("[vela:novo-evento] proposta do briefing:", erroProposta.message);
+        }
+      }
+    } catch (e) {
+      console.error("[vela:novo-evento] proposta do briefing:", e);
     }
   }
 
   revalidatePath("/eventos");
   revalidatePath("/eventos/dashboard");
-  redirect(`/eventos/${data as string}`);
+  redirect(`/eventos/${eventId}`);
 }

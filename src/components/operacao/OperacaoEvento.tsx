@@ -162,7 +162,7 @@ export function OperacaoEvento({
               // Único caminho do sistema que apaga número digitado à mão.
               // Um clique só seria perder trabalho sem aviso.
               const ok = window.confirm(
-                "Refazer o previsto de todos os itens pelo público de hoje? Os números que você ajustou à mão serão substituídos."
+                "Refazer o previsto de todos os itens pelo público de hoje? O que a cliente pediu fica como está."
               );
               if (ok) rodar(() => recalcularPrevisto(eventId, true));
             }}
@@ -349,7 +349,9 @@ function LinhaRecurso({
               <span className="font-medium text-stone-800">{r.nome}</span>
               <span className="block text-xs text-stone-400">
                 {r.regra === "fixo"
-                  ? `${numero(r.indice)} ${r.unidade}`
+                  ? // o pedido da cliente também aparece em item fixo: é ele
+                    // que explica por que o Recalcular não mexe naquele número
+                    `${numero(r.indice)} ${r.unidade}${base && r.baseOrigem === "manual" ? ` · ${base}` : ""}`
                   : `${numero(r.indice)} ${r.unidade} × ${base ?? "—"}`}
                 {r.fornecedorNome ? ` · ${r.fornecedorNome}` : ""}
               </span>

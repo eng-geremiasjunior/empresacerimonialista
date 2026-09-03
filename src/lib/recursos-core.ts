@@ -130,6 +130,10 @@ export function defasagemDoPublico(
 
 /** "para 180 confirmados" / "para 200 estimados" / "12 mesas" */
 export function textoDaBase(r: Recurso): string | null {
+  // O número digitado como pedido da cliente não tem base: quem manda é
+  // ela, e é por isso que o Recalcular não o toca (143). Vem antes das
+  // outras portas porque item avulso é 'fixo' e não tem base_quantidade.
+  if (r.baseOrigem === "manual") return "pedido pela cliente";
   if (r.regra === "fixo") return null;
   if (r.baseQuantidade == null) return null;
   if (r.regra === "por_unidade") return `${r.baseQuantidade} mesas`;

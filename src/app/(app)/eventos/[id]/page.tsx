@@ -26,10 +26,24 @@ import { ColacaoLigada, type ElosColacao } from "@/components/eventos/ColacaoLig
 import { ProximasAtividades } from "@/components/eventos/ProximasAtividades";
 import { NotasRapidas } from "@/components/eventos/NotasRapidas";
 import { AssistenteEvento } from "@/components/eventos/AssistenteEvento";
+import {
+  BriefingExtracaoCaixa,
+  type FornecedorEscolhivel,
+} from "@/components/eventos/BriefingExtracaoCaixa";
+import {
+  normalizarBriefingV2,
+  type PropostaBriefingV2,
+} from "@/lib/briefing-core";
 import { CARGO_LABELS, type Cargo } from "@/lib/equipe-shared";
 import { EVENT_TYPE_LABELS } from "@/lib/types";
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { NotaEvento } from "./notas-actions";
+
+type LinhaFornecedor = {
+  id: string;
+  name: string;
+  supplier_categorias?: { categoria: string }[] | null;
+};
 
 function iniciais(nome: string) {
   const p = nome.trim().split(/\s+/);
@@ -107,6 +121,65 @@ export default async function ResumoPage({
     .order("created_at", { ascending: false });
   if (!notasRes.error) notas = (notasRes.data ?? []) as NotaEvento[];
 
+  // O briefing colado que virou proposta e ainda espera conferência (143),
+  // e o teto de convidados que ele guardou. Degrada em silêncio nos bancos
+  // onde a migração ainda não rodou.
+  const [tetoRes, propostaRes] = await Promise.all([
+    supabase.from("events").select("guests_max").eq("id", eventId).maybeSingle(),
+    supabase
+      .from("briefing_extracao")
+      .select("id, payload")
+      .eq("event_id", eventId)
+      .eq("status", "proposta")
+      .maybeSingle(),
+  ]);
+  const guestsMax = (tetoRes.data?.guests_max as number | null) ?? null;
+
+  let briefing: {
+    id: string;
+    proposta: PropostaBriefingV2;
+    fornecedores: FornecedorEscolhivel[];
+  } | null = null;
+  if (propostaRes.data) {
+    // o select do cadastro agrupa por categoria; sem a 026 a caixa ainda
+    // funciona, só sem o agrupamento
+    const comCat = await supabase
+      .from("suppliers")
+      .select("id, name, supplier_categorias(categoria)")
+      .order("name")
+      .limit(2000);
+    const linhas = (comCat.error
+      ? (
+          await supabase
+            .from("suppliers")
+            .select("id, name")
+            .order("name")
+            .limit(2000)
+        ).data ?? []
+      : comCat.data ?? []) as unknown as LinhaFornecedor[];
+    briefing = {
+      id: propostaRes.data.id as string,
+      proposta: normalizarBriefingV2(propostaRes.data.payload),
+      fornecedores: linhas.map((s) => ({
+        id: s.id,
+        nome: s.name,
+        categorias: (s.supplier_categorias ?? []).map((c) => c.categoria),
+      })),
+    };
+  }
+
+  // "220 pessoas, pode chegar a 240": o teto mora ao lado do número, não
+  // numa caixa própria.
+  const g = resumo.event.guests;
+  const textoConvidados =
+    g != null
+      ? guestsMax != null && guestsMax > g
+        ? `${g} pessoas, pode chegar a ${guestsMax}`
+        : `${g} pessoas`
+      : guestsMax != null
+        ? `pode chegar a ${guestsMax} pessoas`
+        : null;
+
   const eventLabel =
     resumo.event.name ||
     `${EVENT_TYPE_LABELS[resumo.event.type]}${resumo.client?.name ? ` — ${resumo.client.name}` : ""}`;
@@ -129,6 +202,15 @@ export default async function ResumoPage({
         />
 
         <ResumoOperacional eventId={eventId} op={resumo.operacional} />
+
+        {briefing && (
+          <BriefingExtracaoCaixa
+            eventId={eventId}
+            extracaoId={briefing.id}
+            proposta={briefing.proposta}
+            fornecedores={briefing.fornecedores}
+          />
+        )}
 
         {/* Cliente */}
         <section>
@@ -201,12 +283,10 @@ export default async function ResumoPage({
                     </p>
                   </div>
                 )}
-                {resumo.event.guests != null && (
+                {textoConvidados && (
                   <div>
                     <p className="text-xs text-gray-400">Convidados esperados</p>
-                    <p className="mt-1 text-sm text-gray-800">
-                      {resumo.event.guests} pessoas
-                    </p>
+                    <p className="mt-1 text-sm text-gray-800">{textoConvidados}</p>
                   </div>
                 )}
               </div>
@@ -243,10 +323,10 @@ export default async function ResumoPage({
                   label: "Local",
                   valor: resumo.event.location || resumo.event.city || "—",
                 },
-                resumo.event.guests != null && {
+                textoConvidados && {
                   icon: Users,
                   label: "Convidados esperados",
-                  valor: `${resumo.event.guests} pessoas`,
+                  valor: textoConvidados,
                 },
                 resumo.event.time && {
                   icon: Clock,
@@ -263,7 +343,10 @@ export default async function ResumoPage({
                 <Icon size={16} className="mt-0.5 shrink-0 text-gray-400" />
                 <div className="min-w-0">
                   <p className="text-xs text-gray-400">{label}</p>
-                  <p className="truncate text-sm font-medium text-gray-800">
+                  <p
+                    title={valor}
+                    className="truncate text-sm font-medium text-gray-800"
+                  >
                     {valor}
                   </p>
                 </div>

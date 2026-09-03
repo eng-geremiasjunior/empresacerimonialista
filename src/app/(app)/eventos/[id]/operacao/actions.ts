@@ -43,13 +43,28 @@ export async function salvarNumero(
     return { error: "O número não pode ser negativo." };
   }
 
+  // O previsto digitado é PEDIDO DA CLIENTE — é base_origem='manual' que
+  // faz o Recalcular respeitá-lo (143). Ao limpar o número, a origem volta
+  // a nulo: senão o item ficaria fora do dimensionamento para sempre, sem
+  // número e sem quem o calcule.
+  //
+  // E o pedido dela não tem base (145): guardar aqui o público do último
+  // dimensionamento deixaria o item eternamente "defasado" para os três
+  // leitores que só olham base_quantidade — sem ninguém que os feche,
+  // porque o Recalcular agora pula esta linha de propósito.
+  const patch: Record<string, number | string | null> = { [campo]: valor };
+  if (campo === "previsto") {
+    patch.base_origem = valor == null ? null : "manual";
+    if (valor != null) patch.base_quantidade = null;
+  }
+
   const supabase = createClient();
   // `select` depois do update para saber QUANTAS linhas mudaram: com RLS,
   // um update barrado volta sem erro e sem linhas — e sem isto a tela
   // diria "salvo" para uma gravação que nunca aconteceu.
   const { data, error } = await supabase
     .from("evento_recurso")
-    .update({ [campo]: valor })
+    .update(patch)
     .eq("id", recursoId)
     .eq("event_id", eventId)
     .select("id");

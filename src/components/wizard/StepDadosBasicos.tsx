@@ -11,6 +11,8 @@ export type DadosBasicos = {
   city: string;
   location: string;
   guests: string;
+  /** teto mencionado ("pode chegar a 240"); vazio = ela não falou em teto */
+  guestsMax: string;
   contractValue: string;
   entrada: string;
   status: string; // orcamento | confirmado
@@ -37,6 +39,8 @@ type Props = {
   tipo: string;
   value: DadosBasicos;
   suggestedName: string;
+  /** citação de onde saiu o valor do contrato (só existe vinda do briefing) */
+  dicaContrato?: string | null;
   onChange: (patch: Partial<DadosBasicos>) => void;
   membros: MembroOption[];
   responsavelId: string | null;
@@ -51,6 +55,7 @@ export function StepDadosBasicos({
   tipo,
   value,
   suggestedName,
+  dicaContrato,
   onChange,
   membros,
   responsavelId,
@@ -110,21 +115,42 @@ export function StepDadosBasicos({
               className={inputClass}
             />
           </div>
-          <div>
+          {/* com teto são dois números na mesma célula: ela ganha a largura
+              de duas colunas para o par não ficar espremido no celular */}
+          <div className={value.guestsMax !== "" ? "col-span-2" : undefined}>
             <label htmlFor="ev_guests" className={labelClass}>
               {/* Sem lista nominal (show), o numero e publico esperado — e
                   e ele que dimensiona bebida, gelo e pulseira. O rotulo
                   vem da capacidade do tipo, nunca de um if pelo nome. */}
               {capitalizar(rotuloPublico(tipo))}
             </label>
-            <input
-              id="ev_guests"
-              type="number"
-              min={0}
-              value={value.guests}
-              onChange={(e) => onChange({ guests: e.target.value })}
-              className={inputClass}
-            />
+            {/* O teto ("220, talvez 240") só aparece quando a leitura
+                trouxe os dois números — quem digita à mão nunca é obrigado
+                a inventar um segundo. Limpar o campo apaga o teto. */}
+            <div className="flex items-center gap-1.5">
+              <input
+                id="ev_guests"
+                type="number"
+                min={0}
+                value={value.guests}
+                onChange={(e) => onChange({ guests: e.target.value })}
+                className={inputClass}
+              />
+              {value.guestsMax !== "" && (
+                <>
+                  <span className="shrink-0 text-xs text-stone-500">até</span>
+                  <input
+                    id="ev_guests_max"
+                    type="number"
+                    min={0}
+                    aria-label="Pode chegar a"
+                    value={value.guestsMax}
+                    onChange={(e) => onChange({ guestsMax: e.target.value })}
+                    className={inputClass}
+                  />
+                </>
+              )}
+            </div>
           </div>
           <div>
             <label htmlFor="ev_status" className={labelClass}>
@@ -203,6 +229,11 @@ export function StepDadosBasicos({
               onChange={(v) => onChange({ contractValue: v })}
               className={inputClass}
             />
+            {/* de onde o número saiu: sem a citação ela não tem como saber
+                se este valor é o dela ou o de um fornecedor */}
+            {dicaContrato && (
+              <p className="mt-1 text-xs text-stone-400">“{dicaContrato}”</p>
+            )}
           </div>
           <div>
             <label htmlFor="ev_entrada" className={labelClass}>

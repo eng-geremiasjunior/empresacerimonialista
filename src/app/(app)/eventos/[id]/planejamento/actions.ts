@@ -239,7 +239,7 @@ export async function sugerirDistribuicao(
       .maybeSingle(),
     supabase
       .from("evento_campo_valor")
-      .select("id, valor_numero")
+      .select("id, tipo, valor_numero")
       .eq("event_id", eventId)
       .eq("codigo", "reserva_pct")
       .maybeSingle(),
@@ -263,11 +263,18 @@ export async function sugerirDistribuicao(
     : null;
   if (reservaPct === null && reservaRes.data?.id) {
     reservaPct = 10;
-    await supabase
-      .from("evento_campo_valor")
-      .update({ valor_numero: 10, updated_at: new Date().toISOString() })
-      .eq("id", reservaRes.data.id)
-      .eq("event_id", eventId);
+    // Pela mesma porta que a cliente e o drawer usam (091): o UPDATE
+    // direto gravava sem dizer quem escreveu — e esta é escrita dela.
+    const r = await salvarCampo(
+      eventId,
+      reservaRes.data.id as string,
+      (reservaRes.data.tipo as TipoCampo) ?? "numero",
+      "reserva_pct",
+      10
+    );
+    if ("error" in r) {
+      return { error: "Não foi possível gravar a reserva de imprevistos." };
+    }
   }
   const base = verba * (1 - (reservaPct ?? 0) / 100);
   // Sem isto a distribuição grava zero em todo objetivo e "dá certo" em

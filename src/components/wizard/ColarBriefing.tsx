@@ -7,14 +7,20 @@
 // campos do wizard nascem preenchidos e ela caminha os passos
 // conferindo. O telefone real nunca viaja: vai [TELEFONE_1], volta
 // [TELEFONE_1], e é trocado pelo número verdadeiro aqui, localmente.
+//
+// Da proposta v2, só a IDENTIDADE preenche o wizard; dinheiro de
+// terceiro, quantidade e estilo esperam a conferência item a item. A
+// volta dos contatos é feita pelo walker (restaurarProposta): marcador
+// em campo que não é contato é vazamento e vira nulo, e trecho nenhum
+// é restaurado.
 
 import { useState } from "react";
 import { ClipboardPaste } from "lucide-react";
 import {
   pseudonimizar,
-  restaurar,
+  restaurarProposta,
   type MapaPseudonimos,
-  type PropostaBriefing,
+  type PropostaBriefingV2,
 } from "@/lib/briefing-core";
 
 type Fase =
@@ -27,7 +33,7 @@ export function ColarBriefing({
   aoProposta,
 }: {
   /** telefone/e-mail já restaurados localmente */
-  aoProposta: (p: PropostaBriefing) => void;
+  aoProposta: (p: PropostaBriefingV2) => void;
 }) {
   const [fase, setFase] = useState<Fase>({ nome: "fechado" });
   const [texto, setTexto] = useState("");
@@ -58,7 +64,7 @@ export function ColarBriefing({
         body: JSON.stringify({ texto: seguro }),
       });
       const data = (await resp.json()) as {
-        proposta?: PropostaBriefing;
+        proposta?: PropostaBriefingV2;
         error?: string;
       };
       if (!resp.ok || !data.proposta) {
@@ -67,12 +73,7 @@ export function ColarBriefing({
         return;
       }
       // os marcadores voltam a ser dado REAL aqui, localmente
-      const p = data.proposta;
-      aoProposta({
-        ...p,
-        telefone: restaurar(p.telefone, mapa),
-        email: restaurar(p.email, mapa),
-      });
+      aoProposta(restaurarProposta(data.proposta, mapa));
       setFase({ nome: "fechado" });
       setTexto("");
     } catch {

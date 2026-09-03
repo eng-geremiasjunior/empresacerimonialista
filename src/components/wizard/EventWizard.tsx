@@ -26,7 +26,11 @@ import {
 import { StepDadosBasicos, type DadosBasicos } from "./StepDadosBasicos";
 import { StepEstruturacao } from "./StepEstruturacao";
 import { ColarBriefing } from "./ColarBriefing";
-import type { PropostaBriefing } from "@/lib/briefing-core";
+import {
+  identidadeDaProposta,
+  propostaParaConferencia,
+  type PropostaBriefingV2,
+} from "@/lib/briefing-core";
 import { mascararDinheiro } from "@/lib/format";
 
 // O passo "Revisão" saiu. Ele mostrava um checklist para ela marcar,
@@ -44,10 +48,15 @@ const DADOS_INICIAIS: DadosBasicos = {
   city: "",
   location: "",
   guests: "",
+  guestsMax: "",
   contractValue: "",
   entrada: "",
   status: "orcamento",
 };
+
+// A citação vai no aviso e na dica do campo: curta, ou ninguém lê.
+const curto = (t: string, max = 70) =>
+  t.length > max ? `${t.slice(0, max - 1).trimEnd()}…` : t;
 
 type Props = {
   clients: ClientOption[];
@@ -79,40 +88,61 @@ export function EventWizard({
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [doBriefing, setDoBriefing] = useState<string | null>(null);
+  // e-mail não tem campo no passo Cliente (o wizard nunca o pediu): veio
+  // do briefing e vai direto para clients.email na criação.
+  const [emailCliente, setEmailCliente] = useState("");
+  const [dicaHonorario, setDicaHonorario] = useState<string | null>(null);
+  // o que a leitura trouxe e NÃO é do evento (verba da cliente, dinheiro
+  // de fornecedor, quantidade, estilo): nasce proposta, para a conferência
+  const [briefing, setBriefing] = useState<PropostaBriefingV2 | null>(null);
 
   // A proposta do briefing preenche o estado; os passos do wizard SÃO a
   // conferência — ela caminha confirmando o que a leitura propôs.
-  function aplicarBriefing(p: PropostaBriefing) {
+  //
+  // Só a IDENTIDADE entra aqui. O dinheiro do buffet ia para
+  // contractValue, que é o honorário DELA e é somado como faturamento —
+  // agora contractValue só recebe honorário com atribuição explícita
+  // (e a identidade já vem sem ele quando não há citação).
+  function aplicarBriefing(p: PropostaBriefingV2) {
+    const id = identidadeDaProposta(p);
     const preenchidos: string[] = [];
-    if (p.tipo) {
-      setTipo(p.tipo as EventType);
+    if (id.tipo) {
+      setTipo(id.tipo as EventType);
       preenchidos.push("tipo");
     }
-    if (p.nome_cliente) {
-      setCliente({
-        kind: "new",
-        name: p.nome_cliente,
-        phone: p.telefone ?? "",
-      });
-      preenchidos.push(p.telefone ? "cliente e telefone" : "cliente");
+    if (id.nome) {
+      setCliente({ kind: "new", name: id.nome, phone: id.telefone ?? "" });
+      preenchidos.push(id.telefone ? "cliente e telefone" : "cliente");
     }
+    setEmailCliente(id.email ?? "");
+    if (id.email) preenchidos.push("e-mail");
     setDados((d) => ({
       ...d,
-      date: p.data ?? d.date,
-      time: p.hora ?? d.time,
-      city: p.cidade ?? d.city,
-      location: p.local ?? d.location,
-      guests: p.convidados != null ? String(p.convidados) : d.guests,
-      contractValue:
-        p.valor_contrato != null
-          ? mascararDinheiro(String(Math.round(p.valor_contrato)))
-          : d.contractValue,
+      date: id.data ?? d.date,
+      time: id.hora ?? d.time,
+      city: id.cidade ?? d.city,
+      location: id.local ?? d.location,
+      guests: id.convidados != null ? String(id.convidados) : d.guests,
+      guestsMax: id.guestsMax != null ? String(id.guestsMax) : d.guestsMax,
+      contractValue: id.honorario
+        ? mascararDinheiro(String(Math.round(id.honorario.valor)))
+        : d.contractValue,
     }));
-    if (p.data) preenchidos.push("data");
-    if (p.hora) preenchidos.push("hora");
-    if (p.cidade || p.local) preenchidos.push("local");
-    if (p.convidados != null) preenchidos.push("convidados");
-    if (p.valor_contrato != null) preenchidos.push("valor");
+    if (id.data) preenchidos.push("data");
+    if (id.hora) preenchidos.push("hora");
+    if (id.cidade || id.local) preenchidos.push("local");
+    if (id.convidados != null) {
+      preenchidos.push(
+        id.guestsMax != null
+          ? `${id.convidados} convidados (pode chegar a ${id.guestsMax})`
+          : "convidados"
+      );
+    }
+    if (id.honorario) {
+      preenchidos.push(`honorário, citado como “${curto(id.honorario.trecho)}”`);
+    }
+    setDicaHonorario(id.honorario ? curto(id.honorario.trecho) : null);
+    setBriefing(propostaParaConferencia(p));
     setDoBriefing(
       preenchidos.length > 0
         ? `Do briefing: ${preenchidos.join(", ")}. Confira cada passo antes de criar.`
@@ -146,6 +176,7 @@ export function EventWizard({
       clientId: cliente?.kind === "existing" ? cliente.client.id : null,
       newClientName: cliente?.kind === "new" ? cliente.name : "",
       newClientPhone: cliente?.kind === "new" ? cliente.phone : "",
+      newClientEmail: cliente?.kind === "new" ? emailCliente : "",
       type: tipo,
       name: dados.name,
       date: dados.date,
@@ -153,11 +184,13 @@ export function EventWizard({
       city: dados.city,
       location: dados.location,
       guests: dados.guests,
+      guestsMax: dados.guestsMax,
       contractValue: dados.contractValue,
       entrada: dados.entrada,
       status: dados.status,
       responsavelId,
       respostas,
+      briefing,
       incluirTimeline,
     };
     const res = await criarEventoCompleto(payload);
@@ -216,6 +249,7 @@ export function EventWizard({
           tipo={tipo ?? ""}
           value={dados}
           suggestedName={suggestedName}
+          dicaContrato={dicaHonorario}
           onChange={patchDados}
           membros={membros}
           responsavelId={responsavelId}
