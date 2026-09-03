@@ -22,6 +22,19 @@ export default async function EventoOperacaoPage({
     .select("id, name")
     .order("name");
 
+  // A contagem do dia só abre quando o dia chega: antes disso, entrada e
+  // sobra seriam campos pedindo número que ninguém tem. Fuso de São Paulo
+  // porque a festa é aqui, não em UTC.
+  const { data: ev } = await supabase
+    .from("events")
+    .select("date")
+    .eq("id", eventId)
+    .maybeSingle();
+  const hoje = new Date().toLocaleDateString("en-CA", {
+    timeZone: "America/Sao_Paulo",
+  });
+  const contagemLiberada = !!ev?.date && String(ev.date) <= hoje;
+
   // Evento nascido antes do método não tem mapa — oferecer "trazer do
   // método" ali seria um botão que não faz nada.
   const { count: objetivos } = await supabase
@@ -36,6 +49,7 @@ export default async function EventoOperacaoPage({
       fornecedores={(sups ?? []).map((s) => ({ id: s.id, nome: s.name }))}
       publico={publico}
       temMapa={(objetivos ?? 0) > 0}
+      contagemLiberada={contagemLiberada}
     />
   );
 }
