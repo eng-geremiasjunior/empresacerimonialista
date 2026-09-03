@@ -97,8 +97,20 @@ const txt = (v: unknown, max: number): string | null => {
   const t = v.trim().slice(0, max);
   return t || null;
 };
+// O ponto é separador de MILHAR em português e de DECIMAL em JSON, e o
+// modelo devolve os dois. Apagar todo ponto transformava "32500.00" em
+// 3.250.000 — cem vezes o valor do contrato, sem nada na tela denunciando.
+// A vírgula decide: onde ela existe, o ponto é milhar. Sem vírgula, só
+// é milhar quando os grupos têm exatamente três dígitos ("32.500").
+const paraNumero = (s: string): number => {
+  const t = s.replace(/[R$\s ]/gi, "");
+  if (t.includes(",")) return Number(t.replace(/\./g, "").replace(",", "."));
+  if (/^\d{1,3}(\.\d{3})+$/.test(t)) return Number(t.replace(/\./g, ""));
+  return Number(t);
+};
+
 const num = (v: unknown, max: number): number | null => {
-  const n = typeof v === "string" ? Number(v.replace(/\./g, "").replace(",", ".")) : Number(v);
+  const n = typeof v === "string" ? paraNumero(v) : Number(v);
   return Number.isFinite(n) && n > 0 && n <= max ? Math.round(n * 100) / 100 : null;
 };
 

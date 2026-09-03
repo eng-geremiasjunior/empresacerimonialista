@@ -22,7 +22,7 @@ export default async function EditarEventoPage({
   let { data, error } = await supabase
     .from("events")
     .select(
-      "id, client_id, type, date, time, location, name, city, guests, status, cover_image_url, cerimonialista_responsavel_id, clients(id, name, phone, email)"
+      "id, client_id, type, date, time, location, name, city, guests, guests_max, status, cover_image_url, cerimonialista_responsavel_id, clients(id, name, phone, email)"
     )
     .eq("id", params.id)
     .single();
@@ -32,7 +32,7 @@ export default async function EditarEventoPage({
     temResponsavel = false;
     ({ data } = await supabase
       .from("events")
-      .select("id, client_id, type, date, time, location, name, city, guests, status, clients(id, name, phone, email)")
+      .select("id, client_id, type, date, time, location, name, city, guests, guests_max, status, clients(id, name, phone, email)")
       .eq("id", params.id)
       .single());
   }
@@ -49,6 +49,7 @@ export default async function EditarEventoPage({
     name?: string | null;
     city?: string | null;
     guests?: number | null;
+    guests_max?: number | null;
   };
 
   const equipe = temResponsavel
@@ -91,6 +92,7 @@ export default async function EditarEventoPage({
           name: extras.name ?? "",
           city: extras.city ?? "",
           guests: extras.guests ?? null,
+          guestsMax: extras.guests_max ?? null,
           status: event.status,
           responsavelId,
           coverUrl:

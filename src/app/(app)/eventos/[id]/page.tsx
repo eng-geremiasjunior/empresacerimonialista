@@ -30,6 +30,7 @@ import {
   BriefingExtracaoCaixa,
   type FornecedorEscolhivel,
 } from "@/components/eventos/BriefingExtracaoCaixa";
+import { AvisosDoBriefing } from "@/components/eventos/AvisosDoBriefing";
 import {
   normalizarBriefingV2,
   type PropostaBriefingV2,
@@ -124,7 +125,7 @@ export default async function ResumoPage({
   // O briefing colado que virou proposta e ainda espera conferência (143),
   // e o teto de convidados que ele guardou. Degrada em silêncio nos bancos
   // onde a migração ainda não rodou.
-  const [tetoRes, propostaRes] = await Promise.all([
+  const [tetoRes, propostaRes, aplicadaRes] = await Promise.all([
     supabase.from("events").select("guests_max").eq("id", eventId).maybeSingle(),
     supabase
       .from("briefing_extracao")
@@ -132,8 +133,30 @@ export default async function ResumoPage({
       .eq("event_id", eventId)
       .eq("status", "proposta")
       .maybeSingle(),
+    // o que ficou de fora na última conferência e ela ainda não leu: a
+    // caixa que exibia o aviso é desmontada pela revalidação da própria
+    // aplicação, então o texto vem do banco
+    supabase
+      .from("briefing_extracao")
+      .select("id, aplicado")
+      .eq("event_id", eventId)
+      .eq("status", "conferida")
+      .order("conferida_em", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
   const guestsMax = (tetoRes.data?.guests_max as number | null) ?? null;
+
+  const aplicado = (aplicadaRes.data?.aplicado ?? null) as {
+    avisos?: unknown;
+    avisos_lidos?: unknown;
+  } | null;
+  const avisosDoBriefing =
+    aplicado && aplicado.avisos_lidos !== true && Array.isArray(aplicado.avisos)
+      ? (aplicado.avisos as unknown[]).filter(
+          (a): a is string => typeof a === "string" && a.trim().length > 0
+        )
+      : [];
 
   let briefing: {
     id: string;
@@ -209,6 +232,14 @@ export default async function ResumoPage({
             extracaoId={briefing.id}
             proposta={briefing.proposta}
             fornecedores={briefing.fornecedores}
+          />
+        )}
+
+        {avisosDoBriefing.length > 0 && aplicadaRes.data && (
+          <AvisosDoBriefing
+            eventId={eventId}
+            extracaoId={aplicadaRes.data.id as string}
+            avisos={avisosDoBriefing}
           />
         )}
 

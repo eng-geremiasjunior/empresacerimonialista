@@ -121,15 +121,21 @@ export function ConferenciaProposta({
           {pendente ? "Aplicando…" : "Aplicar o que está marcado"}
         </button>
         <button
-          onClick={aoDescartar}
+          onClick={() => {
+            // um clique apagava a leitura inteira da conversa, sem volta:
+            // o texto colado não fica guardado em lugar nenhum
+            if (confirm("Descartar a leitura desta conversa? Ela não volta.")) {
+              aoDescartar();
+            }
+          }}
           disabled={pendente}
           className="rounded px-2 py-1.5 text-[12.5px] text-gray-500 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-60"
         >
           Descartar
         </button>
-        <span className="text-[11px] text-gray-400">
-          Só entra o que está marcado — e nada entra como pago.
-        </span>
+        {/* a metade que explicava a mecânica dos checkboxes saiu; ficou a
+            que é promessa sobre dinheiro, e essa vale a linha */}
+        <span className="text-[11px] text-gray-400">Nada entra como pago.</span>
       </div>
     </div>
   );

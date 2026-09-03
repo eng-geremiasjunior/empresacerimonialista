@@ -15,6 +15,7 @@ type Initial = {
   name?: string | null;
   city?: string | null;
   guests?: number | null;
+  guestsMax?: number | null;
   clientId: string | null;
   clientName: string;
   clientPhone: string;
@@ -188,6 +189,21 @@ export function EventForm({ action, initial, membros }: Props) {
             defaultValue={initial?.guests ?? ""}
             placeholder="Ex.: 120"
             className={inputClass}
+          />
+          {/* O "pode chegar a 240" nascia no briefing e não tinha onde ser
+              corrigido: apagado no assistente, sumia para sempre. Aparece
+              aqui embaixo do número que ele acompanha, sem rótulo próprio
+              e sem pedir nada de quem não tem teto nenhum. */}
+          <input
+            id="ev_guests_max"
+            name="guests_max"
+            type="number"
+            min={0}
+            inputMode="numeric"
+            defaultValue={initial?.guestsMax ?? ""}
+            placeholder="pode chegar a…"
+            aria-label="Teto de convidados"
+            className={`${inputClass} mt-2`}
           />
         </div>
       </div>

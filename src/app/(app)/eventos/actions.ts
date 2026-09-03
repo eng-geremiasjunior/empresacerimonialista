@@ -26,6 +26,7 @@ function readForm(formData: FormData) {
     name: String(formData.get("name") ?? "").trim(),
     city: String(formData.get("city") ?? "").trim(),
     guests: String(formData.get("guests") ?? "").trim(),
+    guestsMax: String(formData.get("guests_max") ?? "").trim(),
     status: String(formData.get("status") ?? ""),
     responsavelId: String(formData.get("responsavel_id") ?? "").trim(),
   };
@@ -104,6 +105,11 @@ export async function updateEvent(
     name: form.name || null,
     city: form.city || null,
     guests: form.guests ? Math.max(0, Math.round(Number(form.guests))) || null : null,
+    // teto some quando ela apaga o campo; e teto que nao e MAIOR que a
+    // estimativa nao e possibilidade nenhuma (mesma regra do assistente)
+    guests_max: form.guestsMax
+      ? Math.max(0, Math.round(Number(form.guestsMax))) || null
+      : null,
     status: form.status,
   };
   // Só troca o responsável se o campo veio no formulário (a coluna pode

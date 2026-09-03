@@ -118,7 +118,9 @@ export async function registrarEstimativaFornecedor(
   eventId: string,
   supplierId: string,
   estimado: number
-): Promise<{ error: string } | { ok: true; id: string }> {
+): Promise<
+  { error: string } | { ok: true; id: string; mantida?: number }
+> {
   if (!supplierId) return { error: "Escolha o fornecedor." };
   if (!Number.isFinite(estimado) || estimado <= 0) {
     return { error: "Informe o valor estimado." };
@@ -130,10 +132,22 @@ export async function registrarEstimativaFornecedor(
   // negociado: a estimativa entra ao lado, nunca por cima.
   const { data: atual } = await supabase
     .from("evento_fornecedor_orcamento")
-    .select("valor_alocado")
+    .select("id, valor_alocado, valor_estimado_inicial")
     .eq("event_id", eventId)
     .eq("supplier_id", supplierId)
     .maybeSingle();
+
+  // "inicial" é o nome do campo e é a regra: é dele que sai a economia
+  // (estimado − alocado) na prestação de contas. Trocar a estimativa que
+  // ela planejou pelo número que o fornecedor falou no WhatsApp faria a
+  // economia contar uma história que não aconteceu.
+  const jaEstimado =
+    atual?.valor_estimado_inicial == null
+      ? null
+      : Number(atual.valor_estimado_inicial);
+  if (jaEstimado != null && jaEstimado !== estimado) {
+    return { ok: true, id: atual!.id as string, mantida: jaEstimado };
+  }
 
   const { data: salvo, error } = await supabase
     .from("evento_fornecedor_orcamento")

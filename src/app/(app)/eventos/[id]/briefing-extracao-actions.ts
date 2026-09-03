@@ -412,7 +412,13 @@ export async function aplicarBriefingExtracao(
     if ("error" in re) {
       return { error: erroParcial(feitos, `a estimativa de ${nome}: ${re.error}`) };
     }
-    feitos.push(`a estimativa de ${nome}`);
+    if (re.mantida != null) {
+      avisos.push(
+        `A estimativa de ${nome} já era ${formatCurrency(re.mantida)} — mantive essa. O briefing dizia ${formatCurrency(f.valor)}.`
+      );
+    } else {
+      feitos.push(`a estimativa de ${nome}`);
+    }
     await anotar(
       "verba_fornecedor",
       re.id,
@@ -485,6 +491,10 @@ export async function aplicarBriefingExtracao(
       const campo = await campoPorCodigo(supabase, eventId, "estilo_desejado");
       if (!campo) {
         avisos.push("O estilo não entrou: este evento não tem o campo de estilo.");
+      } else if (campo.respondido && campo.respondido !== frase) {
+        avisos.push(
+          `O estilo não entrou: já havia uma resposta ("${curtar(campo.respondido)}"). O briefing dizia "${curtar(frase)}".`
+        );
       } else {
         const r = await salvarCampo(
           eventId,
@@ -505,6 +515,10 @@ export async function aplicarBriefingExtracao(
       const campo = await campoPorCodigo(supabase, eventId, "paleta_cores");
       if (!campo) {
         avisos.push("As cores não entraram: este evento não tem o campo de paleta.");
+      } else if (campo.respondido && campo.respondido !== cores) {
+        avisos.push(
+          `As cores não entraram: já havia uma resposta ("${curtar(campo.respondido)}"). O briefing dizia "${curtar(cores)}".`
+        );
       } else {
         const r = await salvarCampo(
           eventId,
@@ -545,7 +559,16 @@ export async function aplicarBriefingExtracao(
       status: "conferida",
       conferida_em: new Date().toISOString(),
       conferida_por: user?.id ?? null,
-      aplicado: { feitos, escolhas: semContatos(escolhas) },
+      // avisos vão para o BANCO, não só para a resposta: as actions que
+      // esta chamou já revalidaram a rota, então a caixa que exibiria o
+      // aviso é desmontada antes de ela ler. O que ficou de fora é
+      // exatamente o que não pode sumir da tela.
+      aplicado: {
+        feitos,
+        escolhas: semContatos(escolhas),
+        avisos,
+        avisos_lidos: avisos.length === 0,
+      },
     })
     .eq("id", extracaoId)
     .eq("status", "proposta")
@@ -661,15 +684,25 @@ async function campoPorCodigo(
   supabase: ReturnType<typeof createClient>,
   eventId: string,
   codigo: string
-): Promise<{ id: string; tipo: TipoCampo } | null> {
+): Promise<{ id: string; tipo: TipoCampo; respondido: string | null } | null> {
   const { data } = await supabase
     .from("evento_campo_valor")
-    .select("id, tipo")
+    .select("id, tipo, valor_texto")
     .eq("event_id", eventId)
     .eq("codigo", codigo)
     .limit(1)
     .maybeSingle();
-  return data ? { id: data.id as string, tipo: data.tipo as TipoCampo } : null;
+  return data
+    ? {
+        id: data.id as string,
+        tipo: data.tipo as TipoCampo,
+        // "estilo_desejado" e "paleta_cores" são DUAS DAS PERGUNTAS que o
+        // casal responde no portal. Se já há resposta, o briefing não
+        // passa por cima: a leitura de uma conversa não vale mais do que
+        // o que eles escreveram com o nome deles.
+        respondido: ((data.valor_texto as string | null) ?? "").trim() || null,
+      }
+    : null;
 }
 
 /**
@@ -695,6 +728,10 @@ async function parcelaJaLancada(
     .limit(1);
   return (data ?? []).length > 0;
 }
+
+/** Corta o texto para caber num aviso de uma linha. */
+const curtar = (t: string): string =>
+  t.length <= 48 ? t : `${t.slice(0, 47).trimEnd()}…`;
 
 /** O estado do fornecedor dito em português, para a linha do histórico. */
 const ESTADO_DITO: Record<string, string> = {
@@ -827,6 +864,35 @@ async function decisaoDeContratar(
   return dec
     ? { id: dec.id as string, titulo: dec.titulo as string, estado: dec.estado as string }
     : null;
+}
+
+/**
+ * "Entendi" no bilhete do que ficou de fora. Não apaga nada: só marca
+ * como lido, para o bilhete parar de aparecer na tela do evento.
+ */
+export async function marcarAvisosLidos(
+  eventId: string,
+  extracaoId: string
+): Promise<{ error: string } | { success: true }> {
+  const supabase = createClient();
+  const { data: linha } = await supabase
+    .from("briefing_extracao")
+    .select("aplicado")
+    .eq("id", extracaoId)
+    .eq("event_id", eventId)
+    .maybeSingle();
+  if (!linha) return { error: "Não encontrei este registro." };
+
+  const aplicado = (linha.aplicado ?? {}) as Record<string, unknown>;
+  const { error } = await supabase
+    .from("briefing_extracao")
+    .update({ aplicado: { ...aplicado, avisos_lidos: true } })
+    .eq("id", extracaoId)
+    .eq("event_id", eventId);
+  if (error) return { error: "Não foi possível marcar como lido." };
+
+  revalidar(eventId);
+  return { success: true };
 }
 
 function erroParcial(feitos: string[], falhou: string): string {
