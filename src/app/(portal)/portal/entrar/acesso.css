@@ -298,6 +298,14 @@
   border-color: var(--gold);
 }
 
+/* Nenhum ícone do portal traz width/height — todos vêm só com viewBox e
+   dependem do CSS. Onde o tamanho falta, o SVG assume a largura
+   disponível e estoura o container. */
+.acesso-box svg {
+  width: 11px;
+  height: 11px;
+}
+
 .acesso-keep[aria-checked="false"] .acesso-box svg {
   opacity: 0;
 }
@@ -399,9 +407,34 @@
   color: var(--err-ink);
 }
 
+/* O ícone vem só com viewBox, sem width nem height. Sem tamanho aqui ele
+   assume a largura disponível — chegou a 322px numa caixa de 350 — e
+   empurra o texto para fora. Era este o bug da tela do computador. */
 .acesso-alert svg {
   flex: none;
+  width: 16px;
+  height: 16px;
   margin-top: 2px;
+}
+
+/* Filho de flex não encolhe abaixo do próprio conteúdo sem isto
+   (min-width: auto é o padrão): o aviso de sessão da equipe carrega um
+   e-mail inteiro, o texto vazava para fora da caixa e a página inteira
+   ganhava barra de rolagem horizontal. */
+.acesso-alert > span {
+  /* flex: 1 ocupa o espaço que sobra; min-width: 0 permite encolher
+     abaixo do conteúdo (o padrão é auto, e era por isso que o e-mail
+     do aviso vazava para fora da caixa). Sem o flex: 1, o mesmo
+     min-width: 0 leva ao extremo oposto — largura zero e uma letra por
+     linha. */
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.acesso-mark svg {
+  width: 20px;
+  height: 20px;
 }
 
 .acesso-mark {
@@ -451,6 +484,11 @@
   font-size: 12.5px;
   letter-spacing: 0.16em;
   color: var(--faint);
+}
+
+.acesso-voltar svg {
+  width: 18px;
+  height: 18px;
 }
 
 .acesso-voltar {
