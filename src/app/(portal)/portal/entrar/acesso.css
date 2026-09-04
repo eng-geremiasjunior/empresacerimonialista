@@ -35,8 +35,13 @@
   --err-bg: #fbf0ed;
   --err-ink: #9c5a4c;
   --ok-ink: #6e7f63;
-  /* a foto que o dono escolheu; 1200px, 168 KB */
-  --foto: url("/portal/noiva.jpg");
+  /* A foto, recortada no buquê. O enquadramento original mostrava o
+     vestido, e o portal atende os CINCO tipos de evento: a mãe da
+     debutante, a comissão da formatura e a empresa no corporativo
+     entrariam e veriam uma noiva. Aqui o sistema ainda não sabe o tipo
+     (ela chega só com e-mail e senha), então a arte tem que servir a
+     todos. Flor serve; vestido não. 1400px, 151 KB. */
+  --foto: url("/portal/flores.jpg");
 
   position: relative;
   min-height: 100vh;
