@@ -1,9 +1,12 @@
 "use client";
 
 // Telas de acesso do Portal da Cliente: entrar, esqueci a senha, enviado.
-// Recriação em React do custom element handoff/portal-login.js — estrutura,
-// copy, estados e animações idênticos; o markup segue as convenções do
-// repo (nada de Babel no navegador, nada de shadow DOM).
+//
+// Redesenho do dono (04/09/2026): a tela era café escuro e passou a ser
+// clara, com a FOTO fazendo a arte — coluna esquerda no desktop, fundo de
+// tela inteira no celular, com o formulário num cartão translúcido. Só a
+// apresentação mudou: os três estados, a copy e as regras de segurança
+// abaixo são as mesmas.
 //
 // Regra de segurança da tela: o erro é SEMPRE o mesmo e nunca revela se a
 // conta existe. O mesmo vale para o "esqueci a senha", que responde
@@ -13,11 +16,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
-  AcessoOrnamento,
   IconeAlerta,
   IconeCheck,
   IconeEnvelope,
-  IconeOlho,
   IconeVoltar,
 } from "./AcessoOrnamento";
 
@@ -107,40 +108,39 @@ export function PortalLoginForm({
     </>
   );
 
+  // A arte. A frase é a mesma de antes; o que mudou é que agora ela mora
+  // sobre a foto, e não sobre o gradiente escuro.
+  //
+  // O topo NÃO leva a marca da cerimonialista de propósito: neste ponto o
+  // sistema ainda não sabe de quem a pessoa é cliente — ela chega com
+  // e-mail e senha, sem nada na URL que identifique a empresa. Pôr um nome
+  // aqui seria acertar para uma e mentir para todas as outras.
+  const arte = (
+    <section className="acesso-arte">
+      <div className="acesso-arte-topo">
+        e<span style={{ color: "#B98FAC" }}>organizei</span>
+      </div>
+      <div className="acesso-arte-baixo">
+        <p className="acesso-eyebrow">Acesso exclusivo</p>
+        <p className="acesso-lead">
+          Cada detalhe do seu dia já está sob cuidado.{" "}
+          <span className="acesso-say2">Entre para acompanhar de perto.</span>
+        </p>
+      </div>
+      <div className="acesso-arte-rodape">eorganizei.com.br</div>
+    </section>
+  );
+
   return (
     <main className="acesso">
-      <div className="acesso-glow" aria-hidden="true" />
-      <div className="acesso-shell">
-        {vista === "login" && <AcessoOrnamento />}
+      {arte}
 
-        {vista === "forgot" && (
-          <button
-            type="button"
-            className="acesso-back"
-            onClick={() => irPara("login")}
-            aria-label="Voltar para entrar"
-          >
-            <IconeVoltar />
-          </button>
-        )}
-        {vista === "sent" && (
-          <button
-            type="button"
-            className="acesso-back"
-            onClick={() => irPara("forgot")}
-            aria-label="Voltar"
-          >
-            <IconeVoltar />
-          </button>
-        )}
-        {vista === "login" && <div className="acesso-top" />}
-
+      <section className="acesso-painel">
         {vista === "login" && (
           <div className="acesso-col">
-            <p className="acesso-eyebrow">Acesso privado</p>
-            <p className="acesso-lead">
-              Cada detalhe do seu dia já está sob cuidado.{" "}
-              <span className="acesso-say2">Entre para acompanhar de perto.</span>
+            <p className="acesso-titulo">Entrar no portal</p>
+            <p className="acesso-sub">
+              Use o e-mail que você recebeu da sua cerimonialista.
             </p>
             {erro && (
               <p className="acesso-alert" role="alert">
@@ -199,6 +199,8 @@ export function PortalLoginForm({
                       ? { "data-invalid": true, "aria-invalid": true }
                       : {})}
                   />
+                  {/* a palavra no lugar do ícone de olho: no celular, um
+                      olhinho de 16px é alvo pequeno e ambíguo */}
                   <button
                     type="button"
                     className="acesso-reveal"
@@ -206,7 +208,7 @@ export function PortalLoginForm({
                     aria-label={revelar ? "Ocultar a senha" : "Mostrar a senha"}
                     onClick={() => setRevelar((r) => !r)}
                   >
-                    <IconeOlho aberto={!revelar} />
+                    {revelar ? "ocultar" : "mostrar"}
                   </button>
                 </div>
               </div>
@@ -255,12 +257,18 @@ export function PortalLoginForm({
 
         {vista === "forgot" && (
           <div className="acesso-col">
-            <p className="acesso-eyebrow">Acesso privado</p>
-            <p className="acesso-lead">
-              Enviamos um link para você definir uma senha nova.
-            </p>
+            <button
+              type="button"
+              className="acesso-voltar"
+              onClick={() => irPara("login")}
+              aria-label="Voltar para entrar"
+            >
+              <IconeVoltar />
+            </button>
+            <p className="acesso-titulo">Esqueci minha senha</p>
             <p className="acesso-sub">
-              Informe o e-mail que sua cerimonialista cadastrou.
+              Informe o e-mail que sua cerimonialista cadastrou e enviamos um
+              link para você definir uma senha nova.
             </p>
             <form className="acesso-fields" method="post" onSubmit={enviarLink}>
               <div className="acesso-field">
@@ -304,7 +312,7 @@ export function PortalLoginForm({
             <span className="acesso-mark">
               <IconeEnvelope />
             </span>
-            <p className="acesso-lead">Verifique sua caixa de entrada.</p>
+            <p className="acesso-titulo">Verifique sua caixa de entrada.</p>
             <p className="acesso-sub">
               Se houver uma conta com esse e-mail, o link para redefinir a senha
               chega em instantes. Ele vale por 30 minutos.
@@ -337,9 +345,8 @@ export function PortalLoginForm({
           </div>
         )}
 
-        <div className="acesso-spacer" />
-        {rodape}
-      </div>
+          <div className="acesso-rodape">{rodape}</div>
+        </section>
     </main>
   );
 }
