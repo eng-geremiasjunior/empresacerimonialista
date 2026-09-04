@@ -39,6 +39,23 @@ export function envioEmModoTeste() {
   return /resend\.dev/i.test(remetente());
 }
 
+/**
+ * Para onde vai a RESPOSTA. Sem isto, responder ao e-mail do sistema é
+ * escrever para uma caixa que não existe: contato@eorganizei.com.br envia
+ * (DKIM e SPF verificados) e não recebe — o MX de entrada nunca foi
+ * apontado. Quem responde não recebe erro; a mensagem simplesmente some.
+ *
+ * SEM PADRÃO, de propósito. Um endereço chutado aqui manda a resposta da
+ * cerimonialista para outro buraco, e desta vez com a nossa assinatura em
+ * cima. Ausente = comportamento de hoje, que ao menos não promete nada.
+ *
+ * Quando o domínio ganhar caixa de verdade (encaminhamento ou provedor),
+ * é só apagar a variável.
+ */
+export function respostaPara(): string | null {
+  return process.env.EMAIL_REPLY_TO?.trim() || null;
+}
+
 function erroLegivel(status: number, corpo: string): string {
   if (status === 403 && /only send testing emails|own email address/i.test(corpo)) {
     return "O envio de e-mails ainda não foi liberado para esta conta — nada foi entregue. Envie o link por WhatsApp enquanto isso.";
@@ -81,6 +98,8 @@ export async function enviarViaResend(dados: {
       to: [dados.to],
       subject: dados.subject,
       html: dados.html,
+      // a chave só entra quando existe: mandar reply_to nulo é erro 422
+      ...(respostaPara() ? { reply_to: respostaPara() } : {}),
     }),
   });
 
