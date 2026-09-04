@@ -16,6 +16,7 @@ import {
   pedirMomento,
   sugerirHorario,
 } from "@/app/(portal)/portal/[eventoId]/cronograma/actions";
+import { exemploMomentoDoDia } from "@/lib/papel";
 import { Cartao, Rotulo } from "./Nucleo";
 
 const campoStyle: React.CSSProperties = {
@@ -52,10 +53,12 @@ function hhmm(hora: string | null): string {
 
 export function ProgramaDoDia({
   eventoId,
+  tipo,
   momentos,
   sugestoes,
 }: {
   eventoId: string;
+  tipo: string;
   momentos: MomentoDoDia[];
   sugestoes: SugestaoCronograma[];
 }) {
@@ -142,7 +145,11 @@ export function ProgramaDoDia({
 
       <Cartao padding="var(--esp-6)">
         {pedindo ? (
-          <FormMomento eventoId={eventoId} onFechar={() => setPedindo(false)} />
+          <FormMomento
+            eventoId={eventoId}
+            tipo={tipo}
+            onFechar={() => setPedindo(false)}
+          />
         ) : (
           <button
             type="button"
@@ -300,9 +307,11 @@ function Momento({
 
 function FormMomento({
   eventoId,
+  tipo,
   onFechar,
 }: {
   eventoId: string;
+  tipo: string;
   onFechar: () => void;
 }) {
   const router = useRouter();
@@ -315,9 +324,11 @@ function FormMomento({
   return (
     <>
       <Rotulo>O que vocês gostariam de incluir</Rotulo>
+      {/* O exemplo tem que caber no roteiro que a cliente está lendo: ao lado
+          de "Passagem de som" a dança com o pai da noiva não ensina nada. */}
       <input
         style={campoStyle}
-        placeholder="Ex.: dança com o pai da noiva"
+        placeholder={exemploMomentoDoDia(tipo)}
         value={titulo}
         onChange={(e) => setTitulo(e.target.value)}
         autoFocus

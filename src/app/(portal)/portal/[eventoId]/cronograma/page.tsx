@@ -31,6 +31,7 @@ export default async function PortalCronogramaPage({
       />
       <ProgramaDoDia
         eventoId={evento.id}
+        tipo={evento.tipo}
         momentos={momentos}
         sugestoes={sugestoes}
       />

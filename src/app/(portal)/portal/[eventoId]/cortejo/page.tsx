@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { rotuloCortejo } from "@/lib/papel";
 import { createClient } from "@/lib/supabase/server";
 import { getEventoDoPortal } from "@/lib/supabase/portal";
 import { getCortejo } from "@/lib/supabase/portal-pessoas";
@@ -31,7 +32,7 @@ export default async function PortalCortejoPage({
       <div className="portal-tela">
         <TopoInterno
           eventoId={evento.id}
-          titulo="Papéis e chamada"
+          titulo={rotuloCortejo(evento.tipo)}
           apoio="As listas da turma ficam no evento do baile — é lá que vocês preenchem e a chamada é montada."
         />
       </div>
@@ -45,7 +46,7 @@ export default async function PortalCortejoPage({
     <div className="portal-tela">
       <TopoInterno
         eventoId={evento.id}
-        titulo={ehFormatura ? "Papéis e chamada" : "Cortejo"}
+        titulo={rotuloCortejo(evento.tipo)}
         apoio={
           ehFormatura
             ? "Formandos na ordem de entrada, mesa de honra e quem discursa. Basta o nome para começar."

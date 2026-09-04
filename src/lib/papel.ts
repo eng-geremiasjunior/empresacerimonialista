@@ -61,6 +61,16 @@ export function rotuloEscolhas(tipoEvento?: string | null): string {
   return ESCOLHAS_POR_TIPO[tipoEvento as EventType] ?? "Escolhas";
 }
 
+const CORTEJO_POR_TIPO: Partial<Record<EventType, string>> = {
+  formatura: "Papéis e chamada",
+};
+
+/** O nome do destino "cortejo" no menu do portal — numa formatura a tela
+ *  se chama "Papéis e chamada" desde sempre, e o menu não acompanhava. */
+export function rotuloCortejo(tipoEvento?: string | null): string {
+  return CORTEJO_POR_TIPO[tipoEvento as EventType] ?? "Cortejo";
+}
+
 const MESA_PRINCIPAL_POR_TIPO: Partial<
   Record<EventType, { nome: string; curto: string }>
 > = {
@@ -151,4 +161,117 @@ export function rotuloAssinante(tipoEvento?: string | null): string {
 /** Rótulo do documento de quem assina ("CPF" mantém a máscara). */
 export function rotuloDocumentoAssinante(tipoEvento?: string | null): string {
   return DOCUMENTO_POR_TIPO[tipoEvento as EventType] ?? "CPF";
+}
+
+// ------------------------------------------------------------------
+// A VOZ DO PORTAL
+//
+// O portal é a única superfície que a CLIENTE lê, e até 04/09/2026 ele
+// falava sempre em casamento — os cinco tipos liam as mesmas frases: "para
+// o grande dia", "Ex.: dança com o pai da noiva", "vivam o inesquecível".
+// O produtor do show contratando ambulância e brigadista lia isso; a mãe
+// da debutante também.
+//
+// Mesmo desenho do resto do arquivo: mapa por tipo e fallback neutro que
+// nunca diz "noivos". Quem não está no mapa (aniversário, batizado, chá,
+// outro) cai no neutro e continua fazendo sentido.
+
+const CONTAGEM_POR_TIPO: Partial<Record<EventType, string>> = {
+  casamento: "para o grande dia",
+  bodas: "para o grande dia",
+  debutante: "para a festa",
+  formatura: "para a formatura",
+  show: "para o show",
+  corporativo: "para o evento",
+};
+
+/** A linha de baixo da contagem regressiva ("Faltam 84 dias …"). */
+export function rotuloContagem(tipoEvento?: string | null): string {
+  return CONTAGEM_POR_TIPO[tipoEvento as EventType] ?? "para o dia do evento";
+}
+
+/** O coração no ícone da contagem só cabe onde há um casal. */
+export function contagemComCoracao(tipoEvento?: string | null): boolean {
+  return tipoEvento === "casamento" || tipoEvento === "bodas";
+}
+
+const EVENTO_DE_POR_TIPO: Partial<Record<EventType, string>> = {
+  casamento: "do casamento",
+  bodas: "das bodas",
+  debutante: "da festa",
+  formatura: "da formatura",
+  show: "do show",
+  corporativo: "do evento",
+};
+
+/**
+ * "do casamento" / "da festa" — corre dentro de frase do portal
+ * ("A identidade visual DO CASAMENTO reunida num lugar só").
+ *
+ * Irmão de `rotuloEventoPossessivo`, que é o possessivo e serve à
+ * mensagem que sai para o FORNECEDOR; este é o artigo e serve à tela da
+ * cliente. São dois textos com donos diferentes, por isso duas funções.
+ */
+export function rotuloEventoDe(tipoEvento?: string | null): string {
+  return EVENTO_DE_POR_TIPO[tipoEvento as EventType] ?? "do evento";
+}
+
+const EXEMPLO_MOMENTO_POR_TIPO: Partial<Record<EventType, string>> = {
+  casamento: "Ex.: dança com o pai da noiva",
+  bodas: "Ex.: homenagem aos filhos",
+  debutante: "Ex.: dança com o pai",
+  formatura: "Ex.: homenagem aos professores",
+  show: "Ex.: passagem de som da banda de abertura",
+  corporativo: "Ex.: fala do diretor antes do intervalo",
+};
+
+/** O exemplo no campo em que a cliente pede um momento novo no roteiro. */
+export function exemploMomentoDoDia(tipoEvento?: string | null): string {
+  return (
+    EXEMPLO_MOMENTO_POR_TIPO[tipoEvento as EventType] ??
+    "Ex.: uma homenagem no meio da festa"
+  );
+}
+
+const CUIDADO_POR_TIPO: Partial<Record<EventType, string>> = {
+  casamento:
+    "Cada detalhe conta uma história. Estamos cuidando de tudo para que vocês vivam o inesquecível.",
+  bodas:
+    "Cada detalhe conta uma história. Estamos cuidando de tudo para que vocês vivam o inesquecível.",
+  debutante:
+    "Cada detalhe conta uma história. Estamos cuidando de tudo para que a festa saia do jeito que vocês imaginaram.",
+  formatura:
+    "Cada detalhe está sendo cuidado para que a turma só precise aproveitar o dia.",
+  show:
+    "Cada detalhe da produção está sendo acompanhado, do palco ao fim da noite.",
+  corporativo:
+    "Cada detalhe está sendo cuidado para que o evento cumpra o que a empresa espera dele.",
+};
+
+/** A frase da faixa assinada pela cerimonialista, na home do portal. */
+export function fraseDeCuidado(tipoEvento?: string | null): string {
+  return (
+    CUIDADO_POR_TIPO[tipoEvento as EventType] ??
+    "Cada detalhe está sendo cuidado para que o dia saia como vocês imaginaram."
+  );
+}
+
+const ASSINATURA_POR_TIPO: Partial<Record<EventType, string>> = {
+  casamento: "Com carinho,",
+  bodas: "Com carinho,",
+  debutante: "Com carinho,",
+  formatura: "Com carinho,",
+  show: "À disposição,",
+  corporativo: "À disposição,",
+};
+
+/**
+ * Como a cerimonialista assina a faixa da home.
+ *
+ * Existe porque a frase ao lado já muda por tipo e a assinatura não
+ * mudava: o produtor do show lia "Cada detalhe da produção está sendo
+ * acompanhado" e, na mesma caixa, "Com carinho, Ana".
+ */
+export function aberturaDaAssinatura(tipoEvento?: string | null): string {
+  return ASSINATURA_POR_TIPO[tipoEvento as EventType] ?? "Com carinho,";
 }

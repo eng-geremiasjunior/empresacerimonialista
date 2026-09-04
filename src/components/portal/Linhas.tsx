@@ -2,9 +2,9 @@
 // CartaoEntrada (coluna direita), LinhaParcela, Pergunta e
 // ItemLinhaDoTempo.
 //
-// No computador a decisão tem botão "Ver detalhes"; no celular a linha
-// inteira é o alvo, com chevron à direita — o botão sumiria num alvo
-// de 44px espremido.
+// A linha de decisão é o alvo inteiro, com chevron à direita — mas SÓ
+// quando há para onde ir: decisão sem pergunta em aberto vira linha
+// morta, com o prazo e sem o chevron (veja LinhaDecisao).
 
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -29,9 +29,14 @@ export function LinhaDecisao({
   descricao,
   prazo,
   urgente = false,
-  ultima = false,
 }: {
-  href: string;
+  /** Sem href a linha NÃO vira link — e é assim que tem de ser quando a
+   *  decisão não tem pergunta esperando: o prazo continua sendo
+   *  informação útil ("vence em 4 dias"), mas nada promete uma tela onde
+   *  ela possa responder. É a maioria: num casamento, 46 das 71 decisões
+   *  da cliente não têm pergunta nenhuma (o porquê está em
+   *  getHomePortal, em lib/supabase/portal.ts). */
+  href?: string | null;
   /** nome do objetivo — define o ícone */
   assunto: string | null;
   titulo: string;
@@ -40,7 +45,6 @@ export function LinhaDecisao({
   prazo?: string | null;
   /** "para agora" ganha o âmbar; o resto fica neutro */
   urgente?: boolean;
-  ultima?: boolean;
 }) {
   const Ico = iconeDoAssunto(assunto);
   const corPrazo = urgente ? "var(--cor-atencao)" : "var(--cor-icone-neutro)";
@@ -65,19 +69,18 @@ export function LinhaDecisao({
     </span>
   ) : null;
 
-  return (
-    <Link
-      href={href}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "var(--esp-4)",
-        padding: "var(--esp-4) 0",
-        minHeight: "var(--toque-min)",
-        borderTop: "1px solid var(--cor-borda-linha)",
-        color: "inherit",
-      }}
-    >
+  const estilo = {
+    display: "flex",
+    alignItems: "center",
+    gap: "var(--esp-4)",
+    padding: "var(--esp-4) 0",
+    minHeight: "var(--toque-min)",
+    borderTop: "1px solid var(--cor-borda-linha)",
+    color: "inherit",
+  } as const;
+
+  const miolo = (
+    <>
       <ChipIcone tamanho={44}>
         <Ico size={TAMANHO} strokeWidth={TRACO} />
       </ChipIcone>
@@ -108,10 +111,29 @@ export function LinhaDecisao({
 
       {/* no computador o prazo fica na coluna própria, antes do chevron */}
       <span className="portal-so-pc">{estado}</span>
-      <span style={{ color: "var(--cor-icone-neutro)", display: "flex" }} aria-hidden>
+      {/* sem href o chevron some MAS o espaço fica: no computador
+          .portal-so-pc é display:contents, então o prazo é irmão flex do
+          chevron — tirá-lo do fluxo empurraria a coluna de prazo 30px e a
+          lista sairia serrilhada */}
+      <span
+        style={{
+          color: "var(--cor-icone-neutro)",
+          display: "flex",
+          visibility: href ? "visible" : "hidden",
+        }}
+        aria-hidden
+      >
         <ChevronRight size={16} strokeWidth={TRACO} />
       </span>
+    </>
+  );
+
+  return href ? (
+    <Link href={href} style={estilo}>
+      {miolo}
     </Link>
+  ) : (
+    <div style={estilo}>{miolo}</div>
   );
 }
 

@@ -25,7 +25,7 @@ function volta(eventoId: string) {
 
 function erroDeEscrita(error: { code?: string; message?: string } | null): string {
   if (error?.code === "PGRST202") {
-    return "O site do casamento ainda não está disponível.";
+    return "O site do evento ainda não está disponível.";
   }
   if (error?.code === "P0001" && error.message) return error.message;
   return "Não foi possível salvar agora.";

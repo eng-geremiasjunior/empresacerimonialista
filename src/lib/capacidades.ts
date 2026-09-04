@@ -49,6 +49,32 @@ export function rotuloPublico(tipo?: string | null): string {
   return PUBLICO_POR_TIPO[tipo as EventType] ?? "convidados";
 }
 
+// O plural resolvia o título da tela e o item do menu; o corpo dela pede
+// o singular ("Adicionar convidado") e o lugar ("pessoas na festa"). Sem
+// estes dois, o menu de um evento corporativo dizia Participantes e a
+// tela, três linhas abaixo, dizia Convidados.
+// Sem entrada para show de propósito: a tela de lista é fechada para ele
+// (não tem listaNominal), então um rótulo aqui seria só promessa de tela
+// que devolve 404 — e "os público esperado" nem concordaria.
+const PUBLICO_SINGULAR_POR_TIPO: Partial<Record<EventType, string>> = {
+  corporativo: "participante",
+};
+
+/** "convidado" / "participante" — uma pessoa da lista. */
+export function rotuloPublicoSingular(tipo?: string | null): string {
+  return PUBLICO_SINGULAR_POR_TIPO[tipo as EventType] ?? "convidado";
+}
+
+const ONDE_POR_TIPO: Partial<Record<EventType, string>> = {
+  corporativo: "no evento",
+  formatura: "na formatura",
+};
+
+/** "na festa" / "no evento" — corre dentro de frase ("pessoas NA FESTA"). */
+export function rotuloNoEvento(tipo?: string | null): string {
+  return ONDE_POR_TIPO[tipo as EventType] ?? "na festa";
+}
+
 // Porte derivado do público: o wizard não pergunta a escala, deriva dela.
 // Os tokens espelham metodo_arquetipo.codigo do seed (141).
 const PORTE_POR_PUBLICO: Partial<

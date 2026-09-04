@@ -3,6 +3,7 @@ import { publicBase } from "@/lib/app-url";
 import { createClient } from "@/lib/supabase/server";
 import { getEventoDoPortal } from "@/lib/supabase/portal";
 import { getConvidados, resumirConvidados } from "@/lib/supabase/portal-pessoas";
+import { rotuloPublico, tem } from "@/lib/capacidades";
 import { TopoInterno } from "@/components/portal/TopoInterno";
 import { ListaConvidados } from "@/components/portal/ListaConvidados";
 import { LinkDoEvento } from "@/components/portal/LinkDoEvento";
@@ -10,9 +11,11 @@ import { LembreteConvidados } from "@/components/portal/LembreteConvidados";
 
 export const dynamic = "force-dynamic";
 
+const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
 // A lista é da cliente: ela monta, edita e manda o link de confirmação
 // para cada pessoa. A tela mostra o número que importa — quantas pessoas
-// vão à festa, não quantos convites foram enviados.
+// vão ao evento, não quantos convites foram enviados.
 export default async function PortalConvidadosPage({
   params,
 }: {
@@ -20,6 +23,10 @@ export default async function PortalConvidadosPage({
 }) {
   const evento = await getEventoDoPortal(params.eventoId);
   if (!evento) notFound();
+  // sumir do menu não basta: o endereço digitado à mão abria a lista
+  // nominal para um show de 5.000 pessoas, que é justamente a escala em
+  // que ela não se sustenta
+  if (!tem(evento.tipo, "listaNominal")) notFound();
 
   const convidados = await getConvidados(evento.id);
   const resumo = resumirConvidados(convidados);
@@ -40,15 +47,18 @@ export default async function PortalConvidadosPage({
 
   return (
     <div className="portal-tela">
+      {/* o mesmo rótulo do menu: numa empresa o item se chama
+          Participantes, e a tela não pode dizer Convidados */}
       <TopoInterno
         eventoId={evento.id}
-        titulo="Convidados"
-        apoio="Mande o link para todo mundo — cada pessoa se cadastra sozinha. Quem não se vira com isso, vocês adicionam aqui."
+        titulo={capitalizar(rotuloPublico(evento.tipo))}
+        apoio="Mande o link para quem vai — cada pessoa se cadastra sozinha. Quem não se cadastrar entra aqui, à mão."
       />
 
       {ev?.rsvp_hash && (
         <LinkDoEvento
           eventoId={evento.id}
+          tipo={evento.tipo}
           url={`${baseUrl}/confirmar/evento/${ev.rsvp_hash}`}
           aberto={ev.rsvp_aberto !== false}
         />

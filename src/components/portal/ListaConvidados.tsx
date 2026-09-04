@@ -1,7 +1,7 @@
 "use client";
 
-// A lista de convidados da cliente: filtro por lado, contador do que
-// importa (quantas pessoas vão à festa, não quantos convites), e o link
+// A lista de pessoas da cliente: filtro por lado, contador do que
+// importa (quantas pessoas vão ao evento, não quantos convites), e o link
 // individual de confirmação para ela mandar por onde quiser.
 //
 // A confirmação também pode ser lançada à mão — sempre tem tia que
@@ -10,6 +10,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { Convidado, ResumoConvidados } from "@/lib/portal-pessoas-shared";
+import { rotuloNoEvento, rotuloPublicoSingular } from "@/lib/capacidades";
 import { ladosDoTipo, type LadoConvidado } from "@/lib/papel";
 import {
   adicionarConvidado,
@@ -162,7 +163,7 @@ export function ListaConvidados({
               flex: 1,
             }}
           >
-            <Numero n={resumo.pessoasNaFesta} rotulo="pessoas na festa" />
+            <Numero n={resumo.pessoasNaFesta} rotulo={`pessoas ${rotuloNoEvento(tipo)}`} />
             <Numero n={resumo.aguardando} rotulo="ainda não responderam" />
             {resumo.comRestricao > 0 && (
               <Numero n={resumo.comRestricao} rotulo="com restrição alimentar" />
@@ -195,7 +196,7 @@ export function ListaConvidados({
 
       {/* adicionar */}
       <Cartao padding="var(--esp-6)">
-        <Rotulo>Adicionar convidado</Rotulo>
+        <Rotulo>Adicionar {rotuloPublicoSingular(tipo)}</Rotulo>
         <div className="portal-grade-2">
           <input
             style={campoStyle}

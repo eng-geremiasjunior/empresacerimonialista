@@ -56,8 +56,14 @@ export default async function PortalEventoLayout({
   const zap = waLink(contato.whatsapp);
   const temPrestacao = prestacao !== null;
 
+  // data-tipo é o gancho para o dia em que cada tipo de evento tiver tema
+  // próprio: basta o portal.css escrever .portal-raiz[data-tipo="corporativo"]
+  // { --cor-… } e nenhuma tela precisa de if de tipo. As três rotas públicas
+  // que importam o mesmo portal.css (/c, /confirmar, /guia) não passam por
+  // aqui e ficam sem o atributo — de propósito: são páginas de fornecedor e
+  // de convidado, e não devem herdar o tema do cliente.
   return (
-    <div className="portal-raiz">
+    <div className="portal-raiz" data-tipo={evento.tipo}>
       <div className="portal-fora">
         <div className="portal-painel">
           <NavLateral

@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { getEventoDoPortal } from "@/lib/supabase/portal";
 import { getGuiaDoEvento } from "@/lib/supabase/guia-estilo";
 import { createClient } from "@/lib/supabase/server";
+import { tem } from "@/lib/capacidades";
+import { rotuloEventoDe } from "@/lib/papel";
 import { TopoInterno } from "@/components/portal/TopoInterno";
 import { GuiaDeEstilo } from "@/components/portal/GuiaDeEstilo";
 import { AdicionarReferencia } from "@/components/portal/AdicionarReferencia";
@@ -16,6 +18,10 @@ export default async function PortalGuiaEstiloPage({
 }) {
   const evento = await getEventoDoPortal(params.eventoId);
   if (!evento) notFound();
+  // Sumir do menu não fecha a porta: o endereço digitado e o histórico do
+  // navegador continuam chegando aqui. Show e corporativo não têm guia —
+  // a rota se defende como /site e /cortejo já se defendem.
+  if (!tem(evento.tipo, "siteDoEvento")) notFound();
 
   const supabase = createClient();
   const [guia, { data: acesso }] = await Promise.all([
@@ -47,7 +53,7 @@ export default async function PortalGuiaEstiloPage({
         <TopoInterno
           eventoId={evento.id}
           titulo="Guia de estilo"
-          apoio="A identidade visual do casamento reunida num lugar só — paleta, flores, materiais, trajes e as referências de vocês."
+          apoio={`A identidade visual ${rotuloEventoDe(evento.tipo)} reunida num lugar só — paleta, flores, materiais, trajes e as referências de vocês.`}
         />
         <div className="guia-raiz">
           <div className="guia-veto">
@@ -73,9 +79,14 @@ export default async function PortalGuiaEstiloPage({
       <TopoInterno
         eventoId={evento.id}
         titulo="Guia de estilo"
-        apoio="A identidade visual do casamento de vocês. Depois de aprovado, é o que cada fornecedor recebe."
+        apoio={`A identidade visual ${rotuloEventoDe(evento.tipo)} de vocês. Depois de aprovado, é o que cada fornecedor recebe.`}
       />
-      <GuiaDeEstilo eventoId={evento.id} guia={guia} ehCliente={ehCliente} />
+      <GuiaDeEstilo
+        eventoId={evento.id}
+        tipo={evento.tipo}
+        guia={guia}
+        ehCliente={ehCliente}
+      />
       {ehCliente && (
         <div className="guia-raiz" style={{ marginTop: 20 }}>
           <AdicionarReferencia

@@ -20,6 +20,7 @@ import {
   type FlorDoGuia,
   type GuiaDeEstilo as Guia,
 } from "@/lib/guia-shared";
+import { rotuloEventoDe } from "@/lib/papel";
 import {
   aprovarGuia,
   pedirAjusteNoGuia,
@@ -163,10 +164,13 @@ function Foto({
 
 export function GuiaDeEstilo({
   eventoId,
+  tipo,
   guia,
   ehCliente,
 }: {
   eventoId: string;
+  /** o guia não guarda o tipo do evento; quem o conhece é a página */
+  tipo?: string | null;
   guia: Guia;
   /** false = a equipe abriu o portal para conferir; sem ações de aprovação */
   ehCliente: boolean;
@@ -286,7 +290,10 @@ export function GuiaDeEstilo({
 
           {/* abertura */}
           <header className="guia-abertura">
-            <span className="guia-rotulo">Paleta do casamento</span>
+            {/* A abertura do documento diz de quem é a paleta — o tipo vem
+                da página em vez de virar um título neutro, porque numa
+                festa de 15 anos "Paleta da festa" ainda é a frase certa. */}
+            <span className="guia-rotulo">Paleta {rotuloEventoDe(tipo)}</span>
             <h1 className="guia-h1">{guia.nome}</h1>
             {guia.sensacao && <p className="guia-abertura-texto">{guia.sensacao}</p>}
           </header>

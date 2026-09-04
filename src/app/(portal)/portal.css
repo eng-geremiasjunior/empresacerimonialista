@@ -1,8 +1,9 @@
 /* ============================================================
    Portal da Cliente — tokens
    Transcrição literal de tokens.js do handoff "luxo silencioso".
-   Importado SÓ pelo layout do portal: a área profissional não enxerga
-   nada disto, e o portal não enxerga os tokens do Celebra Pro.
+   A área profissional não enxerga nada disto, e o portal não enxerga os
+   tokens do Celebra Pro. Mas o arquivo NÃO é só do portal: /c,
+   /confirmar e /guia também o importam (veja o bloco de tema abaixo).
 
    Direção: ivory + creme + taupe, espresso só em texto, champagne só
    em detalhe. Substituiu a versão escura (fundo preto + dourado forte),
@@ -10,6 +11,21 @@
 
    Regra do handoff: nenhum componente escreve hex, px de fonte ou
    duração à mão. Tudo sai daqui.
+
+   ---- Tema por tipo de evento ----
+   A casca do evento escreve data-tipo no .portal-raiz. Um tipo ganha
+   paleta própria redefinindo SÓ variáveis, sem tocar em regra:
+
+     .portal-raiz[data-tipo="corporativo"] {
+       --cor-ouro: ...;
+       --fundo-card-ouro: ...;
+     }
+
+   O que precisa ser sabido antes de desenhar o primeiro tema: quatro
+   telas usam .portal-raiz sem passar pela casca do evento — /c,
+   /confirmar, /guia e o seletor de eventos (/portal). Todas chegam sem
+   data-tipo e ficam de fora de qualquer tema por tipo. Mexer na paleta
+   BASE, essa sim, alcança as cinco superfícies de uma vez.
    ============================================================ */
 
 .portal-raiz {
@@ -36,6 +52,7 @@
   --cor-texto-suave: #4c443c; /* descrições, legendas */
   --cor-texto-rotulo: #776d60; /* rótulos em caixa alta */
   --cor-texto-inativo: #6b6259; /* item de menu inativo */
+  --cor-texto-aba: #5a5148; /* aba inativa da barra do celular */
   --cor-texto-sobre-foto: #fffdf9;
 
   /* ---- Bordas ---- */
@@ -54,6 +71,24 @@
   --cor-ouro-texto-hover: #6e5533;
   --cor-ouro-profundo: #8a6e42; /* assinatura */
   --cor-ouro-fio: rgba(212, 180, 124, 0.55);
+  --cor-ouro-foco: rgba(212, 180, 124, 0.6); /* anel de foco */
+
+  /* Degradês do dourado. Ficam inteiros na variável — a troca de tema
+     acerta as paradas junto com as cores, e não sobra hex solto. */
+  --fundo-card-ouro: linear-gradient(135deg, #fdfaf4 0%, #f8f1e4 100%);
+  --fundo-fio-trilho: linear-gradient(
+    90deg,
+    rgba(212, 180, 124, 0),
+    rgba(212, 180, 124, 0.5),
+    rgba(212, 180, 124, 0)
+  );
+  --fundo-fio-brilho: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0),
+    #e7c98d 45%,
+    #fff6e2 55%,
+    rgba(255, 255, 255, 0)
+  );
 
   /* ---- Estado ---- */
   --cor-atencao: #b08052; /* âmbar queimado — NUNCA vermelho */
@@ -162,7 +197,7 @@
 .portal-raiz input:focus-visible,
 .portal-raiz select:focus-visible,
 .portal-raiz textarea:focus-visible {
-  outline: 2px solid rgba(212, 180, 124, 0.6);
+  outline: 2px solid var(--cor-ouro-foco);
   outline-offset: 2px;
 }
 
@@ -188,24 +223,13 @@
   right: 0;
   height: 1px;
   overflow: hidden;
-  background: linear-gradient(
-    90deg,
-    rgba(212, 180, 124, 0),
-    rgba(212, 180, 124, 0.5),
-    rgba(212, 180, 124, 0)
-  );
+  background: var(--fundo-fio-trilho);
   pointer-events: none;
 }
 .portal-fio > span {
   display: block;
   height: 1px;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0),
-    #e7c98d 45%,
-    #fff6e2 55%,
-    rgba(255, 255, 255, 0)
-  );
+  background: var(--fundo-fio-brilho);
   animation: goldSweep var(--fio-dur) ease-in-out infinite var(--fio-atraso);
   width: var(--fio-largura);
 }
@@ -433,7 +457,11 @@
   background: var(--cor-superficie-alt);
   padding: 10px 8px 20px;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  /* colunas pelo que EXISTE, não cinco fixas: um show perde a aba de
+     convidados (não tem lista nominal) e a barra ficava torta, com um
+     buraco de aba na direita */
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
   gap: 2px;
 }
 .portal-aba {
@@ -443,7 +471,7 @@
   gap: 5px;
   padding: 8px 2px;
   min-height: 52px;
-  color: #5a5148;
+  color: var(--cor-texto-aba);
   font-size: var(--ts-rotulo);
   text-align: center;
   line-height: 1.2;

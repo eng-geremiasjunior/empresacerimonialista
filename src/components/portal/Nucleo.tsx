@@ -96,7 +96,9 @@ export function Cartao({
 
 /**
  * CartaoOuro — o bloco com detalhe dourado (contagem, assinatura).
- * Degradê creme, borda champagne e o fio animado no topo.
+ * Degradê, borda e fio saem dos tokens: como ele é o destaque de TODAS
+ * as telas do portal, um tipo de evento com paleta própria troca o tema
+ * inteiro só redefinindo --fundo-card-ouro e as cores vizinhas.
  */
 export function CartaoOuro({
   fio,
@@ -116,7 +118,7 @@ export function CartaoOuro({
         overflow: "hidden",
         border: "1px solid var(--cor-borda-ouro)",
         borderRadius: "var(--raio-card)",
-        background: "linear-gradient(135deg, #FDFAF4 0%, #F8F1E4 100%)",
+        background: "var(--fundo-card-ouro)",
         boxShadow: "var(--sombra-card-ouro)",
         padding,
         ...style,
@@ -208,7 +210,7 @@ export function Botao({
   );
 }
 
-/** Link de ação em champagne ("Ver todas as decisões"). */
+/** Link de ação em champagne ("Responder as perguntas"). */
 export function LinkAcao({
   href,
   children,

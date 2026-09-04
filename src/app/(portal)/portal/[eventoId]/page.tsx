@@ -16,7 +16,6 @@ import {
 } from "@/components/portal/Nucleo";
 import { CartaoEntrada, LinhaDecisao } from "@/components/portal/Linhas";
 import {
-  CalendarCheck,
   ChevronRight,
   FileText,
   Quote,
@@ -27,15 +26,15 @@ import {
 } from "@/components/portal/icones";
 import { dataLonga, diaEMes, prazoPortal } from "@/components/portal/datas";
 import { hojeBR } from "@/lib/tempo";
-import { EVENT_TYPE_LABELS } from "@/lib/types";
+import { aberturaDaAssinatura, fraseDeCuidado } from "@/lib/papel";
 
 export const dynamic = "force-dynamic";
 
 // Visão geral (handoff "luxo silencioso"): cabeçalho + contagem,
-// Próximas decisões, faixa de assinatura, e a coluna direita com Meu
-// evento, Perguntas, Investimento. O bloco de percentuais do protótipo
-// NÃO existe aqui — decisão do dono: métrica de operação não é assunto
-// da noiva.
+// Próximas decisões, faixa de assinatura, e a coluna direita com
+// Perguntas e Investimento. O bloco de percentuais do protótipo NÃO
+// existe aqui — decisão do dono: métrica de operação não é assunto da
+// cliente.
 export default async function PortalEventoPage({
   params,
 }: {
@@ -56,9 +55,12 @@ export default async function PortalEventoPage({
   const abertas = (home.investimento?.parcelas ?? []).filter((p) => !p.paid);
   const proxima = abertas.find((p) => p.dueDate >= hoje) ?? abertas[0] ?? null;
 
+  // a abertura muda com o tipo: um produtor de show nao e assinado
+  // "com carinho"
+  const abertura = aberturaDaAssinatura(evento.tipo);
   const assinatura = contato.nome
-    ? `Com carinho,\n${contato.nome}`
-    : "Com carinho,\nsua cerimonialista";
+    ? `${abertura}\n${contato.nome}`
+    : `${abertura}\nsua cerimonialista`;
 
   return (
     <>
@@ -77,7 +79,7 @@ export default async function PortalEventoPage({
           local={[evento.local, evento.cidade].filter(Boolean).join(" · ") || null}
         />
         {evento.diasRestantes !== null && evento.diasRestantes >= 0 && (
-          <Contagem dias={evento.diasRestantes} />
+          <Contagem dias={evento.diasRestantes} tipo={evento.tipo} />
         )}
       </div>
 
@@ -105,21 +107,27 @@ export default async function PortalEventoPage({
                   Nada esperando por vocês agora.
                 </p>
               ) : (
-                home.faltaDecidir.map((d, i) => (
+                home.faltaDecidir.map((d) => (
                   <LinhaDecisao
                     key={d.id}
-                    href={`${base}/perguntas`}
+                    // só vira link quando há o que responder — e aí cai na
+                    // pergunta DESTA decisão: a tela mostra 5 por vez e a
+                    // dela poderia ficar fora do corte
+                    href={d.temPergunta ? `${base}/perguntas?decisao=${d.id}` : null}
                     assunto={d.objetivoNome}
                     titulo={d.objetivoNome ?? d.titulo}
                     descricao={d.titulo}
                     prazo={prazoPortal(d.prazoPrevisto)}
                     urgente={prazoPortal(d.prazoPrevisto) === "para agora"}
-                    ultima={i === home.faltaDecidir.length - 1}
                   />
                 ))
               )}
             </div>
-            {home.totalAFechar > home.faltaDecidir.length && (
+            {/* o rodapé dizia "Ver todas as decisões" e levava a
+                /perguntas, que nunca foi a lista de decisões — e num show
+                levava a uma tela vazia para sempre. Agora só aparece
+                quando há pergunta esperando, e diz para onde vai. */}
+            {home.perguntas > 0 && (
               <div
                 style={{
                   borderTop: "1px solid var(--cor-borda-linha)",
@@ -127,7 +135,7 @@ export default async function PortalEventoPage({
                 }}
               >
                 <LinkAcao href={`${base}/perguntas`}>
-                  Ver todas as decisões
+                  Responder as perguntas
                   <ChevronRight size={TAMANHO_PEQUENO} strokeWidth={TRACO} />
                 </LinkAcao>
               </div>
@@ -162,8 +170,7 @@ export default async function PortalEventoPage({
               <span style={{ color: "var(--cor-ponto)", display: "flex" }} aria-hidden>
                 <Quote size={TAMANHO_PEQUENO} strokeWidth={TRACO} />
               </span>
-              Cada detalhe conta uma história. Estamos cuidando de tudo para que
-              vocês vivam o inesquecível.
+              {fraseDeCuidado(evento.tipo)}
             </div>
             <div
               style={{
@@ -183,12 +190,18 @@ export default async function PortalEventoPage({
 
         {/* coluna direita */}
         <div className="portal-coluna-direita">
-          <CartaoEntrada
-            href={base}
-            icone={<CalendarCheck size={TAMANHO} strokeWidth={TRACO} />}
-            titulo="Meu evento"
-            resumo={`${nome} · ${EVENT_TYPE_LABELS[evento.tipo] ?? evento.tipo}`}
-          />
+          {/* "Meu evento" saiu daqui: o cartão apontava para esta mesma
+              página, então clicar nele só recarregava a tela, e o nome do
+              evento já está no cabeçalho logo acima. Com ele foi embora o
+              único lugar da home que escrevia o TIPO do evento — e não faz
+              falta: a cliente sabe que evento é o dela. */}
+          {/* este cartão é o ÚNICO caminho para /perguntas (a tela não
+              está em menu nenhum), então só some quando lá não há mesmo
+              nada: nem pergunta agora, nem por vir, nem resposta antiga
+              para reeditar. É o caso do show, e só dele. */}
+          {(home.perguntas > 0 ||
+            home.perguntasFuturas > 0 ||
+            home.perguntasRespondidas > 0) && (
           <CartaoEntrada
             href={`${base}/perguntas`}
             icone={<FileText size={TAMANHO} strokeWidth={TRACO} />}
@@ -204,6 +217,7 @@ export default async function PortalEventoPage({
             }
             acao="Ver perguntas"
           />
+          )}
           <CartaoEntrada
             href={`${base}/investimento`}
             icone={<Wallet size={TAMANHO} strokeWidth={TRACO} />}

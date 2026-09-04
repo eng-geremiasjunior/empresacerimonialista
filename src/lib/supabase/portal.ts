@@ -7,7 +7,9 @@
 // layout e page pedem o mesmo evento e sai UMA query. As funções por tela
 // disparam seus fetches em paralelo (Promise.all) e nunca em cascata.
 // Orçamento de round-trips: home ≤6 (auth + evento + 4 em paralelo),
-// telas internas ≤4.
+// telas internas ≤4 — e a conta inclui o que uma função pede POR DENTRO
+// (getPerguntasDaCliente chama getDecisoesPendentes; numa mesma request o
+// cache() faz disso uma RPC só).
 //
 // Um detalhe que NÃO é redundância: os filtros responsavel in (noivos,
 // ambos) e visivel_portal=true aparecem aqui MESMO a RLS já garantindo
@@ -91,18 +93,33 @@ export type PerguntaDoPortal = {
   valor: string | number | boolean | null;
   /** a versão que a tela viu — vai junto na escrita (trava otimista) */
   updatedAt: string;
+  /** a decisão a que a pergunta pertence — é por ele que a home sabe se
+   *  a decisão que ela lista tem alguma pergunta esperando resposta */
+  decisaoId: string;
   decisaoTitulo: string;
   prazoPrevisto: string | null;
 };
 
+/**
+ * A decisao COMO A HOME a mostra. `temPergunta` decide se a linha vira
+ * link: so a decisao com pergunta em aberto leva a /perguntas, porque so
+ * dela existe alguma coisa para responder lá.
+ */
+export type DecisaoDaHome = DecisaoDoPortal & { temPergunta: boolean };
+
 export type HomeDoPortal = {
-  faltaDecidir: DecisaoDoPortal[];
-  totalAFechar: number;
+  faltaDecidir: DecisaoDaHome[];
   contratados: FornecedorContratado[];
   investimento: InvestimentoDoPortal | null;
   /** Quantas perguntas a tela de Perguntas mostra AGORA (3–5), nunca o
    *  backlog inteiro — "135 perguntas" assusta e não orienta. */
   perguntas: number;
+  /** Sem pergunta agora, sem pergunta por vir E sem nada respondido, a
+   *  porta não se anuncia: num show a tela nunca vai encher. Respondidas
+   *  contam porque a cliente volta lá para reeditar — e este cartão é o
+   *  único caminho para /perguntas, que não está em menu nenhum. */
+  perguntasFuturas: number;
+  perguntasRespondidas: number;
   proximaPergunta: PerguntaDoPortal | null;
 };
 
@@ -359,12 +376,27 @@ const getPerguntasDaCliente = cache(
     const linhas = (data ?? []) as unknown as (LinhaCampo & {
       updated_at: string;
     })[];
-    const todas = linhas
-      .filter((l) => l.evento_decisao && idsAtivos.has(l.evento_decisao.id))
-      .filter((l) => {
-        const offset = l.evento_decisao!.offset_ideal_dias;
-        return offset === null || offset > 0 || diaChegou;
-      })
+    const naJanela = (l: LinhaCampo) => {
+      const offset = l.evento_decisao!.offset_ideal_dias;
+      return offset === null || offset > 0 || diaChegou;
+    };
+
+    const doEvento = linhas.filter(
+      (l) => l.evento_decisao && idsAtivos.has(l.evento_decisao.id)
+    );
+
+    // Quantas perguntas a JANELA está segurando e continuam sem resposta —
+    // é o único caso em que a tela vazia pode prometer "aparecem quando a
+    // data se aproximar". Sem esta conta a promessa era cega: numa
+    // formatura (1 pergunta no método inteiro) e numa debutante (2), a
+    // cliente respondia tudo e continuava lendo para sempre que viriam
+    // perguntas novas.
+    const futuras = doEvento.filter(
+      (l) => !naJanela(l) && valorDoCampo(comoCampo(l)) === null
+    ).length;
+
+    const todas = doEvento
+      .filter(naJanela)
       .map((l) => ({
         campoId: l.id,
         // o mesmo campo dito na voz dela; sem rótulo próprio, o interno serve
@@ -374,6 +406,7 @@ const getPerguntasDaCliente = cache(
         unidade: l.unidade,
         valor: valorDoCampo(comoCampo(l)),
         updatedAt: l.updated_at,
+        decisaoId: l.evento_decisao!.id,
         decisaoTitulo: l.evento_decisao!.titulo,
         prazoPrevisto: l.evento_decisao!.prazo_previsto,
       }))
@@ -384,6 +417,7 @@ const getPerguntasDaCliente = cache(
     return {
       abertas: todas.filter((p) => p.valor === null),
       respondidas: todas.filter((p) => p.valor !== null),
+      futuras,
     };
   }
 );
@@ -490,12 +524,15 @@ export const getLinhaDoTempo = cache(
   }
 );
 
+/** As perguntas da tela, mais quantas a janela de prazo ainda segura. */
 export async function getPerguntas(
   eventId: string,
   dataEvento: string
 ): Promise<{
   abertas: PerguntaDoPortal[];
   respondidas: PerguntaDoPortal[];
+  /** perguntas ainda sem resposta que a janela de prazo está segurando */
+  futuras: number;
 }> {
   return getPerguntasDaCliente(eventId, dataEvento);
 }
@@ -511,17 +548,48 @@ export async function getHomePortal(
     getContratados(eventId),
     getInvestimento(eventId),
   ]);
+
+  // A home listava decisões e mandava TODAS para /perguntas — e os dois
+  // lados sempre partiram de filtros diferentes: a decisão vem da RPC
+  // (responsável noivos/ambos, objetivo ativo) e a pergunta vem de
+  // pergunta_cliente = true. Medido em produção, das decisões da cliente
+  // com objetivo ativo: casamento 71, das quais só 25 têm pergunta;
+  // corporativo 13/5; debutante 51/2; formatura 12/1; show 11/ZERO. Era
+  // assim que a debutante anunciava "Definir o tema da festa" e abria uma
+  // tela sem tema, e o show anunciava 11 decisões para uma tela vazia
+  // para sempre.
+  //
+  // Esconder as decisões mudas seria pior do que o defeito. Duas causas
+  // as fazem mudas, e nenhuma delas é "a cliente não precisa saber":
+  //   1. o gatilho trg_campo_curado (146) recusa marcar como pergunta
+  //      campo de tipo fornecedor, moeda e anexo — que é tudo o que as
+  //      decisões de contratar e pagar têm;
+  //   2. a curadoria é uma lista de 32 códigos de CASAMENTO, e os outros
+  //      métodos mal a tocam: a debutante compartilha dois códigos, a
+  //      formatura um, o show nenhum. Dar voz a um tipo é mexer na
+  //      curadoria, não nos tipos de campo.
+  // Sumiriam "Definir a data do casamento" e "Contratar o espaço". Então
+  // a lista continua inteira e quem muda é o LINK: só a decisão com
+  // pergunta em aberto vira link, e leva direto para ela (?decisao=).
+  const comPergunta = new Set(perguntas.abertas.map((p) => p.decisaoId));
+
   return {
-    faltaDecidir: pendentes.slice(0, 3),
-    totalAFechar: pendentes.length,
+    faltaDecidir: pendentes.slice(0, 3).map((d) => ({
+      ...d,
+      temPergunta: comPergunta.has(d.id),
+    })),
     contratados,
     investimento,
     perguntas: Math.min(perguntas.abertas.length, 5),
+    perguntasFuturas: perguntas.futuras,
+    perguntasRespondidas: perguntas.respondidas.length,
     proximaPergunta: perguntas.abertas[0] ?? null,
   };
 }
 
-/** "Marina & João" quando existe; senão o rótulo do tipo. */
+/** "Marina & João" quando existe; senão "Seu evento" — o tipo NÃO entra
+ *  aqui: o cabeçalho do portal não é lugar de dizer à cliente que tipo de
+ *  evento ela contratou. */
 export function nomeDeExibicao(ev: EventoDoPortal): string {
   return ev.nome?.trim() || "Seu evento";
 }

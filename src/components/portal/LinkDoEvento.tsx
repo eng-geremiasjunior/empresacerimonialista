@@ -1,6 +1,6 @@
 "use client";
 
-// O link que a noiva espalha — o caminho principal da lista.
+// O link que a cliente espalha — o caminho principal da lista.
 //
 // Fica no topo da tela de convidados porque é o que ela vai usar toda
 // vez: manda no WhatsApp, põe no convite de papel, e cada pessoa se
@@ -10,14 +10,18 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { fecharOuAbrirLink } from "@/app/(portal)/portal/[eventoId]/convidados/actions";
+import { rotuloPublico } from "@/lib/capacidades";
 import { CartaoOuro, Rotulo } from "./Nucleo";
 
 export function LinkDoEvento({
   eventoId,
+  tipo,
   url,
   aberto,
 }: {
   eventoId: string;
+  /** tipo do evento — numa empresa a lista é de participantes */
+  tipo: string;
   url: string;
   aberto: boolean;
 }) {
@@ -80,9 +84,9 @@ export function LinkDoEvento({
                 color: "var(--cor-texto-secundario)",
               }}
             >
-              Mande este link para os convidados. Cada pessoa preenche o próprio
-              nome e recebe a confirmação por e-mail — e entra na lista abaixo
-              sozinha.
+              Mande este link para os {rotuloPublico(tipo)}. Cada pessoa preenche
+              o próprio nome e recebe a confirmação por e-mail — e entra na lista
+              abaixo sozinha.
             </p>
 
             <code
@@ -103,7 +107,7 @@ export function LinkDoEvento({
 
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button type="button" style={botao} onClick={compartilhar}>
-                {copiado ? "Link copiado" : "Enviar convite"}
+                {copiado ? "Link copiado" : "Enviar o link"}
               </button>
               <button
                 type="button"

@@ -15,7 +15,7 @@ export default async function PortalFornecedoresPage({
     <EmBreve
       eventoId={evento.id}
       titulo="Fornecedores"
-      texto="Os fornecedores já confirmados para o seu evento vão aparecer aqui, com o que cada um cuida no grande dia."
+      texto="Os fornecedores já confirmados para o seu evento vão aparecer aqui, com o que cada um cuida no dia."
     />
   );
 }

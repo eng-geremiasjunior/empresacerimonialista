@@ -108,13 +108,17 @@ export function PortalLoginForm({
     </>
   );
 
-  // A arte. A frase é a mesma de antes; o que mudou é que agora ela mora
-  // sobre a foto, e não sobre o gradiente escuro.
+  // A arte. A foto faz o trabalho; o texto só precisa caber sobre ela.
   //
   // O topo NÃO leva a marca da cerimonialista de propósito: neste ponto o
   // sistema ainda não sabe de quem a pessoa é cliente — ela chega com
   // e-mail e senha, sem nada na URL que identifique a empresa. Pôr um nome
   // aqui seria acertar para uma e mentir para todas as outras.
+  //
+  // Pelo mesmo motivo a frase não pode falar em casamento: sem evento não
+  // há tipo, e as funções de rótulo de papel.ts não têm o que responder
+  // aqui. Ela diz o que vale para os cinco tipos e para de falar — quem
+  // abre um show ou uma formatura não lê "seu dia".
   const arte = (
     <section className="acesso-arte">
       <div className="acesso-arte-topo">
@@ -123,7 +127,7 @@ export function PortalLoginForm({
       <div className="acesso-arte-baixo">
         <p className="acesso-eyebrow">Acesso exclusivo</p>
         <p className="acesso-lead">
-          Cada detalhe do seu dia já está sob cuidado.{" "}
+          Cada detalhe já está sob cuidado.{" "}
           <span className="acesso-say2">Entre para acompanhar de perto.</span>
         </p>
       </div>
@@ -151,20 +155,24 @@ export function PortalLoginForm({
             {/* O navegador guarda uma sessão por domínio: entrar aqui
                 encerra a de quem já estava. Sem este aviso, a
                 cerimonialista que abre o portal para conferir perde a
-                própria sessão e acha que o sistema se confundiu. */}
+                própria sessão e acha que o sistema se confundiu.
+
+                O aviso fala em "entrou", não em "conectada": desta porta
+                entra também o produtor do show e o gerente que cuida do
+                evento da empresa, e o feminino erraria na cara deles. */}
             {sessaoAtual && (
               <p className="acesso-alert" role="status">
                 <IconeAlerta />
                 <span>
-                  Você está conectada como <strong>{sessaoAtual}</strong>.
+                  Você entrou como <strong>{sessaoAtual}</strong>.
                   Entrar aqui vai encerrar essa sessão. Para ver o portal sem
                   sair do sistema, use uma janela anônima.
                 </span>
               </p>
             )}
             {/* method="post" não é decoração: até o React hidratar, o
-                submit é NATIVO, e o padrão do HTML é GET — a senha da
-                noiva iria parar na barra de endereço, no histórico do
+                submit é NATIVO, e o padrão do HTML é GET — a senha de
+                quem entra iria parar na barra de endereço, no histórico do
                 navegador e no log de acesso. Com POST, o pior caso vira
                 um 405 sem vazamento. */}
             <form className="acesso-fields" method="post" onSubmit={entrar}>
@@ -223,7 +231,9 @@ export function PortalLoginForm({
                   <span className="acesso-box">
                     <IconeCheck cor="#140D07" />
                   </span>
-                  <span>Continuar conectado</span>
+                  {/* "conectado" concorda com quem lê; "o acesso" não
+                      concorda com ninguém — e cabe na mesma linha. */}
+                  <span>Manter o acesso</span>
                 </button>
                 <span className="acesso-center">
                   <button

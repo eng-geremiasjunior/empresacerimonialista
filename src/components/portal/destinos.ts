@@ -11,7 +11,7 @@
 // aqui nem nas barras.
 
 import { rotuloPublico, tem, type Capacidade } from "@/lib/capacidades";
-import { rotuloEscolhas } from "@/lib/papel";
+import { rotuloCortejo, rotuloEscolhas } from "@/lib/papel";
 
 export type Destino = {
   seg: string;
@@ -98,6 +98,7 @@ const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 /** O rótulo que muda com o tipo; os demais são os do handoff. */
 const ROTULO_POR_TIPO: Record<string, (tipo?: string | null) => string> = {
   escolhas: rotuloEscolhas,
+  cortejo: rotuloCortejo,
   convidados: (tipo) => capitalizar(rotuloPublico(tipo)),
 };
 
@@ -119,7 +120,8 @@ export const duranteDoTipo = (tipo?: string | null): Destino[] =>
 export const abasCelularDoTipo = (tipo?: string | null): Destino[] =>
   doTipo(ABAS_CELULAR, tipo);
 
-/** Todos, para a tela de "em breve" saber o que dizer. */
+/** Todos os destinos, com o rótulo cru. Nenhuma barra lê daqui — serve
+ *  a destinoPorSegmento, para quem precisar do nome de uma rota. */
 export const TODOS: Destino[] = [
   ...PRINCIPAIS,
   ...DURANTE,
