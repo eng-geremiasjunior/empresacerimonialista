@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sem conexão</title>
+<style>
+  /* Sem fonte externa: se a rede caiu, nenhuma fonte vai carregar. */
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: #faf7f2;
+    color: #2f3437;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: grid;
+    place-items: center;
+    padding: 28px;
+    text-align: center;
+    line-height: 1.55;
+  }
+  .caixa { max-width: 30ch; display: flex; flex-direction: column; gap: 14px; }
+  .marca { font-size: 19px; font-weight: 600; letter-spacing: -.02em; }
+  .marca span { color: #6e3f5f; }
+  h1 { margin: 0; font-size: 21px; font-weight: 600; letter-spacing: -.02em; }
+  p { margin: 0; font-size: 15px; color: #6b6259; }
+  button {
+    margin-top: 6px;
+    height: 46px;
+    border: 1px solid #2f3437;
+    border-radius: 6px;
+    background: #2f3437;
+    color: #fff;
+    font: 500 12.5px/1 system-ui, sans-serif;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+  <div class="caixa">
+    <div class="marca">e<span>organizei</span></div>
+    <h1>Sem conexão</h1>
+    <p>Seu celular perdeu a internet. O que você já respondeu está salvo — nada se perdeu.</p>
+    <button onclick="location.reload()">Tentar de novo</button>
+  </div>
+</body>
+</html>

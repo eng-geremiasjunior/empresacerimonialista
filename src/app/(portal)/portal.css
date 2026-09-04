@@ -451,3 +451,79 @@
 .portal-aba[data-ativa="true"] {
   color: var(--cor-ouro-texto);
 }
+
+/* ------------------------------------------------------------------
+   O convite para deixar o portal na tela do celular.
+
+   Discreto de propósito: não é anúncio, é uma cortesia. Uma linha acima
+   das abas, na cor da casa, com "Agora não" do mesmo tamanho do
+   "Adicionar" — quem não quer não precisa procurar a saída.
+   ------------------------------------------------------------------ */
+
+.portal-instalar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 18px 16px 8px;
+  padding: 13px 15px;
+  background: var(--cor-superficie-alt);
+  border: 1px solid var(--cor-borda);
+  border-radius: 12px;
+}
+
+.portal-instalar-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  font-family: var(--fonte-corpo);
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--cor-texto-suave);
+}
+
+.portal-instalar-texto strong {
+  font-weight: 500;
+  color: var(--cor-texto-forte);
+}
+
+.portal-instalar-texto b {
+  font-weight: 500;
+  color: var(--cor-texto);
+}
+
+.portal-instalar-acoes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.portal-instalar-ok,
+.portal-instalar-nao {
+  font-family: var(--fonte-corpo);
+  font-size: 13px;
+  border-radius: 8px;
+  padding: 9px 14px;
+  cursor: pointer;
+  /* 40px de alvo: o dedo dela decide, não o mouse */
+  min-height: 40px;
+}
+
+.portal-instalar-ok {
+  border: 1px solid var(--cor-texto-forte);
+  background: var(--cor-texto-forte);
+  color: var(--cor-superficie);
+}
+
+.portal-instalar-nao {
+  border: 1px solid transparent;
+  background: none;
+  color: var(--cor-texto-inativo);
+}
+
+.portal-instalar-nao:hover {
+  color: var(--cor-texto);
+}
