@@ -14,24 +14,19 @@ import { InstalarPortal } from "@/components/portal/InstalarPortal";
 
 export const dynamic = "force-dynamic";
 
-// O manifesto e o ícone saem da empresa do evento, não do sistema: o
-// portal é marca branca, e o ícone que fica na tela da noiva é o de quem
-// a atende. Os metas do iOS existem porque o Safari ignora o manifesto
-// para "Adicionar à Tela de Início" — lá quem manda são estes.
-export async function generateMetadata({
-  params,
-}: {
-  params: { eventoId: string };
-}): Promise<Metadata> {
-  const evento = await getEventoDoPortal(params.eventoId);
-  const nome = evento?.marca?.nome?.trim() || "eorganizei";
-  return {
-    manifest: `/portal/${params.eventoId}/manifest.webmanifest`,
-    appleWebApp: { capable: true, title: nome, statusBarStyle: "default" },
-    icons: { apple: evento?.marca?.logoUrl ?? "/icon.svg" },
-    themeColor: "#221e1b",
-  };
-}
+// O aplicativo tem a NOSSA marca: o portal é uma cortesia que a
+// cerimonialista oferece à noiva, mas o produto é nosso (decisão do dono,
+// 04/09/2026). Um ícone por empresa seria complexidade sem retorno.
+//
+// Os metas do iOS existem porque o Safari ignora o manifesto no
+// "Adicionar à Tela de Início" — lá quem manda são estes, e o ícone
+// precisa ser PNG: SVG ele não lê.
+export const metadata: Metadata = {
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "eorganizei", statusBarStyle: "default" },
+  icons: { apple: "/apple-touch-icon.png" },
+  themeColor: "#221e1b",
+};
 
 // A casca do evento nos DOIS modos (um ponto de corte, 768px):
 //   celular    → topo fixo (menu, marca, sino) + conteúdo + 5 abas
