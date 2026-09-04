@@ -375,7 +375,7 @@ export function AbaFornecedores({
       <div className="flex items-start gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-xs text-gray-600">
         <ShieldCheck size={15} className="mt-px shrink-0 text-gray-400" />
         <span>
-          O saldo é protegido — o eOrganizei nunca o redistribui automaticamente.
+          O saldo é protegido — o eorganizei nunca o redistribui automaticamente.
           Ajustes no orçamento (como mudança de convidados) apenas sugerem
           revisão; você confirma cada realocação.
         </span>

@@ -40,7 +40,7 @@ export function ConfirmacaoCard({
   return (
     <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
       <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-        eOrganizei — confirmação de presença
+        eorganizei — confirmação de presença
       </p>
       <h1 className="mt-3 text-lg font-semibold text-gray-900">
         Olá, {initial.supplier_name}!

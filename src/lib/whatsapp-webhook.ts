@@ -104,7 +104,7 @@ export function extrairMensagem(payload: unknown): MensagemRecebida | null {
   return { from, messageId, type: "outro" };
 }
 
-// O WhatsApp manda "5538999999999"; o eOrganizei guarda "(38) 99999-9999".
+// O WhatsApp manda "5538999999999"; o eorganizei guarda "(38) 99999-9999".
 // Comparar os últimos 9 dígitos resolve os dois formatos e o DDI ausente.
 // Menos de 8 dígitos => string vazia, que nunca casa com nada (evita que
 // um cadastro vazio/torto case com qualquer telefone).

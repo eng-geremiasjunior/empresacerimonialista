@@ -15,7 +15,7 @@ export default function NaoEncontrado() {
     <main className="flex min-h-screen items-center justify-center bg-stone-50 px-6 py-16">
       <div className="max-w-md">
         <p className="font-mono text-xs uppercase tracking-[0.14em] text-stone-400">
-          eOrganizei
+          eorganizei
         </p>
         <h1 className="mt-3 text-xl font-semibold text-stone-900">
           Esta página não existe

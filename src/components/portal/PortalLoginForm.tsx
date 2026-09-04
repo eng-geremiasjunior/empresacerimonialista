@@ -103,7 +103,7 @@ export function PortalLoginForm({
       <p className="acesso-help">
         Primeiro acesso? <b>Fale com sua cerimonialista</b>
       </p>
-      <p className="acesso-vela">eOrganizei</p>
+      <p className="acesso-vela">eorganizei</p>
     </>
   );
 

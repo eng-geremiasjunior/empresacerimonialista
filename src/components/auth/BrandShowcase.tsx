@@ -3,11 +3,11 @@
 // real (KPIs, gráfico, briefing) e da visão mobile do roteiro público,
 // renderizadas em frames de notebook/celular via CSS.
 
+import { Marca, Simbolo } from "@/components/marca/Marca";
 import {
   BarChart3,
   CalendarCheck,
   CircleDollarSign,
-  Flame,
   Users,
 } from "lucide-react";
 
@@ -34,21 +34,10 @@ const DIFERENCIAIS = [
   },
 ];
 
+// A chama num quadrado índigo era a metáfora de "vela" — o nome
+// provisório. Some com ele: a marca agora é o "e" ameixa (identidade v1).
 export function Logo({ compact = false }: { compact?: boolean }) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white">
-        <Flame size={compact ? 18 : 20} strokeWidth={2} />
-      </span>
-      <span
-        className={`font-semibold tracking-tight text-gray-900 ${
-          compact ? "text-xl" : "text-2xl"
-        }`}
-      >
-        eOrganizei
-      </span>
-    </div>
-  );
+  return <Marca tamanho={compact ? 21 : 26} />;
 }
 
 // Mini-dashboard estático (conteúdo real do sistema, em escala reduzida)
@@ -58,10 +47,10 @@ function DashboardMock() {
       {/* sidebar */}
       <div className="hidden w-[68px] shrink-0 flex-col gap-2 border-r border-gray-200 bg-white p-2 sm:flex">
         <div className="mb-1 flex items-center gap-1">
-          <span className="flex h-4 w-4 items-center justify-center rounded bg-indigo-600 text-white">
-            <Flame size={9} />
+          <Simbolo tamanho={16} />
+          <span className="text-[8px] font-semibold" style={{ color: "#221E1B" }}>
+            e<span style={{ color: "#6E3F5F" }}>organizei</span>
           </span>
-          <span className="text-[8px] font-semibold text-gray-900">eOrganizei</span>
         </div>
         {["Dashboard", "Eventos", "Calendário", "Tarefas", "Financeiro"].map(
           (item, i) => (

@@ -281,7 +281,7 @@ export function LoginForm() {
           {loading
             ? "Aguarde..."
             : isLogin
-              ? "Entrar no eOrganizei"
+              ? "Entrar no eorganizei"
               : "Criar conta gratuita"}
         </button>
       </form>

@@ -13,7 +13,7 @@ import { emailDoSuperAdmin } from "@/lib/supabase/admin-painel";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "eOrganizei — Gestão",
+  title: "eorganizei — Gestão",
   robots: { index: false, follow: false },
 };
 
@@ -31,7 +31,7 @@ export default async function AdminLayout({
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-baseline gap-6">
             <span className="text-lg font-semibold tracking-tight text-stone-900">
-              eOrganizei · Gestão
+              eorganizei · Gestão
             </span>
             <nav className="flex gap-4 text-sm">
               <Link

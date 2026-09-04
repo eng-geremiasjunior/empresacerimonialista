@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 // Existe por um motivo de produto, não técnico: hoje a cerimonialista
 // leva folhas A4 numa prancha. Se ela larga o papel e se queima uma vez
 // — sinal ruim no sítio, celular sem bateria, tela quebrada —, ela volta
-// para o papel e o eOrganizei perde a usuária inteira, não o recurso. Imprimir
+// para o papel e o eorganizei perde a usuária inteira, não o recurso. Imprimir
 // na véspera é o mesmo gesto que ela já faz, e custa uma rota.
 //
 // Rota própria, fora do layout do evento, para o papel sair limpo —
@@ -188,7 +188,7 @@ export default async function ImprimirRoteiroPage({
       )}
 
       <div className="imp-rodape">
-        Impresso do eOrganizei · {formatDate(ev.date)} · confira a versão na tela
+        Impresso do eorganizei · {formatDate(ev.date)} · confira a versão na tela
         antes do evento, o roteiro pode ter mudado.
       </div>
     </div>

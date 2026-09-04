@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Marca } from "@/components/marca/Marca";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -169,9 +170,8 @@ export function AppShell({ userEmail, avatarUrl, cargo, prazosFrase, esperaFrase
   const sidebar = (
     <div className="flex h-full flex-col">
       <div className="flex h-14 items-center justify-between px-5">
-        <span className="text-lg font-semibold tracking-tight text-white">
-          eOrganizei
-        </span>
+        {/* fundo tinta: a palavra usa a variante escura, senão o "e" some */}
+        <Marca tamanho={18} escuro comSimbolo={false} />
         <button
           onClick={() => setOpen(false)}
           className="rounded-md p-1 text-stone-400 hover:text-white lg:hidden"

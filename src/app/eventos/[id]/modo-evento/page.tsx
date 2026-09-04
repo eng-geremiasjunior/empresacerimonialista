@@ -10,7 +10,7 @@ import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Modo Evento — eOrganizei",
+  title: "Modo Evento — eorganizei",
 };
 
 export default async function ModoEventoPage({

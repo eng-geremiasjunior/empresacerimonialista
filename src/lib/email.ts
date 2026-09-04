@@ -5,12 +5,12 @@
 // ambiente de PRODUÇÃO da Vercel, não só no .env.local — foi o que
 // segurou o módulo inteiro até aqui.
 //
-// Sobre o remetente: sem um domínio próprio verificado no Resend, a conta
-// fica em modo de teste e a API recusa qualquer destinatário que não seja
-// o dono da conta (403). Ou seja, fornecedor, noiva e convidado não
-// recebem nada — e o erro precisa dizer isso em português, para a
-// cerimonialista saber que tem que mandar o link por WhatsApp enquanto
-// não estiver liberado.
+// Sobre o remetente: o domínio próprio foi verificado no Resend em
+// 03/09/2026. Antes disso a conta ficava em modo de teste e a API recusava
+// (403) qualquer destinatário que não fosse o dono — fornecedor, noiva e
+// convidado não recebiam nada. As mensagens de erro abaixo continuam de pé
+// porque a chave pode faltar, o domínio pode cair e a cerimonialista
+// precisa saber, em português, que tem que mandar o link por WhatsApp.
 
 import { formatDate, formatTime } from "@/lib/format";
 
@@ -31,7 +31,7 @@ export { appUrl };
  * isso — decisão consciente, anotada aqui para não virar surpresa.
  */
 export function remetente() {
-  return process.env.EMAIL_FROM?.trim() || "eOrganizei <contato@eorganizei.com.br>";
+  return process.env.EMAIL_FROM?.trim() || "eorganizei <contato@eorganizei.com.br>";
 }
 
 /** true quando ainda estamos no domínio de teste (não entrega a terceiros). */
@@ -118,7 +118,7 @@ export async function enviarEmailConfirmacao(
   const html = `
   <div style="font-family:system-ui,-apple-system,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#111827">
     <h2 style="font-size:18px;margin:0 0 4px">Confirmação de presença</h2>
-    <p style="color:#6b7280;margin:0 0 20px">eOrganizei — gestão de eventos</p>
+    <p style="color:#6b7280;margin:0 0 20px">e<span style="color:#6E3F5F">organizei</span> — gestão de eventos</p>
     <p>Olá, <strong>${dados.supplierName}</strong>!</p>
     <p>Você está escalado para o evento:</p>
     <div style="border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin:16px 0">
@@ -165,7 +165,7 @@ export async function enviarEmailSolicitacao(
   const html = `
   <div style="font-family:system-ui,-apple-system,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#111827">
     <h2 style="font-size:18px;margin:0 0 4px">${dados.titulo}</h2>
-    <p style="color:#6b7280;margin:0 0 20px">eOrganizei — gestão de eventos</p>
+    <p style="color:#6b7280;margin:0 0 20px">e<span style="color:#6E3F5F">organizei</span> — gestão de eventos</p>
     <p>Olá, <strong>${dados.supplierName}</strong>!</p>
     <p>A cerimonialista do evento abaixo pediu: <strong>${dados.titulo.toLowerCase()}</strong>.</p>
     <div style="border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin:16px 0">
@@ -220,7 +220,7 @@ export async function enviarConviteAgendamentoEmail(
   const html = `
   <div style="font-family:system-ui,-apple-system,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#111827">
     <h2 style="font-size:18px;margin:0 0 4px">Escolha um horário</h2>
-    <p style="color:#6b7280;margin:0 0 20px">eOrganizei — agendamento de reunião</p>
+    <p style="color:#6b7280;margin:0 0 20px">e<span style="color:#6E3F5F">organizei</span> — agendamento de reunião</p>
     <p>Olá, <strong>${dados.supplierName}</strong>!</p>
     <p>Para <strong>${dados.tarefa}</strong> (${dados.eventLabel}), escolha um horário com a cerimonialista — reunião de ${dados.duracaoMin} minutos.</p>
     <div style="border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;margin:16px 0;color:#374151">

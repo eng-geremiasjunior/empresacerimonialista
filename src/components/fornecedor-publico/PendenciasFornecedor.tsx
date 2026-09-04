@@ -56,7 +56,7 @@ export function PendenciasFornecedor({
   }
 
   /**
-   * O arquivo NÃO passa pelo eOrganizei: pedimos uma URL de upload assinada,
+   * O arquivo NÃO passa pelo eorganizei: pedimos uma URL de upload assinada,
    * o navegador dele manda direto para o Storage, e só então a resposta
    * é registrada. Contrato de casamento passa fácil dos 4,5 MB que uma
    * função serverless aguenta no corpo da requisição.
@@ -111,7 +111,7 @@ export function PendenciasFornecedor({
     <main className="min-h-screen bg-gray-50 px-4 py-8">
       <div className="mx-auto w-full max-w-lg">
         <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-          {initial.empresa.nome ?? "eOrganizei"}
+          {initial.empresa.nome ?? "eorganizei"}
         </p>
         <h1 className="mt-2 text-xl font-semibold text-gray-900">
           Olá, {initial.fornecedor.nome}

@@ -1,6 +1,6 @@
 // O fornecedor manda o contrato assinado sem ter login.
 //
-// Ele nunca fala com o Storage: pede aqui, o eOrganizei revalida o hash e a
+// Ele nunca fala com o Storage: pede aqui, o eorganizei revalida o hash e a
 // pertinência da solicitação, e devolve uma URL de upload assinada — que
 // vale para UM caminho só e expira. Assim nenhuma política do Storage
 // precisa ser aberta para 'anon', e um hash roubado não vira permissão

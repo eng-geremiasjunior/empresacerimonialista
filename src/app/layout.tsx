@@ -27,7 +27,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "eOrganizei",
+  title: "eorganizei",
   description: "Gestão simples para cerimonialistas",
 };
 

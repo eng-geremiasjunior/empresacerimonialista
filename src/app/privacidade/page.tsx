@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Política de Privacidade — eOrganizei",
+  title: "Política de Privacidade — eorganizei",
   description:
-    "Como o eOrganizei trata os dados usados no envio de confirmações e agendamentos de eventos.",
+    "Como o eorganizei trata os dados usados no envio de confirmações e agendamentos de eventos.",
 };
 
 // Página pública (fora do grupo autenticado): exigida pela Meta para
@@ -22,7 +22,7 @@ export default function PrivacidadePage() {
       }}
     >
       <p style={{ fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", color: "#928A81", margin: 0 }}>
-        eOrganizei — gestão para cerimonialistas
+        eorganizei — gestão para cerimonialistas
       </p>
       <h1 style={{ fontSize: 30, fontWeight: 700, letterSpacing: "-0.02em", margin: "8px 0 4px" }}>
         Política de Privacidade
@@ -32,7 +32,7 @@ export default function PrivacidadePage() {
       </p>
 
       <Secao titulo="Quem somos">
-        O eOrganizei é uma ferramenta de gestão usada por cerimonialistas para
+        O eorganizei é uma ferramenta de gestão usada por cerimonialistas para
         organizar eventos (casamentos e festas), do orçamento ao dia da
         celebração. Esta política explica quais dados tratamos e para quê.
       </Secao>
@@ -113,7 +113,7 @@ export default function PrivacidadePage() {
 
       <Secao titulo="Quem responde pelos dados">
         Para os dados dos eventos, a <b>controladora é a cerimonialista</b>{" "}
-        que os cadastrou — é ela quem decide o que coletar e para quê. O eOrganizei
+        que os cadastrou — é ela quem decide o que coletar e para quê. O eorganizei
         atua como <b>operador</b>, tratando os dados em nome dela e sob as
         instruções desta política. Pedidos de titulares podem ser feitos à
         cerimonialista responsável pelo seu evento ou pelo contato abaixo.

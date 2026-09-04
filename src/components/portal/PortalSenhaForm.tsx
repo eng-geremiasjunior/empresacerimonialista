@@ -152,7 +152,7 @@ export function PortalSenhaForm({ modo }: { modo: "primeiro" | "redefinir" }) {
             </>
           )}
         </p>
-        <p className="acesso-vela">eOrganizei</p>
+        <p className="acesso-vela">eorganizei</p>
       </div>
     </main>
   );

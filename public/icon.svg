@@ -1,4 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#1c1917"/>
-  <path d="M20 18l12 28 12-28" fill="none" stroke="#fafaf9" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- A marca curta: a primeira letra do nome, a que já significa "e, ...".
+       Ameixa #6E3F5F com o "e" em branco. O raio do quadrado segue a
+       proporção da identidade (20 num lado de 96 = 0,208 × 64 ≈ 13).
+
+       O "e" é traçado, não fonte: favicon com <text> depende de a fonte
+       existir na máquina de quem abre, e aqui não pode depender.
+       Bojo: círculo de centro (32,33) e raio 14. A barra vai de ponta a
+       ponta no meio; o bojo sai da ponta direita dela, sobe contra o
+       relógio, dá a volta e abre embaixo à direita, a 45°. -->
+  <rect width="64" height="64" rx="13" fill="#6E3F5F"/>
+  <g fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round">
+    <path d="M18 33H46"/>
+    <path d="M46 33A14 14 0 1 0 41.9 42.9"/>
+  </g>
 </svg>

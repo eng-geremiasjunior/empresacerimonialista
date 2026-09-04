@@ -3,7 +3,7 @@ import { BrandShowcase, Logo } from "@/components/auth/BrandShowcase";
 import { LoginForm } from "@/components/auth/LoginForm";
 
 export const metadata: Metadata = {
-  title: "Entrar — eOrganizei",
+  title: "Entrar — eorganizei",
 };
 
 const supabaseConfigured = Boolean(
@@ -85,7 +85,7 @@ export default function LoginPage() {
       {/* Rodapé full width */}
       <footer className="border-t border-gray-200 bg-white px-6 py-4">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 text-sm text-gray-500 sm:flex-row">
-          <p>© 2026 eOrganizei. Todos os direitos reservados.</p>
+          <p>© 2026 eorganizei. Todos os direitos reservados.</p>
           <nav className="flex items-center gap-4">
             <a href="/privacidade" className="hover:text-gray-900">
               Política de Privacidade

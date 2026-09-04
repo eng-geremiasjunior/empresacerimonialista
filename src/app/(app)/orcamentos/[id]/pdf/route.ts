@@ -44,7 +44,7 @@ export async function GET(
     orcamento: orc as unknown as Orcamento,
     itens: (itens ?? []) as unknown as OrcamentoItem[],
     empresa: {
-      nome: empresa?.nome ?? "eOrganizei",
+      nome: empresa?.nome ?? "eorganizei",
       logo_url: empresa?.logo_url ?? null,
     },
     contatoEmpresa: user.email ?? null,

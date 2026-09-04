@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PortalSenhaForm } from "@/components/portal/PortalSenhaForm";
 import "../entrar/acesso.css";
 
-export const metadata = { title: "Nova senha — eOrganizei" };
+export const metadata = { title: "Nova senha — eorganizei" };
 
 // Destino do link de "esqueci minha senha", depois que /auth/confirm troca
 // o token por sessão. Sem sessão não há o que redefinir.

@@ -4,7 +4,7 @@ import { AjudaTela } from "@/components/ajuda/AjudaTela";
 // com resposta curta e o caminho de clique. O conteúdo mora em
 // src/lib/ajuda-conteudo.ts.
 
-export const metadata = { title: "Ajuda — eOrganizei" };
+export const metadata = { title: "Ajuda — eorganizei" };
 
 export default function AjudaPage() {
   return <AjudaTela />;

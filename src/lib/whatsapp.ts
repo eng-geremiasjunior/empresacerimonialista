@@ -261,7 +261,7 @@ export async function enviarConfirmacaoCompromissoWhatsapp(params: {
 // Meta aceita texto livre.
 //
 // Falar com a CERIMONIALISTA é o caso inverso: ela não escreveu nada, o
-// eOrganizei é que inicia. Fora da janela de 24h a Cloud API só entrega
+// eorganizei é que inicia. Fora da janela de 24h a Cloud API só entrega
 // TEMPLATE aprovado, com as variáveis preenchidas na hora. Por isso esta
 // função existe separada — e por isso o texto do lembrete não pode ser
 // montado livremente: só as variáveis mudam.

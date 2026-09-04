@@ -16,7 +16,7 @@ import {
 } from "@/lib/orcamentos";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Orçamento — eOrganizei" };
+export const metadata = { title: "Orçamento — eorganizei" };
 
 // Visualização da cerimonialista: prévia de como a proposta fica para o
 // cliente (o PDF da Etapa 4 e o link público da Etapa 5 usarão o mesmo

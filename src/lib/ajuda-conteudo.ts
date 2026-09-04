@@ -1,6 +1,6 @@
 // O guia de uso — as perguntas que uma cerimonialista faz na primeira
 // semana, com a resposta curta e o caminho exato. É o onboarding do
-// eOrganizei: quem lê aqui não precisa mandar mensagem perguntando.
+// eorganizei: quem lê aqui não precisa mandar mensagem perguntando.
 //
 // Regra de escrita: resposta em 2 a 4 frases, o caminho de clique por
 // extenso ("Eventos → Novo evento"), zero mecânica interna do sistema.
@@ -36,7 +36,7 @@ export const GRUPOS_AJUDA: GrupoAjuda[] = [
         id: "logo-empresa",
         pergunta: "Onde coloco a logo e o nome da minha empresa?",
         resposta:
-          "Em Configurações, na seção da empresa (aparece para a proprietária). A logo e o nome saem na proposta, no PDF e no portal da cliente — é a sua marca na frente do casal, não a do eOrganizei.",
+          "Em Configurações, na seção da empresa (aparece para a proprietária). A logo e o nome saem na proposta, no PDF e no portal da cliente — é a sua marca na frente do casal, não a do eorganizei.",
       },
     ],
   },
