@@ -1,8 +1,8 @@
 "use server";
 
-// A assinatura pelo lado da cerimonialista: assinar, trocar o cartão,
-// cancelar. O cartão nunca passa por aqui — só o token que o navegador
-// pegou direto com o gateway.
+// A assinatura pelo lado da cerimonialista: assinar, mudar de plano,
+// trocar o cartão, cancelar. O cartão nunca passa por aqui — só o token
+// que o navegador pegou direto com o gateway.
 //
 // Depois de cada operação a gente grava o que o GATEWAY devolveu, nunca
 // o que a tela achou que ia acontecer.
@@ -14,12 +14,13 @@ import { documentoValido } from "@/lib/documento";
 import { cepValido, telefoneValido, ufValida } from "@/lib/contato";
 import {
   atualizarCliente,
+  atualizarPrecoAssinatura,
   cancelarAssinatura,
   criarAssinatura,
   criarCliente,
   trocarCartao,
-  valorMensalCentavos,
 } from "@/lib/pagarme";
+import { centavos, ehCodigoDoPlano, getPlano } from "@/lib/planos";
 
 export type ResultadoAssinatura = { ok?: boolean; error?: string };
 
@@ -113,19 +114,31 @@ function conferirCobranca(d: DadosCobranca): string | null {
 }
 
 export async function assinar(
+  planoCodigo: string,
   cardToken: string,
   cobranca: DadosCobranca
 ): Promise<ResultadoAssinatura> {
   if (!cardToken) return { error: "Não recebemos os dados do cartão." };
   const problema = conferirCobranca(cobranca);
   if (problema) return { error: problema };
-  const valor = valorMensalCentavos();
+
+  const ctx = await donaLogada();
+  if ("error" in ctx) return { error: ctx.error };
+
+  // O preço vem do catálogo (147), não de variável de ambiente: o que ela
+  // escolheu na tela é o que vai para o gateway e para o banco, com o
+  // mesmo número. Plano fora do catálogo não é "mensal" disfarçado — é
+  // erro, porque o CHECK da tabela recusaria de todo jeito.
+  if (!ehCodigoDoPlano(planoCodigo)) return { error: "Escolha um plano." };
+  const plano = await getPlano(planoCodigo);
+  if (!plano) {
+    return { error: "Este plano não está disponível agora. Fale com o suporte." };
+  }
+  const valor = centavos(plano.valorMensal);
   if (valor <= 0) {
     return { error: "O plano ainda não está configurado. Fale com o suporte." };
   }
 
-  const ctx = await donaLogada();
-  if ("error" in ctx) return { error: ctx.error };
   const db = servico();
 
   const { data: atual } = await db
@@ -175,7 +188,7 @@ export async function assinar(
     clienteId,
     cardToken,
     valorCentavos: valor,
-    descricao: "Assinatura mensal",
+    descricao: `Plano ${plano.nome}`,
     // o endereço do formulário é também o de cobrança do cartão — pedir
     // duas vezes o mesmo endereço seria burocracia sem ganho
     enderecoCobranca: pagador.endereco,
@@ -203,8 +216,10 @@ export async function assinar(
   const { error } = await db.from("assinaturas").upsert(
     {
       empresa_id: ctx.empresaId,
-      plano: virouAtiva ? "mensal" : (atual?.plano ?? "mensal"),
-      valor_mensal: virouAtiva ? valor / 100 : (atual?.valor_mensal ?? valor / 100),
+      // o plano gravado é o código escolhido — é dele que teto_do_plano
+      // tira quantos eventos e logins a conta pode ter
+      plano: virouAtiva ? plano.codigo : (atual?.plano ?? plano.codigo),
+      valor_mensal: virouAtiva ? plano.valorMensal : (atual?.valor_mensal ?? plano.valorMensal),
       status: statusNovo,
       // Os dados do gateway são gravados SEMPRE, inclusive na falha: é o
       // que permite cancelar e trocar o cartão depois. Sem eles a
@@ -258,11 +273,118 @@ export async function assinar(
       assinatura_id: linha.id,
       empresa_id: ctx.empresaId,
       tipo: "inicio",
-      valor_depois: valor / 100,
-      nota: "assinou pelo app",
+      valor_depois: plano.valorMensal,
+      nota: `assinou o ${plano.nome} pelo app`,
     });
   }
 
+  return { ok: true };
+}
+
+/**
+ * Mudar de plano sem refazer a assinatura: o gateway troca o preço do
+ * item e o novo valor vale a partir da próxima cobrança.
+ *
+ * Só uma coisa barra a troca: descer para um plano com menos vaga de
+ * login do que gente ativa. Comprar o Master, cadastrar dez pessoas e
+ * descer para o Essencial seria furo de receita — e desativar acessos é
+ * decisão dela, não nossa. Eventos NÃO barram: acima do teto ela só não
+ * cria o próximo (o gatilho do banco recusa), e a tela avisa. Corta o
+ * criar, nunca o ver.
+ */
+export async function trocarPlano(planoCodigo: string): Promise<ResultadoAssinatura> {
+  const ctx = await donaLogada();
+  if ("error" in ctx) return { error: ctx.error };
+
+  if (!ehCodigoDoPlano(planoCodigo)) return { error: "Escolha um plano." };
+  const plano = await getPlano(planoCodigo);
+  if (!plano) {
+    return { error: "Este plano não está disponível agora. Fale com o suporte." };
+  }
+  const valor = centavos(plano.valorMensal);
+  if (valor <= 0) {
+    return { error: "O plano ainda não está configurado. Fale com o suporte." };
+  }
+
+  const db = servico();
+  const { data: atual } = await db
+    .from("assinaturas")
+    .select("id, gateway_subscription_id, status, plano, valor_mensal")
+    .eq("empresa_id", ctx.empresaId)
+    .maybeSingle();
+
+  // Trocar é para quem já paga. Trial, cancelada ou pausada passam pelo
+  // assinar(), que cria a assinatura no gateway do zero.
+  const pagante =
+    atual?.gateway_subscription_id &&
+    (atual.status === "ativa" || atual.status === "inadimplente");
+  if (!atual || !pagante) {
+    return { error: "Esta conta ainda não tem assinatura. Assine primeiro." };
+  }
+  if (atual.plano === plano.codigo) {
+    return { error: `Você já está no ${plano.nome}.` };
+  }
+
+  // A vaga de login é contada pelo banco (147), pela mesma função que o
+  // gatilho usa — não por uma conta paralela aqui.
+  if (plano.logins !== null) {
+    const { data: ativos, error: erroLogins } = await db.rpc("logins_que_contam", {
+      p_empresa_id: ctx.empresaId,
+    });
+    if (erroLogins) {
+      console.error("[vela:assinatura] logins_que_contam:", erroLogins.message);
+      return { error: "Não conseguimos conferir os acessos da equipe. Tente de novo." };
+    }
+    const sobra = Number(ativos ?? 0) - plano.logins;
+    if (sobra > 0) {
+      return {
+        error: `Desative ${sobra} ${sobra === 1 ? "acesso" : "acessos"} para mudar para o ${plano.nome}.`,
+      };
+    }
+  }
+
+  // Primeiro o gateway. Se ele recusar, nada muda aqui — uma linha
+  // dizendo "Master" com o gateway cobrando o Essencial seria a pior das
+  // duas verdades.
+  const r = await atualizarPrecoAssinatura(
+    atual.gateway_subscription_id,
+    valor,
+    `Plano ${plano.nome}`
+  );
+  if (!r.ok) return { error: r.erro };
+
+  const valorAntes = Number(atual.valor_mensal ?? 0);
+  const { error } = await db
+    .from("assinaturas")
+    .update({
+      plano: plano.codigo,
+      valor_mensal: plano.valorMensal,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", atual.id);
+  if (error) {
+    // o gateway já está cobrando o novo valor: silêncio aqui deixaria a
+    // conta pagando um plano e travada nos tetos do outro
+    console.error("[vela:assinatura] trocar plano:", error.message, "sub:", atual.gateway_subscription_id);
+    return {
+      error:
+        "O plano mudou na operadora, mas não conseguimos registrar aqui. Fale com o suporte antes de tentar de novo.",
+    };
+  }
+
+  // Subida ou descida é pelo valor, não pela ordem da vitrine: é o
+  // dinheiro que o painel do dono soma.
+  await db.from("assinatura_eventos").insert({
+    assinatura_id: atual.id,
+    empresa_id: ctx.empresaId,
+    tipo: plano.valorMensal >= valorAntes ? "upgrade" : "downgrade",
+    valor_antes: valorAntes,
+    valor_depois: plano.valorMensal,
+    nota: `mudou para o ${plano.nome} pelo app`,
+  });
+
+  revalidatePath("/assinatura");
+  revalidatePath("/", "layout");
   return { ok: true };
 }
 

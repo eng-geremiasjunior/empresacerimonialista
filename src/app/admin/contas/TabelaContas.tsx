@@ -14,6 +14,15 @@ import {
   type ResultadoAdmin,
 } from "../actions";
 
+// O que o <select> de plano recebe do servidor: os três do catálogo com
+// preço e tetos já em texto, mais 'cortesia' e 'piloto' (valorMensal
+// nulo = o dono digita). Só esses cinco passam no CHECK da 147.
+export type OpcaoDePlano = {
+  codigo: string;
+  rotulo: string;
+  valorMensal: number | null;
+};
+
 const STATUS_ROTULO: Record<string, string> = {
   trial: "trial",
   ativa: "ativa",
@@ -46,12 +55,22 @@ function BotaoSalvar() {
 
 function EditorAssinatura({
   conta,
+  planos,
   onFechar,
 }: {
   conta: ContaAdmin;
+  planos: OpcaoDePlano[];
   onFechar: () => void;
 }) {
   const a = conta.assinatura;
+  // Uma conta antiga pode carregar um plano que não está na lista (ex.:
+  // 'mensal' antes da 147 rodar). Cai no primeiro do catálogo em vez de
+  // mandar um valor que o CHECK do banco recusaria.
+  const planoInicial =
+    a && planos.some((p) => p.codigo === a.plano)
+      ? a.plano
+      : (planos[0]?.codigo ?? "piloto");
+  const [plano, setPlano] = useState(planoInicial);
   // dinheiroParaMascara, não String(): 150.5 tem PONTO e a máscara só
   // entende vírgula — virava "1.505" e salvar sem tocar gravava 10×.
   const [valor, setValor] = useState(
@@ -68,6 +87,14 @@ function EditorAssinatura({
   }, [estado.ok, onFechar]);
   if (estado.ok) return null;
 
+  // Escolher um plano do catálogo preenche o preço dele; o dono ainda
+  // pode mexer no valor depois (é ele quem decide desconto, cortesia).
+  function escolherPlano(codigo: string) {
+    setPlano(codigo);
+    const p = planos.find((x) => x.codigo === codigo);
+    if (p && p.valorMensal !== null) setValor(dinheiroParaMascara(p.valorMensal));
+  }
+
   return (
     <form
       action={agir}
@@ -76,11 +103,18 @@ function EditorAssinatura({
       <input type="hidden" name="empresa_id" value={conta.empresaId} />
       <label className="text-xs text-stone-500">
         Plano
-        <input
+        <select
           name="plano"
-          defaultValue={a?.plano ?? "piloto"}
-          className="mt-1 block h-8 w-28 rounded-lg border border-stone-300 px-2 text-sm"
-        />
+          value={plano}
+          onChange={(e) => escolherPlano(e.target.value)}
+          className="mt-1 block h-8 rounded-lg border border-stone-300 bg-white px-2 text-sm"
+        >
+          {planos.map((p) => (
+            <option key={p.codigo} value={p.codigo}>
+              {p.rotulo}
+            </option>
+          ))}
+        </select>
       </label>
       <label className="text-xs text-stone-500">
         Valor mensal (R$)
@@ -128,7 +162,13 @@ function EditorAssinatura({
   );
 }
 
-function Linha({ conta }: { conta: ContaAdmin }) {
+function Linha({
+  conta,
+  planos,
+}: {
+  conta: ContaAdmin;
+  planos: OpcaoDePlano[];
+}) {
   const [editando, setEditando] = useState(false);
   const [confirmandoBan, setConfirmandoBan] = useState(false);
   const [ocupado, comecar] = useTransition();
@@ -232,13 +272,23 @@ function Linha({ conta }: { conta: ContaAdmin }) {
 
       {erro && <p className="mt-2 text-xs text-red-600">{erro}</p>}
       {editando && (
-        <EditorAssinatura conta={conta} onFechar={() => setEditando(false)} />
+        <EditorAssinatura
+          conta={conta}
+          planos={planos}
+          onFechar={() => setEditando(false)}
+        />
       )}
     </div>
   );
 }
 
-export function TabelaContas({ contas }: { contas: ContaAdmin[] }) {
+export function TabelaContas({
+  contas,
+  planos,
+}: {
+  contas: ContaAdmin[];
+  planos: OpcaoDePlano[];
+}) {
   if (contas.length === 0) {
     return (
       <p className="rounded-xl border border-dashed border-stone-300 bg-white p-8 text-center text-sm text-stone-500">
@@ -249,7 +299,7 @@ export function TabelaContas({ contas }: { contas: ContaAdmin[] }) {
   return (
     <div className="space-y-3">
       {contas.map((c) => (
-        <Linha key={c.empresaId} conta={c} />
+        <Linha key={c.empresaId} conta={c} planos={planos} />
       ))}
     </div>
   );

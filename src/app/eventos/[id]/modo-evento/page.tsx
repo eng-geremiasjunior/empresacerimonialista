@@ -6,6 +6,10 @@ import type { ItemChecklistDia } from "@/components/modo-evento/ChecklistDoDia";
 import type { ModoItem, ModoSupplier } from "@/lib/modo-tema";
 import type { CronogramaItem } from "@/lib/cronograma";
 import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
+import { lerPainel } from "@/app/(app)/eventos/[id]/recepcao-actions";
+import { qrSvg } from "@/lib/qr";
+import { publicBase } from "@/lib/app-url";
+import type { ChegadasProps } from "@/components/operacao/ChegadasAoVivo";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +34,7 @@ export default async function ModoEventoPage({
   await supabase.rpc("semear_checklist_dia", { p_event_id: eventId });
 
   // Tudo escopado por event_id (RLS garante que é da cerimonialista logada).
-  const [eventRes, itemsRes, linksRes, checklistRes] = await Promise.all([
+  const [eventRes, itemsRes, linksRes, checklistRes, painel] = await Promise.all([
     supabase
       .from("events")
       .select("type, date, time, clients(name)")
@@ -52,10 +56,28 @@ export default async function ModoEventoPage({
       .eq("ativo", true)
       .order("bloco")
       .order("ordem"),
+    // chegadas (148): o número da porta e os postos, atrás da sessão dela
+    lerPainel(eventId),
   ]);
 
   if (!eventRes.data) {
     notFound();
+  }
+
+  // O QR de cada posto vivo é desenhado aqui, no servidor — o componente
+  // cliente só injeta o SVG. Posto revogado não ganha QR: link morto não
+  // merece código. Nulo quando a 148 ainda não rodou: o bloco some, o
+  // resto do Modo Evento segue.
+  let chegadas: ChegadasProps | null = null;
+  if (painel) {
+    const linkBase = `${publicBase()}/recepcao/`;
+    const vivos = painel.postos.filter((p) => p.revogado_em === null);
+    const svgs = await Promise.all(vivos.map((p) => qrSvg(`${linkBase}${p.hash}`)));
+    const qrPorPosto: Record<string, string> = {};
+    vivos.forEach((p, i) => {
+      qrPorPosto[p.id] = svgs[i];
+    });
+    chegadas = { eventId, painel, qrPorPosto, linkBase };
   }
 
   const event = eventRes.data as unknown as {
@@ -130,6 +152,7 @@ export default async function ModoEventoPage({
       items={items}
       suppliers={suppliers}
       checklist={checklist}
+      chegadas={chegadas}
     />
   );
 }

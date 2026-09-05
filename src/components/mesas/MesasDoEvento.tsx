@@ -81,6 +81,7 @@ export function MesasDoEvento({
   elementos: elementosProp,
   convidados: convidadosProp,
   relacoes,
+  presentes,
 }: {
   eventId: string;
   /** tipo do evento — como esta festa chama a mesa 'noivos' */
@@ -92,6 +93,8 @@ export function MesasDoEvento({
   elementos: Elemento[];
   convidados: ConvidadoDaLista[];
   relacoes: Relacao[];
+  /** quantos chegaram, contados pelo banco (148) — nulo se a migração não rodou */
+  presentes: number | null;
 }) {
   const router = useRouter();
   const [pendente, iniciar] = useTransition();
@@ -171,11 +174,11 @@ export function MesasDoEvento({
   }, [mesas, saude]);
 
   const cont = useMemo(() => contadores(convidados), [convidados]);
-  // quem chegou, contando gente como `contadores` conta (1 + acompanhantes)
-  const chegaram = useMemo(
-    () => convidados.filter((c) => c.presenteEm).reduce((s, c) => s + 1 + c.acompanhantes, 0),
-    [convidados]
-  );
+  // "chegaram" NÃO se soma aqui: vem de presentes_do_evento (148), a
+  // mesma fórmula da porta, do Modo Evento e da prestação de contas. A
+  // soma local (1 + acompanhantes, sem crianças) era a terceira versão
+  // do mesmo número. O toque "chegou" atualiza a linha na hora e o
+  // refresh traz o total certo.
   const rotuloDe = useMemo(() => new Map(mesas.map((m) => [m.id, m.rotulo])), [mesas]);
   const nomeDe = useMemo(() => new Map(convidados.map((c) => [c.id, c.nome])), [convidados]);
 
@@ -243,9 +246,9 @@ export function MesasDoEvento({
       {/* contadores fixos + ações */}
       <div className="sticky top-0 z-10 -mx-1 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-gray-200 bg-white/95 px-4 py-2.5 backdrop-blur">
         <p className="text-sm text-gray-600">
-          {diaDoEvento && (
+          {diaDoEvento && presentes !== null && (
             <>
-              <b className="text-gray-900">{chegaram}</b> chegaram de{" "}
+              <b className="text-gray-900">{presentes}</b> chegaram de{" "}
             </>
           )}
           <b className="text-gray-900">{cont.confirmados}</b> confirmados

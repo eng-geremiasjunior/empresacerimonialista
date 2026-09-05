@@ -9,6 +9,7 @@
 // da lista, rate-limit e e-mail.
 
 import { useState } from "react";
+import { CredencialEntrada, type Credencial } from "@/components/rsvp/ConfirmacaoConvidado";
 
 type Acompanhante = { nome: string; crianca: boolean };
 
@@ -80,6 +81,8 @@ export function RsvpConvite({
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [pronto, setPronto] = useState(false);
+  // a entrada, desenhada pela rota: quem confirma por aqui saía sem nada
+  const [credencial, setCredencial] = useState<Credencial | null>(null);
 
   const total = 1 + acompanhantes.length;
 
@@ -115,12 +118,20 @@ export function RsvpConvite({
           recado: recado || null,
         }),
       });
-      const r = (await res.json()) as { ok?: boolean; erro?: string };
+      const r = (await res.json()) as {
+        ok?: boolean;
+        erro?: string;
+        qr?: string;
+        codigo?: string;
+      };
       setEnviando(false);
       if (!r.ok) {
         setErro(ERROS[r.erro ?? ""] ?? "Não conseguimos registrar agora. Tente de novo.");
         return;
       }
+      setCredencial(
+        vai && r.qr && r.codigo ? { qr: r.qr, codigo: r.codigo, nome: nome.trim() } : null
+      );
       setPronto(true);
     } catch {
       setEnviando(false);
@@ -138,6 +149,7 @@ export function RsvpConvite({
               : "Que alegria! Estamos esperando você."
             : "Obrigado por avisar — vamos sentir sua falta."}
         </p>
+        {vai && credencial && <CredencialEntrada credencial={credencial} />}
         {vai && (
           <div className="cv-agenda">
             <div className="cv-rotulo">Para não esquecer a data</div>

@@ -8,9 +8,69 @@
 // servidor não aceita mais nada (nem id, nem evento).
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 
 type Confirmacao = "aguardando" | "confirmado" | "nao_vai";
+
+/** O que a tela precisa para desenhar a entrada: o SVG já pronto (vem do
+ *  servidor — o único que desenha QR), o código curto e o nome. */
+export type Credencial = { qr: string; codigo: string; nome: string };
+
+const ERROS_RESPOSTA: Record<string, string> = {
+  encerrado: "As confirmações já foram encerradas. Fale direto com os anfitriões.",
+  ja_na_festa: "Sua entrada já foi registrada na festa — não dá mais para mudar por aqui.",
+  convite_invalido: "Este convite não está mais válido.",
+};
+
+/**
+ * A credencial de entrada. QR sobre fundo branco de propósito: o cartão
+ * é creme e a câmera da recepção perde contraste nele. O código de seis
+ * letras em corpo grande é o plano B de quando a câmera não lê.
+ * Sem legenda: quem está na porta sabe o que fazer com um QR.
+ */
+export function CredencialEntrada({ credencial }: { credencial: Credencial }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 10,
+        padding: "var(--esp-4) 0",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 240,
+          background: "#fff",
+          padding: 12,
+          borderRadius: 8,
+        }}
+        dangerouslySetInnerHTML={{ __html: credencial.qr }}
+      />
+      {/* cor herdada de propósito: o mesmo bloco vive no cartão simples e
+          no site do casamento, cada um com a sua paleta */}
+      <span style={{ fontSize: 16, textAlign: "center", color: "inherit" }}>
+        {credencial.nome}
+      </span>
+      <span style={{ fontSize: 12, color: "inherit" }}>
+        <span style={{ opacity: 0.75 }}>entrada</span>{" "}
+        <strong
+          style={{
+            fontSize: 26,
+            letterSpacing: "0.12em",
+            fontVariantNumeric: "tabular-nums",
+            textTransform: "uppercase",
+          }}
+        >
+          {credencial.codigo}
+        </strong>
+      </span>
+    </div>
+  );
+}
 
 export function ConfirmacaoConvidado({
   hash,
@@ -23,6 +83,7 @@ export function ConfirmacaoConvidado({
   acompanhantesIniciais,
   criancasIniciais,
   restricaoInicial,
+  credencial,
 }: {
   hash: string;
   nome: string;
@@ -35,7 +96,10 @@ export function ConfirmacaoConvidado({
   acompanhantesIniciais: number;
   criancasIniciais: number;
   restricaoInicial: string | null;
+  /** nula enquanto o convidado não confirmou — o servidor só a entrega a quem vem */
+  credencial: Credencial | null;
 }) {
+  const router = useRouter();
   const [resposta, setResposta] = useState<Confirmacao>(confirmacaoInicial);
   const [acompanhantes, setAcompanhantes] = useState(acompanhantesIniciais);
   const [criancas, setCriancas] = useState(criancasIniciais);
@@ -61,13 +125,20 @@ export function ConfirmacaoConvidado({
     });
     setEnviando(false);
 
-    const r = data as { ok?: boolean } | null;
+    const r = data as { ok?: boolean; erro?: string } | null;
     if (error || !r?.ok) {
-      setErro("Não conseguimos registrar agora. Tente de novo em instantes.");
+      setErro(
+        ERROS_RESPOSTA[r?.erro ?? ""] ??
+          "Não conseguimos registrar agora. Tente de novo em instantes."
+      );
       return;
     }
     setResposta(valor);
     setPronto(true);
+    // O QR nasce no servidor, atrás da confirmação recém-gravada: o
+    // refresh refaz a página e a credencial chega como prop, sem perder
+    // o estado desta tela. Quem desiste some da porta pelo mesmo caminho.
+    router.refresh();
   }
 
   // depois de responder, a tela agradece — e deixa mudar de ideia
@@ -90,6 +161,11 @@ export function ConfirmacaoConvidado({
           <span className="rsvp-texto">{quando}</span>
           {onde && <span className="rsvp-texto">{onde}</span>}
         </div>
+        {/* a prop pode ainda carregar a credencial antiga entre o "não
+            vou" e o refresh: a resposta local é quem decide se ela aparece */}
+        {resposta === "confirmado" && credencial && (
+          <CredencialEntrada credencial={credencial} />
+        )}
         <button
           type="button"
           className="rsvp-botao"

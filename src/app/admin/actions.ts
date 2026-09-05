@@ -11,8 +11,19 @@ import {
   salvarGastoDb,
 } from "@/lib/supabase/admin-painel";
 import { desmascararDinheiro } from "@/lib/format";
+import { ehCodigoDoPlano } from "@/lib/planos";
 
 export type ResultadoAdmin = { ok?: boolean; error?: string };
+
+// Os dois planos herdados que a 147 mantém fora do catálogo: 'piloto'
+// (quem nunca assinou) e 'cortesia' (conta sem limite, por decisão do
+// dono). Junto com os três do catálogo, são o vocabulário inteiro do
+// CHECK de assinaturas.plano.
+const PLANOS_HERDADOS = ["piloto", "cortesia"];
+
+function planoAceito(plano: string): boolean {
+  return ehCodigoDoPlano(plano) || PLANOS_HERDADOS.includes(plano);
+}
 
 export async function salvarAssinatura(
   _prev: ResultadoAdmin,
@@ -25,11 +36,20 @@ export async function salvarAssinatura(
     if (!["trial", "ativa", "pausada", "cancelada"].includes(status)) {
       return { error: "Status inválido." };
     }
+    // O CHECK do banco recusaria de todo jeito, mas a mensagem do
+    // Postgres não diz ao dono qual era a lista.
+    const plano = String(formData.get("plano") ?? "").trim();
+    if (!planoAceito(plano)) {
+      return {
+        error:
+          "Plano inválido. Aceitos: essencial, profissional, master, cortesia ou piloto.",
+      };
+    }
     const valor = desmascararDinheiro(String(formData.get("valor") ?? "")) ?? 0;
 
     await salvarAssinaturaDb({
       empresaId,
-      plano: String(formData.get("plano") ?? "piloto").trim() || "piloto",
+      plano,
       valorMensal: valor,
       status: status as "trial" | "ativa" | "pausada" | "cancelada",
       observacao: String(formData.get("observacao") ?? "").trim() || null,

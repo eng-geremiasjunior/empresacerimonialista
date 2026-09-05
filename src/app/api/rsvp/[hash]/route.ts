@@ -11,6 +11,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { enviarEmailConvidado } from "@/lib/email-convidado";
+import { qrSvg } from "@/lib/qr";
 
 export const dynamic = "force-dynamic";
 
@@ -118,12 +119,19 @@ export async function POST(
     .map((a) => ({ nome: (a?.nome ?? "").trim(), crianca: a?.crianca === true }))
     .filter((a) => a.nome);
   if (nomes.length > 0) {
-    const { error: erroNomes } = await supabase.rpc("registrar_acompanhantes", {
-      p_hash: r.hash,
-      p_nomes: nomes,
-    });
+    const { data: resNomes, error: erroNomes } = await supabase.rpc(
+      "registrar_acompanhantes",
+      { p_hash: r.hash, p_nomes: nomes }
+    );
+    // Desde a 148 a função também RECUSA em vez de falhar: 'ja_na_festa'
+    // (alguém do grupo já entrou — a lista não pode mais ser trocada por
+    // baixo da porta) e 'encerrado'. O cadastro em si já valeu; a lista
+    // que ficou é a de antes, e a tela não precisa quebrar por isso.
+    const recusa = resNomes as { ok?: boolean; erro?: string } | null;
     if (erroNomes) {
       console.error("[vela:rsvp] acompanhantes:", erroNomes.code, erroNomes.message);
+    } else if (recusa && recusa.ok === false) {
+      console.warn("[vela:rsvp] acompanhantes recusados:", recusa.erro);
     }
   }
   if (corpo.menu || corpo.recado) {
@@ -139,6 +147,31 @@ export async function POST(
     }
   }
 
+  // A credencial de entrada, para a tela desenhar o QR sem depender do
+  // e-mail. É o checkin_hash — NUNCA o hash do convite (r.hash), que
+  // escreve o RSVP e não pode atravessar para um código que fica exposto
+  // na fila. Só quem vem recebe; quem não vai não tem o que mostrar.
+  const confirmado = (corpo.confirmacao ?? "confirmado") === "confirmado";
+  let credencial: { checkinHash: string; codigo: string; qr: string } | null = null;
+  if (confirmado) {
+    const { data: cred } = await supabase
+      .from("evento_convidado")
+      .select("checkin_hash")
+      .eq("hash", r.hash)
+      .maybeSingle();
+    const checkinHash = (cred as { checkin_hash?: string | null } | null)?.checkin_hash;
+    if (checkinHash) {
+      // maiúsculas: hex não distingue caixa, e o modo alfanumérico do QR
+      // sai com menos módulos — o mesmo contrato que a porta lê
+      const emCaixaAlta = checkinHash.toUpperCase();
+      credencial = {
+        checkinHash: emCaixaAlta,
+        codigo: emCaixaAlta.slice(-6),
+        qr: await qrSvg(emCaixaAlta),
+      };
+    }
+  }
+
   // O e-mail é cortesia, não parte do cadastro: se o Resend falhar, a
   // presença continua confirmada e a tela não mente para o convidado.
   const { data: ev } = await supabase.rpc("consultar_rsvp_evento", {
@@ -147,7 +180,6 @@ export async function POST(
   const evento = (ev as Record<string, string | null>[] | null)?.[0];
 
   if (evento && corpo.email) {
-    const confirmado = (corpo.confirmacao ?? "confirmado") === "confirmado";
     const envio = await enviarEmailConvidado({
       para: corpo.email,
       nome: corpo.nome ?? "",
@@ -166,8 +198,8 @@ export async function POST(
     if (envio.ok) {
       await supabase.rpc("marcar_email_convidado_enviado", { p_hash: r.hash });
     }
-    return NextResponse.json({ ok: true, emailEnviado: envio.ok });
+    return NextResponse.json({ ok: true, emailEnviado: envio.ok, ...credencial });
   }
 
-  return NextResponse.json({ ok: true, emailEnviado: false });
+  return NextResponse.json({ ok: true, emailEnviado: false, ...credencial });
 }

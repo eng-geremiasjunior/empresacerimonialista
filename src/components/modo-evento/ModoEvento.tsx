@@ -26,6 +26,7 @@ import { AcaoItemSheet } from "./AcaoItemSheet";
 import { ResumoFinal } from "./ResumoFinal";
 import { FornecedoresStatus } from "./FornecedoresStatus";
 import { ChecklistDoDia, type ItemChecklistDia } from "./ChecklistDoDia";
+import { ChegadasAoVivo, type ChegadasProps } from "@/components/operacao/ChegadasAoVivo";
 import { hojeLocalISO } from "@/lib/format";
 
 const POLL_MS = 15_000;
@@ -38,6 +39,8 @@ type Props = {
   items: ModoItem[];
   suppliers: ModoSupplier[];
   checklist: ItemChecklistDia[];
+  /** chegadas pela porta (148); nulo enquanto a migração não rodou */
+  chegadas?: ChegadasProps | null;
 };
 
 function mapItem(i: CronogramaItem): ModoItem {
@@ -83,6 +86,7 @@ export function ModoEvento({
   items: initialItems,
   suppliers,
   checklist,
+  chegadas = null,
 }: Props) {
   const [now, setNow] = useState(() => Date.now());
   const [isDark, setIsDark] = useState(true);
@@ -238,6 +242,12 @@ export function ModoEvento({
               t={t}
             />
           </Section>
+
+          {chegadas && (
+            <Section title="Chegadas" sub={t.sub}>
+              <ChegadasAoVivo {...chegadas} t={t} />
+            </Section>
+          )}
 
           <Section title="Fornecedores" sub={t.sub}>
             <FornecedoresStatus suppliers={suppliers} t={t} />

@@ -48,6 +48,10 @@ const ROTAS_PUBLICAS: ((p: string) => boolean)[] = [
   // Central de Solicitações na mão do fornecedor
   (p) => p.startsWith("/fornecedor/"),
   (p) => p.startsWith("/api/fornecedor/"),
+  // o posto da recepção (check-in por QR) e a rota que ele chama; o hash
+  // do posto é a credencial e o banco decide se ele ainda vale
+  (p) => p.startsWith("/recepcao/"),
+  (p) => p.startsWith("/api/recepcao/"),
 ];
 
 function ehPublica(pathname: string): boolean {

@@ -260,8 +260,14 @@ export function PrestacaoDeContas({
             {(payload.resumo.custo_por_pessoa ?? 0) > 0 && (
               <p className="mt-0.5 text-sm text-stone-600">
                 {brl(payload.resumo.custo_por_pessoa)} por pessoa
+                {/* porta em aberto (148): o número da porta aparece, mas o
+                    "por pessoa" ainda é pelos confirmados. `=== false` de
+                    propósito: fotografias anteriores à 148 não têm o campo
+                    e dividiam por presentes */}
                 {(payload.convidados.presentes ?? 0) > 0
-                  ? ` · ${payload.convidados.presentes} presentes`
+                  ? payload.convidados.porta_encerrada === false
+                    ? ` · ${payload.convidados.presentes} chegaram pela porta (contagem em aberto)`
+                    : ` · ${payload.convidados.presentes} presentes`
                   : ""}
               </p>
             )}

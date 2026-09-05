@@ -10,6 +10,7 @@
 // que a pessoa muda de ideia depois.
 
 import { useState } from "react";
+import { CredencialEntrada, type Credencial } from "./ConfirmacaoConvidado";
 
 type Passo = "escolha" | "dados" | "pronto";
 
@@ -36,6 +37,8 @@ export function AutocadastroConvidado({
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [emailChegou, setEmailChegou] = useState(true);
+  // o QR vem pronto da rota: o servidor é o único que desenha
+  const [credencial, setCredencial] = useState<Credencial | null>(null);
 
   const ERROS: Record<string, string> = {
     nome_obrigatorio: "Precisamos do seu nome.",
@@ -66,7 +69,13 @@ export function AutocadastroConvidado({
           restricao: vai ? restricao : null,
         }),
       });
-      const r = (await res.json()) as { ok?: boolean; erro?: string; emailEnviado?: boolean };
+      const r = (await res.json()) as {
+        ok?: boolean;
+        erro?: string;
+        emailEnviado?: boolean;
+        qr?: string;
+        codigo?: string;
+      };
       setEnviando(false);
 
       if (!r.ok) {
@@ -74,6 +83,9 @@ export function AutocadastroConvidado({
         return;
       }
       setEmailChegou(r.emailEnviado !== false);
+      setCredencial(
+        vai && r.qr && r.codigo ? { qr: r.qr, codigo: r.codigo, nome: nome.trim() } : null
+      );
       setPasso("pronto");
     } catch {
       setEnviando(false);
@@ -98,11 +110,17 @@ export function AutocadastroConvidado({
           <span className="rsvp-texto">{quando}</span>
           {onde && <span className="rsvp-texto">{onde}</span>}
         </div>
-        <p className="rsvp-texto">
-          {emailChegou
-            ? `Mandamos um e-mail para ${email} com esses detalhes. Se precisar mudar alguma coisa, é por lá.`
-            : "Guarde esta página: se precisar mudar alguma coisa, fale com os anfitriões."}
-        </p>
+        {credencial && <CredencialEntrada credencial={credencial} />}
+        {emailChegou ? (
+          <p className="rsvp-texto">
+            Mandamos um e-mail para {email} com esses detalhes. Se precisar mudar
+            alguma coisa, é por lá.
+          </p>
+        ) : (
+          <p className="rsvp-texto">
+            Se precisar mudar alguma coisa, fale com os anfitriões.
+          </p>
+        )}
       </div>
     );
   }

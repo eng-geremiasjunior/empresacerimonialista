@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { valorMensalReais } from "@/lib/pagarme";
+import { getCatalogoDePlanos, reais, tetoEmTexto } from "@/lib/planos";
 import {
   AssinaturaTela,
   type EstadoAssinatura,
+  type PlanoDaVitrine,
 } from "@/components/assinatura/AssinaturaTela";
 
 export const dynamic = "force-dynamic";
@@ -31,10 +32,23 @@ export default async function AssinaturaPage() {
     .eq("user_id", user?.id ?? "")
     .maybeSingle();
 
+  // A vitrine vem do catálogo (147), não de variável de ambiente. O texto
+  // já sai pronto daqui porque planos.ts é módulo de servidor (lê cookies)
+  // e a tela é cliente: atravessa a fronteira só o que é string e número.
+  const catalogo = await getCatalogoDePlanos();
+  const planos: PlanoDaVitrine[] = catalogo.map((p) => ({
+    codigo: p.codigo,
+    nome: p.nome,
+    valorMensal: p.valorMensal,
+    precoTexto: reais(p.valorMensal),
+    eventosTexto: tetoEmTexto(p.eventosEmAndamento),
+    loginsTexto: tetoEmTexto(p.logins),
+  }));
+
   return (
     <AssinaturaTela
       estado={estado}
-      valorMensal={valorMensalReais()}
+      planos={planos}
       emailDaConta={user?.email ?? ""}
       nomeDaConta={membro?.nome ?? ""}
     />

@@ -169,8 +169,13 @@ export default async function ImprimirPrestacaoPage({
           {(p.resumo.custo_por_pessoa ?? 0) > 0 && (
             <p className="imp-sub">
               {brl(p.resumo.custo_por_pessoa)} por pessoa
+              {/* porta em aberto (148): o "por pessoa" acima é pelos
+                  confirmados; `=== false` porque a fotografia antiga não
+                  tem o campo e dividia por presentes */}
               {(p.convidados.presentes ?? 0) > 0
-                ? ` · ${p.convidados.presentes} presentes`
+                ? p.convidados.porta_encerrada === false
+                  ? ` · ${p.convidados.presentes} chegaram pela porta (contagem em aberto)`
+                  : ` · ${p.convidados.presentes} presentes`
                 : ""}
             </p>
           )}

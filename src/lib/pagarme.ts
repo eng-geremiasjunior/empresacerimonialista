@@ -162,6 +162,10 @@ export type AssinaturaGateway = {
   customer?: { id?: string; name?: string; email?: string };
   card?: { last_four_digits?: string; brand?: string };
   current_cycle?: { end_at?: string | null };
+  // O GET /subscriptions/{id} devolve os itens — é neles que mora o
+  // preço (assinatura avulsa, sem plano no painel). Só tem um; o id
+  // dele é o que a troca de plano precisa para mudar o valor.
+  items?: { id: string; pricing_scheme?: { price?: number } }[];
 };
 
 export type ClienteGateway = { id: string; name?: string; email?: string };
@@ -319,6 +323,43 @@ export async function trocarCartao(assinaturaId: string, cardToken: string) {
   });
 }
 
+/**
+ * Mudar de plano sem refazer a assinatura: o preço vive no único item,
+ * então trocar de plano é trocar o preço desse item.
+ *
+ * Com billing_type "prepaid" o gateway já cobrou o mês corrente; o
+ * novo valor vale a partir da PRÓXIMA cobrança. Não há pro-rata, e
+ * isso é decisão, não limitação: "a partir do próximo vencimento você
+ * paga R$ 149" é uma frase que ela entende — um crédito de R$ 23,47
+ * pelos 14 dias que faltam, não.
+ */
+export async function atualizarPrecoAssinatura(
+  assinaturaId: string,
+  valorCentavos: number,
+  descricao: string
+): Promise<{ ok: true; dados: AssinaturaGateway } | { ok: false; erro: string; cru?: unknown }> {
+  // Primeiro a verdade do gateway: o id do item não fica gravado aqui,
+  // então é relido a cada troca — nunca chutado.
+  const lida = await lerAssinatura(assinaturaId);
+  if (!lida.ok) return lida;
+  const item = lida.dados.items?.[0];
+  if (!item?.id) {
+    console.error("[vela:pagarme] assinatura sem item para reprecificar:", assinaturaId);
+    return {
+      ok: false,
+      erro: "Não encontramos o valor desta assinatura na operadora. Fale com o suporte.",
+    };
+  }
+  return chamar<AssinaturaGateway>(`/subscriptions/${assinaturaId}/items/${item.id}`, {
+    method: "PUT",
+    body: JSON.stringify({
+      description: descricao,
+      quantity: 1,
+      pricing_scheme: { scheme_type: "unit", price: valorCentavos },
+    }),
+  });
+}
+
 /** Cancelar. O gateway para de cobrar; o acesso, quem decide é a gente. */
 export async function cancelarAssinatura(assinaturaId: string) {
   return chamar<AssinaturaGateway>(`/subscriptions/${assinaturaId}`, {
@@ -326,12 +367,5 @@ export async function cancelarAssinatura(assinaturaId: string) {
   });
 }
 
-/** O preço, num lugar só. Em centavos, como o gateway quer. */
-export function valorMensalCentavos(): number {
-  const v = Number(process.env.PAGARME_VALOR_MENSAL_CENTAVOS);
-  return Number.isFinite(v) && v > 0 ? Math.round(v) : 0;
-}
-
-export function valorMensalReais(): number {
-  return valorMensalCentavos() / 100;
-}
+// O preço mora em plano_catalogo (147) e é lido por src/lib/planos.ts.
+// A variável PAGARME_VALOR_MENSAL_CENTAVOS não é mais lida por ninguém.

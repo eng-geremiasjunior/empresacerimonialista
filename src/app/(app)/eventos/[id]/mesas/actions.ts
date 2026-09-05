@@ -461,22 +461,36 @@ export async function ordenarMesa(
  * Presença no dia (141): o toque "chegou" — e o desfazer
  * ---------------------------------------------------------------- */
 
+/**
+ * Desde a 148 a chegada é uma linha no livro (evento_chegada), não um
+ * UPDATE em presente_em: a porta pública e esta tela escrevem no mesmo
+ * lugar e o contador sai de uma fórmula só. `acompanhanteId` marca um
+ * acompanhante nominal sozinho; sem ele, é o titular com os sem nome.
+ */
 export async function marcarPresenca(
   eventId: string,
   convidadoId: string,
-  presente: boolean
+  presente: boolean,
+  acompanhanteId?: string | null
 ): Promise<Resultado> {
   const supabase = createClient();
-  const { error } = await supabase
-    .from("evento_convidado")
-    .update({
-      presente_em: presente ? new Date().toISOString() : null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", convidadoId)
-    .eq("event_id", eventId);
-  if (error) return causa(error, "Não foi possível marcar a chegada");
+  const { error } = await supabase.rpc("registrar_chegada_equipe", {
+    p_event_id: eventId,
+    p_convidado_id: convidadoId,
+    p_acompanhante_id: acompanhanteId ?? null,
+    p_presente: presente,
+  });
+  if (error) {
+    if (error.message.includes("sem_permissao")) {
+      return { error: "Você não tem permissão para editar este evento." };
+    }
+    if (error.message.includes("convidado_de_outro_evento")) {
+      return { error: "Esse convidado não é deste evento." };
+    }
+    return causa(error, "Não foi possível marcar a chegada");
+  }
   revalidar(eventId);
+  revalidatePath(`/eventos/${eventId}/modo-evento`);
   return { success: true };
 }
 

@@ -10,15 +10,22 @@
 // A tela fala em tempo e em consequência, não em estado: "sua próxima
 // cobrança é dia 12", não "status: ativa".
 //
+// Desde a 147 são três planos (Essencial, Profissional, Master), lidos do
+// catálogo — o produto é o mesmo inteiro nos três; o que muda é quantos
+// eventos ficam de pé ao mesmo tempo e quantas pessoas têm login. A tela
+// mostra o uso em número ("8 de 10 eventos em andamento · 1 de 1 login")
+// e a vitrine dos três; quem já paga muda de plano sem refazer o cartão.
+//
 // Visual: Especificacao-Assinatura.md (Claude Design, 31/08/2026) —
-// tema neutro, canvas #E4E5E7, painel do plano em chumbo, zero cor de
-// matiz. Todo valor, data, documento e contagem em IBM Plex Mono; texto
-// corrente em Instrument Sans; o H1 em Inter. As três fontes já são
-// carregadas pelo layout do app.
+// tema neutro, canvas #E4E5E7, painel do plano em chumbo. A única cor de
+// matiz é o âmbar da linha de uso quando a conta passou do teto. Todo
+// valor, data, documento e contagem em IBM Plex Mono; texto corrente em
+// Instrument Sans; o H1 em Inter. As três fontes já são carregadas pelo
+// layout do app.
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { assinar, atualizarCartao, cancelar } from "@/app/(app)/assinatura/actions";
+import { assinar, atualizarCartao, cancelar, trocarPlano } from "@/app/(app)/assinatura/actions";
 import { documentoValido } from "@/lib/documento";
 import { cepValido, telefoneValido, ufValida } from "@/lib/contato";
 import {
@@ -37,8 +44,30 @@ export type EstadoAssinatura = {
   cartao_bandeira: string | null;
   falhas_seguidas: number;
   tem_gateway: boolean;
+  plano_nome: string;
   eventos: number;
+  /** teto do plano; null = sem limite */
+  limite_eventos: number | null;
   pode_criar_evento: boolean;
+  logins: number;
+  limite_logins: number | null;
+  pode_adicionar_login: boolean;
+  /** o aceite de uma proposta pode deixar 11 em 10 — nada trava, a tela avisa */
+  acima_do_plano: boolean;
+};
+
+/**
+ * Um cartão da vitrine, já em texto. planos.ts é módulo de servidor (lê
+ * cookies) e esta tela é cliente: o preço e os tetos chegam formatados
+ * pela page, e aqui só se mostra.
+ */
+export type PlanoDaVitrine = {
+  codigo: string;
+  nome: string;
+  valorMensal: number;
+  precoTexto: string;
+  eventosTexto: string;
+  loginsTexto: string;
 };
 
 const MESES = [
@@ -136,6 +165,10 @@ const C = {
   rotuloChumbo: "#9BA0A6",
 };
 
+// A única cor de matiz da tela: a linha de uso quando a conta passou do
+// teto. Aviso, não erro — nada foi travado.
+const AMBAR = "#9A6700";
+
 const F_UI = "var(--font-ui), 'Instrument Sans', sans-serif";
 const F_MONO = "var(--font-mono), 'IBM Plex Mono', monospace";
 const F_TITLE = "var(--font-title), Inter, sans-serif";
@@ -155,12 +188,13 @@ const cardBranco: React.CSSProperties = {
 
 export function AssinaturaTela({
   estado,
-  valorMensal,
+  planos,
   emailDaConta,
   nomeDaConta,
 }: {
   estado: EstadoAssinatura;
-  valorMensal: number;
+  /** os planos à venda, na ordem da vitrine; vazio = assinatura ainda fechada */
+  planos: PlanoDaVitrine[];
   /** só para começar o formulário preenchido — ela pode trocar */
   emailDaConta?: string;
   nomeDaConta?: string;
@@ -182,6 +216,10 @@ export function AssinaturaTela({
   const [ok, setOk] = useState<string | null>(null);
   const [cancelando, setCancelando] = useState(false);
   const [motivo, setMotivo] = useState("");
+  // o cartão da vitrine que ela escolheu: o formulário abre para ele
+  const [planoEscolhido, setPlanoEscolhido] = useState<PlanoDaVitrine | null>(null);
+  // quem já paga não refaz o cartão: escolhe outro plano e confirma a troca
+  const [trocando, setTrocando] = useState<PlanoDaVitrine | null>(null);
 
   const ativa = estado.status === "ativa";
   const inadimplente = estado.status === "inadimplente";
@@ -197,7 +235,41 @@ export function AssinaturaTela({
   const podeAssinar = !ativa && !inadimplente && (!temAssinaturaLa || jaCancelada);
   const podeCancelar = temAssinaturaLa && !jaCancelada;
 
-  const valorTexto = `R$ ${valorMensal.toFixed(2).replace(".", ",")}`;
+  // O plano gravado na conta, se é um dos vendidos. 'cortesia' e 'piloto'
+  // (contas herdadas) não estão na vitrine e seguem sem limite.
+  //
+  // "Vendido" é decidido pelo CÓDIGO, não pela vitrine: se o dono tirar
+  // um plano de venda (ativo = false no catálogo), quem já paga por ele
+  // continua pagando — e não pode ler "cortesia" numa conta cobrada.
+  const planoAtual = planos.find((p) => p.codigo === estado.plano) ?? null;
+  const planoVendido =
+    estado.plano === "essencial" || estado.plano === "profissional" || estado.plano === "master";
+  const planoForaDaVitrine = (ativa || inadimplente) && !planoVendido;
+
+  // O uso, em número: "8 de 10 eventos em andamento · 1 de 1 login".
+  // A concordância segue a CONTAGEM, não o teto: "5 de 1 evento" seria
+  // exatamente o caso de quem cancelou com a agenda cheia.
+  const eventosTexto =
+    estado.limite_eventos === null
+      ? `${estado.eventos} ${estado.eventos === 1 ? "evento" : "eventos"} em andamento`
+      : `${estado.eventos} de ${estado.limite_eventos} ${
+          estado.eventos === 1 ? "evento" : "eventos"
+        } em andamento`;
+  const loginsTexto =
+    estado.limite_logins === null
+      ? `${estado.logins} ${estado.logins === 1 ? "login" : "logins"}`
+      : `${estado.logins} de ${estado.limite_logins} ${
+          estado.logins === 1 ? "login" : "logins"
+        }`;
+  // A tela sabe que está acima; não sabe POR QUÊ (aceite da cliente,
+  // queda de plano, evento reativado). Diz o número e a saída — a causa
+  // só se afirma quando é conhecida, e aqui não é.
+  const usoAcima = estado.acima_do_plano
+    ? ativa || inadimplente
+      ? `${eventosTexto}. Nada foi travado; para criar o próximo, mude de plano ou espere um evento concluir.`
+      : `${eventosTexto}. Nada foi travado; para criar o próximo, escolha um plano ou espere um evento concluir.`
+    : null;
+
   const cartaoTexto = estado.cartao_final
     ? `${estado.cartao_bandeira ?? "cartão"} •••• ${estado.cartao_final}`
     : "—";
@@ -210,21 +282,30 @@ export function AssinaturaTela({
       setErro(falta);
       return;
     }
+    // o plano vai junto com o token: o que ela escolheu na vitrine é o que
+    // o servidor cobra e grava, com o mesmo código
+    const escolhido = planoEscolhido;
+    if (!troca && !escolhido) {
+      setErro("Escolha um plano.");
+      return;
+    }
     iniciar(async () => {
       const t = await tokenizar(form);
       if (t.erro || !t.token) {
         setErro(t.erro ?? "Não foi possível validar o cartão.");
         return;
       }
-      const r = troca
-        ? await atualizarCartao(t.token)
-        : await assinar(t.token, cobranca);
+      const r =
+        troca || !escolhido
+          ? await atualizarCartao(t.token)
+          : await assinar(escolhido.codigo, t.token, cobranca);
       if (r.error) {
         setErro(r.error);
         return;
       }
       setForm({ numero: "", nome: "", mes: "", ano: "", cvv: "" });
       setModoForm(null);
+      setPlanoEscolhido(null);
       setOk(troca ? "Cartão atualizado." : "Assinatura ativa. Obrigado!");
       router.refresh();
     });
@@ -248,6 +329,21 @@ export function AssinaturaTela({
     });
   }
 
+  function confirmarTroca(plano: PlanoDaVitrine) {
+    iniciar(async () => {
+      setErro(null);
+      setOk(null);
+      const r = await trocarPlano(plano.codigo);
+      if (r.error) {
+        setErro(r.error);
+        return;
+      }
+      setTrocando(null);
+      setOk(`Agora você está no ${plano.nome}. O novo valor vale a partir da próxima cobrança.`);
+      router.refresh();
+    });
+  }
+
   const pilula = jaCancelada
     ? "cancelada"
     : cortesia
@@ -257,7 +353,9 @@ export function AssinaturaTela({
         : null;
 
   const subtitulo = ativa
-    ? null // o painel chumbo já diz a próxima cobrança
+    ? planoForaDaVitrine
+      ? "Sua conta segue liberada como cortesia."
+      : null // o painel chumbo já diz a próxima cobrança
     : inadimplente
       ? "A última cobrança não passou. Nada foi bloqueado — atualize o cartão quando puder."
       : jaCancelada
@@ -266,7 +364,159 @@ export function AssinaturaTela({
           ? "Sua conta está liberada como cortesia."
           : estado.pode_criar_evento
             ? "Seu primeiro evento é por nossa conta."
-            : "Você já usou o evento gratuito. Assine para criar os próximos.";
+            : "Você já usou o evento gratuito. Escolha um plano para criar os próximos.";
+
+  // A vitrine: os três cartões. Quem nunca assinou escolhe um e o
+  // formulário abre para ele; quem já paga vê o seu marcado e muda para
+  // outro sem refazer o cartão. Conta herdada (cortesia/piloto ativa)
+  // não vê vitrine — não tem para onde subir.
+  const mostrarVitrine =
+    planos.length > 0 && !planoForaDaVitrine && (podeAssinar || ativa || inadimplente);
+  const vitrine = mostrarVitrine && (
+    <div style={{ marginTop: 24 }}>
+      <div style={rotuloSecao}>{podeAssinar ? "Planos" : "Mudar de plano"}</div>
+      <div className="subx-planos" style={{ marginTop: 12 }}>
+        {planos.map((p) => {
+          const atual = planoAtual?.codigo === p.codigo;
+          const emTroca = trocando?.codigo === p.codigo;
+          const acao = podeAssinar ? (
+            <button
+              className="subx-btn"
+              style={{ width: "100%" }}
+              disabled={pendente}
+              onClick={() => {
+                setErro(null);
+                setOk(null);
+                setPlanoEscolhido(p);
+                setModoForm("assinar");
+              }}
+            >
+              Assinar o {p.nome}
+            </button>
+          ) : atual ? null : emTroca ? (
+            <>
+              <p style={{ margin: "0 0 10px", font: `400 12.5px/1.5 ${F_UI}`, color: C.apoio }}>
+                {/* descer de plano pede o número NA HORA da decisão: quantos
+                    ela tem hoje e quantos o destino permite — "falar em
+                    número", não descobrir depois */}
+                {planoAtual && p.valorMensal < planoAtual.valorMensal
+                  ? `Você tem ${estado.eventos} ${estado.eventos === 1 ? "evento" : "eventos"} em andamento e ${estado.logins} ${estado.logins === 1 ? "login" : "logins"}; o ${p.nome} permite ${p.eventosTexto === "sem limite" ? "eventos sem limite" : `${p.eventosTexto} eventos`} e ${p.loginsTexto === "sem limite" ? "logins sem limite" : `${p.loginsTexto} ${p.loginsTexto === "1" ? "login" : "logins"}`}. O novo valor vale a partir da próxima cobrança.`
+                  : "O novo valor vale a partir da próxima cobrança."}
+              </p>
+              <div className="subx-actions">
+                <button
+                  className="subx-btn"
+                  style={{ flex: 1 }}
+                  disabled={pendente}
+                  onClick={() => confirmarTroca(p)}
+                >
+                  {pendente ? "Mudando…" : "Confirmar"}
+                </button>
+                <button className="subx-btn2" disabled={pendente} onClick={() => setTrocando(null)}>
+                  Voltar
+                </button>
+              </div>
+            </>
+          ) : (
+            <button
+              className="subx-btn2"
+              style={{ width: "100%" }}
+              disabled={pendente}
+              onClick={() => {
+                setErro(null);
+                setOk(null);
+                setTrocando(p);
+              }}
+            >
+              Mudar para este
+            </button>
+          );
+          return (
+            <div
+              key={p.codigo}
+              style={{
+                ...cardBranco,
+                borderColor: atual ? C.chumbo : C.bordaCard,
+                padding: "20px 22px",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "baseline",
+                  gap: 8,
+                }}
+              >
+                <div style={{ font: `600 15px ${F_UI}`, color: C.forte }}>{p.nome}</div>
+                {atual && (
+                  <span
+                    style={{
+                      font: `500 11px ${F_MONO}`,
+                      color: "#fff",
+                      background: C.chumbo,
+                      borderRadius: 999,
+                      padding: "3px 10px",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    seu plano
+                  </span>
+                )}
+              </div>
+              <div
+                style={{
+                  marginTop: 10,
+                  font: `600 24px ${F_MONO}`,
+                  letterSpacing: "-0.01em",
+                  color: C.forte,
+                }}
+              >
+                {p.precoTexto}
+                <span style={{ font: `400 13px ${F_MONO}`, color: C.rotulo }}> /mês</span>
+              </div>
+              <div
+                style={{
+                  marginTop: 14,
+                  paddingTop: 14,
+                  borderTop: `1px solid ${C.bordaFina}`,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 6,
+                  font: `400 12.5px ${F_UI}`,
+                  color: C.apoio,
+                  flex: 1,
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                  <span>eventos em andamento</span>
+                  <span style={{ font: `500 12.5px ${F_MONO}`, color: C.forte }}>
+                    {p.eventosTexto}
+                  </span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                  <span>pessoas com login</span>
+                  <span style={{ font: `500 12.5px ${F_MONO}`, color: C.forte }}>
+                    {p.loginsTexto}
+                  </span>
+                </div>
+              </div>
+              {acao && <div style={{ marginTop: 18 }}>{acao}</div>}
+            </div>
+          );
+        })}
+      </div>
+      {podeAssinar && (
+        <p style={{ margin: "12px 0 0", font: `400 13px/1.5 ${F_UI}`, color: C.apoio }}>
+          {cortesia
+            ? "Sua cortesia continua valendo. A cobrança começa no dia em que você assinar."
+            : "Cancele quando quiser, sem multa."}
+        </p>
+      )}
+    </div>
+  );
 
   return (
     <div
@@ -281,14 +531,13 @@ export function AssinaturaTela({
       {/* grades responsivas do design — colapsam a 720px */}
       <style>{`
         .subx-grid{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start}
-        .subx-stats{display:grid;grid-template-columns:1fr 1fr}
-        .subx-stats>div+div{border-left:1px solid ${C.bordaFina}}
         .subx-row{display:flex;align-items:center;gap:16px}
         .subx-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
         .subx-form-grid>div,.subx-exp>div{min-width:0}
         .subx-form-grid input,.subx-form-grid select,.subx-exp input{width:100%;min-width:0}
         .subx-exp{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
         .subx-actions{display:flex;gap:10px;align-items:center}
+        .subx-planos{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:stretch}
         .subx-in{height:44px;border:1px solid ${C.bordaCard};border-radius:10px;padding:0 12px;
           font:400 14px ${F_UI};color:${C.forte};background:#fff;outline:none;box-sizing:border-box}
         .subx-in--mono{font:400 14px ${F_MONO}}
@@ -306,8 +555,7 @@ export function AssinaturaTela({
         @media (max-width:720px){
           .subx-wrap{padding:28px 20px 40px !important}
           .subx-grid{grid-template-columns:1fr}
-          .subx-stats{grid-template-columns:1fr}
-          .subx-stats>div+div{border-left:none;border-top:1px solid ${C.bordaFina}}
+          .subx-planos{grid-template-columns:1fr}
           .subx-row{flex-direction:column;align-items:stretch}
           .subx-row button{width:100%;height:44px !important}
           .subx-actions{flex-direction:column;align-items:stretch}
@@ -356,6 +604,18 @@ export function AssinaturaTela({
             {subtitulo}
           </p>
         )}
+        {/* o uso atual, em número — em âmbar quando a conta passou do teto */}
+        {!modoForm && (
+          <p
+            style={{
+              margin: "10px 0 0",
+              font: `500 13.5px/1.55 ${F_UI}`,
+              color: usoAcima ? AMBAR : C.forte,
+            }}
+          >
+            {usoAcima ?? `${eventosTexto} · ${loginsTexto}`}
+          </p>
+        )}
 
         {/* avisos — neutros como o design manda; o erro se destaca pela borda forte */}
         {ok && !erro && (
@@ -384,7 +644,8 @@ export function AssinaturaTela({
               {/* o painel do plano, em chumbo */}
               <div style={{ background: C.chumbo, borderRadius: 14, padding: 24, color: "#fff" }}>
                 <div style={{ ...rotuloSecao, color: C.rotuloChumbo }}>Plano</div>
-                <div style={{ marginTop: 12, font: `600 28px ${F_MONO}`, letterSpacing: "-0.01em" }}>
+                <div style={{ marginTop: 10, font: `600 18px ${F_UI}` }}>{estado.plano_nome}</div>
+                <div style={{ marginTop: 6, font: `600 28px ${F_MONO}`, letterSpacing: "-0.01em" }}>
                   {`R$ ${estado.valor_mensal.toFixed(2).replace(".", ",")}`}
                   <span style={{ font: `400 14px ${F_MONO}`, color: C.rotuloChumbo }}> /mês</span>
                 </div>
@@ -427,23 +688,8 @@ export function AssinaturaTela({
                 </div>
               </div>
 
-              {/* coluna direita: stats + forma de pagamento */}
+              {/* coluna direita: só o que ela pode mexer — o uso já está na linha do topo */}
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <div className="subx-stats" style={cardBranco}>
-                  <div style={{ padding: "20px 24px" }}>
-                    <div style={rotuloSecao}>Eventos criados</div>
-                    <div style={{ marginTop: 8, font: `500 22px ${F_MONO}`, color: C.forte }}>
-                      {estado.eventos}
-                    </div>
-                  </div>
-                  <div style={{ padding: "20px 24px" }}>
-                    <div style={rotuloSecao}>Cartão</div>
-                    <div style={{ marginTop: 8, font: `500 16px ${F_MONO}`, color: C.forte }}>
-                      {cartaoTexto}
-                    </div>
-                  </div>
-                </div>
-
                 <div className="subx-row" style={{ ...cardBranco, padding: "18px 24px" }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ font: `600 14px ${F_UI}`, color: C.forte }}>Forma de pagamento</div>
@@ -484,62 +730,19 @@ export function AssinaturaTela({
                 um casamento.
               </div>
             )}
+
+            {vitrine}
           </>
         )}
 
         {/* ---------------- CORTESIA / CANCELADA / GRATUITO ---------------- */}
         {!ativa && !inadimplente && !modoForm && (
           <>
-            <div className="subx-stats" style={{ ...cardBranco, marginTop: 24 }}>
-              <div style={{ padding: "20px 24px" }}>
-                <div style={rotuloSecao}>Plano</div>
-                <div style={{ marginTop: 8, font: `500 16px ${F_MONO}`, color: C.forte }}>
-                  {cortesia ? "Cortesia" : "Gratuito · 1 evento"}
-                </div>
-              </div>
-              <div style={{ padding: "20px 24px" }}>
-                <div style={rotuloSecao}>Eventos criados</div>
-                <div style={{ marginTop: 8, font: `500 22px ${F_MONO}`, color: C.forte }}>
-                  {estado.eventos}
-                </div>
-              </div>
-            </div>
+            {vitrine}
 
-            {podeAssinar && valorMensal > 0 && (
-              <div
-                className="subx-row"
-                style={{
-                  marginTop: 16,
-                  background: C.chumbo,
-                  borderRadius: 14,
-                  padding: 24,
-                  color: "#fff",
-                }}
-              >
-                <div style={{ flex: 1 }}>
-                  <div style={{ font: `600 16px ${F_UI}` }}>
-                    Assine por <span style={{ font: `600 15px ${F_MONO}` }}>{valorTexto}</span> por
-                    mês
-                  </div>
-                  <div style={{ marginTop: 4, font: `400 13px/1.5 ${F_UI}`, color: C.sobChumbo }}>
-                    {cortesia
-                      ? "Sua cortesia continua valendo. A cobrança começa no dia em que você assinar."
-                      : "Eventos ilimitados. Cancele quando quiser, sem multa."}
-                  </div>
-                </div>
-                <button
-                  className="subx-btn"
-                  style={{ background: "#fff", color: C.forte }}
-                  disabled={pendente}
-                  onClick={() => setModoForm("assinar")}
-                >
-                  Assinar
-                </button>
-              </div>
-            )}
-
-            {podeAssinar && valorMensal <= 0 && (
-              <div style={{ ...cardBranco, marginTop: 16, padding: "20px 24px" }}>
+            {/* catálogo vazio: a assinatura ainda não abriu */}
+            {podeAssinar && planos.length === 0 && (
+              <div style={{ ...cardBranco, marginTop: 24, padding: "20px 24px" }}>
                 <div style={{ font: `600 14px ${F_UI}`, color: C.forte }}>
                   A assinatura ainda não está aberta
                 </div>
@@ -658,11 +861,13 @@ export function AssinaturaTela({
         {/* ---------------- FORMULÁRIO ---------------- */}
         {modoForm && (
           <>
-            {modoForm === "assinar" && (
+            {modoForm === "assinar" && planoEscolhido && (
               <p style={{ margin: "6px 0 0", font: `400 14px/1.5 ${F_UI}`, color: C.apoio }}>
-                Assine por{" "}
-                <span style={{ font: `500 13px ${F_MONO}`, color: C.forte }}>{valorTexto}</span> por
-                mês. Eventos ilimitados. Cancele quando quiser, sem multa.
+                {planoEscolhido.nome} por{" "}
+                <span style={{ font: `500 13px ${F_MONO}`, color: C.forte }}>
+                  {planoEscolhido.precoTexto}
+                </span>{" "}
+                por mês. Cancele quando quiser, sem multa.
               </p>
             )}
             <div style={{ ...cardBranco, marginTop: 24, padding: "28px 24px" }}>
@@ -760,9 +965,20 @@ export function AssinaturaTela({
                   disabled={pendente}
                   onClick={() => enviarCartao(modoForm === "trocar")}
                 >
-                  {pendente ? "Processando…" : modoForm === "trocar" ? "Salvar cartão" : "Assinar"}
+                  {pendente
+                    ? "Processando…"
+                    : modoForm === "trocar"
+                      ? "Salvar cartão"
+                      : `Assinar o ${planoEscolhido?.nome ?? ""}`.trim()}
                 </button>
-                <button className="subx-btn2" disabled={pendente} onClick={() => setModoForm(null)}>
+                <button
+                  className="subx-btn2"
+                  disabled={pendente}
+                  onClick={() => {
+                    setModoForm(null);
+                    setPlanoEscolhido(null);
+                  }}
+                >
                   Voltar
                 </button>
               </div>

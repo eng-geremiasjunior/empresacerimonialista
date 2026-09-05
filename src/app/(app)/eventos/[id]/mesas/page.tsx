@@ -6,6 +6,7 @@ import {
   getConvidadosCroqui,
   getElementos,
   getMesas,
+  getPresentes,
   getRelacoes,
   getSalao,
 } from "@/lib/supabase/mesas";
@@ -24,12 +25,14 @@ export default async function MesasPage({ params }: { params: { id: string } }) 
   if (!evento) notFound();
   if (!tem(evento.type as string, "mesas")) notFound();
 
-  const [salao, mesas, elementos, convidados, relacoes] = await Promise.all([
+  const [salao, mesas, elementos, convidados, relacoes, presentes] = await Promise.all([
     getSalao(params.id),
     getMesas(params.id),
     getElementos(params.id),
     getConvidadosCroqui(params.id),
     getRelacoes(params.id),
+    // "chegaram" vem do banco (148), não de uma soma na tela
+    getPresentes(params.id),
   ]);
 
   return (
@@ -42,6 +45,7 @@ export default async function MesasPage({ params }: { params: { id: string } }) 
       elementos={elementos}
       convidados={convidados}
       relacoes={relacoes}
+      presentes={presentes?.quantidade ?? null}
     />
   );
 }

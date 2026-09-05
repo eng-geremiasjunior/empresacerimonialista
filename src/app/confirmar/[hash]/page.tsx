@@ -1,5 +1,6 @@
 import { ConfirmacaoConvidado } from "@/components/rsvp/ConfirmacaoConvidado";
 import { clienteAnonimoPublico } from "@/lib/supabase/anon-publico";
+import { qrSvg } from "@/lib/qr";
 import { convitePara, quandoLegivel } from "@/lib/rsvp-convite";
 
 export const dynamic = "force-dynamic";
@@ -57,10 +58,30 @@ export default async function ConfirmarPage({
     .filter(Boolean)
     .join(" · ");
 
+  // A credencial de entrada só existe para quem já confirmou: a RPC
+  // devolve o checkin_hash (NUNCA o hash do convite, que escreve o RSVP)
+  // e ele vai para o QR em MAIÚSCULAS — hex não distingue caixa e o modo
+  // alfanumérico do QR sai com menos módulos, mais fácil de ler na fila.
+  const { data: cred } =
+    convite.confirmacao === "confirmado"
+      ? await supabase.rpc("credencial_de_entrada", { p_hash: params.hash })
+      : { data: null };
+  const credencialBruta = cred as
+    | { checkin_hash: string; codigo: string; nome: string }
+    | null;
+  const credencial = credencialBruta?.checkin_hash
+    ? {
+        qr: await qrSvg(credencialBruta.checkin_hash.toUpperCase()),
+        codigo: credencialBruta.codigo,
+        nome: credencialBruta.nome,
+      }
+    : null;
+
   return (
     <main className="rsvp-fora">
       <ConfirmacaoConvidado
         hash={params.hash}
+        credencial={credencial}
         nome={convite.nome}
         anfitrioes={convite.anfitrioes}
         convitePara={convitePara(convite.evento_tipo)}

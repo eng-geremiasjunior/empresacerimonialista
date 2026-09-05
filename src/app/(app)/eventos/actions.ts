@@ -11,6 +11,26 @@ export type EventFormState = { error: string } | null;
 const TYPES = Object.keys(EVENT_TYPE_LABELS);
 const STATUSES = ["orcamento", "confirmado", "concluido", "cancelado"];
 
+// O teto do plano (147) só é lido quando a trava bate — uma consulta a
+// mais no caminho da recusa, nenhuma no caminho feliz. minha_assinatura
+// responde só para a proprietária; para os outros cargos vem vazio e a
+// frase sai sem o número. (Mesma frase do wizard, em eventos/novo.)
+async function mensagemDoTetoDoPlano(
+  supabase: ReturnType<typeof createClient>
+): Promise<string> {
+  let conta = "";
+  try {
+    const { data } = await supabase.rpc("minha_assinatura");
+    const a = data as { eventos?: number; limite_eventos?: number | null } | null;
+    if (a && typeof a.eventos === "number" && typeof a.limite_eventos === "number") {
+      conta = ` (${a.eventos} de ${a.limite_eventos} eventos em andamento)`;
+    }
+  } catch {
+    // sem número, a frase continua verdadeira
+  }
+  return `Sua agenda chegou ao teto do plano${conta}. Mude de plano em Assinatura, ou espere um evento concluir.`;
+}
+
 function readForm(formData: FormData) {
   return {
     clientId: String(formData.get("client_id") ?? "").trim(),
@@ -132,6 +152,12 @@ export async function updateEvent(
   }
 
   if (eventError) {
+    // Voltar um cancelado (ou concluído) para orçamento/confirmado é
+    // devolver um evento à agenda, e o gatilho de reativação (147) conta
+    // isso como criar. Não é falha: é o teto, e ela precisa da saída.
+    if (eventError.message?.includes("plano_no_limite")) {
+      return { error: await mensagemDoTetoDoPlano(supabase) };
+    }
     return { error: "Não foi possível salvar o evento. Tente novamente." };
   }
 
@@ -187,7 +213,7 @@ export async function duplicateEvent(eventId: string) {
   if (!original) return;
 
   const hoje = hojeBR();
-  const { data: created } = await supabase
+  const { data: created, error: createError } = await supabase
     .from("events")
     .insert({
       cerimonialista_id: user.id,
@@ -201,6 +227,11 @@ export async function duplicateEvent(eventId: string) {
     })
     .select("id")
     .single();
+
+  // Duplicar também é criar: a trava do plano (147) recusa aqui do mesmo
+  // jeito. A action devolve void e o card não lê nada — fica no log até
+  // o menu do card ter onde mostrar a frase.
+  if (createError) console.error("[vela:duplicar-evento]", createError.message);
 
   revalidatePath("/eventos");
   if (created?.id) redirect(`/eventos/${created.id}/editar`);
@@ -287,6 +318,20 @@ export async function importarEventos(
       status: "orcamento",
     });
     if (evErr) {
+      // Bateu no teto do plano: as linhas seguintes bateriam também. Uma
+      // frase honesta nesta e para de tentar — cada tentativa a mais seria
+      // o mesmo "não" com um cliente criado a toa antes dele.
+      if (evErr.message?.includes("plano_no_limite")) {
+        erros.push({ linha: nLinha, motivo: await mensagemDoTetoDoPlano(supabase) });
+        break;
+      }
+      if (evErr.message?.includes("plano_gratuito_no_limite")) {
+        erros.push({
+          linha: nLinha,
+          motivo: "O primeiro evento é por nossa conta. Para importar outros, ative a assinatura em Assinatura, no menu.",
+        });
+        break;
+      }
       erros.push({ linha: nLinha, motivo: "falha ao criar evento" });
       continue;
     }

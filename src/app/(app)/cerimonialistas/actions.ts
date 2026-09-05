@@ -5,7 +5,11 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { criarCerimonialista, derrubarSessoes } from "@/lib/cerimonialistas-admin";
+import {
+  criarCerimonialista,
+  derrubarSessoes,
+  SEM_VAGA_DE_LOGIN,
+} from "@/lib/cerimonialistas-admin";
 import { CARGOS_CADASTRO } from "@/lib/equipe-shared";
 import {
   getDetalheCerimonialista,
@@ -103,6 +107,8 @@ export async function cadastrarCerimonialista(
     cargo: input.cargo as "coordenadora" | "cerimonialista" | "assistente",
     especialidades: input.especialidades ?? [],
   });
+  // O texto vai inteiro para a tela: "sem vaga de login" é uma resposta
+  // com saída, não uma falha — e o modal mostra r.error como veio.
   if (r.error) return { error: r.error };
 
   revalidatePath("/cerimonialistas");
@@ -162,7 +168,14 @@ export async function setStatusMembro(
     .select("user_id")
     .maybeSingle();
 
-  if (error) return { error: "Não foi possível alterar o status" };
+  if (error) {
+    // Reativar ocupa vaga (gatilho da 147). Bateu no teto, ela precisa
+    // ouvir o caminho de saída, não "não foi possível".
+    if (error.message?.includes("plano_sem_vaga_de_login")) {
+      return { error: SEM_VAGA_DE_LOGIN };
+    }
+    return { error: "Não foi possível alterar o status" };
+  }
 
   // Desativar sem derrubar a sessão deixava a pessoa dentro do app até o
   // token expirar sozinho. A RLS já nega quase tudo nesse estado, mas

@@ -130,10 +130,22 @@ export const getElementos = cache(async (eventId: string): Promise<Elemento[]> =
 /** convidados como o croqui precisa — SEM telefone e SEM e-mail, que a
  *  alocação não usa. restricao_alimentar (texto livre) também fica de
  *  fora: aqui circula só a categoria, que vira contagem. */
+/** Acompanhante com nome (129) e a presença dele (148): na porta cada um
+ *  entra por si, e o titular pode chegar antes da mulher. */
+export type AcompanhanteDaLista = {
+  id: string;
+  nome: string;
+  ehCrianca: boolean;
+  presenteEm: string | null;
+};
+
 /** O convidado da lista da aba Mesas: o croqui + a presença no dia (141).
  *  Fica fora de ConvidadoCroqui de propósito — o croqui e os impressos
  *  não precisam saber quem chegou. */
-export type ConvidadoDaLista = ConvidadoCroqui & { presenteEm: string | null };
+export type ConvidadoDaLista = ConvidadoCroqui & {
+  presenteEm: string | null;
+  acompanhantesNominais: AcompanhanteDaLista[];
+};
 
 export const getConvidadosCroqui = cache(
   async (eventId: string): Promise<ConvidadoDaLista[]> => {
@@ -141,7 +153,7 @@ export const getConvidadosCroqui = cache(
     const { data } = await supabase
       .from("evento_convidado")
       .select(
-        "id, nome, confirmacao, mesa_id, ordem_na_mesa, eh_crianca, responsavel_id, restricao_tipo, acessibilidade, acompanhantes, presente_em"
+        "id, nome, confirmacao, mesa_id, ordem_na_mesa, eh_crianca, responsavel_id, restricao_tipo, acessibilidade, acompanhantes, presente_em, evento_acompanhante(id, nome, eh_crianca, presente_em, ordem)"
       )
       .eq("event_id", eventId)
       .order("nome");
@@ -157,7 +169,50 @@ export const getConvidadosCroqui = cache(
       acessibilidade: c.acessibilidade,
       acompanhantes: c.acompanhantes ?? 0,
       presenteEm: c.presente_em ?? null,
+      acompanhantesNominais: (
+        (c.evento_acompanhante ?? []) as {
+          id: string;
+          nome: string;
+          eh_crianca: boolean | null;
+          presente_em: string | null;
+          ordem: number | null;
+        }[]
+      )
+        .slice()
+        .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0))
+        .map((a) => ({
+          id: a.id,
+          nome: a.nome,
+          ehCrianca: a.eh_crianca ?? false,
+          presenteEm: a.presente_em ?? null,
+        })),
     })) as ConvidadoDaLista[];
+  }
+);
+
+/**
+ * Quantos chegaram — a ÚNICA fórmula (148: presentes_do_evento lê o
+ * livro de chegadas). Antes cada tela somava do seu jeito: Mesas fazia
+ * 1 + acompanhantes, a prestação 1 + acompanhantes + crianças, e as duas
+ * divergiam da porta. `origem` diz por onde as pessoas entraram.
+ * Nulo quando a migração ainda não rodou — a tela mostra o que tem.
+ */
+export const getPresentes = cache(
+  async (
+    eventId: string
+  ): Promise<{ quantidade: number; origem: "sem_marcacao" | "porta" | "equipe" | "mista" } | null> => {
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc("presentes_do_evento", { p_event_id: eventId });
+    if (error) {
+      console.error("[eorganizei:mesas] presentes:", error.message);
+      return null;
+    }
+    const linha = (data as { quantidade: number; origem: string }[] | null)?.[0];
+    if (!linha) return null;
+    return {
+      quantidade: linha.quantidade,
+      origem: linha.origem as "sem_marcacao" | "porta" | "equipe" | "mista",
+    };
   }
 );
 

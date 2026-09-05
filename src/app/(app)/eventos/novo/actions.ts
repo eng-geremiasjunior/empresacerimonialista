@@ -92,6 +92,26 @@ async function escreverCampo(
 
 export type CriarEventoState = { error: string } | null;
 
+// O teto do plano (147) só é lido quando a trava bate — uma consulta a
+// mais no caminho da recusa, nenhuma no caminho feliz. minha_assinatura
+// responde só para a proprietária; para os outros cargos vem vazio e a
+// frase sai sem o número.
+async function mensagemDoTetoDoPlano(
+  supabase: ReturnType<typeof createClient>
+): Promise<string> {
+  let conta = "";
+  try {
+    const { data } = await supabase.rpc("minha_assinatura");
+    const a = data as { eventos?: number; limite_eventos?: number | null } | null;
+    if (a && typeof a.eventos === "number" && typeof a.limite_eventos === "number") {
+      conta = ` (${a.eventos} de ${a.limite_eventos} eventos em andamento)`;
+    }
+  } catch {
+    // sem número, a frase continua verdadeira
+  }
+  return `Sua agenda chegou ao teto do plano${conta}. Mude de plano em Assinatura, ou espere um evento concluir.`;
+}
+
 export async function criarEventoCompleto(
   payload: WizardPayload
 ): Promise<CriarEventoState> {
@@ -168,6 +188,11 @@ export async function criarEventoCompleto(
         error:
           "Seu primeiro evento é por nossa conta — e ele já está criado. Para começar o próximo, ative a assinatura em Assinatura, no menu.",
       };
+    }
+    // Assinante no teto (147): a agenda está cheia, não quebrada. Concluir
+    // um evento libera a vaga sozinho — o cron muda o status.
+    if (error?.message?.includes("plano_no_limite")) {
+      return { error: await mensagemDoTetoDoPlano(supabase) };
     }
     return {
       // O texto do Postgres não diz nada a ela e assusta — vai para o log,

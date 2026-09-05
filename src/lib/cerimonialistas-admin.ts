@@ -39,6 +39,11 @@ export async function derrubarSessoes(
   return error ? { error: error.message } : {};
 }
 
+// O que ela lê quando o plano não tem mais assento. Uma frase só, com a
+// saída no fim — e a mesma nas duas travas (cadastrar e reativar).
+export const SEM_VAGA_DE_LOGIN =
+  "Seu plano não tem mais vaga de login. Desative um acesso ou mude de plano.";
+
 export async function criarCerimonialista(params: {
   empresaId: string;
   nome: string;
@@ -50,6 +55,20 @@ export async function criarCerimonialista(params: {
   const admin = adminClient();
   if (!admin) {
     return { error: "SUPABASE_SERVICE_ROLE_KEY não configurada no ambiente" };
+  }
+
+  // 0) Tem vaga no plano? O gatilho da 147 recusa o insert em
+  // membros_equipe quando os logins ativos batem no teto — mas o login já
+  // teria sido criado no Auth um passo antes, só para ser apagado no
+  // desfazer. Perguntar primeiro poupa esse cria-e-destrói. Se a RPC não
+  // existir ainda (147 pendente), segue: o desfazer lá embaixo continua
+  // sendo a rede.
+  const { data: temVaga, error: vagaError } = await admin.rpc(
+    "pode_adicionar_login",
+    { p_empresa_id: params.empresaId }
+  );
+  if (!vagaError && temVaga === false) {
+    return { error: SEM_VAGA_DE_LOGIN };
   }
 
   // 1) Cria o usuário já com e-mail confirmado (sem link de verificação)
@@ -89,6 +108,11 @@ export async function criarCerimonialista(params: {
   if (membroError || !membro) {
     // desfaz a criação do login para não deixar usuário órfão
     await admin.auth.admin.deleteUser(authData.user.id);
+    // Segunda rede: alguém ocupou a última vaga entre a pergunta e o
+    // insert. A resposta é a mesma, não o texto do Postgres.
+    if (membroError?.message?.includes("plano_sem_vaga_de_login")) {
+      return { error: SEM_VAGA_DE_LOGIN };
+    }
     return {
       error: `Não foi possível registrar o membro: ${membroError?.message}`,
     };

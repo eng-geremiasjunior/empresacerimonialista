@@ -47,7 +47,7 @@ export async function getPrestacaoAoVivo(eventId: string): Promise<{
 } | null> {
   const supabase = createClient();
 
-  const [evRes, verbaRes, parcRes, roteiroRes, notasRes, publicoRes, ocorRes, presRes] =
+  const [evRes, verbaRes, parcRes, roteiroRes, notasRes, publicoRes, ocorRes, presRes, portaRes] =
     await Promise.all([
       supabase
         .from("events")
@@ -86,12 +86,18 @@ export async function getPrestacaoAoVivo(eventId: string): Promise<{
         )
         .eq("event_id", eventId)
         .order("criada_em", { ascending: true }),
-      // presença no dia (141): quem foi marcado "chegou", com quem trouxe
+      // presença no dia: a ÚNICA fórmula de "quantos chegaram" mora no
+      // livro de chegadas (148) — somar 1 + acompanhantes + crianças aqui
+      // divergiria dela assim que a porta marcasse um acompanhante nominal
+      // sem o titular. Degrada para null se a 148 não rodou.
+      supabase.rpc("presentes_do_evento", { p_event_id: eventId }),
+      // o carimbo dela: "encerrei a contagem da porta" (148). Consulta à
+      // parte para a coluna ausente não derrubar a leitura do evento.
       supabase
-        .from("evento_convidado")
-        .select("acompanhantes, criancas")
-        .eq("event_id", eventId)
-        .not("presente_em", "is", null),
+        .from("events")
+        .select("porta_encerrada_em")
+        .eq("id", eventId)
+        .maybeSingle(),
     ]);
 
   const ev = evRes.data as {
@@ -215,18 +221,20 @@ export async function getPrestacaoAoVivo(eventId: string): Promise<{
 
   // ---- convidados (o número canônico, com a origem dita) ----
   const pub = (publicoRes.data as { quantidade: number; origem: string }[] | null)?.[0];
-  // presentes conta gente como publico_do_evento conta confirmados
-  // (1 + acompanhantes + crianças) — senão o "por pessoa" divide maçã por pera
-  const presentes = presRes.error
-    ? null
-    : ((presRes.data ?? []) as { acompanhantes: number | null; criancas: number | null }[])
-        .reduce((s, c) => s + 1 + (c.acompanhantes ?? 0) + (c.criancas ?? 0), 0);
+  // presentes vem do livro no mesmo padrão de gente que publico_do_evento
+  // conta confirmados (titular + acompanhantes + crianças) — senão o
+  // "por pessoa" divide maçã por pera
+  const pres = (presRes.data as { quantidade: number; origem: string }[] | null)?.[0];
+  const presentes = presRes.error ? null : Number(pres?.quantidade ?? 0);
+  const porta = portaRes.data as { porta_encerrada_em: string | null } | null;
   const convidados = {
     quantidade: pub?.quantidade ?? 0,
     origem: (pub?.origem === "confirmados" ? "confirmados" : "estimados") as
       | "confirmados"
       | "estimados",
     presentes,
+    // sem o carimbo, presentes é informação ao lado — não o divisor
+    porta_encerrada: Boolean(!portaRes.error && porta?.porta_encerrada_em),
   };
 
   // ---- notas dela ----

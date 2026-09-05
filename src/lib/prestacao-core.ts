@@ -67,9 +67,10 @@ export type PrestacaoPayload = {
     em_aberto: number;
     economia: number;
     fornecedores_com_estimativa: number;
-    /** o efetivo dividido por quem veio (presentes; sem toque no dia,
-     *  confirmados); null quando não há por quem dividir — ausente em
-     *  fotografias anteriores à 141 */
+    /** o efetivo dividido por quem veio — presentes SÓ depois que ela
+     *  encerrou a contagem da porta (148); antes disso, confirmados;
+     *  null quando não há por quem dividir — ausente em fotografias
+     *  anteriores à 141 */
     custo_por_pessoa: number | null;
   };
   fornecedores: FornecedorPrestacao[];
@@ -87,6 +88,10 @@ export type PrestacaoPayload = {
     origem: "confirmados" | "estimados";
     /** quem foi marcado presente no dia (141); null = sem a marcação */
     presentes: number | null;
+    /** ela encerrou a contagem da porta (148) — só então `presentes` é
+     *  o divisor do custo por pessoa; ausente em fotografias anteriores
+     *  à 148, que dividiam por presentes sempre que havia marcação */
+    porta_encerrada?: boolean;
   };
   pendencias: {
     parcelas_abertas: number;
@@ -128,7 +133,7 @@ const CHAVES_PERMITIDAS = new Set([
   "paga", "paga_em",
   "dia", "itens", "titulo", "previsto", "previsto_original",
   "realizado_inicio", "variacao", "concluidos", "total",
-  "convidados", "confirmados", "origem", "presentes",
+  "convidados", "confirmados", "origem", "presentes", "porta_encerrada",
   "pendencias", "parcelas_abertas", "valor_em_aberto",
   "valores_nao_conferidos",
   "notas", ...SECOES_NOTA,
@@ -193,6 +198,8 @@ export type EntradaMontagem = {
     origem: "confirmados" | "estimados";
     /** marcados presentes no dia; null quando a presença não foi lida */
     presentes: number | null;
+    /** ela carimbou "encerrei a contagem da porta" (148) */
+    porta_encerrada: boolean;
   };
   economia: number;
   fornecedoresComEstimativa: number;
@@ -207,10 +214,19 @@ export function montarPayloadCasal(e: EntradaMontagem): PrestacaoPayload {
   const parcelasAbertas = e.parcelas.filter((p) => !p.paga);
   const naoConferidos = e.fornecedores.some((f) => f.realizado === null);
 
-  // por pessoa: quem de fato veio manda; sem toque no dia, os confirmados
+  // por pessoa: quem de fato veio manda — mas SÓ depois que ela encerrou a
+  // contagem da porta. Check-in usado pela metade (40 marcados de 200,
+  // porque a recepção parou de escanear às 21h) estragaria o número que
+  // vai para a cliente: R$ 53.000 ÷ 40 não é o custo de ninguém. Enquanto
+  // a porta está aberta, presentes é informação ao lado e o divisor
+  // continua sendo o público do evento (confirmados ou estimados).
   const presentes = e.convidados.presentes ?? 0;
-  const porQuemDividir =
-    presentes > 0 ? presentes : e.convidados.quantidade > 0 ? e.convidados.quantidade : null;
+  const presentesValem = presentes > 0 && e.convidados.porta_encerrada;
+  const porQuemDividir = presentesValem
+    ? presentes
+    : e.convidados.quantidade > 0
+      ? e.convidados.quantidade
+      : null;
   const custoPorPessoa = porQuemDividir === null ? null : arred(efetivo / porQuemDividir);
 
   // só as notas de seções conhecidas e não vazias entram na fotografia
@@ -258,6 +274,7 @@ export function montarPayloadCasal(e: EntradaMontagem): PrestacaoPayload {
       confirmados: e.convidados.quantidade,
       origem: e.convidados.origem,
       presentes: e.convidados.presentes,
+      porta_encerrada: e.convidados.porta_encerrada,
     },
     pendencias: {
       parcelas_abertas: parcelasAbertas.length,
