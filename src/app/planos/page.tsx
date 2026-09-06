@@ -1,14 +1,7 @@
 import type { Metadata } from "next";
 import { Fragment } from "react";
-import { createClient as createSupabase } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import {
-  ehCodigoDoPlano,
-  getCatalogoDePlanos,
-  reais,
-  tetoEmTexto,
-  type PlanoDoCatalogo,
-} from "@/lib/planos";
+import { getCatalogoDePlanos, reais, tetoEmTexto, type PlanoDoCatalogo } from "@/lib/planos";
 import { Marca } from "@/components/marca/Marca";
 
 export const dynamic = "force-dynamic";
@@ -30,54 +23,6 @@ export const metadata: Metadata = {
 // Nenhum número vive aqui — nem a contagem de planos. Preço e tetos vêm
 // de plano_catalogo (147): o dono muda no admin e esta página acompanha;
 // se ele tirar um plano de venda, "nos três" vira "nos dois" sozinho.
-
-type Linha = {
-  codigo: string;
-  nome: string;
-  valor_mensal: number | string;
-  eventos_em_andamento: number | null;
-  logins: number | null;
-  ordem: number;
-};
-
-// A policy de leitura do catálogo (147) é só para `authenticated`: até
-// aqui a única leitora era a tela de assinatura, que vive dentro da
-// conta. Para o visitante sem sessão o cliente de cookies devolve lista
-// vazia — e preço de plano é exatamente o que esta página existe para
-// mostrar. Sem sessão, então, a leitura é pela chave de serviço: só este
-// SELECT, só as colunas da vitrine, e nunca no navegador (a página é
-// server component). Com sessão, o caminho é o mesmo da tela de
-// assinatura. Se um dia a policy abrir para `anon`, este desvio some e
-// getCatalogoDePlanos() serve para os dois casos.
-async function catalogoSemSessao(): Promise<PlanoDoCatalogo[]> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return [];
-  const servico = createSupabase(url, key, {
-    auth: { persistSession: false },
-    global: {
-      // Next guarda fetch GET no Data Cache: um preço mudado no admin não
-      // pode continuar sendo servido da versão antiga.
-      fetch: (i: RequestInfo | URL, x?: RequestInit) =>
-        fetch(i, { ...x, cache: "no-store" }),
-    },
-  });
-  const { data } = await servico
-    .from("plano_catalogo")
-    .select("codigo, nome, valor_mensal, eventos_em_andamento, logins, ordem")
-    .eq("ativo", true)
-    .order("ordem", { ascending: true });
-  return ((data ?? []) as Linha[])
-    .filter((l) => ehCodigoDoPlano(l.codigo))
-    .map((l) => ({
-      codigo: l.codigo as PlanoDoCatalogo["codigo"],
-      nome: l.nome,
-      valorMensal: Number(l.valor_mensal),
-      eventosEmAndamento: l.eventos_em_andamento,
-      logins: l.logins,
-      ordem: l.ordem,
-    }));
-}
 
 // "Para quem é", montado a partir dos tetos — nunca literal, porque o
 // dono muda os tetos no admin e a frase tem que continuar verdadeira.
@@ -149,13 +94,12 @@ export default async function PlanosPage() {
   const dona = conta !== null;
   const jaPaga = conta?.status === "ativa" || conta?.status === "inadimplente";
 
-  // Primeiro pelo caminho normal (cookies + RLS). Com a 150 aplicada a
-  // policy de `anon` devolve o catálogo também sem sessão e o desvio pela
-  // chave de serviço nunca roda; antes dela, o visitante recebe lista
-  // vazia e o desvio cobre. Assim a página não depende da ordem entre o
-  // deploy e a migração.
-  let planos = await getCatalogoDePlanos();
-  if (planos.length === 0 && !user) planos = await catalogoSemSessao();
+  // O catálogo é lido pelo caminho normal, com ou sem sessão: a policy
+  // de leitura para visitante entrou com a 150 (aplicada em 06/09/2026).
+  // Antes dela esta página precisava de um desvio pela chave de serviço,
+  // que morreu junto — chave de serviço em página pública é superfície
+  // que não se deixa aberta por conveniência.
+  const planos = await getCatalogoDePlanos();
   const n = planos.length;
   const nosN = n === 3 ? "nos três" : n === 2 ? "nos dois" : "em todos os planos";
 
