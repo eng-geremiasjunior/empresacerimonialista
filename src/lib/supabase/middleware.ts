@@ -34,6 +34,8 @@ const ROTAS_PUBLICAS: ((p: string) => boolean)[] = [
   (p) => p === "/privacidade",
   // termos de uso — o link da caixinha de aceite abre ANTES de haver conta
   (p) => p === "/termos",
+  // os planos lado a lado — a pessoa escolhe ANTES de ter conta
+  (p) => p === "/planos",
   // orçamento na mão da cliente (aprova ou recusa)
   (p) => p.startsWith("/orcamento/"),
   // as rotas de cron se protegem sozinhas com Bearer CRON_SECRET

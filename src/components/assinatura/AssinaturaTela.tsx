@@ -24,7 +24,7 @@
 // layout do app.
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { assinar, atualizarCartao, cancelar, trocarPlano } from "@/app/(app)/assinatura/actions";
 import { documentoValido } from "@/lib/documento";
 import { cepValido, telefoneValido, ufValida } from "@/lib/contato";
@@ -201,29 +201,7 @@ export function AssinaturaTela({
   nomeDaConta?: string;
 }) {
   const router = useRouter();
-  const [pendente, iniciar] = useTransition();
-  const [form, setForm] = useState({ numero: "", nome: "", mes: "", ano: "", cvv: "" });
-  // O gateway exige CPF/CNPJ, telefone e endereço de quem paga (cada um
-  // custou uma cobrança recusada até ser descoberto). Nada disso fica no
-  // nosso banco: vai para o gateway e acabou.
-  const [cobranca, setCobranca] = useState<Cobranca>({
-    ...COBRANCA_VAZIA,
-    nome: nomeDaConta ?? "",
-    email: emailDaConta ?? "",
-  });
-  // null = sem formulário; "assinar" pede cartão + cobrança; "trocar" só cartão
-  const [modoForm, setModoForm] = useState<null | "assinar" | "trocar">(null);
-  const [erro, setErro] = useState<string | null>(null);
-  const [ok, setOk] = useState<string | null>(null);
-  const [cancelando, setCancelando] = useState(false);
-  const [motivo, setMotivo] = useState("");
-  // o cartão da vitrine que ela escolheu: o formulário abre para ele
-  const [planoEscolhido, setPlanoEscolhido] = useState<PlanoDaVitrine | null>(null);
-  // quem já paga não refaz o cartão: escolhe outro plano e confirma a troca
-  const [trocando, setTrocando] = useState<PlanoDaVitrine | null>(null);
-  // a caixinha dos termos: nasce desmarcada e volta a desmarcada toda vez
-  // que o formulário fecha — o aceite é daquele clique, não da sessão
-  const [aceitei, setAceitei] = useState(false);
+  const busca = useSearchParams();
 
   const ativa = estado.status === "ativa";
   const inadimplente = estado.status === "inadimplente";
@@ -249,6 +227,47 @@ export function AssinaturaTela({
   const planoVendido =
     estado.plano === "essencial" || estado.plano === "profissional" || estado.plano === "master";
   const planoForaDaVitrine = (ativa || inadimplente) && !planoVendido;
+
+  // /planos manda o código escolhido na URL (?plano=master): o que ela
+  // decidiu lá não é pedido de novo aqui. Quem pode assinar já cai no
+  // formulário desse plano; quem já paga cai na confirmação da troca.
+  // Sem o parâmetro (ou com um código que não está à venda), nada muda.
+  const planoDaUrl = planos.find((p) => p.codigo === busca.get("plano")) ?? null;
+  const assinarDaUrl = podeAssinar ? planoDaUrl : null;
+  const trocarDaUrl =
+    !podeAssinar &&
+    (ativa || inadimplente) &&
+    !planoForaDaVitrine &&
+    planoDaUrl &&
+    planoAtual?.codigo !== planoDaUrl.codigo
+      ? planoDaUrl
+      : null;
+
+  const [pendente, iniciar] = useTransition();
+  const [form, setForm] = useState({ numero: "", nome: "", mes: "", ano: "", cvv: "" });
+  // O gateway exige CPF/CNPJ, telefone e endereço de quem paga (cada um
+  // custou uma cobrança recusada até ser descoberto). Nada disso fica no
+  // nosso banco: vai para o gateway e acabou.
+  const [cobranca, setCobranca] = useState<Cobranca>({
+    ...COBRANCA_VAZIA,
+    nome: nomeDaConta ?? "",
+    email: emailDaConta ?? "",
+  });
+  // null = sem formulário; "assinar" pede cartão + cobrança; "trocar" só cartão
+  const [modoForm, setModoForm] = useState<null | "assinar" | "trocar">(
+    assinarDaUrl ? "assinar" : null
+  );
+  const [erro, setErro] = useState<string | null>(null);
+  const [ok, setOk] = useState<string | null>(null);
+  const [cancelando, setCancelando] = useState(false);
+  const [motivo, setMotivo] = useState("");
+  // o cartão da vitrine que ela escolheu: o formulário abre para ele
+  const [planoEscolhido, setPlanoEscolhido] = useState<PlanoDaVitrine | null>(assinarDaUrl);
+  // quem já paga não refaz o cartão: escolhe outro plano e confirma a troca
+  const [trocando, setTrocando] = useState<PlanoDaVitrine | null>(trocarDaUrl);
+  // a caixinha dos termos: nasce desmarcada e volta a desmarcada toda vez
+  // que o formulário fecha — o aceite é daquele clique, não da sessão
+  const [aceitei, setAceitei] = useState(false);
 
   // O uso, em número: "8 de 10 eventos em andamento · 1 de 1 login".
   // A concordância segue a CONTAGEM, não o teto: "5 de 1 evento" seria
@@ -386,6 +405,23 @@ export function AssinaturaTela({
   const vitrine = mostrarVitrine && (
     <div style={{ marginTop: 24 }}>
       <div style={rotuloSecao}>{podeAssinar ? "Planos" : "Mudar de plano"}</div>
+      {/* os cartões dizem o preço e os tetos; quem quer escolher pela
+          situação dela vai à página pública, em outra aba para não
+          perder o formulário */}
+      <a
+        href="/planos"
+        target="_blank"
+        rel="noreferrer"
+        style={{
+          display: "inline-block",
+          marginTop: 6,
+          font: `400 12.5px/1.5 ${F_UI}`,
+          color: C.apoio,
+          textDecoration: "underline",
+        }}
+      >
+        Ver as diferenças lado a lado
+      </a>
       <div className="subx-planos" style={{ marginTop: 12 }}>
         {planos.map((p) => {
           const atual = planoAtual?.codigo === p.codigo;
@@ -411,7 +447,7 @@ export function AssinaturaTela({
                     ela tem hoje e quantos o destino permite — "falar em
                     número", não descobrir depois */}
                 {planoAtual && p.valorMensal < planoAtual.valorMensal
-                  ? `Você tem ${estado.eventos} ${estado.eventos === 1 ? "evento" : "eventos"} em andamento e ${estado.logins} ${estado.logins === 1 ? "login" : "logins"}; o ${p.nome} permite ${p.eventosTexto === "sem limite" ? "eventos sem limite" : `${p.eventosTexto} eventos`} e ${p.loginsTexto === "sem limite" ? "logins sem limite" : `${p.loginsTexto} ${p.loginsTexto === "1" ? "login" : "logins"}`}. O novo valor vale a partir da próxima cobrança.`
+                  ? `Você tem ${estado.eventos} ${estado.eventos === 1 ? "evento" : "eventos"} em andamento e ${estado.logins} ${estado.logins === 1 ? "login" : "logins"}; o ${p.nome} permite ${p.eventosTexto === "sem limite" ? "eventos sem limite" : `${p.eventosTexto} ${p.eventosTexto === "1" ? "evento" : "eventos"}`} e ${p.loginsTexto === "sem limite" ? "logins sem limite" : `${p.loginsTexto} ${p.loginsTexto === "1" ? "login" : "logins"}`}. O novo valor vale a partir da próxima cobrança.`
                   : "O novo valor vale a partir da próxima cobrança."}
               </p>
               <div className="subx-actions">
@@ -674,6 +710,8 @@ export function AssinaturaTela({
                     gap: 8,
                   }}
                 >
+                  {/* só a data: ela responde "está ativa?" sozinha, e a
+                      cobrança que falhou já está na pílula e no subtítulo */}
                   <div
                     style={{
                       display: "flex",
@@ -685,19 +723,6 @@ export function AssinaturaTela({
                     <span>Próxima cobrança</span>
                     <span style={{ font: `500 12px ${F_MONO}`, color: "#fff" }}>
                       {dataLonga(estado.proximo_vencimento) || "próximo ciclo"}
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      font: `400 12.5px ${F_UI}`,
-                      color: C.sobChumbo,
-                    }}
-                  >
-                    <span>Status</span>
-                    <span style={{ font: `500 12px ${F_MONO}`, color: "#fff" }}>
-                      {inadimplente ? "cobrança falhou" : "ativa"}
                     </span>
                   </div>
                 </div>
@@ -741,8 +766,7 @@ export function AssinaturaTela({
                 {estado.falhas_seguidas > 1
                   ? `A cobrança falhou ${estado.falhas_seguidas} vezes.`
                   : "A última cobrança falhou."}{" "}
-                Seus eventos continuam funcionando normalmente — a gente não trava nada no meio de
-                um casamento.
+                Seus eventos continuam funcionando normalmente — nada trava no meio de um evento.
               </div>
             )}
 
@@ -842,8 +866,11 @@ export function AssinaturaTela({
             }}
           >
             <div style={{ font: `400 13.5px/1.5 ${F_UI}`, color: C.forte }}>
-              Confirmar o cancelamento? A assinatura encerra hoje e nenhuma nova cobrança será
-              feita.
+              {/* Sem "encerra hoje": até a 150, o teto cai no dia; com a
+                  150, o mês pago vale até o fim. A frase abaixo é verdade
+                  nos dois casos — o que a tela promete é o que o banco faz. */}
+              Confirmar o cancelamento? Nenhuma cobrança nova será feita, e seus eventos
+              continuam seus.
             </div>
             <input
               className="subx-in"
