@@ -128,8 +128,8 @@ export default function PrivacidadePage() {
       </Secao>
 
       <Secao titulo="Medição de visitas e anúncios">
-        Em <b>uma única página</b> — a tela de entrada e criação de conta —
-        usamos o <b>Google Analytics</b> e o <b>pixel da Meta</b>, para saber
+        Em <b>duas páginas</b> — a de planos e a de entrada e criação de conta
+        — usamos o <b>Google Analytics</b> e o <b>pixel da Meta</b>, para saber
         quantas pessoas chegam pelos nossos anúncios e quantas criam conta.
         Eles registram a visita e o fato de uma conta ter sido criada;{" "}
         <b>não recebem nome, e-mail nem qualquer dado que você digite</b>.

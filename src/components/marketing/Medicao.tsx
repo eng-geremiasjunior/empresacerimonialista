@@ -15,7 +15,7 @@
 import Script from "next/script";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
-import { idDoGoogle, idDoPixelMeta, telaDeMarketing } from "@/lib/marketing";
+import { idDoGoogle, idDoPixelMeta, telaDaOferta, telaDeMarketing } from "@/lib/marketing";
 
 export function Medicao() {
   const pathname = usePathname();
@@ -35,7 +35,10 @@ export function Medicao() {
     if (!podeMedir) return;
     try {
       if (ga) window.gtag?.("event", "page_view", { page_path: pathname });
-      if (pixel) window.fbq?.("track", "PageView");
+      if (pixel) {
+        window.fbq?.("track", "PageView");
+        if (telaDaOferta(pathname)) window.fbq?.("track", "ViewContent");
+      }
     } catch {
       /* bloqueador de anúncio: a tela não muda por causa disso */
     }
@@ -69,7 +72,12 @@ n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
 n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
 t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
 document,'script','https://connect.facebook.net/en_US/fbevents.js');
-fbq('init','${pixel}');fbq('track','PageView');`}
+fbq('init','${pixel}');fbq('track','PageView');${
+            // a primeira carga não passa pelo efeito acima (que existe para
+            // as navegações seguintes), então a página da oferta dispara o
+            // "viu o conteúdo" aqui mesmo
+            telaDaOferta(pathname) ? "fbq('track','ViewContent');" : ""
+          }`}
         </Script>
       )}
     </>

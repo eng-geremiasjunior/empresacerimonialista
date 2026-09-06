@@ -3,6 +3,7 @@ import { Fragment } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getCatalogoDePlanos, reais, tetoEmTexto, type PlanoDoCatalogo } from "@/lib/planos";
 import { Marca } from "@/components/marca/Marca";
+import { Medicao } from "@/components/marketing/Medicao";
 
 export const dynamic = "force-dynamic";
 
@@ -300,6 +301,7 @@ export default async function PlanosPage() {
           <a href="/privacidade">Política de Privacidade</a>
         </nav>
       </footer>
+      <Medicao />
     </div>
   );
 }

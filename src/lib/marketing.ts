@@ -18,16 +18,28 @@
 // Por isso a lista abaixo é de PERMISSÃO, não de bloqueio: rota nova
 // nasce sem medição, e só entra aqui quem for olhada uma a uma.
 //
-// UMA TELA SÓ, por decisão do dono (06/09/2026): "o pixel e a tag é
-// somente na tela de login, antes da cliente ter qualquer acesso". Havia
-// argumento para incluir /planos, que também é página de venda e não tem
-// credencial no endereço — ele preferiu o corte mais curto, e o corte
-// mais curto é o que menos erra. Consequência a lembrar na hora de
-// montar o anúncio: se o anúncio apontar para /planos, a visita NÃO é
-// medida; o destino do anúncio tem de ser /login.
+// DUAS TELAS, e nenhuma a mais (dono, 06/09/2026). Começou em /login
+// apenas — "antes da cliente ter qualquer acesso" —, e /planos entrou
+// quando ele decidiu transformá-la na página de destino do anúncio, com
+// a oferta e a criação de conta no fim.
+//
+// As duas cabem pelo mesmo teste, que é o único que vale aqui: **o
+// endereço delas não carrega credencial**. É por isso que /portal,
+// /confirmar, /c, /guia, /fornecedor, /recepcao, /entrada e /orcamento
+// nunca entram — não por serem menos importantes para a venda, mas
+// porque o hash na URL É a chave de acesso.
 
-/** A tela onde a medição pode rodar. Comparação exata, sem prefixo. */
-const TELAS_DE_MARKETING = new Set(["/login"]);
+/** As telas onde a medição pode rodar. Comparação exata, sem prefixo. */
+const TELAS_DE_MARKETING = new Set(["/login", "/planos"]);
+
+/**
+ * A tela é a da oferta? Só ela dispara "viu o conteúdo" — o evento que
+ * separa quem chegou de quem leu a proposta. Em /login isso não faz
+ * sentido: quem está lá já decidiu entrar.
+ */
+export function telaDaOferta(pathname: string): boolean {
+  return pathname === "/planos";
+}
 
 export function telaDeMarketing(pathname: string): boolean {
   return TELAS_DE_MARKETING.has(pathname);
