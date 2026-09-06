@@ -232,9 +232,22 @@ export default function TermosPage() {
           <li>
             o período que você já pagou continua disponível até o fim dele;
           </li>
+          {/* O que continua e o que para. Até a 151 esta linha só prometia
+              o que continua, e a conta cancelada seguia editável para
+              sempre — o texto tem de dizer os dois lados.
+              O "enquanto mantivermos a sua conta" amarra esta promessa ao
+              prazo de guarda da seção 5: sem isso, um parágrafo prometia
+              acesso para sempre e o outro autorizava excluir os dados. */}
           <li>
-            sua conta e seus eventos continuam existindo — você volta quando
-            quiser, assinando de novo;
+            tudo o que já está criado continua seu: enquanto mantivermos a
+            sua conta (
+            <a href="#dados" style={link}>
+              seção 5
+            </a>
+            ), você continua vendo, imprimindo e exportando. Trinta dias
+            depois do fim do período pago, a conta{" "}
+            <b>deixa de aceitar alterações</b> — e volta a aceitar assim que
+            você assinar de novo;
           </li>
           <li>
             o mês em curso não é devolvido de forma proporcional, salvo quando a

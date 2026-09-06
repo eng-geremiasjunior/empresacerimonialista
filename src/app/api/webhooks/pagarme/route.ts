@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { lerAssinatura } from "@/lib/pagarme";
+import { hojeBR } from "@/lib/tempo";
 
 export const dynamic = "force-dynamic";
 
@@ -126,7 +127,10 @@ export async function POST(request: NextRequest) {
 
   const { data: linha } = await db
     .from("assinaturas")
-    .select("id, empresa_id, status, falhas_seguidas")
+    // proximo_vencimento entra na leitura porque o patch abaixo o usa como
+    // valor de queda: é o fim do período pago, e a cortesia da 151 conta
+    // a partir dele
+    .select("id, empresa_id, status, falhas_seguidas, proximo_vencimento")
     .eq("gateway_subscription_id", assinaturaId)
     .maybeSingle();
 
@@ -165,18 +169,27 @@ export async function POST(request: NextRequest) {
 
   const patch: Record<string, unknown> = {
     status: statusNovo,
+    // Assinatura encerrada não tem próxima cobrança, e o gateway devolve
+    // nulo — mas esta coluna é o FIM DO PERÍODO PAGO, e é dela que a
+    // cortesia de 30 dias conta (151). Apagá-la fazia a conta congelar
+    // cerca de 25 dias antes do combinado. Sem data nova, mantém-se a
+    // que havia: o que foi pago continua tendo sido pago.
     proximo_vencimento:
-      g.next_billing_at?.slice(0, 10) ?? g.current_cycle?.end_at?.slice(0, 10) ?? null,
+      g.next_billing_at?.slice(0, 10) ??
+      g.current_cycle?.end_at?.slice(0, 10) ??
+      linha.proximo_vencimento ??
+      null,
     cartao_final: g.card?.last_four_digits ?? null,
     cartao_bandeira: g.card?.brand ?? null,
     updated_at: new Date().toISOString(),
   };
   if (pagou) {
-    patch.ultimo_pagamento_em = new Date().toISOString().slice(0, 10);
+    patch.ultimo_pagamento_em = hojeBR();
     patch.falhas_seguidas = 0;
   }
   if (falhou) patch.falhas_seguidas = (linha.falhas_seguidas ?? 0) + 1;
-  if (cancelou) patch.cancelada_em = new Date().toISOString().slice(0, 10);
+  // Brasília, como a 151 mede a cortesia — ver o comentário em actions.ts
+  if (cancelou) patch.cancelada_em = hojeBR();
 
   const { error: erroUpdate } = await db
     .from("assinaturas")

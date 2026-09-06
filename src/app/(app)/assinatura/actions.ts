@@ -22,6 +22,7 @@ import {
   trocarCartao,
 } from "@/lib/pagarme";
 import { centavos, ehCodigoDoPlano, getPlano } from "@/lib/planos";
+import { hojeBR } from "@/lib/tempo";
 import { TERMOS_VERSAO } from "@/lib/termos";
 
 export type ResultadoAssinatura = { ok?: boolean; error?: string };
@@ -154,7 +155,10 @@ export async function assinar(
   const { data: atual } = await db
     .from("assinaturas")
     .select(
-      "id, gateway_customer_id, gateway_subscription_id, status, plano, valor_mensal, falhas_seguidas"
+      // cancelada_em e proximo_vencimento entram na leitura para poderem
+      // ser PRESERVADOS quando a cobrança não passa — ver os comentários
+      // no upsert abaixo
+      "id, gateway_customer_id, gateway_subscription_id, status, plano, valor_mensal, falhas_seguidas, cancelada_em, proximo_vencimento"
     )
     .eq("empresa_id", ctx.empresaId)
     .maybeSingle();
@@ -261,12 +265,25 @@ export async function assinar(
       gateway: "pagarme",
       gateway_customer_id: clienteId,
       gateway_subscription_id: g.id,
+      // sem data nova, mantém a que havia: é o fim do período pago, e a
+      // cortesia de 30 dias da 151 conta a partir dele
       proximo_vencimento:
-        g.next_billing_at?.slice(0, 10) ?? g.current_cycle?.end_at?.slice(0, 10) ?? null,
+        g.next_billing_at?.slice(0, 10) ??
+        g.current_cycle?.end_at?.slice(0, 10) ??
+        atual?.proximo_vencimento ??
+        null,
       cartao_final: g.card?.last_four_digits ?? null,
       cartao_bandeira: g.card?.brand ?? null,
       falhas_seguidas: virouAtiva ? 0 : (atual?.falhas_seguidas ?? 0) + 1,
-      cancelada_em: null,
+      // A data do cancelamento só se apaga quando a assinatura VOLTOU a
+      // valer. Zerá-la sempre — como era até 06/09/2026 — descongelava a
+      // conta com uma tentativa de cartão recusado: o status continuava
+      // 'cancelada', mas conta_congelada() exige a data e passava a
+      // devolver false, de graça e para sempre (achado de um cético da
+      // 151). Cartão recusado não é assinatura; preserva-se o que havia.
+      cancelada_em: virouAtiva
+        ? null
+        : (atual?.cancelada_em ?? (statusNovo === "cancelada" ? hojeBR() : null)),
       updated_at: new Date().toISOString(),
     },
     { onConflict: "empresa_id" }
@@ -534,7 +551,9 @@ export async function cancelar(motivo: string): Promise<ResultadoAssinatura> {
     .from("assinaturas")
     .update({
       status: "cancelada",
-      cancelada_em: new Date().toISOString().slice(0, 10),
+      // Brasília, não UTC: às 21h o toISOString já é o dia seguinte, e a
+      // cortesia de 30 dias sairia um dia mais longa do que o combinado
+      cancelada_em: hojeBR(),
       motivo_cancelamento: motivo.trim().slice(0, 400) || null,
       updated_at: new Date().toISOString(),
     })

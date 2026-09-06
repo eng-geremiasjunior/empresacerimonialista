@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Building2, Eye, EyeOff, Lock, Mail, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { contaCriada } from "@/lib/marketing";
 
 const inputClass =
   "w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-10 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100";
@@ -108,6 +109,12 @@ export function LoginForm({
         setLoading(false);
         return;
       }
+      // A conversão que o anúncio otimiza. Dispara aqui, no ÚNICO ponto em
+      // que a conta nasceu de verdade — depois do ramo de e-mail repetido
+      // acima, que devolve sucesso sem criar nada. Não leva e-mail nem
+      // nome: só o fato de ter acontecido.
+      contaCriada();
+
       if (data.session) {
         router.push("/eventos/dashboard");
         router.refresh();

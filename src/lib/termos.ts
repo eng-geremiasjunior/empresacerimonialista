@@ -8,10 +8,20 @@
  * o que fica gravado em `termos_aceite.versao`, e é por ela que se prova,
  * depois, QUAL texto a pessoa aceitou. Formato AAAA-MM-DD da publicação.
  */
-export const TERMOS_VERSAO = "2026-09-05";
+// 2026-09-06: a seção 7 passou a dizer o que PARA no cancelamento — os
+// trinta dias depois do período pago, quando a conta vira somente leitura
+// (151). Mudou o texto, muda a versão: quem aceitou a 2026-09-05 aceitou
+// outro texto, e é isso que a coluna `termos_aceite.versao` prova.
+//
+// Ainda na 2026-09-06, e antes de publicar: a mesma seção 7 passou a
+// amarrar a promessa de continuar vendo ao prazo de guarda da seção 5 —
+// um parágrafo prometia acesso para sempre e o outro autorizava excluir
+// os dados. Mesma data de publicação, mesma versão: ninguém aceitou o
+// texto do meio do caminho.
+export const TERMOS_VERSAO = "2026-09-06";
 
 /** A mesma data, por extenso, para o rodapé da página. */
-export const TERMOS_ATUALIZADO_EM = "5 de setembro de 2026";
+export const TERMOS_ATUALIZADO_EM = "6 de setembro de 2026";
 
 /** Onde os termos moram. Rota pública (liberada no middleware). */
 export const TERMOS_CAMINHO = "/termos";

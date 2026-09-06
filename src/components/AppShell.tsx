@@ -130,17 +130,88 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+const MESES = [
+  "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+  "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+];
+
+/** "2026-10-07" → "7 de outubro". Só formata o que veio do banco. */
+function diaLongo(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  return m ? `${Number(m[3])} de ${MESES[Number(m[2]) - 1]}` : iso;
+}
+
+/**
+ * A conta cancelou (151): a faixa diz o que está parado — ou em quantos
+ * dias vai parar.
+ *
+ * Duas frases porque são duas pessoas. A PROPRIETÁRIA decide a assinatura:
+ * a dela termina no link que resolve. A coordenadora e a cerimonialista
+ * trabalham na mesma conta e também precisam saber por que nada salva, mas
+ * dinheiro não é assunto delas — mandá-las a /assinatura seria mandá-las a
+ * uma porta que as expulsa.
+ *
+ * O que a frase promete é o que o banco faz: eventos (pode_editar_evento),
+ * clientes e fornecedores param de aceitar escrita. Prometer "nenhuma
+ * alteração é salva" seria mais forte do que a trava é.
+ */
+function fraseDaFaixa(
+  congelamento: Congelamento,
+  cargo: string | null,
+  diasAteCongelar: number | null
+): string | null {
+  const dona = cargo === "proprietaria";
+  const fim = dona ? "" : " Fale com a proprietária.";
+
+  if (congelamento.congelada) {
+    return (
+      "A conta está só para leitura: os eventos e os cadastros não aceitam alterações." +
+      (dona ? " Assinar de novo destrava na hora." : fim)
+    );
+  }
+  if (diasAteCongelar === null || !congelamento.congelaEm) return null;
+  return (
+    `Em ${diasAteCongelar} ${diasAteCongelar === 1 ? "dia" : "dias"}, no dia ` +
+    `${diaLongo(congelamento.congelaEm)}, a conta deixa de aceitar alterações.` +
+    fim
+  );
+}
+
+/** Quantos dias antes do congelamento a faixa começa a aparecer. */
+const AVISO_DIAS = 14;
+
+export type Congelamento = { congelada: boolean; congelaEm: string | null };
+
 type Props = {
   userEmail: string;
   avatarUrl: string | null;
   cargo: string | null;
   prazosFrase: string | null;
   esperaFrase: string | null;
+  /**
+   * A conta cancelou: já congelou (não aceita mais alterações) e/ou o dia
+   * em que congela (151). Null = nada a dizer.
+   *
+   * Sem esta faixa, a trava chega à tela como a RLS a devolve — "não foi
+   * possível salvar", sem causa. A faixa é o que transforma "deu erro" em
+   * "eu sei por quê", e por isso acompanha TODAS as telas, não só a de
+   * assinatura: quem descobre o congelamento está no meio de um roteiro.
+   */
+  congelamento: Congelamento | null;
   signOut: () => Promise<void>;
   children: React.ReactNode;
 };
 
-export function AppShell({ userEmail, avatarUrl, cargo, prazosFrase, esperaFrase, signOut, children }: Props) {
+export function AppShell({
+  userEmail,
+  avatarUrl,
+  cargo,
+  prazosFrase,
+  esperaFrase,
+  congelamento,
+  signOut,
+  children,
+}: Props) {
   // Cargo null é quem meu_cargo() não reconhece: ex-membro desativada,
   // ou conta sem vínculo. Antes via o menu inteiro "preservando o
   // comportamento antigo" — só que as telas restritas vinham vazias de
@@ -164,6 +235,38 @@ export function AppShell({ userEmail, avatarUrl, cargo, prazosFrase, esperaFrase
     }).format(new Date());
     setToday(label.charAt(0).toUpperCase() + label.slice(1));
   }, []);
+
+  // Quantos dias faltam até a conta parar de aceitar alterações — no
+  // CLIENTE, pelo mesmo motivo do relógio acima: "hoje" no servidor e
+  // "hoje" no navegador podem ser dias diferentes, e a divergência faz o
+  // React refazer a página inteira. `congelada` vem pronto do banco e por
+  // isso pode aparecer já no primeiro render; a contagem, não.
+  const [diasAteCongelar, setDiasAteCongelar] = useState<number | null>(null);
+  const congelada = congelamento?.congelada ?? false;
+  const congelaEm = congelamento?.congelaEm ?? null;
+  useEffect(() => {
+    if (congelada || !congelaEm) {
+      setDiasAteCongelar(null);
+      return;
+    }
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(congelaEm);
+    if (!m) return;
+    // meia-noite UTC nos dois lados: subtrair datas em hora local erra um
+    // dia quando o horário de verão começa dentro do intervalo
+    const alvo = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    const agora = new Date();
+    const hoje = Date.UTC(agora.getFullYear(), agora.getMonth(), agora.getDate());
+    const dias = Math.round((alvo - hoje) / 86_400_000);
+    setDiasAteCongelar(dias > 0 && dias <= AVISO_DIAS ? dias : null);
+  }, [congelada, congelaEm]);
+
+  // Dentro de /assinatura a faixa não entra: a própria tela diz o mesmo,
+  // com mais detalhe e com a vitrine embaixo. Duas caixas para um recado
+  // só, e um link para a página em que a pessoa já está.
+  const congelamentoFrase =
+    congelamento && pathname !== "/assinatura"
+      ? fraseDaFaixa(congelamento, cargo, diasAteCongelar)
+      : null;
 
   const initials = userEmail.slice(0, 2).toUpperCase();
 
@@ -259,6 +362,28 @@ export function AppShell({ userEmail, avatarUrl, cargo, prazosFrase, esperaFrase
             </div>
           </div>
         </header>
+
+        {/* Faixa fina, âmbar sóbrio, no topo do conteúdo. Sem ícone, sem
+            botão de fechar: enquanto a conta não aceitar alterações, esta
+            linha é a explicação de todo salvamento que falhar.
+            O link só aparece para quem decide a assinatura — /assinatura
+            devolve as outras ao painel, e mandar a coordenadora a uma
+            porta que a expulsa seria repetir o erro que a faixa corrige. */}
+        {congelamentoFrase && (
+          <div className="border-b border-amber-300 bg-amber-50 px-4 py-2 lg:px-6">
+            <p className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-amber-900">
+              {congelamentoFrase}
+              {cargo === "proprietaria" && (
+                <Link
+                  href="/assinatura"
+                  className="font-medium underline underline-offset-2 hover:text-amber-950"
+                >
+                  Ver assinatura
+                </Link>
+              )}
+            </p>
+          </div>
+        )}
 
         <main className="flex-1 px-4 py-6 lg:px-8">
           <div className="mx-auto w-full max-w-7xl">{children}</div>

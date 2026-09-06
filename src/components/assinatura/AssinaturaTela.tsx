@@ -23,7 +23,7 @@
 // Instrument Sans; o H1 em Inter. As três fontes já são carregadas pelo
 // layout do app.
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { assinar, atualizarCartao, cancelar, trocarPlano } from "@/app/(app)/assinatura/actions";
 import { documentoValido } from "@/lib/documento";
@@ -56,6 +56,17 @@ export type EstadoAssinatura = {
   pode_adicionar_login: boolean;
   /** o aceite de uma proposta pode deixar 11 em 10 — nada trava, a tela avisa */
   acima_do_plano: boolean;
+  /**
+   * Cancelou e a cortesia de 30 dias acabou: a conta lê, imprime e exporta
+   * tudo, e não aceita mais alterações. Trial, cortesia, piloto,
+   * inadimplente e conta sem assinatura nunca ficam congeladas (151).
+   */
+  congelada: boolean;
+  /**
+   * O dia em que a conta congela — ou congelou. Null quando não se aplica.
+   * É o que permite avisar ANTES, e não no dia em que ela tenta salvar.
+   */
+  congela_em: string | null;
 };
 
 /**
@@ -312,6 +323,51 @@ export function AssinaturaTela({
   // sendo uma tela só, porque é um formulário só.
   const [etapa, setEtapa] = useState<1 | 2 | 3>(1);
 
+  // Quantos dias faltam até a conta parar de aceitar alterações.
+  //
+  // Calculado no CLIENTE, como o relógio do AppShell: "hoje" no servidor e
+  // "hoje" no navegador podem ser dias diferentes, e essa divergência faz o
+  // React refazer a página inteira acusando erro de hidratação. O estado
+  // `congelada` vem pronto do banco e por isso pode ser renderizado dos dois
+  // lados; a contagem de dias, não.
+  const [diasAteCongelar, setDiasAteCongelar] = useState<number | null>(null);
+  // E o dia em que a conta congelaria se ela cancelasse AGORA — a frase da
+  // zona de cancelamento precisa dele: quem decide sair lê ali, e só ali,
+  // o que vai parar. Mesma conta da 151 (31 dias depois do maior entre o
+  // fim do período pago e o dia do cancelamento) e, pelo mesmo motivo do
+  // bloco acima, feita no cliente.
+  const [diaSeCancelar, setDiaSeCancelar] = useState<string | null>(null);
+  useEffect(() => {
+    const iso = estado.congela_em;
+    if (estado.congelada || !iso) {
+      setDiasAteCongelar(null);
+      return;
+    }
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+    if (!m) return;
+    // meia-noite UTC nos dois lados: subtrair datas em hora local erra um
+    // dia quando o horário de verão começa dentro do intervalo
+    const alvo = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    const agora = new Date();
+    const hoje = Date.UTC(agora.getFullYear(), agora.getMonth(), agora.getDate());
+    const dias = Math.round((alvo - hoje) / 86_400_000);
+    setDiasAteCongelar(dias > 0 ? dias : null);
+  }, [estado.congelada, estado.congela_em]);
+
+  useEffect(() => {
+    const agora = new Date();
+    let base = Date.UTC(agora.getFullYear(), agora.getMonth(), agora.getDate());
+    const m = estado.proximo_vencimento
+      ? /^(\d{4})-(\d{2})-(\d{2})/.exec(estado.proximo_vencimento)
+      : null;
+    if (m) {
+      const venc = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+      if (venc > base) base = venc;
+    }
+    const d = new Date(base + 31 * 86_400_000);
+    setDiaSeCancelar(`${d.getUTCDate()} de ${MESES[d.getUTCMonth()]}`);
+  }, [estado.proximo_vencimento]);
+
   // O uso, em número: "8 de 10 eventos em andamento · 1 de 1 login".
   // A concordância segue a CONTAGEM, não o teto: "5 de 1 evento" seria
   // exatamente o caso de quem cancelou com a agenda cheia.
@@ -330,11 +386,30 @@ export function AssinaturaTela({
   // A tela sabe que está acima; não sabe POR QUÊ (aceite da cliente,
   // queda de plano, evento reativado). Diz o número e a saída — a causa
   // só se afirma quando é conhecida, e aqui não é.
-  const usoAcima = estado.acima_do_plano
+  //
+  // Na conta congelada esta linha some. Ela dizia "Nada foi travado" oito
+  // pixels acima de "a conta não aceita alterações", e mandava esperar um
+  // evento concluir — que é, ela própria, uma alteração que não salva
+  // mais. Duas frases em âmbar se contradizendo no mesmo instante.
+  const usoAcima = estado.congelada
+    ? null
+    : estado.acima_do_plano
     ? ativa || inadimplente
       ? `${eventosTexto}. Nada foi travado; para criar o próximo, mude de plano ou espere um evento concluir.`
       : `${eventosTexto}. Nada foi travado; para criar o próximo, escolha um plano ou espere um evento concluir.`
     : null;
+
+  // A conta congelada, dita em tempo e em consequência. Não é erro — nada
+  // foi apagado e nada foi escondido; o que parou foi a escrita. Por isso
+  // divide o âmbar com a linha de uso acima do teto, e não a borda forte do
+  // bloco de erro. O caminho de volta é a vitrine que já está logo abaixo.
+  const avisoCongelada = estado.congelada
+    ? "A conta está só para leitura. Você continua vendo, imprimindo e exportando tudo; os eventos e os cadastros não aceitam alterações. Assinar de novo destrava na hora."
+    : diasAteCongelar !== null
+      ? `Em ${diasAteCongelar} ${diasAteCongelar === 1 ? "dia" : "dias"}, no dia ${dataLonga(
+          estado.congela_em
+        )}, a conta deixa de aceitar alterações: você continua vendo, imprimindo e exportando, e nada mais pode ser editado. Assinar de novo destrava na hora.`
+      : null;
 
   const cartaoTexto = estado.cartao_final
     ? `${estado.cartao_bandeira ?? "cartão"} •••• ${estado.cartao_final}`
@@ -768,6 +843,20 @@ export function AssinaturaTela({
             {usoAcima ?? `${eventosTexto} · ${loginsTexto}`}
           </p>
         )}
+        {/* a conta que parou de aceitar alterações — ou o dia em que vai
+            parar. Mesmo âmbar da linha de uso: aviso, não erro. */}
+        {avisoCongelada && !modoForm && (
+          <p
+            style={{
+              margin: "8px 0 0",
+              font: `500 13.5px/1.55 ${F_UI}`,
+              color: AMBAR,
+              maxWidth: 620,
+            }}
+          >
+            {avisoCongelada}
+          </p>
+        )}
 
         {/* avisos — neutros como o design manda; o erro se destaca pela borda forte */}
         {ok && !erro && (
@@ -933,6 +1022,11 @@ export function AssinaturaTela({
           >
             <div style={{ flex: 1 }}>
               <div style={{ font: `600 14px ${F_UI}`, color: C.forte }}>Cancelar assinatura</div>
+              {/* Os dois lados, ditos aqui — onde ela decide. Prometer só o
+                  que continua (era o que esta frase fazia) é a promessa que
+                  a gente mesmo desmente 30 dias depois, quando o roteiro
+                  para de salvar e a /termos, que ela não abriu, era o único
+                  lugar onde isso estava escrito. */}
               <p
                 style={{
                   margin: "4px 0 0",
@@ -941,8 +1035,11 @@ export function AssinaturaTela({
                   maxWidth: 440,
                 }}
               >
-                Seus eventos e tudo o que está dentro deles continuam seus. Você só não poderá criar
-                eventos novos.
+                Seus eventos continuam seus: você segue vendo, imprimindo e exportando.{" "}
+                {diaSeCancelar
+                  ? `A partir de ${diaSeCancelar} a conta deixa de aceitar alterações`
+                  : "Trinta dias depois do fim do período pago, a conta deixa de aceitar alterações"}
+                , e assinar de novo destrava na hora.
               </p>
             </div>
             <button
@@ -968,10 +1065,14 @@ export function AssinaturaTela({
           >
             <div style={{ font: `400 13.5px/1.5 ${F_UI}`, color: C.forte }}>
               {/* Sem "encerra hoje": até a 150, o teto cai no dia; com a
-                  150, o mês pago vale até o fim. A frase abaixo é verdade
-                  nos dois casos — o que a tela promete é o que o banco faz. */}
-              Confirmar o cancelamento? Nenhuma cobrança nova será feita, e seus eventos
-              continuam seus.
+                  150, o mês pago vale até o fim. O que a tela promete é o
+                  que o banco faz — inclusive o dia em que ele para de
+                  aceitar alterações (151). */}
+              Confirmar o cancelamento? Nenhuma cobrança nova será feita e seus eventos continuam
+              seus.{" "}
+              {diaSeCancelar
+                ? `A partir de ${diaSeCancelar} a conta passa a ser só para leitura.`
+                : "Trinta dias depois do fim do período pago, a conta passa a ser só para leitura."}
             </div>
             <input
               className="subx-in"

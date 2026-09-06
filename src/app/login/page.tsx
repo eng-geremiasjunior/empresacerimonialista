@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { BrandShowcase, Logo } from "@/components/auth/BrandShowcase";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { Medicao } from "@/components/marketing/Medicao";
 
 export const metadata: Metadata = {
   title: "Entrar — eorganizei",
@@ -103,6 +104,7 @@ export default function LoginPage({
           </nav>
         </div>
       </footer>
+      <Medicao />
     </div>
   );
 }

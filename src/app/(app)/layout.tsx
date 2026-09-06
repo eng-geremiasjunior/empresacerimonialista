@@ -5,9 +5,34 @@ import { getEspera } from "@/lib/supabase/espera-solicitacoes";
 import { fraseDoCopiloto } from "@/lib/espera-core";
 import { getAlertasCopiloto } from "@/lib/supabase/queries";
 import { frasePrazos, resumirPrazos } from "@/lib/copiloto-prazos";
-import { AppShell } from "@/components/AppShell";
+import { AppShell, type Congelamento } from "@/components/AppShell";
 import { TaskNotifications } from "@/components/TaskNotifications";
 import { signOut } from "./actions";
+
+/**
+ * A conta cancelou (151): já congelou, e em que dia congela. Null quando
+ * não há nada a dizer — e erro (a 151 ainda não aplicada, por exemplo)
+ * também vira null: uma faixa a menos é melhor que uma faixa mentindo que
+ * a conta parou.
+ *
+ * A pergunta é a mesma para todos os cargos, e é sobre a PRÓPRIA conta:
+ * `meu_congelamento()` resolve a empresa pelo login. Antes a proprietária
+ * passava por `minha_assinatura()`, que conta eventos e logins duas vezes
+ * a cada navegação para devolver um booleano; e os outros cargos passavam
+ * a empresa por argumento, o que deixava a situação comercial de qualquer
+ * conta legível por qualquer login que soubesse o uuid.
+ *
+ * O DIA vem junto porque avisar depois não serve: quem cancelou não volta
+ * mais à tela de assinatura, e a coordenadora e a cerimonialista nem têm
+ * essa tela.
+ */
+async function congelamentoDaConta(): Promise<Congelamento | null> {
+  const supabase = createClient();
+  const { data } = await supabase.rpc("meu_congelamento");
+  const d = data as { congelada?: boolean; congela_em?: string | null } | null;
+  if (!d) return null;
+  return { congelada: d.congelada === true, congelaEm: d.congela_em ?? null };
+}
 
 export default async function AppLayout({
   children,
@@ -54,7 +79,7 @@ export default async function AppLayout({
 
   // Em série, cada navegação do app esperava as 3 consultas dos prazos
   // TERMINAREM antes de começar as da espera. Nada aqui depende do outro.
-  const [prazosFrase, esperaFrase] = await Promise.all([
+  const [prazosFrase, esperaFrase, congelamento] = await Promise.all([
     getAlertasCopiloto()
       .then((alertas) => frasePrazos(resumirPrazos(alertas.map((a) => a.tipo))))
       .catch(() => null),
@@ -67,6 +92,7 @@ export default async function AppLayout({
           )
           .catch(() => "Não deu para checar os fornecedores agora.")
       : Promise.resolve(null),
+    congelamentoDaConta().catch(() => null),
   ]);
 
   return (
@@ -76,6 +102,7 @@ export default async function AppLayout({
         cargo={cargo}
         prazosFrase={prazosFrase}
         esperaFrase={esperaFrase}
+        congelamento={congelamento}
         avatarUrl={
           ((user.user_metadata as { avatar_url?: string | null } | null)
             ?.avatar_url as string | null) ?? null

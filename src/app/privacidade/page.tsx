@@ -127,6 +127,21 @@ export default function PrivacidadePage() {
         , que valem junto com esta política.
       </Secao>
 
+      <Secao titulo="Medição de visitas e anúncios">
+        Em <b>uma única página</b> — a tela de entrada e criação de conta —
+        usamos o <b>Google Analytics</b> e o <b>pixel da Meta</b>, para saber
+        quantas pessoas chegam pelos nossos anúncios e quantas criam conta.
+        Eles registram a visita e o fato de uma conta ter sido criada;{" "}
+        <b>não recebem nome, e-mail nem qualquer dado que você digite</b>.
+        <p style={{ marginTop: 10 }}>
+          Em nenhuma outra página eles são carregados — nem nas áreas de
+          trabalho do sistema, nem no portal da cliente, na confirmação de
+          presença, no guia do fornecedor, na recepção ou na proposta. Nessas
+          páginas o endereço é a própria credencial de acesso, e ele não sai
+          para terceiros.
+        </p>
+      </Secao>
+
       <Secao titulo="Contato">
         Dúvidas ou solicitações sobre privacidade:{" "}
         <a href="mailto:geremiaseng@outlook.com" style={{ color: "#6E3F5F", fontWeight: 600 }}>
