@@ -24,14 +24,15 @@
 // layout do app.
 
 import { useState, useTransition } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { assinar, atualizarCartao, cancelar, trocarPlano } from "@/app/(app)/assinatura/actions";
 import { documentoValido } from "@/lib/documento";
 import { cepValido, telefoneValido, ufValida } from "@/lib/contato";
 import { TERMOS_CAMINHO } from "@/lib/termos";
 import {
   COBRANCA_VAZIA,
-  DadosDeCobranca,
+  DadosPessoais,
+  EnderecoDeCobranca,
   type Cobranca,
 } from "@/components/assinatura/DadosDeCobranca";
 
@@ -122,28 +123,56 @@ async function tokenizar(cartao: {
  * para o erro ser instantâneo e específico. Botão desabilitado sem dizer
  * por quê é adivinha; clique que responde "informe o bairro" é resposta.
  */
-function faltaNoFormulario(
-  form: { numero: string; nome: string; mes: string; ano: string; cvv: string },
-  cobranca: Cobranca | null
-): string | null {
+// As três etapas, cada uma cobrando só o que está na sua tela. Quem
+// erra o CPF descobre no passo 1, não depois de digitar o cartão — era o
+// que acontecia quando os onze campos moravam na mesma página.
+function faltaNosDadosPessoais(c: Cobranca): string | null {
+  if (!c.nome.trim()) return "Informe o nome de quem vai pagar.";
+  if (!c.email.includes("@")) return "Informe um e-mail válido para a cobrança.";
+  if (!telefoneValido(c.telefone)) return "Informe um telefone válido, com DDD.";
+  if (!documentoValido(c.documento)) return "Informe um CPF ou CNPJ válido.";
+  return null;
+}
+
+function faltaNoEndereco(c: Cobranca): string | null {
+  if (!cepValido(c.cep)) return "Informe um CEP válido.";
+  if (!c.rua.trim()) return "Informe a rua.";
+  if (!c.numero.trim()) return "Informe o número do endereço.";
+  if (!c.bairro.trim()) return "Informe o bairro.";
+  if (!c.cidade.trim()) return "Informe a cidade.";
+  if (!ufValida(c.estado)) return "Escolha o estado.";
+  return null;
+}
+
+function faltaNoCartao(form: {
+  numero: string;
+  nome: string;
+  mes: string;
+  ano: string;
+  cvv: string;
+}): string | null {
   if (form.numero.replace(/\s/g, "").length < 13) return "Confira o número do cartão.";
   if (!form.nome.trim()) return "Informe o nome como está no cartão.";
   const mes = Number(form.mes);
   if (!form.mes || mes < 1 || mes > 12) return "Confira o mês de validade.";
   if (!form.ano) return "Confira o ano de validade.";
   if (form.cvv.length < 3) return "Confira o CVV.";
-  if (!cobranca) return null; // troca de cartão não recadastra o pagador
-  if (!cobranca.nome.trim()) return "Informe o nome de quem vai pagar.";
-  if (!cobranca.email.includes("@")) return "Informe um e-mail válido para a cobrança.";
-  if (!telefoneValido(cobranca.telefone)) return "Informe um telefone válido, com DDD.";
-  if (!documentoValido(cobranca.documento)) return "Informe um CPF ou CNPJ válido.";
-  if (!cepValido(cobranca.cep)) return "Informe um CEP válido.";
-  if (!cobranca.rua.trim()) return "Informe a rua.";
-  if (!cobranca.numero.trim()) return "Informe o número do endereço.";
-  if (!cobranca.bairro.trim()) return "Informe o bairro.";
-  if (!cobranca.cidade.trim()) return "Informe a cidade.";
-  if (!ufValida(cobranca.estado)) return "Escolha o estado.";
   return null;
+}
+
+/**
+ * A conferência final, antes de tokenizar: a mesma de sempre, agora
+ * composta das três. Continua existindo mesmo com as etapas validando
+ * uma a uma — o botão só é liberado por elas, mas quem envia é esta.
+ */
+function faltaNoFormulario(
+  form: { numero: string; nome: string; mes: string; ano: string; cvv: string },
+  cobranca: Cobranca | null
+): string | null {
+  const cartao = faltaNoCartao(form);
+  if (cartao) return cartao;
+  if (!cobranca) return null; // troca de cartão não recadastra o pagador
+  return faltaNosDadosPessoais(cobranca) ?? faltaNoEndereco(cobranca);
 }
 
 /* ------------------------------------------------------------------ */
@@ -187,11 +216,20 @@ const cardBranco: React.CSSProperties = {
   borderRadius: 14,
 };
 
+// O painel escuro do plano — o mesmo desenho que já resumia a assinatura
+// no alto da tela, agora também ao lado das etapas.
+const cardChumbo: React.CSSProperties = {
+  background: "#23262A",
+  borderRadius: 14,
+  color: "#fff",
+};
+
 export function AssinaturaTela({
   estado,
   planos,
   emailDaConta,
   nomeDaConta,
+  planoDaUrl: codigoDaUrl,
 }: {
   estado: EstadoAssinatura;
   /** os planos à venda, na ordem da vitrine; vazio = assinatura ainda fechada */
@@ -199,9 +237,10 @@ export function AssinaturaTela({
   /** só para começar o formulário preenchido — ela pode trocar */
   emailDaConta?: string;
   nomeDaConta?: string;
+  /** o código que veio de /planos (?plano=), lido no servidor */
+  planoDaUrl?: string | null;
 }) {
   const router = useRouter();
-  const busca = useSearchParams();
 
   const ativa = estado.status === "ativa";
   const inadimplente = estado.status === "inadimplente";
@@ -232,7 +271,7 @@ export function AssinaturaTela({
   // decidiu lá não é pedido de novo aqui. Quem pode assinar já cai no
   // formulário desse plano; quem já paga cai na confirmação da troca.
   // Sem o parâmetro (ou com um código que não está à venda), nada muda.
-  const planoDaUrl = planos.find((p) => p.codigo === busca.get("plano")) ?? null;
+  const planoDaUrl = planos.find((p) => p.codigo === codigoDaUrl) ?? null;
   const assinarDaUrl = podeAssinar ? planoDaUrl : null;
   const trocarDaUrl =
     !podeAssinar &&
@@ -268,6 +307,10 @@ export function AssinaturaTela({
   // a caixinha dos termos: nasce desmarcada e volta a desmarcada toda vez
   // que o formulário fecha — o aceite é daquele clique, não da sessão
   const [aceitei, setAceitei] = useState(false);
+  // Em que etapa da assinatura ela está: 1 dados pessoais, 2 endereço,
+  // 3 pagamento. Só existe no modo "assinar" — trocar o cartão continua
+  // sendo uma tela só, porque é um formulário só.
+  const [etapa, setEtapa] = useState<1 | 2 | 3>(1);
 
   // O uso, em número: "8 de 10 eventos em andamento · 1 de 1 login".
   // A concordância segue a CONTAGEM, não o teto: "5 de 1 evento" seria
@@ -336,6 +379,7 @@ export function AssinaturaTela({
       setModoForm(null);
       setPlanoEscolhido(null);
       setAceitei(false);
+      setEtapa(1);
       setOk(troca ? "Cartão atualizado." : "Assinatura ativa. Obrigado!");
       router.refresh();
     });
@@ -357,6 +401,34 @@ export function AssinaturaTela({
       setOk("Assinatura cancelada. Você pode voltar quando quiser.");
       router.refresh();
     });
+  }
+
+  /**
+   * Avança uma etapa, cobrando só o que está na tela dela. O erro aparece
+   * onde o campo está — o que não acontecia quando os onze campos moravam
+   * na mesma página e o "informe o bairro" só saía depois do cartão.
+   */
+  function avancar() {
+    setErro(null);
+    const falta = etapa === 1 ? faltaNosDadosPessoais(cobranca) : faltaNoEndereco(cobranca);
+    if (falta) {
+      setErro(falta);
+      return;
+    }
+    setEtapa(etapa === 1 ? 2 : 3);
+  }
+
+  /** Volta uma etapa; na primeira, fecha o formulário e devolve a vitrine. */
+  function voltar() {
+    setErro(null);
+    if (modoForm === "assinar" && etapa > 1) {
+      setEtapa(etapa === 3 ? 2 : 1);
+      return;
+    }
+    setModoForm(null);
+    setPlanoEscolhido(null);
+    setAceitei(false);
+    setEtapa(1);
   }
 
   function confirmarTroca(plano: PlanoDaVitrine) {
@@ -435,6 +507,7 @@ export function AssinaturaTela({
                 setErro(null);
                 setOk(null);
                 setPlanoEscolhido(p);
+                setEtapa(1);
                 setModoForm("assinar");
               }}
             >
@@ -576,7 +649,15 @@ export function AssinaturaTela({
       }}
     >
       {/* grades responsivas do design — colapsam a 720px */}
-      <style>{`
+      {/* Não <style> com template literal: as fontes entram por
+          interpolação (F_UI vale var(--font-ui), 'Instrument Sans',
+          sans-serif) e o servidor escapa essas aspas para &#x27;,
+          enquanto o navegador lê a aspa crua. O React acusava "Text
+          content does not match" e refazia a tela inteira no cliente —
+          doze erros por carregamento nesta página. Medido em
+          06/09/2026; mesmo defeito da /planos. Como innerHTML o CSS
+          chega igual dos dois lados, e não há nada de usuário nele. */}
+      <style dangerouslySetInnerHTML={{ __html: `
         .subx-grid{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start}
         .subx-row{display:flex;align-items:center;gap:16px}
         .subx-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -602,6 +683,18 @@ export function AssinaturaTela({
         .subx-aceite{display:flex;align-items:flex-start;gap:10px;cursor:pointer;
           font:400 13.5px/1.5 ${F_UI};color:${C.forte}}
         .subx-aceite input{width:20px;height:20px;margin:0;flex:none;accent-color:${C.chumbo};cursor:pointer}
+        /* assinar em sequência: o painel do plano à esquerda, as etapas à direita */
+        .subx-passos{display:grid;grid-template-columns:260px 1fr;gap:16px;align-items:start}
+        .subx-trilha{display:flex;align-items:center;gap:10px;list-style:none;margin:0 0 20px;padding:0 0 16px;
+          border-bottom:1px solid ${C.bordaFina};flex-wrap:wrap}
+        .subx-trilha li{display:flex;align-items:center;gap:8px;color:${C.rotulo};
+          font:400 13px ${F_UI}}
+        .subx-trilha li+li::before{content:"";width:18px;height:1px;background:${C.bordaCard};margin-right:2px}
+        .subx-trilha-num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;
+          border-radius:50%;border:1px solid ${C.bordaCard};font:500 11px ${F_MONO};flex:none}
+        .subx-trilha li[data-atual="true"]{color:${C.forte};font-weight:600}
+        .subx-trilha li[data-atual="true"] .subx-trilha-num{background:${C.chumbo};border-color:${C.chumbo};color:#fff}
+        .subx-trilha li[data-feita="true"] .subx-trilha-num{border-color:${C.forte};color:${C.forte}}
         .subx-aceite a{color:${C.forte};text-decoration:underline;text-underline-offset:2px}
         @media (max-width:720px){
           .subx-wrap{padding:28px 20px 40px !important}
@@ -611,8 +704,16 @@ export function AssinaturaTela({
           .subx-row button{width:100%;height:44px !important}
           .subx-actions{flex-direction:column;align-items:stretch}
           .subx-actions button{width:100%;height:44px !important}
+          /* no celular o painel do plano vai para o topo e as etapas
+             seguem abaixo — uma coluna, na ordem de leitura */
+          .subx-passos{grid-template-columns:1fr}
+          /* a trilha vira só o número da etapa atual: três nomes lado a
+             lado não cabem em 375px sem virar duas linhas tortas */
+          .subx-trilha li{display:none}
+          .subx-trilha li[data-atual="true"]{display:flex}
+          .subx-trilha li+li::before{display:none}
         }
-      `}</style>
+      ` }} />
 
       <div style={{ maxWidth: 760, margin: "0 auto" }}>
         {/* cabeçalho */}
@@ -901,108 +1002,216 @@ export function AssinaturaTela({
         )}
 
         {/* ---------------- FORMULÁRIO ---------------- */}
-        {modoForm && (
-          <>
-            {modoForm === "assinar" && planoEscolhido && (
-              <p style={{ margin: "6px 0 0", font: `400 14px/1.5 ${F_UI}`, color: C.apoio }}>
-                {planoEscolhido.nome} por{" "}
-                <span style={{ font: `500 13px ${F_MONO}`, color: C.forte }}>
-                  {planoEscolhido.precoTexto}
-                </span>{" "}
-                por mês. Cancele quando quiser, sem multa.
-              </p>
-            )}
-            <div style={{ ...cardBranco, marginTop: 24, padding: "28px 24px" }}>
-              <div style={rotuloSecao}>Cartão</div>
-              <div className="subx-form-grid" style={{ marginTop: 14 }}>
-                <div
-                  style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: 6 }}
-                >
-                  <label style={{ font: `500 12.5px ${F_UI}`, color: C.apoio }}>
-                    Número do cartão
-                  </label>
-                  <input
-                    className="subx-in subx-in--mono"
-                    inputMode="numeric"
-                    autoComplete="cc-number"
-                    placeholder="0000 0000 0000 0000"
-                    disabled={pendente}
-                    value={form.numero}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        numero: e.target.value
-                          .replace(/\D/g, "")
-                          .slice(0, 19)
-                          .replace(/(\d{4})(?=\d)/g, "$1 "),
-                      })
-                    }
-                  />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <label style={{ font: `500 12.5px ${F_UI}`, color: C.apoio }}>
-                    Nome como está no cartão
-                  </label>
-                  <input
-                    className="subx-in"
-                    autoComplete="cc-name"
-                    disabled={pendente}
-                    value={form.nome}
-                    onChange={(e) => setForm({ ...form, nome: e.target.value.toUpperCase() })}
-                  />
-                </div>
-                <div className="subx-exp">
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <label style={{ font: `500 12.5px ${F_UI}`, color: C.apoio }}>Mês</label>
-                    <input
-                      className="subx-in subx-in--mono"
-                      inputMode="numeric"
-                      autoComplete="cc-exp-month"
-                      placeholder="MM"
-                      maxLength={2}
-                      disabled={pendente}
-                      value={form.mes}
-                      onChange={(e) => setForm({ ...form, mes: e.target.value.replace(/\D/g, "") })}
-                    />
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <label style={{ font: `500 12.5px ${F_UI}`, color: C.apoio }}>Ano</label>
-                    <input
-                      className="subx-in subx-in--mono"
-                      inputMode="numeric"
-                      autoComplete="cc-exp-year"
-                      placeholder="AA"
-                      maxLength={4}
-                      disabled={pendente}
-                      value={form.ano}
-                      onChange={(e) => setForm({ ...form, ano: e.target.value.replace(/\D/g, "") })}
-                    />
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <label style={{ font: `500 12.5px ${F_UI}`, color: C.apoio }}>CVV</label>
-                    <input
-                      className="subx-in subx-in--mono"
-                      inputMode="numeric"
-                      autoComplete="cc-csc"
-                      placeholder="000"
-                      maxLength={4}
-                      disabled={pendente}
-                      value={form.cvv}
-                      onChange={(e) => setForm({ ...form, cvv: e.target.value.replace(/\D/g, "") })}
-                    />
-                  </div>
-                </div>
-              </div>
+        {/*
+          Assinar é uma SEQUÊNCIA, não uma página: 1 dados pessoais,
+          2 endereço, 3 pagamento. Antes eram onze campos mais o cartão na
+          mesma tela, e a pessoa desistia na rolagem — "isso não converte"
+          (dono, 06/09/2026). Nenhum campo mudou de nome, de máscara ou de
+          validação; mudou a ordem em que aparecem, e cada etapa cobra só
+          o que está nela.
 
+          À esquerda, o painel do plano fica de pé o tempo todo, dizendo o
+          preço e em que etapa ela está — no celular ele vai para o topo e
+          as etapas seguem abaixo.
+
+          Trocar o cartão NÃO tem etapas: é um formulário só, e continua
+          igual ao que era.
+        */}
+        {modoForm && (
+          <div className="subx-passos" style={{ marginTop: 24 }}>
+            {/* o painel do plano, à esquerda */}
+            <aside style={{ ...cardChumbo, padding: "22px 24px", alignSelf: "start" }}>
+              <div style={{ ...rotuloSecao, color: C.rotuloChumbo }}>
+                {modoForm === "trocar" ? "Cartão" : "Plano"}
+              </div>
+              {modoForm === "assinar" && planoEscolhido ? (
+                <>
+                  <div style={{ marginTop: 10, font: `500 24px ${F_MONO}`, color: "#fff" }}>
+                    {planoEscolhido.precoTexto}
+                    <span style={{ font: `400 13px ${F_UI}`, color: C.rotuloChumbo }}> /mês</span>
+                  </div>
+                  <div style={{ marginTop: 4, font: `400 14px ${F_UI}`, color: C.sobChumbo }}>
+                    {planoEscolhido.nome}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 18,
+                      paddingTop: 14,
+                      borderTop: `1px solid ${C.bordaChumbo}`,
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      font: `400 13px ${F_UI}`,
+                      color: C.rotuloChumbo,
+                    }}
+                  >
+                    <span>Etapa</span>
+                    <span style={{ font: `500 13px ${F_MONO}`, color: "#fff" }}>{etapa} de 3</span>
+                  </div>
+                  <p
+                    style={{
+                      margin: "14px 0 0",
+                      font: `400 12.5px/1.5 ${F_UI}`,
+                      color: C.rotuloChumbo,
+                    }}
+                  >
+                    Cancele quando quiser, sem multa.
+                  </p>
+                </>
+              ) : (
+                <p
+                  style={{
+                    margin: "10px 0 0",
+                    font: `400 13px/1.5 ${F_UI}`,
+                    color: C.sobChumbo,
+                  }}
+                >
+                  A cobrança mensal passa a usar o cartão que você salvar aqui.
+                </p>
+              )}
+            </aside>
+
+            {/* as etapas, à direita */}
+            <div style={{ ...cardBranco, padding: "24px" }}>
               {modoForm === "assinar" && (
-                <div style={{ marginTop: 28, paddingTop: 24, borderTop: `1px solid ${C.bordaFina}` }}>
-                  <div style={rotuloSecao}>Dados de cobrança</div>
-                  <DadosDeCobranca valor={cobranca} onChange={setCobranca} desabilitado={pendente} />
-                </div>
+                <ol className="subx-trilha" aria-label={`Etapa ${etapa} de 3`}>
+                  {[
+                    [1, "Dados pessoais"],
+                    [2, "Endereço"],
+                    [3, "Pagamento"],
+                  ].map(([n, nome]) => (
+                    <li key={n as number} data-atual={etapa === n} data-feita={etapa > (n as number)}>
+                      <span className="subx-trilha-num">{n}</span>
+                      <span className="subx-trilha-nome">{nome}</span>
+                    </li>
+                  ))}
+                </ol>
               )}
 
-              {/* o aceite: a caixinha segura o botão; a action registra o clique */}
-              {modoForm === "assinar" && (
+              {modoForm === "assinar" && etapa === 1 && (
+                <>
+                  <div style={rotuloSecao}>Dados pessoais</div>
+                  <DadosPessoais valor={cobranca} onChange={setCobranca} desabilitado={pendente} />
+                </>
+              )}
+
+              {modoForm === "assinar" && etapa === 2 && (
+                <>
+                  <div style={rotuloSecao}>Endereço</div>
+                  <EnderecoDeCobranca
+                    valor={cobranca}
+                    onChange={setCobranca}
+                    desabilitado={pendente}
+                  />
+                </>
+              )}
+
+              {(modoForm === "trocar" || etapa === 3) && (
+                <>
+                  <div style={rotuloSecao}>Pagamento</div>
+                  <div className="subx-form-grid" style={{ marginTop: 14 }}>
+                    <div
+                      style={{
+                        gridColumn: "1 / -1",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 6,
+                      }}
+                    >
+                      <label style={{ font: `500 12.5px ${F_UI}`, color: C.apoio }}>
+                        Número do cartão
+                      </label>
+                      <input
+                        className="subx-in subx-in--mono"
+                        inputMode="numeric"
+                        autoComplete="cc-number"
+                        placeholder="0000 0000 0000 0000"
+                        disabled={pendente}
+                        value={form.numero}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            numero: e.target.value
+                              .replace(/\D/g, "")
+                              .slice(0, 19)
+                              .replace(/(\d{4})(?=\d)/g, "$1 "),
+                          })
+                        }
+                      />
+                    </div>
+                    <div
+                      style={{
+                        gridColumn: "1 / -1",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 6,
+                      }}
+                    >
+                      <label style={{ font: `500 12.5px ${F_UI}`, color: C.apoio }}>
+                        Nome como está no cartão
+                      </label>
+                      <input
+                        className="subx-in"
+                        autoComplete="cc-name"
+                        disabled={pendente}
+                        value={form.nome}
+                        onChange={(e) => setForm({ ...form, nome: e.target.value.toUpperCase() })}
+                      />
+                    </div>
+                    <div className="subx-exp" style={{ gridColumn: "1 / -1" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        <label style={{ font: `500 12.5px ${F_UI}`, color: C.apoio }}>Mês</label>
+                        <input
+                          className="subx-in subx-in--mono"
+                          inputMode="numeric"
+                          autoComplete="cc-exp-month"
+                          placeholder="MM"
+                          maxLength={2}
+                          disabled={pendente}
+                          value={form.mes}
+                          onChange={(e) =>
+                            setForm({ ...form, mes: e.target.value.replace(/\D/g, "") })
+                          }
+                        />
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        <label style={{ font: `500 12.5px ${F_UI}`, color: C.apoio }}>Ano</label>
+                        <input
+                          className="subx-in subx-in--mono"
+                          inputMode="numeric"
+                          autoComplete="cc-exp-year"
+                          placeholder="AA"
+                          maxLength={4}
+                          disabled={pendente}
+                          value={form.ano}
+                          onChange={(e) =>
+                            setForm({ ...form, ano: e.target.value.replace(/\D/g, "") })
+                          }
+                        />
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        <label style={{ font: `500 12.5px ${F_UI}`, color: C.apoio }}>CVV</label>
+                        <input
+                          className="subx-in subx-in--mono"
+                          inputMode="numeric"
+                          autoComplete="cc-csc"
+                          placeholder="000"
+                          maxLength={4}
+                          disabled={pendente}
+                          value={form.cvv}
+                          onChange={(e) =>
+                            setForm({ ...form, cvv: e.target.value.replace(/\D/g, "") })
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* o aceite: a caixinha segura o botão; a action registra o
+                  clique. Mora na última etapa, junto do botão que assina. */}
+              {modoForm === "assinar" && etapa === 3 && (
                 <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid ${C.bordaFina}` }}>
                   <label className="subx-aceite">
                     <input
@@ -1025,31 +1234,29 @@ export function AssinaturaTela({
               )}
 
               <div className="subx-actions" style={{ marginTop: 24 }}>
-                <button
-                  className="subx-btn"
-                  disabled={pendente || (modoForm === "assinar" && !aceitei)}
-                  onClick={() => enviarCartao(modoForm === "trocar")}
-                >
-                  {pendente
-                    ? "Processando…"
-                    : modoForm === "trocar"
-                      ? "Salvar cartão"
-                      : `Assinar o ${planoEscolhido?.nome ?? ""}`.trim()}
-                </button>
-                <button
-                  className="subx-btn2"
-                  disabled={pendente}
-                  onClick={() => {
-                    setModoForm(null);
-                    setPlanoEscolhido(null);
-                    setAceitei(false);
-                  }}
-                >
+                {modoForm === "assinar" && etapa < 3 ? (
+                  <button className="subx-btn" disabled={pendente} onClick={avancar}>
+                    Continuar
+                  </button>
+                ) : (
+                  <button
+                    className="subx-btn"
+                    disabled={pendente || (modoForm === "assinar" && !aceitei)}
+                    onClick={() => enviarCartao(modoForm === "trocar")}
+                  >
+                    {pendente
+                      ? "Processando…"
+                      : modoForm === "trocar"
+                        ? "Salvar cartão"
+                        : `Assinar o ${planoEscolhido?.nome ?? ""}`.trim()}
+                  </button>
+                )}
+                <button className="subx-btn2" disabled={pendente} onClick={voltar}>
                   Voltar
                 </button>
               </div>
             </div>
-          </>
+          </div>
         )}
 
         {/* rodapé legal */}

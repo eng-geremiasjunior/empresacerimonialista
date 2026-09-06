@@ -4,14 +4,21 @@
 //
 // Foram descobertos um a um, no susto: primeiro o gateway recusou por
 // falta de documento, depois por falta de telefone, depois pelo endereço
-// de cobrança do cartão. Aqui se pede tudo de uma vez.
+// de cobrança do cartão. Aqui se pede tudo — mas não de uma vez.
+//
+// Desde 06/09/2026 são DUAS peças, e o motivo é de conversão: pedir
+// onze campos numa tela só, ao lado do cartão, faz a pessoa desistir na
+// rolagem ("não converte", dono). O formulário virou sequência —
+// 1 Dados pessoais, 2 Endereço, 3 Pagamento — e cada peça é uma etapa.
+// Nenhum campo mudou de nome, de máscara ou de validação; só de vizinho.
 //
 // Nada disto fica no nosso banco: vai para o gateway e acaba. Guardar
 // documento e endereço de alguém sem precisar é passivo, não recurso.
 //
-// Visual: usa as classes .subx-* definidas pela AssinaturaTela (este
-// componente só é renderizado dentro dela) — labels 12.5px Instrument,
-// inputs 44px raio 10, dado técnico (telefone, documento, CEP) em mono.
+// Visual: usa as classes .subx-* definidas pela AssinaturaTela (estes
+// componentes só são renderizados dentro dela) — labels 12.5px
+// Instrument, inputs 44px raio 10, dado técnico (telefone, documento,
+// CEP) em mono.
 
 import { useState } from "react";
 import { mascararDocumento } from "@/lib/documento";
@@ -49,15 +56,68 @@ const F_UI = "var(--font-ui), 'Instrument Sans', sans-serif";
 const label: React.CSSProperties = { font: `500 12.5px ${F_UI}`, color: "#5B6167" };
 const grupo: React.CSSProperties = { display: "flex", flexDirection: "column", gap: 6 };
 
-export function DadosDeCobranca({
-  valor,
-  onChange,
-  desabilitado,
-}: {
+type Props = {
   valor: Cobranca;
   onChange: (c: Cobranca) => void;
   desabilitado?: boolean;
-}) {
+};
+
+/** Etapa 1: quem paga. Quatro campos, nenhum deles do cartão. */
+export function DadosPessoais({ valor, onChange, desabilitado }: Props) {
+  const set = (p: Partial<Cobranca>) => onChange({ ...valor, ...p });
+
+  return (
+    <div className="subx-form-grid" style={{ marginTop: 14 }}>
+      <div style={{ ...grupo, gridColumn: "1 / -1" }}>
+        <label style={label}>Nome ou razão social de quem paga</label>
+        <input
+          className="subx-in"
+          disabled={desabilitado}
+          value={valor.nome}
+          onChange={(e) => set({ nome: e.target.value })}
+        />
+      </div>
+
+      <div style={grupo}>
+        <label style={label}>E-mail da cobrança</label>
+        <input
+          className="subx-in"
+          type="email"
+          inputMode="email"
+          disabled={desabilitado}
+          value={valor.email}
+          onChange={(e) => set({ email: e.target.value })}
+        />
+      </div>
+      <div style={grupo}>
+        <label style={label}>Telefone com DDD</label>
+        <input
+          className="subx-in subx-in--mono"
+          inputMode="numeric"
+          placeholder="(33) 99999-9999"
+          disabled={desabilitado}
+          value={valor.telefone}
+          onChange={(e) => set({ telefone: mascararTelefone(e.target.value) })}
+        />
+      </div>
+
+      <div style={{ ...grupo, gridColumn: "1 / -1" }}>
+        <label style={label}>CPF ou CNPJ</label>
+        <input
+          className="subx-in subx-in--mono"
+          inputMode="numeric"
+          placeholder="000.000.000-00"
+          disabled={desabilitado}
+          value={valor.documento}
+          onChange={(e) => set({ documento: mascararDocumento(e.target.value) })}
+        />
+      </div>
+    </div>
+  );
+}
+
+/** Etapa 2: onde a cobrança do cartão é registrada. O CEP preenche o resto. */
+export function EnderecoDeCobranca({ valor, onChange, desabilitado }: Props) {
   const [buscandoCep, setBuscandoCep] = useState(false);
   const set = (p: Partial<Cobranca>) => onChange({ ...valor, ...p });
 
@@ -96,50 +156,6 @@ export function DadosDeCobranca({
 
   return (
     <div className="subx-form-grid" style={{ marginTop: 14 }}>
-      <div style={{ ...grupo, gridColumn: "1 / -1" }}>
-        <label style={label}>Nome ou razão social de quem paga</label>
-        <input
-          className="subx-in"
-          disabled={desabilitado}
-          value={valor.nome}
-          onChange={(e) => set({ nome: e.target.value })}
-        />
-      </div>
-
-      <div style={grupo}>
-        <label style={label}>E-mail da cobrança</label>
-        <input
-          className="subx-in"
-          type="email"
-          inputMode="email"
-          disabled={desabilitado}
-          value={valor.email}
-          onChange={(e) => set({ email: e.target.value })}
-        />
-      </div>
-      <div style={grupo}>
-        <label style={label}>Telefone com DDD</label>
-        <input
-          className="subx-in subx-in--mono"
-          inputMode="numeric"
-          placeholder="(33) 99999-9999"
-          disabled={desabilitado}
-          value={valor.telefone}
-          onChange={(e) => set({ telefone: mascararTelefone(e.target.value) })}
-        />
-      </div>
-
-      <div style={grupo}>
-        <label style={label}>CPF ou CNPJ</label>
-        <input
-          className="subx-in subx-in--mono"
-          inputMode="numeric"
-          placeholder="000.000.000-00"
-          disabled={desabilitado}
-          value={valor.documento}
-          onChange={(e) => set({ documento: mascararDocumento(e.target.value) })}
-        />
-      </div>
       <div style={grupo}>
         <label style={label}>
           CEP{" "}
@@ -160,7 +176,6 @@ export function DadosDeCobranca({
           }}
         />
       </div>
-
       <div style={grupo}>
         <label style={label}>Rua</label>
         <input
@@ -170,6 +185,7 @@ export function DadosDeCobranca({
           onChange={(e) => set({ rua: e.target.value })}
         />
       </div>
+
       <div style={grupo}>
         <label style={label}>Número</label>
         <input
@@ -179,7 +195,6 @@ export function DadosDeCobranca({
           onChange={(e) => set({ numero: e.target.value })}
         />
       </div>
-
       <div style={grupo}>
         <label style={label}>Complemento (opcional)</label>
         <input
@@ -189,6 +204,7 @@ export function DadosDeCobranca({
           onChange={(e) => set({ complemento: e.target.value })}
         />
       </div>
+
       <div style={grupo}>
         <label style={label}>Bairro</label>
         <input
@@ -198,7 +214,6 @@ export function DadosDeCobranca({
           onChange={(e) => set({ bairro: e.target.value })}
         />
       </div>
-
       <div style={grupo}>
         <label style={label}>Cidade</label>
         <input
@@ -208,6 +223,7 @@ export function DadosDeCobranca({
           onChange={(e) => set({ cidade: e.target.value })}
         />
       </div>
+
       <div style={grupo}>
         <label style={label}>Estado</label>
         <select

@@ -14,7 +14,16 @@ export const metadata = { title: "Assinatura" };
 // O plano da conta, para quem paga por ele. Só a proprietária: a RPC
 // devolve vazio para os outros cargos, e a tela manda para o painel.
 
-export default async function AssinaturaPage() {
+// O ?plano= (vindo de /planos) é lido AQUI, no servidor, e desce como
+// prop. Com useSearchParams() lá dentro, o servidor renderizava sem o
+// parâmetro e o navegador com ele — duas telas diferentes, e o React
+// refazia a página inteira acusando erro de hidratação. Medido em
+// 06/09/2026.
+export default async function AssinaturaPage({
+  searchParams,
+}: {
+  searchParams?: { plano?: string };
+}) {
   const supabase = createClient();
   const { data } = await supabase.rpc("minha_assinatura");
   const estado = data as EstadoAssinatura | null;
@@ -51,6 +60,7 @@ export default async function AssinaturaPage() {
       planos={planos}
       emailDaConta={user?.email ?? ""}
       nomeDaConta={membro?.nome ?? ""}
+      planoDaUrl={searchParams?.plano ?? null}
     />
   );
 }
