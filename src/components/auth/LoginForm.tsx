@@ -95,6 +95,19 @@ export function LoginForm({
         setLoading(false);
         return;
       }
+      // E-mail que JÁ tem conta. Com a confirmação ligada, o Supabase não
+      // devolve erro nenhum (para não entregar a quem tenta adivinhar
+      // quais e-mails existem): responde "sucesso" com um usuário de
+      // fachada, sem sessão e com identities VAZIO — e não manda e-mail.
+      // A tela lia isso como "conta criada, confira seu e-mail", e a
+      // pessoa ficava esperando uma confirmação que nunca viria. Medido em
+      // 06/09/2026: o dono testou com um e-mail que já era da equipe.
+      if (data.user && (data.user.identities?.length ?? 0) === 0) {
+        setError("Já existe uma conta com este e-mail. Entre em vez de criar — ou use “Esqueci minha senha”.");
+        setMode("login");
+        setLoading(false);
+        return;
+      }
       if (data.session) {
         router.push("/eventos/dashboard");
         router.refresh();
