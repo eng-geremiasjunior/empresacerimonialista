@@ -126,6 +126,26 @@ export function codigoDoHash(hash: string): string {
   return hash.slice(-6).toUpperCase();
 }
 
+/**
+ * O que vai DENTRO do QR do convidado: um endereço, não o hash pelado.
+ *
+ * O hash sozinho funcionava na porta (a nossa tela lê o código com a
+ * biblioteca e pesca o hash de qualquer texto), mas quem apontasse a
+ * câmera comum do celular via o pior fim possível: o sistema operacional
+ * trata como texto, manda ao buscador e o convidado lê "não encontrou
+ * nenhum documento correspondente" com o próprio ingresso na mão.
+ *
+ * Em minúsculas porque a rota é o que é: /entrada/<hash>. O QR fica
+ * alguns módulos maior que o alfanumérico de antes — troca barata por um
+ * código que abre alguma coisa quando alguém o aponta.
+ *
+ * Compatível com o que já circula: extrairCheckinHash acha o hash dentro
+ * do endereço, e os QRs antigos (hash pelado) continuam sendo lidos.
+ */
+export function linkDaCredencial(base: string, checkinHash: string): string {
+  return `${base.replace(/\/+$/, "")}/entrada/${checkinHash.toLowerCase()}`;
+}
+
 /** "José" e "jose" têm de casar: sem acento, sem caixa, sem espaço sobrando. */
 export function normalizarBusca(texto: string): string {
   return texto

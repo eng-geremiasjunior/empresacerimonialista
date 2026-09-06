@@ -12,6 +12,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { enviarEmailConvidado } from "@/lib/email-convidado";
 import { qrSvg } from "@/lib/qr";
+import { publicBase } from "@/lib/app-url";
+import { linkDaCredencial } from "@/lib/recepcao";
 
 export const dynamic = "force-dynamic";
 
@@ -161,13 +163,16 @@ export async function POST(
       .maybeSingle();
     const checkinHash = (cred as { checkin_hash?: string | null } | null)?.checkin_hash;
     if (checkinHash) {
-      // maiúsculas: hex não distingue caixa, e o modo alfanumérico do QR
-      // sai com menos módulos — o mesmo contrato que a porta lê
+      // O QR leva o ENDEREÇO /entrada/<hash>, não o hash pelado: quem
+      // aponta a câmera comum do celular num texto solto cai no buscador
+      // — o convidado via "nenhum documento correspondente" com o próprio
+      // ingresso na mão. A porta segue lendo igual (pesca o hash de
+      // dentro do texto), e o código curto continua em maiúsculas.
       const emCaixaAlta = checkinHash.toUpperCase();
       credencial = {
         checkinHash: emCaixaAlta,
         codigo: emCaixaAlta.slice(-6),
-        qr: await qrSvg(emCaixaAlta),
+        qr: await qrSvg(linkDaCredencial(publicBase(), checkinHash)),
       };
     }
   }

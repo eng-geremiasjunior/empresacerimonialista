@@ -3,7 +3,8 @@
 /* eslint-disable @next/next/no-img-element */
 
 // O topo fixo do celular: botão de menu (abre a navegação completa em
-// gaveta), a marca centralizada e sino + iniciais à direita.
+// gaveta), a marca centralizada e sino + iniciais à direita. O Sair mora
+// no fim da gaveta — é a única saída do portal no celular.
 
 import { useState } from "react";
 import Link from "next/link";
@@ -17,6 +18,7 @@ import {
   type Destino,
 } from "./destinos";
 import { Rotulo } from "./Nucleo";
+import { SairDoPortal } from "./SairDoPortal";
 
 function Icone({ nome }: { nome: string }) {
   const Ico = (Icones as unknown as Record<string, typeof Icones.Bell>)[nome];
@@ -206,6 +208,18 @@ export function TopoCelular({
             <GrupoGaveta itens={visiveis(principaisDoTipo(tipo))} base={base} aoNavegar={fechar} />
             <GrupoGaveta titulo="Durante o evento" itens={visiveis(duranteDoTipo(tipo))} base={base} aoNavegar={fechar} />
             <GrupoGaveta titulo="Investimento" itens={investimentoDoEvento(temPrestacao)} base={base} aoNavegar={fechar} />
+
+            {/* o Sair no fim, empurrado para baixo e separado por uma
+                linha: não é um destino, não se mistura com os grupos */}
+            <div
+              style={{
+                marginTop: "auto",
+                borderTop: "1px solid var(--cor-borda-suave)",
+                paddingTop: 10,
+              }}
+            >
+              <SairDoPortal />
+            </div>
           </div>
           <button
             type="button"

@@ -119,6 +119,14 @@ export default function PrivacidadePage() {
         cerimonialista responsável pelo seu evento ou pelo contato abaixo.
       </Secao>
 
+      <Secao titulo="Termos de uso">
+        As condições da assinatura e da licença de uso do sistema estão nos{" "}
+        <a href="/termos" style={{ color: "#6E3F5F", fontWeight: 600 }}>
+          Termos e Condições
+        </a>
+        , que valem junto com esta política.
+      </Secao>
+
       <Secao titulo="Contato">
         Dúvidas ou solicitações sobre privacidade:{" "}
         <a href="mailto:geremiaseng@outlook.com" style={{ color: "#6E3F5F", fontWeight: 600 }}>

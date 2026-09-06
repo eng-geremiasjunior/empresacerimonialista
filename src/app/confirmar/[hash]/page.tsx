@@ -1,6 +1,8 @@
 import { ConfirmacaoConvidado } from "@/components/rsvp/ConfirmacaoConvidado";
 import { clienteAnonimoPublico } from "@/lib/supabase/anon-publico";
 import { qrSvg } from "@/lib/qr";
+import { publicBase } from "@/lib/app-url";
+import { linkDaCredencial } from "@/lib/recepcao";
 import { convitePara, quandoLegivel } from "@/lib/rsvp-convite";
 
 export const dynamic = "force-dynamic";
@@ -59,9 +61,13 @@ export default async function ConfirmarPage({
     .join(" · ");
 
   // A credencial de entrada só existe para quem já confirmou: a RPC
-  // devolve o checkin_hash (NUNCA o hash do convite, que escreve o RSVP)
-  // e ele vai para o QR em MAIÚSCULAS — hex não distingue caixa e o modo
-  // alfanumérico do QR sai com menos módulos, mais fácil de ler na fila.
+  // devolve o checkin_hash (NUNCA o hash do convite, que escreve o RSVP).
+  //
+  // O QR carrega o ENDEREÇO /entrada/<hash>, não o hash pelado: apontar a
+  // câmera comum do celular num texto solto termina no buscador, e o
+  // convidado lia "nenhum documento correspondente" segurando o próprio
+  // ingresso. A porta continua lendo igual — ela pesca o hash de dentro
+  // de qualquer texto.
   const { data: cred } =
     convite.confirmacao === "confirmado"
       ? await supabase.rpc("credencial_de_entrada", { p_hash: params.hash })
@@ -71,7 +77,7 @@ export default async function ConfirmarPage({
     | null;
   const credencial = credencialBruta?.checkin_hash
     ? {
-        qr: await qrSvg(credencialBruta.checkin_hash.toUpperCase()),
+        qr: await qrSvg(linkDaCredencial(publicBase(), credencialBruta.checkin_hash)),
         codigo: credencialBruta.codigo,
         nome: credencialBruta.nome,
       }

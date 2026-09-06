@@ -3,7 +3,8 @@
 /* eslint-disable @next/next/no-img-element */
 
 // A barra lateral do computador (276px): marca, navegação principal,
-// os dois grupos e o cartão da cerimonialista ancorado no rodapé.
+// os dois grupos e, ancorados no rodapé, o cartão da cerimonialista e o
+// Sair.
 //
 // O item ativo é dito por fundo (#F3EBDF) e cor do texto — sem pílula,
 // sem barra lateral, sem seta. Hover só troca o fundo.
@@ -19,6 +20,7 @@ import {
   type Destino,
 } from "./destinos";
 import { Rotulo } from "./Nucleo";
+import { SairDoPortal } from "./SairDoPortal";
 
 function Icone({ nome, tamanho }: { nome: string; tamanho?: number }) {
   const Ico = (Icones as unknown as Record<string, typeof Icones.Bell>)[nome];
@@ -129,81 +131,85 @@ export function NavLateral({
       <Grupo titulo="Durante o evento" itens={visiveis(duranteDoTipo(tipo))} base={base} pathname={pathname} />
       <Grupo titulo="Investimento" itens={investimentoDoEvento(temPrestacao)} base={base} pathname={pathname} />
 
-      {/* cerimonialista, ancorada no rodapé */}
-      {cerimonialistaNome && (
-        <div
-          style={{
-            marginTop: "auto",
-            border: "1px solid var(--cor-borda)",
-            borderRadius: "var(--raio-chip)",
-            background: "var(--cor-card-suave)",
-            padding: "18px 16px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "var(--esp-4)",
-          }}
-        >
-          <Rotulo>Sua cerimonialista</Rotulo>
-          <div style={{ display: "flex", alignItems: "center", gap: "var(--esp-3)" }}>
-            <span
-              aria-hidden
-              style={{
-                width: 42,
-                height: 42,
-                flex: "none",
-                borderRadius: "var(--raio-pill)",
-                background: "var(--cor-chip-redondo)",
-                border: "1px solid #EAE1D3",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontFamily: "var(--fonte-titulo)",
-                fontSize: 16,
-                color: "var(--cor-ouro-texto)",
-              }}
-            >
-              {cerimonialistaNome.slice(0, 1).toUpperCase()}
-            </span>
-            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <div
+      {/* rodapé: cartão da cerimonialista e o Sair. O marginTop:auto fica
+          no envoltório, não no cartão — sem contato cadastrado o cartão
+          não existe, e o Sair precisa continuar lá embaixo. */}
+      <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
+        {cerimonialistaNome && (
+          <div
+            style={{
+              border: "1px solid var(--cor-borda)",
+              borderRadius: "var(--raio-chip)",
+              background: "var(--cor-card-suave)",
+              padding: "18px 16px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--esp-4)",
+            }}
+          >
+            <Rotulo>Sua cerimonialista</Rotulo>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--esp-3)" }}>
+              <span
+                aria-hidden
                 style={{
+                  width: 42,
+                  height: 42,
+                  flex: "none",
+                  borderRadius: "var(--raio-pill)",
+                  background: "var(--cor-chip-redondo)",
+                  border: "1px solid #EAE1D3",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                   fontFamily: "var(--fonte-titulo)",
-                  fontSize: 18,
-                  color: "var(--cor-texto)",
+                  fontSize: 16,
+                  color: "var(--cor-ouro-texto)",
                 }}
               >
-                {cerimonialistaNome}
-              </div>
-              <div style={{ fontSize: 12, color: "var(--cor-texto-suave)" }}>
-                responde em algumas horas
+                {cerimonialistaNome.slice(0, 1).toUpperCase()}
+              </span>
+              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <div
+                  style={{
+                    fontFamily: "var(--fonte-titulo)",
+                    fontSize: 18,
+                    color: "var(--cor-texto)",
+                  }}
+                >
+                  {cerimonialistaNome}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--cor-texto-suave)" }}>
+                  responde em algumas horas
+                </div>
               </div>
             </div>
+            {cerimonialistaZap && (
+              <a
+                href={cerimonialistaZap}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "var(--esp-2)",
+                  border: "1px solid var(--cor-borda-botao-ouro)",
+                  borderRadius: "var(--raio-botao)",
+                  padding: 11,
+                  minHeight: "var(--toque-min)",
+                  fontSize: "var(--ts-botao)",
+                  color: "var(--cor-ouro-texto-hover)",
+                  background: "var(--cor-superficie-alt)",
+                }}
+              >
+                <Icones.MessageCircle size={Icones.TAMANHO} strokeWidth={Icones.TRACO} />
+                Falar com {primeiroNome}
+              </a>
+            )}
           </div>
-          {cerimonialistaZap && (
-            <a
-              href={cerimonialistaZap}
-              target="_blank"
-              rel="noreferrer"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "var(--esp-2)",
-                border: "1px solid var(--cor-borda-botao-ouro)",
-                borderRadius: "var(--raio-botao)",
-                padding: 11,
-                minHeight: "var(--toque-min)",
-                fontSize: "var(--ts-botao)",
-                color: "var(--cor-ouro-texto-hover)",
-                background: "var(--cor-superficie-alt)",
-              }}
-            >
-              <Icones.MessageCircle size={Icones.TAMANHO} strokeWidth={Icones.TRACO} />
-              Falar com {primeiroNome}
-            </a>
-          )}
-        </div>
-      )}
+        )}
+        <SairDoPortal />
+      </div>
     </aside>
   );
 }

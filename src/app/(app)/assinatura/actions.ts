@@ -8,6 +8,7 @@
 // o que a tela achou que ia acontecer.
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServico } from "@supabase/supabase-js";
 import { documentoValido } from "@/lib/documento";
@@ -21,6 +22,7 @@ import {
   trocarCartao,
 } from "@/lib/pagarme";
 import { centavos, ehCodigoDoPlano, getPlano } from "@/lib/planos";
+import { TERMOS_VERSAO } from "@/lib/termos";
 
 export type ResultadoAssinatura = { ok?: boolean; error?: string };
 
@@ -46,7 +48,7 @@ function servico() {
 
 /** Quem é a dona logada — e a empresa dela. Nada acontece sem isto. */
 async function donaLogada(): Promise<
-  { empresaId: string; nome: string; email: string } | { error: string }
+  { empresaId: string; userId: string; nome: string; email: string } | { error: string }
 > {
   const supabase = createClient();
   const {
@@ -68,6 +70,7 @@ async function donaLogada(): Promise<
 
   return {
     empresaId: c.empresa_id,
+    userId: user.id,
     nome: membro?.nome ?? user.email ?? "Cerimonialista",
     email: user.email ?? "",
   };
@@ -116,8 +119,15 @@ function conferirCobranca(d: DadosCobranca): string | null {
 export async function assinar(
   planoCodigo: string,
   cardToken: string,
-  cobranca: DadosCobranca
+  cobranca: DadosCobranca,
+  aceitouTermos: boolean
 ): Promise<ResultadoAssinatura> {
+  // Antes de qualquer outra coisa: sem o aceite não há contrato, e sem
+  // contrato não há o que cobrar. A caixinha da tela já segura o botão;
+  // isto aqui é para quem chamar a action por fora dela.
+  if (aceitouTermos !== true) {
+    return { error: "Para assinar, é preciso aceitar os Termos e Condições." };
+  }
   if (!cardToken) return { error: "Não recebemos os dados do cartão." };
   const problema = conferirCobranca(cobranca);
   if (problema) return { error: problema };
@@ -151,6 +161,30 @@ export async function assinar(
 
   if (atual?.gateway_subscription_id && atual.status === "ativa") {
     return { error: "Esta conta já tem uma assinatura ativa." };
+  }
+
+  // O aceite é gravado AQUI — depois de saber que a assinatura é válida
+  // e ANTES de falar com o gateway. A ordem importa nos dois sentidos:
+  // o aceite é fato mesmo que o cartão seja recusado logo depois (ela
+  // leu e concordou; a cobrança é outra história), e sem a linha na
+  // tabela não há cobrança nenhuma — prova primeiro, dinheiro depois.
+  // A tabela (149) não tem policy: só o service role escreve.
+  const h = headers();
+  const { error: erroAceite } = await db.from("termos_aceite").insert({
+    empresa_id: ctx.empresaId,
+    user_id: ctx.userId,
+    email: ctx.email,
+    versao: TERMOS_VERSAO,
+    contexto: "assinatura",
+    plano: plano.codigo,
+    ip: h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+    user_agent: h.get("user-agent")?.slice(0, 300) ?? null,
+  });
+  if (erroAceite) {
+    console.error("[vela:assinatura] aceite:", erroAceite.message);
+    return {
+      error: "Não conseguimos registrar o aceite dos termos. Tente de novo em instantes.",
+    };
   }
 
   // Cliente no gateway: reaproveita se já existe — mas ATUALIZANDO o
@@ -291,6 +325,9 @@ export async function assinar(
  * decisão dela, não nossa. Eventos NÃO barram: acima do teto ela só não
  * cria o próximo (o gatilho do banco recusa), e a tela avisa. Corta o
  * criar, nunca o ver.
+ *
+ * Não pede aceite novo: os termos aceitos na assinatura já cobrem a
+ * troca de plano — é a mesma relação, só muda o valor.
  */
 export async function trocarPlano(planoCodigo: string): Promise<ResultadoAssinatura> {
   const ctx = await donaLogada();

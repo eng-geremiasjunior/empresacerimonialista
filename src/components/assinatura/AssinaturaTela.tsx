@@ -28,6 +28,7 @@ import { useRouter } from "next/navigation";
 import { assinar, atualizarCartao, cancelar, trocarPlano } from "@/app/(app)/assinatura/actions";
 import { documentoValido } from "@/lib/documento";
 import { cepValido, telefoneValido, ufValida } from "@/lib/contato";
+import { TERMOS_CAMINHO } from "@/lib/termos";
 import {
   COBRANCA_VAZIA,
   DadosDeCobranca,
@@ -220,6 +221,9 @@ export function AssinaturaTela({
   const [planoEscolhido, setPlanoEscolhido] = useState<PlanoDaVitrine | null>(null);
   // quem já paga não refaz o cartão: escolhe outro plano e confirma a troca
   const [trocando, setTrocando] = useState<PlanoDaVitrine | null>(null);
+  // a caixinha dos termos: nasce desmarcada e volta a desmarcada toda vez
+  // que o formulário fecha — o aceite é daquele clique, não da sessão
+  const [aceitei, setAceitei] = useState(false);
 
   const ativa = estado.status === "ativa";
   const inadimplente = estado.status === "inadimplente";
@@ -289,6 +293,12 @@ export function AssinaturaTela({
       setErro("Escolha um plano.");
       return;
     }
+    // o botão já fica preso sem a caixinha; isto é a segunda tranca, para
+    // o caso de o botão ser liberado por outro caminho
+    if (!troca && !aceitei) {
+      setErro("Aceite os Termos e Condições para assinar.");
+      return;
+    }
     iniciar(async () => {
       const t = await tokenizar(form);
       if (t.erro || !t.token) {
@@ -298,7 +308,7 @@ export function AssinaturaTela({
       const r =
         troca || !escolhido
           ? await atualizarCartao(t.token)
-          : await assinar(escolhido.codigo, t.token, cobranca);
+          : await assinar(escolhido.codigo, t.token, cobranca, aceitei);
       if (r.error) {
         setErro(r.error);
         return;
@@ -306,6 +316,7 @@ export function AssinaturaTela({
       setForm({ numero: "", nome: "", mes: "", ano: "", cvv: "" });
       setModoForm(null);
       setPlanoEscolhido(null);
+      setAceitei(false);
       setOk(troca ? "Cartão atualizado." : "Assinatura ativa. Obrigado!");
       router.refresh();
     });
@@ -552,6 +563,10 @@ export function AssinaturaTela({
           border:1px solid ${C.bordaCard};border-radius:8px;font:600 13px ${F_UI};cursor:pointer}
         .subx-btn2:hover{background:#fff}
         .subx-btn2:disabled{opacity:.5;cursor:default}
+        .subx-aceite{display:flex;align-items:flex-start;gap:10px;cursor:pointer;
+          font:400 13.5px/1.5 ${F_UI};color:${C.forte}}
+        .subx-aceite input{width:20px;height:20px;margin:0;flex:none;accent-color:${C.chumbo};cursor:pointer}
+        .subx-aceite a{color:${C.forte};text-decoration:underline;text-underline-offset:2px}
         @media (max-width:720px){
           .subx-wrap{padding:28px 20px 40px !important}
           .subx-grid{grid-template-columns:1fr}
@@ -959,10 +974,33 @@ export function AssinaturaTela({
                 </div>
               )}
 
+              {/* o aceite: a caixinha segura o botão; a action registra o clique */}
+              {modoForm === "assinar" && (
+                <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid ${C.bordaFina}` }}>
+                  <label className="subx-aceite">
+                    <input
+                      type="checkbox"
+                      checked={aceitei}
+                      disabled={pendente}
+                      onChange={(e) => setAceitei(e.target.checked)}
+                    />
+                    <span>
+                      Li e aceito os{" "}
+                      <a href={TERMOS_CAMINHO} target="_blank" rel="noreferrer">
+                        Termos e Condições
+                      </a>
+                    </span>
+                  </label>
+                  <p style={{ margin: "8px 0 0 30px", font: `400 12px/1.5 ${F_UI}`, color: C.rotulo }}>
+                    Assinatura mensal, sem fidelidade e sem custo para cancelar.
+                  </p>
+                </div>
+              )}
+
               <div className="subx-actions" style={{ marginTop: 24 }}>
                 <button
                   className="subx-btn"
-                  disabled={pendente}
+                  disabled={pendente || (modoForm === "assinar" && !aceitei)}
                   onClick={() => enviarCartao(modoForm === "trocar")}
                 >
                   {pendente
@@ -977,6 +1015,7 @@ export function AssinaturaTela({
                   onClick={() => {
                     setModoForm(null);
                     setPlanoEscolhido(null);
+                    setAceitei(false);
                   }}
                 >
                   Voltar
@@ -989,7 +1028,24 @@ export function AssinaturaTela({
         {/* rodapé legal */}
         <p style={{ marginTop: 28, font: `400 12px/1.5 ${F_UI}`, color: C.rotulo }}>
           O pagamento é processado pela Pagar.me. Os dados do seu cartão não passam pelos nossos
-          servidores.
+          servidores.{" "}
+          <a
+            href={TERMOS_CAMINHO}
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: "inherit", textDecoration: "underline", textUnderlineOffset: 2 }}
+          >
+            Termos e Condições
+          </a>
+          {" · "}
+          <a
+            href="/privacidade"
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: "inherit", textDecoration: "underline", textUnderlineOffset: 2 }}
+          >
+            Política de Privacidade
+          </a>
         </p>
       </div>
     </div>

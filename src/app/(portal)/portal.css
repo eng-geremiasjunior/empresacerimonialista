@@ -342,6 +342,41 @@
   font-size: var(--ts-nav-sub);
 }
 
+/* O Sair é um <button> dentro de um <form>, não um <Link>: o navegador
+   dá a ele fonte, borda e fundo próprios, e isto os apaga para que ele
+   pareça mais um item do menu. A cor é a de rótulo — um degrau mais
+   discreta que os itens de navegação: sair não é um destino. */
+.portal-nav-item--botao {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--ts-nav-sub);
+  text-align: left;
+  color: var(--cor-texto-rotulo);
+}
+
+/* A mesma saída, em texto, na tela que não tem menu (a escolha de
+   evento). 44px de alvo mesmo sem fundo: o dedo dela decide. */
+.portal-sair-texto {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+  min-height: var(--toque-min);
+  padding: 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--ts-acao);
+  color: var(--cor-texto-rotulo);
+  transition: color var(--dur-hover) var(--ease-padrao);
+}
+.portal-sair-texto:hover {
+  color: var(--cor-texto);
+}
+
 /* ---- Cabeçalho (nome + contagem) ---- */
 .portal-cabecalho-grade {
   display: flex;

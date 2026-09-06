@@ -5,6 +5,7 @@ import { getEventosDaCliente, nomeDeExibicao } from "@/lib/supabase/portal";
 import { getMeuCargo } from "@/lib/supabase/equipe";
 import { dataLonga } from "@/components/portal/datas";
 import { Cartao, Rotulo } from "@/components/portal/Nucleo";
+import { SairDoPortal } from "@/components/portal/SairDoPortal";
 import { ChevronRight, TAMANHO_PEQUENO, TRACO } from "@/components/portal/icones";
 
 export const dynamic = "force-dynamic";
@@ -97,6 +98,12 @@ export default async function PortalHomePage() {
               ))}
             </>
           )}
+
+          {/* esta tela não tem menu nem casca de evento: sem isto, quem
+              cai aqui sem vínculo não tem por onde sair */}
+          <div style={{ alignSelf: "flex-start" }}>
+            <SairDoPortal variante="texto" />
+          </div>
         </div>
       </div>
     </div>

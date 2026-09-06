@@ -24,6 +24,8 @@ const ROTAS_PUBLICAS: ((p: string) => boolean)[] = [
   (p) => p.startsWith("/agendar/"),
   // política de privacidade — pública, exigida pela Meta
   (p) => p === "/privacidade",
+  // termos de uso — o link da caixinha de aceite abre ANTES de haver conta
+  (p) => p === "/termos",
   // orçamento na mão da cliente (aprova ou recusa)
   (p) => p.startsWith("/orcamento/"),
   // as rotas de cron se protegem sozinhas com Bearer CRON_SECRET
@@ -41,6 +43,8 @@ const ROTAS_PUBLICAS: ((p: string) => boolean)[] = [
   (p) => p.startsWith("/nova-senha"),
   // confirmação de presença do convidado
   (p) => p.startsWith("/confirmar/"),
+  // o destino do QR do convidado: mostra o código de entrada e nada mais
+  (p) => p.startsWith("/entrada/"),
   // o site do casamento pelo endereço bonito (/c/ana-e-bruno)
   (p) => p.startsWith("/c/"),
   // guia de estilo na mão do fornecedor

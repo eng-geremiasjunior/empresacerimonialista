@@ -87,6 +87,9 @@ export default function LoginPage() {
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 text-sm text-gray-500 sm:flex-row">
           <p>© 2026 eorganizei. Todos os direitos reservados.</p>
           <nav className="flex items-center gap-4">
+            <a href="/termos" className="hover:text-gray-900">
+              Termos e Condições
+            </a>
             <a href="/privacidade" className="hover:text-gray-900">
               Política de Privacidade
             </a>
