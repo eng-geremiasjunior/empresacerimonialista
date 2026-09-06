@@ -24,7 +24,16 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "eorganizei", statusBarStyle: "default" },
-  icons: { apple: "/apple-touch-icon.png" },
+  // a lista inteira, não só o apple: `icons` substitui o do layout raiz
+  // em bloco, e declarar um campo só apagaria o ícone da aba aqui dentro
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
   themeColor: "#221e1b",
 };
 
