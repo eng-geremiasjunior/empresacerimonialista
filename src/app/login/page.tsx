@@ -57,7 +57,11 @@ function SetupInstructions() {
   );
 }
 
-export default function LoginPage() {
+export default function LoginPage({
+  searchParams,
+}: {
+  searchParams?: { erro?: string };
+}) {
   if (!supabaseConfigured) return <SetupInstructions />;
 
   return (
@@ -78,7 +82,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <LoginForm />
+          <LoginForm erroInicial={searchParams?.erro} />
         </section>
       </main>
 

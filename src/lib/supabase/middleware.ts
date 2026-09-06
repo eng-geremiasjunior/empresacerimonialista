@@ -16,6 +16,14 @@ type CookieToSet = { name: string; value: string; options: CookieOptions };
  * outro lado devolve só a fatia dele.
  */
 const ROTAS_PUBLICAS: ((p: string) => boolean)[] = [
+  // A raiz decide sozinha para onde mandar (login ou painel) — e precisa
+  // rodar para isso. Sem esta linha, um link de confirmação que o
+  // Supabase mandou para "/?code=…" (o Site URL, quando o destino pedido
+  // não está na lista de permitidas) era rebatido para /login AQUI, com
+  // o code jogado fora, antes de a página ter a chance de encaminhá-lo
+  // para /auth/confirm. Para quem chega sem sessão e sem code, o
+  // resultado é o mesmo de antes: /login.
+  (p) => p === "/",
   (p) => p.startsWith("/login"),
   // roteiro do fornecedor: /eventos/{id}/roteiro/publico/{hash}
   (p) => new RegExp("^/eventos/[^/]+/roteiro/publico/").test(p),

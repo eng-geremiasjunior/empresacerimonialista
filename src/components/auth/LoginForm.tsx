@@ -11,7 +11,15 @@ import { createClient } from "@/lib/supabase/client";
 const inputClass =
   "w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-10 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100";
 
-export function LoginForm() {
+export function LoginForm({
+  erroInicial,
+}: {
+  /** Vem do ?erro= da URL — /auth/confirm manda para cá quando o link do
+   *  e-mail não serviu (expirou, já foi usado, ou foi aberto em outro
+   *  aparelho). O portal já fazia isso; a área profissional chegava aqui
+   *  muda, e quem clicou no link achava que o sistema não funcionava. */
+  erroInicial?: string;
+} = {}) {
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [negocio, setNegocio] = useState("");
@@ -19,7 +27,11 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    erroInicial === "link"
+      ? "Este link não funcionou — pode ter expirado, já ter sido usado, ou foi aberto em outro aparelho. Entre com e-mail e senha; se a conta ainda não foi confirmada, peça um link novo em “Esqueci minha senha”."
+      : null
+  );
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
