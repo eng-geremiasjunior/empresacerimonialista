@@ -75,6 +75,57 @@ declare global {
   }
 }
 
+/** O nome do cookie que carrega a origem do clique até a assinatura. */
+export const COOKIE_ORIGEM = "eorg_origem";
+
+function cookie(nome: string): string | null {
+  if (typeof document === "undefined") return null;
+  const m = document.cookie.match(new RegExp("(?:^|; )" + nome + "=([^;]*)"));
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
+/**
+ * A impressão digital do clique, no momento em que a conta nasce.
+ *
+ * Ela só existe no navegador e só agora: os cookies são do pixel e da tag,
+ * e os parâmetros vêm da URL do anúncio. A assinatura vai acontecer
+ * depois — no servidor, às vezes dias depois —, e sem isto guardado a
+ * plataforma conta a venda mas não sabe de qual anúncio ela veio.
+ *
+ * Guarda num cookie próprio, de 90 dias, porque é o único carregador que
+ * atravessa a sessão: entre criar a conta e assinar pode haver um logout,
+ * um e-mail de confirmação e outro dia.
+ *
+ * Nada aqui identifica pessoa: identifica navegador e campanha.
+ */
+export function guardarOrigemDoClique(): void {
+  if (typeof document === "undefined") return;
+  try {
+    const url = new URLSearchParams(window.location.search);
+    const dados = {
+      fbp: cookie("_fbp"),
+      // o _fbc só existe se a pessoa veio de um anúncio; quando não existe,
+      // dá para montá-lo a partir do fbclid da URL, no formato da Meta
+      fbc:
+        cookie("_fbc") ??
+        (url.get("fbclid") ? `fb.1.${Date.now()}.${url.get("fbclid")}` : null),
+      // o cookie _ga é "GA1.1.<client_id>" — o client_id é o par final
+      gaClientId: cookie("_ga")?.split(".").slice(-2).join(".") ?? null,
+      gclid: url.get("gclid"),
+      utm_source: url.get("utm_source"),
+      utm_medium: url.get("utm_medium"),
+      utm_campaign: url.get("utm_campaign"),
+    };
+    if (!Object.values(dados).some(Boolean)) return;
+    const noventaDias = 90 * 24 * 60 * 60;
+    document.cookie =
+      `${COOKIE_ORIGEM}=${encodeURIComponent(JSON.stringify(dados))};` +
+      `path=/;max-age=${noventaDias};SameSite=Lax`;
+  } catch {
+    // sem cookie a conta continua sendo criada; só a atribuição se perde
+  }
+}
+
 /**
  * A conversão que importa: a conta foi criada.
  *

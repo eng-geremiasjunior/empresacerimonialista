@@ -8,7 +8,7 @@
 // o que a tela achou que ia acontecer.
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServico } from "@supabase/supabase-js";
 import { documentoValido } from "@/lib/documento";
@@ -22,6 +22,8 @@ import {
   trocarCartao,
 } from "@/lib/pagarme";
 import { centavos, ehCodigoDoPlano, getPlano } from "@/lib/planos";
+import { registrarConversao } from "@/lib/conversoes";
+import { COOKIE_ORIGEM } from "@/lib/marketing";
 import { hojeBR } from "@/lib/tempo";
 import { TERMOS_VERSAO } from "@/lib/termos";
 
@@ -75,6 +77,36 @@ async function donaLogada(): Promise<
     nome: membro?.nome ?? user.email ?? "Cerimonialista",
     email: user.email ?? "",
   };
+}
+
+/**
+ * A origem do clique, como o navegador a guardou na criação da conta.
+ * Lê o cookie e devolve só as colunas que a tabela conhece — nada do que
+ * vier ali é confiado às cegas, e nada disso identifica pessoa.
+ */
+function lerOrigemDoCookie(): Record<string, string> | null {
+  try {
+    const cru = cookies().get(COOKIE_ORIGEM)?.value;
+    if (!cru) return null;
+    const o = JSON.parse(cru) as Record<string, unknown>;
+    const permitidas: Record<string, string> = {};
+    const mapa: Record<string, string> = {
+      fbp: "fbp",
+      fbc: "fbc",
+      gaClientId: "ga_client_id",
+      gclid: "gclid",
+      utm_source: "utm_source",
+      utm_medium: "utm_medium",
+      utm_campaign: "utm_campaign",
+    };
+    for (const [doCookie, naTabela] of Object.entries(mapa)) {
+      const v = o[doCookie];
+      if (typeof v === "string" && v.trim()) permitidas[naTabela] = v.slice(0, 300);
+    }
+    return Object.keys(permitidas).length ? permitidas : null;
+  } catch {
+    return null;
+  }
 }
 
 export type DadosCobranca = {
@@ -310,6 +342,55 @@ export async function assinar(
       error:
         "O cartão não foi aprovado pela operadora. Nada foi cobrado. Tente outro cartão em “Forma de pagamento”, ou cancele a assinatura logo abaixo.",
     };
+  }
+
+  // A CONVERSÃO. Só aqui: a assinatura existe quando a operadora aprova,
+  // e este é o único ponto do sistema que sabe disso. O navegador não
+  // sabe — a tela de assinatura vive no app, onde pixel nenhum entra —,
+  // e por isso a Meta e o Google recebem este evento pelo servidor.
+  //
+  // A origem do clique foi guardada num cookie quando a conta nasceu, e
+  // é ela que diz de qual anúncio esta venda veio. Aproveita-se a passagem
+  // para gravá-la (152): o cookie tem 90 dias, a conta é para sempre.
+  //
+  // Nada disto pode derrubar a assinatura, que já está paga: registrar
+  // conversão engole o próprio erro.
+  try {
+    const origem = lerOrigemDoCookie();
+    if (origem) {
+      await db.from("origem_do_clique").upsert(
+        {
+          empresa_id: ctx.empresaId,
+          ...origem,
+          ip: h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+          user_agent: h.get("user-agent")?.slice(0, 300) ?? null,
+        },
+        { onConflict: "empresa_id", ignoreDuplicates: true }
+      );
+    }
+    const { data: guardada } = await db
+      .from("origem_do_clique")
+      .select("fbp, fbc, ga_client_id")
+      .eq("empresa_id", ctx.empresaId)
+      .maybeSingle();
+
+    await registrarConversao({
+      tipo: "assinatura",
+      email: ctx.email,
+      valor: plano.valorMensal,
+      // o id do gateway é único e estável: se este trecho rodar duas
+      // vezes, a plataforma reconhece o mesmo fato e não conta em dobro
+      idDoEvento: `assinatura:${g.id}`,
+      origem: {
+        fbp: guardada?.fbp ?? origem?.fbp ?? null,
+        fbc: guardada?.fbc ?? origem?.fbc ?? null,
+        gaClientId: guardada?.ga_client_id ?? origem?.ga_client_id ?? null,
+        ip: h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+        userAgent: h.get("user-agent")?.slice(0, 300) ?? null,
+      },
+    });
+  } catch (e) {
+    console.error("[vela:conversao] assinatura:", String(e).slice(0, 200));
   }
 
   // Só uma assinatura que de fato começou entra no histórico — é dele que
