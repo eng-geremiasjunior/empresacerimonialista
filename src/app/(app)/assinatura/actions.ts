@@ -456,6 +456,28 @@ export async function atualizarCartao(cardToken: string): Promise<ResultadoAssin
   return { ok: true };
 }
 
+/**
+ * Cancelar. **Esta função não tem caminho de recusa** — e isso é regra de
+ * produto, não descuido (decisão do dono, 06/09/2026): quem quer sair,
+ * sai. Cobrança em aberto se resolve depois, entre gente; prender alguém
+ * numa tela de erro é como se ganha um processo bobo no Juizado.
+ *
+ * Os três casos, todos terminando em "cancelada":
+ *
+ *   1. A operadora cancela  → o normal.
+ *   2. A operadora diz que a assinatura não existe → já não havia o que
+ *      cobrar. É sucesso, não erro (era o que a tela chamava, errado, de
+ *      "Não foi possível concluir o pagamento").
+ *   3. A operadora falha ou está fora do ar → cancela aqui do mesmo
+ *      jeito, avisa o dono do sistema e deixa a linha marcada para a
+ *      rotina diária tentar de novo. A cliente não paga pela nossa
+ *      indisponibilidade.
+ *
+ * O caso 3 tem um risco real — cancelado aqui, vivo lá, cobrança no mês
+ * seguinte —, e é por isso que ele NÃO termina aqui: /api/cron/
+ * cancelamentos-pendentes confere todo dia e insiste até a operadora
+ * confirmar.
+ */
 export async function cancelar(motivo: string): Promise<ResultadoAssinatura> {
   const ctx = await donaLogada();
   if ("error" in ctx) return { error: ctx.error };
@@ -463,17 +485,52 @@ export async function cancelar(motivo: string): Promise<ResultadoAssinatura> {
 
   const { data: atual } = await db
     .from("assinaturas")
-    .select("id, gateway_subscription_id")
+    .select("id, status, gateway_subscription_id")
     .eq("empresa_id", ctx.empresaId)
     .maybeSingle();
-  if (!atual?.gateway_subscription_id) {
-    return { error: "Esta conta não tem assinatura para cancelar." };
+  if (!atual) return { error: "Esta conta não tem assinatura para cancelar." };
+
+  // Sem assinatura na operadora não há o que cancelar lá — mas a linha
+  // aqui pode estar 'ativa' (cortesia, conta herdada, assinatura lançada
+  // à mão). Cancelar continua significando alguma coisa: parar de contar
+  // como ativa. Antes, isto devolvia erro e a conta ficava sem saída.
+  let notaDoGateway = "";
+  if (atual.gateway_subscription_id) {
+    const r = await cancelarAssinatura(atual.gateway_subscription_id);
+    if (r.ok) {
+      notaDoGateway = r.jaNaoExistia ? " (a operadora já não tinha esta assinatura)" : "";
+    } else {
+      notaDoGateway = ` (a operadora recusou: ${r.erro})`;
+      console.error(
+        "[vela:assinatura] cancelamento local sem confirmação do gateway:",
+        atual.gateway_subscription_id,
+        r.erro
+      );
+      // O dono precisa saber HOJE: é ele que mata a assinatura no painel
+      // se a rotina diária não conseguir.
+      const { data: dono } = await db
+        .from("membros_equipe")
+        .select("user_id")
+        .eq("empresa_id", ctx.empresaId)
+        .eq("is_owner", true)
+        .eq("status", "ativo")
+        .maybeSingle();
+      if (dono?.user_id) {
+        await db.from("notifications").insert({
+          cerimonialista_id: dono.user_id,
+          // 'pagamento' é um dos tipos que o CHECK aceita (101) — e é o
+          // assunto certo: o que ficou pendente é cobrança, não sistema.
+          type: "pagamento",
+          title: "Cancelamento registrado, operadora não confirmou",
+          message:
+            "A assinatura foi cancelada aqui, mas a operadora não confirmou. Confira no painel dela se ainda há cobrança agendada — o sistema tenta de novo todo dia.",
+          link: "/assinatura",
+        });
+      }
+    }
   }
 
-  const r = await cancelarAssinatura(atual.gateway_subscription_id);
-  if (!r.ok) return { error: r.erro };
-
-  await db
+  const { error: erroUpdate } = await db
     .from("assinaturas")
     .update({
       status: "cancelada",
@@ -483,11 +540,21 @@ export async function cancelar(motivo: string): Promise<ResultadoAssinatura> {
     })
     .eq("id", atual.id);
 
+  // A única falha que a cliente pode ver: o banco não gravou. Aí ela
+  // continua ativa de verdade, e mentir seria pior que avisar.
+  if (erroUpdate) {
+    console.error("[vela:assinatura] gravar cancelamento:", erroUpdate.message);
+    return {
+      error:
+        "Não conseguimos registrar o cancelamento agora. Tente de novo em instantes — se insistir, fale com o suporte que a gente cancela por aqui.",
+    };
+  }
+
   await db.from("assinatura_eventos").insert({
     assinatura_id: atual.id,
     empresa_id: ctx.empresaId,
     tipo: "cancelamento",
-    nota: motivo.trim().slice(0, 200) || "cancelou pelo app",
+    nota: (motivo.trim().slice(0, 160) || "cancelou pelo app") + notaDoGateway,
   });
 
   revalidatePath("/assinatura");

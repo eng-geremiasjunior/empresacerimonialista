@@ -87,7 +87,13 @@ function registrarChamada(linha: {
 async function chamar<T>(
   caminho: string,
   init?: RequestInit
-): Promise<{ ok: true; dados: T } | { ok: false; erro: string; cru?: unknown }> {
+): Promise<
+  | { ok: true; dados: T }
+  // `status` vem junto porque nem toda falha é falha: um 404 no
+  // cancelamento quer dizer "já não existe lá", que é o resultado que a
+  // gente queria. Sem o número, quem chama só tem a frase traduzida.
+  | { ok: false; erro: string; cru?: unknown; status: number | null }
+> {
   const metodo = init?.method ?? "GET";
   const inicio = Date.now();
   try {
@@ -112,7 +118,7 @@ async function chamar<T>(
     });
     if (!r.ok) {
       console.error("[vela:pagarme]", caminho, r.status, JSON.stringify(corpo)?.slice(0, 500));
-      return { ok: false, erro: mensagemDoErro(r.status, corpo), cru: corpo };
+      return { ok: false, erro: mensagemDoErro(r.status, corpo), cru: corpo, status: r.status };
     }
     return { ok: true, dados: corpo as T };
   } catch (e) {
@@ -126,7 +132,11 @@ async function chamar<T>(
       duracaoMs: Date.now() - inicio,
     });
     console.error("[vela:pagarme] rede:", caminho, e);
-    return { ok: false, erro: "Não conseguimos falar com a operadora agora. Tente de novo." };
+    return {
+      ok: false,
+      erro: "Não conseguimos falar com a operadora agora. Tente de novo.",
+      status: null,
+    };
   }
 }
 
@@ -360,11 +370,46 @@ export async function atualizarPrecoAssinatura(
   });
 }
 
-/** Cancelar. O gateway para de cobrar; o acesso, quem decide é a gente. */
-export async function cancelarAssinatura(assinaturaId: string) {
-  return chamar<AssinaturaGateway>(`/subscriptions/${assinaturaId}`, {
+/**
+ * Cancelar. O gateway para de cobrar; o acesso, quem decide é a gente.
+ *
+ * Três respostas, não duas — e a do meio é a que faltava. Quando a
+ * operadora diz "Subscription not found", a assinatura já não existe lá:
+ * ninguém vai ser cobrado, que é exatamente o que o cancelamento queria.
+ * Tratar isso como erro prendia a cliente numa tela dizendo "Não foi
+ * possível concluir o pagamento" — palavra errada, para uma ação que nem
+ * é de pagamento, num estado em que ela já estava livre.
+ */
+export async function cancelarAssinatura(
+  assinaturaId: string
+): Promise<
+  | { ok: true; jaNaoExistia: boolean }
+  | { ok: false; erro: string }
+> {
+  const r = await chamar<AssinaturaGateway>(`/subscriptions/${assinaturaId}`, {
     method: "DELETE",
   });
+  if (r.ok) return { ok: true, jaNaoExistia: false };
+
+  const corpo = JSON.stringify(r.cru ?? "").toLowerCase();
+  if (r.status === 404 || corpo.includes("not found")) {
+    return { ok: true, jaNaoExistia: true };
+  }
+  return { ok: false, erro: r.erro };
+}
+
+/**
+ * A assinatura ainda está viva lá? Usada pela rotina que confere, todo
+ * dia, se o que foi cancelado aqui morreu mesmo na operadora.
+ * `null` = não deu para saber agora (rede, instabilidade) — e não saber
+ * nunca vira "está morta".
+ */
+export async function assinaturaViva(assinaturaId: string): Promise<boolean | null> {
+  const r = await chamar<AssinaturaGateway>(`/subscriptions/${assinaturaId}`);
+  if (r.ok) return r.dados.status !== "canceled";
+  const corpo = JSON.stringify(r.cru ?? "").toLowerCase();
+  if (r.status === 404 || corpo.includes("not found")) return false;
+  return null;
 }
 
 // O preço mora em plano_catalogo (147) e é lido por src/lib/planos.ts.

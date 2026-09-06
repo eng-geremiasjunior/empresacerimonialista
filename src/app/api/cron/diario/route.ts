@@ -33,6 +33,10 @@ const ROTINAS = [
   // por último de propósito: só avisa do que vence amanhã depois que
   // concluir-eventos já tirou de cena os eventos que acabaram ontem
   "lembretes-tarefas",
+  // a tela nunca recusa um cancelamento, nem quando a operadora falha —
+  // esta rotina é quem insiste até a operadora confirmar, para não
+  // existir "cancelada aqui, cobrando lá"
+  "cancelamentos-pendentes",
 ] as const;
 
 export async function GET(request: NextRequest) {
