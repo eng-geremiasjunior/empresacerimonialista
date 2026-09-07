@@ -1,7 +1,18 @@
 import type { Metadata } from "next";
 import { Fragment } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { getCatalogoDePlanos, reais, tetoEmTexto, type PlanoDoCatalogo } from "@/lib/planos";
+import {
+  comTetoDoPlano,
+  fraseDaEscada,
+  getCatalogoDePlanos,
+  getEscadaDaPromocao,
+  PLANO_DA_PROMOCAO,
+  PROMOCAO_LANCAMENTO,
+  reais,
+  tetoEmTexto,
+  type EscadaDaPromocao,
+  type PlanoDoCatalogo,
+} from "@/lib/planos";
 import { Marca } from "@/components/marca/Marca";
 import { Medicao } from "@/components/marketing/Medicao";
 
@@ -104,6 +115,27 @@ export default async function PlanosPage() {
   const n = planos.length;
   const nosN = n === 3 ? "nos três" : n === 2 ? "nos dois" : "em todos os planos";
 
+  // A ESCADA DE LANÇAMENTO (153). Esta página é o destino do anúncio: se
+  // ela anuncia o preço cheio e a promoção só aparece depois de criar
+  // conta, o clique que você pagou lê R$ 97,00 e vai embora — e quem
+  // chegou pelo anúncio dos R$ 27,90 se sente enganado na primeira tela.
+  //
+  // Só o plano da promoção muda de cara; os outros seguem no preço do
+  // catálogo. Se a promoção sair de venda, `getEscadaDaPromocao` devolve
+  // null e a página volta sozinha ao preço cheio, sem tocar em código.
+  const escada = await getEscadaDaPromocao(PROMOCAO_LANCAMENTO);
+  const planoPromovido = planos.find((p) => p.codigo === PLANO_DA_PROMOCAO) ?? null;
+  const emPromocao =
+    escada && escada.degraus.length > 0 && planoPromovido ? escada : null;
+  const primeiroDegrau =
+    emPromocao && planoPromovido
+      ? comTetoDoPlano(emPromocao.degraus[0].valorMensal, planoPromovido.valorMensal)
+      : null;
+  const fraseDaPromocao =
+    emPromocao && planoPromovido
+      ? fraseDaEscada(emPromocao, planoPromovido.valorMensal)
+      : null;
+
   const topo = !user
     ? { href: "/login", texto: "Entrar" }
     : dona
@@ -157,6 +189,16 @@ export default async function PlanosPage() {
           {`O sistema é o mesmo ${nosN}; o que muda é o tamanho da agenda e quantas pessoas trabalham nela.`}
         </p>
 
+        {/* A escada dita por extenso, logo abaixo da abertura — antes de
+            qualquer botão. Quem chega do anúncio precisa ler aqui o que
+            vai pagar em cada mês, não descobrir na quarta cobrança. */}
+        {fraseDaPromocao && (
+          <p className="pl-promo">
+            <b>Preço de lançamento:</b> {fraseDaPromocao}. Cancela quando quiser,
+            sem multa.
+          </p>
+        )}
+
         {planos.length === 0 ? (
           <p className="pl-p" style={{ marginTop: 36 }}>
             Não conseguimos carregar os planos agora. Tente de novo em alguns
@@ -185,7 +227,17 @@ export default async function PlanosPage() {
                 </div>
                 <div className="pl-cel">
                   <span className="pl-rotulo-m">Por mês</span>
-                  <span className="pl-preco">{reais(p.valorMensal)}</span>
+                  {/* o plano da promoção mostra o primeiro degrau em
+                      destaque, com o preço cheio riscado ao lado: esconder
+                      o valor futuro é o que vira contestação de cartão */}
+                  {emPromocao && p.codigo === PLANO_DA_PROMOCAO && primeiroDegrau !== null ? (
+                    <>
+                      <span className="pl-preco">{reais(primeiroDegrau)}</span>
+                      <span className="pl-cheio">{reais(p.valorMensal)}</span>
+                    </>
+                  ) : (
+                    <span className="pl-preco">{reais(p.valorMensal)}</span>
+                  )}
                 </div>
                 <div className="pl-cel pl-quem">
                   <span className="pl-rotulo-m">Para quem é</span>
@@ -334,6 +386,13 @@ const css = `
   /* o preço em tinta, não em ameixa: a marca reserva a ameixa para ação
      principal, link e estado ativo — e preço é dado, não ação */
   .pl-preco{font:600 26px/1.15 var(--font-mono),'IBM Plex Mono',monospace;letter-spacing:-0.01em;color:#221E1B}
+  /* o preço cheio ao lado do promocional: riscado, menor e em cinza —
+     ele não some, porque é o que ela vai pagar depois da escada */
+  .pl-cheio{display:inline-block;margin-left:8px;font:500 15px var(--font-mono),'IBM Plex Mono',monospace;
+    color:#928A81;text-decoration:line-through}
+  .pl-promo{margin:14px 0 0;max-width:640px;
+    font:400 15px/1.6 var(--font-ui),'Instrument Sans',sans-serif;color:#3D3835}
+  .pl-promo b{color:#221E1B;font-weight:600}
   .pl-quem{font:400 14.5px/1.5 var(--font-ui),'Instrument Sans',sans-serif;color:#3D3835}
   /* as duas linhas que mudam: peso e um fundo suave, em cinza quente —
      hierarquia por cinza, a ameixa fica para os links */

@@ -407,6 +407,14 @@ export async function salvarAssinaturaDb(input: {
         inicio: novoInicio,
         cancelada_em: canceladaEm,
         observacao: input.observacao,
+        // Mexer no plano ou no valor por AQUI encerra a promoção — a
+        // mesma regra que trocarPlano() já aplica do lado da cliente.
+        // Sem isto, o dono corrigia uma conta à mão e a rotina diária
+        // puxava a mensalidade de volta para o degrau na madrugada
+        // seguinte, desfazendo em silêncio o que ele acabou de decidir.
+        // Preço mexido à mão é preço combinado à mão: não tem escada.
+        promocao_codigo: null,
+        promocao_inicio: null,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "empresa_id" }

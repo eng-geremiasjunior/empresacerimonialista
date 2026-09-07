@@ -2,9 +2,11 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
   comTetoDoPlano,
+  dataQueMandaNoDegrau,
   fraseDaEscada,
   fraseDoDegrauAtual,
   getCatalogoDePlanos,
+  getEscadaContratada,
   getEscadaDaPromocao,
   podeEntrarNaPromocao,
   reais,
@@ -87,22 +89,27 @@ export default async function AssinaturaPage({
   const planoDaPromocao = catalogo.find((p) => p.codigo === PLANO_DA_PROMOCAO) ?? null;
   const primeiroDegrau = escada?.degraus[0] ?? null;
 
-  // quem já está na escada pode estar em OUTRA promoção e em outro plano:
-  // a linha dela se lê pelo que está gravado, não pelo que está à venda
+  // Quem já está na escada pode estar em OUTRA promoção e em outro plano:
+  // a linha dela se lê pelo que está gravado, não pelo que está à venda —
+  // e por `getEscadaContratada`, sem o filtro de `ativo`, porque tirar o
+  // lançamento de venda não pode fazer a frase do degrau sumir do painel
+  // de quem já está pagando por ele.
   const escadaDela =
     assinatura?.promocao_codigo == null
       ? null
-      : assinatura.promocao_codigo === PROMOCAO_LANCAMENTO
-        ? escada
-        : await getEscadaDaPromocao(assinatura.promocao_codigo);
+      : await getEscadaContratada(assinatura.promocao_codigo);
   const planoDela = catalogo.find((p) => p.codigo === estado.plano) ?? planoDaPromocao;
+  // A data que manda no degrau é a da PRÓXIMA COBRANÇA, não a de hoje: é
+  // ela que a rotina usa para trocar o preço na operadora, e o número do
+  // painel (valor_mensal) já é o da próxima cobrança. Perguntando por
+  // hoje, o painel diria R$ 57,00 e a frase logo abaixo, R$ 27,90.
   const emCurso =
     escadaDela && assinatura?.promocao_inicio && planoDela
       ? fraseDoDegrauAtual(
           escadaDela,
           assinatura.promocao_inicio,
           planoDela.valorMensal,
-          hojeBR()
+          dataQueMandaNoDegrau(estado.proximo_vencimento, hojeBR())
         )
       : null;
 

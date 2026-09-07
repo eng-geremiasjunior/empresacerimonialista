@@ -186,7 +186,9 @@ export default function TermosPage() {
           função fica atrás de um plano maior. O que muda é quantos eventos
           podem estar em andamento ao mesmo tempo e quantas pessoas têm acesso.
           Os valores e os limites de cada plano são os que aparecem na tela de
-          assinatura no momento da contratação.
+          assinatura no momento da contratação — e o valor cobrado na entrada
+          pode ser um <b>preço promocional</b>, nas condições do parágrafo
+          abaixo.
         </p>
         <p style={p}>
           <b>Chegar ao limite não apaga nem esconde nada.</b> Tudo o que já
@@ -206,6 +208,23 @@ export default function TermosPage() {
           acessos exige desativar antes os acessos que sobram — essa escolha é
           sua, não nossa.
         </p>
+        {/* O parágrafo do preço promocional. Existe porque a promoção de
+            lançamento (153) não é um desconto só: o valor SOBE em datas
+            combinadas, e um aumento combinado tem de estar escrito no
+            contrato que ela aceita — não só na frase do checkout, que
+            ninguém guarda. Sem ele, o parágrafo de mudança de preço mais
+            abaixo ("avisada com antecedência") seria a única regra
+            aplicável, e ela não descreve o que de fato acontece. */}
+        <p style={p}>
+          <b>Preço promocional.</b> O valor de entrada pode ser promocional e
+          por prazo determinado. Quando for o caso, a tela de assinatura mostra,{" "}
+          <b>antes de você confirmar</b>, cada etapa do preço e o mês em que
+          cada uma passa a valer; terminada a promoção, passa a valer o preço
+          do plano em vigor. Cada etapa vale a partir da cobrança seguinte, sem
+          cobrança retroativa e sem cobrança proporcional no meio do ciclo — e
+          você pode cancelar quando quiser, sem multa, inclusive antes de uma
+          etapa entrar.
+        </p>
         <p style={p}>
           O pagamento é processado pela <b>Pagar.me</b>. Os dados do seu cartão
           vão do seu navegador direto para a operadora: eles não passam pelos
@@ -214,9 +233,10 @@ export default function TermosPage() {
           enviados à operadora para emitir a cobrança.
         </p>
         <p style={p}>
-          Os preços podem mudar. Uma mudança de preço é avisada com
-          antecedência e vale a partir do ciclo seguinte — se você não
-          concordar, pode cancelar antes, sem custo.
+          Fora das etapas de um preço promocional, que já vêm combinadas
+          desde a contratação, os preços podem mudar. Uma mudança de preço é
+          avisada com antecedência e vale a partir do ciclo seguinte — se você
+          não concordar, pode cancelar antes, sem custo.
         </p>
       </Secao>
 

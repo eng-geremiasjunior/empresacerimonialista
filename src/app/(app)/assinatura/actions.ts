@@ -289,6 +289,37 @@ export async function assinar(
     clienteId = cli.dados.id;
   }
 
+  // ANTES DE CRIAR A SEGUNDA, MATAR A PRIMEIRA.
+  //
+  // Chegar aqui com um `gateway_subscription_id` gravado é normal: cartão
+  // recusado guarda o id, e cancelar com a operadora fora do ar (caso 3 do
+  // `cancelar()`) deixa a linha 'cancelada' aqui e a assinatura VIVA lá.
+  // Nesse estado, criar outra assinatura sobrescrevia o id da anterior —
+  // que ficava órfã, cobrando todo mês, sem nenhuma rotina sabendo dela:
+  // `cancelamentos-pendentes` só varre linhas 'cancelada', e a linha
+  // acabara de voltar a 'ativa' apontando para a nova. Duas cobranças por
+  // mês, indefinidamente.
+  //
+  // Com a promoção isso deixa de ser exceção rara: assinar depois de
+  // cancelar passa a ser o caminho de quem voltou. Se a operadora não
+  // confirmar o cancelamento da antiga, esta assinatura NÃO nasce — é
+  // melhor pedir para tentar de novo em instantes do que criar a segunda
+  // cobrança que ninguém vê.
+  if (atual?.gateway_subscription_id) {
+    const morta = await cancelarAssinatura(atual.gateway_subscription_id);
+    if (!morta.ok) {
+      console.error(
+        "[vela:assinatura] não deu para encerrar a assinatura anterior:",
+        atual.gateway_subscription_id,
+        morta.erro
+      );
+      return {
+        error:
+          "Não conseguimos encerrar a assinatura anterior na operadora agora. Tente de novo em alguns minutos — assim você não corre o risco de ser cobrada duas vezes.",
+      };
+    }
+  }
+
   const ass = await criarAssinatura({
     clienteId,
     cardToken,

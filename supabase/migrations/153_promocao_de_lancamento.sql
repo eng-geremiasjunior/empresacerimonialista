@@ -69,6 +69,8 @@ comment on table public.plano_promocao is
   'Os degraus de uma promoção de lançamento. Depois do último, vale o preço do plano no catálogo. Promoção é preço, nunca plano: os tetos continuam sendo os do plano contratado.';
 comment on column public.plano_promocao.meses is
   'Duração DESTE degrau em meses, não o acumulado.';
+comment on column public.plano_promocao.ativo is
+  'Governa quem ENTRA: a vitrine e a policy de leitura filtram por aqui. NÃO governa quem já entrou — valor_da_promocao ignora esta coluna de propósito, para desligar a venda não subir o preço de quem está no meio da escada.';
 
 -- A escada de lançamento. `where not exists` para a migração poder rodar
 -- de novo sem duplicar nem sobrescrever um preço que o dono tenha
@@ -115,6 +117,26 @@ comment on column public.assinaturas.promocao_inicio is
 -- Devolve o valor do degrau vigente, ou NULL quando a escada acabou (aí
 -- vale o preço do plano no catálogo). Pura: entra código e data, sai
 -- número — o chamador é que decide o que fazer com isso.
+--
+-- DUAS COISAS QUE ESTA FUNÇÃO NÃO OLHA, e por quê:
+--
+--   `ativo`. A coluna governa quem ENTRA na promoção — é ela que a
+--   vitrine e a policy de leitura filtram. Quem já entrou tem contrato:
+--   a escada dela não pode encurtar porque o dono tirou o lançamento de
+--   venda. Com o filtro aqui dentro, um `update plano_promocao set
+--   ativo = false` fazia esta função devolver NULL para TODA conta em
+--   curso, a rotina diária lia NULL como "acabou a escada" e subia o
+--   preço de quem estava no primeiro mês — de R$ 27,90 para o cheio, na
+--   cobrança seguinte, sem ninguém ter decidido isso. Desativar um
+--   degrau só era pior ainda: a janela acumulada dos outros encolhia e
+--   quem estava no 4º mês caía direto no preço cheio.
+--
+--   A sessão de quem pergunta. `security definer` porque, sem ele, a
+--   policy `using (ativo)` refazia por baixo exatamente o filtro que o
+--   parágrafo acima acabou de tirar — o corpo veria só os degraus à
+--   venda. O valor cobrado tem de ser o mesmo para o cron (service
+--   role) e para a tela (authenticated); é o mesmo molde das funções
+--   da 147/150.
 create or replace function public.valor_da_promocao(
   p_codigo text,
   p_inicio date,
@@ -123,6 +145,8 @@ create or replace function public.valor_da_promocao(
 returns numeric
 language sql
 stable
+security definer
+set search_path = public
 as $$
   with hoje as (
     select coalesce(p_hoje, (now() at time zone 'America/Sao_Paulo')::date) as d
@@ -139,8 +163,10 @@ as $$
   escada as (
     select ordem, valor_mensal,
            sum(meses) over (order by ordem rows between unbounded preceding and current row) as ate
+    -- sem filtro de `ativo`: ver o bloco acima. A escada de quem já
+    -- entrou é contrato, não vitrine.
     from public.plano_promocao
-    where codigo = p_codigo and ativo
+    where codigo = p_codigo
   )
   select e.valor_mensal
   from escada e, decorridos
@@ -184,18 +210,21 @@ select 'assinaturas ganhou as duas colunas',
         where table_schema = 'public' and table_name = 'assinaturas'
           and column_name in ('promocao_codigo', 'promocao_inicio'))
 union all
--- a escada, mês a mês, contra o que ela deve valer
+-- A escada, mês a mês, contra o que ela deve valer. `coalesce(... , false)`
+-- de propósito: NULL é justamente o modo de falha desta escada (degrau
+-- apagado, código errado), e `NULL = 27.90` sai NULL — coluna em branco
+-- no SQL Editor, que quem varre à procura de `false` dá por aprovada.
 select 'mês 0 (recém-assinada) paga 27,90',
-       public.valor_da_promocao('lancamento', current_date, current_date) = 27.90
+       coalesce(public.valor_da_promocao('lancamento', current_date, current_date) = 27.90, false)
 union all
 select 'mês 2 ainda paga 27,90',
-       public.valor_da_promocao('lancamento', (current_date - interval '2 months')::date, current_date) = 27.90
+       coalesce(public.valor_da_promocao('lancamento', (current_date - interval '2 months')::date, current_date) = 27.90, false)
 union all
 select 'mês 3 sobe para 57,00',
-       public.valor_da_promocao('lancamento', (current_date - interval '3 months')::date, current_date) = 57.00
+       coalesce(public.valor_da_promocao('lancamento', (current_date - interval '3 months')::date, current_date) = 57.00, false)
 union all
 select 'mês 5 ainda paga 57,00',
-       public.valor_da_promocao('lancamento', (current_date - interval '5 months')::date, current_date) = 57.00
+       coalesce(public.valor_da_promocao('lancamento', (current_date - interval '5 months')::date, current_date) = 57.00, false)
 union all
 select 'mês 6 acabou a escada (null = preço do plano)',
        public.valor_da_promocao('lancamento', (current_date - interval '6 months')::date, current_date) is null
@@ -228,8 +257,14 @@ select 'a escada sobe, degrau a degrau',
          where a.codigo = 'lancamento' and b.valor_mensal <= a.valor_mensal
        )
 union all
-select 'nenhuma conta de hoje entrou em promoção ainda',
-       not exists (select 1 from public.assinaturas where promocao_codigo is not null)
+-- Não "ninguém entrou ainda" — isso vira false no dia seguinte ao
+-- lançamento, numa migração que rodou perfeitamente, e um false vermelho
+-- faz o dono desconfiar de um degrau que está certo. O que se confere é a
+-- invariante que importa: código sem data de início deixaria a escada sem
+-- âncora, e o degrau de hoje viraria NULL para sempre.
+select 'nenhuma promoção ficou sem data de início',
+       not exists (select 1 from public.assinaturas
+                   where promocao_codigo is not null and promocao_inicio is null)
 union all
 select 'anon lê a escada (a página de vendas precisa)',
        exists (select 1 from pg_policies
@@ -239,4 +274,26 @@ union all
 select 'ninguém escreve na escada por policy',
        not exists (select 1 from pg_policies
                    where schemaname = 'public' and tablename = 'plano_promocao'
-                     and cmd in ('INSERT', 'UPDATE', 'DELETE'));
+                     and cmd in ('INSERT', 'UPDATE', 'DELETE'))
+union all
+-- Os grants, como a 150 confere os dela. O service_role é o único ator
+-- que ANDA a escada: sem o grant dele nada quebraria — a escada
+-- simplesmente nunca subiria, em silêncio, que é pior que quebrar.
+select 'o cron (service_role) executa a função',
+       has_function_privilege('service_role',
+         'public.valor_da_promocao(text,date,date)', 'execute')
+union all
+select 'a tela (authenticated) executa a função',
+       has_function_privilege('authenticated',
+         'public.valor_da_promocao(text,date,date)', 'execute')
+union all
+select 'anon NÃO executa a função',
+       not has_function_privilege('anon',
+         'public.valor_da_promocao(text,date,date)', 'execute')
+union all
+-- security definer: sem ele, a policy `using (ativo)` refaria por baixo o
+-- filtro que o corpo da função tirou de propósito
+select 'a função roda como dona (ignora a policy de vitrine)',
+       (select p.prosecdef from pg_proc p
+        join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = 'public' and p.proname = 'valor_da_promocao');

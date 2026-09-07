@@ -6,6 +6,7 @@
 // e o painel do dono leem daqui. Nenhum número de plano vive em TS.
 
 import { createClient } from "@/lib/supabase/server";
+import { somarDias } from "@/lib/tempo";
 
 export type CodigoDoPlano = "essencial" | "profissional" | "master";
 
@@ -115,19 +116,44 @@ export type EscadaDaPromocao = {
   degraus: DegrauDaPromocao[];
 };
 
-/** Os degraus ativos de uma promoção, em ordem. null quando não há escada. */
-export async function getEscadaDaPromocao(codigo: string): Promise<EscadaDaPromocao | null> {
+async function lerDegraus(codigo: string, soAtivos: boolean): Promise<EscadaDaPromocao | null> {
   const supabase = createClient();
-  const { data } = await supabase
+  let q = supabase
     .from("plano_promocao")
     .select("ordem, valor_mensal, meses")
-    .eq("codigo", codigo)
-    .eq("ativo", true)
-    .order("ordem", { ascending: true });
+    .eq("codigo", codigo);
+  if (soAtivos) q = q.eq("ativo", true);
+  const { data } = await q.order("ordem", { ascending: true });
   const degraus = (
     (data ?? []) as { ordem: number; valor_mensal: number | string; meses: number }[]
   ).map((l) => ({ ordem: l.ordem, valorMensal: Number(l.valor_mensal), meses: l.meses }));
   return degraus.length > 0 ? { codigo, degraus } : null;
+}
+
+/**
+ * A escada À VENDA: só os degraus ativos. É esta que a vitrine anuncia e
+ * que a action usa para decidir por quanto a assinatura nasce.
+ */
+export async function getEscadaDaPromocao(codigo: string): Promise<EscadaDaPromocao | null> {
+  return lerDegraus(codigo, true);
+}
+
+/**
+ * A escada de quem JÁ ENTROU — sem filtro de `ativo`, de propósito.
+ *
+ * `ativo` governa a venda; a escada de quem já está nela é contrato. O dia
+ * em que o dono tirar o lançamento de venda, a frase do degrau tem de
+ * continuar aparecendo no painel dela e tem de continuar batendo com o que
+ * o banco cobra — `valor_da_promocao` (153) ignora `ativo` pelo mesmo
+ * motivo. Duas leituras diferentes porque são duas perguntas diferentes.
+ *
+ * A policy da 153 filtra `ativo` para anon e authenticated, então esta
+ * leitura, feita com a sessão dela, pode devolver menos do que existe. É
+ * aceitável: o pior caso é a frase sumir da tela; quem manda no dinheiro
+ * é a função do banco, que roda como dona e enxerga a escada inteira.
+ */
+export async function getEscadaContratada(codigo: string): Promise<EscadaDaPromocao | null> {
+  return lerDegraus(codigo, false);
 }
 
 /**
@@ -222,20 +248,51 @@ function dataPorExtenso(iso: string): string {
 }
 
 /**
- * Em que degrau esta assinatura está hoje, e em que dia ele muda.
+ * A data que manda no degrau — e ela NÃO é hoje.
  *
- * É a mesma conta de `valor_da_promocao` (153), aqui só para a TELA ter o
- * que dizer. Quem manda no dinheiro continua sendo a função do banco: se
- * as duas discordarem por um dia de borda, o que ela paga é o do banco.
- * Devolve null quando a escada já acabou — aí vale o preço do plano e não
- * há mais nada para avisar.
+ * Trocar o preço do item na operadora vale a partir da PRÓXIMA cobrança,
+ * sem pró-rata. Então a pergunta certa nunca é "quanto ela deveria pagar
+ * hoje?", e sim "quanto vai sair na próxima cobrança?". Perguntando por
+ * hoje, cada degrau chegava um ciclo atrasado: no dia em que a escada
+ * virava, a cobrança daquele dia já tinha saído pelo valor antigo, e o
+ * degrau novo só alcançava a cobrança do mês seguinte — quatro cobranças
+ * de R$ 27,90 contra as três prometidas no checkout, e a frase "a partir
+ * de 6 de dezembro, R$ 57,00" desmentida no próprio dia 6.
+ *
+ * Perguntando pela data da próxima cobrança, a troca acontece em
+ * qualquer dia do ciclo corrente — há um mês inteiro de janela, não um
+ * dia exato, e a rotina que falhar por uma semana ainda acerta.
+ *
+ * Sem vencimento gravado (ou com um vencimento vencido, de conta
+ * inadimplente) sobra o mínimo honesto: amanhã. Erra tarde, nunca cedo —
+ * e errar tarde é ela seguir pagando o degrau anterior.
+ */
+export function dataQueMandaNoDegrau(
+  proximoVencimento: string | null | undefined,
+  hoje: string
+): string {
+  return proximoVencimento && proximoVencimento > hoje
+    ? proximoVencimento
+    : somarDias(hoje, 1);
+}
+
+/**
+ * Em que degrau esta assinatura está, e em que dia ele muda.
+ *
+ * `referencia` é a data da PRÓXIMA COBRANÇA, não hoje — ver
+ * `dataQueMandaNoDegrau`. É a mesma conta de `valor_da_promocao` (153),
+ * aqui só para a TELA ter o que dizer, e com a mesma data que a rotina
+ * usa: se a tela perguntasse por hoje e a rotina pela próxima cobrança,
+ * o painel mostraria um valor e a frase logo abaixo, outro. Quem manda
+ * no dinheiro continua sendo a função do banco. Devolve null quando a
+ * escada já acabou — aí vale o preço do plano e não há mais o que avisar.
  */
 export function degrauDeHoje(
   escada: EscadaDaPromocao,
   inicio: string,
-  hoje: string
+  referencia: string
 ): { degrau: DegrauDaPromocao; mudaEm: string } | null {
-  const m = mesesDecorridos(inicio, hoje);
+  const m = mesesDecorridos(inicio, referencia);
   if (m === null) return null;
   let ate = 0;
   for (const d of escada.degraus) {
@@ -281,7 +338,11 @@ export function fraseDaEscada(escada: EscadaDaPromocao, valorCheio: number): str
 }
 
 /**
- * O que dizer a quem JÁ está na escada: quanto paga hoje e quando muda.
+ * O que dizer a quem JÁ está na escada: quanto sai na próxima cobrança e
+ * em que dia isso muda. `referencia` é a data da próxima cobrança — a
+ * mesma que a rotina usa (ver `dataQueMandaNoDegrau`), para o número no
+ * painel e a frase logo abaixo dele não discordarem.
+ *
  * null quando a escada acabou — aí ela paga o preço do plano, como todo
  * mundo, e não há aviso a dar.
  */
@@ -289,9 +350,9 @@ export function fraseDoDegrauAtual(
   escada: EscadaDaPromocao,
   inicio: string,
   valorCheio: number,
-  hoje: string
+  referencia: string
 ): string | null {
-  const atual = degrauDeHoje(escada, inicio, hoje);
+  const atual = degrauDeHoje(escada, inicio, referencia);
   if (!atual) return null;
   const proximo = escada.degraus.find((d) => d.ordem > atual.degrau.ordem);
   const depois = comTetoDoPlano(proximo ? proximo.valorMensal : valorCheio, valorCheio);

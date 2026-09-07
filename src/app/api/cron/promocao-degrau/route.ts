@@ -12,28 +12,60 @@
 // define ordem entre eles. Um preço só, trocado na hora certa, não tem
 // ambiguidade.
 //
-// TRÊS COISAS QUE ESTA ROTINA NUNCA FAZ:
+// A DATA QUE MANDA NÃO É HOJE, É A DA PRÓXIMA COBRANÇA. A troca de preço
+// vale a partir da cobrança seguinte, sem pró-rata. Perguntando "quanto
+// ela deve pagar hoje?", cada degrau chegava um ciclo atrasado: no dia do
+// aniversário a cobrança daquele dia já tinha saído pelo valor antigo.
+// Eram quatro cobranças de R$ 27,90 contra as três prometidas no
+// checkout, e a frase "a partir de 6 de dezembro, R$ 57,00" desmentida no
+// próprio dia 6. Perguntando pela data da próxima cobrança, a troca cabe
+// em qualquer dia do ciclo corrente — um mês inteiro de janela.
+//
+// QUATRO COISAS QUE ESTA ROTINA NUNCA FAZ:
 //
 //   1. Cobrar mais do que o degrau manda. Se a escada devolver um valor
 //      acima do preço do plano, vale o do plano — erro de digitação no
 //      preço não vira cobrança maior.
 //   2. Chutar quando não sabe. Se a conta do degrau falhar, a linha fica
 //      como está e se tenta amanhã. Não saber nunca vira "acabou a
-//      promoção", que é justamente o caminho que subiria o preço.
-//   3. Gravar aqui um valor que a operadora não aceitou. Gateway
+//      promoção", que é justamente o caminho que subiria o preço. E
+//      "promoção sem degrau nenhum" é não saber, não é acabou.
+//   3. Andar a escada de uma conta que não está mais no plano dela. Se o
+//      plano mudou por fora, o preço é do plano, não do degrau.
+//   4. Gravar aqui um valor que a operadora não aceitou. Gateway
 //      primeiro, banco depois — como a troca de plano já faz.
 //
-// Idempotente: rodar duas vezes no mesmo dia não faz nada na segunda,
-// porque a comparação é com o valor que já está gravado. E como o degrau
-// é calculado e não guardado, uma semana de falhas se corrige sozinha na
-// execução seguinte — errando a favor da cliente, que nesse meio-tempo
-// segue pagando o degrau anterior.
+// Idempotente em série e em paralelo: em série porque a comparação é com
+// o valor que já está gravado; em paralelo porque a gravação só vale se a
+// linha ainda estiver no valor que esta execução leu, e o evento do
+// painel do dono só é registrado se essa gravação de fato pegou. E como o
+// degrau é calculado e não guardado, uma semana de falhas se corrige
+// sozinha na execução seguinte — errando a favor da cliente, que nesse
+// meio-tempo segue pagando o degrau anterior.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { atualizarPrecoAssinatura } from "@/lib/pagarme";
-import { centavos, comTetoDoPlano, reais } from "@/lib/planos";
+import {
+  centavos,
+  comTetoDoPlano,
+  dataQueMandaNoDegrau,
+  reais,
+  PLANO_DA_PROMOCAO,
+  PROMOCAO_LANCAMENTO,
+} from "@/lib/planos";
 import { hojeBR } from "@/lib/tempo";
+
+const MESES = [
+  "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+  "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+];
+
+/** "6 de dezembro" — a data como ela é dita no aviso e na tela. */
+function dataPorExtenso(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  return m ? `${Number(m[3])} de ${MESES[Number(m[2]) - 1]}` : iso;
+}
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -84,7 +116,9 @@ export async function GET(request: NextRequest) {
   const { data: linhas, error } = await db
     .from("assinaturas")
     .select(
-      "id, empresa_id, plano, valor_mensal, gateway_subscription_id, promocao_codigo, promocao_inicio"
+      // proximo_vencimento entra porque é ELE que decide o degrau: o
+      // preço trocado hoje é o preço da cobrança daquele dia
+      "id, empresa_id, plano, valor_mensal, proximo_vencimento, gateway_subscription_id, promocao_codigo, promocao_inicio"
     )
     .in("status", ["ativa", "inadimplente"])
     .not("promocao_codigo", "is", null)
@@ -110,16 +144,66 @@ export async function GET(request: NextRequest) {
     ])
   );
 
+  // Quantos degraus cada promoção tem, lido UMA vez e com o service role
+  // — que enxerga inclusive os degraus desativados, porque `ativo` governa
+  // a venda e não o contrato de quem já entrou.
+  //
+  // Serve para separar os dois NULLs que `valor_da_promocao` devolve:
+  // "a escada acabou" (a promoção tem degraus e os meses dela passaram) de
+  // "não existe escada nenhuma" (o dono apagou as linhas). O primeiro sobe
+  // o preço para o do catálogo; o segundo é não saber, e não saber nunca
+  // pode virar um salto de R$ 27,90 para R$ 97,00 na conta de quem está no
+  // primeiro mês.
+  const { data: deg, error: erroDegraus } = await db
+    .from("plano_promocao")
+    .select("codigo");
+  if (erroDegraus) {
+    return NextResponse.json({ error: erroDegraus.message }, { status: 500 });
+  }
+  const quantosDegraus = new Map<string, number>();
+  for (const d of (deg ?? []) as { codigo: string }[]) {
+    quantosDegraus.set(d.codigo, (quantosDegraus.get(d.codigo) ?? 0) + 1);
+  }
+
+  // A promoção acabou para esta linha: as duas colunas saem juntas e a
+  // linha sai do alcance desta rotina para sempre. Sem isso, um reajuste
+  // futuro no catálogo subiria o preço destas contas sozinho, sem ninguém
+  // decidir — e reajuste é decisão de produto, não de cron.
+  const limparPromocao = (id: string) =>
+    db
+      .from("assinaturas")
+      .update({
+        promocao_codigo: null,
+        promocao_inicio: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+
   let conferidas = 0;
   let emDia = 0;
   let mudadas = 0;
   let encerradas = 0;
   let semCatalogo = 0;
   let semResposta = 0;
+  let foraDoPlano = 0;
   const falhas: string[] = [];
 
   for (const l of linhas ?? []) {
     conferidas++;
+
+    const codigo = String(l.promocao_codigo);
+
+    // A promoção vale num plano só, e o acoplamento entre os dois vive em
+    // TS. Se o plano da conta mudou por fora (o dono subindo alguém para o
+    // Master pelo /admin, por exemplo) sem limpar as colunas de promoção,
+    // seguir andando a escada puxaria a mensalidade de R$ 199,00 de volta
+    // para R$ 27,90 — com os tetos do Master. A linha fica como está e
+    // aparece na contagem, para o dono ver que existe.
+    if (codigo === PROMOCAO_LANCAMENTO && String(l.plano) !== PLANO_DA_PROMOCAO) {
+      foraDoPlano++;
+      console.error("[vela:promocao] em promoção fora do plano dela:", l.id, l.plano);
+      continue;
+    }
 
     const plano = catalogo.get(String(l.plano));
     if (!plano || !(plano.valor > 0)) {
@@ -129,10 +213,35 @@ export async function GET(request: NextRequest) {
       continue;
     }
 
+    // Escada sem âncora: código gravado e data de início não. A função do
+    // banco devolveria NULL, que aqui significa "acabou" — e acabou sobe o
+    // preço. Sem data, o certo é não saber. (A 153 confere esta mesma
+    // invariante no bloco de conferência.)
+    if (!l.promocao_inicio) {
+      semResposta++;
+      console.error("[vela:promocao] promoção sem data de início:", l.id, codigo);
+      continue;
+    }
+
+    // Promoção sem degrau nenhum não é escada acabada, é escada sumida —
+    // e "não sei" jamais sobe preço. Ver o censo de degraus acima.
+    if (!(quantosDegraus.get(codigo) ?? 0)) {
+      semResposta++;
+      console.error("[vela:promocao] promoção sem degrau, linha intocada:", l.id, codigo);
+      continue;
+    }
+
+    // Não "hoje": o dia da próxima cobrança. É essa a cobrança que o novo
+    // preço vai alcançar.
+    const referencia = dataQueMandaNoDegrau(
+      l.proximo_vencimento as string | null,
+      hoje
+    );
+
     const { data: doDegrau, error: erroDegrau } = await db.rpc("valor_da_promocao", {
       p_codigo: l.promocao_codigo,
       p_inicio: l.promocao_inicio,
-      p_hoje: hoje,
+      p_hoje: referencia,
     });
     if (erroDegrau) {
       semResposta++;
@@ -163,6 +272,20 @@ export async function GET(request: NextRequest) {
     // operadora. Comparação em centavos porque é assim que se cobra.
     if (centavos(antes) === centavos(alvo)) {
       emDia++;
+      // Fim da escada com o valor já coincidindo — acontece se o dono
+      // baixar o catálogo até o degrau. Sem limpar aqui, a linha ficaria
+      // em promoção para sempre, e no dia em que o catálogo voltasse ao
+      // normal esta rotina subiria o preço dela sozinha. A limpeza não
+      // pode morar só no ramo que troca o preço.
+      if (acabou) {
+        const { error: erroLimpeza } = await limparPromocao(String(l.id));
+        if (erroLimpeza) {
+          falhas.push(`${l.id}: encerrar a promoção falhou`);
+          console.error("[vela:promocao] encerrar promoção:", l.id, erroLimpeza.message);
+        } else {
+          encerradas++;
+        }
+      }
       continue;
     }
 
@@ -184,7 +307,14 @@ export async function GET(request: NextRequest) {
     // linha sai do alcance desta rotina para sempre. Sem isso, um reajuste
     // futuro no catálogo subiria o preço destas contas sozinho, sem
     // ninguém decidir — e reajuste é decisão de produto, não de cron.
-    const { error: erroUpdate } = await db
+    //
+    // O `.eq("valor_mensal", ...)` é o que faz esta gravação valer só se a
+    // linha ainda estiver como esta execução a leu. Duas execuções no
+    // mesmo minuto (um retry da Vercel, o dono disparando à mão) não fazem
+    // dano em dinheiro — o PUT na operadora é idempotente —, mas as duas
+    // registrariam o mesmo evento e o painel do dono somaria a expansão
+    // duas vezes no NRR do mês.
+    const filtroDoValor = db
       .from("assinaturas")
       .update({
         valor_mensal: alvo,
@@ -192,11 +322,22 @@ export async function GET(request: NextRequest) {
         updated_at: new Date().toISOString(),
       })
       .eq("id", l.id);
+    const { data: gravadas, error: erroUpdate } = await (
+      l.valor_mensal === null || l.valor_mensal === undefined
+        ? filtroDoValor.is("valor_mensal", null)
+        : filtroDoValor.eq("valor_mensal", l.valor_mensal as number)
+    ).select("id");
     if (erroUpdate) {
       // a operadora já cobra o novo valor: silêncio aqui deixaria o banco
       // mentindo sobre o preço até alguém reparar
       falhas.push(`${l.id}: gravar ${reais(alvo)} falhou`);
       console.error("[vela:promocao] gravar novo degrau:", l.id, erroUpdate.message);
+      continue;
+    }
+    if (!gravadas || gravadas.length === 0) {
+      // outra execução andou este degrau primeiro: o preço lá fora já é o
+      // certo e o evento dela já está registrado
+      emDia++;
       continue;
     }
 
@@ -216,6 +357,32 @@ export async function GET(request: NextRequest) {
         ? `fim da promoção ${l.promocao_codigo}: passa a pagar o ${plano.nome}, ${reais(alvo)}`
         : `promoção ${l.promocao_codigo}: novo degrau, ${reais(alvo)}`,
     });
+
+    // O AVISO A ELA. `assinatura_eventos` é log do painel do dono, não
+    // recado para a cliente — e quem assinou por R$ 27,90 não pode
+    // descobrir o R$ 57,00 pela fatura do cartão. Os Termos prometem
+    // aviso com antecedência, e a antecedência é justamente esta: o preço
+    // acaba de mudar na operadora e a cobrança nova é a de `referencia`,
+    // um ciclo à frente. Uma notificação por degrau — este trecho só roda
+    // quando a gravação acima de fato pegou.
+    if (centavos(alvo) > centavos(antes)) {
+      const { data: dona } = await db
+        .from("membros_equipe")
+        .select("user_id")
+        .eq("empresa_id", l.empresa_id)
+        .eq("is_owner", true)
+        .eq("status", "ativo")
+        .maybeSingle();
+      if (dona?.user_id) {
+        await db.from("notifications").insert({
+          cerimonialista_id: dona.user_id,
+          type: "pagamento",
+          title: `Sua mensalidade passa a ser ${reais(alvo)}`,
+          message: `Na cobrança de ${dataPorExtenso(referencia)}, o valor combinado quando você assinou passa a valer: ${reais(alvo)} por mês. Você pode cancelar quando quiser, sem multa.`,
+          link: "/assinatura",
+        });
+      }
+    }
   }
 
   return NextResponse.json({
@@ -226,6 +393,7 @@ export async function GET(request: NextRequest) {
     encerradas,
     semCatalogo,
     semResposta,
+    foraDoPlano,
     falhas,
   });
 }
