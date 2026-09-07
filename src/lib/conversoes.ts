@@ -57,8 +57,8 @@ export type OrigemDoClique = {
 };
 
 export type Conversao = {
-  /** 'conta_criada' | 'assinatura' — o nome de cada lado é traduzido abaixo */
-  tipo: "conta_criada" | "assinatura";
+  /** o nome de cada lado é traduzido abaixo */
+  tipo: "conta_criada" | "checkout_iniciado" | "assinatura";
   /** e-mail de quem converteu; vira SHA-256 antes de sair */
   email?: string | null;
   valor?: number;
@@ -67,8 +67,27 @@ export type Conversao = {
   origem?: OrigemDoClique;
 };
 
-const NOME_META = { conta_criada: "CompleteRegistration", assinatura: "Subscribe" } as const;
-const NOME_GA = { conta_criada: "sign_up", assinatura: "purchase" } as const;
+// A venda sai como `Purchase`, não como `Subscribe` (07/09/2026).
+//
+// Os dois são eventos padrão da Meta e dá para otimizar por qualquer um;
+// `Subscribe` é até mais exato para assinatura. Mas quem vai gastar
+// dinheiro é a campanha, e a otimização da Meta — lance por valor,
+// Advantage+, a coluna de receita do relatório — trabalha melhor com
+// `Purchase`, que é o evento com mais história nos modelos dela. Com um
+// pixel novo e quase sem conversão, isso não é detalhe.
+//
+// Um só evento de dinheiro, de propósito: mandar `Subscribe` junto
+// dobraria a receita no relatório e o número deixaria de servir.
+const NOME_META = {
+  conta_criada: "CompleteRegistration",
+  checkout_iniciado: "InitiateCheckout",
+  assinatura: "Purchase",
+} as const;
+const NOME_GA = {
+  conta_criada: "sign_up",
+  checkout_iniciado: "begin_checkout",
+  assinatura: "purchase",
+} as const;
 
 /* ------------------------------------------------------------------ */
 /* Meta — API de Conversões                                            */

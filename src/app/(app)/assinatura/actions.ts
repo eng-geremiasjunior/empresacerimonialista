@@ -320,6 +320,44 @@ export async function assinar(
     }
   }
 
+  // O MEIO DO FUNIL: ela mandou o cartão. Ainda não é venda — a operadora
+  // não respondeu —, e é justamente por isso que este evento existe
+  // separado: com um pixel novo e quase nenhuma compra, é o sinal do meio
+  // que dá à Meta o que aprender enquanto as vendas ainda são poucas.
+  //
+  // Sai pelo SERVIDOR, como a venda: a tela de assinatura mora dentro do
+  // sistema, e pixel não entra aqui.
+  //
+  // O valor é o real — o que vai ser cobrado agora, com o degrau da
+  // promoção já aplicado, não o preço de tabela.
+  //
+  // O id junta empresa, plano e DIA: se ela errar o cartão e tentar de
+  // novo, a Meta reconhece o mesmo checkout em vez de contar dois.
+  try {
+    const origemAgora = lerOrigemDoCookie();
+    const { data: origemGuardada } = await db
+      .from("origem_do_clique")
+      .select("fbp, fbc, ga_client_id")
+      .eq("empresa_id", ctx.empresaId)
+      .maybeSingle();
+    await registrarConversao({
+      tipo: "checkout_iniciado",
+      email: ctx.email,
+      valor: valorCobrado,
+      idDoEvento: `checkout:${ctx.empresaId}:${plano.codigo}:${hojeBR()}`,
+      origem: {
+        fbp: origemGuardada?.fbp ?? origemAgora?.fbp ?? null,
+        fbc: origemGuardada?.fbc ?? origemAgora?.fbc ?? null,
+        gaClientId: origemGuardada?.ga_client_id ?? origemAgora?.ga_client_id ?? null,
+        ip: h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+        userAgent: h.get("user-agent")?.slice(0, 300) ?? null,
+      },
+    });
+  } catch (e) {
+    // medir nunca pode atrapalhar cobrar
+    console.error("[vela:conversao] checkout:", String(e).slice(0, 200));
+  }
+
   const ass = await criarAssinatura({
     clienteId,
     cardToken,
