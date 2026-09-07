@@ -2,6 +2,9 @@
 
 // O denominador do CAC: quanto foi gasto em marketing no mês. O sistema
 // não tem como saber — o dono informa. Botão explícito, regra da casa.
+//
+// Estilo do painel chumbo (handoff 09/2026): é a única ação primária da
+// tela, então é o único fundo escuro fora da barra lateral.
 
 import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
@@ -15,7 +18,7 @@ function Botao() {
     <button
       type="submit"
       disabled={pending}
-      className="rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-black disabled:opacity-50"
+      className="rounded-md bg-[#33343a] px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-[#4d4e55] disabled:opacity-50"
     >
       {pending ? "…" : "Salvar"}
     </button>
@@ -40,7 +43,7 @@ export function FormGastoMarketing({
       <button
         type="button"
         onClick={() => setAberto(true)}
-        className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50"
+        className="rounded-md bg-[#33343a] px-3.5 py-[7px] text-[12px] font-semibold text-white hover:bg-[#4d4e55]"
       >
         {gastoAtual === null
           ? "Informar gasto de marketing"
@@ -52,25 +55,26 @@ export function FormGastoMarketing({
   return (
     <form action={agir} className="flex items-center gap-2">
       <input type="hidden" name="mes" value={mes} />
-      <span className="text-xs text-stone-500">Gasto do mês R$</span>
+      <span className="text-[12px] text-[#5c5d63]">Gasto do mês R$</span>
       <input
         name="valor"
         value={v}
         onChange={(e) => setV(mascararDinheiro(e.target.value))}
         inputMode="numeric"
         autoFocus
-        className="h-8 w-28 rounded-lg border border-stone-300 px-2 font-mono text-sm"
+        className="h-8 w-28 rounded-md border border-[#d3d3cf] bg-white px-2 text-[13px] text-[#1c1d21]"
+        style={{ fontFamily: "var(--font-mono), ui-monospace, monospace" }}
       />
       <Botao />
       <button
         type="button"
         onClick={() => setAberto(false)}
-        className="rounded-lg border border-stone-200 px-2 py-1.5 text-xs text-stone-500 hover:bg-stone-50"
+        className="rounded-md border border-[#d3d3cf] px-2 py-[7px] text-[12px] text-[#5c5d63] hover:bg-white"
       >
         ✕
       </button>
       {estado.error && (
-        <span className="text-xs text-red-600">{estado.error}</span>
+        <span className="text-[12px] text-red-600">{estado.error}</span>
       )}
     </form>
   );
