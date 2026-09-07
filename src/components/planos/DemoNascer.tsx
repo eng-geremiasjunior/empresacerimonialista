@@ -185,20 +185,62 @@ export function DemoNascer({ precoDeEntrada }: { precoDeEntrada: string | null }
   const decisoes = ativos.flatMap((o) => o.decisoes.map((d) => ({ ...d, objetivo: o.nome })));
   const criticas = [...decisoes].sort((a, b) => b.dias - a.dias).slice(0, 3);
 
+  // A seção é uma FAIXA, como o fechamento e o CTA final da página: fundo
+  // recuado, bordas, título centralizado e a pílula ameixa do topo. É o
+  // tratamento que a própria página dá ao que não pode passar batido — o
+  // dono viu a versão discreta e pediu destaque, sem sair do tema.
   return (
-    <section style={{ maxWidth: "1080px", margin: "clamp(56px,7vw,88px) auto 0", padding: "0 clamp(20px,4vw,28px)" }}>
-      <span style={{ display: "block", margin: "0 0 10px", fontFamily: F_MONO, fontSize: "11px", fontWeight: "500", letterSpacing: ".06em", textTransform: "uppercase", color: "#928A81" }}>
-        Experimente
-      </span>
-      <h2 style={{ margin: "0 0 12px", maxWidth: "24ch", fontFamily: F_TITLE, fontWeight: "600", fontSize: "clamp(23px,3.2vw,34px)", lineHeight: "1.15", letterSpacing: "-0.028em", textWrap: "pretty" }}>
-        Veja o seu evento nascer.
-      </h2>
-      <p style={{ margin: "0", maxWidth: "60ch", fontSize: "16.5px", lineHeight: "1.6", color: "#6B6259" }}>
-        Escreva o nome, escolha o tipo e a data. A tela que aparece é a tela do
-        sistema — com o que ele monta sozinho num evento novo: as decisões com prazo,
-        o roteiro do dia, o financeiro esperando o primeiro contrato. É uma
-        demonstração: nada fica salvo.
-      </p>
+    <section
+      style={{
+        marginTop: "clamp(56px,7vw,88px)",
+        padding: "clamp(52px,6vw,80px) 0 clamp(56px,7vw,84px)",
+        background: "#F2EEE9",
+        borderTop: "1px solid #E6E0D8",
+        borderBottom: "1px solid #E6E0D8",
+      }}
+    >
+      <div style={{ maxWidth: "1080px", margin: "0 auto", padding: "0 clamp(20px,4vw,28px)" }}>
+        <div style={{ textAlign: "center" }}>
+          <p
+            style={{
+              display: "inline-block",
+              margin: "0 0 20px",
+              padding: "6px 14px",
+              borderRadius: "999px",
+              background: "#6E3F5F",
+              color: "#FAF8F5",
+              fontFamily: F_MONO,
+              fontSize: "12px",
+              fontWeight: "600",
+              letterSpacing: ".08em",
+              textTransform: "uppercase",
+            }}
+          >
+            Experimente agora
+          </p>
+          <h2
+            style={{
+              margin: "0 auto 14px",
+              maxWidth: "22ch",
+              fontFamily: F_TITLE,
+              fontWeight: "700",
+              fontSize: "clamp(28px,4.4vw,46px)",
+              lineHeight: "1.08",
+              letterSpacing: "-0.035em",
+              textWrap: "balance",
+            }}
+          >
+            Veja o seu evento nascer.
+          </h2>
+          <p style={{ margin: "0 auto", maxWidth: "56ch", fontSize: "clamp(16px,1.8vw,18px)", lineHeight: "1.55", color: "#6B6259", textWrap: "pretty" }}>
+            Escreva o nome, escolha o tipo e a data — e assista ao que o sistema
+            monta sozinho num evento novo: as decisões com prazo, o roteiro do dia,
+            o financeiro esperando o primeiro contrato.
+          </p>
+          <p style={{ margin: "10px auto 0", maxWidth: "56ch", fontSize: "13.5px", lineHeight: "1.5", color: "#928A81" }}>
+            A tela é a do sistema. É uma demonstração: nada fica salvo.
+          </p>
+        </div>
 
       {/* ============ a janela: o app de verdade ============ */}
       <div style={{ maxWidth: "980px", margin: "clamp(28px,3.5vw,40px) auto 0", border: "1px solid #E6E0D8", borderRadius: "14px", background: "#fafaf9", overflow: "hidden", boxShadow: "0 1px 2px rgba(34,30,27,.04),0 14px 34px rgba(34,30,27,.07)" }}>
@@ -525,6 +567,7 @@ export function DemoNascer({ precoDeEntrada }: { precoDeEntrada: string | null }
             )}
           </div>
         </div>
+      </div>
       </div>
     </section>
   );

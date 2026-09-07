@@ -19,6 +19,8 @@ import { Medicao } from "@/components/marketing/Medicao";
 import { CSS_PLANOS } from "@/components/planos/estilo";
 import { Demonstracao } from "@/components/planos/Demonstracao";
 import { DemoNascer } from "@/components/planos/DemoNascer";
+import { DemoCroqui } from "@/components/planos/DemoCroqui";
+import { DemoMapaMental } from "@/components/planos/DemoMapaMental";
 import { Palco } from "@/components/planos/Palco";
 import { Solucao } from "@/components/planos/Solucao";
 import { Cadeia } from "@/components/planos/Cadeia";
@@ -587,6 +589,11 @@ export default async function PlanosPage() {
             data — e o evento nasce na tela REAL do sistema, com o método
             real. Roda toda no navegador; nada é salvo. */}
         <DemoNascer precoDeEntrada={precoDeEntrada !== null ? reais(precoDeEntrada) : null} />
+        {/* Duas telas do sistema, renderizadas pelos COMPONENTES REAIS com
+            dados fictícios: o croqui do salão (aba Mesas) e o mapa mental do
+            Planejamento. Nada de banco nem de IA. */}
+        <DemoCroqui />
+        <DemoMapaMental />
 
         {/* ============ 11 · OFERTA E PLANOS ============ */}
         <section
