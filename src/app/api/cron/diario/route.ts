@@ -37,6 +37,9 @@ const ROTINAS = [
   // esta rotina é quem insiste até a operadora confirmar, para não
   // existir "cancelada aqui, cobrando lá"
   "cancelamentos-pendentes",
+  // a promoção de lançamento guarda só o dia em que a escada começou; é
+  // esta rotina que troca o preço na operadora quando o degrau vira
+  "promocao-degrau",
 ] as const;
 
 export async function GET(request: NextRequest) {

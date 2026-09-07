@@ -83,6 +83,29 @@ export type PlanoDaVitrine = {
   loginsTexto: string;
 };
 
+/**
+ * A promoção de lançamento, já em texto — mesma fronteira dos planos: a
+ * escada mora no banco (153), a conta do degrau é feita no servidor e o
+ * que atravessa é frase pronta.
+ *
+ * `fraseTexto` é a obrigação legal desta tela: o preço futuro tem de
+ * estar dito no CHECKOUT, com todas as letras, e não só no anúncio.
+ */
+export type PromocaoDaVitrine = {
+  /** o plano em que a promoção vale; "" quando só há degrau em curso */
+  planoCodigo: string;
+  /** o primeiro degrau — o que ela paga se assinar hoje */
+  precoTexto: string;
+  /** o preço do plano no catálogo, que passa a valer no fim da escada */
+  precoCheioTexto: string;
+  /** a escada inteira numa frase */
+  fraseTexto: string;
+  /** true quando ESTA conta ainda pode entrar */
+  disponivel: boolean;
+  /** quem já está na escada: o degrau de hoje e o dia em que muda */
+  emCurso: string | null;
+};
+
 const MESES = [
   "janeiro", "fevereiro", "março", "abril", "maio", "junho",
   "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
@@ -238,6 +261,7 @@ const cardChumbo: React.CSSProperties = {
 export function AssinaturaTela({
   estado,
   planos,
+  promocao = null,
   emailDaConta,
   nomeDaConta,
   planoDaUrl: codigoDaUrl,
@@ -245,6 +269,8 @@ export function AssinaturaTela({
   estado: EstadoAssinatura;
   /** os planos à venda, na ordem da vitrine; vazio = assinatura ainda fechada */
   planos: PlanoDaVitrine[];
+  /** a promoção de lançamento, quando há uma para esta conta */
+  promocao?: PromocaoDaVitrine | null;
   /** só para começar o formulário preenchido — ela pode trocar */
   emailDaConta?: string;
   nomeDaConta?: string;
@@ -322,6 +348,15 @@ export function AssinaturaTela({
   // 3 pagamento. Só existe no modo "assinar" — trocar o cartão continua
   // sendo uma tela só, porque é um formulário só.
   const [etapa, setEtapa] = useState<1 | 2 | 3>(1);
+
+  // A promoção só aparece onde ela vale: no cartão do plano dela, e no
+  // checkout desse mesmo plano. Anunciar em cima de outro cartão seria
+  // prometer um preço que a action não vai cobrar.
+  const promoDisponivel = promocao?.disponivel && podeAssinar ? promocao : null;
+  const promoEscolhida =
+    promoDisponivel && planoEscolhido?.codigo === promoDisponivel.planoCodigo
+      ? promoDisponivel
+      : null;
 
   // Quantos dias faltam até a conta parar de aceitar alterações.
   //
@@ -573,6 +608,8 @@ export function AssinaturaTela({
         {planos.map((p) => {
           const atual = planoAtual?.codigo === p.codigo;
           const emTroca = trocando?.codigo === p.codigo;
+          const promoDoCartao =
+            promoDisponivel && promoDisponivel.planoCodigo === p.codigo ? promoDisponivel : null;
           const acao = podeAssinar ? (
             <button
               className="subx-btn"
@@ -669,9 +706,36 @@ export function AssinaturaTela({
                   color: C.forte,
                 }}
               >
-                {p.precoTexto}
+                {promoDoCartao ? promoDoCartao.precoTexto : p.precoTexto}
                 <span style={{ font: `400 13px ${F_MONO}`, color: C.rotulo }}> /mês</span>
+                {/* o preço cheio fica à vista, riscado: o desconto só é
+                    desconto se ela vir de quanto para quanto */}
+                {promoDoCartao && (
+                  <span
+                    style={{
+                      marginLeft: 8,
+                      font: `400 13px ${F_MONO}`,
+                      color: C.rotulo,
+                      textDecoration: "line-through",
+                    }}
+                  >
+                    {promoDoCartao.precoCheioTexto}
+                  </span>
+                )}
               </div>
+              {/* a escada inteira, numa linha — o preço futuro dito no
+                  lugar em que ela decide, não só no anúncio */}
+              {promoDoCartao && (
+                <p
+                  style={{
+                    margin: "6px 0 0",
+                    font: `400 12px/1.5 ${F_UI}`,
+                    color: C.apoio,
+                  }}
+                >
+                  {promoDoCartao.fraseTexto}
+                </p>
+              )}
               <div
                 style={{
                   marginTop: 14,
@@ -915,6 +979,20 @@ export function AssinaturaTela({
                       {dataLonga(estado.proximo_vencimento) || "próximo ciclo"}
                     </span>
                   </div>
+                  {/* quem está na escada lê aqui o degrau de hoje e o dia
+                      em que ele muda — o aumento é combinado, e quem
+                      combinou tem direito de lembrar sem abrir a fatura */}
+                  {promocao?.emCurso && (
+                    <div
+                      style={{
+                        marginTop: 4,
+                        font: `400 12.5px/1.55 ${F_UI}`,
+                        color: C.sobChumbo,
+                      }}
+                    >
+                      {promocao.emCurso}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1128,8 +1206,20 @@ export function AssinaturaTela({
               {modoForm === "assinar" && planoEscolhido ? (
                 <>
                   <div style={{ marginTop: 10, font: `500 24px ${F_MONO}`, color: "#fff" }}>
-                    {planoEscolhido.precoTexto}
+                    {promoEscolhida ? promoEscolhida.precoTexto : planoEscolhido.precoTexto}
                     <span style={{ font: `400 13px ${F_UI}`, color: C.rotuloChumbo }}> /mês</span>
+                    {promoEscolhida && (
+                      <span
+                        style={{
+                          marginLeft: 8,
+                          font: `400 13px ${F_MONO}`,
+                          color: C.rotuloChumbo,
+                          textDecoration: "line-through",
+                        }}
+                      >
+                        {promoEscolhida.precoCheioTexto}
+                      </span>
+                    )}
                   </div>
                   <div style={{ marginTop: 4, font: `400 14px ${F_UI}`, color: C.sobChumbo }}>
                     {planoEscolhido.nome}
@@ -1308,6 +1398,27 @@ export function AssinaturaTela({
                     </div>
                   </div>
                 </>
+              )}
+
+              {/* O QUE VAI SER COBRADO, e quando muda — antes do botão.
+                  Esta frase não é marketing: é a única chance de ela ler o
+                  preço do quarto mês antes de passar o cartão. Sem ela, a
+                  primeira notícia do aumento chega pela fatura, e a fatura
+                  vira contestação. */}
+              {modoForm === "assinar" && etapa === 3 && promoEscolhida && (
+                <div
+                  style={{
+                    marginTop: 20,
+                    background: C.recuo,
+                    border: `1px solid ${C.bordaFina}`,
+                    borderRadius: 10,
+                    padding: "12px 14px",
+                    font: `500 13px/1.6 ${F_UI}`,
+                    color: C.forte,
+                  }}
+                >
+                  Você vai pagar {promoEscolhida.fraseTexto}.
+                </div>
               )}
 
               {/* o aceite: a caixinha segura o botão; a action registra o

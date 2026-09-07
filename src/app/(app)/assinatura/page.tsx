@@ -1,10 +1,23 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCatalogoDePlanos, reais, tetoEmTexto } from "@/lib/planos";
+import {
+  comTetoDoPlano,
+  fraseDaEscada,
+  fraseDoDegrauAtual,
+  getCatalogoDePlanos,
+  getEscadaDaPromocao,
+  podeEntrarNaPromocao,
+  reais,
+  tetoEmTexto,
+  PLANO_DA_PROMOCAO,
+  PROMOCAO_LANCAMENTO,
+} from "@/lib/planos";
+import { hojeBR } from "@/lib/tempo";
 import {
   AssinaturaTela,
   type EstadoAssinatura,
   type PlanoDaVitrine,
+  type PromocaoDaVitrine,
 } from "@/components/assinatura/AssinaturaTela";
 
 export const dynamic = "force-dynamic";
@@ -54,10 +67,84 @@ export default async function AssinaturaPage({
     loginsTexto: tetoEmTexto(p.logins),
   }));
 
+  // A PROMOÇÃO DE LANÇAMENTO (153), já em texto.
+  //
+  // Duas perguntas diferentes, respondidas aqui porque as duas dependem
+  // do banco: esta conta ainda PODE entrar na escada (e então o cartão do
+  // plano anuncia o primeiro degrau e o checkout diz a escada inteira), e
+  // esta conta JÁ ESTÁ na escada (e então ela lê o degrau de hoje e o dia
+  // em que muda).
+  //
+  // A régua da elegibilidade é a mesma da action — `podeEntrarNaPromocao`
+  // sobre as mesmas colunas. Preço anunciado e preço cobrado não podem
+  // divergir: é disso que nasce contestação de cartão.
+  const { data: assinatura } = await supabase
+    .from("assinaturas")
+    .select("cancelada_em, promocao_codigo, promocao_inicio")
+    .maybeSingle();
+
+  const escada = await getEscadaDaPromocao(PROMOCAO_LANCAMENTO);
+  const planoDaPromocao = catalogo.find((p) => p.codigo === PLANO_DA_PROMOCAO) ?? null;
+  const primeiroDegrau = escada?.degraus[0] ?? null;
+
+  // quem já está na escada pode estar em OUTRA promoção e em outro plano:
+  // a linha dela se lê pelo que está gravado, não pelo que está à venda
+  const escadaDela =
+    assinatura?.promocao_codigo == null
+      ? null
+      : assinatura.promocao_codigo === PROMOCAO_LANCAMENTO
+        ? escada
+        : await getEscadaDaPromocao(assinatura.promocao_codigo);
+  const planoDela = catalogo.find((p) => p.codigo === estado.plano) ?? planoDaPromocao;
+  const emCurso =
+    escadaDela && assinatura?.promocao_inicio && planoDela
+      ? fraseDoDegrauAtual(
+          escadaDela,
+          assinatura.promocao_inicio,
+          planoDela.valorMensal,
+          hojeBR()
+        )
+      : null;
+
+  const promocao: PromocaoDaVitrine | null =
+    planoDaPromocao && escada && primeiroDegrau
+      ? {
+          planoCodigo: planoDaPromocao.codigo,
+          precoTexto: reais(
+            comTetoDoPlano(primeiroDegrau.valorMensal, planoDaPromocao.valorMensal)
+          ),
+          precoCheioTexto: reais(planoDaPromocao.valorMensal),
+          fraseTexto: fraseDaEscada(escada, planoDaPromocao.valorMensal),
+          // a mesma régua da action: degrau que não desconta (ou que zera
+          // a mensalidade) não é promoção, e a tela não anuncia o que a
+          // action não vai cobrar
+          disponivel:
+            primeiroDegrau.valorMensal > 0 &&
+            comTetoDoPlano(primeiroDegrau.valorMensal, planoDaPromocao.valorMensal) <
+              planoDaPromocao.valorMensal &&
+            podeEntrarNaPromocao({
+              status: estado.status,
+              cancelada_em: assinatura?.cancelada_em ?? null,
+              ultimo_pagamento_em: estado.ultimo_pagamento_em,
+            }),
+          emCurso,
+        }
+      : emCurso
+        ? {
+            planoCodigo: "",
+            precoTexto: "",
+            precoCheioTexto: "",
+            fraseTexto: "",
+            disponivel: false,
+            emCurso,
+          }
+        : null;
+
   return (
     <AssinaturaTela
       estado={estado}
       planos={planos}
+      promocao={promocao}
       emailDaConta={user?.email ?? ""}
       nomeDaConta={membro?.nome ?? ""}
       planoDaUrl={searchParams?.plano ?? null}

@@ -21,7 +21,16 @@ import {
   criarCliente,
   trocarCartao,
 } from "@/lib/pagarme";
-import { centavos, ehCodigoDoPlano, getPlano } from "@/lib/planos";
+import {
+  centavos,
+  comTetoDoPlano,
+  ehCodigoDoPlano,
+  getEscadaDaPromocao,
+  getPlano,
+  podeEntrarNaPromocao,
+  PLANO_DA_PROMOCAO,
+  PROMOCAO_LANCAMENTO,
+} from "@/lib/planos";
 import { registrarConversao } from "@/lib/conversoes";
 import { COOKIE_ORIGEM } from "@/lib/marketing";
 import { hojeBR } from "@/lib/tempo";
@@ -177,8 +186,7 @@ export async function assinar(
   if (!plano) {
     return { error: "Este plano não está disponível agora. Fale com o suporte." };
   }
-  const valor = centavos(plano.valorMensal);
-  if (valor <= 0) {
+  if (centavos(plano.valorMensal) <= 0) {
     return { error: "O plano ainda não está configurado. Fale com o suporte." };
   }
 
@@ -189,8 +197,9 @@ export async function assinar(
     .select(
       // cancelada_em e proximo_vencimento entram na leitura para poderem
       // ser PRESERVADOS quando a cobrança não passa — ver os comentários
-      // no upsert abaixo
-      "id, gateway_customer_id, gateway_subscription_id, status, plano, valor_mensal, falhas_seguidas, cancelada_em, proximo_vencimento"
+      // no upsert abaixo. ultimo_pagamento_em e as duas colunas de
+      // promoção entram pelo mesmo motivo, mais a régua da promoção.
+      "id, gateway_customer_id, gateway_subscription_id, status, plano, valor_mensal, falhas_seguidas, cancelada_em, proximo_vencimento, ultimo_pagamento_em, promocao_codigo, promocao_inicio"
     )
     .eq("empresa_id", ctx.empresaId)
     .maybeSingle();
@@ -198,6 +207,32 @@ export async function assinar(
   if (atual?.gateway_subscription_id && atual.status === "ativa") {
     return { error: "Esta conta já tem uma assinatura ativa." };
   }
+
+  // A PROMOÇÃO DE LANÇAMENTO (153), decidida aqui e só aqui.
+  //
+  // A assinatura nasce cobrando o PRIMEIRO DEGRAU; os outros a rotina
+  // diária anda, trocando o preço do item na operadora. O que fica
+  // gravado é o código e o dia em que a escada começou — nunca o degrau,
+  // que é conta e se corrige sozinho se a rotina falhar por uma semana.
+  //
+  // Duas travas: só o plano da promoção entra, e só quem nunca teve
+  // assinatura de verdade. Lançamento é para quem chega.
+  const escada =
+    plano.codigo === PLANO_DA_PROMOCAO && podeEntrarNaPromocao(atual)
+      ? await getEscadaDaPromocao(PROMOCAO_LANCAMENTO)
+      : null;
+  const primeiroDegrau = escada?.degraus[0] ?? null;
+  const valorDoDegrau = primeiroDegrau
+    ? comTetoDoPlano(primeiroDegrau.valorMensal, plano.valorMensal)
+    : null;
+  // Escada que não desconta nada não é promoção: não vale gravar código
+  // nem fazer a rotina visitar esta linha todo dia até o fim dos tempos.
+  // E degrau zerado também não entra — assinatura de graça o gateway
+  // recusa, e o que ela veria seria "cartão não aprovado".
+  const naPromocao =
+    valorDoDegrau !== null && valorDoDegrau > 0 && valorDoDegrau < plano.valorMensal;
+  const valorCobrado = naPromocao ? (valorDoDegrau as number) : plano.valorMensal;
+  const valor = centavos(valorCobrado);
 
   // O aceite é gravado AQUI — depois de saber que a assinatura é válida
   // e ANTES de falar com o gateway. A ordem importa nos dois sentidos:
@@ -289,8 +324,22 @@ export async function assinar(
       // o plano gravado é o código escolhido — é dele que teto_do_plano
       // tira quantos eventos e logins a conta pode ter
       plano: virouAtiva ? plano.codigo : (atual?.plano ?? plano.codigo),
-      valor_mensal: virouAtiva ? plano.valorMensal : (atual?.valor_mensal ?? plano.valorMensal),
+      valor_mensal: virouAtiva ? valorCobrado : (atual?.valor_mensal ?? valorCobrado),
       status: statusNovo,
+      // A promoção só é gravada quando a cobrança PASSOU: escada que
+      // ninguém pagou não é escada. Cartão recusado preserva o que havia,
+      // e ela pode tentar de novo sem perder o degrau de entrada — é para
+      // isso que podeEntrarNaPromocao não olha gateway_subscription_id.
+      promocao_codigo: virouAtiva
+        ? naPromocao
+          ? PROMOCAO_LANCAMENTO
+          : null
+        : (atual?.promocao_codigo ?? null),
+      promocao_inicio: virouAtiva
+        ? naPromocao
+          ? hojeBR()
+          : null
+        : (atual?.promocao_inicio ?? null),
       // Os dados do gateway são gravados SEMPRE, inclusive na falha: é o
       // que permite cancelar e trocar o cartão depois. Sem eles a
       // assinatura existiria lá fora sem botão de saída aqui dentro.
@@ -377,7 +426,9 @@ export async function assinar(
     await registrarConversao({
       tipo: "assinatura",
       email: ctx.email,
-      valor: plano.valorMensal,
+      // o valor da conversão é o que foi COBRADO, não o do catálogo: é
+      // dinheiro que entrou, e é por ele que a Meta e o Google otimizam
+      valor: valorCobrado,
       // o id do gateway é único e estável: se este trecho rodar duas
       // vezes, a plataforma reconhece o mesmo fato e não conta em dobro
       idDoEvento: `assinatura:${g.id}`,
@@ -405,8 +456,10 @@ export async function assinar(
       assinatura_id: linha.id,
       empresa_id: ctx.empresaId,
       tipo: "inicio",
-      valor_depois: plano.valorMensal,
-      nota: `assinou o ${plano.nome} pelo app`,
+      valor_depois: valorCobrado,
+      nota: naPromocao
+        ? `assinou o ${plano.nome} pelo app, no 1º degrau da promoção ${PROMOCAO_LANCAMENTO}`
+        : `assinou o ${plano.nome} pelo app`,
     });
   }
 
@@ -426,6 +479,9 @@ export async function assinar(
  *
  * Não pede aceite novo: os termos aceitos na assinatura já cobrem a
  * troca de plano — é a mesma relação, só muda o valor.
+ *
+ * E a troca ENCERRA a promoção de lançamento: o preço cobrado passa a ser
+ * o do plano de destino, cheio, na próxima cobrança.
  */
 export async function trocarPlano(planoCodigo: string): Promise<ResultadoAssinatura> {
   const ctx = await donaLogada();
@@ -494,6 +550,13 @@ export async function trocarPlano(planoCodigo: string): Promise<ResultadoAssinat
     .update({
       plano: plano.codigo,
       valor_mensal: plano.valorMensal,
+      // Trocar de plano ENCERRA a promoção. Ela é de lançamento e vale
+      // para o plano em que ela entrou; quem escolhe outro plano escolhe
+      // o preço dele, cheio. Sem limpar estas duas colunas a rotina
+      // diária continuaria andando uma escada de outro plano e puxaria o
+      // valor de volta para baixo na primeira execução.
+      promocao_codigo: null,
+      promocao_inicio: null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", atual.id);
