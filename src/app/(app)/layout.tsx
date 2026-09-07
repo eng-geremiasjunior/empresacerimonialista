@@ -1,6 +1,8 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { garantirEmpresaDoUsuario, getMeuCargo } from "@/lib/supabase/equipe";
+import { precisaAssinar } from "@/lib/supabase/porta-da-assinatura";
 import { getEspera } from "@/lib/supabase/espera-solicitacoes";
 import { fraseDoCopiloto } from "@/lib/espera-core";
 import { getAlertasCopiloto } from "@/lib/supabase/queries";
@@ -64,6 +66,26 @@ export default async function AppLayout({
   if (cargo === null) {
     await garantirEmpresaDoUsuario();
     ({ cargo } = await getMeuCargo());
+  }
+
+  // A PORTA: quem nunca pagou vai para o checkout, não para o painel.
+  //
+  // Só a proprietária é levada — ela é a única que pode assinar, e
+  // /assinatura devolve os outros cargos ao painel, o que viraria um
+  // laço. Na prática não há outro cargo numa conta sem assinatura: sem
+  // pagar, o teto é de um login só.
+  //
+  // O caminho vem do cabeçalho que o middleware repassa. Sem ele a trava
+  // não age — falta de informação nunca vira porta trancada, e trancar
+  // /assinatura seria trancar a única saída.
+  const caminho = headers().get("x-caminho") ?? "";
+  if (
+    cargo === "proprietaria" &&
+    caminho &&
+    !caminho.startsWith("/assinatura") &&
+    (await precisaAssinar())
+  ) {
+    redirect("/assinatura");
   }
 
   // A linha dos prazos vem da MESMA fonte que o bloco do dashboard: antes

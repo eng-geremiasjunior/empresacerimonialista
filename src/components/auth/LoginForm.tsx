@@ -76,7 +76,9 @@ export function LoginForm({
           data: { empresa: negocio.trim(), name: nome.trim() },
           // Sem isto o link de confirmação sai com o Site URL do projeto,
           // que aponta para localhost.
-          emailRedirectTo: `${window.location.origin}/auth/confirm?next=/eventos/dashboard`,
+          // Não existe conta gratuita: quem acaba de se cadastrar cai no
+          // checkout, não no painel. O painel só abre depois de assinar.
+          emailRedirectTo: `${window.location.origin}/auth/confirm?next=/assinatura`,
         },
       });
       if (error) {
@@ -119,7 +121,9 @@ export function LoginForm({
       contaCriada();
 
       if (data.session) {
-        router.push("/eventos/dashboard");
+        // O checkout é a próxima tela, e não o painel: o anúncio promete
+        // R$ 27,90 e a promessa tem de encontrar o cartão aqui.
+        router.push("/assinatura");
         router.refresh();
       } else {
         setInfo("Conta criada! Verifique seu e-mail para confirmar o cadastro.");

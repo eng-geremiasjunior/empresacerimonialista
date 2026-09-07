@@ -72,8 +72,26 @@ function ehPublica(pathname: string): boolean {
   return ROTAS_PUBLICAS.some((casa) => casa(pathname));
 }
 
+/**
+ * O caminho pedido, repassado ao servidor num cabeçalho.
+ *
+ * Layout no App Router não sabe qual rota está renderizando, e a trava da
+ * assinatura precisa saber: sem isso ela mandaria para /assinatura a
+ * própria /assinatura, em laço infinito.
+ *
+ * Os cabeçalhos são copiados NA HORA da chamada, e não uma vez no topo,
+ * porque `request.cookies.set` (que o Supabase usa para renovar a sessão)
+ * mexe no cabeçalho de cookie do request: copiar antes congelaria a
+ * sessão velha e derrubaria o login na navegação seguinte.
+ */
+function comCaminho(request: NextRequest) {
+  const cabecalhos = new Headers(request.headers);
+  cabecalhos.set("x-caminho", request.nextUrl.pathname);
+  return NextResponse.next({ request: { headers: cabecalhos } });
+}
+
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+  let supabaseResponse = comCaminho(request);
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -98,7 +116,7 @@ export async function updateSession(request: NextRequest) {
         cookiesToSet.forEach(({ name, value }) =>
           request.cookies.set(name, value)
         );
-        supabaseResponse = NextResponse.next({ request });
+        supabaseResponse = comCaminho(request);
         cookiesToSet.forEach(({ name, value, options }) =>
           supabaseResponse.cookies.set(name, value, options)
         );
