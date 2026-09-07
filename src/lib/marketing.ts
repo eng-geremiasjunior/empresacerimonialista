@@ -176,3 +176,21 @@ export function assinaturaFeita(plano: string, valor: number): void {
     /* idem */
   }
 }
+
+/**
+ * Alguém mexeu na demonstração da página de vendas: escreveu o nome e
+ * mandou o evento nascer. É o número que separa quem só leu de quem
+ * quis ver — e o que diz se a demo puxa gente para o checkout ou não.
+ *
+ * Só dispara em /planos, onde os scripts existem; fora dela `fbq` e
+ * `gtag` são undefined e nada acontece. Leva só o tipo do evento —
+ * nunca o nome que ela digitou.
+ */
+export function demoIniciada(tipo: string): void {
+  try {
+    window.gtag?.("event", "demo_iniciada", { tipo });
+    window.fbq?.("trackCustom", "DemoIniciada", { tipo });
+  } catch {
+    // medir nunca pode quebrar a página
+  }
+}

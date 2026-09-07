@@ -18,6 +18,7 @@ import { Simbolo } from "@/components/marca/Marca";
 import { Medicao } from "@/components/marketing/Medicao";
 import { CSS_PLANOS } from "@/components/planos/estilo";
 import { Demonstracao } from "@/components/planos/Demonstracao";
+import { DemoNascer } from "@/components/planos/DemoNascer";
 import { Palco } from "@/components/planos/Palco";
 import { Solucao } from "@/components/planos/Solucao";
 import { Cadeia } from "@/components/planos/Cadeia";
@@ -582,6 +583,10 @@ export default async function PlanosPage() {
         <Execucao />
         <PortalDaCliente />
         <SistemaInteiro nosN={nosNPlanos} />
+        {/* A demonstração que ela mexe, logo antes da oferta: nome, tipo,
+            data — e o evento nasce na tela REAL do sistema, com o método
+            real. Roda toda no navegador; nada é salvo. */}
+        <DemoNascer precoDeEntrada={precoDeEntrada !== null ? reais(precoDeEntrada) : null} />
 
         {/* ============ 11 · OFERTA E PLANOS ============ */}
         <section
