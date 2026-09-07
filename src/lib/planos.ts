@@ -358,3 +358,64 @@ export function fraseDoDegrauAtual(
   const depois = comTetoDoPlano(proximo ? proximo.valorMensal : valorCheio, valorCheio);
   return `Você paga ${reais(comTetoDoPlano(atual.degrau.valorMensal, valorCheio))}/mês. A partir de ${dataPorExtenso(atual.mudaEm)}, ${reais(depois)}/mês.`;
 }
+
+/**
+ * A escada em FAIXAS DE MÊS, que é como a página de vendas a mostra:
+ * "Meses 1 a 3 · R$ 27,90", "Meses 4 a 6 · R$ 57,00", "Do 7º mês em
+ * diante · R$ 97,00".
+ *
+ * A última faixa é o preço do catálogo — ela não vem de `plano_promocao`,
+ * vem do plano, e é justamente a que a pessoa precisa ler ANTES de
+ * assinar. Por isso ela entra aqui e não é opcional: a tabela da oferta,
+ * a coluna do plano e a frase do rodapé saem todas desta mesma lista, e
+ * nenhuma delas pode contar metade da escada.
+ *
+ * `fraseDaEscada` continua existindo para o painel de quem já assinou —
+ * lá a frase é corrida ("nos 3 primeiros meses, depois…"); aqui ela é
+ * por faixa, porque a vitrine mostra as faixas numa tabela.
+ */
+export type FaixaDaEscada = {
+  /** "Meses 1 a 3", "Mês 1", "Do 7º mês em diante" */
+  rotulo: string;
+  valorMensal: number;
+  /** primeiro mês da faixa, 1-based */
+  de: number;
+  /** último mês; null na faixa final, que não acaba */
+  ate: number | null;
+};
+
+export function faixasDaEscada(
+  escada: EscadaDaPromocao,
+  valorCheio: number
+): FaixaDaEscada[] {
+  const faixas: FaixaDaEscada[] = [];
+  let ate = 0;
+  for (const d of escada.degraus) {
+    const de = ate + 1;
+    ate += d.meses;
+    faixas.push({
+      rotulo: de === ate ? `Mês ${de}` : `Meses ${de} a ${ate}`,
+      valorMensal: comTetoDoPlano(d.valorMensal, valorCheio),
+      de,
+      ate,
+    });
+  }
+  faixas.push({
+    rotulo: `Do ${ate + 1}º mês em diante`,
+    valorMensal: valorCheio,
+    de: ate + 1,
+    ate: null,
+  });
+  return faixas;
+}
+
+/** A mesma escada numa linha só: "R$ 27,90 nos meses 1 a 3, R$ 57,00…". */
+export function fraseDasFaixas(faixas: FaixaDaEscada[]): string {
+  return faixas
+    .map((f) => {
+      if (f.ate === null) return `${reais(f.valorMensal)} do ${f.de}º mês em diante`;
+      if (f.de === f.ate) return `${reais(f.valorMensal)} no mês ${f.de}`;
+      return `${reais(f.valorMensal)} nos meses ${f.de} a ${f.ate}`;
+    })
+    .join(", ");
+}

@@ -2,44 +2,62 @@ import type { Metadata } from "next";
 import { Fragment } from "react";
 import { createClient } from "@/lib/supabase/server";
 import {
-  comTetoDoPlano,
-  fraseDaEscada,
+  faixasDaEscada,
+  fraseDasFaixas,
   getCatalogoDePlanos,
   getEscadaDaPromocao,
   PLANO_DA_PROMOCAO,
   PROMOCAO_LANCAMENTO,
   reais,
   tetoEmTexto,
-  type EscadaDaPromocao,
+  type FaixaDaEscada,
   type PlanoDoCatalogo,
 } from "@/lib/planos";
-import { Marca } from "@/components/marca/Marca";
+import { Simbolo } from "@/components/marca/Marca";
 import { Medicao } from "@/components/marketing/Medicao";
+import { CSS_PLANOS } from "@/components/planos/estilo";
+import { Demonstracao } from "@/components/planos/Demonstracao";
+import { Palco } from "@/components/planos/Palco";
+import { Solucao } from "@/components/planos/Solucao";
+import { Cadeia } from "@/components/planos/Cadeia";
+import { FinanceiroDoEvento } from "@/components/planos/FinanceiroDoEvento";
+import { Execucao } from "@/components/planos/Execucao";
+import { PortalDaCliente } from "@/components/planos/PortalDaCliente";
+import { SistemaInteiro } from "@/components/planos/SistemaInteiro";
+import { Perguntas } from "@/components/planos/Perguntas";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Planos — eorganizei",
+  title: "eorganizei — a gestão dos seus eventos, em um só lugar",
   description:
-    "O mesmo sistema inteiro em todos os planos. O que muda é quantos eventos ficam em andamento ao mesmo tempo e quantas pessoas têm login.",
+    "O sistema em que a cerimonialista organiza clientes, fornecedores, cronograma, financeiro e tudo o que acontece antes e durante o evento. Do primeiro briefing à execução.",
 };
 
-// Página pública, liberada no middleware: ela existe para a pessoa
-// escolher ANTES de ter conta. A vitrine da tela de assinatura só diz o
-// preço — "os planos secos só falam preço; a pessoa nem sabe qual
-// escolher" (dono, 06/09/2026). Aqui ela escolhe pela situação dela e
-// vê, lado a lado, as DUAS coisas que mudam. Nada de tabela de "✓" com
-// as mesmas funções nas três colunas: o produto é o mesmo inteiro, e a
-// página diz isso uma vez, num bloco só.
+// A página de vendas — e o destino do anúncio pago, no Meta e no Google.
 //
-// Nenhum número vive aqui — nem a contagem de planos. Preço e tetos vêm
-// de plano_catalogo (147): o dono muda no admin e esta página acompanha;
-// se ele tirar um plano de venda, "nos três" vira "nos dois" sozinho.
+// Quem cai aqui não conhece a marca: a página conta UM evento
+// atravessando o sistema (briefing → informação → planejamento →
+// contratação → organização → financeiro → execução) e repete a mesma
+// ação três vezes — no topo, na oferta e no fim.
+//
+// NENHUM NÚMERO DE PLANO VIVE AQUI. Preço cheio e tetos vêm de
+// `plano_catalogo` (147); os degraus, de `plano_promocao` (153). O dono
+// muda no admin e a página acompanha — inclusive a frase da escada, que
+// é obrigação e não enfeite: o preço do quarto mês precisa estar dito na
+// tela onde a pessoa decide, não descoberto na quarta cobrança.
+//
+// O desenho (Claude Design, 07/09/2026) foi traduzido campo a campo. As
+// seções de argumento são componentes em components/planos; as cinco
+// demonstrações animadas são CSS puro, e os quadros vivem em estilo.ts.
+
+type Conta = {
+  plano: string | null;
+  status: string | null;
+} | null;
 
 // "Para quem é", montado a partir dos tetos — nunca literal, porque o
 // dono muda os tetos no admin e a frase tem que continuar verdadeira.
-// A célula responde "é para mim?", numa linha; os números ficam nas duas
-// linhas de baixo, que existem para isso.
 function paraQuemE(p: PlanoDoCatalogo): string {
   const agenda =
     p.eventosEmAndamento === null
@@ -55,38 +73,8 @@ function paraQuemE(p: PlanoDoCatalogo): string {
   return `Você e mais ${outras} ${outras === 1 ? "pessoa" : "pessoas"}, ${agenda}.`;
 }
 
-// O menu real do app, nos nomes que ela vê na barra lateral. É um bloco
-// só porque é a mesma coisa em todos os planos. Só o que existe: o
-// portal ainda não tem "Pagamentos" (destinos.ts marca emBreve), então a
-// linha diz o que a cliente vê hoje — o resumo financeiro.
-const INCLUSO: [string, string][] = [
-  ["Dashboard e Copiloto", "o radar do dia: “2 eventos precisam de ação hoje”"],
-  [
-    "Eventos",
-    "com Planejamento por tipo (casamento, debutante, formatura, show, corporativo): o que decidir e até quando, e o guia de estilo que o fornecedor abre pelo link",
-  ],
-  ["Orçamentos e propostas", "com aceite pela cliente"],
-  [
-    "Clientes e Portal da Cliente",
-    "login próprio dela: perguntas, cronograma, escolhas, resumo financeiro (parcelas e o que já foi pago) e prestação de contas",
-  ],
-  ["Cerimonialistas", "a equipe"],
-  [
-    "Fornecedores",
-    "Solicitações com confirmação por WhatsApp ou e-mail, Agenda de Fornecedores e Contratos (leitura do PDF: parcelas, quantidades, horários)",
-  ],
-  ["Tarefas e Calendário", ""],
-  ["Financeiro por evento", "receita, custos, rentabilidade e parcelas"],
-  ["Roteiro do dia", "link por fornecedor e Modo Evento"],
-  [
-    "Convidados",
-    "convite e site, confirmação de presença, recepção por QR Code e mapa de mesas",
-  ],
-  ["Catálogo", "o conteúdo das propostas por tipo de evento, precificação e paletas"],
-  ["Configurações", ""],
-];
-
-type Conta = { status: string; plano: string };
+const MONO = "var(--font-mono, 'IBM Plex Mono', monospace)";
+const TITULO = "var(--font-title, Inter, sans-serif)";
 
 export default async function PlanosPage() {
   const supabase = createClient();
@@ -94,359 +82,1187 @@ export default async function PlanosPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Quem assina é a proprietária: minha_assinatura() (147) só devolve
-  // linha para esse cargo, e /assinatura manda os outros para o painel
-  // sem dizer nada. Sem esta leitura, a coordenadora logada ganhava três
-  // botões que levavam a lugar nenhum. A mesma linha diz se a dona já
-  // paga — aí o botão é "mudar", não "assinar".
+  // Quem assina é a proprietária: `minha_assinatura()` (147) só devolve
+  // linha para esse cargo. Sem esta leitura, a coordenadora logada ganha
+  // botões que levam a lugar nenhum.
   const { data: assinatura } = user
     ? await supabase.rpc("minha_assinatura")
     : { data: null };
-  const conta = (assinatura ?? null) as Conta | null;
+  const conta = (assinatura ?? null) as Conta;
   const dona = conta !== null;
   const jaPaga = conta?.status === "ativa" || conta?.status === "inadimplente";
 
-  // O catálogo é lido pelo caminho normal, com ou sem sessão: a policy
-  // de leitura para visitante entrou com a 150 (aplicada em 06/09/2026).
-  // Antes dela esta página precisava de um desvio pela chave de serviço,
-  // que morreu junto — chave de serviço em página pública é superfície
-  // que não se deixa aberta por conveniência.
+  const visitante = !user;
+  const equipe = Boolean(user) && !dona;
+  const temBotao = !equipe;
+
   const planos = await getCatalogoDePlanos();
   const n = planos.length;
-  const nosN = n === 3 ? "nos três" : n === 2 ? "nos dois" : "em todos os planos";
+  // Duas formas porque o desenho usa as duas: o título da seção diz "nos
+  // três planos" e o parágrafo da grade, só "nos três". Se o dono tirar
+  // um plano de venda, as duas mudam juntas.
+  const nosNPlanos =
+    n === 3 ? "nos três planos" : n === 2 ? "nos dois planos" : "em todos os planos";
+  const nosNSeco = n === 3 ? "nos três" : n === 2 ? "nos dois" : "em todos";
 
-  // A ESCADA DE LANÇAMENTO (153). Esta página é o destino do anúncio: se
-  // ela anuncia o preço cheio e a promoção só aparece depois de criar
-  // conta, o clique que você pagou lê R$ 97,00 e vai embora — e quem
-  // chegou pelo anúncio dos R$ 27,90 se sente enganado na primeira tela.
-  //
-  // Só o plano da promoção muda de cara; os outros seguem no preço do
-  // catálogo. Se a promoção sair de venda, `getEscadaDaPromocao` devolve
-  // null e a página volta sozinha ao preço cheio, sem tocar em código.
+  // A ESCADA DE LANÇAMENTO (153). Se ela sair de venda, `escada` volta
+  // null e a página inteira cai sozinha no preço cheio: some o cartão da
+  // oferta, some o selo na coluna do plano, e os botões voltam a dizer o
+  // valor do catálogo. Sem tocar em código.
   const escada = await getEscadaDaPromocao(PROMOCAO_LANCAMENTO);
   const planoPromovido = planos.find((p) => p.codigo === PLANO_DA_PROMOCAO) ?? null;
-  const emPromocao =
-    escada && escada.degraus.length > 0 && planoPromovido ? escada : null;
-  const primeiroDegrau =
-    emPromocao && planoPromovido
-      ? comTetoDoPlano(emPromocao.degraus[0].valorMensal, planoPromovido.valorMensal)
-      : null;
-  const fraseDaPromocao =
-    emPromocao && planoPromovido
-      ? fraseDaEscada(emPromocao, planoPromovido.valorMensal)
+  const faixas: FaixaDaEscada[] | null =
+    escada && escada.degraus.length > 0 && planoPromovido
+      ? faixasDaEscada(escada, planoPromovido.valorMensal)
       : null;
 
-  const topo = !user
-    ? { href: "/login", texto: "Entrar" }
-    : dona
-      ? { href: "/assinatura", texto: "Minha assinatura" }
-      : { href: "/eventos/dashboard", texto: "Voltar ao painel" };
+  const promo = faixas !== null && planoPromovido !== null;
 
-  // O botão de cada coluna diz o que o clique faz. Sem conta, o próximo
-  // passo é criar uma (a assinatura vem depois, dentro dela). Com conta,
-  // o plano escolhido vai na URL e a tela de assinatura abre direto nele
-  // — a escolha feita aqui não é pedida de novo lá.
-  function acao(p: PlanoDoCatalogo) {
-    if (!user) {
+  // O que os botões e as frases dizem. Com promoção, o preço de entrada
+  // é o primeiro degrau; sem ela, o preço cheio do plano de entrada — e
+  // "plano de entrada" é o mais barato do catálogo, não um código fixo.
+  const planoDeEntrada =
+    planoPromovido ?? [...planos].sort((a, b) => a.valorMensal - b.valorMensal)[0] ?? null;
+  const primeiraFaixa = faixas?.[0] ?? null;
+  const ultimaFaixa = faixas?.[faixas.length - 1] ?? null;
+  const precoDeEntrada = primeiraFaixa
+    ? primeiraFaixa.valorMensal
+    : (planoDeEntrada?.valorMensal ?? null);
+  const fraseDaEscadaEmFaixas = faixas ? fraseDasFaixas(faixas) : null;
+  const mesesDoPrimeiroDegrau = primeiraFaixa?.ate ?? 0;
+
+  // O plano em destaque na grade: o da promoção, se houver; senão, o
+  // primeiro da vitrine. É ele que ganha o botão cheio.
+  const iDestaque = Math.max(
+    0,
+    promo ? planos.findIndex((p) => p.codigo === PLANO_DA_PROMOCAO) : 0
+  );
+
+  // O botão de cada coluna da grade. A visitante vê exatamente o que o
+  // desenho escreveu; a dona vê o que faz sentido para a conta dela —
+  // "Seu plano" no que ela já paga, em vez de um botão que não leva a
+  // nada.
+  function botaoDoPlano(p: PlanoDoCatalogo, destaque: boolean) {
+    const estilo = destaque
+      ? {
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "44px",
+          padding: "10px 12px",
+          boxSizing: "border-box" as const,
+          borderRadius: "8px",
+          border: "1px solid #6E3F5F",
+          background: "#6E3F5F",
+          color: "#FAF8F5",
+          textAlign: "center" as const,
+          textDecoration: "none",
+          fontWeight: "600",
+          fontSize: "14px",
+          transition: "background 120ms cubic-bezier(.2,.8,.3,1)",
+        }
+      : {
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "44px",
+          padding: "10px 12px",
+          boxSizing: "border-box" as const,
+          borderRadius: "8px",
+          border: "1px solid #E6E0D8",
+          background: "#FFFFFF",
+          color: "#221E1B",
+          textAlign: "center" as const,
+          textDecoration: "none",
+          fontWeight: "600",
+          fontSize: "14px",
+          transition: "background 120ms cubic-bezier(.2,.8,.3,1)",
+        };
+    const classe = destaque ? "pl-h-ameixa" : "pl-h-branco";
+
+    if (equipe) return null;
+    if (!dona) {
       return (
-        <a className="pl-btn" href="/login">
-          Criar conta e assinar
+        <a href="/login" style={estilo} className={classe}>
+          {destaque ? "Começar agora" : `Começar no ${p.nome}`}
         </a>
       );
     }
-    if (!dona) return null;
     if (jaPaga && conta?.plano === p.codigo) {
-      return <span className="pl-seu">Seu plano</span>;
+      return (
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "44px",
+            padding: "10px 12px",
+            fontWeight: 600,
+            fontSize: "14px",
+            color: "#6B6259",
+          }}
+        >
+          Seu plano
+        </span>
+      );
     }
     return (
-      <a className="pl-btn" href={`/assinatura?plano=${p.codigo}`}>
+      <a href={`/assinatura?plano=${p.codigo}`} style={estilo} className={classe}>
         {jaPaga ? `Mudar para o ${p.nome}` : `Assinar o ${p.nome}`}
       </a>
     );
   }
 
+  const rotuloMono = {
+    padding: "20px 22px 16px 0",
+    fontFamily: MONO,
+    fontSize: "11px",
+    fontWeight: "500",
+    letterSpacing: ".06em",
+    textTransform: "uppercase" as const,
+    color: "#928A81",
+  };
+  const rotuloMonoNevoa = {
+    padding: "20px 22px 16px 0",
+    background: "#F2EEE9",
+    fontFamily: MONO,
+    fontSize: "11px",
+    fontWeight: "600",
+    letterSpacing: ".06em",
+    textTransform: "uppercase" as const,
+    color: "#6B6259",
+  };
+  // O mesmo rótulo, repetido dentro da célula: no celular a grade vira
+  // uma coluna e a linha de cabeçalho some, então cada valor precisa
+  // dizer de novo do que está falando.
+  const rotuloCelular = {
+    display: "none",
+    fontFamily: MONO,
+    fontSize: "11px",
+    fontWeight: "500",
+    letterSpacing: ".06em",
+    textTransform: "uppercase" as const,
+    color: "#928A81",
+    marginBottom: "4px",
+  };
+  const rotuloCelularForte = { ...rotuloCelular, fontWeight: "600", color: "#6B6259" };
+  const numeroDoTeto = { fontFamily: MONO, fontWeight: "600", fontSize: "20px", color: "#221E1B" };
+
   return (
-    <div className="pl-page">
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#FAF8F5",
+        color: "#221E1B",
+        fontFamily: "var(--font-ui, 'Instrument Sans', sans-serif)",
+        WebkitFontSmoothing: "antialiased",
+      }}
+    >
       {/* Não <style>{css}</style>: o servidor escapa as aspas do texto
           (' vira &#x27;), o cliente lê a aspa crua, e o React acusa
-          "Text content did not match" e refaz a página inteira no
-          navegador. Medido no dev em 06/09/2026. Como innerHTML o CSS
-          chega igual dos dois lados — e não há nada de usuário nele. */}
-      <style dangerouslySetInnerHTML={{ __html: css }} />
+          "Text content did not match" e refaz a página no navegador.
+          Medido no dev em 06/09/2026. Como innerHTML o CSS chega igual
+          dos dois lados — e não há nada de usuário nele. */}
+      <style dangerouslySetInnerHTML={{ __html: CSS_PLANOS }} />
 
-      <header className="pl-wrap pl-topo">
-        <a href="/" aria-label="eorganizei" style={{ textDecoration: "none" }}>
-          <Marca tamanho={19} />
-        </a>
-        <a className="pl-entrar" href={topo.href}>
-          {topo.texto}
-        </a>
+      <header
+        style={{
+          position: "sticky",
+          top: "0",
+          zIndex: "20",
+          background: "#FAF8F5",
+          borderBottom: "1px solid #E6E0D8",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: "1080px",
+            margin: "0 auto",
+            padding: "0 clamp(20px,4vw,28px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "16px",
+            height: "56px",
+          }}
+        >
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}>
+            <Simbolo tamanho={26} />
+            <span
+              style={{
+                fontFamily: TITULO,
+                fontWeight: "600",
+                fontSize: "18px",
+                letterSpacing: "-0.03em",
+                color: "#221E1B",
+                whiteSpace: "nowrap",
+              }}
+            >
+              e<span style={{ color: "#6E3F5F" }}>organizei</span>
+            </span>
+          </span>
+          <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            {visitante && (
+              <a
+                href="/login"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  minHeight: "40px",
+                  padding: "0 12px",
+                  borderRadius: "8px",
+                  fontWeight: "500",
+                  fontSize: "14px",
+                  color: "#3D3835",
+                  textDecoration: "none",
+                  transition: "background 120ms cubic-bezier(.2,.8,.3,1)",
+                }}
+                className="pl-h-suave"
+              >
+                Entrar
+              </a>
+            )}
+            {dona && (
+              <a
+                href="/assinatura"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  minHeight: "40px",
+                  padding: "0 12px",
+                  borderRadius: "8px",
+                  fontWeight: "500",
+                  fontSize: "14px",
+                  color: "#3D3835",
+                  textDecoration: "none",
+                }}
+                className="pl-h-suave"
+              >
+                Minha assinatura
+              </a>
+            )}
+            {equipe && (
+              <a
+                href="/eventos/dashboard"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  minHeight: "40px",
+                  padding: "0 12px",
+                  borderRadius: "8px",
+                  fontWeight: "500",
+                  fontSize: "14px",
+                  color: "#3D3835",
+                  textDecoration: "none",
+                }}
+                className="pl-h-suave"
+              >
+                Voltar ao painel
+              </a>
+            )}
+            {temBotao && (
+              <a
+                href="/login"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minHeight: "40px",
+                  padding: "0 16px",
+                  borderRadius: "8px",
+                  background: "#6E3F5F",
+                  color: "#FAF8F5",
+                  textDecoration: "none",
+                  fontWeight: "600",
+                  fontSize: "14px",
+                  transition: "background 120ms cubic-bezier(.2,.8,.3,1)",
+                }}
+                className="pl-h-ameixa"
+              >
+                Começar agora
+              </a>
+            )}
+          </span>
+        </div>
       </header>
 
-      <main className="pl-wrap">
-        <h1 className="pl-h1">Qual plano é o seu?</h1>
-        <p className="pl-lede">
-          {`O sistema é o mesmo ${nosN}; o que muda é o tamanho da agenda e quantas pessoas trabalham nela.`}
-        </p>
-
-        {/* A escada dita por extenso, logo abaixo da abertura — antes de
-            qualquer botão. Quem chega do anúncio precisa ler aqui o que
-            vai pagar em cada mês, não descobrir na quarta cobrança. */}
-        {fraseDaPromocao && (
-          <p className="pl-promo">
-            <b>Preço de lançamento:</b> {fraseDaPromocao}. Cancela quando quiser,
-            sem multa.
+      <main>
+        {/* ============ 1 · HERO ============ */}
+        <section
+          style={{
+            maxWidth: "1080px",
+            margin: "0 auto",
+            padding: "clamp(52px,7vw,84px) clamp(20px,4vw,28px) 0",
+            textAlign: "center",
+          }}
+        >
+          <p
+            style={{
+              display: "inline-block",
+              margin: "0 0 20px",
+              padding: "5px 12px",
+              borderRadius: "999px",
+              background: "#F3EBF0",
+              color: "#6E3F5F",
+              fontFamily: MONO,
+              fontSize: "11px",
+              fontWeight: "500",
+              letterSpacing: ".06em",
+              textTransform: "uppercase",
+            }}
+          >
+            Para cerimonialistas e assessorias de eventos
           </p>
-        )}
-
-        {planos.length === 0 ? (
-          <p className="pl-p" style={{ marginTop: 36 }}>
-            Não conseguimos carregar os planos agora. Tente de novo em alguns
-            minutos.
+          <h1
+            style={{
+              margin: "0 auto 20px",
+              maxWidth: "20ch",
+              fontFamily: TITULO,
+              fontWeight: "700",
+              fontSize: "clamp(31px,5.2vw,54px)",
+              lineHeight: "1.05",
+              letterSpacing: "-0.035em",
+              textWrap: "balance",
+            }}
+          >
+            A gestão dos seus eventos, em um só lugar.
+          </h1>
+          <p
+            style={{
+              margin: "0 auto",
+              maxWidth: "58ch",
+              fontSize: "clamp(16.5px,1.9vw,19px)",
+              lineHeight: "1.5",
+              color: "#6B6259",
+              textWrap: "pretty",
+            }}
+          >
+            O sistema em que a cerimonialista organiza clientes, fornecedores,
+            cronograma, financeiro e tudo o que acontece antes e durante o evento. Do
+            primeiro briefing à execução.
           </p>
-        ) : (
-          // Uma grade só, com as células emitidas COLUNA a coluna (a de
-          // rótulos e depois cada plano): no computador o fluxo é por
-          // coluna e as linhas são compartilhadas — os três planos ficam
-          // com a mesma altura em cada linha; no celular o fluxo vira por
-          // linha, as células empilham na ordem em que foram emitidas
-          // (Essencial inteiro, depois Profissional, depois Master) e
-          // cada célula mostra o próprio rótulo. Nunca rola de lado.
-          <section className="pl-grade" aria-label="Os planos lado a lado">
-            <div className="pl-rotulo" />
-            <div className="pl-rotulo">Por mês</div>
-            <div className="pl-rotulo">Para quem é</div>
-            <div className="pl-rotulo pl-muda">Eventos em andamento ao mesmo tempo</div>
-            <div className="pl-rotulo pl-muda">Pessoas com login</div>
-            <div className="pl-rotulo" />
-
-            {planos.map((p, i) => (
-              <Fragment key={p.codigo}>
-                <div className={`pl-cel pl-nome${i === 0 ? " pl-primeiro" : ""}`}>
-                  <h2 className="pl-nome-h">{p.nome}</h2>
-                </div>
-                <div className="pl-cel">
-                  <span className="pl-rotulo-m">Por mês</span>
-                  {/* o plano da promoção mostra o primeiro degrau em
-                      destaque, com o preço cheio riscado ao lado: esconder
-                      o valor futuro é o que vira contestação de cartão */}
-                  {emPromocao && p.codigo === PLANO_DA_PROMOCAO && primeiroDegrau !== null ? (
-                    <>
-                      <span className="pl-preco">{reais(primeiroDegrau)}</span>
-                      <span className="pl-cheio">{reais(p.valorMensal)}</span>
-                    </>
-                  ) : (
-                    <span className="pl-preco">{reais(p.valorMensal)}</span>
-                  )}
-                </div>
-                <div className="pl-cel pl-quem">
-                  <span className="pl-rotulo-m">Para quem é</span>
-                  {paraQuemE(p)}
-                </div>
-                <div className="pl-cel pl-muda">
-                  <span className="pl-rotulo-m">Eventos em andamento ao mesmo tempo</span>
-                  <span className="pl-num">{tetoEmTexto(p.eventosEmAndamento)}</span>
-                </div>
-                <div className="pl-cel pl-muda">
-                  <span className="pl-rotulo-m">Pessoas com login</span>
-                  <span className="pl-num">{tetoEmTexto(p.logins)}</span>
-                </div>
-                <div className="pl-cel pl-acao">{acao(p)}</div>
-              </Fragment>
-            ))}
-          </section>
-        )}
-
-        {user && !dona && (
-          <p className="pl-p" style={{ marginTop: 12 }}>
-            Quem assina ou muda de plano é a proprietária da conta.
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "14px",
+              marginTop: "32px",
+            }}
+          >
+            {visitante && precoDeEntrada !== null && (
+              <a
+                href="/login"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minHeight: "52px",
+                  padding: "0 30px",
+                  borderRadius: "8px",
+                  background: "#6E3F5F",
+                  color: "#FAF8F5",
+                  textDecoration: "none",
+                  fontWeight: "600",
+                  fontSize: "17px",
+                  transition: "background 120ms cubic-bezier(.2,.8,.3,1)",
+                }}
+                className="pl-h-ameixa"
+              >
+                {`Começar por ${reais(precoDeEntrada)}`}
+              </a>
+            )}
+            {dona && planoDeEntrada && (
+              <a
+                href={`/assinatura?plano=${planoDeEntrada.codigo}`}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minHeight: "52px",
+                  padding: "0 30px",
+                  borderRadius: "8px",
+                  background: "#6E3F5F",
+                  color: "#FAF8F5",
+                  textDecoration: "none",
+                  fontWeight: "600",
+                  fontSize: "17px",
+                }}
+                className="pl-h-ameixa"
+              >
+                {jaPaga ? "Minha assinatura" : `Assinar o ${planoDeEntrada.nome}`}
+              </a>
+            )}
+            {equipe && (
+              <p style={{ margin: "0", fontSize: "13.5px", lineHeight: "1.5", color: "#6B6259" }}>
+                Quem assina ou muda de plano é a proprietária da conta.
+              </p>
+            )}
+            {promo && (
+              <p
+                style={{
+                  margin: "0",
+                  maxWidth: "56ch",
+                  fontSize: "13.5px",
+                  lineHeight: "1.55",
+                  color: "#6B6259",
+                }}
+              >
+                {`${fraseDaEscadaEmFaixas}. Cancela quando quiser, sem multa.`}
+              </p>
+            )}
+          </div>
+          <p
+            style={{
+              margin: "36px auto 0",
+              maxWidth: "62ch",
+              fontSize: "15.5px",
+              lineHeight: "1.6",
+              color: "#928A81",
+              textWrap: "pretty",
+            }}
+          >
+            Porque organizar um evento não deveria depender de procurar informação em
+            dezenas de conversas, planilhas e anotações.
           </p>
-        )}
-
-        <section className="pl-incluso">
-          <h2 className="pl-h2">{`Incluso ${nosN}, sem exceção`}</h2>
-          <ul className="pl-lista-incluso">
-            {INCLUSO.map(([nome, desc]) => (
-              <li key={nome}>
-                <b>{nome}</b>
-                {desc ? ` — ${desc}` : ""}
-              </li>
-            ))}
-          </ul>
         </section>
 
-        <div className="pl-duas">
-          <section className="pl-secao">
-            <h2 className="pl-h2">O que conta como evento em andamento</h2>
-            <p className="pl-p">Contam os eventos em orçamento e os confirmados.</p>
-            <p className="pl-p">Concluídos e cancelados não contam.</p>
-            <p className="pl-p">Quando um evento conclui, a vaga volta.</p>
+        <Demonstracao />
+        <Palco />
+        <Solucao />
+        <Cadeia />
+        <FinanceiroDoEvento />
+        <Execucao />
+        <PortalDaCliente />
+        <SistemaInteiro nosN={nosNPlanos} />
+
+        {/* ============ 11 · OFERTA E PLANOS ============ */}
+        <section
+          style={{
+            maxWidth: "1080px",
+            margin: "clamp(56px,7vw,88px) auto 0",
+            padding: "0 clamp(20px,4vw,28px)",
+          }}
+        >
+          {promo && faixas && planoPromovido && primeiraFaixa && ultimaFaixa && (
+            <div
+              style={{
+                border: "1px solid #E6E0D8",
+                borderRadius: "14px",
+                background: "#FFFFFF",
+                padding: "clamp(24px,3.5vw,36px)",
+              }}
+            >
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))",
+                  gap: "clamp(24px,3.5vw,44px)",
+                  alignItems: "center",
+                }}
+                data-stack="1"
+              >
+                <div>
+                  <span
+                    style={{
+                      display: "inline-block",
+                      margin: "0 0 14px",
+                      padding: "5px 12px",
+                      borderRadius: "999px",
+                      background: "#F3EBF0",
+                      color: "#6E3F5F",
+                      fontFamily: MONO,
+                      fontSize: "11px",
+                      fontWeight: "500",
+                      letterSpacing: ".06em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Condição de lançamento
+                  </span>
+                  <h2
+                    style={{
+                      margin: "0 0 12px",
+                      fontFamily: TITULO,
+                      fontWeight: "600",
+                      fontSize: "clamp(24px,3.4vw,36px)",
+                      lineHeight: "1.13",
+                      letterSpacing: "-0.03em",
+                      textWrap: "pretty",
+                    }}
+                  >
+                    {`Comece por ${reais(primeiraFaixa.valorMensal)} por mês.`}
+                  </h2>
+                  <p
+                    style={{
+                      margin: "0 0 10px",
+                      maxWidth: "48ch",
+                      fontSize: "16.5px",
+                      lineHeight: "1.6",
+                      color: "#6B6259",
+                    }}
+                  >
+                    Uma condição especial para as primeiras cerimonialistas que entrarem
+                    no sistema.
+                  </p>
+                  <p
+                    style={{
+                      margin: "0",
+                      maxWidth: "48ch",
+                      fontSize: "15px",
+                      lineHeight: "1.6",
+                      color: "#6B6259",
+                    }}
+                  >
+                    {`Você começa pagando ${reais(primeiraFaixa.valorMensal)} para conhecer e implementar o sistema na sua rotina. O valor sobe gradualmente até o preço normal de ${reais(ultimaFaixa.valorMensal)} por mês.`}
+                  </p>
+                </div>
+                <div>
+                  <div
+                    style={{
+                      border: "1px solid #E6E0D8",
+                      borderRadius: "10px",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {faixas.map((f, i) => (
+                      <div
+                        key={f.rotulo}
+                        style={{
+                          display: "flex",
+                          alignItems: "baseline",
+                          justifyContent: "space-between",
+                          gap: "12px",
+                          padding: "14px 16px",
+                          ...(i === 0
+                            ? { background: "#F3EBF0" }
+                            : { borderTop: "1px solid #E6E0D8" }),
+                        }}
+                      >
+                        <span style={{ fontSize: "14.5px", color: "#3D3835" }}>
+                          {f.rotulo}
+                        </span>
+                        <b
+                          style={{
+                            fontFamily: MONO,
+                            fontWeight: "600",
+                            fontSize: "18px",
+                            color: "#221E1B",
+                          }}
+                        >
+                          {reais(f.valorMensal)}
+                        </b>
+                      </div>
+                    ))}
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-start",
+                      gap: "12px",
+                      marginTop: "20px",
+                    }}
+                  >
+                    {visitante && (
+                      <a
+                        href="/login"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          minHeight: "50px",
+                          padding: "0 26px",
+                          borderRadius: "8px",
+                          background: "#6E3F5F",
+                          color: "#FAF8F5",
+                          textDecoration: "none",
+                          fontWeight: "600",
+                          fontSize: "16px",
+                          transition: "background 120ms cubic-bezier(.2,.8,.3,1)",
+                        }}
+                        className="pl-h-ameixa"
+                      >
+                        Quero conhecer o sistema
+                      </a>
+                    )}
+                    {dona && (
+                      <a
+                        href={`/assinatura?plano=${planoPromovido.codigo}`}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          minHeight: "50px",
+                          padding: "0 26px",
+                          borderRadius: "8px",
+                          background: "#6E3F5F",
+                          color: "#FAF8F5",
+                          textDecoration: "none",
+                          fontWeight: "600",
+                          fontSize: "16px",
+                        }}
+                        className="pl-h-ameixa"
+                      >
+                        {jaPaga
+                          ? `Mudar para o ${planoPromovido.nome}`
+                          : `Assinar o ${planoPromovido.nome}`}
+                      </a>
+                    )}
+                    {equipe && (
+                      <p
+                        style={{
+                          margin: "0",
+                          fontSize: "13.5px",
+                          lineHeight: "1.5",
+                          color: "#6B6259",
+                        }}
+                      >
+                        Quem assina ou muda de plano é a proprietária da conta.
+                      </p>
+                    )}
+                    <p
+                      style={{
+                        margin: "0",
+                        fontSize: "13.5px",
+                        lineHeight: "1.55",
+                        color: "#6B6259",
+                      }}
+                    >
+                      Cancela quando quiser, sem multa e sem fidelidade. O que já está
+                      criado continua seu.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <h3
+            style={{
+              margin: "clamp(40px,5vw,56px) 0 8px",
+              fontFamily: TITULO,
+              fontWeight: "600",
+              fontSize: "clamp(20px,2.6vw,26px)",
+              lineHeight: "1.2",
+              letterSpacing: "-0.025em",
+            }}
+          >
+            Qual plano é o seu
+          </h3>
+          <p style={{ margin: "0", maxWidth: "60ch", fontSize: "16px", lineHeight: "1.6", color: "#6B6259" }}>
+            {`O produto é o mesmo e inteiro ${nosNSeco}. O que muda são duas coisas: quantos eventos ficam em andamento ao mesmo tempo e quantas pessoas têm login próprio.`}
+          </p>
+
+          <section
+            style={{
+              display: "grid",
+              gridAutoFlow: "column",
+              gridTemplateRows: "repeat(6,auto)",
+              gridTemplateColumns: "minmax(176px,.78fr)",
+              gridAutoColumns: "1fr",
+              marginTop: "28px",
+              borderTop: "1px solid #E6E0D8",
+            }}
+            data-grade="1"
+            aria-label="Os planos lado a lado"
+          >
+            <div data-hide-sm="1" style={{ padding: "20px 22px 16px 0" }}></div>
+            <div data-hide-sm="1" style={rotuloMono}>
+              Por mês
+            </div>
+            <div data-hide-sm="1" style={rotuloMono}>
+              Para quem é
+            </div>
+            <div data-hide-sm="1" style={rotuloMonoNevoa}>
+              Eventos em andamento ao mesmo tempo
+            </div>
+            <div data-hide-sm="1" style={rotuloMonoNevoa}>
+              Pessoas com login
+            </div>
+            <div data-hide-sm="1" style={{ padding: "20px 22px 16px 0" }}></div>
+
+            {planos.map((p, i) => {
+              const destaque = i === iDestaque;
+              const comPromo = promo && p.codigo === PLANO_DA_PROMOCAO && faixas;
+              return (
+                <Fragment key={p.codigo}>
+                  <div
+                    data-cel="1"
+                    data-cel-borda="1"
+                    {...(i === 0 ? { "data-cel-borda-1": "1" } : {})}
+                    style={{ padding: "22px 22px 16px", borderLeft: "1px solid #E6E0D8" }}
+                  >
+                    <h4
+                      style={{
+                        margin: "0",
+                        fontFamily: TITULO,
+                        fontWeight: "600",
+                        fontSize: "19px",
+                        letterSpacing: "-0.015em",
+                      }}
+                    >
+                      {p.nome}
+                    </h4>
+                    {comPromo && (
+                      <span
+                        style={{
+                          display: "inline-block",
+                          marginTop: "8px",
+                          padding: "3px 8px",
+                          borderRadius: "999px",
+                          background: "#F3EBF0",
+                          fontFamily: MONO,
+                          fontSize: "11px",
+                          fontWeight: "500",
+                          letterSpacing: ".04em",
+                          color: "#6E3F5F",
+                        }}
+                      >
+                        condição de lançamento
+                      </span>
+                    )}
+                  </div>
+
+                  <div
+                    data-cel="1"
+                    style={{
+                      padding: "16px 22px",
+                      borderLeft: "1px solid #E6E0D8",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "2px",
+                    }}
+                  >
+                    <span data-plano-cel="1" style={rotuloCelular}>
+                      Por mês
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: MONO,
+                        fontWeight: "600",
+                        fontSize: "30px",
+                        lineHeight: "1.1",
+                        letterSpacing: "-0.02em",
+                        color: "#221E1B",
+                      }}
+                    >
+                      {reais(comPromo && faixas ? faixas[0].valorMensal : p.valorMensal)}
+                    </span>
+                    {comPromo && faixas && faixas[0].ate !== null && (
+                      <span style={{ fontSize: "12.5px", lineHeight: "1.4", color: "#3D3835" }}>
+                        {faixas[0].de === faixas[0].ate
+                          ? `no mês ${faixas[0].de}`
+                          : `nos meses ${faixas[0].de} a ${faixas[0].ate}`}
+                      </span>
+                    )}
+                    {comPromo && faixas && (
+                      <span
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "2px",
+                          marginTop: "8px",
+                          fontFamily: MONO,
+                          fontSize: "12.5px",
+                          lineHeight: "1.45",
+                          color: "#6B6259",
+                        }}
+                      >
+                        {faixas.slice(1).map((f) => (
+                          <span key={f.rotulo}>
+                            {f.ate === null
+                              ? `${reais(f.valorMensal)} do ${f.de}º mês em diante`
+                              : f.de === f.ate
+                                ? `${reais(f.valorMensal)} no mês ${f.de}`
+                                : `${reais(f.valorMensal)} nos meses ${f.de} a ${f.ate}`}
+                          </span>
+                        ))}
+                      </span>
+                    )}
+                  </div>
+
+                  <div
+                    data-cel="1"
+                    style={{
+                      padding: "16px 22px",
+                      borderLeft: "1px solid #E6E0D8",
+                      fontSize: "14.5px",
+                      lineHeight: "1.55",
+                      color: "#3D3835",
+                    }}
+                  >
+                    <span data-plano-cel="1" style={rotuloCelular}>
+                      Para quem é
+                    </span>
+                    {paraQuemE(p)}
+                  </div>
+
+                  <div
+                    data-cel="1"
+                    data-nevoa="1"
+                    style={{
+                      padding: "16px 22px",
+                      borderLeft: "1px solid #E6E0D8",
+                      background: "#F2EEE9",
+                    }}
+                  >
+                    <span data-plano-cel="1" style={rotuloCelularForte}>
+                      Eventos em andamento ao mesmo tempo
+                    </span>
+                    <span style={numeroDoTeto}>{tetoEmTexto(p.eventosEmAndamento)}</span>
+                  </div>
+
+                  <div
+                    data-cel="1"
+                    data-nevoa="1"
+                    style={{
+                      padding: "16px 22px",
+                      borderLeft: "1px solid #E6E0D8",
+                      background: "#F2EEE9",
+                    }}
+                  >
+                    <span data-plano-cel="1" style={rotuloCelularForte}>
+                      Pessoas com login
+                    </span>
+                    <span style={numeroDoTeto}>{tetoEmTexto(p.logins)}</span>
+                  </div>
+
+                  <div
+                    data-cel="1"
+                    style={{ padding: "20px 22px 8px", borderLeft: "1px solid #E6E0D8" }}
+                  >
+                    {botaoDoPlano(p, destaque)}
+                  </div>
+                </Fragment>
+              );
+            })}
           </section>
 
-          <section className="pl-secao">
-            <h2 className="pl-h2">Chegou no limite?</h2>
-            <p className="pl-p">
-              Nada some e nada trava para consulta: seus eventos, e tudo o que
-              está dentro deles, continuam abertos.
-            </p>
-            <p className="pl-p">
-              O que pede plano maior é criar o próximo evento ou dar o próximo
-              login. Para evento, você também pode esperar um concluir; para
-              login, desativar um acesso.
-            </p>
-            {/* "pelo link dela" não é enfeite: o gatilho (147) só deixa
-                passar acima do teto quando não há sessão — é o caso do
-                aceite no aparelho da cliente. No navegador da
-                cerimonialista logada, o aceite esbarra no teto como
-                qualquer criação pela mão dela. */}
-            <p className="pl-p">
-              O aceite de uma proposta pela sua cliente, pelo link dela, nunca
-              é barrado: o evento entra mesmo acima do teto, e você recebe um
-              aviso.
-            </p>
-          </section>
-        </div>
-
-        <section className="pl-secao">
-          <h2 className="pl-h2">Regras iguais para todos</h2>
-          <ul className="pl-lista">
-            <li>
-              Seu primeiro evento é por nossa conta: você cria um sem assinar,
-              para conhecer o sistema. Depois dele, você continua vendo tudo;
-              só criar o segundo pede um plano.
-            </li>
-            <li>
-              Você muda de plano quando quiser, pela tela de assinatura. O novo
-              valor vale a partir da próxima cobrança, sem cobrança
-              proporcional. Para descer de plano, basta caber nos logins do
-              plano de destino.
-            </li>
-            {/* O cancelamento vale no dia (actions.ts grava 'cancelada' na
-                hora e o teto volta a 1 evento / 1 login). Prometer "o mês
-                pago vai até o fim" seria dizer o que o sistema não faz. */}
-            <li>
-              Você cancela quando quiser, sem multa, sem taxa e sem fidelidade.
-              Nenhuma cobrança nova é feita, tudo o que já está criado continua
-              seu, e você volta quando quiser.
-            </li>
-            <li>
-              Assinatura mensal, pré-paga, no cartão, pela Pagar.me. O cartão
-              não passa pelos nossos servidores.
-            </li>
-          </ul>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))",
+              gap: "32px 44px",
+              marginTop: "44px",
+            }}
+            data-stack="1"
+          >
+            <div>
+              <h4
+                style={{
+                  margin: "0 0 8px",
+                  fontFamily: TITULO,
+                  fontWeight: "600",
+                  fontSize: "16px",
+                  letterSpacing: "-0.01em",
+                }}
+              >
+                O que conta como evento em andamento
+              </h4>
+              <p style={{ margin: "0 0 8px", fontSize: "15px", lineHeight: "1.6", color: "#3D3835" }}>
+                Contam os eventos em orçamento e os confirmados. Concluídos e cancelados
+                não contam.
+              </p>
+              <p style={{ margin: "0", fontSize: "15px", lineHeight: "1.6", color: "#3D3835" }}>
+                Quando um evento conclui, a vaga volta.
+              </p>
+            </div>
+            <div>
+              <h4
+                style={{
+                  margin: "0 0 8px",
+                  fontFamily: TITULO,
+                  fontWeight: "600",
+                  fontSize: "16px",
+                  letterSpacing: "-0.01em",
+                }}
+              >
+                Chegou no limite?
+              </h4>
+              <p style={{ margin: "0 0 8px", fontSize: "15px", lineHeight: "1.6", color: "#3D3835" }}>
+                Nada some e nada trava para consulta: seus eventos, e tudo dentro deles,
+                continuam abertos.
+              </p>
+              <p style={{ margin: "0", fontSize: "15px", lineHeight: "1.6", color: "#3D3835" }}>
+                O que pede plano maior é criar o próximo evento ou dar o próximo login.
+              </p>
+            </div>
+          </div>
         </section>
 
-        <section className="pl-secao">
-          <h2 className="pl-h2">Na dúvida</h2>
-          <p className="pl-p">
-            Conte quantos eventos você tem hoje entre orçamento e confirmado, e
-            quantas pessoas, além de você, precisam da própria senha. O plano em
-            que os dois números cabem é o seu.
-          </p>
+        <Perguntas />
+
+        {/* ============ 13 · CTA FINAL ============ */}
+        <section
+          style={{
+            marginTop: "clamp(56px,7vw,88px)",
+            padding: "clamp(56px,7vw,84px) 0",
+            background: "#F2EEE9",
+            borderTop: "1px solid #E6E0D8",
+            borderBottom: "1px solid #E6E0D8",
+          }}
+        >
+          <div
+            style={{
+              maxWidth: "1080px",
+              margin: "0 auto",
+              padding: "0 clamp(20px,4vw,28px)",
+              textAlign: "center",
+            }}
+          >
+            <h2
+              style={{
+                margin: "0 auto 14px",
+                maxWidth: "24ch",
+                fontFamily: TITULO,
+                fontWeight: "700",
+                fontSize: "clamp(26px,3.8vw,40px)",
+                lineHeight: "1.1",
+                letterSpacing: "-0.032em",
+                textWrap: "balance",
+              }}
+            >
+              Coloque um evento no sistema hoje.
+            </h2>
+            <p
+              style={{
+                margin: "0 auto",
+                maxWidth: "52ch",
+                fontSize: "17px",
+                lineHeight: "1.55",
+                color: "#6B6259",
+                textWrap: "pretty",
+              }}
+            >
+              Comece por um evento que você já está organizando. Cole a conversa e veja a
+              operação dele montada.
+            </p>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "14px",
+                marginTop: "30px",
+              }}
+            >
+              {visitante && precoDeEntrada !== null && (
+                <a
+                  href="/login"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: "52px",
+                    padding: "0 30px",
+                    borderRadius: "8px",
+                    background: "#6E3F5F",
+                    color: "#FAF8F5",
+                    textDecoration: "none",
+                    fontWeight: "600",
+                    fontSize: "17px",
+                    transition: "background 120ms cubic-bezier(.2,.8,.3,1)",
+                  }}
+                  className="pl-h-ameixa"
+                >
+                  {`Começar por ${reais(precoDeEntrada)}`}
+                </a>
+              )}
+              {dona && planoDeEntrada && (
+                <a
+                  href={`/assinatura?plano=${planoDeEntrada.codigo}`}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: "52px",
+                    padding: "0 30px",
+                    borderRadius: "8px",
+                    background: "#6E3F5F",
+                    color: "#FAF8F5",
+                    textDecoration: "none",
+                    fontWeight: "600",
+                    fontSize: "17px",
+                  }}
+                  className="pl-h-ameixa"
+                >
+                  {jaPaga ? "Minha assinatura" : `Assinar o ${planoDeEntrada.nome}`}
+                </a>
+              )}
+              {equipe && (
+                <p style={{ margin: "0", fontSize: "13.5px", lineHeight: "1.5", color: "#6B6259" }}>
+                  Quem assina ou muda de plano é a proprietária da conta.
+                </p>
+              )}
+              {promo && (
+                <p
+                  style={{
+                    margin: "0",
+                    maxWidth: "56ch",
+                    fontSize: "13.5px",
+                    lineHeight: "1.55",
+                    color: "#6B6259",
+                  }}
+                >
+                  {`${fraseDaEscadaEmFaixas}. Cancela quando quiser, sem multa.`}
+                </p>
+              )}
+            </div>
+          </div>
         </section>
       </main>
 
-      <footer className="pl-wrap pl-rodape">
+      <footer
+        style={{
+          maxWidth: "1080px",
+          margin: "0 auto",
+          padding: "20px clamp(20px,4vw,28px) 44px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "12px",
+          flexWrap: "wrap",
+          fontSize: "13px",
+          color: "#6B6259",
+        }}
+      >
         <span>eorganizei</span>
-        <nav className="pl-rodape-nav">
-          <a href="/termos">Termos e Condições</a>
-          <a href="/privacidade">Política de Privacidade</a>
+        <nav style={{ display: "flex", gap: "18px" }}>
+          <a
+            href="/termos"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              minHeight: "44px",
+              color: "#6B6259",
+              textDecoration: "none",
+            }}
+            className="pl-h-tinta"
+          >
+            Termos e Condições
+          </a>
+          <a
+            href="/privacidade"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              minHeight: "44px",
+              color: "#6B6259",
+              textDecoration: "none",
+            }}
+            className="pl-h-tinta"
+          >
+            Política de Privacidade
+          </a>
         </nav>
       </footer>
+
+      {/* No celular a página tem cinco telas de rolagem entre um CTA e o
+          seguinte; a barra fixa mantém a ação sempre a um toque. Só
+          existe para quem pode assinar — a coordenadora logada não ganha
+          botão. */}
+      {temBotao && <div data-cta-espaco="1" style={{ display: "none", height: "76px" }}></div>}
+      {temBotao && (
+        <div
+          data-cta-fixo="1"
+          style={{
+            display: "none",
+            position: "fixed",
+            left: "0",
+            right: "0",
+            bottom: "0",
+            zIndex: "40",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "14px",
+            padding: "11px 16px",
+            background: "#FAF8F5",
+            borderTop: "1px solid #E6E0D8",
+            boxShadow: "0 -6px 20px rgba(34,30,27,.08)",
+          }}
+        >
+          <span style={{ minWidth: "0" }}>
+            {precoDeEntrada !== null && (
+              <b
+                style={{
+                  display: "block",
+                  fontFamily: MONO,
+                  fontWeight: "600",
+                  fontSize: "16px",
+                  letterSpacing: "-0.01em",
+                  color: "#221E1B",
+                }}
+              >
+                {reais(precoDeEntrada)}
+              </b>
+            )}
+            {promo && mesesDoPrimeiroDegrau > 0 && (
+              <em
+                style={{
+                  display: "block",
+                  fontStyle: "normal",
+                  fontSize: "11.5px",
+                  lineHeight: "1.35",
+                  color: "#6B6259",
+                }}
+              >
+                {`${
+                  mesesDoPrimeiroDegrau === 1
+                    ? "no primeiro mês"
+                    : `nos ${mesesDoPrimeiroDegrau} primeiros meses`
+                } · cancela quando quiser`}
+              </em>
+            )}
+          </span>
+          {visitante && (
+            <a
+              href="/login"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flex: "none",
+                minHeight: "46px",
+                padding: "0 20px",
+                borderRadius: "8px",
+                background: "#6E3F5F",
+                color: "#FAF8F5",
+                textDecoration: "none",
+                fontWeight: "600",
+                fontSize: "15px",
+              }}
+              className="pl-h-ameixa"
+            >
+              Começar agora
+            </a>
+          )}
+          {dona && planoDeEntrada && (
+            <a
+              href={`/assinatura?plano=${planoDeEntrada.codigo}`}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flex: "none",
+                minHeight: "46px",
+                padding: "0 20px",
+                borderRadius: "8px",
+                background: "#6E3F5F",
+                color: "#FAF8F5",
+                textDecoration: "none",
+                fontWeight: "600",
+                fontSize: "15px",
+              }}
+              className="pl-h-ameixa"
+            >
+              {jaPaga ? "Ver assinatura" : "Assinar"}
+            </a>
+          )}
+        </div>
+      )}
+
       <Medicao />
     </div>
   );
 }
-
-// Estilo inline não faz :hover nem media query; o bloco fica aqui, com o
-// prefixo pl-, para não vazar para o resto do app. Fontes vêm do layout
-// raiz (--font-title / --font-ui / --font-mono). Todo alvo de toque tem
-// pelo menos 44px de altura — a página é aberta no celular.
-const css = `
-  .pl-page{min-height:100vh;background:#FAF7F2;color:#221E1B;
-    font-family:var(--font-ui),'Instrument Sans',sans-serif;-webkit-font-smoothing:antialiased}
-  .pl-wrap{max-width:1040px;margin:0 auto;padding:0 24px;box-sizing:content-box}
-  .pl-topo{display:flex;align-items:center;justify-content:space-between;padding-top:22px;padding-bottom:22px}
-  .pl-entrar{display:inline-flex;align-items:center;min-height:44px;padding:0 4px;
-    font:500 14px var(--font-ui),'Instrument Sans',sans-serif;color:#6E3F5F;
-    text-decoration:underline;text-underline-offset:3px}
-  .pl-entrar:hover{color:#4A2A40}
-
-  .pl-h1{font:700 34px/1.15 var(--font-title),Inter,sans-serif;letter-spacing:-0.02em;margin:32px 0 10px}
-  .pl-lede{font:400 17px/1.5 var(--font-ui),'Instrument Sans',sans-serif;color:#6B6259;max-width:640px;margin:0}
-
-  /* a grade: 1 coluna explícita (rótulos) + uma implícita por plano */
-  .pl-grade{display:grid;grid-auto-flow:column;grid-template-rows:repeat(6,auto);
-    grid-template-columns:minmax(170px,.8fr);grid-auto-columns:1fr;margin-top:36px}
-  .pl-rotulo{padding:17px 20px 14px 0;font:500 11px/1.4 var(--font-mono),'IBM Plex Mono',monospace;
-    letter-spacing:.06em;text-transform:uppercase;color:#928A81}
-  .pl-rotulo-m{display:none}
-  .pl-cel{padding:14px 20px;border-left:1px solid #E6E1DA;min-width:0}
-  .pl-nome-h{font:600 18px/1.3 var(--font-title),Inter,sans-serif;letter-spacing:-0.01em;margin:0}
-  /* o preço em tinta, não em ameixa: a marca reserva a ameixa para ação
-     principal, link e estado ativo — e preço é dado, não ação */
-  .pl-preco{font:600 26px/1.15 var(--font-mono),'IBM Plex Mono',monospace;letter-spacing:-0.01em;color:#221E1B}
-  /* o preço cheio ao lado do promocional: riscado, menor e em cinza —
-     ele não some, porque é o que ela vai pagar depois da escada */
-  .pl-cheio{display:inline-block;margin-left:8px;font:500 15px var(--font-mono),'IBM Plex Mono',monospace;
-    color:#928A81;text-decoration:line-through}
-  .pl-promo{margin:14px 0 0;max-width:640px;
-    font:400 15px/1.6 var(--font-ui),'Instrument Sans',sans-serif;color:#3D3835}
-  .pl-promo b{color:#221E1B;font-weight:600}
-  .pl-quem{font:400 14.5px/1.5 var(--font-ui),'Instrument Sans',sans-serif;color:#3D3835}
-  /* as duas linhas que mudam: peso e um fundo suave, em cinza quente —
-     hierarquia por cinza, a ameixa fica para os links */
-  .pl-muda{background:#F2EEE9}
-  .pl-rotulo.pl-muda{color:#6B6259;font-weight:600}
-  .pl-num{font:600 20px/1.3 var(--font-mono),'IBM Plex Mono',monospace;color:#221E1B}
-  .pl-acao{padding-top:18px;padding-bottom:6px}
-  /* altura mínima, não fixa: o rótulo quebra em duas linhas na coluna
-     estreita do tablet e o botão cresce junto */
-  .pl-btn{display:flex;align-items:center;justify-content:center;min-height:44px;padding:10px 12px;
-    box-sizing:border-box;border-radius:8px;background:#221E1B;color:#FAF8F5;text-align:center;
-    font:500 14px/1.25 var(--font-ui),'Instrument Sans',sans-serif;text-decoration:none}
-  .pl-btn:hover{background:#000}
-  .pl-seu{display:flex;align-items:center;justify-content:center;min-height:44px;
-    font:500 14px/1.25 var(--font-ui),'Instrument Sans',sans-serif;color:#928A81}
-
-  .pl-incluso{margin-top:36px;padding-top:24px;border-top:1px solid #E6E1DA}
-  .pl-h2{font:600 17px/1.3 var(--font-title),Inter,sans-serif;letter-spacing:-0.01em;margin:0 0 8px;color:#221E1B}
-  .pl-lista-incluso{list-style:none;margin:12px 0 0;padding:0;columns:3;column-gap:32px;
-    font:400 14px/1.5 var(--font-ui),'Instrument Sans',sans-serif;color:#3D3835}
-  .pl-lista-incluso li{break-inside:avoid;margin:0 0 10px}
-  .pl-lista-incluso b{font-weight:600;color:#221E1B}
-
-  .pl-duas{display:grid;grid-template-columns:1fr 1fr;gap:0 40px}
-  .pl-secao{margin-top:40px;max-width:720px}
-  .pl-p{margin:0 0 8px;font:400 15px/1.6 var(--font-ui),'Instrument Sans',sans-serif;color:#3D3835}
-  /* list-style explícito: o preflight do Tailwind zera os marcadores do ul */
-  .pl-lista{list-style:disc;margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:8px;
-    font:400 15px/1.6 var(--font-ui),'Instrument Sans',sans-serif;color:#3D3835}
-
-  .pl-rodape{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
-    margin-top:56px;padding-top:16px;padding-bottom:40px;border-top:1px solid #E6E1DA;font-size:13px;color:#928A81}
-  .pl-rodape-nav{display:flex;gap:16px}
-  .pl-rodape a{display:inline-flex;align-items:center;min-height:44px;color:#928A81;
-    text-decoration:underline;text-underline-offset:3px}
-  .pl-rodape a:hover{color:#221E1B}
-
-  @media (max-width:899px){
-    .pl-lista-incluso{columns:2}
-  }
-  @media (max-width:719px){
-    .pl-h1{font-size:28px}
-    .pl-grade{grid-auto-flow:row;grid-template-rows:none;grid-template-columns:1fr}
-    .pl-rotulo{display:none}
-    .pl-rotulo-m{display:block;font:500 11px/1.4 var(--font-mono),'IBM Plex Mono',monospace;
-      letter-spacing:.06em;text-transform:uppercase;color:#928A81;margin-bottom:4px}
-    .pl-muda .pl-rotulo-m{color:#6B6259;font-weight:600}
-    .pl-cel{border-left:0;padding-left:0;padding-right:0}
-    /* a faixa sangra 14px para cada lado e o texto continua alinhado
-       com as outras células */
-    .pl-muda{margin:0 -14px;padding-left:14px;padding-right:14px}
-    .pl-nome{border-top:1px solid #E6E1DA;padding-top:28px;margin-top:20px}
-    .pl-nome.pl-primeiro{border-top:0;padding-top:0;margin-top:0}
-    .pl-lista-incluso{columns:1}
-    .pl-duas{grid-template-columns:1fr}
-  }
-`;
