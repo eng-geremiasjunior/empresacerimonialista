@@ -167,6 +167,11 @@ export default async function PlanosPage() {
     planoPromovido ?? [...planos].sort((a, b) => a.valorMensal - b.valorMensal)[0] ?? null;
   const primeiraFaixa = faixas?.[0] ?? null;
   const ultimaFaixa = faixas?.[faixas.length - 1] ?? null;
+  // null só se o catálogo vier vazio — o que `getCatalogoDePlanos` também
+  // devolve quando a LEITURA falha, porque ela descarta o erro. Numa
+  // página de anúncio isso é caro: o clique já foi pago. Então o preço
+  // some do botão, mas o botão fica — a pessoa ainda entra, e o resto da
+  // página continua vendendo. Preço nenhum é melhor do que preço errado.
   const precoDeEntrada = primeiraFaixa
     ? primeiraFaixa.valorMensal
     : (planoDeEntrada?.valorMensal ?? null);
@@ -492,7 +497,7 @@ export default async function PlanosPage() {
               marginTop: "32px",
             }}
           >
-            {visitante && precoDeEntrada !== null && (
+            {visitante && (
               <a
                 href="/login"
                 style={{
@@ -511,7 +516,7 @@ export default async function PlanosPage() {
                 }}
                 className="pl-h-ameixa"
               >
-                {`Começar por ${reais(precoDeEntrada)}`}
+                {precoDeEntrada === null ? "Começar agora" : `Começar por ${reais(precoDeEntrada)}`}
               </a>
             )}
             {dona && planoDeEntrada && (
@@ -1089,7 +1094,7 @@ export default async function PlanosPage() {
                 marginTop: "30px",
               }}
             >
-              {visitante && precoDeEntrada !== null && (
+              {visitante && (
                 <a
                   href="/login"
                   style={{
@@ -1108,7 +1113,7 @@ export default async function PlanosPage() {
                   }}
                   className="pl-h-ameixa"
                 >
-                  {`Começar por ${reais(precoDeEntrada)}`}
+                  {precoDeEntrada === null ? "Começar agora" : `Começar por ${reais(precoDeEntrada)}`}
                 </a>
               )}
               {dona && planoDeEntrada && (
