@@ -158,24 +158,230 @@ function conferirCobranca(d: DadosCobranca): string | null {
   return null;
 }
 
+type ContextoDaDona = { empresaId: string; userId: string; nome: string; email: string };
+
+/**
+ * O que precisa estar certo ANTES de qualquer coisa acontecer.
+ *
+ * Sem o aceite não há contrato, e sem contrato não há o que cobrar. A
+ * caixinha da tela já segura o botão; isto é para quem chamar a action
+ * por fora dela.
+ *
+ * Existe como função própria — e não no meio da cobrança — porque a porta
+ * pública precisa conferir tudo isto ANTES de criar a conta. Sem isso,
+ * `/comecar` seria uma fábrica de contas: bastava mandar nome e e-mail,
+ * sem cartão nenhum, e a conta nascia.
+ */
+/**
+ * Um cliente sem poder nenhum, só para CONFERIR UMA SENHA.
+ *
+ * Não persiste sessão: a conferência é a resposta, e o que ela devolve
+ * morre aqui — nenhum cookie do navegador é tocado.
+ */
+function criarAnonimo() {
+  return createServico(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { persistSession: false, autoRefreshToken: false } }
+  );
+}
+
+function conferirPedido(
+  planoCodigo: string,
+  cardToken: string,
+  cobranca: DadosCobranca,
+  aceitouTermos: boolean
+): string | null {
+  if (aceitouTermos !== true) {
+    return "Para assinar, é preciso aceitar os Termos e Condições.";
+  }
+  if (!cardToken) return "Não recebemos os dados do cartão.";
+  if (!ehCodigoDoPlano(planoCodigo)) return "Escolha um plano.";
+  return conferirCobranca(cobranca);
+}
+
+/** A porta de quem JÁ ESTÁ LOGADA — a tela de assinatura de dentro do app. */
 export async function assinar(
   planoCodigo: string,
   cardToken: string,
   cobranca: DadosCobranca,
   aceitouTermos: boolean
 ): Promise<ResultadoAssinatura> {
-  // Antes de qualquer outra coisa: sem o aceite não há contrato, e sem
-  // contrato não há o que cobrar. A caixinha da tela já segura o botão;
-  // isto aqui é para quem chamar a action por fora dela.
-  if (aceitouTermos !== true) {
-    return { error: "Para assinar, é preciso aceitar os Termos e Condições." };
-  }
-  if (!cardToken) return { error: "Não recebemos os dados do cartão." };
-  const problema = conferirCobranca(cobranca);
-  if (problema) return { error: problema };
-
   const ctx = await donaLogada();
   if ("error" in ctx) return { error: ctx.error };
+  return assinarPara(ctx, planoCodigo, cardToken, cobranca, aceitouTermos);
+}
+
+/**
+ * A porta de quem CHEGA DO ANÚNCIO e ainda não tem conta.
+ *
+ * Não existe conta gratuita, então pedir para se cadastrar, sair, abrir o
+ * e-mail e voltar para pagar é perder no caminho quem já tinha decidido
+ * pagar. Aqui a conta nasce e a cobrança acontece no mesmo envio.
+ *
+ * A conta nasce JÁ CONFIRMADA, e isso é decisão de produto, não atalho:
+ * quem põe um cartão que a operadora aprova está mais verificada do que
+ * quem clica num link de e-mail. A confirmação por e-mail continua ligada
+ * para todo o resto do sistema.
+ *
+ * A ORDEM É CONTA PRIMEIRO, COBRANÇA DEPOIS, e não há como ser diferente:
+ * a cobrança precisa de uma empresa para pendurar a assinatura. Se o
+ * cartão for recusado, a conta fica de pé sem assinatura — que é
+ * exatamente o estado de quem se cadastrou e ainda não pagou, e a porta
+ * de `porta-da-assinatura.ts` a manda para o checkout até pagar.
+ *
+ * Quem já tem conta NÃO passa por aqui: a resposta diz para entrar. Sem
+ * isso, um e-mail já cadastrado viraria uma segunda cobrança sem dono.
+ */
+export async function assinarCriandoConta(
+  dados: {
+    nome: string;
+    negocio: string;
+    email: string;
+    senha: string;
+  },
+  planoCodigo: string,
+  cardToken: string,
+  cobranca: DadosCobranca,
+  aceitouTermos: boolean
+): Promise<ResultadoAssinatura | { error: string; jaTemConta?: true }> {
+  const nome = dados.nome?.trim() ?? "";
+  const negocio = dados.negocio?.trim() ?? "";
+  const email = dados.email?.trim().toLowerCase() ?? "";
+  const senha = dados.senha ?? "";
+
+  if (nome.length < 2) return { error: "Escreva seu nome." };
+  if (negocio.length < 2) return { error: "Escreva o nome do seu negócio." };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { error: "Confira o e-mail digitado." };
+  if (senha.length < 6) return { error: "A senha precisa de pelo menos 6 caracteres." };
+
+  // TUDO CONFERIDO ANTES DE A CONTA NASCER. Sem esta linha aqui em cima,
+  // este endereço público seria uma fábrica de contas: bastava mandar
+  // nome e e-mail, sem cartão nenhum, e a conta existia.
+  const pedido = conferirPedido(planoCodigo, cardToken, cobranca, aceitouTermos);
+  if (pedido) return { error: pedido };
+
+  const db = servico();
+
+  // Cria a conta. `email_confirm: true` porque o cartão é a verificação —
+  // e porque, sem isso, ela não teria sessão para nada depois de pagar.
+  const { data: criada, error: erroCriar } = await db.auth.admin.createUser({
+    email,
+    password: senha,
+    email_confirm: true,
+    // as mesmas chaves que o gatilho de signup lê: 'empresa' vira o nome
+    // da empresa, 'name' vira o nome da pessoa em membros_equipe
+    user_metadata: { empresa: negocio, name: nome },
+  });
+
+  let userId = criada?.user?.id ?? null;
+
+  if (erroCriar || !userId) {
+    const jaExiste =
+      erroCriar?.code === "email_exists" ||
+      /already been registered|already exists/i.test(erroCriar?.message ?? "");
+    if (!jaExiste) {
+      // só o CÓDIGO do erro: a mensagem do Supabase pode repetir o e-mail
+      // digitado, e log não é lugar de dado de quem está comprando
+      console.error("[vela:assinatura] criar conta:", erroCriar?.code ?? "sem código");
+      return { error: "Não foi possível criar a conta agora. Tente de novo em alguns instantes." };
+    }
+
+    // A CONTA JÁ EXISTE — e o caso mais provável NÃO é fraude, é ela
+    // mesma: o cartão foi recusado na primeira tentativa, a conta ficou
+    // criada, ela corrigiu o número e clicou de novo. Barrar aqui seria
+    // trancar a compradora do lado de fora no exato momento em que ela
+    // estava pagando.
+    //
+    // Quem prova que é ela é a SENHA. Se confere, segue a compra na conta
+    // que já existe; se não confere, não há o que fazer aqui — entrar
+    // primeiro é o caminho.
+    const conferindo = criarAnonimo();
+    const { data: entrou } = await conferindo.auth.signInWithPassword({
+      email,
+      password: senha,
+    });
+    userId = entrou?.user?.id ?? null;
+    // a sessão criada só para conferir a senha não serve para mais nada
+    await conferindo.auth.signOut();
+    if (!userId) {
+      return {
+        error: "Já existe uma conta com este e-mail. Entre para assinar.",
+        jaTemConta: true,
+      };
+    }
+  }
+
+  // O gatilho de signup cria empresa e vínculo. É ele quem manda — aqui
+  // só se espera a linha aparecer, porque a cobrança precisa do
+  // empresa_id. Se não aparecer, a conta existe e ela paga na tela
+  // seguinte: melhor do que cobrar sem saber de quem é a assinatura.
+  let empresaId: string | null = null;
+  for (let tentativa = 0; tentativa < 8 && !empresaId; tentativa++) {
+    const { data: vinculo } = await db
+      .from("membros_equipe")
+      .select("empresa_id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    empresaId = vinculo?.empresa_id ?? null;
+    if (!empresaId) await new Promise((r) => setTimeout(r, 250));
+  }
+  if (!empresaId) {
+    console.error("[vela:assinatura] empresa não provisionada para", userId);
+    return {
+      error:
+        "Sua conta foi criada, mas o pagamento não foi concluído. Entre com seu e-mail e senha para assinar.",
+    };
+  }
+
+  // A conta nasceu. O evento sai pelo SERVIDOR porque esta tela não tem
+  // pixel — há campos de cartão nela, e script de terceiro não entra em
+  // formulário de pagamento. Sem valor: criar conta não é dinheiro.
+  try {
+    const h0 = headers();
+    const o = lerOrigemDoCookie();
+    await registrarConversao({
+      tipo: "conta_criada",
+      email,
+      idDoEvento: `conta:${empresaId}`,
+      origem: {
+        fbp: o?.fbp ?? null,
+        fbc: o?.fbc ?? null,
+        gaClientId: o?.ga_client_id ?? null,
+        ip: h0.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+        userAgent: h0.get("user-agent")?.slice(0, 300) ?? null,
+      },
+    });
+  } catch (e) {
+    console.error("[vela:conversao] conta:", String(e).slice(0, 200));
+  }
+
+  return assinarPara(
+    { empresaId, userId, nome, email },
+    planoCodigo,
+    cardToken,
+    cobranca,
+    aceitouTermos
+  );
+}
+
+/**
+ * Assinar, para uma conta que já existe.
+ *
+ * NÃO é exportada, de propósito: neste arquivo `"use server"`, exportar
+ * significaria abrir um endereço público que aceita `ctx` de fora — e
+ * `ctx` diz de QUAL empresa é a cobrança. Quem chama tem de provar quem
+ * é primeiro; são as duas portas abaixo que fazem isso.
+ */
+async function assinarPara(
+  ctx: ContextoDaDona,
+  planoCodigo: string,
+  cardToken: string,
+  cobranca: DadosCobranca,
+  aceitouTermos: boolean
+): Promise<ResultadoAssinatura> {
+  const problema = conferirPedido(planoCodigo, cardToken, cobranca, aceitouTermos);
+  if (problema) return { error: problema };
 
   // O preço vem do catálogo (147), não de variável de ambiente: o que ela
   // escolheu na tela é o que vai para o gateway e para o banco, com o

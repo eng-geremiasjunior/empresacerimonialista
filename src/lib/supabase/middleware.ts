@@ -36,6 +36,9 @@ const ROTAS_PUBLICAS: ((p: string) => boolean)[] = [
   (p) => p === "/termos",
   // os planos lado a lado — a pessoa escolhe ANTES de ter conta
   (p) => p === "/planos",
+  // o checkout de quem chega do anúncio: a conta nasce junto com a
+  // cobrança, então esta tela existe para quem ainda não tem sessão
+  (p) => p === "/comecar",
   // orçamento na mão da cliente (aprova ou recusa)
   (p) => p.startsWith("/orcamento/"),
   // as rotas de cron se protegem sozinhas com Bearer CRON_SECRET

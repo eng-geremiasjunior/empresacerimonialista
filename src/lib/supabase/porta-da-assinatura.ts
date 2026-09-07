@@ -25,8 +25,15 @@ import { createClient } from "@/lib/supabase/server";
  *  - qualquer conta com `ultimo_pagamento_em` — já pagou alguma vez, e é
  *    o caso da assinante cujo cartão falhou ESTE mês: ela não perde o
  *    sistema por um boleto atrasado, quem cuida disso é a cobrança;
- *  - qualquer conta com `cancelada_em` — quem cancelou continua vendo o
- *    que é dela até congelar, e esse prazo quem decide é a 151.
+ *  - quem cancelou DEPOIS de ter pago — coberto pelo `ultimo_pagamento_em`
+ *    acima; continua vendo o que é dela até congelar, e esse prazo quem
+ *    decide é a 151.
+ *
+ * `cancelada_em` sozinho NÃO abre a porta, e isso é um conserto: uma
+ * assinatura nova que o gateway devolve como 'canceled' grava
+ * `cancelada_em` sem um centavo ter entrado. Pela régua anterior, um
+ * cartão que nascesse cancelado na operadora abria o sistema inteiro de
+ * graça — que é exatamente o buraco que esta trava veio fechar.
  *
  * Erro de leitura NÃO tranca a porta. Uma falha de trinta segundos no
  * banco não pode trancar do lado de fora quem está pagando.
@@ -35,7 +42,7 @@ export async function precisaAssinar(): Promise<boolean> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("assinaturas")
-    .select("status, ultimo_pagamento_em, cancelada_em")
+    .select("status, ultimo_pagamento_em")
     .maybeSingle();
 
   if (error) return false;
@@ -44,9 +51,8 @@ export async function precisaAssinar(): Promise<boolean> {
   const linha = data as {
     status: string | null;
     ultimo_pagamento_em: string | null;
-    cancelada_em: string | null;
   };
   if (linha.status === "ativa" || linha.status === "pausada") return false;
-  if (linha.ultimo_pagamento_em || linha.cancelada_em) return false;
+  if (linha.ultimo_pagamento_em) return false;
   return true;
 }

@@ -230,7 +230,7 @@ export default async function PlanosPage() {
     if (equipe) return null;
     if (!dona) {
       return (
-        <a href="/login?criar=1" style={estilo} className={classe}>
+        <a href={`/comecar?plano=${p.codigo}`} style={estilo} className={classe}>
           {destaque ? "Começar agora" : `Começar no ${p.nome}`}
         </a>
       );
@@ -351,7 +351,7 @@ export default async function PlanosPage() {
           <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             {visitante && (
               <a
-                href="/login?criar=1"
+                href="/comecar"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -409,7 +409,7 @@ export default async function PlanosPage() {
             )}
             {podeAssinar && (
               <a
-                href={visitante ? "/login?criar=1" : `/assinatura?plano=${planoDeEntrada?.codigo ?? ""}`}
+                href={visitante ? "/comecar" : `/assinatura?plano=${planoDeEntrada?.codigo ?? ""}`}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -499,7 +499,7 @@ export default async function PlanosPage() {
           >
             {visitante && (
               <a
-                href="/login?criar=1"
+                href="/comecar"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -713,7 +713,7 @@ export default async function PlanosPage() {
                   >
                     {visitante && (
                       <a
-                        href="/login?criar=1"
+                        href="/comecar"
                         style={{
                           display: "inline-flex",
                           alignItems: "center",
@@ -1096,7 +1096,7 @@ export default async function PlanosPage() {
             >
               {visitante && (
                 <a
-                  href="/login?criar=1"
+                  href="/comecar"
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
@@ -1264,7 +1264,7 @@ export default async function PlanosPage() {
           </span>
           {visitante && (
             <a
-              href="/login?criar=1"
+              href="/comecar"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
