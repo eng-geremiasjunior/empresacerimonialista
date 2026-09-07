@@ -7,6 +7,7 @@ import {
   getCatalogoDePlanos,
   getEscadaDaPromocao,
   PLANO_DA_PROMOCAO,
+  podeEntrarNaPromocao,
   PROMOCAO_LANCAMENTO,
   reais,
   tetoEmTexto,
@@ -54,6 +55,7 @@ export const metadata: Metadata = {
 type Conta = {
   plano: string | null;
   status: string | null;
+  ultimo_pagamento_em: string | null;
 } | null;
 
 // "Para quem é", montado a partir dos tetos — nunca literal, porque o
@@ -92,9 +94,19 @@ export default async function PlanosPage() {
   const dona = conta !== null;
   const jaPaga = conta?.status === "ativa" || conta?.status === "inadimplente";
 
+  // `minha_assinatura()` não devolve `cancelada_em`, e sem ela a régua da
+  // promoção fica cega para quem já cancelou uma vez. A linha é lida
+  // direto, como faz /assinatura — pela sessão dela, sob RLS.
+  const { data: linhaDaAssinatura } = dona
+    ? await supabase.from("assinaturas").select("cancelada_em").maybeSingle()
+    : { data: null };
+
   const visitante = !user;
   const equipe = Boolean(user) && !dona;
-  const temBotao = !equipe;
+  // Quem tem uma assinatura para FAZER. A coordenadora nunca assina, e
+  // quem já paga não precisa de um botão de "começar" — precisa do
+  // caminho para a assinatura dela.
+  const podeAssinar = visitante || (dona && !jaPaga);
 
   const planos = await getCatalogoDePlanos();
   const n = planos.length;
@@ -111,12 +123,42 @@ export default async function PlanosPage() {
   // valor do catálogo. Sem tocar em código.
   const escada = await getEscadaDaPromocao(PROMOCAO_LANCAMENTO);
   const planoPromovido = planos.find((p) => p.codigo === PLANO_DA_PROMOCAO) ?? null;
-  const faixas: FaixaDaEscada[] | null =
+  const faixasCruas: FaixaDaEscada[] | null =
     escada && escada.degraus.length > 0 && planoPromovido
       ? faixasDaEscada(escada, planoPromovido.valorMensal)
       : null;
 
-  const promo = faixas !== null && planoPromovido !== null;
+  // A VITRINE SÓ ANUNCIA O QUE O CHECKOUT COBRA. Duas réguas, as mesmas
+  // que /assinatura e a action usam:
+  //
+  // 1) degrau que não desconta (ou que zera a mensalidade) não é
+  //    promoção — anunciar "condição de lançamento" com o preço cheio é
+  //    promessa vazia;
+  // 2) lançamento é para quem chega, não para quem volta: quem já pagou,
+  //    quem paga e quem já cancelou uma vez não entram de novo. Sem esta
+  //    régua, a página prometia R$ 27,90 a uma conta que o checkout
+  //    cobraria R$ 97,00 — que é exatamente de onde nasce contestação de
+  //    cartão.
+  //
+  // Para o visitante — que é quem vem do anúncio — nada disso muda nada:
+  // ele não tem conta, e a promoção aparece inteira.
+  const promocaoDesconta =
+    faixasCruas !== null &&
+    planoPromovido !== null &&
+    faixasCruas[0].valorMensal > 0 &&
+    faixasCruas[0].valorMensal < planoPromovido.valorMensal;
+  const elegivelAPromocao =
+    visitante ||
+    podeEntrarNaPromocao({
+      status: conta?.status ?? null,
+      cancelada_em: linhaDaAssinatura?.cancelada_em ?? null,
+      ultimo_pagamento_em: conta?.ultimo_pagamento_em ?? null,
+    });
+  const promo = promocaoDesconta && elegivelAPromocao;
+  // Uma decisão só: se a promoção não vale para quem está olhando, ela
+  // não existe para o resto da página — preço, frase, selo e barra do
+  // celular saem todos daqui.
+  const faixas: FaixaDaEscada[] | null = promo ? faixasCruas : null;
 
   // O que os botões e as frases dizem. Com promoção, o preço de entrada
   // é o primeiro degrau; sem ela, o preço cheio do plano de entrada — e
@@ -360,9 +402,9 @@ export default async function PlanosPage() {
                 Voltar ao painel
               </a>
             )}
-            {temBotao && (
+            {podeAssinar && (
               <a
-                href="/login"
+                href={visitante ? "/login" : `/assinatura?plano=${planoDeEntrada?.codigo ?? ""}`}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -379,7 +421,7 @@ export default async function PlanosPage() {
                 }}
                 className="pl-h-ameixa"
               >
-                Começar agora
+                {visitante ? "Começar agora" : "Assinar"}
               </a>
             )}
           </span>
@@ -474,7 +516,7 @@ export default async function PlanosPage() {
             )}
             {dona && planoDeEntrada && (
               <a
-                href={`/assinatura?plano=${planoDeEntrada.codigo}`}
+                href={jaPaga ? "/assinatura" : `/assinatura?plano=${planoDeEntrada.codigo}`}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -1071,7 +1113,7 @@ export default async function PlanosPage() {
               )}
               {dona && planoDeEntrada && (
                 <a
-                  href={`/assinatura?plano=${planoDeEntrada.codigo}`}
+                  href={jaPaga ? "/assinatura" : `/assinatura?plano=${planoDeEntrada.codigo}`}
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
@@ -1162,8 +1204,8 @@ export default async function PlanosPage() {
           seguinte; a barra fixa mantém a ação sempre a um toque. Só
           existe para quem pode assinar — a coordenadora logada não ganha
           botão. */}
-      {temBotao && <div data-cta-espaco="1" style={{ display: "none", height: "76px" }}></div>}
-      {temBotao && (
+      {podeAssinar && <div data-cta-espaco="1" style={{ display: "none", height: "76px" }}></div>}
+      {podeAssinar && (
         <div
           data-cta-fixo="1"
           style={{
@@ -1256,7 +1298,7 @@ export default async function PlanosPage() {
               }}
               className="pl-h-ameixa"
             >
-              {jaPaga ? "Ver assinatura" : "Assinar"}
+              Assinar
             </a>
           )}
         </div>
