@@ -161,18 +161,6 @@ function conferirCobranca(d: DadosCobranca): string | null {
 type ContextoDaDona = { empresaId: string; userId: string; nome: string; email: string };
 
 /**
- * O que precisa estar certo ANTES de qualquer coisa acontecer.
- *
- * Sem o aceite não há contrato, e sem contrato não há o que cobrar. A
- * caixinha da tela já segura o botão; isto é para quem chamar a action
- * por fora dela.
- *
- * Existe como função própria — e não no meio da cobrança — porque a porta
- * pública precisa conferir tudo isto ANTES de criar a conta. Sem isso,
- * `/comecar` seria uma fábrica de contas: bastava mandar nome e e-mail,
- * sem cartão nenhum, e a conta nascia.
- */
-/**
  * Um cliente sem poder nenhum, só para CONFERIR UMA SENHA.
  *
  * Não persiste sessão: a conferência é a resposta, e o que ela devolve
@@ -186,6 +174,18 @@ function criarAnonimo() {
   );
 }
 
+/**
+ * O que precisa estar certo ANTES de qualquer coisa acontecer.
+ *
+ * Sem o aceite não há contrato, e sem contrato não há o que cobrar. A
+ * caixinha da tela já segura o botão; isto é para quem chamar a action
+ * por fora dela.
+ *
+ * Existe como função própria — e não no meio da cobrança — porque a porta
+ * pública precisa conferir tudo isto ANTES de criar a conta. Sem isso,
+ * `/comecar` seria uma fábrica de contas: bastava mandar nome e e-mail,
+ * sem cartão nenhum, e a conta nascia.
+ */
 function conferirPedido(
   planoCodigo: string,
   cardToken: string,
@@ -275,6 +275,8 @@ export async function assinarCriandoConta(
   });
 
   let userId = criada?.user?.id ?? null;
+  // só o caminho que criou a conta AGORA pode desfazê-la lá embaixo
+  const contaNova = userId !== null;
 
   if (erroCriar || !userId) {
     const jaExiste =
@@ -356,13 +358,50 @@ export async function assinarCriandoConta(
     console.error("[vela:conversao] conta:", String(e).slice(0, 200));
   }
 
-  return assinarPara(
+  const resultado = await assinarPara(
     { empresaId, userId, nome, email },
     planoCodigo,
     cardToken,
     cobranca,
-    aceitouTermos
+    aceitouTermos,
+    "checkout"
   );
+
+  // DESFAZ A CONTA QUE NÃO VIROU ASSINATURA.
+  //
+  // `conferirPedido` exige um token de cartão, mas não pergunta ao
+  // gateway se ele vale — e não tem como perguntar antes de cobrar. Num
+  // endereço público, isso bastava para fabricar contas: token inventado,
+  // a cobrança falha, e ficavam de pé um login CONFIRMADO (sem nenhum
+  // e-mail avisando o dono do endereço), uma empresa e um vínculo de
+  // proprietária. Pior: aquele e-mail passava a ser recusado como acesso
+  // de portal em qualquer conta, para sempre.
+  //
+  // A guarda é o `gateway_subscription_id`: cartão de VERDADE recusado
+  // grava o id, e essa conta continua de pé — ela troca o cartão e tenta
+  // de novo, que é a decisão de produto do cabeçalho. Sem id, a operadora
+  // nunca chegou a criar nada, e não há o que preservar.
+  //
+  // Só desfaz o que ESTE pedido criou: quem entrou pelo ramo do e-mail
+  // que já existia nunca perde a conta. Mesmo padrão de
+  // `cerimonialistas-admin.ts`, que já desfaz login órfão.
+  if (contaNova && resultado.error) {
+    const { data: linha } = await db
+      .from("assinaturas")
+      .select("gateway_subscription_id")
+      .eq("empresa_id", empresaId)
+      .maybeSingle();
+    if (!linha?.gateway_subscription_id) {
+      await db.from("membros_equipe").delete().eq("user_id", userId);
+      await db.from("empresas").delete().eq("id", empresaId);
+      const { error: erroApagar } = await db.auth.admin.deleteUser(userId);
+      if (erroApagar) {
+        console.error("[vela:assinatura] conta órfã não apagada:", userId);
+      }
+    }
+  }
+
+  return resultado;
 }
 
 /**
@@ -378,7 +417,9 @@ async function assinarPara(
   planoCodigo: string,
   cardToken: string,
   cobranca: DadosCobranca,
-  aceitouTermos: boolean
+  aceitouTermos: boolean,
+  /** de qual tela veio — muda o que se pode PEDIR a ela quando algo falha */
+  porta: "app" | "checkout" = "app"
 ): Promise<ResultadoAssinatura> {
   const problema = conferirPedido(planoCodigo, cardToken, cobranca, aceitouTermos);
   if (problema) return { error: problema };
@@ -664,7 +705,14 @@ async function assinarPara(
     console.error("[vela:assinatura] gateway devolveu status", g.status, "sub:", g.id);
     return {
       error:
-        "O cartão não foi aprovado pela operadora. Nada foi cobrado. Tente outro cartão em “Forma de pagamento”, ou cancele a assinatura logo abaixo.",
+      // A frase muda com a PORTA: a de dentro do app tem "Forma de
+      // pagamento" e o botão de cancelar logo abaixo; a de quem chega do
+      // anúncio tem só os três passos e o botão de assinar. Mandar essa
+      // pessoa procurar dois controles que não existem na tela dela é
+      // deixá-la sem saída no momento em que ela estava pagando.
+      porta === "checkout"
+        ? "O cartão não foi aprovado pela operadora. Nada foi cobrado. Confira os dados e tente de novo, ou use outro cartão."
+        : "O cartão não foi aprovado pela operadora. Nada foi cobrado. Tente outro cartão em “Forma de pagamento”, ou cancele a assinatura logo abaixo.",
     };
   }
 
