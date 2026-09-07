@@ -2,6 +2,14 @@ import type { Metadata } from "next";
 import { BrandShowcase, Logo } from "@/components/auth/BrandShowcase";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { Medicao } from "@/components/marketing/Medicao";
+import {
+  comTetoDoPlano,
+  getCatalogoDePlanos,
+  getEscadaDaPromocao,
+  PLANO_DA_PROMOCAO,
+  PROMOCAO_LANCAMENTO,
+  reais,
+} from "@/lib/planos";
 
 export const metadata: Metadata = {
   title: "Entrar — eorganizei",
@@ -58,12 +66,39 @@ function SetupInstructions() {
   );
 }
 
-export default function LoginPage({
+// O preço de entrada aparece nesta tela porque ela é o meio do caminho
+// entre o anúncio e o cartão: quem chegou lendo "Começar por R$ 27,90"
+// precisa reconhecer o mesmo número aqui. Vem do catálogo e da escada,
+// nunca escrito à mão — se o dono mudar o valor, esta tela acompanha.
+async function precoDeEntrada(): Promise<string | null> {
+  try {
+    const planos = await getCatalogoDePlanos();
+    const plano =
+      planos.find((p) => p.codigo === PLANO_DA_PROMOCAO) ??
+      [...planos].sort((a, b) => a.valorMensal - b.valorMensal)[0];
+    if (!plano) return null;
+    const escada = await getEscadaDaPromocao(PROMOCAO_LANCAMENTO);
+    const degrau = escada?.degraus[0];
+    // a mesma régua da vitrine: degrau que não desconta não é promoção
+    const valor =
+      degrau && comTetoDoPlano(degrau.valorMensal, plano.valorMensal) < plano.valorMensal
+        ? comTetoDoPlano(degrau.valorMensal, plano.valorMensal)
+        : plano.valorMensal;
+    return reais(valor);
+  } catch {
+    return null;
+  }
+}
+
+export default async function LoginPage({
   searchParams,
 }: {
-  searchParams?: { erro?: string };
+  searchParams?: { erro?: string; criar?: string };
 }) {
   if (!supabaseConfigured) return <SetupInstructions />;
+
+  const criar = searchParams?.criar === "1";
+  const preco = criar ? await precoDeEntrada() : null;
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
@@ -83,7 +118,11 @@ export default function LoginPage({
             </p>
           </div>
 
-          <LoginForm erroInicial={searchParams?.erro} />
+          <LoginForm
+            erroInicial={searchParams?.erro}
+            criarConta={criar}
+            precoDeEntrada={preco}
+          />
         </section>
       </main>
 

@@ -14,15 +14,28 @@ const inputClass =
 
 export function LoginForm({
   erroInicial,
+  criarConta = false,
+  precoDeEntrada = null,
 }: {
   /** Vem do ?erro= da URL — /auth/confirm manda para cá quando o link do
    *  e-mail não serviu (expirou, já foi usado, ou foi aberto em outro
    *  aparelho). O portal já fazia isso; a área profissional chegava aqui
    *  muda, e quem clicou no link achava que o sistema não funcionava. */
   erroInicial?: string;
+  /** `?criar=1` — abre direto no cadastro, para quem vem do anúncio. */
+  criarConta?: boolean;
+  /** "R$ 27,90", lido do catálogo pela página. Nunca escrito aqui. */
+  precoDeEntrada?: string | null;
 } = {}) {
   const router = useRouter();
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  // Quem chega do anúncio vem para ASSINAR, não para entrar: o botão da
+  // página de vendas manda `?criar=1` e a tela abre no cadastro. Sem
+  // isso, o clique em "Começar por R$ 27,90" caía num formulário de
+  // login — tela de quem já é cliente, na cara de quem nunca ouviu falar
+  // da marca.
+  const [mode, setMode] = useState<"login" | "signup">(
+    criarConta ? "signup" : "login"
+  );
   const [negocio, setNegocio] = useState("");
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -162,10 +175,16 @@ export function LoginForm({
         <h2 className="mt-4 text-xl font-bold tracking-tight text-gray-900">
           {isLogin ? "Bem-vinda de volta!" : "Crie sua conta"}
         </h2>
+        {/* No cadastro a frase diz o PRÓXIMO PASSO, e o preço vem junto:
+            quem clicou no anúncio precisa reconhecer aqui a oferta que
+            leu lá. O valor é lido do catálogo pela página — não existe
+            preço escrito nesta tela. */}
         <p className="mt-1 text-sm text-gray-500">
           {isLogin
             ? "Faça login para acessar sua conta."
-            : "Comece a organizar seus eventos em minutos."}
+            : precoDeEntrada
+              ? `Primeiro passo: seus dados. Em seguida, o pagamento de ${precoDeEntrada} por mês.`
+              : "Primeiro passo: seus dados. Em seguida, o pagamento."}
         </p>
       </div>
 
@@ -321,7 +340,7 @@ export function LoginForm({
             ? "Aguarde..."
             : isLogin
               ? "Entrar no eorganizei"
-              : "Criar conta gratuita"}
+              : "Continuar para o pagamento"}
         </button>
       </form>
 
@@ -340,7 +359,7 @@ export function LoginForm({
         }}
         className="w-full rounded-lg border border-indigo-200 bg-white px-4 py-2.5 text-sm font-semibold text-indigo-600 transition-colors hover:bg-indigo-50"
       >
-        {isLogin ? "Criar conta gratuita" : "Já tenho conta — entrar"}
+        {isLogin ? "Criar conta e assinar" : "Já tenho conta — entrar"}
       </button>
     </div>
   );
