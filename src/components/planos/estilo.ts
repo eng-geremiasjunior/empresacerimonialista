@@ -166,6 +166,10 @@ export const CSS_PLANOS = `
     [data-demo-quadro]{height:auto!important}
     [data-cena-1]{position:relative!important;top:0!important;margin-top:48px!important;grid-template-columns:1fr!important}
     [data-legenda-demo]{height:44px!important}
+    /* o cursor e o halo de clique da demonstração foram calibrados em
+       porcentagem para a moldura de desktop; com a cena empilhada eles
+       caem fora dos alvos — no celular não existem */
+    [data-cursor]{display:none!important}
     /* a demonstração nascida (DemoNascer): a calha do app cai de 24 para
        14px, a data do cabeçalho some, a saída vira dois botões empilhados
        e o prazo de cada decisão desce para a linha de baixo — em 375px o
