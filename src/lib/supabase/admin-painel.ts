@@ -263,11 +263,19 @@ export async function getSerieMensal(
   const meses = mesesAte(mesFinal, n);
 
   const [assinaturas, eventos, { data: gastos }, empresas] = await Promise.all([
-    lerTudo<{ empresa_id: string; status: AssinaturaAdmin["status"] }>(
+    lerTudo<{
+      empresa_id: string;
+      status: AssinaturaAdmin["status"];
+      teste_termina_em?: string | null;
+    }>(
       (de, ate) =>
         db
           .from("assinaturas")
-          .select("empresa_id, status")
+          // Todas as colunas, e não a lista: teste_termina_em (154) pode
+          // ainda não existir no banco quando este código subir, e pedir
+          // a coluna pelo nome derrubaria o painel inteiro com erro do
+          // PostgREST.
+          .select("*")
           .order("empresa_id", { ascending: true })
           .range(de, ate),
       "as assinaturas"
@@ -305,6 +313,7 @@ export async function getSerieMensal(
   const a: AssinaturaAdmin[] = assinaturas.map((r) => ({
     empresaId: r.empresa_id,
     status: r.status,
+    testeTerminaEm: r.teste_termina_em ?? null,
   }));
   const ev: EventoAssinatura[] = eventos.map((r) => ({
     empresaId: r.empresa_id,
@@ -491,4 +500,58 @@ export async function definirBanimentoDb(
     }
   }
   return { afetados };
+}
+
+// ------------------------------------------------------------------
+// O portão do teste grátis (154)
+// ------------------------------------------------------------------
+// Ligar e desligar o cadastro sem cartão é decisão comercial do dono, e
+// por isso mora no banco e não no código: ele fecha a torneira às onze
+// da noite sem publicar nada. Fechar governa só quem CHEGA — quem já
+// tem `teste_termina_em` corre os dias dela até o fim.
+
+export type PortaoAdmin = { aberto: boolean; dias: number; atualizadoEm: string | null };
+
+export async function getPortaoDoTeste(): Promise<PortaoAdmin | null> {
+  await exigirSuperAdmin();
+  const db = servico();
+  const { data, error } = await db
+    .from("teste_gratis")
+    .select("aberto, dias, atualizado_em")
+    .maybeSingle();
+  // sem a 154 aplicada a tabela não existe: a tela mostra o aviso em vez
+  // de um interruptor que não liga nada
+  if (error || !data) return null;
+  return {
+    aberto: data.aberto === true,
+    dias: Number(data.dias) || 7,
+    atualizadoEm: data.atualizado_em ?? null,
+  };
+}
+
+export async function salvarPortaoDoTesteDb(input: {
+  aberto: boolean;
+  dias: number;
+}): Promise<void> {
+  await exigirSuperAdmin();
+  const db = servico();
+  const dias = Math.trunc(input.dias);
+  // o CHECK do banco recusaria, mas a mensagem do Postgres não diria ao
+  // dono qual era a faixa
+  if (!Number.isFinite(dias) || dias < 1 || dias > 90) {
+    throw new Error("O teste precisa ter entre 1 e 90 dias.");
+  }
+  const { error } = await db
+    .from("teste_gratis")
+    .upsert(
+      { id: true, aberto: input.aberto, dias, atualizado_em: new Date().toISOString() },
+      { onConflict: "id" }
+    );
+  if (error) {
+    throw new Error(
+      error.code === "42P01"
+        ? "A migração 154 ainda não foi aplicada neste banco."
+        : `Não foi possível salvar o portão: ${error.message}`
+    );
+  }
 }

@@ -9,6 +9,7 @@ import {
   definirBanimentoDb,
   salvarAssinaturaDb,
   salvarGastoDb,
+  salvarPortaoDoTesteDb,
 } from "@/lib/supabase/admin-painel";
 import { desmascararDinheiro } from "@/lib/format";
 import { ehCodigoDoPlano } from "@/lib/planos";
@@ -95,5 +96,22 @@ export async function definirBanimento(
     return {
       error: e instanceof Error ? e.message : "Não foi possível alterar.",
     };
+  }
+}
+
+export async function salvarPortaoDoTeste(
+  _prev: ResultadoAdmin,
+  formData: FormData
+): Promise<ResultadoAdmin> {
+  try {
+    const aberto = String(formData.get("aberto") ?? "") === "1";
+    const dias = Number(String(formData.get("dias") ?? "7").replace(/\D/g, "")) || 7;
+    await salvarPortaoDoTesteDb({ aberto, dias });
+    revalidatePath("/admin");
+    revalidatePath("/planos");
+    return { ok: true };
+  } catch (e) {
+    console.error("[vela:admin] salvarPortaoDoTeste:", e);
+    return { error: e instanceof Error ? e.message : "Não foi possível salvar." };
   }
 }

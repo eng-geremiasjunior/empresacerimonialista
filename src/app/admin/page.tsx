@@ -17,7 +17,7 @@
 
 import { Fragment } from "react";
 import Link from "next/link";
-import { getSerieMensal } from "@/lib/supabase/admin-painel";
+import { getPortaoDoTeste, getSerieMensal } from "@/lib/supabase/admin-painel";
 import {
   agruparEmAnos,
   agruparEmTrimestres,
@@ -35,6 +35,7 @@ import {
 } from "@/lib/admin-metricas";
 import { hojeBR } from "@/lib/tempo";
 import { FormGastoMarketing } from "./FormGastoMarketing";
+import { FormPortaoDoTeste } from "./FormPortaoDoTeste";
 
 export const dynamic = "force-dynamic";
 
@@ -439,10 +440,11 @@ export default async function AdminMetricasPage({
   // 12 barras mensais, 8 trimestrais (24 meses) ou 3 anuais (36). Tudo
   // sai de UMA leitura — getSerieMensal não repete a query por mês.
   const quantosMeses = periodo === "ano" ? 36 : periodo === "tri" ? 24 : 12;
-  const { meses: serie, eventos, criadasEm } = await getSerieMensal(
-    mes,
-    quantosMeses
-  );
+  const [{ meses: serie, eventos, criadasEm }, portao] = await Promise.all([
+    getSerieMensal(mes, quantosMeses),
+    // null enquanto a 154 não tiver sido aplicada neste banco
+    getPortaoDoTeste(),
+  ]);
 
   const m = serie[serie.length - 1];
   const anterior = serie[serie.length - 2];
@@ -544,6 +546,21 @@ export default async function AdminMetricasPage({
           <FormGastoMarketing mes={mes} gastoAtual={m.gastoMarketing} />
         </div>
       </div>
+
+      {/* ---------- o portão do teste grátis (154) ----------
+          Fica no alto porque é a única alavanca desta tela que muda o
+          funil HOJE: aberta, a página de vendas convida a criar conta
+          sem cartão; fechada, ela volta a mandar todo mundo ao
+          checkout. */}
+      <section className="rounded-lg border border-[#e7e5e4] bg-white p-3.5">
+        {portao ? (
+          <FormPortaoDoTeste aberto={portao.aberto} dias={portao.dias} />
+        ) : (
+          <p className="text-[12px] text-[#8a3d3d]">
+            O portão do teste grátis ainda não existe neste banco: aplique a migração 154.
+          </p>
+        )}
+      </section>
 
       {/* ---------- faixa de KPIs ---------- */}
       <section

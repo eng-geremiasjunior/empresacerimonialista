@@ -120,7 +120,18 @@ function respLabel(resp: DecisaoDaDemo["resp"], tipo: TipoDaDemo): string {
   return tipo === "casamento" ? "casal" : "família";
 }
 
-export function DemoNascer({ precoDeEntrada }: { precoDeEntrada: string | null }) {
+export function DemoNascer({
+  precoDeEntrada,
+  saida = null,
+}: {
+  precoDeEntrada: string | null;
+  /**
+   * Para onde vai o botão do fim da demonstração. Com o teste de sete
+   * dias aberto (154), é o cadastro sem cartão; fechado, é o checkout —
+   * quem decide é a página, que sabe do portão.
+   */
+  saida?: { href: string; rotulo: string } | null;
+}) {
   const [nome, setNome] = useState("");
   const [tipo, setTipo] = useState<TipoDaDemo>("casamento");
   const [data, setData] = useState("");
@@ -560,8 +571,8 @@ export function DemoNascer({ precoDeEntrada }: { precoDeEntrada: string | null }
                       </span>
                       <span data-saida-cel="1" style={{ display: "flex", gap: 10, alignItems: "center", flex: "none" }}>
                         <button type="button" onClick={refazer} style={{ height: 40, padding: "0 14px", borderRadius: 8, border: `1.5px solid ${C.bordaForte}`, background: "#fff", color: C.tinta, fontFamily: F_TITLE, fontWeight: 500, fontSize: 13, cursor: "pointer" }}>Refazer</button>
-                        <a href="/comecar" className="pl-h-ameixa" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 40, padding: "0 16px", borderRadius: 8, background: C.ameixa, color: "#fff", textDecoration: "none", fontFamily: F_TITLE, fontWeight: 600, fontSize: 13.5 }}>
-                          {precoDeEntrada ? `Criar de verdade por ${precoDeEntrada}` : "Criar de verdade"}
+                        <a href={saida?.href ?? "/comecar"} className="pl-h-ameixa" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 40, padding: "0 16px", borderRadius: 8, background: C.ameixa, color: "#fff", textDecoration: "none", fontFamily: F_TITLE, fontWeight: 600, fontSize: 13.5 }}>
+                          {saida?.rotulo ?? (precoDeEntrada ? `Criar de verdade por ${precoDeEntrada}` : "Criar de verdade")}
                         </a>
                       </span>
                     </div>

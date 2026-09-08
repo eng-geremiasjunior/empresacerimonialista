@@ -37,22 +37,58 @@ import { createClient } from "@/lib/supabase/server";
  *
  * Erro de leitura NÃO tranca a porta. Uma falha de trinta segundos no
  * banco não pode trancar do lado de fora quem está pagando.
+ *
+ * O TESTE DE SETE DIAS (154, 08/09/2026) abriu uma quarta entrada, e ela
+ * é por DATA, não por status. `minha_assinatura()` devolve
+ * `coalesce(status,'trial')`, então toda conta sem linha já se apresenta
+ * como 'trial' para a tela: se a porta abrisse pela string, abriria para
+ * todo mundo que nunca assinou — que é o buraco que este arquivo veio
+ * fechar. Quem decide é `teste_termina_em`, escrita uma vez no cadastro
+ * e nunca renovada. Vencida a data, a linha continua ali e a porta
+ * fecha sozinha: o teste não precisa de rotina para acabar.
+ *
+ * Fechar o portão no /admin NÃO corta quem já entrou: esta função nem
+ * olha o portão, só a data que a conta recebeu. Encurtar prazo prometido
+ * é o tipo de coisa que gera contestação de cartão.
  */
 export async function precisaAssinar(): Promise<boolean> {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .from("assinaturas")
-    .select("status, ultimo_pagamento_em")
-    .maybeSingle();
+  // `*` e não a lista de colunas, de propósito. Pedir
+  // `teste_termina_em` pelo nome antes de a 154 ter sido aplicada é um
+  // erro do PostgREST — e a linha abaixo trata erro como "não tranca a
+  // porta", o que abriria o sistema inteiro de graça para todo mundo
+  // durante a janela entre publicar o código e rodar a migração. Com
+  // `*` não existe acoplamento a nome de coluna: a chave é só a linha
+  // dela, que a RLS já limita.
+  const { data, error } = await supabase.from("assinaturas").select("*").maybeSingle();
 
   if (error) return false;
   if (!data) return true;
 
   const linha = data as {
-    status: string | null;
-    ultimo_pagamento_em: string | null;
+    status?: string | null;
+    ultimo_pagamento_em?: string | null;
+    // ausente enquanto a 154 não tiver sido aplicada — e ausente é o
+    // mesmo que "sem teste", que é o comportamento anterior a ela
+    teste_termina_em?: string | null;
   };
   if (linha.status === "ativa" || linha.status === "pausada") return false;
   if (linha.ultimo_pagamento_em) return false;
+  if (linha.status === "trial" && testeVivo(linha.teste_termina_em ?? null)) return false;
   return true;
+}
+
+/**
+ * O último dia conta inteiro. Comparação de texto ISO, não de `Date`, e
+ * em BRASÍLIA — a mesma régua que `teto_do_plano` usa desde a 154
+ * (`(now() at time zone 'America/Sao_Paulo')::date`). Se um lado
+ * contasse em UTC, das 21h à meia-noite do último dia a porta diria
+ * "entra" e os tetos do banco já diriam "acabou", justamente na noite
+ * em que a promoção de fechamento deveria converter.
+ */
+export function testeVivo(fim: string | null, agora = new Date()): boolean {
+  if (!fim) return false;
+  const brasilia = new Date(agora.getTime() - 3 * 60 * 60 * 1000);
+  const hoje = brasilia.toISOString().slice(0, 10);
+  return fim >= hoje;
 }

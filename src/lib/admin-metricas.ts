@@ -26,6 +26,8 @@ import { hojeBR } from "@/lib/tempo";
 export type AssinaturaAdmin = {
   empresaId: string;
   status: "trial" | "ativa" | "pausada" | "cancelada";
+  /** Último dia do teste grátis (154). Ausente = nunca testou. */
+  testeTerminaEm?: string | null;
 };
 
 export type EventoAssinatura = {
@@ -196,7 +198,14 @@ export function calcularMetricas(
     mrr,
     arr: mrr * 12,
     assinantesAtivos,
-    emTrial: assinaturas.filter((a) => a.status === "trial").length,
+    // TESTE VIVO, não status. Depois da 154 o teste é uma fábrica de
+    // contas por desenho: contar todo mundo que um dia teve status
+    // 'trial' faria este número virar o acumulado histórico de quem
+    // testou e não assinou — e é um dos quatro números que o dono olha
+    // todo dia. Quem decide é a data, como no resto do sistema.
+    emTrial: assinaturas.filter(
+      (a) => a.status === "trial" && (a.testeTerminaEm ?? "") >= hojeBR()
+    ).length,
     churnContasPct,
     churnReceitaPct,
     nrrPct,

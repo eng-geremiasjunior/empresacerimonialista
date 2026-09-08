@@ -170,6 +170,10 @@ export const CSS_PLANOS = `
        porcentagem para a moldura de desktop; com a cena empilhada eles
        caem fora dos alvos — no celular não existem */
     [data-cursor]{display:none!important}
+    /* o convite do teste: as três garantias uma embaixo da outra e os
+       dois botões na largura toda */
+    [data-convite-grade]{grid-template-columns:1fr!important;gap:18px!important}
+    [data-convite-botoes]{flex-direction:column!important;align-items:stretch!important}
     /* a demonstração nascida (DemoNascer): a calha do app cai de 24 para
        14px, a data do cabeçalho some, a saída vira dois botões empilhados
        e o prazo de cada decisão desce para a linha de baixo — em 375px o
@@ -206,6 +210,9 @@ export const CSS_PLANOS = `
     transition:background 120ms cubic-bezier(.2,.8,.3,1),transform 160ms cubic-bezier(.2,.8,.3,1),box-shadow 160ms cubic-bezier(.2,.8,.3,1)}
   .pl-cta:hover{transform:translateY(-1px);box-shadow:0 2px 4px rgba(34,30,27,.08),0 12px 28px rgba(110,63,95,.36)}
   .pl-h-contorno:hover{background:#F3EBF0!important;border-color:#4A2A40!important;color:#4A2A40!important}
+  /* os dois botões do convite do teste, sobre a faixa escura */
+  .pl-h-claro:hover{background:#FFFFFF!important;color:#241C21!important}
+  .pl-h-claro-contorno:hover{background:rgba(250,248,245,.12)!important;border-color:rgba(250,248,245,.7)!important;color:#FFFFFF!important}
   @keyframes flutuaEntra{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
   @media (prefers-reduced-motion:reduce){
     html{scroll-behavior:auto}

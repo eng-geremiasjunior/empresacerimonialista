@@ -36,6 +36,8 @@ const ROTAS_PUBLICAS: ((p: string) => boolean)[] = [
   (p) => p === "/termos",
   // os planos lado a lado — a pessoa escolhe ANTES de ter conta
   (p) => p === "/planos",
+  // o teste de sete dias (154): quatro campos, sem cartão e sem conta
+  (p) => p === "/criar-conta",
   // o checkout de quem chega do anúncio: a conta nasce junto com a
   // cobrança, então esta tela existe para quem ainda não tem sessão
   (p) => p === "/comecar",

@@ -21,7 +21,9 @@ import { Demonstracao } from "@/components/planos/Demonstracao";
 import { DemoNascer } from "@/components/planos/DemoNascer";
 import { DemoCroqui } from "@/components/planos/DemoCroqui";
 import { DemoMapaMental } from "@/components/planos/DemoMapaMental";
+import { portaoDoTeste } from "@/lib/supabase/teste-gratis";
 import { Chamada } from "@/components/planos/Chamada";
+import { ConviteDoTeste } from "@/components/planos/ConviteDoTeste";
 import { BotaoFlutuante } from "@/components/planos/BotaoFlutuante";
 import { Palco } from "@/components/planos/Palco";
 import { Solucao } from "@/components/planos/Solucao";
@@ -207,6 +209,29 @@ export default async function PlanosPage() {
     rotulo: visitante && precoCurto ? `Assine por ${precoCurto}` : rotuloDeAssinar,
   };
   const experimente = { href: "#experimente", rotulo: "Experimente agora" };
+
+  // O TESTE DE SETE DIAS (154). Com o portão aberto, a entrada principal
+  // do visitante deixa de ser o checkout e passa a ser o cadastro sem
+  // cartão — a promoção não sai de cena, sai do lugar de porta. Para a
+  // dona já logada nada muda: ela tem conta, o caminho dela é a
+  // assinatura. Portão fechado devolve a página ao que era.
+  const portao = await portaoDoTeste();
+  const testeAberto = portao.aberto && visitante;
+  const entradaPrincipal = testeAberto
+    ? { href: "/criar-conta", rotulo: `Criar conta grátis — ${portao.dias} dias, sem cartão` }
+    : {
+        href: destinoDaAssinatura,
+        rotulo: visitante && precoCurto ? `Começar por ${precoCurto}` : rotuloDeAssinar,
+      };
+  const entradaSecundaria = testeAberto
+    ? { href: "/comecar", rotulo: precoCurto ? `Já quero assinar por ${precoCurto}` : "Já quero assinar" }
+    : null;
+  // o rótulo curto, para as chamadas que se repetem no percurso: o longo
+  // ("Criar conta grátis — 7 dias, sem cartão") só no hero e no fecho
+  const entradaCurta = testeAberto
+    ? { href: "/criar-conta", rotulo: "Criar conta grátis" }
+    : assineAgora;
+  const entradaCurtaComPreco = testeAberto ? entradaCurta : assinePeloPreco;
 
   // O plano em destaque na grade: o da promoção, se houver; senão, o
   // primeiro da vitrine. É ele que ganha o botão cheio.
@@ -460,7 +485,7 @@ export default async function PlanosPage() {
             )}
             {podeAssinar && (
               <a
-                href={visitante ? "/comecar" : `/assinatura?plano=${planoDeEntrada?.codigo ?? ""}`}
+                href={visitante ? entradaCurta.href : `/assinatura?plano=${planoDeEntrada?.codigo ?? ""}`}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -480,7 +505,7 @@ export default async function PlanosPage() {
                 }}
                 className="pl-h-ameixa"
               >
-                {visitante ? "Começar agora" : "Assinar"}
+                {visitante ? (testeAberto ? "Criar conta grátis" : "Começar agora") : "Assinar"}
               </a>
             )}
           </span>
@@ -554,7 +579,7 @@ export default async function PlanosPage() {
           >
             {visitante && (
               <a
-                href="/comecar"
+                href={entradaPrincipal.href}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -567,12 +592,58 @@ export default async function PlanosPage() {
                   textDecoration: "none",
                   fontWeight: "600",
                   fontSize: "17px",
+                  textAlign: "center",
                   transition: "background 120ms cubic-bezier(.2,.8,.3,1)",
                 }}
                 className="pl-h-ameixa pl-cta"
               >
-                {precoDeEntrada === null ? "Começar agora" : `Começar por ${reais(precoDeEntrada)}`}
+                {entradaPrincipal.rotulo}
               </a>
+            )}
+            {entradaSecundaria && (
+              <a
+                href={entradaSecundaria.href}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minHeight: "44px",
+                  padding: "0 18px",
+                  borderRadius: "8px",
+                  border: "1px solid #6E3F5F",
+                  color: "#6E3F5F",
+                  textDecoration: "none",
+                  fontWeight: "600",
+                  fontSize: "15px",
+                  transition: "background 120ms cubic-bezier(.2,.8,.3,1)",
+                }}
+                className="pl-h-contorno"
+              >
+                {entradaSecundaria.rotulo}
+              </a>
+            )}
+            {testeAberto && (
+              // As três objeções, na ordem em que ela as tem. A terceira é
+              // a de verdade: "vou perder o que eu montar?".
+              <ul
+                data-tres-linhas="1"
+                style={{
+                  listStyle: "none",
+                  margin: "2px 0 0",
+                  padding: "0",
+                  display: "flex",
+                  flexWrap: "wrap",
+                  justifyContent: "center",
+                  gap: "6px 14px",
+                  fontSize: "13.5px",
+                  lineHeight: "1.5",
+                  color: "#6B6259",
+                }}
+              >
+                <li>Sem cartão de crédito</li>
+                <li>{`Acaba sozinho no dia ${portao.dias}`}</li>
+                <li>O que você cadastrar continua salvo se assinar</li>
+              </ul>
             )}
             {dona && planoDeEntrada && (
               <a
@@ -635,7 +706,7 @@ export default async function PlanosPage() {
             titulo="Quer ver isso com o seu evento?"
             texto="Escreva o nome, escolha casamento ou debutante e veja tudo nascer na tela do sistema. Sem cadastro, sem cartão."
             primaria={experimente}
-            secundaria={assinePeloPreco}
+            secundaria={entradaCurtaComPreco}
           />
         )}
         <Palco />
@@ -649,7 +720,7 @@ export default async function PlanosPage() {
                 ? `${fraseDaEscadaEmFaixas}. Cancela quando quiser, sem multa.`
                 : "Cancela quando quiser, sem multa."
             }
-            primaria={assineAgora}
+            primaria={entradaCurta}
             secundaria={{ href: "#planos", rotulo: "Veja os planos" }}
           />
         )}
@@ -659,7 +730,7 @@ export default async function PlanosPage() {
           <Chamada
             titulo="O próximo evento já pode entrar no sistema hoje."
             texto="Conta, cartão e o primeiro evento em vinte minutos. Cancela quando quiser."
-            primaria={assinePeloPreco}
+            primaria={entradaCurtaComPreco}
             secundaria={{ href: "#experimente", rotulo: "Experimente antes" }}
           />
         )}
@@ -668,12 +739,22 @@ export default async function PlanosPage() {
         {/* A demonstração que ela mexe, logo antes da oferta: nome, tipo,
             data — e o evento nasce na tela REAL do sistema, com o método
             real. Roda toda no navegador; nada é salvo. */}
-        <DemoNascer precoDeEntrada={precoDeEntrada !== null ? reais(precoDeEntrada) : null} />
+        <DemoNascer
+          precoDeEntrada={precoDeEntrada !== null ? reais(precoDeEntrada) : null}
+          saida={testeAberto ? { href: "/criar-conta", rotulo: "Criar a minha de verdade, grátis" } : null}
+        />
         {/* Duas telas do sistema, renderizadas pelos COMPONENTES REAIS com
             dados fictícios: o croqui do salão (aba Mesas) e o mapa mental do
             Planejamento. Nada de banco nem de IA. */}
         <DemoCroqui />
         <DemoMapaMental />
+        {/* O convite do teste, em faixa escura e inteira: é a mudança de
+            oferta da página, e o dono pediu que não passasse batida. Vem
+            depois das telas do sistema, quando a pergunta seguinte é
+            "quanto custa para eu fazer isso com o meu evento?". */}
+        {testeAberto && (
+          <ConviteDoTeste dias={portao.dias} precoDeEntrada={precoCurto} />
+        )}
 
         {/* ============ 11 · OFERTA E PLANOS ============ */}
         <section
@@ -1191,7 +1272,7 @@ export default async function PlanosPage() {
             >
               {visitante && (
                 <a
-                  href="/comecar"
+                  href={entradaPrincipal.href}
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
@@ -1204,11 +1285,33 @@ export default async function PlanosPage() {
                     textDecoration: "none",
                     fontWeight: "600",
                     fontSize: "17px",
+                    textAlign: "center",
                     transition: "background 120ms cubic-bezier(.2,.8,.3,1)",
                   }}
                   className="pl-h-ameixa pl-cta"
                 >
-                  {precoDeEntrada === null ? "Começar agora" : `Começar por ${reais(precoDeEntrada)}`}
+                  {entradaPrincipal.rotulo}
+                </a>
+              )}
+              {entradaSecundaria && (
+                <a
+                  href={entradaSecundaria.href}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: "44px",
+                    padding: "0 18px",
+                    borderRadius: "8px",
+                    border: "1px solid #6E3F5F",
+                    color: "#6E3F5F",
+                    textDecoration: "none",
+                    fontWeight: "600",
+                    fontSize: "15px",
+                  }}
+                  className="pl-h-contorno"
+                >
+                  {entradaSecundaria.rotulo}
                 </a>
               )}
               {dona && planoDeEntrada && (
@@ -1325,7 +1428,34 @@ export default async function PlanosPage() {
           }}
         >
           <span style={{ minWidth: "0" }}>
-            {precoDeEntrada !== null && (
+            {testeAberto && (
+              <>
+                <b
+                  style={{
+                    display: "block",
+                    fontFamily: MONO,
+                    fontWeight: "600",
+                    fontSize: "15px",
+                    letterSpacing: "-0.01em",
+                    color: "#221E1B",
+                  }}
+                >
+                  {portao.dias + " dias grátis"}
+                </b>
+                <em
+                  style={{
+                    display: "block",
+                    fontStyle: "normal",
+                    fontSize: "11.5px",
+                    lineHeight: "1.35",
+                    color: "#6B6259",
+                  }}
+                >
+                  sem cartão de crédito
+                </em>
+              </>
+            )}
+            {!testeAberto && precoDeEntrada !== null && (
               <b
                 style={{
                   display: "block",
@@ -1339,7 +1469,7 @@ export default async function PlanosPage() {
                 {reais(precoDeEntrada)}
               </b>
             )}
-            {promo && mesesDoPrimeiroDegrau > 0 && (
+            {!testeAberto && promo && mesesDoPrimeiroDegrau > 0 && (
               <em
                 style={{
                   display: "block",
@@ -1359,7 +1489,7 @@ export default async function PlanosPage() {
           </span>
           {visitante && (
             <a
-              href="/comecar"
+              href={entradaCurta.href}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -1376,7 +1506,7 @@ export default async function PlanosPage() {
               }}
               className="pl-h-ameixa pl-cta"
             >
-              Começar agora
+              {testeAberto ? "Criar conta grátis" : "Começar agora"}
             </a>
           )}
           {dona && planoDeEntrada && (
@@ -1405,7 +1535,11 @@ export default async function PlanosPage() {
       )}
 
       {podeAssinar && (
-        <BotaoFlutuante href={destinoDaAssinatura} rotulo={rotuloDeAssinar} preco={visitante ? precoCurto : null} />
+        <BotaoFlutuante
+          href={entradaCurta.href}
+          rotulo={entradaCurta.rotulo}
+          preco={testeAberto ? `${portao.dias} dias` : visitante ? precoCurto : null}
+        />
       )}
 
       <Medicao />

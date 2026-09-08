@@ -32,5 +32,12 @@ export default async function Home({
     data: { user },
   } = await supabase.auth.getUser();
 
-  redirect(user ? "/eventos/dashboard" : "/login");
+  // Quem não tem sessão vê a PÁGINA DE VENDAS, não o login (08/09/2026).
+  // Até aqui a raiz mandava todo mundo para /login: quem chegava por
+  // indicação, por cartão de visita ou digitando o endereço encontrava
+  // uma caixa de e-mail e senha de um sistema que nunca tinha visto.
+  // A /planos existe, tem a demonstração do evento nascendo e é para onde
+  // os anúncios apontam — é ela que responde "o que é isto?". O login
+  // continua a um clique, no cabeçalho dela.
+  redirect(user ? "/eventos/dashboard" : "/planos");
 }
