@@ -8,6 +8,7 @@ import { PropostaConviteVivo } from "@/components/orcamento-publico/PropostaConv
 import { PropostaDebutanteGlam } from "@/components/orcamento-publico/PropostaDebutanteGlam";
 import { PropostaCasamentoMaison } from "@/components/orcamento-publico/PropostaCasamentoMaison";
 import { PropostaCasamentoPraia } from "@/components/orcamento-publico/PropostaCasamentoPraia";
+import { FaixaDoRascunho } from "@/components/orcamento-publico/FaixaDoRascunho";
 import type { OrcamentoPublicoData } from "@/lib/orcamento-publico";
 import { TEMPLATE_PADRAO_POR_TIPO } from "@/lib/proposta-templates";
 import type { EventType } from "@/lib/types";
@@ -38,6 +39,30 @@ export async function generateMetadata({
   return { title: empresa ? `Sua proposta — ${empresa}` : "Sua proposta" };
 }
 
+/**
+ * Quem está olhando é da casa? Só é perguntado quando a proposta é
+ * RASCUNHO — e é a RLS que responde: a leitura da tabela `orcamentos`
+ * pela sessão só devolve linha para quem é da empresa dona. Cliente
+ * nenhuma, logada em outra conta ou sem conta, recebe null aqui.
+ *
+ * Existe porque a dona abre "Acessar orçamento" antes de enviar, encontra
+ * o botão de aceite apagado e não tem como saber por quê. A saída passa a
+ * ficar onde o erro acontece.
+ */
+async function orcamentoDaCasa(hash: string): Promise<string | null> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data } = await supabase
+    .from("orcamentos")
+    .select("id")
+    .eq("hash_publico", hash)
+    .maybeSingle();
+  return data?.id ?? null;
+}
+
 export default async function OrcamentoPublicoPage({
   params,
 }: {
@@ -47,6 +72,21 @@ export default async function OrcamentoPublicoPage({
 
   if (!proposta) notFound();
 
+  const idParaEnviar =
+    proposta.status === "rascunho" ? await orcamentoDaCasa(params.hash) : null;
+
+  // O cartão flutua sobre a peça, sem empurrar nem cobrir: a proposta
+  // continua sendo lida exatamente como a cliente a lê.
+  const comFaixa = (conteudo: React.ReactNode) =>
+    idParaEnviar ? (
+      <>
+        <FaixaDoRascunho orcamentoId={idParaEnviar} />
+        {conteudo}
+      </>
+    ) : (
+      conteudo
+    );
+
   if (proposta.tipo_evento === "debutante") {
     // O template vem do orçamento (059); null cai no padrão do tipo.
     const template =
@@ -55,18 +95,18 @@ export default async function OrcamentoPublicoPage({
       "debutante_classico";
 
     if (template === "debutante_convite_vivo") {
-      return <PropostaConviteVivo hash={params.hash} inicial={proposta} />;
+      return comFaixa(<PropostaConviteVivo hash={params.hash} inicial={proposta} />);
     }
 
     if (template === "debutante_glam") {
-      return (
+      return comFaixa(
         <div className="min-h-screen">
           <PropostaDebutanteGlam hash={params.hash} inicial={proposta} />
         </div>
       );
     }
 
-    return (
+    return comFaixa(
       <div
         className="min-h-screen font-[var(--font-inter)]"
       >
@@ -82,11 +122,11 @@ export default async function OrcamentoPublicoPage({
     "casamento_v2";
 
   if (templateCasamento === "casamento_praia") {
-    return <PropostaCasamentoPraia hash={params.hash} inicial={proposta} />;
+    return comFaixa(<PropostaCasamentoPraia hash={params.hash} inicial={proposta} />);
   }
 
   if (templateCasamento === "casamento_maison") {
-    return (
+    return comFaixa(
       <div
         className="min-h-screen"
       >
@@ -97,5 +137,5 @@ export default async function OrcamentoPublicoPage({
 
   // O slug casamento_v2 sempre foi rotulado "Clássico — Creme e dourado";
   // este É o Clássico agora (o dono redesenhou e o novo assumiu o slug).
-  return <PropostaCasamentoClassico hash={params.hash} inicial={proposta} />;
+  return comFaixa(<PropostaCasamentoClassico hash={params.hash} inicial={proposta} />);
 }

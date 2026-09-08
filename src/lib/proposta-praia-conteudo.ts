@@ -133,7 +133,6 @@ export const CARTA_PRAIA = (primeiroNome: string) =>
 
 export const TEXTOS_PRAIA = {
   topoBadge: "CASAMENTO NA PRAIA",
-  heroDica: "TOQUE NO NOME PARA EDITAR",
   heroParagrafo:
     "O casamento de vocês na areia começa a ganhar forma aqui. Escolha o que faz parte do dia e o investimento se ajusta na hora.",
   ctaMontar: "COMEÇAR A MONTAR ↓",

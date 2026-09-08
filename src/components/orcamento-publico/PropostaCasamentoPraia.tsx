@@ -130,7 +130,8 @@ export function PropostaCasamentoPraia({
 
   /* ---------------- estado do montador ---------------- */
 
-  const [nome, setNome] = useState(dados.nome_contato || "");
+  // Vem do orçamento e não muda na tela (08/09/2026).
+  const nome = dados.nome_contato || "";
   const [slot, setSlot] = useState(1);
   const [prazo, setPrazo] = useState<string>(PRAZOS_PRAIA[0].id);
   const [pacoteId, setPacoteId] = useState<string | null>(
@@ -200,7 +201,6 @@ export function PropostaCasamentoPraia({
     set(lista.includes(i) ? lista.filter((x) => x !== i) : [...lista, i]);
 
   const marcos = [
-    nome.trim() !== "",
     pacote !== null,
     convidados !== regra.inclusos,
     tradicoes.length >= 3,
@@ -478,47 +478,30 @@ export function PropostaCasamentoPraia({
         />
 
         <div className="praia-float" style={{ position: "relative", zIndex: 1, textAlign: "center", maxWidth: 760 }}>
-          <span
-            style={{
-              display: "inline-block", padding: "8px 16px",
-              border: "1px solid rgba(247,242,234,0.4)", borderRadius: 2,
-              fontSize: 10, fontWeight: 700, letterSpacing: "2.4px",
-            }}
-          >
-            {null}
-          </span>
           {dataExtenso && (
             <p style={{ margin: "18px 0 0", fontSize: 11, fontWeight: 700, letterSpacing: "3px", opacity: 0.85 }}>
               {dataExtenso.toUpperCase()}
             </p>
           )}
-          <label style={{ display: "block", marginTop: 10 }}>
-            <span style={{ position: "absolute", left: -9999 }}>Nome do casal</span>
-            <input
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
-              placeholder="Marina & João"
-              className="praia-serif"
-              style={{
-                width: "100%", background: "transparent", border: "none",
-                outline: "none", textAlign: "center", color: COR.claro,
-                // O nome do casal é um <input>, e input não quebra linha:
-                // o que não couber some pela direita. Com o piso antigo de
-                // 36px, "Marina & João" pedia 369px numa tela de 375 e
-                // aparecia cortado. Agora o piso acompanha a tela — e
-                // encolhe mais um passo quando o nome é longo, que é o
-                // caso em que a tela pequena não perdoa.
-                fontSize:
-                  nome.length > 18
-                    ? "clamp(20px, 6.4vw, 52px)"
-                    : "clamp(26px, 8vw, 64px)",
-                lineHeight: 1.15,
-              }}
-            />
-          </label>
-          <p style={{ margin: "6px 0 0", fontSize: 10, fontWeight: 700, letterSpacing: "2.4px", opacity: 0.7 }}>
-            ↑ {T.heroDica}
-          </p>
+          <h1
+            className="praia-serif"
+            style={{
+              margin: "10px 0 0", textAlign: "center", color: COR.claro,
+              fontWeight: 400,
+              // Título, e não mais <input>: agora o nome quebra linha em
+              // vez de sumir pela direita. A escala continua encolhendo
+              // com nome longo, que é o caso em que a tela pequena não
+              // perdoa.
+              fontSize:
+                nome.length > 18
+                  ? "clamp(20px, 6.4vw, 52px)"
+                  : "clamp(26px, 8vw, 64px)",
+              lineHeight: 1.15,
+              textWrap: "balance",
+            }}
+          >
+            {nome}
+          </h1>
           <p style={{ margin: "22px auto 0", maxWidth: 560, fontSize: 15.5, lineHeight: 1.7, opacity: 0.92 }}>
             {T.heroParagrafo}
           </p>

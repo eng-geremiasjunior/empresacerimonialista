@@ -168,9 +168,7 @@ export const INCLUSO_CONVITE_VIVO = [
 ];
 
 export const TEXTOS_CONVITE_VIVO = {
-  heroBadge: "ORÇAMENTO INTERATIVO",
   heroSub: "faz quinze",
-  heroDica: "TOQUE NO NOME PARA EDITAR",
   heroParagrafo:
     "Sua festa começa a ganhar forma aqui. Escolha os momentos que quer viver e veja o investimento se ajustar na hora.",
   ctaMontar: "COMEÇAR A MONTAR ↓",
