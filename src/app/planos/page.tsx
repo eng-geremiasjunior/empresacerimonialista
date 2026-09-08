@@ -836,7 +836,15 @@ export default async function PlanosPage() {
                       color: "#6B6259",
                     }}
                   >
-                    {`Você começa pagando ${reais(primeiraFaixa.valorMensal)} para conhecer e implementar o sistema na sua rotina. O valor sobe gradualmente até o preço normal de ${reais(ultimaFaixa.valorMensal)} por mês.`}
+                    {/* "Sobe gradualmente" era verdade com três preços.
+                        Com um degrau só o valor sobe UMA vez, e dizer
+                        "gradualmente" seria suavizar um salto de 3,5× —
+                        exatamente o tipo de frase que a pessoa lembra na
+                        fatura do quarto mês. A frase segue o número de
+                        degraus, e não o contrário. */}
+                    {faixas.length > 2
+                      ? `Você começa pagando ${reais(primeiraFaixa.valorMensal)} para conhecer e implementar o sistema na sua rotina. O valor sobe gradualmente até o preço normal de ${reais(ultimaFaixa.valorMensal)} por mês.`
+                      : `Você começa pagando ${reais(primeiraFaixa.valorMensal)} por mês para conhecer e implementar o sistema na sua rotina. A partir do ${ultimaFaixa.de}º mês vale o preço normal, ${reais(ultimaFaixa.valorMensal)} por mês.`}
                   </p>
                 </div>
                 <div>
