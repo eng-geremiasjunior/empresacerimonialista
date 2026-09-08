@@ -98,7 +98,10 @@ export function PropostaConviteVivo({
 
   /* ---------------- estado do montador ---------------- */
 
-  const [nome, setNome] = useState(dados.nome_contato || "");
+  // O nome vem do orçamento e não muda na tela: era um campo aberto, e
+  // o dono tirou — a cliente não edita o próprio nome dentro de uma
+  // proposta que termina em assinatura.
+  const nome = dados.nome_contato || "";
   const [momento, setMomento] = useState<string>(MOMENTOS_CONVITE_VIVO[0].id);
   const [pacoteId, setPacoteId] = useState<string | null>(
     pacotes.find((p) => p.recomendado)?.id ?? pacotes[0]?.id ?? null
@@ -120,6 +123,19 @@ export function PropostaConviteVivo({
   const pacote = pacotes.find((p) => p.id === pacoteId) ?? null;
   const venceu = expirado(dados);
   const podeResponder = dados.status === "enviado" && !venceu && !recibo;
+  // O rascunho é o caso mais comum de "o botão não funciona": a proposta
+  // foi montada e nunca enviada pelo painel. Não é erro — mas a tela tem
+  // de dizer, senão o único sinal é um botão apagado.
+  const rascunho = dados.status === "rascunho";
+  const situacao = recibo
+    ? null
+    : rascunho
+      ? "PROPOSTA AINDA NÃO ENVIADA"
+      : venceu
+        ? "PROPOSTA VENCIDA"
+        : dados.data_validade
+          ? `PROPOSTA VÁLIDA ATÉ ${dados.data_validade.slice(8, 10)}/${dados.data_validade.slice(5, 7)}`
+          : "PROPOSTA EM ABERTO";
   const tempo = useCountdownValidade(
     dados.status === "enviado" ? dados.data_validade : null
   );
@@ -154,9 +170,11 @@ export function PropostaConviteVivo({
   const alterna = (lista: string[], set: (v: string[]) => void, id: string) =>
     set(lista.includes(id) ? lista.filter((x) => x !== id) : [...lista, id]);
 
-  /* Progresso: os cinco marcos da SPEC, adaptados ao que existe aqui. */
+  /* Progresso: as escolhas que são DELA. O nome saiu da conta quando
+     deixou de ser campo editável (08/09/2026) — ele vem do orçamento e
+     está sempre preenchido, então contá-lo dava 20% de "montada" antes
+     de a cliente tocar em nada. */
   const marcos = [
-    nome.trim() !== "",
     pacote !== null,
     convidados !== regra.inclusos,
     tradicoes.length >= 4,
@@ -386,7 +404,7 @@ export function PropostaConviteVivo({
                   letterSpacing: ".04em", background: COR.champanhe, color: COR.ameixa,
                 }}
               >
-                {podeResponder ? "FECHAR" : "VER PROPOSTA"}
+                {podeResponder ? T.topoCta : T.topoCtaVer}
               </button>
             </div>
           </div>
@@ -441,22 +459,6 @@ export function PropostaConviteVivo({
             className="cv-rise"
             style={{ position: "relative", zIndex: 1, textAlign: "center", maxWidth: 900 }}
           >
-            <span
-              style={{
-                display: "inline-flex", alignItems: "center", gap: 9,
-                padding: "8px 16px", borderRadius: 999,
-                border: `1px solid ${marfim(0.2)}`, background: "rgba(18,6,15,.4)",
-                backdropFilter: "blur(10px)",
-                fontSize: 10, fontWeight: 800, letterSpacing: ".24em",
-              }}
-            >
-              <span
-                className="cv-pulse"
-                style={{ width: 7, height: 7, borderRadius: 999, background: COR.rosa }}
-              />
-              {T.heroBadge}
-            </span>
-
             {dataExtenso && (
               <p
                 style={{
@@ -468,25 +470,21 @@ export function PropostaConviteVivo({
               </p>
             )}
 
-            <label style={{ display: "block", marginTop: 14 }}>
-              <span className="sr-only" style={{ position: "absolute", left: -9999 }}>
-                Nome da debutante
-              </span>
-              <input
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                placeholder="SEU NOME"
-                className="cv-serif"
-                style={{
-                  width: "100%", background: "transparent", border: "none",
-                  outline: "none", textAlign: "center", color: COR.marfim,
-                  // piso de 48px num celular de 320px empurrava o nome
-                  // para quatro linhas; 11vw já cuida do crescimento
-                  fontSize: "clamp(34px, 11vw, 104px)", lineHeight: 0.86,
-                  letterSpacing: "-.03em",
-                }}
-              />
-            </label>
+            <h1
+              className="cv-serif"
+              style={{
+                margin: "14px 0 0", textAlign: "center", color: COR.marfim,
+                fontWeight: 400,
+                // o mesmo tamanho de antes: piso de 48px num celular de
+                // 320px empurrava o nome para quatro linhas; 11vw já
+                // cuida do crescimento
+                fontSize: "clamp(34px, 11vw, 104px)", lineHeight: 0.86,
+                letterSpacing: "-.03em",
+                textWrap: "balance",
+              }}
+            >
+              {nome}
+            </h1>
             <p
               className="cv-serif cv-it"
               style={{
@@ -496,15 +494,6 @@ export function PropostaConviteVivo({
             >
               {T.heroSub}
             </p>
-            <p
-              style={{
-                margin: "10px 0 0", fontSize: 10, fontWeight: 800,
-                letterSpacing: ".24em", color: marfim(0.4),
-              }}
-            >
-              ↑ {T.heroDica}
-            </p>
-
             <p
               style={{
                 margin: "26px auto 0", maxWidth: 620, fontSize: 18,
@@ -1247,7 +1236,7 @@ export function PropostaConviteVivo({
                           color: podeResponder && pacote ? COR.ameixa : marfim(0.4),
                         }}
                       >
-                        ASSINAR E TRAVAR A DATA →
+                        {T.assinarCta}
                       </button>
                       <p
                         style={{
@@ -1255,11 +1244,7 @@ export function PropostaConviteVivo({
                           fontWeight: 700, letterSpacing: ".16em", color: marfim(0.42),
                         }}
                       >
-                        {venceu
-                          ? "PROPOSTA VENCIDA"
-                          : dados.data_validade
-                            ? `PROPOSTA VÁLIDA ATÉ ${dados.data_validade.slice(8, 10)}/${dados.data_validade.slice(5, 7)}`
-                            : "PROPOSTA EM ABERTO"}
+                        {situacao}
                       </p>
                     </>
                   )}
@@ -1408,9 +1393,9 @@ export function PropostaConviteVivo({
                 </p>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
-                {faltam > 0 && (
+                {!podeResponder && situacao && (
                   <span style={{ fontSize: 12, fontWeight: 700, color: marfim(0.5) }}>
-                    {faltam === 1 ? "Falta 1 escolha" : `Faltam ${faltam} escolhas`}
+                    {situacao.charAt(0) + situacao.slice(1).toLowerCase()}
                   </span>
                 )}
                 <button
@@ -1446,7 +1431,7 @@ export function PropostaConviteVivo({
           parcelas={condicoes.parcelasMaximo}
           tipoEvento={dados.tipo_evento}
           dataEvento={dados.data_evento}
-          textoBotao="ASSINAR E TRAVAR A DATA →"
+          textoBotao={T.assinarCtaModal}
           rodape="ASSINATURA COM VALIDADE JURÍDICA"
           onFechar={() => setModal(false)}
           onAceito={(codigo, total) => {

@@ -191,9 +191,19 @@ export const TEXTOS_CONVITE_VIVO = {
   roteiroDica: "ESCOLHA AS SUAS",
   pistaTitulo: "A SUA PISTA",
   pistaDica: "Os estilos entram no briefing do DJ — não mudam o valor.",
-  fechamentoCta: "QUERO ESSA DATA",
+  // OS BOTÕES DE ACEITE (08/09/2026). Eram "QUERO ESSA DATA", "FECHAR
+  // MINHA FESTA" e "ASSINAR E TRAVAR A DATA". O dono pediu linguagem
+  // profissional: quem lê é a mãe da debutante decidindo um contrato de
+  // milhares de reais, e "travar a data" soa a técnica de venda. O que
+  // ela está fazendo tem nome próprio — aceitar uma proposta —, e é esse
+  // nome que o botão diz, igual em todos os lugares da página.
+  fechamentoCta: "ACEITAR A PROPOSTA",
   contratoEyebrow: "CONTRATO DIGITAL · ASSINATURA",
-  barraCta: "FECHAR MINHA FESTA",
+  barraCta: "ACEITAR PROPOSTA",
+  assinarCta: "ACEITAR E ASSINAR A PROPOSTA",
+  assinarCtaModal: "ACEITAR E ASSINAR",
+  topoCta: "ACEITAR",
+  topoCtaVer: "VER PROPOSTA",
   rodapeSelo: "MODELO 03 · CONVITE VIVO",
 };
 

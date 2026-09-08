@@ -152,6 +152,16 @@ export function PropostaCasamentoPraia({
   const pacote = pacotes.find((p) => p.id === pacoteId) ?? null;
   const venceu = expirado(dados);
   const podeResponder = dados.status === "enviado" && !venceu && !recibo;
+  // Por que o aceite não está disponível. Sem isto o único sinal era um
+  // botão apagado, e as duas causas comuns não têm nada a ver com o que
+  // os noivos escolheram: a proposta venceu, ou nunca foi enviada.
+  const situacao = recibo || podeResponder
+    ? null
+    : dados.status === "rascunho"
+      ? "Proposta ainda não enviada"
+      : venceu
+        ? "Proposta vencida"
+        : null;
   const tempo = useCountdownValidade(
     dados.status === "enviado" ? dados.data_validade : null
   );
@@ -475,7 +485,7 @@ export function PropostaCasamentoPraia({
               fontSize: 10, fontWeight: 700, letterSpacing: "2.4px",
             }}
           >
-            {T.heroBadge}
+            {null}
           </span>
           {dataExtenso && (
             <p style={{ margin: "18px 0 0", fontSize: 11, fontWeight: 700, letterSpacing: "3px", opacity: 0.85 }}>
@@ -1179,9 +1189,9 @@ export function PropostaCasamentoPraia({
               </p>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-              {faltam > 0 && (
+              {situacao && (
                 <span style={{ fontSize: 11.5, color: "rgba(247,242,234,0.65)" }}>
-                  {faltam === 1 ? "Falta 1 escolha" : `Faltam ${faltam} escolhas`}
+                  {situacao}
                 </span>
               )}
               <button

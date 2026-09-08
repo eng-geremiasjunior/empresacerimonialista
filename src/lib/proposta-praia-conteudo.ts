@@ -133,7 +133,6 @@ export const CARTA_PRAIA = (primeiroNome: string) =>
 
 export const TEXTOS_PRAIA = {
   topoBadge: "CASAMENTO NA PRAIA",
-  heroBadge: "ORÇAMENTO INTERATIVO",
   heroDica: "TOQUE NO NOME PARA EDITAR",
   heroParagrafo:
     "O casamento de vocês na areia começa a ganhar forma aqui. Escolha o que faz parte do dia e o investimento se ajusta na hora.",
@@ -164,8 +163,11 @@ export const TEXTOS_PRAIA = {
   roteiroVazio: "Nenhuma tradição escolhida ainda. Toque nas que fazem sentido para vocês.",
   aCotarAviso: "Há itens marcados como “a cotar” — enviamos o valor junto do contrato.",
   cartaEyebrow: "UMA CARTA ANTES DE VOCÊ DECIDIR",
-  barraCta: "FECHAR MEU CASAMENTO",
-  assinarCta: "ASSINAR E TRAVAR A DATA",
+  // OS BOTÕES DE ACEITE (08/09/2026). Eram "FECHAR MEU CASAMENTO" e
+  // "ASSINAR E TRAVAR A DATA". O dono pediu linguagem profissional: o
+  // que os noivos estão fazendo tem nome próprio — aceitar uma proposta.
+  barraCta: "ACEITAR PROPOSTA",
+  assinarCta: "ACEITAR E ASSINAR A PROPOSTA",
   rodapeSelo: "CASAMENTO NA PRAIA",
 };
 
