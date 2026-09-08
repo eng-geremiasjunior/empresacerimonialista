@@ -241,7 +241,7 @@ export function Solucao() {
                       Modo Evento
                     </span>
                   </span>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", border: "1px solid #E7E5E4", borderRadius: "12px", background: "#FFFFFF", overflow: "hidden" }}>
+                  <div data-stack="1" style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", border: "1px solid #E7E5E4", borderRadius: "12px", background: "#FFFFFF", overflow: "hidden" }}>
                     <div style={{ padding: "13px 14px" }}>
                       <span style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "8px" }}>
                         <b style={{ fontWeight: "600", fontSize: "12.5px", color: "#1C1917" }}>
@@ -262,7 +262,7 @@ export function Solucao() {
                       <span style={{ display: "block", height: "4px", marginTop: "10px", borderRadius: "999px", background: "#F0EFED" }}>
                       </span>
                     </div>
-                    <div style={{ padding: "13px 14px", borderLeft: "1px solid #F0EFED" }}>
+                    <div data-fase-cel="1" style={{ padding: "13px 14px", borderLeft: "1px solid #F0EFED" }}>
                       <span style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "8px" }}>
                         <b style={{ fontWeight: "600", fontSize: "12.5px", color: "#1C1917" }}>
                           Organização
@@ -279,7 +279,7 @@ export function Solucao() {
                         </i>
                       </span>
                     </div>
-                    <div style={{ padding: "13px 14px", borderLeft: "1px solid #F0EFED" }}>
+                    <div data-fase-cel="1" style={{ padding: "13px 14px", borderLeft: "1px solid #F0EFED" }}>
                       <span style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "8px" }}>
                         <b style={{ fontWeight: "600", fontSize: "12.5px", color: "#1C1917" }}>
                           Roteiro do dia
@@ -409,7 +409,7 @@ export function Solucao() {
                       </svg>
                     </span>
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: "9px" }}>
+                  <div data-duas-cel="1" style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: "9px" }}>
                     <div style={{ padding: "11px 12px", border: "1px solid #E7E5E4", borderRadius: "12px", background: "#FFFFFF" }}>
                       <span style={{ display: "flex", alignItems: "center", gap: "7px" }}>
                         <svg viewBox="0 0 24 24" fill="none" stroke="#57534E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: "14px", height: "14px", flex: "none" }}>

@@ -103,7 +103,7 @@ export function FinanceiroDoEvento() {
                 <span style={{ fontFamily: "var(--font-title, Inter, sans-serif)", fontWeight: "600", fontSize: "15px", letterSpacing: "-0.01em", color: "#221E1B" }}>
                   Resultado previsto
                 </span>
-                <b style={{ fontFamily: "var(--font-mono, 'IBM Plex Mono', monospace)", fontWeight: "600", fontSize: "clamp(22px,3vw,26px)", letterSpacing: "-0.02em", color: "#221E1B" }}>
+                <b style={{ fontFamily: "var(--font-mono, 'IBM Plex Mono', monospace)", fontWeight: "600", fontSize: "clamp(22px,3vw,26px)", letterSpacing: "-0.02em", color: "#221E1B", whiteSpace: "nowrap" }}>
                   R$ 32.300
                 </b>
               </div>

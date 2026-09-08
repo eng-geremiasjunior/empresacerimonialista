@@ -253,7 +253,7 @@ export function DemoNascer({ precoDeEntrada }: { precoDeEntrada: string | null }
             {[0, 1, 2].map((i) => <i key={i} style={{ width: "9px", height: "9px", borderRadius: "999px", background: "#D9D2C8", display: "block" }} />)}
           </span>
           <span style={{ flex: "1", display: "flex", alignItems: "center", height: "22px", padding: "0 10px", borderRadius: "6px", background: "#FFFFFF", border: "1px solid #E6E0D8", fontFamily: F_MONO, fontSize: "11.5px", color: "#6B6259", overflow: "hidden", whiteSpace: "nowrap" }}>
-            eorganizei.com.br<span style={{ color: "#221E1B", fontWeight: "500" }}>{etapa === 0 ? "/eventos/novo" : `/eventos/${slug(nomeLimpo) || "evento"}`}</span>
+            <span data-hide-sm="1">eorganizei.com.br</span><span style={{ color: "#221E1B", fontWeight: "500" }}>{etapa === 0 ? "/eventos/novo" : `/eventos/${slug(nomeLimpo) || "evento"}`}</span>
           </span>
         </div>
 
@@ -284,8 +284,8 @@ export function DemoNascer({ precoDeEntrada }: { precoDeEntrada: string | null }
 
           <div style={{ minWidth: 0, display: "flex", flexDirection: "column", fontFamily: F_UI }}>
             {/* AppShell: header h-14 bg-white border-b */}
-            <div style={{ height: "56px", display: "flex", alignItems: "center", gap: "12px", padding: "0 24px", background: "#ffffff", borderBottom: "1px solid #e7e5e4", flex: "none" }}>
-              <span style={{ fontSize: "14px", color: "#78716c" }}>{hoje ? dataLonga(hoje) : ""}</span>
+            <div data-app-pad="1" style={{ height: "56px", display: "flex", alignItems: "center", gap: "12px", padding: "0 24px", background: "#ffffff", borderBottom: "1px solid #e7e5e4", flex: "none" }}>
+              <span data-hide-sm="1" style={{ fontSize: "14px", color: "#78716c" }}>{hoje ? dataLonga(hoje) : ""}</span>
               <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "10px" }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="#78716c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: "18px", height: "18px" }} aria-hidden="true"><path d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
                 <span style={{ width: "28px", height: "28px", borderRadius: "999px", background: "#e7e5e4" }} />
@@ -295,12 +295,12 @@ export function DemoNascer({ precoDeEntrada }: { precoDeEntrada: string | null }
             </div>
 
             {aviso && (
-              <p style={{ margin: "12px 24px 0", padding: "9px 12px", borderRadius: "8px", background: "#F3EBF0", color: "#4A2A40", fontSize: "13px", lineHeight: "1.45" }}>{aviso}</p>
+              <p data-app-marg="1" style={{ margin: "12px 24px 0", padding: "9px 12px", borderRadius: "8px", background: "#F3EBF0", color: "#4A2A40", fontSize: "13px", lineHeight: "1.45" }}>{aviso}</p>
             )}
 
             {etapa === 0 ? (
               /* ---- o formulário, na cara do app ---- */
-              <div style={{ padding: "24px", maxWidth: "460px" }}>
+              <div data-app-pad="1" style={{ padding: "24px", maxWidth: "460px" }}>
                 <p style={{ margin: "0 0 4px", fontSize: "14px", color: "#78716c" }}>Eventos / Novo evento</p>
                 <h3 style={{ margin: "0 0 18px", fontFamily: F_TITLE, fontWeight: 600, fontSize: "22px", letterSpacing: "-0.02em", color: "#1b1c1e" }}>Novo evento</h3>
                 <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#3c4145", marginBottom: "6px" }}>Tipo</label>
@@ -328,7 +328,7 @@ export function DemoNascer({ precoDeEntrada }: { precoDeEntrada: string | null }
               </div>
             ) : (
               /* ---- a tela do evento, como no sistema ---- */
-              <div style={{ padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div data-app-pad="1" style={{ padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: "16px" }}>
                 {/* eventos/[id]/layout.tsx — cabeçalho */}
                 <div style={{ opacity: etapa >= 1 ? 1 : 0, transition: "opacity .35s" }}>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13.5px", color: "#797e86" }}>← Voltar para eventos</span>
@@ -360,7 +360,7 @@ export function DemoNascer({ precoDeEntrada }: { precoDeEntrada: string | null }
                       ["Organização", 0, "Sem fornecedores ou parcelas"],
                       ["Roteiro do dia", 0, `${m.roteiro.length} itens do roteiro`],
                     ].map(([nomeFase, pct, contagem], i) => (
-                      <div key={String(nomeFase)} style={{ display: "flex", flexDirection: "column", gap: "4px", padding: "14px 16px 12px", borderLeft: i ? "1px solid #f0f0ee" : "none" }}>
+                      <div key={String(nomeFase)} {...(i ? { "data-fase-cel": "1" } : {})} style={{ display: "flex", flexDirection: "column", gap: "4px", padding: "14px 16px 12px", borderLeft: i ? "1px solid #f0f0ee" : "none" }}>
                         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "8px" }}>
                           <span style={{ fontSize: "14px", fontWeight: 600, color: "#1b1c1e" }}>{nomeFase}</span>
                           <span style={{ fontFamily: F_MONO, fontSize: "11px", color: "#a2a6ad" }}>{pct}%</span>
@@ -427,7 +427,7 @@ export function DemoNascer({ precoDeEntrada }: { precoDeEntrada: string | null }
                         ))}
                       </ul>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: "12px" }} data-stack="1">
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: "12px" }} data-duas-cel="1">
                       {[
                         ["Tarefas", "0/0", "Concluídas"],
                         ["Roteiro do dia", String(m.roteiro.length), "Itens"],
@@ -446,7 +446,7 @@ export function DemoNascer({ precoDeEntrada }: { precoDeEntrada: string | null }
 
                 {/* ---- Planejamento (tema neutro), como ModoFoco ---- */}
                 {etapa >= 5 && (
-                  <div style={{ margin: "8px -24px -24px", padding: "20px 24px 24px", background: C.canvas, fontFamily: F_UI }}>
+                  <div data-nevoa="1" style={{ margin: "8px -24px -24px", padding: "20px 24px 24px", background: C.canvas, fontFamily: F_UI }}>
                     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: "12px" }}>
                       <div>
                         <h3 style={{ ...titulo(22, 28), margin: 0 }}>Planejamento</h3>
@@ -505,7 +505,7 @@ export function DemoNascer({ precoDeEntrada }: { precoDeEntrada: string | null }
                               </div>
                               <span style={{ display: "flex", alignItems: "center", gap: 10, flex: "none" }}>
                                 <span style={{ fontFamily: F_MONO, fontSize: 10, color: C.meta }}>decisões 0/{o.total}</span>
-                                <span style={{ width: 56, height: 3, borderRadius: 999, background: "#e4e6e8" }} />
+                                <span data-hide-sm="1" style={{ width: 56, height: 3, borderRadius: 999, background: "#e4e6e8" }} />
                               </span>
                             </div>
                             {aberto && (
@@ -513,14 +513,14 @@ export function DemoNascer({ precoDeEntrada }: { precoDeEntrada: string | null }
                                 {o.decisoes.map((d) => {
                                   const p = hoje ? prazoRelativo(somarDias(data, -d.dias), hoje) : null;
                                   return (
-                                    <div key={d.titulo} style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 0", borderBottom: `1px solid ${C.divisoria2}` }}>
+                                    <div key={d.titulo} data-linha-cel="1" style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 0", borderBottom: `1px solid ${C.divisoria2}` }}>
                                       <span aria-hidden style={{ width: 7, height: 7, borderRadius: "50%", background: p?.atrasada ? C.atrasadaFg : C.pendenteFg, flexShrink: 0 }} />
                                       <span style={{ flex: 1, minWidth: 0 }}>
-                                        <span style={{ display: "block", fontFamily: F_UI, fontSize: 14, lineHeight: "18px", color: C.tinta, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.titulo}</span>
+                                        <span data-titulo-cel="1" style={{ display: "block", fontFamily: F_UI, fontSize: 14, lineHeight: "18px", color: C.tinta, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.titulo}</span>
                                         <span style={{ display: "block", marginTop: 2, fontFamily: F_MONO, fontSize: 10, lineHeight: "14px", color: C.meta }}>{respLabel(d.resp, tipo)}</span>
                                       </span>
                                       {p && (
-                                        <span style={{ display: "flex", alignItems: "center", gap: 8, flex: "none" }}>
+                                        <span data-prazo-cel="1" style={{ display: "flex", alignItems: "center", gap: 8, flex: "none" }}>
                                           <span style={{ fontFamily: F_MONO, fontSize: 10, color: p.atrasada ? C.atrasadaFg : C.meta }}>{p.texto}</span>
                                           <span style={{ borderRadius: 999, padding: "2px 8px", fontFamily: F_MONO, fontSize: 10, background: p.atrasada ? C.atrasadaBg : C.pendenteBg, color: p.atrasada ? C.atrasadaFg : C.pendenteFg }}>{p.atrasada ? "atrasada" : "pendente"}</span>
                                         </span>
@@ -558,7 +558,7 @@ export function DemoNascer({ precoDeEntrada }: { precoDeEntrada: string | null }
                       <span style={{ fontSize: 13.5, lineHeight: 1.5, color: C.corpo, maxWidth: "48ch" }}>
                         Isto é o que nasce pronto. Abrir cada decisão, contratar fornecedores, ler o contrato, abrir o portal para {m.cliente} — vem com a assinatura.
                       </span>
-                      <span style={{ display: "flex", gap: 10, alignItems: "center", flex: "none" }}>
+                      <span data-saida-cel="1" style={{ display: "flex", gap: 10, alignItems: "center", flex: "none" }}>
                         <button type="button" onClick={refazer} style={{ height: 40, padding: "0 14px", borderRadius: 8, border: `1.5px solid ${C.bordaForte}`, background: "#fff", color: C.tinta, fontFamily: F_TITLE, fontWeight: 500, fontSize: 13, cursor: "pointer" }}>Refazer</button>
                         <a href="/comecar" className="pl-h-ameixa" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 40, padding: "0 16px", borderRadius: 8, background: C.ameixa, color: "#fff", textDecoration: "none", fontFamily: F_TITLE, fontWeight: 600, fontSize: 13.5 }}>
                           {precoDeEntrada ? `Criar de verdade por ${precoDeEntrada}` : "Criar de verdade"}

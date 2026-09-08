@@ -473,6 +473,9 @@ export default async function PlanosPage() {
                   textDecoration: "none",
                   fontWeight: "600",
                   fontSize: "14px",
+                  // em 375px o cabeçalho aperta e o rótulo quebrava em duas
+                  // linhas; o botão não encolhe abaixo do próprio texto
+                  whiteSpace: "nowrap",
                   transition: "background 120ms cubic-bezier(.2,.8,.3,1)",
                 }}
                 className="pl-h-ameixa"

@@ -203,9 +203,9 @@ export function DemoCroqui() {
       <div style={{ marginTop: "clamp(24px,3vw,36px)", borderRadius: "14px", border: "1px solid #E6E0D8", background: "#fafaf9", padding: "16px", boxShadow: "0 1px 2px rgba(34,30,27,.04),0 14px 34px rgba(34,30,27,.07)" }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px", marginBottom: "12px", fontFamily: "var(--font-ui), 'Instrument Sans', sans-serif" }}>
           <span style={{ display: "inline-flex", alignItems: "center", height: "34px", padding: "0 12px", borderRadius: "8px", background: "#1c1917", color: "#fff", fontSize: "13.5px", fontWeight: 500 }}>+ Mesa</span>
-          <span style={{ display: "inline-flex", alignItems: "center", height: "34px", padding: "0 10px", borderRadius: "8px", border: "1px solid #d6d3d1", background: "#fff", color: "#374151", fontSize: "13.5px" }}>Elemento do espaço ▾</span>
-          <span style={{ display: "inline-flex", alignItems: "center", height: "34px", padding: "0 12px", borderRadius: "8px", border: "1px solid #d6d3d1", background: "#fff", color: "#374151", fontSize: "13.5px", fontWeight: 500 }}>+ Elemento</span>
-          <span style={{ display: "inline-flex", alignItems: "center", height: "34px", padding: "0 12px", borderRadius: "8px", border: "1px solid #d6d3d1", background: "#fff", color: "#374151", fontSize: "13.5px", fontWeight: 500 }}>Importar planta</span>
+          <span data-hide-sm="1" style={{ display: "inline-flex", alignItems: "center", height: "34px", padding: "0 10px", borderRadius: "8px", border: "1px solid #d6d3d1", background: "#fff", color: "#374151", fontSize: "13.5px" }}>Elemento do espaço ▾</span>
+          <span data-hide-sm="1" style={{ display: "inline-flex", alignItems: "center", height: "34px", padding: "0 12px", borderRadius: "8px", border: "1px solid #d6d3d1", background: "#fff", color: "#374151", fontSize: "13.5px", fontWeight: 500 }}>+ Elemento</span>
+          <span data-hide-sm="1" style={{ display: "inline-flex", alignItems: "center", height: "34px", padding: "0 12px", borderRadius: "8px", border: "1px solid #d6d3d1", background: "#fff", color: "#374151", fontSize: "13.5px", fontWeight: 500 }}>Importar planta</span>
           <span style={{ marginLeft: "auto", fontSize: "13.5px", color: "#6b7280" }}>Salão · {LARGURA / 100} × {ALTURA / 100} m</span>
           <button
             type="button"

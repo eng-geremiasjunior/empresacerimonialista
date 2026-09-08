@@ -167,7 +167,7 @@ export function DemoMapaMental() {
       {dados && dataEvento && (
         // key no tipo: trocar o evento refaz a cascata de entrada, como
         // quando se abre o mapa de outro evento
-        <div key={tipo} style={{ fontFamily: "var(--font-ui), 'Instrument Sans', sans-serif" }}>
+        <div key={tipo} data-mapa-demo="1" style={{ fontFamily: "var(--font-ui), 'Instrument Sans', sans-serif" }}>
           <MapaMental
             tipoEvento={tipo}
             objetivos={dados.objetivos}

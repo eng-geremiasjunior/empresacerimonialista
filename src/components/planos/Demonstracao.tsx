@@ -30,7 +30,7 @@ export function Demonstracao() {
                 </span>
               </span>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "minmax(0,214px) minmax(0,1fr)", height: "clamp(380px,45vw,462px)", background: "#FAF8F5" }} data-stack="1">
+            <div style={{ display: "grid", gridTemplateColumns: "minmax(0,214px) minmax(0,1fr)", height: "clamp(380px,45vw,462px)", background: "#FAF8F5" }} data-stack="1" data-demo-quadro="1">
               <nav data-side="1" style={{ background: "#1C1917", display: "flex", flexDirection: "column", overflow: "hidden" }} aria-hidden="true">
                 <span style={{ display: "flex", alignItems: "center", height: "50px", padding: "0 18px", flex: "none", fontFamily: "var(--font-title, Inter, sans-serif)", fontWeight: "600", fontSize: "16px", letterSpacing: "-0.03em", color: "#FFFFFF" }}>
                   e
@@ -174,7 +174,7 @@ export function Demonstracao() {
                   </span>
                 </div>
                 {/* cena 1: a conversa virando campos */}
-                <div data-anim="1" style={{ position: "absolute", top: "48px", left: "0", right: "0", bottom: "0", padding: "16px", display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,.92fr)", gap: "14px", background: "#FAF8F5", animation: "hs1 28s cubic-bezier(.2,.8,.3,1) infinite" }}>
+                <div data-anim="1" data-cena-1="1" style={{ position: "absolute", top: "48px", left: "0", right: "0", bottom: "0", padding: "16px", display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,.92fr)", gap: "14px", background: "#FAF8F5", animation: "hs1 28s cubic-bezier(.2,.8,.3,1) infinite" }}>
                   <div style={{ display: "flex", flexDirection: "column", minWidth: "0" }}>
                     <p style={{ margin: "0 0 8px", fontFamily: "var(--font-mono, 'IBM Plex Mono', monospace)", fontSize: "10.5px", fontWeight: "500", letterSpacing: ".06em", textTransform: "uppercase", color: "#928A81" }}>
                       Briefing · conversa com a cliente
@@ -276,10 +276,10 @@ export function Demonstracao() {
                     <span data-anim="1" style={{ padding: "0 2px 8px", borderBottom: "2px solid #6E3F5F", fontWeight: "600", fontSize: "12px", color: "#4A2A40", animation: "htabA 28s cubic-bezier(.2,.8,.3,1) infinite" }}>
                       Visão geral
                     </span>
-                    <span style={{ padding: "0 2px 8px", borderBottom: "2px solid transparent", fontWeight: "500", fontSize: "12px", color: "#6B6259" }}>
+                    <span data-hide-sm="1" style={{ padding: "0 2px 8px", borderBottom: "2px solid transparent", fontWeight: "500", fontSize: "12px", color: "#6B6259" }}>
                       Planejamento
                     </span>
-                    <span style={{ padding: "0 2px 8px", borderBottom: "2px solid transparent", fontWeight: "500", fontSize: "12px", color: "#6B6259" }}>
+                    <span data-hide-sm="1" style={{ padding: "0 2px 8px", borderBottom: "2px solid transparent", fontWeight: "500", fontSize: "12px", color: "#6B6259" }}>
                       Fornecedores
                     </span>
                     <span data-anim="1" style={{ padding: "0 2px 8px", borderBottom: "2px solid transparent", fontWeight: "500", fontSize: "12px", color: "#6B6259", animation: "htabF 28s cubic-bezier(.2,.8,.3,1) infinite" }}>
@@ -370,11 +370,11 @@ export function Demonstracao() {
                       </b>
                     </span>
                   </div>
-                  <div style={{ marginTop: "auto", padding: "12px 13px", border: "1px solid #E6E0D8", borderRadius: "10px", background: "#F2EEE9", display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "12px" }}>
+                  <div style={{ marginTop: "auto", padding: "12px 13px", border: "1px solid #E6E0D8", borderRadius: "10px", background: "#F2EEE9", display: "flex", flexWrap: "wrap", alignItems: "baseline", justifyContent: "space-between", gap: "12px" }}>
                     <span style={{ fontSize: "12px", color: "#3D3835" }}>
                       Resultado previsto do evento
                     </span>
-                    <b style={{ fontFamily: "var(--font-mono, 'IBM Plex Mono', monospace)", fontWeight: "600", fontSize: "20px", letterSpacing: "-0.02em", color: "#221E1B" }}>
+                    <b style={{ fontFamily: "var(--font-mono, 'IBM Plex Mono', monospace)", fontWeight: "600", fontSize: "20px", letterSpacing: "-0.02em", color: "#221E1B", whiteSpace: "nowrap", marginLeft: "auto" }}>
                       R$ 32.300
                     </b>
                   </div>
@@ -388,7 +388,7 @@ export function Demonstracao() {
               </div>
             </div>
           </div>
-          <div style={{ position: "relative", height: "24px", marginTop: "18px" }} aria-hidden="true">
+          <div data-legenda-demo="1" style={{ position: "relative", height: "24px", marginTop: "18px" }} aria-hidden="true">
             <span data-anim="1" style={{ position: "absolute", left: "0", right: "0", textAlign: "center", fontSize: "13.5px", lineHeight: "1.5", color: "#6B6259", animation: "hp1 28s cubic-bezier(.2,.8,.3,1) infinite" }}>
               A conversa com a cliente vira{" "}
               <b style={{ fontWeight: "600", color: "#221E1B" }}>

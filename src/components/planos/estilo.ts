@@ -151,6 +151,31 @@ export const CSS_PLANOS = `
     [data-flutuante]{display:none!important}
     /* os dois botões da faixa de chamada, um embaixo do outro, na largura toda */
     [data-chamada-botoes]{flex-direction:column!important;align-items:stretch!important}
+    /* a tela do sistema dentro da seção "Não é uma lista de tarefas":
+       as três fases empilhadas (a divisória vira horizontal) e a fileira
+       de quatro indicadores em duas colunas — em 375px cada um tinha 68px
+       e o texto saía cortado */
+    [data-fase-cel]{border-left:0!important;border-top:1px solid #F0EFED!important}
+    [data-duas-cel]{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+    /* o painel do Copiloto no mapa mental tem 288px fixos no app; aqui,
+       embaixo do mapa, ele ocupa a largura toda */
+    [data-mapa-demo] aside{width:100%!important;border-left:0!important;border-top:1px solid #E7E5E4!important}
+    /* a demonstração da conversa: em 375px a cena 1 tinha duas colunas de
+       140px, com os balões em cinco linhas e o botão "Criar evento"
+       cortado pela moldura. Uma coluna só, e a moldura cresce para caber */
+    [data-demo-quadro]{height:auto!important}
+    [data-cena-1]{position:relative!important;top:0!important;margin-top:48px!important;grid-template-columns:1fr!important}
+    [data-legenda-demo]{height:44px!important}
+    /* a demonstração nascida (DemoNascer): a calha do app cai de 24 para
+       14px, a data do cabeçalho some, a saída vira dois botões empilhados
+       e o prazo de cada decisão desce para a linha de baixo — em 375px o
+       título da decisão virava "D…" */
+    [data-app-pad]{padding-left:14px!important;padding-right:14px!important}
+    [data-app-marg]{margin-left:14px!important;margin-right:14px!important}
+    [data-linha-cel]{flex-wrap:wrap!important}
+    [data-prazo-cel]{flex-basis:100%!important;padding-left:19px!important}
+    [data-titulo-cel]{white-space:normal!important}
+    [data-saida-cel]{flex:1 1 100%!important;min-width:0!important;flex-direction:column!important;align-items:stretch!important}
     [data-palco]{min-height:0!important;padding:56px 0!important}
     [data-palco-t]{position:static!important;transform:none!important}
     /* a inclinação em 360px cortaria a janela: ela volta a ser reta */

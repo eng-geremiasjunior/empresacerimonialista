@@ -82,23 +82,23 @@ export function PortalDaCliente() {
             </p>
           </div>
           <ul style={{ listStyle: "none", margin: "0", padding: "0", display: "flex", flexDirection: "column", gap: "9px" }}>
-            <li style={{ display: "flex", alignItems: "center", gap: "9px", fontSize: "14.5px", lineHeight: "1.5", color: "#3D3835" }}>
-              <i style={{ width: "6px", height: "6px", borderRadius: "999px", background: "#A5813C", flex: "none" }}>
+            <li style={{ display: "flex", alignItems: "flex-start", gap: "9px", fontSize: "14.5px", lineHeight: "1.5", color: "#3D3835" }}>
+              <i style={{ width: "6px", height: "6px", marginTop: "8px", borderRadius: "999px", background: "#A5813C", flex: "none" }}>
               </i>
               Flor &amp; Casa não respondeu a solicitação há 4 dias
             </li>
-            <li style={{ display: "flex", alignItems: "center", gap: "9px", fontSize: "14.5px", lineHeight: "1.5", color: "#3D3835" }}>
-              <i style={{ width: "6px", height: "6px", borderRadius: "999px", background: "#A5813C", flex: "none" }}>
+            <li style={{ display: "flex", alignItems: "flex-start", gap: "9px", fontSize: "14.5px", lineHeight: "1.5", color: "#3D3835" }}>
+              <i style={{ width: "6px", height: "6px", marginTop: "8px", borderRadius: "999px", background: "#A5813C", flex: "none" }}>
               </i>
               Parcela do buffet vence em 3 dias
             </li>
-            <li style={{ display: "flex", alignItems: "center", gap: "9px", fontSize: "14.5px", lineHeight: "1.5", color: "#3D3835" }}>
-              <i style={{ width: "6px", height: "6px", borderRadius: "999px", background: "#A5813C", flex: "none" }}>
+            <li style={{ display: "flex", alignItems: "flex-start", gap: "9px", fontSize: "14.5px", lineHeight: "1.5", color: "#3D3835" }}>
+              <i style={{ width: "6px", height: "6px", marginTop: "8px", borderRadius: "999px", background: "#A5813C", flex: "none" }}>
               </i>
               Debutante Helena · lista de convidados atrasada
             </li>
-            <li style={{ display: "flex", alignItems: "center", gap: "9px", fontSize: "14.5px", lineHeight: "1.5", color: "#3D3835" }}>
-              <i style={{ width: "6px", height: "6px", borderRadius: "999px", background: "#6E7F63", flex: "none" }}>
+            <li style={{ display: "flex", alignItems: "flex-start", gap: "9px", fontSize: "14.5px", lineHeight: "1.5", color: "#3D3835" }}>
+              <i style={{ width: "6px", height: "6px", marginTop: "8px", borderRadius: "999px", background: "#6E7F63", flex: "none" }}>
               </i>
               Marina e Téo · saúde do evento 86%
             </li>
