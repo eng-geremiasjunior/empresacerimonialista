@@ -21,6 +21,8 @@ import { Demonstracao } from "@/components/planos/Demonstracao";
 import { DemoNascer } from "@/components/planos/DemoNascer";
 import { DemoCroqui } from "@/components/planos/DemoCroqui";
 import { DemoMapaMental } from "@/components/planos/DemoMapaMental";
+import { Chamada } from "@/components/planos/Chamada";
+import { BotaoFlutuante } from "@/components/planos/BotaoFlutuante";
 import { Palco } from "@/components/planos/Palco";
 import { Solucao } from "@/components/planos/Solucao";
 import { Cadeia } from "@/components/planos/Cadeia";
@@ -181,6 +183,31 @@ export default async function PlanosPage() {
   const fraseDaEscadaEmFaixas = faixas ? fraseDasFaixas(faixas) : null;
   const mesesDoPrimeiroDegrau = primeiraFaixa?.ate ?? 0;
 
+  // AS CHAMADAS NOVAS (07/09/2026). A vendedora apontou que a página
+  // explica muito e chama pouco: entre o hero e a oferta havia oito
+  // seções sem um botão. Três faixas no percurso, o botão flutuante e o
+  // link "Experimente" do cabeçalho nascem daqui — um destino só, para
+  // que o visitante caia no checkout e a dona sem pagamento caia na
+  // assinatura dela, como nos botões que já existiam. Quem já paga e a
+  // equipe não veem nada disso.
+  const precoCurto = precoDeEntrada !== null ? reais(precoDeEntrada) : null;
+  const destinoDaAssinatura = visitante
+    ? "/comecar"
+    : planoDeEntrada
+      ? `/assinatura?plano=${planoDeEntrada.codigo}`
+      : "/assinatura";
+  const rotuloDeAssinar = visitante
+    ? "Assine agora"
+    : planoDeEntrada
+      ? `Assinar o ${planoDeEntrada.nome}`
+      : "Assinar agora";
+  const assineAgora = { href: destinoDaAssinatura, rotulo: rotuloDeAssinar };
+  const assinePeloPreco = {
+    href: destinoDaAssinatura,
+    rotulo: visitante && precoCurto ? `Assine por ${precoCurto}` : rotuloDeAssinar,
+  };
+  const experimente = { href: "#experimente", rotulo: "Experimente agora" };
+
   // O plano em destaque na grade: o da promoção, se houver; senão, o
   // primeiro da vitrine. É ele que ganha o botão cheio.
   const iDestaque = Math.max(
@@ -228,7 +255,7 @@ export default async function PlanosPage() {
           fontSize: "14px",
           transition: "background 120ms cubic-bezier(.2,.8,.3,1)",
         };
-    const classe = destaque ? "pl-h-ameixa" : "pl-h-branco";
+    const classe = destaque ? "pl-h-ameixa pl-cta" : "pl-h-branco";
 
     if (equipe) return null;
     if (!dona) {
@@ -352,6 +379,27 @@ export default async function PlanosPage() {
             </span>
           </span>
           <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            {podeAssinar && (
+              <a
+                href="#experimente"
+                data-hide-sm="1"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  minHeight: "40px",
+                  padding: "0 12px",
+                  borderRadius: "8px",
+                  fontWeight: "500",
+                  fontSize: "14px",
+                  color: "#3D3835",
+                  textDecoration: "none",
+                  transition: "background 120ms cubic-bezier(.2,.8,.3,1)",
+                }}
+                className="pl-h-suave"
+              >
+                Experimente
+              </a>
+            )}
             {visitante && (
               <a
                 href="/comecar"
@@ -499,6 +547,7 @@ export default async function PlanosPage() {
               gap: "14px",
               marginTop: "32px",
             }}
+            data-cta-hero="1"
           >
             {visitante && (
               <a
@@ -517,7 +566,7 @@ export default async function PlanosPage() {
                   fontSize: "17px",
                   transition: "background 120ms cubic-bezier(.2,.8,.3,1)",
                 }}
-                className="pl-h-ameixa"
+                className="pl-h-ameixa pl-cta"
               >
                 {precoDeEntrada === null ? "Começar agora" : `Começar por ${reais(precoDeEntrada)}`}
               </a>
@@ -538,7 +587,7 @@ export default async function PlanosPage() {
                   fontWeight: "600",
                   fontSize: "17px",
                 }}
-                className="pl-h-ameixa"
+                className="pl-h-ameixa pl-cta"
               >
                 {jaPaga ? "Minha assinatura" : `Assinar o ${planoDeEntrada.nome}`}
               </a>
@@ -578,11 +627,39 @@ export default async function PlanosPage() {
         </section>
 
         <Demonstracao />
+        {podeAssinar && (
+          <Chamada
+            titulo="Quer ver isso com o seu evento?"
+            texto="Escreva o nome, escolha casamento ou debutante e veja tudo nascer na tela do sistema. Sem cadastro, sem cartão."
+            primaria={experimente}
+            secundaria={assinePeloPreco}
+          />
+        )}
         <Palco />
         <Solucao />
         <Cadeia />
+        {podeAssinar && (
+          <Chamada
+            titulo="Comece pelo evento que você já está organizando."
+            texto={
+              promo && fraseDaEscadaEmFaixas
+                ? `${fraseDaEscadaEmFaixas}. Cancela quando quiser, sem multa.`
+                : "Cancela quando quiser, sem multa."
+            }
+            primaria={assineAgora}
+            secundaria={{ href: "#planos", rotulo: "Veja os planos" }}
+          />
+        )}
         <FinanceiroDoEvento />
         <Execucao />
+        {podeAssinar && (
+          <Chamada
+            titulo="O próximo evento já pode entrar no sistema hoje."
+            texto="Conta, cartão e o primeiro evento em vinte minutos. Cancela quando quiser."
+            primaria={assinePeloPreco}
+            secundaria={{ href: "#experimente", rotulo: "Experimente antes" }}
+          />
+        )}
         <PortalDaCliente />
         <SistemaInteiro nosN={nosNPlanos} />
         {/* A demonstração que ela mexe, logo antes da oferta: nome, tipo,
@@ -597,7 +674,9 @@ export default async function PlanosPage() {
 
         {/* ============ 11 · OFERTA E PLANOS ============ */}
         <section
+          id="planos"
           style={{
+            scrollMarginTop: "64px",
             maxWidth: "1080px",
             margin: "clamp(56px,7vw,88px) auto 0",
             padding: "0 clamp(20px,4vw,28px)",
@@ -740,7 +819,7 @@ export default async function PlanosPage() {
                           fontSize: "16px",
                           transition: "background 120ms cubic-bezier(.2,.8,.3,1)",
                         }}
-                        className="pl-h-ameixa"
+                        className="pl-h-ameixa pl-cta"
                       >
                         Quero conhecer o sistema
                       </a>
@@ -761,7 +840,7 @@ export default async function PlanosPage() {
                           fontWeight: "600",
                           fontSize: "16px",
                         }}
-                        className="pl-h-ameixa"
+                        className="pl-h-ameixa pl-cta"
                       >
                         {jaPaga
                           ? `Mudar para o ${planoPromovido.nome}`
@@ -1054,6 +1133,7 @@ export default async function PlanosPage() {
 
         {/* ============ 13 · CTA FINAL ============ */}
         <section
+          data-cta-final="1"
           style={{
             marginTop: "clamp(56px,7vw,88px)",
             padding: "clamp(56px,7vw,84px) 0",
@@ -1123,7 +1203,7 @@ export default async function PlanosPage() {
                     fontSize: "17px",
                     transition: "background 120ms cubic-bezier(.2,.8,.3,1)",
                   }}
-                  className="pl-h-ameixa"
+                  className="pl-h-ameixa pl-cta"
                 >
                   {precoDeEntrada === null ? "Começar agora" : `Começar por ${reais(precoDeEntrada)}`}
                 </a>
@@ -1144,7 +1224,7 @@ export default async function PlanosPage() {
                     fontWeight: "600",
                     fontSize: "17px",
                   }}
-                  className="pl-h-ameixa"
+                  className="pl-h-ameixa pl-cta"
                 >
                   {jaPaga ? "Minha assinatura" : `Assinar o ${planoDeEntrada.nome}`}
                 </a>
@@ -1291,7 +1371,7 @@ export default async function PlanosPage() {
                 fontWeight: "600",
                 fontSize: "15px",
               }}
-              className="pl-h-ameixa"
+              className="pl-h-ameixa pl-cta"
             >
               Começar agora
             </a>
@@ -1313,12 +1393,16 @@ export default async function PlanosPage() {
                 fontWeight: "600",
                 fontSize: "15px",
               }}
-              className="pl-h-ameixa"
+              className="pl-h-ameixa pl-cta"
             >
               Assinar
             </a>
           )}
         </div>
+      )}
+
+      {podeAssinar && (
+        <BotaoFlutuante href={destinoDaAssinatura} rotulo={rotuloDeAssinar} preco={visitante ? precoCurto : null} />
       )}
 
       <Medicao />

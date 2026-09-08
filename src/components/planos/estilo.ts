@@ -147,6 +147,10 @@ export const CSS_PLANOS = `
     [data-frag-wrap]{display:none!important}
     [data-cta-fixo]{display:flex!important}
     [data-cta-espaco]{display:block!important}
+    /* o botão flutuante é do desktop; no celular a barra fixa já faz o papel */
+    [data-flutuante]{display:none!important}
+    /* os dois botões da faixa de chamada, um embaixo do outro, na largura toda */
+    [data-chamada-botoes]{flex-direction:column!important;align-items:stretch!important}
     [data-palco]{min-height:0!important;padding:56px 0!important}
     [data-palco-t]{position:static!important;transform:none!important}
     /* a inclinação em 360px cortaria a janela: ela volta a ser reta */
@@ -161,6 +165,23 @@ export const CSS_PLANOS = `
     [data-cel-borda-1]{border-top:0!important;padding-top:0!important;margin-top:0!important}
     [data-cel]{border-left:0!important;padding-left:0!important;padding-right:0!important}
     [data-nevoa]{margin-left:-14px!important;margin-right:-14px!important;padding-left:14px!important;padding-right:14px!important}
+  }
+
+  /* ---- As chamadas para a ação (07/09/2026) ----
+     A vendedora pediu mais chamadas e mais destaque. O brilho ameixa é
+     comum a todo botão principal; o contorno é o botão secundário das
+     faixas; a rolagem suave é para os links "Experimente", que descem
+     até a demonstração. */
+  html{scroll-behavior:smooth}
+  .pl-cta{box-shadow:0 1px 2px rgba(34,30,27,.08),0 8px 22px rgba(110,63,95,.28);
+    transition:background 120ms cubic-bezier(.2,.8,.3,1),transform 160ms cubic-bezier(.2,.8,.3,1),box-shadow 160ms cubic-bezier(.2,.8,.3,1)}
+  .pl-cta:hover{transform:translateY(-1px);box-shadow:0 2px 4px rgba(34,30,27,.08),0 12px 28px rgba(110,63,95,.36)}
+  .pl-h-contorno:hover{background:#F3EBF0!important;border-color:#4A2A40!important;color:#4A2A40!important}
+  @keyframes flutuaEntra{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    [data-flutuante]{animation:none!important}
+    .pl-cta:hover{transform:none}
   }
 
   /* ---- O que o desenho escreveu como style-hover ----

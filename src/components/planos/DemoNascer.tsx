@@ -191,7 +191,11 @@ export function DemoNascer({ precoDeEntrada }: { precoDeEntrada: string | null }
   // dono viu a versão discreta e pediu destaque, sem sair do tema.
   return (
     <section
+      id="experimente"
       style={{
+        // o cabeçalho fixo tem 56px: sem esta folga o link "Experimente"
+        // pararia com o título escondido atrás dele
+        scrollMarginTop: "64px",
         marginTop: "clamp(56px,7vw,88px)",
         padding: "clamp(52px,6vw,80px) 0 clamp(56px,7vw,84px)",
         background: "#F2EEE9",
