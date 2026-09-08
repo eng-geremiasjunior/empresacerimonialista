@@ -16,6 +16,7 @@ import {
 } from "@/lib/planos";
 import { Simbolo } from "@/components/marca/Marca";
 import { Medicao } from "@/components/marketing/Medicao";
+import { Origem } from "@/components/marketing/Origem";
 import { CSS_PLANOS } from "@/components/planos/estilo";
 import { Demonstracao } from "@/components/planos/Demonstracao";
 import { DemoNascer } from "@/components/planos/DemoNascer";
@@ -1550,6 +1551,9 @@ export default async function PlanosPage() {
         />
       )}
 
+      {/* a marca do anúncio guardada aqui, na primeira tela — no
+          cadastro a URL já não a carrega mais */}
+      <Origem />
       <Medicao />
     </div>
   );

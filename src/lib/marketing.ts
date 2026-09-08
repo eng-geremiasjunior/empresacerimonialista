@@ -97,6 +97,23 @@ function cookie(nome: string): string | null {
  * um e-mail de confirmação e outro dia.
  *
  * Nada aqui identifica pessoa: identifica navegador e campanha.
+ *
+ * CHAMAR NA PRIMEIRA TELA, NÃO SÓ NO CADASTRO (08/09/2026). O anúncio
+ * entrega em `/planos?utm_source=…&fbclid=…`, e a pessoa só chega ao
+ * cadastro dois ou três cliques depois — quando a URL já não carrega
+ * nada. Enquanto esta função rodava só no formulário, `utm_source`,
+ * `utm_campaign`, `gclid` e o `fbclid` (que vira o `fbc` da Meta) eram
+ * perdidos em TODA conta: a plataforma recebia a conversão sem saber de
+ * qual anúncio ela veio, que é a única pergunta que o dono faz ao olhar
+ * o painel.
+ *
+ * E A SEGUNDA CHAMADA NÃO PODE APAGAR A PRIMEIRA. Chamada no cadastro,
+ * onde só existem os cookies do pixel, ela reescrevia o cookie inteiro
+ * sem os `utm_*` — jogando fora justamente o que a landing tinha
+ * guardado. Agora o que já está gravado permanece, e só é substituído
+ * quando a URL de AGORA traz marca de campanha nova: quem volta por um
+ * segundo anúncio conta para o segundo anúncio, quem só navegou pelo
+ * site continua contando para o primeiro.
  */
 export function guardarOrigemDoClique(): void {
   if (typeof document === "undefined") return;
@@ -116,10 +133,41 @@ export function guardarOrigemDoClique(): void {
       utm_medium: url.get("utm_medium"),
       utm_campaign: url.get("utm_campaign"),
     };
-    if (!Object.values(dados).some(Boolean)) return;
+    // Marca de campanha na URL de AGORA = toque novo, e toque novo manda.
+    // Sem ela, esta chamada é só uma navegação interna e não tem
+    // autoridade para trocar a origem de nada.
+    const toqueNovo = Boolean(
+      url.get("utm_source") ||
+        url.get("utm_medium") ||
+        url.get("utm_campaign") ||
+        url.get("gclid") ||
+        url.get("fbclid")
+    );
+
+    let guardado: Record<string, string | null> = {};
+    try {
+      const cru = cookie(COOKIE_ORIGEM);
+      if (cru) guardado = JSON.parse(decodeURIComponent(cru)) as Record<string, string | null>;
+    } catch {
+      guardado = {};
+    }
+
+    const juntos: Record<string, string | null> = { ...dados };
+    for (const [chave, valor] of Object.entries(guardado)) {
+      if (!valor) continue;
+      // o que já estava guardado só cede a um toque novo de verdade; os
+      // identificadores de navegador (fbp, ga) cedem sempre que houver
+      // um valor mais fresco, porque identificam o mesmo navegador
+      const eDeCampanha = chave.startsWith("utm_") || chave === "gclid" || chave === "fbc";
+      if (eDeCampanha && toqueNovo) continue;
+      if (!juntos[chave]) juntos[chave] = valor;
+      else if (eDeCampanha) juntos[chave] = valor;
+    }
+
+    if (!Object.values(juntos).some(Boolean)) return;
     const noventaDias = 90 * 24 * 60 * 60;
     document.cookie =
-      `${COOKIE_ORIGEM}=${encodeURIComponent(JSON.stringify(dados))};` +
+      `${COOKIE_ORIGEM}=${encodeURIComponent(JSON.stringify(juntos))};` +
       `path=/;max-age=${noventaDias};SameSite=Lax`;
   } catch {
     // sem cookie a conta continua sendo criada; só a atribuição se perde
