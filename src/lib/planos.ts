@@ -303,8 +303,8 @@ export function degrauDeHoje(
 }
 
 /**
- * A escada com todas as letras: "R$ 27,90/mês nos 3 primeiros meses,
- * depois R$ 57,00 e a partir do 7º mês R$ 97,00".
+ * A escada com todas as letras: "R$ 27,90/mês nos 3 primeiros meses e
+ * R$ 97,00 a partir do 4º".
  *
  * Esta frase é obrigação, não enfeite. O preço futuro precisa estar dito
  * no CHECKOUT, não só no anúncio: é o que o CDC pede sobre mudança de
@@ -361,8 +361,9 @@ export function fraseDoDegrauAtual(
 
 /**
  * A escada em FAIXAS DE MÊS, que é como a página de vendas a mostra:
- * "Meses 1 a 3 · R$ 27,90", "Meses 4 a 6 · R$ 57,00", "Do 7º mês em
- * diante · R$ 97,00".
+ * "Meses 1 a 3 · R$ 27,90", "Do 4º mês em diante · R$ 97,00". (A escada
+ * teve um degrau do meio, R$ 57,00, entre 06 e 08/09/2026; a função não
+ * mudou, os degraus é que são dado.)
  *
  * A última faixa é o preço do catálogo — ela não vem de `plano_promocao`,
  * vem do plano, e é justamente a que a pessoa precisa ler ANTES de
@@ -409,7 +410,7 @@ export function faixasDaEscada(
   return faixas;
 }
 
-/** A mesma escada numa linha só: "R$ 27,90 nos meses 1 a 3, R$ 57,00…". */
+/** A mesma escada numa linha só: "R$ 27,90 nos meses 1 a 3, R$ 97,00 do 4º mês em diante". */
 export function fraseDasFaixas(faixas: FaixaDaEscada[]): string {
   return faixas
     .map((f) => {

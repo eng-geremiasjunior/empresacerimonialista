@@ -18,8 +18,25 @@
 -- escada cobre um ciclo inteiro e o salto vira 2×.
 --
 --   meses 1 a 3   R$ 27,90
---   meses 4 a 6   R$ 57,00
---   do 7º em diante  o preço do plano (hoje R$ 97,00, lido do catálogo)
+--   do 4º em diante  o preço do plano (hoje R$ 97,00, lido do catálogo)
+--
+-- EMENDA DE 08/09/2026 — o degrau do meio saiu. A escada tinha três
+-- preços (27,90 → 57,00 → 97,00) e o dono a leu como visitante: "ficou
+-- confuso na leitura e tem choque do mesmo jeito". É verdade: 27,90 para
+-- 57,00 e 57,00 para 97,00 são o mesmo susto, dado duas vezes, e três
+-- preços numa frase ninguém guarda. Fica um degrau só, e a frase que a
+-- página monta sozinha vira "R$ 27,90 nos meses 1 a 3, R$ 97,00 do 4º mês
+-- em diante".
+--
+-- POR QUE APAGAR E NÃO MARCAR `ativo = false`: as duas colunas fazem
+-- coisas diferentes de propósito. `ativo` governa a VITRINE (a policy de
+-- leitura filtra por ele), e `valor_da_promocao` o IGNORA, para desligar
+-- a venda não subir o preço de quem está no meio da escada. Marcar
+-- inativo faria a página anunciar R$ 97,00 no mês 4 e a cobrança sacar
+-- R$ 57,00 no mesmo mês — a vitrine prometendo o que o checkout não
+-- cobra, que é de onde nasce contestação de cartão. Apagar é seguro
+-- aqui e agora: conferido em 08/09/2026, nenhuma assinatura tem
+-- `promocao_codigo` preenchido, ou seja, ninguém está na escada.
 --
 -- POR QUE NÃO O DESCONTO DA OPERADORA. A Pagar.me tem desconto por ciclos
 -- (value/discount_type/cycles), e ele resolveria UM degrau sozinho. Não
@@ -80,11 +97,13 @@ select 'lancamento', 1, 27.90, 3
 where not exists (
   select 1 from public.plano_promocao where codigo = 'lancamento' and ordem = 1
 );
-insert into public.plano_promocao (codigo, ordem, valor_mensal, meses)
-select 'lancamento', 2, 57.00, 3
-where not exists (
-  select 1 from public.plano_promocao where codigo = 'lancamento' and ordem = 2
-);
+-- O degrau 2 (R$ 57,00) existiu entre 06/09 e 08/09/2026 e foi removido
+-- pela emenda do cabeçalho. O delete fica aqui, e não numa migração
+-- nova, porque este arquivo é convergente e é ele que define a escada:
+-- sem esta linha, rodar a 153 de novo ressuscitaria o degrau que o dono
+-- mandou tirar. Se um dia voltar a haver degrau do meio, é aqui que ele
+-- nasce de novo.
+delete from public.plano_promocao where codigo = 'lancamento' and ordem = 2;
 
 alter table public.plano_promocao enable row level security;
 
@@ -192,18 +211,17 @@ grant execute on function public.valor_da_promocao(text, date, date) to service_
 select 'plano_promocao existe' as item,
        (select to_regclass('public.plano_promocao') is not null) as ok
 union all
-select 'a escada de lançamento tem os dois degraus',
-       (select count(*) = 2 from public.plano_promocao where codigo = 'lancamento')
+select 'a escada de lançamento tem um degrau só',
+       (select count(*) = 1 from public.plano_promocao where codigo = 'lancamento')
 union all
 select 'degrau 1: R$ 27,90 por 3 meses',
        exists (select 1 from public.plano_promocao
                where codigo = 'lancamento' and ordem = 1
                  and valor_mensal = 27.90 and meses = 3)
 union all
-select 'degrau 2: R$ 57,00 por 3 meses',
-       exists (select 1 from public.plano_promocao
-               where codigo = 'lancamento' and ordem = 2
-                 and valor_mensal = 57.00 and meses = 3)
+select 'o degrau do meio não existe mais',
+       not exists (select 1 from public.plano_promocao
+                   where codigo = 'lancamento' and ordem = 2)
 union all
 select 'assinaturas ganhou as duas colunas',
        (select count(*) = 2 from information_schema.columns
@@ -220,14 +238,16 @@ union all
 select 'mês 2 ainda paga 27,90',
        coalesce(public.valor_da_promocao('lancamento', (current_date - interval '2 months')::date, current_date) = 27.90, false)
 union all
-select 'mês 3 sobe para 57,00',
-       coalesce(public.valor_da_promocao('lancamento', (current_date - interval '3 months')::date, current_date) = 57.00, false)
+select 'mês 3 acabou a escada (null = preço cheio do plano)',
+       public.valor_da_promocao('lancamento', (current_date - interval '3 months')::date, current_date) is null
 union all
-select 'mês 5 ainda paga 57,00',
-       coalesce(public.valor_da_promocao('lancamento', (current_date - interval '5 months')::date, current_date) = 57.00, false)
+select 'mês 5 continua no preço cheio',
+       public.valor_da_promocao('lancamento', (current_date - interval '5 months')::date, current_date) is null
 union all
-select 'mês 6 acabou a escada (null = preço do plano)',
-       public.valor_da_promocao('lancamento', (current_date - interval '6 months')::date, current_date) is null
+select 'ninguém ficou preso num degrau que não existe mais',
+       (select count(*) = 0 from public.assinaturas a
+         where a.promocao_codigo = 'lancamento'
+           and public.valor_da_promocao(a.promocao_codigo, a.promocao_inicio) = 57.00)
 union all
 select 'conta sem promoção devolve null',
        public.valor_da_promocao(null, null, current_date) is null
