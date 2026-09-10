@@ -54,6 +54,15 @@ create table if not exists public.origem_do_clique (
   created_at     timestamptz not null default now()
 );
 
+-- ANTES DOS COMENTÁRIOS, e não depois (corrigido em 09/09/2026). Para
+-- quem já rodou esta migração antes da emenda, o `create table if not
+-- exists` acima não faz nada — a tabela existe, e as duas colunas novas
+-- não nascem por ali. Os `comment on column` logo abaixo então batiam
+-- numa coluna inexistente e a migração morria com 42703 na cara do dono.
+-- Coluna nova entra por ALTER, e o ALTER vem primeiro.
+alter table public.origem_do_clique add column if not exists utm_content text;
+alter table public.origem_do_clique add column if not exists utm_term text;
+
 comment on table public.origem_do_clique is
   'De qual anúncio veio cada conta. Identificadores de clique, nunca de pessoa — usados só para atribuir a conversão de servidor (API de Conversões da Meta e Measurement Protocol do GA4).';
 comment on column public.origem_do_clique.fbp is
@@ -66,11 +75,6 @@ comment on column public.origem_do_clique.utm_term is
   'Nome do CONJUNTO de anúncios, vindo da macro {{adset.name}}.';
 comment on column public.origem_do_clique.ga_client_id is
   'client_id do GA4 (o par de números do cookie _ga). Sem ele o Measurement Protocol registra a conversão sem sessão de origem.';
-
--- Para quem já rodou esta migração antes da emenda: as colunas entram
--- sem tocar no que está gravado.
-alter table public.origem_do_clique add column if not exists utm_content text;
-alter table public.origem_do_clique add column if not exists utm_term text;
 
 alter table public.origem_do_clique enable row level security;
 
