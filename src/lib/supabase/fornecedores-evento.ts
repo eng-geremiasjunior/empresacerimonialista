@@ -33,6 +33,7 @@ type LinkRow = {
   confirmed: boolean;
   created_at: string | null;
   hash: string;
+  confirmar_em: string | null;
   suppliers: {
     name: string;
     email: string | null;
@@ -46,27 +47,52 @@ export type DadosFornecedores = {
   automacao: Automacao;
 };
 
+// supplier_categorias, NÃO suppliers.category: a coluna antiga foi
+// aposentada na 026 e ninguém mais escreve nela (dbFields não a inclui).
+// Esta tela ainda lia dali, então TODO fornecedor cadastrado depois da
+// 026 aparecia aqui como "sem categoria" — enquanto a tela /fornecedores,
+// que lê a fonte certa, mostrava a categoria dele normalmente.
+//
+// hash: o link que o fornecedor abre sem login. Ele já existia, mas só
+// era oferecido lá no fim da tela de Roteiro — o dono procurou por ele
+// aqui, onde o fornecedor está, e não achou.
+const COLUNAS_DO_VINCULO =
+  "supplier_id, confirmed, created_at, hash, suppliers(name, email, whatsapp, supplier_categorias(categoria))";
+
+/**
+ * O vínculo, com a data de confirmação de cada um QUANDO ela existe.
+ *
+ * O deploy chega antes da migração — quem aplica SQL aqui é o dono, à
+ * mão. E o PostgREST não ignora coluna que não existe: ele derruba a
+ * consulta inteira. Sem esta rede, o dia entre subir o código e rodar a
+ * 157 seria um dia com a aba Fornecedores dizendo "nenhum fornecedor
+ * vinculado ainda" para todo mundo — o pior tipo de erro, o que parece
+ * um dado.
+ */
+async function lerVinculos(
+  supabase: ReturnType<typeof createClient>,
+  eventId: string
+) {
+  const comData = await supabase
+    .from("roteiro_links")
+    .select(`${COLUNAS_DO_VINCULO}, confirmar_em`)
+    .eq("event_id", eventId);
+  if (!comData.error) return { res: comData, temColuna: true };
+
+  const semData = await supabase
+    .from("roteiro_links")
+    .select(COLUNAS_DO_VINCULO)
+    .eq("event_id", eventId);
+  return { res: semData, temColuna: false };
+}
+
 export const getFornecedoresDoEvento = cache(
   async (eventId: string): Promise<DadosFornecedores> => {
     const supabase = createClient();
 
-    const [linksRes, confRes, evRes, pedidosRes, roteiroRes, dinheiroRes] =
+    const [vinculos, confRes, evRes, pedidosRes, roteiroRes, dinheiroRes] =
       await Promise.all([
-      supabase
-        .from("roteiro_links")
-        .select(
-          // supplier_categorias, NÃO suppliers.category: a coluna antiga foi
-          // aposentada na 026 e ninguém mais escreve nela (dbFields não a
-          // inclui). Esta tela ainda lia dali, então TODO fornecedor
-          // cadastrado depois da 026 aparecia aqui como "sem categoria" —
-          // enquanto a tela /fornecedores, que lê a fonte certa, mostrava
-          // a categoria dele normalmente.
-          // hash: o link que o fornecedor abre sem login. Ele já existia,
-          // mas só era oferecido lá no fim da tela de Roteiro — o dono
-          // procurou por ele aqui, onde o fornecedor está, e não achou.
-          "supplier_id, confirmed, created_at, hash, suppliers(name, email, whatsapp, supplier_categorias(categoria))"
-        )
-        .eq("event_id", eventId),
+      lerVinculos(supabase, eventId),
       supabase
         .from("supplier_confirmations")
         .select(
@@ -75,7 +101,7 @@ export const getFornecedoresDoEvento = cache(
         .eq("event_id", eventId),
       supabase
         .from("events")
-        .select("confirmation_days_before, whatsapp_auto, email_auto")
+        .select("confirmation_days_before, whatsapp_auto, email_auto, date")
         .eq("id", eventId)
         .maybeSingle(),
       supabase
@@ -175,7 +201,7 @@ export const getFornecedoresDoEvento = cache(
       });
     }
 
-    const fornecedores = ((linksRes.data ?? []) as unknown as LinkRow[])
+    const fornecedores = ((vinculos.res.data ?? []) as unknown as LinkRow[])
       .filter((l) => l.suppliers)
       .map<Fornecedor>((l) => ({
         supplierId: l.supplier_id,
@@ -186,6 +212,7 @@ export const getFornecedoresDoEvento = cache(
         confirmadoNoEvento: l.confirmed,
         vinculadoEm: l.created_at,
         hashDoLink: l.hash,
+        confirmarEm: l.confirmar_em ?? null,
         convite: convitePor.get(l.supplier_id) ?? null,
         pedidos: pedidosPor.get(l.supplier_id) ?? [],
         dinheiro: dinheiroPor.get(l.supplier_id) ?? null,
@@ -201,6 +228,10 @@ export const getFornecedoresDoEvento = cache(
         // comportamento histórico
         email: evRes.data?.email_auto !== false,
         whatsapp: evRes.data?.whatsapp_auto !== false,
+        dataDoEvento: evRes.data?.date ?? null,
+        // enquanto a 157 não for aplicada, o campo de data nem aparece:
+        // melhor não oferecer do que oferecer e falhar ao salvar
+        dataPorFornecedor: vinculos.temColuna,
       },
     };
   }

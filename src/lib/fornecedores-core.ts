@@ -26,6 +26,12 @@ export type Fornecedor = {
    * aparece junto do fornecedor, que é onde se procura por ele.
    */
   hashDoLink: string | null;
+  /**
+   * roteiro_links.confirmar_em (157) — a data em que o convite automático
+   * sai SÓ para ele. Nulo = segue o padrão do evento. O buffet confirma
+   * com um mês, a banda com uma semana.
+   */
+  confirmarEm: string | null;
   convite: {
     status: "pendente" | "confirmado" | "recusado";
     enviadoEm: string | null;
@@ -113,7 +119,37 @@ export type Automacao = {
   diasAntes: number;
   email: boolean;
   whatsapp: boolean;
+  /** a data do evento — o teto do campo de data de cada fornecedor */
+  dataDoEvento: string | null;
+  /** false enquanto a 157 não foi aplicada: o campo de data não aparece */
+  dataPorFornecedor: boolean;
 };
+
+/**
+ * A data em que o convite automático deste fornecedor vai sair, em ISO.
+ * Nulo quando não dá para saber (evento sem data).
+ *
+ * Uma conta só, num lugar só: a tela mostra, e o cron decide pelo mesmo
+ * critério. Se as duas contas morassem em lugares diferentes, um dia
+ * discordariam — e a que ela veria na tela seria a errada.
+ */
+export function quandoConfirma(
+  f: Fornecedor,
+  a: Pick<Automacao, "diasAntes" | "dataDoEvento">
+): string | null {
+  if (f.confirmarEm) return f.confirmarEm;
+  if (!a.dataDoEvento) return null;
+  const d = new Date(`${a.dataDoEvento}T12:00:00`);
+  d.setDate(d.getDate() - a.diasAntes);
+  return d.toISOString().slice(0, 10);
+}
+
+/** "03/04" — data ISO em dia/mês, sem Date no render. */
+export function diaMes(iso: string | null): string | null {
+  if (!iso) return null;
+  const [, m, d] = iso.split("-");
+  return m && d ? `${d}/${m}` : null;
+}
 
 export type Tom = "ok" | "neutro" | "late";
 export type Grupo = "confirmados" | "pendentes" | "atencao";

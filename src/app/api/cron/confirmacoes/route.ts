@@ -3,14 +3,25 @@
 // Authorization: Bearer CRON_SECRET. Usa a service role key porque roda
 // sem sessão de usuário (varre eventos de todas as cerimonialistas).
 //
-// Regra: evento confirmado, ainda sem envio (confirmation_sent_at null),
-// cuja data está a até `confirmation_days_before` dias (e não passou).
+// A REGRA, DESDE A 157: a vez é de cada FORNECEDOR, não do evento. Cada
+// vínculo pode ter a sua data (`roteiro_links.confirmar_em`); quem não
+// tem segue o padrão do evento (`confirmation_days_before`, 7 por
+// omissão). O buffet confirma com um mês, a banda com uma semana.
+//
+// O QUE MUDOU NA MECÂNICA. Antes o job só olhava eventos com
+// `confirmation_sent_at` nulo e carimbava essa coluna ao fim: um envio
+// por evento. Com datas diferentes, esse carimbo viraria uma tranca — o
+// primeiro fornecedor a sair fecharia a porta para todos os outros, em
+// silêncio. Agora o "já foi" é lido por fornecedor, em
+// supplier_confirmations.sent_at, e o carimbo do evento só é escrito
+// quando não sobra ninguém a enviar: virou registro, não tranca.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import {
   enviarConfirmacaoFornecedor,
   fornecedoresDoEvento,
+  jaConvidados,
   type EventoParaConfirmar,
 } from "@/lib/confirmacoes";
 import { hojeBR, somarDias } from "@/lib/tempo";
@@ -56,9 +67,15 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Janela de disparo: hoje já entrou no prazo do evento e o evento ainda
-  // não aconteceu. Como days_before é configurável por evento, filtramos
-  // grosseiramente no SQL (maior janela possível) e refinamos em código.
+  // Janela de disparo: o evento ainda não aconteceu e está perto o
+  // bastante para alguém dele poder ter chegado a vez. Filtramos
+  // grosseiramente no SQL (maior janela possível) e refinamos em código,
+  // fornecedor por fornecedor.
+  //
+  // `confirmation_sent_at` saiu do filtro: ele era a tranca por evento, e
+  // manter aqui esconderia justamente o fornecedor cuja data ainda não
+  // tinha chegado quando o primeiro saiu. Quem impede a repetição agora é
+  // o sent_at de cada um.
   const hojeIso = hojeBR();
   // teto: ninguém configura mais que 60 dias
   const limiteIso = somarDias(hojeIso, 60);
@@ -69,7 +86,6 @@ export async function GET(request: NextRequest) {
       "id, type, date, time, location, confirmation_days_before, whatsapp_auto, clients(name)"
     )
     .eq("status", "confirmado")
-    .is("confirmation_sent_at", null)
     .gte("date", hojeIso)
     .lte("date", limiteIso);
 
@@ -84,6 +100,7 @@ export async function GET(request: NextRequest) {
     eventId: string;
     enviados: number;
     pulados: { supplier: string; motivo?: string }[];
+    aguardandoAVez?: number;
     repetiraAmanha?: boolean;
   }[] = [];
 
@@ -99,11 +116,10 @@ export async function GET(request: NextRequest) {
       clients: { name: string } | null;
     };
 
-    // Refino: hoje já entrou na janela (data - days_before)? Comparação
-    // por string ISO — sem Date e sem o fuso do runtime no meio.
+    // O padrão do evento — vale para quem não escolheu data própria.
+    // Comparação por string ISO: sem Date e sem o fuso do runtime no meio.
     const diasAntes = ev.confirmation_days_before ?? 7;
-    const disparoIso = somarDias(ev.date, -diasAntes);
-    if (hojeIso < disparoIso) continue;
+    const padraoIso = somarDias(ev.date, -diasAntes);
 
     const evento: EventoParaConfirmar = {
       id: ev.id,
@@ -116,11 +132,24 @@ export async function GET(request: NextRequest) {
     };
 
     const fornecedores = await fornecedoresDoEvento(supabase, ev.id);
+    const convidados = await jaConvidados(supabase, ev.id);
     let enviados = 0;
     let falhouEntrega = false;
+    let aguardandoAVez = 0;
     const pulados: { supplier: string; motivo?: string }[] = [];
 
     for (const f of fornecedores) {
+      // Já recebeu o convite automático: repetir é decisão dela, no
+      // botão da tela. O job não insiste.
+      if (convidados.has(f.id)) continue;
+
+      // A data dele, ou o padrão do evento.
+      const quandoIso = f.confirmarEm ?? padraoIso;
+      if (hojeIso < quandoIso) {
+        aguardandoAVez += 1;
+        continue;
+      }
+
       const r = await enviarConfirmacaoFornecedor(supabase, evento, f);
       if (r.enviado) enviados += 1;
       else {
@@ -129,23 +158,27 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Marca o evento como processado mesmo sem fornecedores com e-mail —
-    // amanhã seria igual e não vale reprocessar todo dia. MAS não marca se
-    // alguma entrega FALHOU: aí amanhã pode funcionar (é o caso enquanto o
-    // domínio de e-mail não está verificado). Marcar nesse caso queimava a
-    // confirmação em silêncio: o fornecedor nunca era avisado e o sistema
-    // nunca mais tentava.
-    if (!falhouEntrega) {
+    // O carimbo do evento não tranca mais nada (o sent_at de cada
+    // fornecedor faz isso); ele registra "este evento terminou a rodada".
+    // Por isso só é escrito quando não sobra ninguém esperando a vez — e
+    // nunca quando uma entrega FALHOU, porque amanhã pode funcionar (é o
+    // caso enquanto o domínio de e-mail não está verificado).
+    if (!falhouEntrega && aguardandoAVez === 0) {
       await supabase
         .from("events")
         .update({ confirmation_sent_at: new Date().toISOString() })
         .eq("id", ev.id);
     }
 
+    // Evento em que ninguém tinha vez hoje não vira linha de relatório:
+    // com a janela de 60 dias, isso seria a maioria deles todo dia.
+    if (enviados === 0 && pulados.length === 0) continue;
+
     resultados.push({
       eventId: ev.id,
       enviados,
       pulados,
+      ...(aguardandoAVez ? { aguardandoAVez } : {}),
       ...(falhouEntrega ? { repetiraAmanha: true } : {}),
     });
   }

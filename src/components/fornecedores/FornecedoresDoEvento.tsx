@@ -25,6 +25,8 @@ import {
   canaisDe,
   contagens,
   corDoTom,
+  diaMes,
+  quandoConfirma,
   estadoConvite,
   estadoPresenca,
   filtrar,
@@ -40,6 +42,7 @@ import {
 import {
   desvincularFornecedor,
   enviarConfirmacaoAgora,
+  salvarDataDeConfirmacao,
   salvarDiasAntecedencia,
   salvarEmailAuto,
   salvarEmailFornecedor,
@@ -265,7 +268,9 @@ export function FornecedoresDoEvento({
                 }}
               />
               <span style={{ fontFamily: F_UI, fontSize: 12.5, color: "var(--cinza)" }}>
-                confirmação sem login
+                {automacao.dataPorFornecedor
+                  ? "padrão do evento · dá para mudar em cada fornecedor"
+                  : "confirmação sem login"}
               </span>
             </div>
           </div>
@@ -412,6 +417,7 @@ export function FornecedoresDoEvento({
                   eventId={eventId}
                   f={f}
                   canais={canais}
+                  automacao={automacao}
                   aberto={aberto === f.supplierId}
                   pendente={pendente}
                   aoAbrir={() =>
@@ -526,6 +532,7 @@ function Linha({
   eventId,
   f,
   canais,
+  automacao,
   aberto,
   pendente,
   aoAbrir,
@@ -535,6 +542,7 @@ function Linha({
   eventId: string;
   f: Fornecedor;
   canais: { email: boolean; whatsapp: boolean };
+  automacao: Automacao;
   aberto: boolean;
   pendente: boolean;
   aoAbrir: () => void;
@@ -633,6 +641,7 @@ function Linha({
           eventId={eventId}
           f={f}
           canais={canais}
+          automacao={automacao}
           pendente={pendente}
           rodar={rodar}
           setAviso={setAviso}
@@ -688,6 +697,7 @@ function Detalhe({
   eventId,
   f,
   canais,
+  automacao,
   pendente,
   rodar,
   setAviso,
@@ -695,6 +705,7 @@ function Detalhe({
   eventId: string;
   f: Fornecedor;
   canais: { email: boolean; whatsapp: boolean };
+  automacao: Automacao;
   pendente: boolean;
   rodar: (
     a: () => Promise<{ error?: string } | { success: true } | void>,
@@ -818,6 +829,17 @@ function Detalhe({
           nome={f.nome}
         />
       )}
+
+      {/* A data DELE (157). O buffet confirma com um mês, a banda com uma
+          semana: um prazo único para o evento inteiro obrigava a escolher
+          o mais apertado de todos e cobrar o resto à mão. */}
+      <DataDeConfirmacao
+        eventId={eventId}
+        f={f}
+        automacao={automacao}
+        pendente={pendente}
+        rodar={rodar}
+      />
 
       {/* O dinheiro dele e o que está pendurado com ele. Vem do Financeiro
           do evento e da Central de Solicitações: ela decide sobre o
@@ -966,6 +988,102 @@ function Detalhe({
 }
 
 /* ================================================================ */
+
+/**
+ * A data em que o convite automático deste fornecedor sai.
+ *
+ * Vazia, ele segue o padrão do evento — e a tela DIZ qual é essa data,
+ * em vez de deixar a cerimonialista fazer a conta de trás para frente.
+ * O `max` é o dia do evento: escolher depois disso seria escolher um
+ * disparo que nunca acontece.
+ *
+ * Quem já recebeu o convite não tem mais data a escolher: o que sobra é
+ * reenviar, e isso é botão, não agenda.
+ */
+function DataDeConfirmacao({
+  eventId,
+  f,
+  automacao,
+  pendente,
+  rodar,
+}: {
+  eventId: string;
+  f: Fornecedor;
+  automacao: Automacao;
+  pendente: boolean;
+  rodar: (
+    a: () => Promise<{ error?: string } | { success: true } | void>,
+    sucesso?: string | ((r: unknown) => string)
+  ) => void;
+}) {
+  const [valor, setValor] = useState(f.confirmarEm ?? "");
+  const jaFoi = !!f.convite?.enviadoEm;
+  const padrao = diaMes(quandoConfirma({ ...f, confirmarEm: null }, automacao));
+
+  if (jaFoi || !automacao.dataPorFornecedor) return null;
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        flexWrap: "wrap",
+        fontFamily: F_UI,
+        fontSize: 12.5,
+        color: "var(--cinza)",
+      }}
+    >
+      <span style={{ color: "var(--cinza-3)" }}>Avisar em</span>
+      <input
+        type="date"
+        value={valor}
+        disabled={pendente}
+        max={automacao.dataDoEvento ?? undefined}
+        aria-label={`Data da confirmação automática de ${f.nome}`}
+        onChange={(e) => {
+          const v = e.target.value;
+          setValor(v);
+          rodar(() => salvarDataDeConfirmacao(eventId, f.supplierId, v || null));
+        }}
+        style={{
+          height: 30,
+          padding: "0 8px",
+          border: "1px solid var(--linha)",
+          borderRadius: 8,
+          background: "var(--papel)",
+          fontFamily: F_UI,
+          fontSize: 12.5,
+          color: "var(--tinta)",
+        }}
+      />
+      {valor ? (
+        <button
+          type="button"
+          disabled={pendente}
+          onClick={() => {
+            setValor("");
+            rodar(() => salvarDataDeConfirmacao(eventId, f.supplierId, null));
+          }}
+          style={{
+            background: "none",
+            border: "none",
+            padding: 0,
+            fontFamily: F_UI,
+            fontSize: 12.5,
+            color: "var(--cinza)",
+            textDecoration: "underline",
+            cursor: "pointer",
+          }}
+        >
+          voltar ao padrão do evento
+        </button>
+      ) : (
+        <span>{padrao ? `sem data própria: sai em ${padrao}` : "segue o padrão do evento"}</span>
+      )}
+    </div>
+  );
+}
 
 /**
  * O link do fornecedor, dentro do fornecedor.

@@ -163,6 +163,47 @@ export async function salvarEmailFornecedor(
   return {};
 }
 
+/**
+ * A data de confirmação de UM fornecedor (157).
+ *
+ * `null` devolve o fornecedor ao padrão do evento — não é o mesmo que
+ * "não avisar": quem não quer aviso automático desliga os canais.
+ *
+ * A validação aqui é de formato e de calendário, e nada mais. Recusar
+ * uma data no passado seria zelo mal colocado: ela pode estar corrigindo
+ * um evento que já passou da hora, e o cron entende data vencida como
+ * "manda na próxima varredura". O que a tela impede é escolher DEPOIS do
+ * evento, que aí sim nunca sairia.
+ */
+export async function salvarDataDeConfirmacao(
+  eventId: string,
+  supplierId: string,
+  data: string | null
+): Promise<{ error?: string }> {
+  if (data !== null && !/^\d{4}-\d{2}-\d{2}$/.test(data)) {
+    return { error: "Data inválida" };
+  }
+
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("roteiro_links")
+    .update({ confirmar_em: data })
+    .eq("event_id", eventId)
+    .eq("supplier_id", supplierId);
+
+  if (error) {
+    // Coluna ainda não aplicada: dizer a verdade em vez de "salvo".
+    return {
+      error: /confirmar_em/.test(error.message)
+        ? "A data por fornecedor ainda não foi liberada neste banco."
+        : "Não foi possível salvar a data",
+    };
+  }
+
+  revalidatePath(`/eventos/${eventId}/fornecedores`);
+  return {};
+}
+
 export async function salvarDiasAntecedencia(
   eventId: string,
   dias: number

@@ -166,20 +166,38 @@ export async function enviarConfirmacaoFornecedor(
   };
 }
 
+export type FornecedorDoEvento = {
+  id: string;
+  name: string;
+  email: string | null;
+  whatsapp: string | null;
+  /** 157 — a data escolhida SÓ para ele; nulo = padrão do evento */
+  confirmarEm: string | null;
+};
+
 // Fornecedores vinculados ao evento (via roteiro_links), com e-mail.
 export async function fornecedoresDoEvento(
   supabase: SupabaseClient,
   eventId: string
-): Promise<
-  { id: string; name: string; email: string | null; whatsapp: string | null }[]
-> {
-  const { data } = await supabase
+): Promise<FornecedorDoEvento[]> {
+  // Mesma rede da tela: o deploy chega antes da migração aplicada à mão,
+  // e o PostgREST derruba a consulta inteira por causa de uma coluna que
+  // ainda não existe. Sem ela, o job de confirmação passaria o dia
+  // achando que nenhum evento tem fornecedor.
+  const comData = await supabase
     .from("roteiro_links")
-    .select("supplier_id, suppliers(id, name, email, whatsapp)")
+    .select("supplier_id, confirmar_em, suppliers(id, name, email, whatsapp)")
     .eq("event_id", eventId);
+  const { data } = comData.error
+    ? await supabase
+        .from("roteiro_links")
+        .select("supplier_id, suppliers(id, name, email, whatsapp)")
+        .eq("event_id", eventId)
+    : comData;
 
   return ((data ?? []) as unknown as {
     supplier_id: string;
+    confirmar_em: string | null;
     suppliers: {
       id: string;
       name: string;
@@ -193,5 +211,35 @@ export async function fornecedoresDoEvento(
       name: l.suppliers!.name,
       email: l.suppliers!.email,
       whatsapp: l.suppliers!.whatsapp,
+      // sem a coluna, todo mundo cai no padrão do evento — que é
+      // exatamente o comportamento de antes da 157
+      confirmarEm: l.confirmar_em ?? null,
     }));
+}
+
+/**
+ * Quem deste evento JÁ recebeu o convite automático.
+ *
+ * Antes da 157 quem respondia isso era `events.confirmation_sent_at`: um
+ * carimbo por evento. Com data por fornecedor esse carimbo vira uma
+ * tranca — o primeiro a sair fecharia a porta para todos os outros. A
+ * resposta por fornecedor já existia em supplier_confirmations.sent_at,
+ * que tem unique (event_id, supplier_id); só ninguém perguntava.
+ *
+ * Vale para o CRON. O botão de reenviar da tela não passa por aqui: quem
+ * decide repetir um envio é ela.
+ */
+export async function jaConvidados(
+  supabase: SupabaseClient,
+  eventId: string
+): Promise<Set<string>> {
+  const { data } = await supabase
+    .from("supplier_confirmations")
+    .select("supplier_id, sent_at")
+    .eq("event_id", eventId)
+    .not("sent_at", "is", null);
+
+  return new Set(
+    ((data ?? []) as { supplier_id: string }[]).map((c) => c.supplier_id)
+  );
 }
