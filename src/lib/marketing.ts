@@ -30,7 +30,7 @@
 // porque o hash na URL É a chave de acesso.
 
 /** As telas onde a medição pode rodar. Comparação exata, sem prefixo. */
-const TELAS_DE_MARKETING = new Set(["/login", "/planos"]);
+const TELAS_DE_MARKETING = new Set(["/login", "/planos", "/precos"]);
 
 /**
  * A tela é a da oferta? Só ela dispara "viu o conteúdo" — o evento que

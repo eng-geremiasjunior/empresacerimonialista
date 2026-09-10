@@ -14,7 +14,7 @@ import {
   type FaixaDaEscada,
   type PlanoDoCatalogo,
 } from "@/lib/planos";
-import { Simbolo } from "@/components/marca/Marca";
+import { Cabecalho } from "@/components/planos/Cabecalho";
 import { Medicao } from "@/components/marketing/Medicao";
 import { Origem } from "@/components/marketing/Origem";
 import { MedirCliques } from "@/components/marketing/MedirCliques";
@@ -369,155 +369,20 @@ export default async function PlanosPage() {
           dos dois lados — e não há nada de usuário nele. */}
       <style dangerouslySetInnerHTML={{ __html: CSS_PLANOS }} />
 
-      <header
-        style={{
-          position: "sticky",
-          top: "0",
-          zIndex: "20",
-          background: "#FAF8F5",
-          borderBottom: "1px solid #E6E0D8",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: "1080px",
-            margin: "0 auto",
-            padding: "0 clamp(20px,4vw,28px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "16px",
-            height: "56px",
-          }}
-        >
-          <span style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}>
-            <Simbolo tamanho={26} />
-            <span
-              style={{
-                fontFamily: TITULO,
-                fontWeight: "600",
-                fontSize: "18px",
-                letterSpacing: "-0.03em",
-                color: "#221E1B",
-                whiteSpace: "nowrap",
-              }}
-            >
-              e<span style={{ color: "#6E3F5F" }}>organizei</span>
-            </span>
-          </span>
-          <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            {podeAssinar && (
-              <a
-                href="#experimente"
-                data-hide-sm="1"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  minHeight: "40px",
-                  padding: "0 12px",
-                  borderRadius: "8px",
-                  fontWeight: "500",
-                  fontSize: "14px",
-                  color: "#3D3835",
-                  textDecoration: "none",
-                  transition: "background 120ms cubic-bezier(.2,.8,.3,1)",
-                }}
-                className="pl-h-suave"
-              >
-                Experimente
-              </a>
-            )}
-            {visitante && (
-              <a
-                // "Entrar" leva ao LOGIN (09/09/2026). Apontava para
-                // /comecar, o checkout: quem já tem conta e volta pelo
-                // anúncio clicava em "Entrar" e caía numa tela pedindo
-                // cartão. É justamente a pessoa que ele mais quer de
-                // volta — a que testou e está decidindo assinar.
-                href="/login"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  minHeight: "40px",
-                  padding: "0 12px",
-                  borderRadius: "8px",
-                  fontWeight: "500",
-                  fontSize: "14px",
-                  color: "#3D3835",
-                  textDecoration: "none",
-                  transition: "background 120ms cubic-bezier(.2,.8,.3,1)",
-                }}
-                className="pl-h-suave"
-              >
-                Entrar
-              </a>
-            )}
-            {dona && (
-              <a
-                href="/assinatura"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  minHeight: "40px",
-                  padding: "0 12px",
-                  borderRadius: "8px",
-                  fontWeight: "500",
-                  fontSize: "14px",
-                  color: "#3D3835",
-                  textDecoration: "none",
-                }}
-                className="pl-h-suave"
-              >
-                Minha assinatura
-              </a>
-            )}
-            {equipe && (
-              <a
-                href="/eventos/dashboard"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  minHeight: "40px",
-                  padding: "0 12px",
-                  borderRadius: "8px",
-                  fontWeight: "500",
-                  fontSize: "14px",
-                  color: "#3D3835",
-                  textDecoration: "none",
-                }}
-                className="pl-h-suave"
-              >
-                Voltar ao painel
-              </a>
-            )}
-            {podeAssinar && (
-              <a
-                href={visitante ? entradaCurta.href : `/assinatura?plano=${planoDeEntrada?.codigo ?? ""}`}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  minHeight: "40px",
-                  padding: "0 16px",
-                  borderRadius: "8px",
-                  background: "#6E3F5F",
-                  color: "#FAF8F5",
-                  textDecoration: "none",
-                  fontWeight: "600",
-                  fontSize: "14px",
-                  // em 375px o cabeçalho aperta e o rótulo quebrava em duas
-                  // linhas; o botão não encolhe abaixo do próprio texto
-                  whiteSpace: "nowrap",
-                  transition: "background 120ms cubic-bezier(.2,.8,.3,1)",
-                }}
-                className="pl-h-ameixa"
-              >
-                {visitante ? (testeAberto ? "Criar conta grátis" : "Começar agora") : "Assinar"}
-              </a>
-            )}
-          </span>
-        </div>
-      </header>
+      {/* O cabeçalho com menu é compartilhado com /precos: era uma barra
+          sem navegação nenhuma, e quem entrava querendo o preço tinha de
+          rolar a página inteira. */}
+      <Cabecalho
+        ondeEstou="vendas"
+        acao={
+          podeAssinar
+            ? { href: entradaCurta.href, rotulo: testeAberto ? "Criar conta grátis" : "Assinar" }
+            : equipe
+              ? { href: "/eventos/dashboard", rotulo: "Voltar ao painel" }
+              : { href: "/assinatura", rotulo: "Minha assinatura" }
+        }
+        entrar={visitante}
+      />
 
       <main>
         {/* ============ 1 · HERO ============ */}
@@ -742,7 +607,9 @@ export default async function PlanosPage() {
           />
         )}
         <PortalDaCliente />
-        <SistemaInteiro nosN={nosNPlanos} />
+        <div id="o-sistema" style={{ scrollMarginTop: "68px" }}>
+          <SistemaInteiro nosN={nosNPlanos} />
+        </div>
         {/* A demonstração que ela mexe, logo antes da oferta: nome, tipo,
             data — e o evento nasce na tela REAL do sistema, com o método
             real. Roda toda no navegador; nada é salvo. */}

@@ -174,6 +174,9 @@ export const CSS_PLANOS = `
        dois botões na largura toda */
     [data-convite-grade]{grid-template-columns:1fr!important;gap:18px!important}
     [data-convite-botoes]{flex-direction:column!important;align-items:stretch!important}
+    /* a página de preços: os três planos e a lista de recursos empilham */
+    [data-precos-grade]{grid-template-columns:1fr!important}
+    [data-recursos-grade]{grid-template-columns:1fr!important}
     /* a demonstração nascida (DemoNascer): a calha do app cai de 24 para
        14px, a data do cabeçalho some, a saída vira dois botões empilhados
        e o prazo de cada decisão desce para a linha de baixo — em 375px o
