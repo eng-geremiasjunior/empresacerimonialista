@@ -76,7 +76,8 @@ const NAV: NavItem[] = [
   { label: "Orçamentos", icon: "cotacoes", href: "/orcamentos" },
   { label: "Clientes", icon: "clientes", href: "/clientes" },
   {
-    label: "Cerimonialistas",
+    // "Equipe": cabe coordenadora e assistente, não só cerimonialista.
+    label: "Equipe",
     icon: "cerimonialistas",
     href: "/cerimonialistas",
     cargos: ["proprietaria", "coordenadora"],

@@ -57,7 +57,6 @@ import {
 import { enviarArquivo } from "@/lib/contratos-cliente";
 
 const F_UI = "var(--font-ui)";
-const F_MONO = "var(--font-mono)";
 const F_TITLE = "var(--font-title)";
 
 /** o mesmo grid no cabeçalho e em cada linha — sem coluna de ação,
@@ -216,7 +215,7 @@ export function FornecedoresDoEvento({
                     border: "1px solid var(--linha)",
                     borderRadius: 8,
                     background: "var(--papel)",
-                    fontFamily: F_MONO,
+                    fontFamily: F_UI,
                     fontSize: 12,
                     color: "var(--tinta)",
                     cursor: "pointer",
@@ -265,8 +264,8 @@ export function FornecedoresDoEvento({
                   rodar(() => salvarWhatsappAuto(eventId, v));
                 }}
               />
-              <span style={{ fontFamily: F_MONO, fontSize: 11, color: "var(--cinza)" }}>
-                magic link sem login
+              <span style={{ fontFamily: F_UI, fontSize: 12.5, color: "var(--cinza)" }}>
+                confirmação sem login
               </span>
             </div>
           </div>
@@ -314,7 +313,7 @@ export function FornecedoresDoEvento({
                     </span>
                     <span
                       style={{
-                        fontFamily: F_MONO,
+                        fontFamily: F_UI,
                         fontSize: 12,
                         color: ativo ? "var(--cinza-3)" : "var(--cinza)",
                       }}
@@ -379,9 +378,10 @@ export function FornecedoresDoEvento({
                 padding: "8px 18px",
                 background: "var(--nevoa)",
                 borderBottom: "1px solid var(--linha)",
-                fontFamily: F_MONO,
-                fontSize: 11,
-                letterSpacing: "0.06em",
+                fontFamily: F_UI,
+                fontSize: 11.5,
+                fontWeight: 600,
+                letterSpacing: "0.04em",
                 textTransform: "uppercase",
                 color: "var(--cinza)",
               }}
@@ -430,16 +430,16 @@ export function FornecedoresDoEvento({
                 justifyContent: "space-between",
                 gap: 16,
                 padding: "11px 18px",
-                fontFamily: F_MONO,
-                fontSize: 11,
+                fontFamily: F_UI,
+                fontSize: 12.5,
                 color: "var(--cinza)",
                 flexWrap: "wrap",
               }}
             >
               <span>{textoRodape(fornecedores)}</span>
               <span>
-                confirmação sem login via magic link · resposta atualiza a Saúde do
-                Evento
+                ele confirma sem precisar de login · a resposta atualiza a Saúde
+                do Evento
               </span>
             </div>
           </div>
@@ -606,8 +606,8 @@ function Linha({
           title={f.email ?? "sem e-mail cadastrado"}
           style={{
             minWidth: 0,
-            fontFamily: F_MONO,
-            fontSize: 12,
+            fontFamily: F_UI,
+            fontSize: 13,
             color: semEmail ? "var(--cinza-2)" : "var(--text-body)",
             whiteSpace: "nowrap",
             overflow: "hidden",
@@ -794,8 +794,8 @@ function Detalhe({
           display: "flex",
           flexWrap: "wrap",
           gap: "6px 18px",
-          fontFamily: F_MONO,
-          fontSize: 11,
+          fontFamily: F_UI,
+          fontSize: 12.5,
           color: "var(--cinza)",
         }}
       >
@@ -806,6 +806,19 @@ function Detalhe({
         <span>presença: {presenca.meta}</span>
       </div>
 
+      {/* O LINK DELE, AQUI (10/09/2026). O link do roteiro sempre existiu,
+          mas só era oferecido no fim da tela de Roteiro, numa lista
+          separada. O dono foi procurá-lo no fornecedor — que é onde a
+          cabeça procura — e não achou: "ontem eu mesmo custei achar".
+          Continua lá também; agora está nos dois lugares. */}
+      {f.hashDoLink && (
+        <LinkDoFornecedor
+          eventId={eventId}
+          hash={f.hashDoLink}
+          nome={f.nome}
+        />
+      )}
+
       {/* O dinheiro dele e o que está pendurado com ele. Vem do Financeiro
           do evento e da Central de Solicitações: ela decide sobre o
           fornecedor sem sair de onde está olhando para ele. */}
@@ -814,8 +827,8 @@ function Detalhe({
           display: "flex",
           flexWrap: "wrap",
           gap: "6px 18px",
-          fontFamily: F_MONO,
-          fontSize: 11,
+          fontFamily: F_UI,
+          fontSize: 13,
           color: "var(--cinza)",
         }}
       >
@@ -844,9 +857,10 @@ function Detalhe({
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
         <span
           style={{
-            fontFamily: F_MONO,
-            fontSize: 11,
-            letterSpacing: "0.06em",
+            fontFamily: F_UI,
+            fontSize: 11.5,
+            fontWeight: 600,
+            letterSpacing: "0.04em",
             textTransform: "uppercase",
             color: "var(--cinza)",
           }}
@@ -857,16 +871,16 @@ function Detalhe({
           <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
             <span
               style={{
-                width: 132,
+                width: 118,
                 flex: "none",
-                fontFamily: F_MONO,
-                fontSize: 11,
+                fontFamily: F_UI,
+                fontSize: 12.5,
                 color: "var(--cinza)",
               }}
             >
               {h.quando}
             </span>
-            <span style={{ fontFamily: F_UI, fontSize: 13, color: "var(--cinza-3)" }}>
+            <span style={{ fontFamily: F_UI, fontSize: 13.5, color: "var(--cinza-3)" }}>
               {h.texto}
             </span>
           </div>
@@ -887,8 +901,8 @@ function Detalhe({
               padding: "0 10px",
               border: "1px solid var(--linha)",
               borderRadius: 8,
-              fontFamily: F_MONO,
-              fontSize: 12,
+              fontFamily: F_UI,
+              fontSize: 13,
               color: "var(--tinta)",
               background: "var(--papel)",
             }}
@@ -937,8 +951,8 @@ function Detalhe({
           ))}
           <span
             style={{
-              fontFamily: F_MONO,
-              fontSize: 11,
+              fontFamily: F_UI,
+              fontSize: 12.5,
               color: "var(--cinza)",
               marginLeft: 4,
             }}
@@ -947,6 +961,75 @@ function Detalhe({
           </span>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ================================================================ */
+
+/**
+ * O link do fornecedor, dentro do fornecedor.
+ *
+ * O mesmo endereço que a tela de Roteiro oferece no fim da página. Não é
+ * uma cópia da regra: é o mesmo hash de roteiro_links, lido na mesma
+ * consulta que monta esta tela. Mostra o endereço porque ela às vezes
+ * precisa VER que é um link (para colar no WhatsApp e conferir), e copia
+ * com um clique porque é o que ela faz em 99% das vezes.
+ */
+function LinkDoFornecedor({
+  eventId,
+  hash,
+  nome,
+}: {
+  eventId: string;
+  hash: string;
+  nome: string;
+}) {
+  const [copiado, setCopiado] = useState(false);
+  const caminho = `/eventos/${eventId}/roteiro/publico/${hash}`;
+
+  async function copiar() {
+    // window só existe no cliente, e este componente é de cliente — mas
+    // a cópia só acontece no clique, então nunca roda na hidratação.
+    await navigator.clipboard.writeText(`${window.location.origin}${caminho}`);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2000);
+  }
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        flexWrap: "wrap",
+        fontFamily: F_UI,
+        fontSize: 12.5,
+        color: "var(--cinza)",
+      }}
+    >
+      <span style={{ color: "var(--cinza-3)" }}>Link do fornecedor</span>
+      <a
+        href={caminho}
+        target="_blank"
+        rel="noopener noreferrer"
+        title={`Abrir o que ${nome} vê`}
+        style={{
+          minWidth: 0,
+          maxWidth: 340,
+          overflow: "hidden",
+          whiteSpace: "nowrap",
+          textOverflow: "ellipsis",
+          color: "var(--tinta)",
+          textDecoration: "underline",
+        }}
+      >
+        {`/roteiro/publico/${hash.slice(0, 10)}…`}
+      </a>
+      <Button size="sm" variant="secondary" onClick={copiar}>
+        {copiado ? "Copiado" : "Copiar link"}
+      </Button>
+      <span>ele vê só os itens dele, sem login</span>
     </div>
   );
 }

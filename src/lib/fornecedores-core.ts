@@ -20,6 +20,12 @@ export type Fornecedor = {
   confirmadoNoEvento: boolean;
   /** quando o fornecedor foi vinculado ao evento */
   vinculadoEm: string | null;
+  /**
+   * roteiro_links.hash — o link que ele abre sem login e vê só os itens
+   * dele. É o mesmo link oferecido no fim da tela de Roteiro; aqui ele
+   * aparece junto do fornecedor, que é onde se procura por ele.
+   */
+  hashDoLink: string | null;
   convite: {
     status: "pendente" | "confirmado" | "recusado";
     enviadoEm: string | null;
@@ -147,7 +153,7 @@ export function estadoConvite(f: Fornecedor, agora = Date.now()): Estado {
     return {
       label: "Não enviado",
       tom: "late",
-      meta: f.email ? "magic link não gerado" : "sem e-mail: magic link não gerado",
+      meta: f.email ? "ainda não enviado" : "sem e-mail: não dá para enviar",
     };
   }
   if (c.aberturas > 0 && c.ultimaAbertura) {
@@ -347,7 +353,7 @@ export function historicoDe(f: Fornecedor): { quando: string; texto: string }[] 
       .join(" + ");
     linhas.push({
       iso: c.enviadoEm,
-      texto: `Convite enviado${canais ? ` por ${canais}` : ""} · magic link gerado`,
+      texto: `Convite enviado${canais ? ` por ${canais}` : ""}`,
     });
   }
   if (c && c.aberturas > 0 && c.ultimaAbertura) {
@@ -355,8 +361,8 @@ export function historicoDe(f: Fornecedor): { quando: string; texto: string }[] 
       iso: c.ultimaAbertura,
       texto:
         c.aberturas === 1
-          ? "Magic link aberto 1 vez"
-          : `Magic link aberto ${c.aberturas} vezes · última abertura`,
+          ? "Abriu o convite 1 vez"
+          : `Abriu o convite ${c.aberturas} vezes · última abertura`,
     });
   }
   if (c?.respondidoEm) {
@@ -389,10 +395,10 @@ export function canaisDe(f: Fornecedor): string {
  *  link (ele não expira — dizer "expira em 6 dias" seria invenção). */
 export function notaDoLink(f: Fornecedor): string {
   if (f.convite?.status === "confirmado") {
-    return f.convite.respondidoEm ? "confirmado via magic link" : "confirmado";
+    return f.convite.respondidoEm ? "confirmou pelo link" : "confirmado";
   }
   if (f.convite?.status === "recusado") return "recusou pelo link";
-  if (!f.email) return "e-mail necessário para o magic link";
+  if (!f.email) return "precisa de e-mail para enviar o convite";
   if (f.convite?.enviadoEm) return "link ativo · sem login";
   return "o link nasce no primeiro envio";
 }

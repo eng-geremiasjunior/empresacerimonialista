@@ -32,6 +32,7 @@ type LinkRow = {
   supplier_id: string;
   confirmed: boolean;
   created_at: string | null;
+  hash: string;
   suppliers: {
     name: string;
     email: string | null;
@@ -60,7 +61,10 @@ export const getFornecedoresDoEvento = cache(
           // cadastrado depois da 026 aparecia aqui como "sem categoria" —
           // enquanto a tela /fornecedores, que lê a fonte certa, mostrava
           // a categoria dele normalmente.
-          "supplier_id, confirmed, created_at, suppliers(name, email, whatsapp, supplier_categorias(categoria))"
+          // hash: o link que o fornecedor abre sem login. Ele já existia,
+          // mas só era oferecido lá no fim da tela de Roteiro — o dono
+          // procurou por ele aqui, onde o fornecedor está, e não achou.
+          "supplier_id, confirmed, created_at, hash, suppliers(name, email, whatsapp, supplier_categorias(categoria))"
         )
         .eq("event_id", eventId),
       supabase
@@ -181,6 +185,7 @@ export const getFornecedoresDoEvento = cache(
         whatsapp: l.suppliers!.whatsapp,
         confirmadoNoEvento: l.confirmed,
         vinculadoEm: l.created_at,
+        hashDoLink: l.hash,
         convite: convitePor.get(l.supplier_id) ?? null,
         pedidos: pedidosPor.get(l.supplier_id) ?? [],
         dinheiro: dinheiroPor.get(l.supplier_id) ?? null,

@@ -24,9 +24,7 @@ export default async function CerimonialistasPage() {
     return (
       <div className="space-y-4">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">
-            Cerimonialistas
-          </h1>
+          <h1 className="text-xl font-semibold text-gray-900">Equipe</h1>
         </div>
         <div className="rounded-lg border-2 border-dashed border-gray-200 bg-white p-12 text-center text-sm text-gray-500">
           A gestão da equipe é exclusiva da proprietária e da coordenação.
@@ -47,9 +45,7 @@ export default async function CerimonialistasPage() {
     return (
       <div className="space-y-4">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">
-            Cerimonialistas
-          </h1>
+          <h1 className="text-xl font-semibold text-gray-900">Equipe</h1>
           <p className="text-sm text-gray-500">
             Gerencie quem administra os eventos da sua empresa
           </p>
@@ -74,7 +70,11 @@ export default async function CerimonialistasPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-semibold text-gray-900">Cerimonialistas</h1>
+        {/* "Equipe", não "Cerimonialistas" (10/09/2026): a equipe dela
+            pode ter mais gente do que cerimonialista — coordenadora,
+            assistente — e o cargo já aparece em cada linha. A rota
+            continua /cerimonialistas para não quebrar link salvo. */}
+        <h1 className="text-xl font-semibold text-gray-900">Equipe</h1>
         <p className="text-sm text-gray-500">
           {readOnly
             ? "Equipe da empresa (visualização)"

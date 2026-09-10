@@ -30,7 +30,7 @@ export const GRUPOS_AJUDA: GrupoAjuda[] = [
         id: "equipe",
         pergunta: "Como cadastro minha equipe?",
         resposta:
-          "Em Cerimonialistas → Cadastrar. Cada pessoa entra com o próprio e-mail e senha. Coordenadora enxerga tudo; cerimonialista vê os eventos em que é responsável ou está escalada; assistente vê só a operação dos eventos escalados — nada de financeiro.",
+          "Em Equipe → Cadastrar. Cada pessoa entra com o próprio e-mail e senha. Coordenadora enxerga tudo; cerimonialista vê os eventos em que é responsável ou está escalada; assistente vê só a operação dos eventos escalados — nada de financeiro.",
       },
       {
         id: "logo-empresa",
