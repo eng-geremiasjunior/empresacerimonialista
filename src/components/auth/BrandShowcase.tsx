@@ -8,6 +8,8 @@ import {
   BarChart3,
   CalendarCheck,
   CircleDollarSign,
+  ListChecks,
+  ShieldCheck,
   Users,
 } from "lucide-react";
 
@@ -31,6 +33,33 @@ const DIFERENCIAIS = [
     icon: BarChart3,
     title: "Visão clara do seu negócio",
     desc: "Dashboards e relatórios para decidir com confiança",
+  },
+];
+
+// A MESMA COLUNA, OUTRA CONVERSA (10/09/2026). Quem chega pela porta da
+// equipe já trabalha com a cerimonialista: vender o produto para ela é
+// falar da coisa errada. O que ela precisa saber é o que vai encontrar
+// depois de entrar.
+const DA_EQUIPE = [
+  {
+    icon: CalendarCheck,
+    title: "O roteiro do dia",
+    desc: "Horários, responsáveis e o que mudou, na hora em que muda",
+  },
+  {
+    icon: Users,
+    title: "Fornecedores do evento",
+    desc: "Quem já confirmou presença e quem ainda falta",
+  },
+  {
+    icon: ListChecks,
+    title: "As tarefas que são suas",
+    desc: "O que depende de você, com o prazo de cada uma",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Cada cargo vê o seu",
+    desc: "Coordenadora, cerimonialista e assistente têm telas diferentes",
   },
 ];
 
@@ -164,25 +193,33 @@ function MobileMock() {
   );
 }
 
-export function BrandShowcase() {
+export function BrandShowcase({ quem = "dona" }: { quem?: "dona" | "equipe" }) {
+  const daEquipe = quem === "equipe";
+  const itens = daEquipe ? DA_EQUIPE : DIFERENCIAIS;
+
   return (
     <div className="flex h-full flex-col justify-between gap-10 bg-gradient-to-br from-gray-50 via-indigo-50/40 to-gray-50 px-10 py-10 xl:px-16">
       <div>
         <Logo />
 
         <p className="mt-10 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600">
-          Gestão inteligente para cerimonialistas
+          {daEquipe
+            ? "Acesso da equipe"
+            : "Gestão inteligente para cerimonialistas"}
         </p>
         <h1 className="mt-3 max-w-md text-4xl font-bold leading-tight tracking-tight text-gray-900 xl:text-5xl">
-          Organize cada detalhe. Encante em cada evento.
+          {daEquipe
+            ? "O evento inteiro, do jeito que a coordenação montou."
+            : "Organize cada detalhe. Encante em cada evento."}
         </h1>
         <p className="mt-4 max-w-md text-gray-600">
-          Do orçamento ao dia da festa: eventos, cronogramas, fornecedores e
-          financeiro em uma ferramenta feita para quem trabalha com celebrações.
+          {daEquipe
+            ? "Você entra com o seu próprio e-mail e senha, e encontra os eventos em que está escalada — roteiro, fornecedores e tarefas."
+            : "Do orçamento ao dia da festa: eventos, cronogramas, fornecedores e financeiro em uma ferramenta feita para quem trabalha com celebrações."}
         </p>
 
         <ul className="mt-8 grid max-w-xl gap-4 sm:grid-cols-2">
-          {DIFERENCIAIS.map(({ icon: Icon, title, desc }) => (
+          {itens.map(({ icon: Icon, title, desc }) => (
             <li key={title} className="flex items-start gap-3">
               <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600">
                 <Icon size={17} strokeWidth={1.75} />
@@ -207,7 +244,7 @@ export function BrandShowcase() {
               <span className="h-2 w-2 rounded-full bg-amber-300" />
               <span className="h-2 w-2 rounded-full bg-emerald-300" />
               <span className="ml-2 flex-1 truncate rounded bg-white px-2 py-0.5 text-[7px] text-gray-400">
-                app.vela.com.br/dashboard
+                eorganizei.com.br/dashboard
               </span>
             </div>
             <div className="h-52">

@@ -25,6 +25,8 @@ const ROTAS_PUBLICAS: ((p: string) => boolean)[] = [
   // resultado é o mesmo de antes: /login.
   (p) => p === "/",
   (p) => p.startsWith("/login"),
+  // o apelido da porta da equipe — só encaminha para /login?entrar=equipe
+  (p) => p === "/equipe",
   // roteiro do fornecedor: /eventos/{id}/roteiro/publico/{hash}
   (p) => new RegExp("^/eventos/[^/]+/roteiro/publico/").test(p),
   (p) => p.startsWith("/confirmacao/"),

@@ -16,6 +16,7 @@ export function LoginForm({
   erroInicial,
   criarConta = false,
   precoDeEntrada = null,
+  quem = "dona",
 }: {
   /** Vem do ?erro= da URL — /auth/confirm manda para cá quando o link do
    *  e-mail não serviu (expirou, já foi usado, ou foi aberto em outro
@@ -26,6 +27,24 @@ export function LoginForm({
   criarConta?: boolean;
   /** "R$ 27,90", lido do catálogo pela página. Nunca escrito aqui. */
   precoDeEntrada?: string | null;
+  /**
+   * QUEM ESTÁ ENTRANDO (10/09/2026). Duas portas na mesma tela, no molde
+   * que o dono trouxe do CREA: a cerimonialista que assina o sistema, e
+   * a equipe dela.
+   *
+   * Não é separação de permissão — permissão já é o cargo em
+   * membros_equipe, lido por meu_cargo(). O que muda é o que a tela
+   * OFERECE. Na porta da equipe não existe "criar conta e assinar":
+   * quem cria o acesso do funcionário é a proprietária, dentro do
+   * sistema. Sem essa separação, um funcionário que caísse aqui podia
+   * criar uma empresa nova por engano — e a partir daí trabalhar
+   * sozinho, numa conta paralela, sem ver nenhum evento da chefe.
+   *
+   * O que NÃO muda: o e-mail e a senha são os mesmos (um único
+   * auth.users), e a mensagem de erro é idêntica nas duas portas — a
+   * aba não pode virar um jeito de descobrir quais contas existem.
+   */
+  quem?: "dona" | "equipe";
 } = {}) {
   const router = useRouter();
   // Quem chega do anúncio vem para ASSINAR, não para entrar: o botão da
@@ -33,8 +52,11 @@ export function LoginForm({
   // isso, o clique em "Começar por R$ 27,90" caía num formulário de
   // login — tela de quem já é cliente, na cara de quem nunca ouviu falar
   // da marca.
+  // Na porta da equipe não existe cadastro: nem por `?criar=1`, que é o
+  // parâmetro do anúncio e não tem o que fazer aqui.
+  const daEquipe = quem === "equipe";
   const [mode, setMode] = useState<"login" | "signup">(
-    criarConta ? "signup" : "login"
+    criarConta && !daEquipe ? "signup" : "login"
   );
   const [negocio, setNegocio] = useState("");
   const [nome, setNome] = useState("");
@@ -167,13 +189,44 @@ export function LoginForm({
   const isLogin = mode === "login";
 
   return (
-    <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+    <div className="w-full max-w-md overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+      {/* As duas portas. São links de verdade, não estado de tela: assim o
+          servidor já monta a porta certa, a equipe pode guardar o próprio
+          endereço (/equipe) e voltar direto nele. No cadastro elas somem —
+          ali não se está escolhendo por onde entrar. */}
+      {isLogin && (
+        <div className="grid grid-cols-2 border-b border-gray-200 bg-gray-50">
+          {[
+            { href: "/login", rotulo: "Sou a cerimonialista", desta: !daEquipe },
+            { href: "/login?entrar=equipe", rotulo: "Sou da equipe", desta: daEquipe },
+          ].map((p) => (
+            <a
+              key={p.href}
+              href={p.href}
+              aria-current={p.desta ? "page" : undefined}
+              className={`px-4 py-3 text-center text-sm font-semibold transition-colors ${
+                p.desta
+                  ? "border-b-2 border-indigo-600 bg-white text-gray-900"
+                  : "border-b-2 border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {p.rotulo}
+            </a>
+          ))}
+        </div>
+      )}
+
+      <div className="p-8">
       <div className="flex flex-col items-center text-center">
         <span className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50 text-indigo-600">
           <Lock size={22} strokeWidth={1.75} />
         </span>
         <h2 className="mt-4 text-xl font-bold tracking-tight text-gray-900">
-          {isLogin ? "Bem-vinda de volta!" : "Crie sua conta"}
+          {!isLogin
+            ? "Crie sua conta"
+            : daEquipe
+              ? "Acesso da equipe"
+              : "Bem-vinda de volta!"}
         </h2>
         {/* No cadastro a frase diz o PRÓXIMO PASSO, e o preço vem junto:
             quem clicou no anúncio precisa reconhecer aqui a oferta que
@@ -181,7 +234,9 @@ export function LoginForm({
             preço escrito nesta tela. */}
         <p className="mt-1 text-sm text-gray-500">
           {isLogin
-            ? "Faça login para acessar sua conta."
+            ? daEquipe
+              ? "Entre com o e-mail e a senha que a proprietária cadastrou para você."
+              : "Faça login para acessar sua conta."
             : precoDeEntrada
               ? `Primeiro passo: seus dados. Em seguida, o pagamento de ${precoDeEntrada} por mês.`
               : "Primeiro passo: seus dados. Em seguida, o pagamento."}
@@ -344,23 +399,37 @@ export function LoginForm({
         </button>
       </form>
 
-      <div className="my-5 flex items-center gap-3">
-        <span className="h-px flex-1 bg-gray-200" />
-        <span className="text-xs font-medium uppercase text-gray-400">ou</span>
-        <span className="h-px flex-1 bg-gray-200" />
-      </div>
+      {/* Quem é da equipe não cria conta: quem cria o acesso dela é a
+          proprietária, em Equipe → Cadastrar. Oferecer "criar conta e
+          assinar" aqui seria convidar o funcionário a abrir uma empresa
+          paralela por engano. */}
+      {daEquipe ? (
+        <p className="mt-5 text-center text-sm text-gray-500">
+          Ainda não tem acesso? Quem cadastra você é a proprietária da conta,
+          em <span className="font-medium text-gray-700">Equipe</span>.
+        </p>
+      ) : (
+        <>
+          <div className="my-5 flex items-center gap-3">
+            <span className="h-px flex-1 bg-gray-200" />
+            <span className="text-xs font-medium uppercase text-gray-400">ou</span>
+            <span className="h-px flex-1 bg-gray-200" />
+          </div>
 
-      <button
-        type="button"
-        onClick={() => {
-          setMode(isLogin ? "signup" : "login");
-          setError(null);
-          setInfo(null);
-        }}
-        className="w-full rounded-lg border border-indigo-200 bg-white px-4 py-2.5 text-sm font-semibold text-indigo-600 transition-colors hover:bg-indigo-50"
-      >
-        {isLogin ? "Criar conta e assinar" : "Já tenho conta — entrar"}
-      </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMode(isLogin ? "signup" : "login");
+              setError(null);
+              setInfo(null);
+            }}
+            className="w-full rounded-lg border border-indigo-200 bg-white px-4 py-2.5 text-sm font-semibold text-indigo-600 transition-colors hover:bg-indigo-50"
+          >
+            {isLogin ? "Criar conta e assinar" : "Já tenho conta — entrar"}
+          </button>
+        </>
+      )}
+      </div>
     </div>
   );
 }

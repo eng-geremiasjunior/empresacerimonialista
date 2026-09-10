@@ -10,7 +10,7 @@
 // whitespace-nowrap nos badges evitam transbordo/sobreposição.
 
 import { useEffect, useRef, useState } from "react";
-import { Briefcase, Phone, UserRound } from "lucide-react";
+import { Briefcase, MoreVertical, Pencil, Phone, UserRound } from "lucide-react";
 import { formatTime } from "@/lib/format";
 import { categoriaLabel } from "@/lib/fornecedores-shared";
 import {
@@ -343,8 +343,14 @@ export function ItemTimelineExpandido({
             ) : null}
           </div>
 
-          {/* 70px — obrigatória + menu */}
-          <div className="flex flex-shrink-0 items-start justify-between gap-3 2xl:w-[70px] 2xl:flex-col 2xl:items-end">
+          {/* obrigatória + ações
+              EDITAR DEIXOU DE SER UM SEGREDO (10/09/2026). A única forma
+              de editar um item era um "⋮" de 16px em #B4B1C8, sem borda e
+              sem fundo, num card branco. O dono passou "vários e vários
+              minutos" procurando por ele. Agora Editar é um botão com o
+              nome escrito, e o "⋮" — que continua guardando histórico e
+              excluir — ganhou contorno para parecer o que é: um botão. */}
+          <div className="flex flex-shrink-0 items-start justify-between gap-3 2xl:w-[124px] 2xl:flex-col 2xl:items-end">
             {item.etapa_obrigatoria && (
               <span
                 className="whitespace-nowrap text-[12.5px] font-semibold"
@@ -353,15 +359,21 @@ export function ItemTimelineExpandido({
                 🔖 Obrigatória
               </span>
             )}
-            <div className="relative flex-shrink-0" ref={menuRef}>
+            <div className="relative flex flex-shrink-0 items-center gap-1.5" ref={menuRef}>
+              <button
+                onClick={onEditar}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[#DFDDE9] bg-white px-2.5 py-1.5 text-[12.5px] font-semibold text-[#3D3A52] transition-colors hover:border-[#B4B1C8] hover:bg-[#F6F6FA]"
+              >
+                <Pencil size={13} strokeWidth={2} />
+                Editar
+              </button>
               <button
                 onClick={() => setMenuAberto((v) => !v)}
-                aria-label="Ações"
+                aria-label="Mais ações"
                 aria-expanded={menuAberto}
-                className="-m-2 rounded p-2 text-base leading-none hover:opacity-70"
-                style={{ color: "#B4B1C8" }}
+                className="inline-flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-[#DFDDE9] bg-white text-[#6B6884] transition-colors hover:border-[#B4B1C8] hover:bg-[#F6F6FA]"
               >
-                ⋮
+                <MoreVertical size={15} strokeWidth={2} />
               </button>
 
               {menuAberto && (
@@ -381,21 +393,14 @@ export function ItemTimelineExpandido({
                           {item.title}
                         </p>
                       </div>
-                      <button
-                        onClick={() => {
-                          setMenuAberto(false);
-                          onEditar();
-                        }}
-                        className="block w-full px-5 py-4 text-left text-[15px] text-[#3D3A52] active:bg-[#F6F6FA]"
-                      >
-                        Editar
-                      </button>
+                      {/* Editar saiu daqui: virou botão com nome ao lado
+                          do "⋮". O menu ficou com o que sobra. */}
                       <button
                         onClick={() => {
                           setMenuAberto(false);
                           onVerHistorico();
                         }}
-                        className="block w-full border-t border-[#F1F0F5] px-5 py-4 text-left text-[15px] text-[#3D3A52] active:bg-[#F6F6FA]"
+                        className="block w-full px-5 py-4 text-left text-[15px] text-[#3D3A52] active:bg-[#F6F6FA]"
                       >
                         Ver histórico
                       </button>
@@ -418,16 +423,7 @@ export function ItemTimelineExpandido({
                   </div>
 
                   {/* Desktop: dropdown ancorado no botão. */}
-                  <div className="absolute right-0 top-7 z-20 hidden w-44 overflow-hidden rounded-lg border border-[#ECEBF3] bg-white py-1 shadow-lg lg:block">
-                    <button
-                      onClick={() => {
-                        setMenuAberto(false);
-                        onEditar();
-                      }}
-                      className="block w-full px-3 py-2 text-left text-[12.5px] text-[#3D3A52] hover:bg-[#F6F6FA]"
-                    >
-                      Editar
-                    </button>
+                  <div className="absolute right-0 top-9 z-20 hidden w-44 overflow-hidden rounded-lg border border-[#ECEBF3] bg-white py-1 shadow-lg lg:block">
                     <button
                       onClick={() => {
                         setMenuAberto(false);

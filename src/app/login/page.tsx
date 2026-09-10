@@ -13,6 +13,8 @@ import {
 
 export const metadata: Metadata = {
   title: "Entrar — eorganizei",
+  // Tela de conta: não tem por que aparecer em busca.
+  robots: { index: false, follow: false },
 };
 
 const supabaseConfigured = Boolean(
@@ -93,11 +95,17 @@ async function precoDeEntrada(): Promise<string | null> {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams?: { erro?: string; criar?: string };
+  searchParams?: { erro?: string; criar?: string; entrar?: string };
 }) {
   if (!supabaseConfigured) return <SetupInstructions />;
 
-  const criar = searchParams?.criar === "1";
+  // DUAS PORTAS, UMA TELA (10/09/2026, molde do CREA que o dono trouxe).
+  // A porta vem da URL, não do estado do formulário: assim o servidor já
+  // monta a coluna certa, /equipe é um endereço que a funcionária pode
+  // guardar, e trocar de aba é navegar, não hidratar.
+  const daEquipe = searchParams?.entrar === "equipe";
+  const quem = daEquipe ? "equipe" : "dona";
+  const criar = !daEquipe && searchParams?.criar === "1";
   const preco = criar ? await precoDeEntrada() : null;
 
   return (
@@ -105,7 +113,7 @@ export default async function LoginPage({
       <main className="grid flex-1 lg:grid-cols-[1.1fr_1fr]">
         {/* Coluna esquerda — apresentação (desktop) */}
         <section className="hidden lg:block">
-          <BrandShowcase />
+          <BrandShowcase quem={quem} />
         </section>
 
         {/* Coluna direita — formulário */}
@@ -114,7 +122,9 @@ export default async function LoginPage({
           <div className="flex flex-col items-center gap-2 lg:hidden">
             <Logo compact />
             <p className="text-center text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600">
-              Gestão inteligente para cerimonialistas
+              {daEquipe
+                ? "Acesso da equipe"
+                : "Gestão inteligente para cerimonialistas"}
             </p>
           </div>
 
@@ -122,6 +132,7 @@ export default async function LoginPage({
             erroInicial={searchParams?.erro}
             criarConta={criar}
             precoDeEntrada={preco}
+            quem={quem}
           />
         </section>
       </main>
@@ -143,7 +154,9 @@ export default async function LoginPage({
           </nav>
         </div>
       </footer>
-      <Medicao />
+      {/* O pixel fica só na porta de quem pode virar cliente. A equipe já
+          é gente de dentro: medi-la só sujaria o público do anúncio. */}
+      {!daEquipe && <Medicao />}
     </div>
   );
 }
