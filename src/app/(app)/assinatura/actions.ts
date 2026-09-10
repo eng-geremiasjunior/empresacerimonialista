@@ -107,6 +107,8 @@ function lerOrigemDoCookie(): Record<string, string> | null {
       utm_source: "utm_source",
       utm_medium: "utm_medium",
       utm_campaign: "utm_campaign",
+      utm_content: "utm_content",
+      utm_term: "utm_term",
     };
     for (const [doCookie, naTabela] of Object.entries(mapa)) {
       const v = o[doCookie];

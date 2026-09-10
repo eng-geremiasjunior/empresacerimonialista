@@ -15,7 +15,7 @@
 --   fbp        cookie que o pixel cria para identificar o NAVEGADOR
 --   fbc        derivado do fbclid, identifica o CLIQUE no anúncio
 --   ga_client_id  o mesmo, do lado do Google
---   gclid / utm_*  de qual campanha a pessoa veio
+--   gclid / utm_*  de qual campanha, conjunto e ANÚNCIO a pessoa veio
 -- Nenhum deles diz quem a pessoa é: dizem de onde ela chegou. Nome,
 -- e-mail, documento e telefone NÃO entram aqui — o e-mail que a API de
 -- Conversões usa é lido da conta na hora do envio e sai em SHA-256.
@@ -40,6 +40,13 @@ create table if not exists public.origem_do_clique (
   utm_source     text,
   utm_medium     text,
   utm_campaign   text,
+  -- EMENDA DE 09/09/2026. A Meta tem um campo "Parâmetros de URL" que
+  -- aceita macros: {{campaign.name}}, {{adset.name}}, {{ad.name}}. Com
+  -- três criativos rodando no mesmo conjunto, saber a CAMPANHA não basta
+  -- — a pergunta que decide onde pôr a verba é qual ANÚNCIO trouxe a
+  -- conta. utm_content leva o nome do anúncio; utm_term, o do conjunto.
+  utm_content    text,
+  utm_term       text,
   -- o endereço e o navegador de quando a conta nasceu: a Meta os exige
   -- para casar o evento de servidor com o do navegador
   ip             text,
@@ -53,8 +60,17 @@ comment on column public.origem_do_clique.fbp is
   'Cookie _fbp do pixel: identifica o navegador, não a pessoa.';
 comment on column public.origem_do_clique.fbc is
   'Cookie _fbc, derivado do fbclid: identifica o clique no anúncio.';
+comment on column public.origem_do_clique.utm_content is
+  'Nome do ANÚNCIO, vindo da macro {{ad.name}} nos Parâmetros de URL. É por ele que se sabe qual criativo trouxe a conta.';
+comment on column public.origem_do_clique.utm_term is
+  'Nome do CONJUNTO de anúncios, vindo da macro {{adset.name}}.';
 comment on column public.origem_do_clique.ga_client_id is
   'client_id do GA4 (o par de números do cookie _ga). Sem ele o Measurement Protocol registra a conversão sem sessão de origem.';
+
+-- Para quem já rodou esta migração antes da emenda: as colunas entram
+-- sem tocar no que está gravado.
+alter table public.origem_do_clique add column if not exists utm_content text;
+alter table public.origem_do_clique add column if not exists utm_term text;
 
 alter table public.origem_do_clique enable row level security;
 
@@ -82,6 +98,11 @@ select 'morre junto com a empresa (cascade)',
        exists (select 1 from pg_constraint
                where conrelid = 'public.origem_do_clique'::regclass
                  and contype = 'f' and confdeltype = 'c')
+union all
+select 'guarda o anúncio e o conjunto, não só a campanha',
+       (select count(*) = 2 from information_schema.columns
+        where table_schema = 'public' and table_name = 'origem_do_clique'
+          and column_name in ('utm_content', 'utm_term'))
 union all
 select 'nenhuma coluna de dado pessoal',
        not exists (select 1 from information_schema.columns

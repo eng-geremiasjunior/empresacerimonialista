@@ -132,6 +132,11 @@ export function guardarOrigemDoClique(): void {
       utm_source: url.get("utm_source"),
       utm_medium: url.get("utm_medium"),
       utm_campaign: url.get("utm_campaign"),
+      // o nome do anúncio e o do conjunto, que a Meta preenche com as
+      // macros {{ad.name}} e {{adset.name}}: é o que responde "qual
+      // criativo trouxe esta conta", a pergunta que decide a verba
+      utm_content: url.get("utm_content"),
+      utm_term: url.get("utm_term"),
     };
     // Marca de campanha na URL de AGORA = toque novo, e toque novo manda.
     // Sem ela, esta chamada é só uma navegação interna e não tem
