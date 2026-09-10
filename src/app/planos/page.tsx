@@ -17,6 +17,7 @@ import {
 import { Simbolo } from "@/components/marca/Marca";
 import { Medicao } from "@/components/marketing/Medicao";
 import { Origem } from "@/components/marketing/Origem";
+import { MedirCliques } from "@/components/marketing/MedirCliques";
 import { CSS_PLANOS } from "@/components/planos/estilo";
 import { Demonstracao } from "@/components/planos/Demonstracao";
 import { DemoNascer } from "@/components/planos/DemoNascer";
@@ -428,7 +429,12 @@ export default async function PlanosPage() {
             )}
             {visitante && (
               <a
-                href="/comecar"
+                // "Entrar" leva ao LOGIN (09/09/2026). Apontava para
+                // /comecar, o checkout: quem já tem conta e volta pelo
+                // anúncio clicava em "Entrar" e caía numa tela pedindo
+                // cartão. É justamente a pessoa que ele mais quer de
+                // volta — a que testou e está decidindo assinar.
+                href="/login"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -1554,6 +1560,9 @@ export default async function PlanosPage() {
       {/* a marca do anúncio guardada aqui, na primeira tela — no
           cadastro a URL já não a carrega mais */}
       <Origem />
+      {/* toda âncora desta página vira evento medido, sem precisar marcar
+          botão por botão — e chamada nova nasce medida */}
+      <MedirCliques />
       <Medicao />
     </div>
   );

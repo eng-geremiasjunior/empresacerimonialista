@@ -242,3 +242,61 @@ export function demoIniciada(tipo: string): void {
     // medir nunca pode quebrar a página
   }
 }
+
+/**
+ * O CLIQUE EM CADA CHAMADA DA PÁGINA DE VENDAS (09/09/2026).
+ *
+ * Pedido do dono: "coloca disparo em todos os botões, todos". O motivo é
+ * prático — nenhuma conta foi criada ainda, e um conjunto de anúncios sem
+ * conversão nenhuma não sai da fase de aprendizado. Um evento de meio de
+ * funil, com volume, dá à plataforma o que otimizar enquanto o de baixo
+ * não acontece.
+ *
+ * A régua para escolher o nome de cada um:
+ *
+ *  · quem clica no botão que leva ao cadastro está DECLARANDO INTENÇÃO, e
+ *    isso tem nome padrão na Meta: `Lead`. É evento reconhecido, aparece
+ *    na lista de otimização e serve de alvo enquanto "Concluir inscrição"
+ *    não tem volume;
+ *  · quem clica em "assinar" NÃO dispara `InitiateCheckout` aqui. Esse
+ *    nome já é usado pelo SERVIDOR no momento em que a cobrança vai à
+ *    operadora — repeti-lo num clique dobraria o número e estragaria a
+ *    única medida confiável de "chegou ao pagamento";
+ *  · o resto vira evento próprio, com nome que diz o que é. Nome
+ *    inventado não polui os padrões e continua contável no Gerenciador.
+ *
+ * Nada aqui identifica pessoa: identifica qual botão foi tocado.
+ */
+export function cliqueNaChamada(destino: string, rotulo?: string | null): void {
+  if (typeof window === "undefined") return;
+  const alvo = (destino || "").split("?")[0];
+  const dados = { botao: (rotulo || "").trim().slice(0, 60) || alvo };
+  try {
+    if (alvo === "/criar-conta") {
+      window.fbq?.("track", "Lead", dados);
+      window.gtag?.("event", "generate_lead", dados);
+      return;
+    }
+    if (alvo === "/comecar" || alvo.startsWith("/assinatura")) {
+      window.fbq?.("trackCustom", "ClicouAssinar", dados);
+      window.gtag?.("event", "clicou_assinar", dados);
+      return;
+    }
+    if (alvo === "#experimente") {
+      window.fbq?.("trackCustom", "ClicouExperimentar", dados);
+      window.gtag?.("event", "clicou_experimentar", dados);
+      return;
+    }
+    if (alvo === "#planos") {
+      window.fbq?.("trackCustom", "ClicouVerPlanos", dados);
+      window.gtag?.("event", "clicou_ver_planos", dados);
+      return;
+    }
+    if (alvo === "/login") {
+      window.gtag?.("event", "clicou_entrar", dados);
+      return;
+    }
+  } catch {
+    // medição nunca atrapalha a navegação
+  }
+}
