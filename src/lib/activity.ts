@@ -3,8 +3,40 @@
 // receber. Quando o sistema de logs existir, cada ação importante grava
 // uma Activity (em tabela própria) e o feed passa a ser alimentado por ela.
 
-import { differenceInCalendarDays, isSameMonth, isToday, isYesterday } from "date-fns";
 import { formatDate } from "@/lib/format";
+import { hojeBR, somarDias } from "@/lib/tempo";
+
+// ------------------------------------------------------------
+// O calendário deste arquivo é o de Brasília, nos dois lados
+// ------------------------------------------------------------
+// Aqui morava `isToday`/`isYesterday`/`differenceInCalendarDays` do
+// date-fns. Todos respondem pelo calendário LOCAL DO PROCESSO — e este
+// arquivo roda nos dois: no servidor (Vercel, UTC) para gerar o HTML, e
+// no navegador dela (Brasília) para hidratar.
+//
+// Medido em 10/09/2026, com o dev rodando em UTC para imitar a Vercel:
+// duas atividades de 04/09 01:34 UTC (= 03/09 22:34 em Brasília) caíam
+// em "Esta semana" no servidor e em "Este mês" no navegador. O navegador
+// desenhava um grupo a mais, e o React derrubava a hidratação do
+// dashboard inteiro — "Did not expect server HTML to contain a <div>".
+//
+// A regra do sistema já estava escrita em lib/tempo.ts: a cerimonialista
+// trabalha em horário de Brasília, e o sistema também. Estas funções
+// passam a usar a mesma régua.
+
+/** O dia em Brasília de um instante qualquer, `yyyy-MM-dd`. */
+function diaBR(iso: string | Date): string {
+  return hojeBR(typeof iso === "string" ? new Date(iso) : iso);
+}
+
+/** Quantos dias de calendário separam dois `yyyy-MM-dd`. Sem fuso no meio. */
+function diasEntre(depois: string, antes: string): number {
+  const n = (s: string) => {
+    const [a, m, d] = s.split("-").map(Number);
+    return Date.UTC(a, m - 1, d);
+  };
+  return Math.round((n(depois) - n(antes)) / 86_400_000);
+}
 
 export type ActivityCategory =
   | "eventos"
@@ -126,13 +158,16 @@ export function relativeTime(iso: string, now = new Date()): string {
   if (diffMinutes < 1) return "agora";
   if (diffMinutes < 60) return `há ${diffMinutes} min`;
 
-  if (isToday(date)) {
+  const dia = diaBR(date);
+  const hoje = diaBR(now);
+
+  if (dia === hoje) {
     const hours = Math.floor(diffMinutes / 60);
     return `há ${hours} ${hours === 1 ? "hora" : "horas"}`;
   }
-  if (isYesterday(date)) return "ontem";
+  if (dia === somarDias(hoje, -1)) return "ontem";
 
-  const days = differenceInCalendarDays(now, date);
+  const days = diasEntre(hoje, dia);
   if (days <= 30) return `há ${days} dias`;
   return formatDate(iso.slice(0, 10));
 }
@@ -152,11 +187,13 @@ const GROUP_ORDER = [
 ] as const;
 
 function periodOf(activity: Activity, now: Date): (typeof GROUP_ORDER)[number] {
-  const date = new Date(activity.createdAt);
-  if (isToday(date)) return "Hoje";
-  if (isYesterday(date)) return "Ontem";
-  if (differenceInCalendarDays(now, date) < 7) return "Esta semana";
-  if (isSameMonth(date, now)) return "Este mês";
+  const dia = diaBR(activity.createdAt);
+  const hoje = diaBR(now);
+  if (dia === hoje) return "Hoje";
+  if (dia === somarDias(hoje, -1)) return "Ontem";
+  if (diasEntre(hoje, dia) < 7) return "Esta semana";
+  // mesmo mês, pelo calendário de Brasília — não pelo do processo
+  if (dia.slice(0, 7) === hoje.slice(0, 7)) return "Este mês";
   return "Anteriores";
 }
 
