@@ -44,10 +44,30 @@ export function Medicao() {
     }
   }, [pathname, podeMedir, ga, pixel]);
 
-  if (!podeMedir || (!ga && !pixel)) return null;
+  if (!podeMedir) return null;
+
+  // POR QUE ESTE MARCADOR EXISTE (09/09/2026). O pixel da Meta não saía
+  // em produção e não havia como saber por quê de fora: a variável
+  // podia estar ausente, marcada só para Preview, ou com um valor que a
+  // régua recusa (aspas, espaço, o NOME do conjunto de dados em vez do
+  // id numérico). Os três casos produzem exatamente a mesma página —
+  // sem pixel e sem erro.
+  //
+  // O marcador só aparece quando algo está ERRADO, e diz qual dos dois
+  // casos é. Não expõe nada: a ausência do script já é visível para
+  // qualquer um que abra o código-fonte; isto só a explica.
+  const cru = process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim() ?? "";
+  const diagnostico = pixel
+    ? null
+    : cru
+      ? "pixel-recusado"
+      : "pixel-ausente-no-build";
+
+  if (!ga && !pixel && !diagnostico) return null;
 
   return (
     <>
+      {diagnostico && <meta name="eorg-medicao" content={diagnostico} />}
       {ga && (
         <>
           <Script
