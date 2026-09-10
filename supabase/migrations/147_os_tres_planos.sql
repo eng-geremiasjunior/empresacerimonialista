@@ -72,9 +72,16 @@ comment on column public.plano_catalogo.logins is
 insert into public.plano_catalogo (codigo, nome, valor_mensal, eventos_em_andamento, logins, ordem)
 select v.codigo, v.nome, v.valor_mensal, v.eventos, v.logins, v.ordem
 from (values
-  ('essencial',    'Essencial',    97.00,  10,   1,    1),
-  ('profissional', 'Profissional', 149.00, 25,   3,    2),
-  ('master',       'Master',       199.00, null, 10,   3)
+  -- EMENDA DE 10/09/2026. Os tetos de LOGIN caíram: a concorrente
+  -- direta dá usuários ilimitados nos três planos e cobra só por
+  -- quantidade de evento, e o dono decidiu igualar. O motivo é o
+  -- público: metade das cerimonialistas trabalha em dupla, e cobrar
+  -- pela sócia empurrava para o plano do meio quem lá entrava no mais
+  -- barato. Login não custa nada para nós; evento em andamento custa.
+  -- Os preços seguiram a mesma régua.
+  ('essencial',    'Essencial',     59.90,  6,   null, 1),
+  ('profissional', 'Profissional',  99.90, 12,   null, 2),
+  ('master',       'Master',       149.90, null, null, 3)
 ) as v (codigo, nome, valor_mensal, eventos, logins, ordem)
 where not exists (select 1 from public.plano_catalogo c where c.codigo = v.codigo);
 
