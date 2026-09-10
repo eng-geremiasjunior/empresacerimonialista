@@ -27,6 +27,8 @@ export function Cabecalho({
   ondeEstou,
   acao,
   entrar = true,
+  fundo = "#FAF8F5",
+  emBloco = false,
 }: {
   /** Marca o item do menu correspondente à página atual. */
   ondeEstou?: "vendas" | "precos";
@@ -34,6 +36,20 @@ export function Cabecalho({
   acao?: AcaoDoCabecalho;
   /** "Entrar" some para quem já está logada. */
   entrar?: boolean;
+  /** A cor da barra — a mesma do topo da página, quando em bloco. */
+  fundo?: string;
+  /**
+   * O CABEÇALHO COMO TOPO DO BLOCO (10/09/2026). O dono viu o site da
+   * concorrente e disse: "gostei da header dele, achei mais
+   * profissional, não digo a cor, digo a ideia". A ideia é que lá o
+   * cabeçalho não é uma tira separada: ele tem a mesma cor do topo, e
+   * cabeçalho, título e o produto aparecem como uma coisa só.
+   *
+   * Em bloco, a linha de baixo sai (ela é justamente o que corta) e
+   * fica só uma sombra de um pixel, que não se vê enquanto a página
+   * está no alto e separa a barra do conteúdo depois que ela rola.
+   */
+  emBloco?: boolean;
 }) {
   // Na página de vendas, âncoras; na de preços, o caminho de volta com a
   // âncora junto — assim o menu funciona igual nas duas.
@@ -50,8 +66,9 @@ export function Cabecalho({
         position: "sticky",
         top: "0",
         zIndex: "20",
-        background: "#FAF8F5",
-        borderBottom: "1px solid #E6E0D8",
+        background: fundo,
+        borderBottom: emBloco ? "none" : "1px solid #E6E0D8",
+        boxShadow: emBloco ? "0 1px 0 rgba(34,30,27,.05)" : "none",
       }}
     >
       <div
@@ -66,6 +83,11 @@ export function Cabecalho({
           height: "60px",
         }}
       >
+        {/* As duas pontas ocupam a mesma fatia (flex 1 de cada lado) para
+            que o menu do meio caia no centro de verdade, e não no centro
+            do que sobrou — a marca e os dois botões têm larguras
+            diferentes. */}
+        <span data-ponta-cabecalho="1" style={{ flex: "1 1 0", display: "flex", minWidth: "0" }}>
         <a
           href="/planos"
           style={{
@@ -90,12 +112,19 @@ export function Cabecalho({
             e<span style={{ color: "#6E3F5F" }}>organizei</span>
           </span>
         </a>
+        </span>
 
         {/* O menu some no celular: três itens de texto ao lado do botão
             não cabem em 360px, e a barra fixa do rodapé já leva à ação. */}
         <nav
           data-hide-sm="1"
-          style={{ display: "flex", alignItems: "center", gap: "4px", marginLeft: "auto" }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "4px",
+            flex: "none",
+          }}
         >
           {itens.map((i) => (
             <a
@@ -120,7 +149,17 @@ export function Cabecalho({
           ))}
         </nav>
 
-        <span style={{ display: "flex", alignItems: "center", gap: "6px", flex: "none" }}>
+        <span
+          data-ponta-cabecalho="1"
+          style={{
+            flex: "1 1 0",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            gap: "6px",
+            minWidth: "0",
+          }}
+        >
           {entrar && (
             <a
               href="/login"

@@ -192,18 +192,22 @@ export default async function PrecosPage() {
       }}
     >
       <style dangerouslySetInnerHTML={{ __html: CSS_PLANOS }} />
-      <Cabecalho ondeEstou="precos" acao={acaoDoTopo} entrar={visitante} />
+      {/* Mesmo bloco de topo da página de vendas: cabeçalho e título com
+          o mesmo fundo, sem linha entre eles. Os cartões começam depois,
+          no claro — a mudança de tom é que diz "aqui começa o preço". */}
+      <Cabecalho ondeEstou="precos" acao={acaoDoTopo} entrar={visitante} fundo="#F2EEE9" emBloco />
 
       <main>
         {/* ---------- título ---------- */}
         <section
           style={{
-            maxWidth: "1080px",
-            margin: "0 auto",
-            padding: "clamp(44px,6vw,72px) clamp(20px,4vw,28px) 0",
+            background: "#F2EEE9",
+            borderBottom: "1px solid #E6E0D8",
+            padding: "clamp(40px,5.5vw,66px) clamp(20px,4vw,28px) clamp(40px,5.5vw,62px)",
             textAlign: "center",
           }}
         >
+        <div style={{ maxWidth: "1080px", margin: "0 auto" }}>
           <h1
             style={{
               margin: "0 auto 14px",
@@ -248,6 +252,7 @@ export default async function PrecosPage() {
               {`Condição de lançamento: ${fraseDasFaixas(faixas)}.`}
             </p>
           )}
+        </div>
         </section>
 
         {/* ---------- os planos ---------- */}

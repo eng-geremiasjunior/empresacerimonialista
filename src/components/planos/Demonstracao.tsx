@@ -11,8 +11,11 @@ export function Demonstracao() {
     <>
       {" "}
       {/* a demonstração: o briefing virando evento */}
-      <section style={{ marginTop: "clamp(40px,5vw,56px)", paddingBottom: "clamp(52px,6vw,72px)", background: "#F2EEE9", borderTop: "1px solid #E6E0D8", borderBottom: "1px solid #E6E0D8" }}>
-        <div style={{ maxWidth: "1080px", margin: "0 auto", padding: "clamp(40px,5vw,56px) clamp(20px,4vw,28px) 0" }}>
+      {/* Sem borda em cima e sem margem: a janela do sistema continua o
+          mesmo fundo do cabeçalho e do título, e o topo da página vira um
+          bloco só. A linha de baixo é a única — ela fecha o bloco. */}
+      <section style={{ paddingBottom: "clamp(52px,6vw,72px)", background: "#F2EEE9", borderBottom: "1px solid #E6E0D8" }}>
+        <div style={{ maxWidth: "1080px", margin: "0 auto", padding: "clamp(36px,4.5vw,52px) clamp(20px,4vw,28px) 0" }}>
           <div style={{ maxWidth: "944px", margin: "0 auto", border: "1px solid #E6E0D8", borderRadius: "14px", background: "#FFFFFF", overflow: "hidden", boxShadow: "0 1px 2px rgba(34,30,27,.04),0 14px 34px rgba(34,30,27,.07)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", height: "38px", padding: "0 12px", background: "#F2EEE9", borderBottom: "1px solid #E6E0D8" }}>
               <span style={{ display: "flex", gap: "6px", flex: "none" }}>

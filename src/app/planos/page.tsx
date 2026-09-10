@@ -369,11 +369,24 @@ export default async function PlanosPage() {
           dos dois lados — e não há nada de usuário nele. */}
       <style dangerouslySetInnerHTML={{ __html: CSS_PLANOS }} />
 
+      {/* O TOPO É UM BLOCO SÓ (10/09/2026): cabeçalho, título e a janela
+          do sistema dividem o mesmo fundo, sem linha entre eles. Antes o
+          cabeçalho era uma tira clara, o título vinha noutro tom e a
+          demonstração começava com borda — três faixas para dizer uma
+          coisa só. O dono viu isso no site da concorrente: "gostei da
+          header dele, achei mais profissional, não digo a cor, digo a
+          ideia". A cor é a nossa; a ideia é essa.
+
+          O fundo vai em cada peça em vez de num <div> em volta: o <main>
+          começa entre o cabeçalho e o título, e uma caixa que abrisse
+          antes dele e fechasse depois teria de cruzar essa fronteira. */}
       {/* O cabeçalho com menu é compartilhado com /precos: era uma barra
           sem navegação nenhuma, e quem entrava querendo o preço tinha de
           rolar a página inteira. */}
       <Cabecalho
         ondeEstou="vendas"
+        fundo="#F2EEE9"
+        emBloco
         acao={
           podeAssinar
             ? { href: entradaCurta.href, rotulo: testeAberto ? "Criar conta grátis" : "Assinar" }
@@ -388,12 +401,12 @@ export default async function PlanosPage() {
         {/* ============ 1 · HERO ============ */}
         <section
           style={{
-            maxWidth: "1080px",
-            margin: "0 auto",
-            padding: "clamp(52px,7vw,84px) clamp(20px,4vw,28px) 0",
+            background: "#F2EEE9",
+            padding: "clamp(46px,6vw,74px) clamp(20px,4vw,28px) 0",
             textAlign: "center",
           }}
         >
+        <div style={{ maxWidth: "1080px", margin: "0 auto" }}>
           <p
             style={{
               display: "inline-block",
@@ -570,6 +583,7 @@ export default async function PlanosPage() {
             Porque organizar um evento não deveria depender de procurar informação em
             dezenas de conversas, planilhas e anotações.
           </p>
+        </div>
         </section>
 
         <Demonstracao />

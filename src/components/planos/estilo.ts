@@ -142,6 +142,11 @@ export const CSS_PLANOS = `
     [data-side]{display:none!important}
     [data-stack]{grid-template-columns:1fr!important}
     [data-hide-sm]{display:none!important}
+    /* As pontas do cabeçalho dividem a largura em partes iguais só para
+       centralizar o menu. Sem menu, essa divisão empurra o "Entrar" para
+       o meio da tela, colado na marca — aqui elas voltam a ocupar apenas
+       o que precisam, e a barra separa uma da outra. */
+    [data-ponta-cabecalho]{flex:none!important}
     [data-plano-cel]{display:block!important}
     [data-frag-sm]{display:none!important}
     [data-frag-wrap]{display:none!important}
