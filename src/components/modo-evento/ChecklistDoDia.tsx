@@ -8,6 +8,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { ModoTheme } from "@/lib/modo-tema";
+import { hojeBR, minutosDoDiaBR } from "@/lib/tempo";
 import { OcorrenciasDoDia } from "./OcorrenciasDoDia";
 
 export type ItemChecklistDia = {
@@ -44,12 +45,15 @@ function blocoSugerido(
     itens.some((i) => i.bloco === b && !i.conferidoEm);
 
   if (ancora) {
+    // Dia e hora em Brasília, não no fuso de quem desenha: no servidor
+    // da Vercel este bloco escolhia a fase errada da festa (três horas
+    // adiantado) e a tela trocava de conteúdo ao hidratar.
     const agora = new Date();
-    const hojeLocal = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, "0")}-${String(agora.getDate()).padStart(2, "0")}`;
+    const hojeLocal = hojeBR(agora);
     if (eventDate === hojeLocal) {
       const [h, m] = ancora.split(":").map(Number);
       const minAncora = h * 60 + m;
-      const minAgora = agora.getHours() * 60 + agora.getMinutes();
+      const minAgora = minutosDoDiaBR(agora);
       const temItens = (b: ItemChecklistDia["bloco"]) =>
         itens.some((i) => i.bloco === b);
       if (minAgora < minAncora - 45) return "montagem";

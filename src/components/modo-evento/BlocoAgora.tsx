@@ -7,7 +7,8 @@
 
 import { Check, Clock, Eye, MessageSquareText, Play, TriangleAlert } from "lucide-react";
 import { formatTime } from "@/lib/format";
-import { itemDateTime, pad2, type ModoItem, type ModoTheme } from "@/lib/modo-tema";
+import { itemDateTime, type ModoItem, type ModoTheme } from "@/lib/modo-tema";
+import { horaMinutoBR } from "@/lib/tempo";
 import { tempoRelativo, type AtividadeRecente } from "@/lib/modo-evento";
 
 const ICONE: Record<
@@ -22,10 +23,11 @@ const ICONE: Record<
   status_atualizado: { icon: Play, cor: "text-sky-500" },
 };
 
-function relogio(now: number) {
-  const d = new Date(now);
-  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
-}
+// O relógio da tela do dia da festa, em Brasília e não no fuso de quem
+// desenha. Era `d.getHours()`: na Vercel o HTML saía com 18:02 e o
+// celular dela mostrava 15:02 — mesmo instante, fusos diferentes — e o
+// React derrubava a hidratação do Modo Evento inteiro.
+const relogio = (now: number) => horaMinutoBR(now);
 
 export function BlocoAgora({
   now,

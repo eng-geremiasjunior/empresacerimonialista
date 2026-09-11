@@ -39,6 +39,37 @@ export function horaBR(agora: Date = new Date()): number {
 }
 
 /**
+ * A hora do relógio em Brasília, `HH:mm`.
+ *
+ * Existe por causa do Modo Evento: o relógio grande da tela do dia da
+ * festa era `d.getHours()`, o fuso do processo. Na Vercel isso desenhava
+ * 18:02 no HTML enquanto o celular dela mostrava 15:02 — o React
+ * derrubava a hidratação da tela inteira e trocava o conteúdo no susto.
+ */
+export function horaMinutoBR(quando: Date | number = new Date()): string {
+  const d = typeof quando === "number" ? new Date(quando) : quando;
+  return d.toLocaleTimeString("en-GB", {
+    timeZone: FUSO,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
+/**
+ * Minutos desde a meia-noite em Brasília (0–1439).
+ *
+ * É o que decide qual item do roteiro está acontecendo AGORA. Lido pelo
+ * fuso do processo, o servidor achava que eram três horas mais tarde e
+ * marcava a atividade errada como a atual — numa tela que existe para
+ * ser olhada de relance no meio da festa.
+ */
+export function minutosDoDiaBR(quando: Date | number = new Date()): number {
+  const [h, m] = horaMinutoBR(quando).split(":").map(Number);
+  return h * 60 + m;
+}
+
+/**
  * Meia-noite de hoje, como Date, para comparar com datas montadas a partir
  * de `yyyy-MM-dd`. Substitui `new Date(new Date().toDateString())`, que
  * usava o fuso do runtime.

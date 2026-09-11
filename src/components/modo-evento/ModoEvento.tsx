@@ -27,7 +27,7 @@ import { ResumoFinal } from "./ResumoFinal";
 import { FornecedoresStatus } from "./FornecedoresStatus";
 import { ChecklistDoDia, type ItemChecklistDia } from "./ChecklistDoDia";
 import { ChegadasAoVivo, type ChegadasProps } from "@/components/operacao/ChegadasAoVivo";
-import { hojeLocalISO } from "@/lib/format";
+import { hojeBR, minutosDoDiaBR } from "@/lib/tempo";
 
 const POLL_MS = 15_000;
 
@@ -178,11 +178,15 @@ export function ModoEvento({
     [items]
   );
   const proximo = useMemo(() => proximoPlanejado(items), [items]);
-  const nowMinutes = new Date(now).getHours() * 60 + new Date(now).getMinutes();
-  // hoje LOCAL: com toISOString (UTC), a partir das 21h o guarda achava
-  // que o evento era "ontem" e silenciava a detecção de atraso no pico
-  // da recepção.
-  const hoje = hojeLocalISO(new Date(now));
+  // Minutos do dia EM BRASÍLIA. Era o fuso do processo: no servidor da
+  // Vercel dava três horas a mais, e o HTML entregue marcava como "agora"
+  // uma atividade que só acontece mais tarde — numa tela feita para ser
+  // olhada de relance no meio da festa.
+  const nowMinutes = minutosDoDiaBR(now);
+  // hoje em Brasília pelo mesmo motivo: com toISOString (UTC), a partir
+  // das 21h o guarda achava que o evento era "ontem" e silenciava a
+  // detecção de atraso no pico da recepção.
+  const hoje = hojeBR(new Date(now));
   const status = useMemo(
     () => statusGeral(items, eventDate === hoje ? nowMinutes : -1),
     [items, eventDate, hoje, nowMinutes]
