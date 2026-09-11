@@ -255,8 +255,12 @@ export function EventoCardHorizontal({
           </div>
 
           {acao && (
-            <div className="flex items-center gap-3">
-              <div className="text-right">
+            // flex-wrap: no celular o texto da próxima ação (até 220px) e
+            // o botão (134px) não cabem lado a lado em 390px de tela, e
+            // sem quebra o botão saía 80px para fora — a lista de eventos
+            // era a única tela do app que rolava para o lado.
+            <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+              <div className="min-w-0 text-right">
                 <p className="text-[11px] uppercase tracking-wide text-gray-400">
                   Próxima ação
                 </p>
