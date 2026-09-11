@@ -272,6 +272,7 @@ export default async function OrcamentosPage({
 
       <OrcamentosTable
         rows={rows}
+        hoje={hojeIso}
         total={count ?? 0}
         perPage={PER_PAGE}
         vencendo={(aVencer ?? []) as unknown as Orcamento[]}

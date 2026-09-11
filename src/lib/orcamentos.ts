@@ -35,8 +35,55 @@ export type Orcamento = {
   ficha_email: string | null;
   ficha_preenchida_em: string | null;
   respondido_em: string | null;
+  // Quem abriu a peça (155). Conta abertura, não pessoa: a cerimonialista
+  // fica sabendo QUE foi vista e QUANDO — é o que decide se ela liga hoje
+  // ou espera. Opcionais porque a coluna é nova e a lista lê `select("*")`.
+  visitas?: number | null;
+  primeira_visita_em?: string | null;
+  ultima_visita_em?: string | null;
   created_at: string;
 };
+
+/**
+ * "vista 3× · última há 2 dias" — ou nada.
+ *
+ * Nada é a resposta certa para proposta em rascunho e para enviada que
+ * ninguém abriu ainda: o silêncio aqui já é a informação, e uma linha
+ * dizendo "0 visitas" só ocuparia espaço repetindo o status.
+ *
+ * `hoje` vem de fora (hojeBR, no servidor) e não de `new Date()` aqui: a
+ * lista de orçamentos é componente de cliente, e relógio lido no
+ * primeiro render diverge entre o servidor (UTC na Vercel) e o navegador
+ * (Brasília) — foi assim que o feed do dashboard quebrou a hidratação.
+ */
+export function visitasEmPalavras(
+  o: {
+    status: OrcamentoStatus;
+    visitas?: number | null;
+    ultima_visita_em?: string | null;
+  },
+  hoje: string
+): string | null {
+  if (o.status === "rascunho") return null;
+  const n = o.visitas ?? 0;
+  if (n < 1) return null;
+  const vezes = n === 1 ? "vista 1×" : `vista ${n}×`;
+  if (!o.ultima_visita_em) return vezes;
+
+  // O dia EM BRASÍLIA, não o pedaço da ISO: uma visita às 22h30 daqui é
+  // 01h30 do dia seguinte em UTC, e fatiar a string diria "hoje" para
+  // uma visita de ontem à noite. Converter pelo fuso fixo dá o mesmo
+  // resultado no servidor e no navegador — não lê relógio, lê instante.
+  const dia = hojeBR(new Date(o.ultima_visita_em));
+  const emDias = (s: string) => {
+    const [a, m, d] = s.split("-").map(Number);
+    return Date.UTC(a, m - 1, d) / 86_400_000;
+  };
+  const dias = Math.round(emDias(hoje) - emDias(dia));
+  if (dias <= 0) return `${vezes} · última hoje`;
+  if (dias === 1) return `${vezes} · última ontem`;
+  return `${vezes} · última há ${dias} dias`;
+}
 
 export type OrcamentoItem = {
   id: string;

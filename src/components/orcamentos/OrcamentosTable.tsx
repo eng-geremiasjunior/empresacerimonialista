@@ -41,7 +41,7 @@ import {
   excluirOrcamento,
 } from "@/app/(app)/orcamentos/actions";
 import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
-import { type Orcamento } from "@/lib/orcamentos";
+import { type Orcamento, visitasEmPalavras } from "@/lib/orcamentos";
 import {
   CORES,
   dataPorExtenso,
@@ -237,11 +237,12 @@ function MenuAcoes({ o }: { o: Orcamento }) {
 }
 
 /** Cartão da lista principal. Três linhas, sem nada que abra no hover. */
-function Cartao({ o, pacote }: { o: Orcamento; pacote?: string }) {
+function Cartao({ o, pacote, hoje }: { o: Orcamento; pacote?: string; hoje: string }) {
   const avatar = paletaAvatar(o.tipo_evento);
   const st = estiloStatus(o.status);
   const val = infoValidade(o.data_validade);
   const tel = telefoneFormatado(o.contato_telefone);
+  const visitas = visitasEmPalavras(o, hoje);
 
   // O pacote só existe depois do aceite — quando existe, é a informação
   // mais concreta da linha e entra na frente do resto.
@@ -307,6 +308,14 @@ function Cartao({ o, pacote }: { o: Orcamento; pacote?: string }) {
               {valorFormatado(o.valor_total)}
             </span>
             <span className="flex items-center gap-3">
+              {/* Quem abriu a peça (155). Fica antes do prazo porque é o
+                  que decide o próximo passo: proposta vista três vezes e
+                  sem resposta pede telefonema, não espera. */}
+              {visitas && (
+                <span className="text-[12px]" style={{ color: CORES.secundario }}>
+                  {visitas}
+                </span>
+              )}
               {/* prazo só aparece quando há algo a fazer com ele */}
               {val.alerta && (
                 <span className="text-[12px]" style={{ color: val.cor }}>
@@ -361,6 +370,7 @@ export function OrcamentosTable({
   current,
   vencendo = [],
   pacotePorOrcamento = {},
+  hoje,
 }: {
   rows: Orcamento[];
   total: number;
@@ -370,6 +380,8 @@ export function OrcamentosTable({
   vencendo?: Orcamento[];
   /** nome do pacote fechado, por orçamento aceito */
   pacotePorOrcamento?: Record<string, string>;
+  /** hoje em Brasília, do servidor — nunca relógio lido aqui (hidratação) */
+  hoje: string;
 }) {
   const router = useRouter();
   const [busca, setBusca] = useState(current.busca);
@@ -519,7 +531,7 @@ export function OrcamentosTable({
           ) : (
             <div className="flex flex-col gap-2.5">
               {rows.map((o) => (
-                <Cartao key={o.id} o={o} pacote={pacotePorOrcamento[o.id]} />
+                <Cartao key={o.id} o={o} pacote={pacotePorOrcamento[o.id]} hoje={hoje} />
               ))}
             </div>
           )}

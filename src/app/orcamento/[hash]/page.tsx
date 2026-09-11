@@ -9,6 +9,7 @@ import { PropostaDebutanteGlam } from "@/components/orcamento-publico/PropostaDe
 import { PropostaCasamentoMaison } from "@/components/orcamento-publico/PropostaCasamentoMaison";
 import { PropostaCasamentoPraia } from "@/components/orcamento-publico/PropostaCasamentoPraia";
 import { FaixaDoRascunho } from "@/components/orcamento-publico/FaixaDoRascunho";
+import { ContarVisita } from "@/components/orcamento-publico/ContarVisita";
 import type { OrcamentoPublicoData } from "@/lib/orcamento-publico";
 import { TEMPLATE_PADRAO_POR_TIPO } from "@/lib/proposta-templates";
 import type { EventType } from "@/lib/types";
@@ -72,20 +73,24 @@ export default async function OrcamentoPublicoPage({
 
   if (!proposta) notFound();
 
-  const idParaEnviar =
-    proposta.status === "rascunho" ? await orcamentoDaCasa(params.hash) : null;
+  // A pergunta "esta sessão é da casa?" agora serve a dois propósitos: o
+  // cartão de enviar no rascunho, e NÃO contar visita quando quem abre é
+  // a própria cerimonialista conferindo a peça antes de mandar.
+  const daCasa = await orcamentoDaCasa(params.hash);
+  const idParaEnviar = proposta.status === "rascunho" ? daCasa : null;
+  // A função do banco só conta proposta enviada; a checagem aqui evita
+  // uma ida ao servidor à toa em rascunho e em quem é da casa.
+  const contarVisita = proposta.status === "enviado" && !daCasa;
 
   // O cartão flutua sobre a peça, sem empurrar nem cobrir: a proposta
   // continua sendo lida exatamente como a cliente a lê.
-  const comFaixa = (conteudo: React.ReactNode) =>
-    idParaEnviar ? (
-      <>
-        <FaixaDoRascunho orcamentoId={idParaEnviar} />
-        {conteudo}
-      </>
-    ) : (
-      conteudo
-    );
+  const comFaixa = (conteudo: React.ReactNode) => (
+    <>
+      {contarVisita && <ContarVisita hash={params.hash} />}
+      {idParaEnviar && <FaixaDoRascunho orcamentoId={idParaEnviar} />}
+      {conteudo}
+    </>
+  );
 
   if (proposta.tipo_evento === "debutante") {
     // O template vem do orçamento (059); null cai no padrão do tipo.
