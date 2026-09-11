@@ -172,11 +172,41 @@ export function OrganizacaoEvento({
   // Status otimista (o clique reflete na hora; o servidor sincroniza).
   const [statusOverride, setStatusOverride] = useState<Record<string, TarefaStatus>>({});
 
+  /**
+   * A PRIMEIRA TAREFA DO EVENTO NÃO VOLTAVA (11/09/2026).
+   *
+   * Medido em produção, três vezes: criar a tarefa número 1 de um evento
+   * salvava no banco e a tela continuava dizendo "Nenhuma tarefa aqui
+   * ainda" — não só a lista, o cabeçalho desenhado no servidor também
+   * ficava em "Nenhuma tarefa cadastrada". Da segunda tarefa em diante,
+   * tudo aparece na hora. Ou seja: o `router.refresh()` roda, a ação
+   * revalida os caminhos certos, e mesmo assim o primeiro salto de zero
+   * para um não traz dado novo. A causa está no cache do Next e segue em
+   * aberto.
+   *
+   * O sintoma, porém, é o pior que existe: quem acabou de digitar acha
+   * que perdeu. Então a tarefa recém-criada entra na lista por conta
+   * própria e sai sozinha assim que o servidor passa a devolvê-la — o
+   * mesmo desenho do statusOverride logo acima. Não é maquiagem: a
+   * tarefa existe no banco antes de aparecer aqui.
+   */
+  const [recemCriadas, setRecemCriadas] = useState<Tarefa[]>([]);
+
+  const doServidor = new Set(inicial.tarefas.map((t) => t.id));
+  const pendentesDeChegar = recemCriadas.filter((t) => !doServidor.has(t.id));
+
   const org: Organizacao = {
     ...inicial,
-    tarefas: inicial.tarefas.map((t) =>
-      statusOverride[t.id] ? { ...t, status: statusOverride[t.id] } : t
-    ),
+    tarefas: [...inicial.tarefas, ...pendentesDeChegar]
+      .map((t) => (statusOverride[t.id] ? { ...t, status: statusOverride[t.id] } : t))
+      // o servidor entrega por prazo crescente, nulos por último; a
+      // recém-criada precisa cair no grupo certo, não no fim da lista
+      .sort((a, b) => {
+        if (a.dueDate === b.dueDate) return 0;
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return a.dueDate < b.dueDate ? -1 : 1;
+      }),
   };
 
   function alternar(taskId: string, concluida: boolean) {
@@ -369,6 +399,7 @@ export function OrganizacaoEvento({
           hoje={hoje}
           fornecedores={fornecedores}
           onFechar={() => setSel(null)}
+          onCriada={(t) => setRecemCriadas((l) => [...l, t])}
         />
       )}
     </div>
@@ -860,6 +891,7 @@ function TarefaDrawer({
   hoje,
   fornecedores,
   onFechar,
+  onCriada,
 }: {
   eventId: string;
   tarefa: Tarefa | null; // null = nova
@@ -869,6 +901,8 @@ function TarefaDrawer({
   hoje: string;
   fornecedores: Fornecedor[];
   onFechar: () => void;
+  /** a tarefa que acabou de nascer, para a lista não esperar o servidor */
+  onCriada?: (t: Tarefa) => void;
 }) {
   const router = useRouter();
   const nova = tarefa === null;
@@ -965,11 +999,53 @@ function TarefaDrawer({
       canalConvite,
     };
     start(async () => {
-      const r = nova
-        ? await criarTarefa(eventId, form)
-        : await atualizarTarefa(eventId, tarefa!.id, form);
-      if ("error" in r) setErro(r.error);
-      else {
+      // Criar e editar seguem separados de propósito: só a criação
+      // devolve id, e é o id que a lista precisa para se adiantar ao
+      // servidor sem duplicar a linha depois.
+      if (!nova) {
+        const r = await atualizarTarefa(eventId, tarefa!.id, form);
+        if ("error" in r) return setErro(r.error);
+        router.refresh();
+        return onFechar();
+      }
+
+      const r = await criarTarefa(eventId, form);
+      if ("error" in r) return setErro(r.error);
+      {
+        // A lista recebe a tarefa nova agora, sem depender do refresh —
+        // ver o comentário de `recemCriadas` lá em cima.
+        if (r.id && onCriada) {
+          onCriada({
+            id: r.id,
+            titulo: form.titulo ?? "",
+            descricao: form.descricao ?? null,
+            dueDate: form.dueDate ?? null,
+            dueTime: form.dueTime ?? null,
+            status: "pendente",
+            priority: form.priority ?? "media",
+            category: form.categoria ?? "geral",
+            responsavel: form.responsavel ?? null,
+            origemDecisao: null,
+            origemObjetivo: null,
+            decisaoId: null,
+            vinculoModulo: null,
+            supplierId: form.supplierId ?? null,
+            supplierNome:
+              fornecedores.find((f) => f.id === form.supplierId)?.nome ?? null,
+            local: form.local ?? null,
+            valor: form.valor ?? null,
+            conviteData: form.conviteData ?? null,
+            conviteOffsetDias: form.conviteOffsetDias ?? null,
+            prazoRespostaDias: form.prazoRespostaDias ?? 0,
+            reenvioHoras: form.reenvioHoras ?? 0,
+            autoAgendar: form.autoAgendar ?? false,
+            duracaoMin: form.duracaoMin ?? 0,
+            canalConvite: form.canalConvite ?? "whatsapp",
+            convite: null,
+            checklist: [],
+            criadaEm: null,
+          });
+        }
         router.refresh();
         onFechar();
       }
