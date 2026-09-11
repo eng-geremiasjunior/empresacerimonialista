@@ -7,14 +7,17 @@ import type { ModoTheme } from "@/lib/modo-tema";
 type Props = {
   eventLabel: string;
   eventDate: string; // yyyy-MM-dd
-  now: number;
+  now: number | null;
   isDark: boolean;
   onToggleTheme: () => void;
   eventId: string;
   t: ModoTheme;
 };
 
-function faltaLabel(eventDate: string, now: number) {
+function faltaLabel(eventDate: string, now: number | null) {
+  // antes de montar não há relógio: a linha fica vazia por um quadro,
+  // em vez de sair errada e ser trocada
+  if (now === null) return "";
   const dias = differenceInCalendarDays(
     new Date(`${eventDate}T00:00:00`),
     new Date(now)

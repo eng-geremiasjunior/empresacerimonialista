@@ -27,7 +27,7 @@ const ICONE: Record<
 // desenha. Era `d.getHours()`: na Vercel o HTML saía com 18:02 e o
 // celular dela mostrava 15:02 — mesmo instante, fusos diferentes — e o
 // React derrubava a hidratação do Modo Evento inteiro.
-const relogio = (now: number) => horaMinutoBR(now);
+const relogio = (now: number | null) => (now === null ? "--:--" : horaMinutoBR(now));
 
 export function BlocoAgora({
   now,
@@ -37,7 +37,7 @@ export function BlocoAgora({
   status,
   t,
 }: {
-  now: number;
+  now: number | null;
   activities: AtividadeRecente[];
   proximo: ModoItem | null;
   eventDate: string;
@@ -49,12 +49,13 @@ export function BlocoAgora({
   let proximoLabel: string | null = null;
   if (proximo) {
     const dt = itemDateTime(eventDate, proximo.time);
-    const diffMin = Math.round((dt - now) / 60000);
-    if (!isNaN(dt)) {
-      proximoLabel =
-        diffMin <= 0 ? "começa agora" : `começa em ${diffMin} min`;
-    } else {
+    if (isNaN(dt)) {
       proximoLabel = "horário a definir";
+    } else if (now !== null) {
+      // "começa em N min" depende do relógio: antes de montar não há
+      // relógio, e a linha some por um quadro em vez de sair errada
+      const diffMin = Math.round((dt - now) / 60000);
+      proximoLabel = diffMin <= 0 ? "começa agora" : `começa em ${diffMin} min`;
     }
   }
 
@@ -88,7 +89,9 @@ export function BlocoAgora({
                     ) : null}
                   </p>
                   <p className={`text-xs ${t.sub}`}>
-                    {tempoRelativo(a.created_at, now)}
+                    {/* "há 3 minutos" precisa de relógio; sem ele, nada —
+                        o texto entra no quadro seguinte, já certo */}
+                    {now === null ? "" : tempoRelativo(a.created_at, now)}
                   </p>
                 </div>
               </div>

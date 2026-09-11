@@ -88,7 +88,8 @@ export function ModoEvento({
   checklist,
   chegadas = null,
 }: Props) {
-  const [now, setNow] = useState(() => Date.now());
+  // null até montar: relógio no primeiro render quebra a hidratação
+  const [now, setNow] = useState<number | null>(null);
   const [isDark, setIsDark] = useState(true);
   const [items, setItems] = useState<ModoItem[]>(initialItems);
   const [activities, setActivities] = useState<AtividadeRecente[]>([]);
@@ -100,6 +101,7 @@ export function ModoEvento({
   const t = isDark ? MODO_DARK : MODO_LIGHT;
 
   useEffect(() => {
+    setNow(Date.now());
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
@@ -182,11 +184,11 @@ export function ModoEvento({
   // Vercel dava três horas a mais, e o HTML entregue marcava como "agora"
   // uma atividade que só acontece mais tarde — numa tela feita para ser
   // olhada de relance no meio da festa.
-  const nowMinutes = minutosDoDiaBR(now);
+  const nowMinutes = now === null ? -1 : minutosDoDiaBR(now);
   // hoje em Brasília pelo mesmo motivo: com toISOString (UTC), a partir
   // das 21h o guarda achava que o evento era "ontem" e silenciava a
   // detecção de atraso no pico da recepção.
-  const hoje = hojeBR(new Date(now));
+  const hoje = now === null ? null : hojeBR(new Date(now));
   const status = useMemo(
     () => statusGeral(items, eventDate === hoje ? nowMinutes : -1),
     [items, eventDate, hoje, nowMinutes]

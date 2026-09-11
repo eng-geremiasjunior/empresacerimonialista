@@ -11,7 +11,7 @@ import {
 type Props = {
   item: ModoItem | null;
   eventDate: string;
-  now: number;
+  now: number | null;
   t: ModoTheme;
 };
 
@@ -25,8 +25,9 @@ export function ProximaAtividade({ item, eventDate, now, t }: Props) {
   }
 
   const dt = itemDateTime(eventDate, item.time);
-  const diff = dt - now;
-  const futuro = !isNaN(dt) && diff > 0;
+  // sem relógio ainda: mostra o horário marcado, sem a contagem
+  const diff = now === null ? 0 : dt - now;
+  const futuro = now !== null && !isNaN(dt) && diff > 0;
 
   return (
     <div className={`rounded-2xl border p-5 text-center ${t.panel}`}>
