@@ -79,7 +79,11 @@ const RECURSOS = [
   {
     icone: Heart,
     titulo: "Portal da cliente",
-    linha: "A noiva acompanha o próprio casamento, com a sua marca.",
+    // NADA de "noiva" aqui. Escrevi "a noiva acompanha o próprio
+    // casamento" e isso estreita para um dos nove tipos de evento —
+    // justamente o erro que o dono cortou na foto do herói. Quem abre o
+    // portal é A CLIENTE, e o que ela acompanha é O EVENTO dela.
+    linha: "A cliente acompanha o próprio evento, com a sua marca.",
   },
   {
     icone: Users,
