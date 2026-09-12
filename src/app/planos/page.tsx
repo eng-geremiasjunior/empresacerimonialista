@@ -15,6 +15,8 @@ import {
   type PlanoDoCatalogo,
 } from "@/lib/planos";
 import { Cabecalho } from "@/components/planos/Cabecalho";
+import { SombraDoTopo } from "@/components/planos/SombraDoTopo";
+import { Grade } from "@/components/planos/Grade";
 import { Medicao } from "@/components/marketing/Medicao";
 import { Origem } from "@/components/marketing/Origem";
 import { MedirCliques } from "@/components/marketing/MedirCliques";
@@ -85,6 +87,12 @@ function paraQuemE(p: PlanoDoCatalogo): string {
 }
 
 const MONO = "var(--font-mono, 'IBM Plex Mono', monospace)";
+// A fonte de texto do sistema. O quadro de preço usa esta, não a mono:
+// ver a nota em `rotuloMono`.
+const TEXTO = "var(--font-ui, 'Instrument Sans', sans-serif)";
+// Dígito de largura fixa: é o que fazia o preço alinhar em coluna
+// quando o quadro era monoespaçado.
+const NUMERO_TABULAR = "tabular-nums" as const;
 const TITULO = "var(--font-title, Inter, sans-serif)";
 
 export default async function PlanosPage() {
@@ -317,22 +325,25 @@ export default async function PlanosPage() {
     );
   }
 
+  // Os rótulos da coluna da esquerda. Em mono, "EVENTOS EM ANDAMENTO AO
+  // MESMO TEMPO" ficava com cara de etiqueta de sistema; em texto, com
+  // maiúsculas e um respiro entre letras, lê como cabeçalho de tabela.
   const rotuloMono = {
     padding: "20px 22px 16px 0",
-    fontFamily: MONO,
-    fontSize: "11px",
-    fontWeight: "500",
-    letterSpacing: ".06em",
+    fontFamily: TEXTO,
+    fontSize: "11.5px",
+    fontWeight: "600",
+    letterSpacing: ".04em",
     textTransform: "uppercase" as const,
     color: "#928A81",
   };
   const rotuloMonoNevoa = {
     padding: "20px 22px 16px 0",
     background: "#F2EEE9",
-    fontFamily: MONO,
-    fontSize: "11px",
+    fontFamily: TEXTO,
+    fontSize: "11.5px",
     fontWeight: "600",
-    letterSpacing: ".06em",
+    letterSpacing: ".04em",
     textTransform: "uppercase" as const,
     color: "#6B6259",
   };
@@ -341,16 +352,22 @@ export default async function PlanosPage() {
   // dizer de novo do que está falando.
   const rotuloCelular = {
     display: "none",
-    fontFamily: MONO,
-    fontSize: "11px",
-    fontWeight: "500",
-    letterSpacing: ".06em",
+    fontFamily: TEXTO,
+    fontSize: "11.5px",
+    fontWeight: "600",
+    letterSpacing: ".04em",
     textTransform: "uppercase" as const,
     color: "#928A81",
     marginBottom: "4px",
   };
   const rotuloCelularForte = { ...rotuloCelular, fontWeight: "600", color: "#6B6259" };
-  const numeroDoTeto = { fontFamily: MONO, fontWeight: "600", fontSize: "20px", color: "#221E1B" };
+  const numeroDoTeto = {
+    fontFamily: TEXTO,
+    fontWeight: "600",
+    fontSize: "20px",
+    fontVariantNumeric: NUMERO_TABULAR,
+    color: "#221E1B",
+  };
 
   return (
     <div
@@ -383,10 +400,9 @@ export default async function PlanosPage() {
       {/* O cabeçalho com menu é compartilhado com /precos: era uma barra
           sem navegação nenhuma, e quem entrava querendo o preço tinha de
           rolar a página inteira. */}
+      <SombraDoTopo />
       <Cabecalho
         ondeEstou="vendas"
-        fundo="#F2EEE9"
-        emBloco
         acao={
           podeAssinar
             ? { href: entradaCurta.href, rotulo: testeAberto ? "Criar conta grátis" : "Assinar" }
@@ -399,14 +415,29 @@ export default async function PlanosPage() {
 
       <main>
         {/* ============ 1 · HERO ============ */}
+        {/* UMA PROMESSA, UM BOTÃO, UMA IMAGEM (12/09/2026).
+            Antes havia dois botões concorrentes — "Criar conta grátis" e
+            "Já quero assinar por R$ 27,90" — e quatro linhas de letra
+            miúda de preço. Quem não conhece o sistema não escolhe entre
+            duas portas: hesita. O preço não sumiu da página, desceu para
+            o bloco de preço, que é onde a pergunta "quanto custa" nasce.
+            E a primeira imagem aparecia tarde demais numa página sobre
+            casamento. */}
         <section
           style={{
             background: "#F2EEE9",
-            padding: "clamp(46px,6vw,74px) clamp(20px,4vw,28px) 0",
-            textAlign: "center",
+            padding: "clamp(40px,5vw,64px) clamp(20px,4vw,28px) 0",
           }}
         >
-        <div style={{ maxWidth: "1080px", margin: "0 auto" }}>
+        {/* SEM FOTOGRAFIA NO HERÓI (12/09/2026). Eu tinha posto aqui a
+            foto de noivos que serve de capa padrão da proposta Clássico —
+            a única do repositório. O dono cortou na hora, e com razão:
+            "nosso sistema não é para noivas, ou apenas evento de
+            casamento — é sistema operacional de eventos". A imagem
+            estreitava para casamento um produto que atende nove tipos.
+            Quem mostra o produto aqui é a TELA REAL, logo abaixo, e ela
+            serve a qualquer evento. */}
+        <div style={{ maxWidth: "1080px", margin: "0 auto", textAlign: "center" }}>
           <p
             style={{
               display: "inline-block",
@@ -426,8 +457,8 @@ export default async function PlanosPage() {
           </p>
           <h1
             style={{
-              margin: "0 auto 20px",
-              maxWidth: "20ch",
+              margin: "0 auto 18px",
+              maxWidth: "19ch",
               fontFamily: TITULO,
               fontWeight: "700",
               fontSize: "clamp(31px,5.2vw,54px)",
@@ -441,7 +472,7 @@ export default async function PlanosPage() {
           <p
             style={{
               margin: "0 auto",
-              maxWidth: "58ch",
+              maxWidth: "54ch",
               fontSize: "clamp(16.5px,1.9vw,19px)",
               lineHeight: "1.5",
               color: "#6B6259",
@@ -458,7 +489,7 @@ export default async function PlanosPage() {
               flexDirection: "column",
               alignItems: "center",
               gap: "14px",
-              marginTop: "32px",
+              marginTop: "28px",
             }}
             data-cta-hero="1"
           >
@@ -485,28 +516,10 @@ export default async function PlanosPage() {
                 {entradaPrincipal.rotulo}
               </a>
             )}
-            {entradaSecundaria && (
-              <a
-                href={entradaSecundaria.href}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  minHeight: "44px",
-                  padding: "0 18px",
-                  borderRadius: "8px",
-                  border: "1px solid #6E3F5F",
-                  color: "#6E3F5F",
-                  textDecoration: "none",
-                  fontWeight: "600",
-                  fontSize: "15px",
-                  transition: "background 120ms cubic-bezier(.2,.8,.3,1)",
-                }}
-                className="pl-h-contorno"
-              >
-                {entradaSecundaria.rotulo}
-              </a>
-            )}
+            {/* O segundo botão ("Já quero assinar por R$ 27,90") saiu
+                daqui: duas portas na mesma altura fazem hesitar, e esta
+                página existe para uma coisa só. Ele continua na página,
+                no bloco de preço. */}
             {testeAberto && (
               // As três objeções, na ordem em que ela as tem. A terceira é
               // a de verdade: "vou perder o que eu montar?".
@@ -556,25 +569,15 @@ export default async function PlanosPage() {
                 Quem assina ou muda de plano é a proprietária da conta.
               </p>
             )}
-            {promo && (
-              <p
-                style={{
-                  margin: "0",
-                  maxWidth: "56ch",
-                  fontSize: "13.5px",
-                  lineHeight: "1.55",
-                  color: "#6B6259",
-                }}
-              >
-                {`${fraseDaEscadaEmFaixas}. Cancela quando quiser, sem multa.`}
-              </p>
-            )}
+            {/* A escada de preço e o "cancela quando quiser" desceram
+                para o bloco de preço — aqui eram quatro linhas de letra
+                miúda entre a promessa e o botão. */}
           </div>
           <p
             style={{
-              margin: "36px auto 0",
-              maxWidth: "62ch",
-              fontSize: "15.5px",
+              margin: "28px auto 0",
+              maxWidth: "58ch",
+              fontSize: "15px",
               lineHeight: "1.6",
               color: "#928A81",
               textWrap: "pretty",
@@ -586,6 +589,15 @@ export default async function PlanosPage() {
         </div>
         </section>
 
+        <Grade />
+        {/* A demonstração que ela MEXE sobe para cá (12/09/2026): estava
+            a quinze mil pixels de profundidade, e é onde a pessoa entende
+            o produto sem ler. Escrever o nome e ver o evento nascer vale
+            mais que três capítulos. */}
+        <DemoNascer
+          precoDeEntrada={precoDeEntrada !== null ? reais(precoDeEntrada) : null}
+          saida={testeAberto ? { href: "/criar-conta", rotulo: "Criar a minha de verdade, grátis" } : null}
+        />
         <Demonstracao />
         {podeAssinar && (
           <Chamada
@@ -624,13 +636,7 @@ export default async function PlanosPage() {
         <div id="o-sistema" style={{ scrollMarginTop: "68px" }}>
           <SistemaInteiro nosN={nosNPlanos} />
         </div>
-        {/* A demonstração que ela mexe, logo antes da oferta: nome, tipo,
-            data — e o evento nasce na tela REAL do sistema, com o método
-            real. Roda toda no navegador; nada é salvo. */}
-        <DemoNascer
-          precoDeEntrada={precoDeEntrada !== null ? reais(precoDeEntrada) : null}
-          saida={testeAberto ? { href: "/criar-conta", rotulo: "Criar a minha de verdade, grátis" } : null}
-        />
+        {/* A DemoNascer subiu para logo depois da grade — ver lá em cima. */}
         {/* Duas telas do sistema, renderizadas pelos COMPONENTES REAIS com
             dados fictícios: o croqui do salão (aba Mesas) e o mapa mental do
             Planejamento. Nada de banco nem de IA. */}
@@ -681,10 +687,10 @@ export default async function PlanosPage() {
                       borderRadius: "999px",
                       background: "#F3EBF0",
                       color: "#6E3F5F",
-                      fontFamily: MONO,
-                      fontSize: "11px",
-                      fontWeight: "500",
-                      letterSpacing: ".06em",
+                      fontFamily: TEXTO,
+                      fontSize: "11.5px",
+                      fontWeight: "600",
+                      letterSpacing: ".04em",
                       textTransform: "uppercase",
                     }}
                   >
@@ -762,9 +768,10 @@ export default async function PlanosPage() {
                         </span>
                         <b
                           style={{
-                            fontFamily: MONO,
+                            fontFamily: TEXTO,
                             fontWeight: "600",
                             fontSize: "18px",
+                            fontVariantNumeric: NUMERO_TABULAR,
                             color: "#221E1B",
                           }}
                         >
@@ -930,10 +937,11 @@ export default async function PlanosPage() {
                           padding: "3px 8px",
                           borderRadius: "999px",
                           background: "#F3EBF0",
-                          fontFamily: MONO,
-                          fontSize: "11px",
-                          fontWeight: "500",
+                          fontFamily: TEXTO,
+                          fontSize: "11.5px",
+                          fontWeight: "600",
                           letterSpacing: ".04em",
+                          textTransform: "uppercase",
                           color: "#6E3F5F",
                         }}
                       >
@@ -957,11 +965,12 @@ export default async function PlanosPage() {
                     </span>
                     <span
                       style={{
-                        fontFamily: MONO,
-                        fontWeight: "600",
-                        fontSize: "30px",
+                        fontFamily: TEXTO,
+                        fontWeight: "700",
+                        fontSize: "32px",
                         lineHeight: "1.1",
-                        letterSpacing: "-0.02em",
+                        letterSpacing: "-0.03em",
+                        fontVariantNumeric: NUMERO_TABULAR,
                         color: "#221E1B",
                       }}
                     >
@@ -981,9 +990,10 @@ export default async function PlanosPage() {
                           flexDirection: "column",
                           gap: "2px",
                           marginTop: "8px",
-                          fontFamily: MONO,
-                          fontSize: "12.5px",
+                          fontFamily: TEXTO,
+                          fontSize: "13px",
                           lineHeight: "1.45",
+                          fontVariantNumeric: NUMERO_TABULAR,
                           color: "#6B6259",
                         }}
                       >
@@ -1329,9 +1339,10 @@ export default async function PlanosPage() {
                 <b
                   style={{
                     display: "block",
-                    fontFamily: MONO,
-                    fontWeight: "600",
+                    fontFamily: TEXTO,
+                    fontWeight: "700",
                     fontSize: "15px",
+                    fontVariantNumeric: NUMERO_TABULAR,
                     letterSpacing: "-0.01em",
                     color: "#221E1B",
                   }}
@@ -1355,9 +1366,10 @@ export default async function PlanosPage() {
               <b
                 style={{
                   display: "block",
-                  fontFamily: MONO,
-                  fontWeight: "600",
+                  fontFamily: TEXTO,
+                  fontWeight: "700",
                   fontSize: "16px",
+                  fontVariantNumeric: NUMERO_TABULAR,
                   letterSpacing: "-0.01em",
                   color: "#221E1B",
                 }}

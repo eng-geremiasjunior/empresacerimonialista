@@ -11,6 +11,11 @@
 
 export const CSS_PLANOS = `
   html,body{margin:0;padding:0;background:#FAF8F5}
+  /* A sombra do cabeçalho nasce ao rolar (SombraDoTopo escreve o
+     atributo). Parada no topo ela sujava a aresta; rolando, é ela que
+     separa a barra do conteúdo que passa por baixo. */
+  [data-cabecalho]{transition:box-shadow 140ms cubic-bezier(.2,.8,.3,1)}
+  html[data-rolou] [data-cabecalho]{box-shadow:0 1px 12px rgba(34,30,27,.07)}
   a{color:#6E3F5F}
   a:hover{color:#4A2A40}
   summary::-webkit-details-marker{display:none}
@@ -147,6 +152,21 @@ export const CSS_PLANOS = `
        o meio da tela, colado na marca — aqui elas voltam a ocupar apenas
        o que precisam, e a barra separa uma da outra. */
     [data-ponta-cabecalho]{flex:none!important}
+    /* "Preços" no cabeçalho SÓ no celular: no desktop ele já está no
+       menu do meio, e repetir seria ruído. */
+    [data-so-no-celular]{display:inline-flex!important}
+    /* Com "Preços" entrando, a barra passou a ter marca + três ações em
+       390px e transbordava 55px para o lado. A palavra da marca sai e
+       fica o símbolo — ele é a marca de qualquer jeito, e "Entrar" não
+       pode sumir: quem já é cliente entra por aqui. */
+    [data-marca-palavra]{display:none!important}
+    /* A barra fixa de baixo tem três coisas (o selo do teste, a linha de
+       apoio e o botão) e não cabia em 390px sem encolher. */
+    [data-cta-fixo]{gap:10px!important;padding:10px 12px!important}
+    [data-cta-fixo] > *{min-width:0!important}
+    /* A grade de doze: duas colunas no celular ainda se lê de relance;
+       uma coluna só viraria uma lista de doze telas. */
+    [data-grade-recursos]{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:18px 14px!important}
     [data-plano-cel]{display:block!important}
     [data-frag-sm]{display:none!important}
     [data-frag-wrap]{display:none!important}

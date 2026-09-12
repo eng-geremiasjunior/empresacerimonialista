@@ -61,14 +61,17 @@ export function Cabecalho({
   ];
 
   return (
+    // A SOMBRA SÓ DEPOIS DE ROLAR: `data-cabecalho` é o gancho que o
+    // CSS usa quando <html> ganha `data-rolou` (ver SombraDoTopo). Parada
+    // no topo, uma sombra fixa só suja a aresta.
     <header
+      data-cabecalho="1"
       style={{
         position: "sticky",
         top: "0",
         zIndex: "20",
         background: fundo,
         borderBottom: emBloco ? "none" : "1px solid #E6E0D8",
-        boxShadow: emBloco ? "0 1px 0 rgba(34,30,27,.05)" : "none",
       }}
     >
       <div
@@ -109,7 +112,9 @@ export function Cabecalho({
               whiteSpace: "nowrap",
             }}
           >
-            e<span style={{ color: "#6E3F5F" }}>organizei</span>
+            <span data-marca-palavra="1">
+              e<span style={{ color: "#6E3F5F" }}>organizei</span>
+            </span>
           </span>
         </a>
         </span>
@@ -160,6 +165,30 @@ export function Cabecalho({
             minWidth: "0",
           }}
         >
+          {/* PREÇO NO CELULAR (12/09/2026). O menu inteiro some abaixo de
+              720px — e é de lá que vem o tráfego do anúncio. Quem queria
+              saber o preço tinha trinta e uma telas pela frente. Este
+              atalho aparece SÓ no celular, onde o menu não está. */}
+          {ondeEstou !== "precos" && (
+            <a
+              href="/precos"
+              data-so-no-celular="1"
+              className="pl-h-suave"
+              style={{
+                display: "none",
+                alignItems: "center",
+                minHeight: "40px",
+                padding: "0 10px",
+                borderRadius: "8px",
+                fontWeight: "500",
+                fontSize: "14px",
+                color: "#3D3835",
+                textDecoration: "none",
+              }}
+            >
+              Preços
+            </a>
+          )}
           {entrar && (
             <a
               href="/login"
