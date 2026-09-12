@@ -262,7 +262,16 @@ export function demoIniciada(tipo: string): void {
  *  · quem clica no botão que leva ao cadastro está DECLARANDO INTENÇÃO, e
  *    isso tem nome padrão na Meta: `Lead`. É evento reconhecido, aparece
  *    na lista de otimização e serve de alvo enquanto "Concluir inscrição"
- *    não tem volume;
+ *    não tem volume. MAS — descoberto em 12/09/2026, com a lista de
+ *    eventos aberta na tela do conjunto de anúncios — `Lead` é EXCLUSIVO
+ *    do objetivo de campanha "Leads": numa campanha de Vendas ele aparece
+ *    apagado, com o aviso "esse evento de conversão está disponível apenas
+ *    com o objetivo de Leads". Escolher o nome padrão amarrou o evento a
+ *    um objetivo só. Por isso o mesmo clique dispara TAMBÉM
+ *    `ClicouCriarConta`: evento próprio não tem essa restrição e pode ser
+ *    alvo em qualquer objetivo — é assim que `ClicouAssinar` já funciona.
+ *    Os dois juntos, e não um no lugar do outro, para não mexer na
+ *    campanha de Leads que já está rodando;
  *  · quem clica em "assinar" NÃO dispara `InitiateCheckout` aqui. Esse
  *    nome já é usado pelo SERVIDOR no momento em que a cobrança vai à
  *    operadora — repeti-lo num clique dobraria o número e estragaria a
@@ -278,7 +287,10 @@ export function cliqueNaChamada(destino: string, rotulo?: string | null): void {
   const dados = { botao: (rotulo || "").trim().slice(0, 60) || alvo };
   try {
     if (alvo === "/criar-conta") {
+      // Dois eventos no mesmo clique, de propósito: o padrão para o
+      // objetivo Leads, o próprio para todos os outros. Ver a régua acima.
       window.fbq?.("track", "Lead", dados);
+      window.fbq?.("trackCustom", "ClicouCriarConta", dados);
       window.gtag?.("event", "generate_lead", dados);
       return;
     }
