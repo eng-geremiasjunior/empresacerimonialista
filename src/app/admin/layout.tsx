@@ -12,7 +12,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { emailDoSuperAdmin } from "@/lib/supabase/admin-painel";
+import { contarSuporteNaoLidas, emailDoSuperAdmin } from "@/lib/supabase/admin-painel";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +71,9 @@ export default async function AdminLayout({
 }) {
   const email = await emailDoSuperAdmin();
   if (!email) notFound();
+  // As mensagens novas da caixinha do sistema (161). Erro vira 0 dentro
+  // da função: sem a migração, o item só não acende.
+  const suporteNovas = await contarSuporteNaoLidas();
 
   return (
     <div
@@ -93,6 +96,16 @@ export default async function AdminLayout({
         <ItemLateral href="/admin#financeiro">Financeiro</ItemLateral>
         <ItemLateral href="/admin#relatorio">Relatório</ItemLateral>
         <ItemLateral href="/admin/contas">Contas</ItemLateral>
+        <ItemLateral href="/admin/suporte">
+          <span className="flex items-center justify-between gap-2">
+            Suporte
+            {suporteNovas > 0 && (
+              <span className="rounded-full bg-emerald-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                {suporteNovas}
+              </span>
+            )}
+          </span>
+        </ItemLateral>
         <ItemLateral href="/admin/gateway">Gateway</ItemLateral>
 
         <div className="mt-auto pt-8 text-[11px] leading-[1.5] text-[#8e8f96]">

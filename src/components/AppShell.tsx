@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Avatar } from "@/components/ui/Avatar";
 import { CopilotoSidebarCard } from "@/components/layout/CopilotoSidebarCard";
+import { CaixaDeSuporte } from "@/components/suporte/CaixaDeSuporte";
 import { ExplicacaoDoMenu } from "@/components/ajuda/ExplicacaoDoMenu";
 import { ProvedorDasExplicacoes } from "@/components/ajuda/ContextoDasExplicacoes";
 import { explicacaoDe } from "@/lib/explicacoes-do-menu";
@@ -349,7 +350,9 @@ export function AppShell({
         })}
 
       </nav>
-      <div className="border-t border-stone-800 p-3">
+      <div className="space-y-2 border-t border-stone-800 p-3">
+        {/* Suporte logo ACIMA do Copiloto — lugar pedido pelo dono. */}
+        <CaixaDeSuporte />
         <CopilotoSidebarCard prazosFrase={prazosFrase} esperaFrase={esperaFrase} />
       </div>
       <div className="border-t border-stone-800 px-5 py-3">

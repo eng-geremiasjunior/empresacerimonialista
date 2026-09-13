@@ -7,6 +7,7 @@
 import { revalidatePath } from "next/cache";
 import {
   definirBanimentoDb,
+  responderSuporteDb,
   salvarAssinaturaDb,
   salvarGastoDb,
   salvarPortaoDoTesteDb,
@@ -113,5 +114,21 @@ export async function salvarPortaoDoTeste(
   } catch (e) {
     console.error("[vela:admin] salvarPortaoDoTeste:", e);
     return { error: e instanceof Error ? e.message : "Não foi possível salvar." };
+  }
+}
+
+/** A resposta do dono a uma conversa da caixinha de suporte (161). */
+export async function responderSuporte(
+  userId: string,
+  texto: string
+): Promise<ResultadoAdmin> {
+  try {
+    if (!userId) return { error: "Conversa inválida." };
+    await responderSuporteDb(userId, texto);
+    revalidatePath("/admin/suporte");
+    return { ok: true };
+  } catch (e) {
+    console.error("[eorganizei:admin] responderSuporte:", e);
+    return { error: e instanceof Error ? e.message : "Não foi possível responder." };
   }
 }

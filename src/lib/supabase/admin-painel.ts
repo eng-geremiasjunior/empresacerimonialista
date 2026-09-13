@@ -555,3 +555,147 @@ export async function salvarPortaoDoTesteDb(input: {
     );
   }
 }
+
+// ------------------------------------------------------------------
+// Suporte (161)
+// ------------------------------------------------------------------
+// A caixinha do canto do sistema escreve em suporte_mensagem pelas
+// funções da cliente; o dono lê e responde AQUI, com a chave de serviço,
+// atrás do mesmo gate de toda esta camada. A tabela não tem policy
+// nenhuma: fora destas funções e das duas RPCs da cliente, ninguém a vê.
+
+export type ConversaSuporteResumo = {
+  userId: string;
+  pessoa: string;
+  email: string | null;
+  empresa: string;
+  ultimaMensagem: string;
+  ultimaEm: string;
+  ultimoAutor: "cliente" | "eorganizei";
+  naoLidas: number;
+};
+
+export type MensagemSuporteAdmin = {
+  id: string;
+  autor: "cliente" | "eorganizei";
+  texto: string;
+  pagina: string | null;
+  em: string;
+};
+
+type LinhaSuporte = {
+  id: string;
+  empresa_id: string;
+  user_id: string | null;
+  autor: "cliente" | "eorganizei";
+  texto: string;
+  pagina: string | null;
+  lida_pelo_suporte_em: string | null;
+  created_at: string;
+};
+
+export async function contarSuporteNaoLidas(): Promise<number> {
+  await exigirSuperAdmin();
+  const { count, error } = await servico()
+    .from("suporte_mensagem")
+    .select("id", { count: "exact", head: true })
+    .eq("autor", "cliente")
+    .is("lida_pelo_suporte_em", null);
+  // 161 ausente: a caixa de entrada só não acende — o painel segue.
+  return error ? 0 : count ?? 0;
+}
+
+export async function getConversasSuporte(): Promise<ConversaSuporteResumo[]> {
+  await exigirSuperAdmin();
+  const db = servico();
+  const { data, error } = await db
+    .from("suporte_mensagem")
+    .select("id, empresa_id, user_id, autor, texto, pagina, lida_pelo_suporte_em, created_at")
+    .order("created_at", { ascending: false })
+    .limit(3000);
+  if (error || !data) return [];
+  const linhas = data as LinhaSuporte[];
+
+  const porPessoa = new Map<string, LinhaSuporte[]>();
+  for (const l of linhas) {
+    if (!l.user_id) continue;
+    const lista = porPessoa.get(l.user_id) ?? [];
+    lista.push(l);
+    porPessoa.set(l.user_id, lista);
+  }
+  if (porPessoa.size === 0) return [];
+
+  const ids = [...porPessoa.keys()];
+  const empresasIds = [...new Set(linhas.map((l) => l.empresa_id))];
+  const [{ data: membros }, { data: empresas }] = await Promise.all([
+    db.from("membros_equipe").select("user_id, nome, email").in("user_id", ids),
+    db.from("empresas").select("id, nome").in("id", empresasIds),
+  ]);
+  const membroPor = new Map((membros ?? []).map((m) => [m.user_id as string, m]));
+  const empresaPor = new Map((empresas ?? []).map((e) => [e.id as string, e.nome as string]));
+
+  return ids
+    .map((userId) => {
+      const msgs = porPessoa.get(userId)!; // já em ordem decrescente
+      const ultima = msgs[0];
+      const m = membroPor.get(userId);
+      return {
+        userId,
+        pessoa: (m?.nome as string) || "Sem nome",
+        email: (m?.email as string) ?? null,
+        empresa: empresaPor.get(ultima.empresa_id) ?? "—",
+        ultimaMensagem: ultima.texto,
+        ultimaEm: ultima.created_at,
+        ultimoAutor: ultima.autor,
+        naoLidas: msgs.filter((x) => x.autor === "cliente" && !x.lida_pelo_suporte_em).length,
+      };
+    })
+    .sort((a, b) => (a.ultimaEm < b.ultimaEm ? 1 : -1));
+}
+
+/** Abrir a conversa conta como ler: as mensagens da cliente ganham a data. */
+export async function getConversaSuporte(userId: string): Promise<MensagemSuporteAdmin[]> {
+  await exigirSuperAdmin();
+  const db = servico();
+  const { data, error } = await db
+    .from("suporte_mensagem")
+    .select("id, autor, texto, pagina, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true })
+    .limit(500);
+  if (error || !data) return [];
+  await db
+    .from("suporte_mensagem")
+    .update({ lida_pelo_suporte_em: new Date().toISOString() })
+    .eq("user_id", userId)
+    .eq("autor", "cliente")
+    .is("lida_pelo_suporte_em", null);
+  return (data as { id: string; autor: "cliente" | "eorganizei"; texto: string; pagina: string | null; created_at: string }[]).map(
+    (m) => ({ id: m.id, autor: m.autor, texto: m.texto, pagina: m.pagina, em: m.created_at })
+  );
+}
+
+export async function responderSuporteDb(userId: string, texto: string): Promise<void> {
+  await exigirSuperAdmin();
+  const limpo = texto.trim();
+  if (!limpo) throw new Error("Escreva a resposta.");
+  if (limpo.length > 2000) throw new Error("Resposta longa demais.");
+  const db = servico();
+  // A empresa sai da própria conversa: resposta só existe onde alguém
+  // perguntou — o painel não abre conversa do nada com ninguém.
+  const { data: ultima } = await db
+    .from("suporte_mensagem")
+    .select("empresa_id")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!ultima) throw new Error("Conversa não encontrada.");
+  const { error } = await db.from("suporte_mensagem").insert({
+    empresa_id: ultima.empresa_id,
+    user_id: userId,
+    autor: "eorganizei",
+    texto: limpo,
+  });
+  if (error) throw new Error(`Não foi possível responder: ${error.message}`);
+}
