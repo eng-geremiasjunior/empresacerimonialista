@@ -125,21 +125,69 @@ export type ContaAdmin = {
     inicio: string;
     canceladaEm: string | null;
     observacao: string | null;
+    /** fim do teste grátis, quando a conta está nele */
+    testeTerminaEm: string | null;
   } | null;
+  // QUEM É E O QUE FEZ. Pedido do dono no dia da primeira conta de uma
+  // desconhecida: "não sei de onde ela é, sei nada". Tudo abaixo já estava
+  // no banco — nenhum campo novo foi pedido a ninguém no cadastro.
+  /** de onde o clique veio (origem_do_clique, 152) */
+  origem: { canal: string; campanha: string | null; aparelho: string | null } | null;
+  /** cidades dos eventos dela — o que responde "de onde ela é" */
+  cidades: string[];
+  ultimoLogin: string | null;
+  whatsapp: string | null;
+  convidados: number;
+  tarefas: number;
+  fornecedores: number;
+  /** o guia do primeiro acesso da dona (160) */
+  guia: "em andamento" | "pulou" | "concluiu";
 };
+
+/** utm_source/utm_medium → como o dono fala. */
+function canalDaOrigem(source: string | null, medium: string | null, gclid: string | null): string {
+  const s = (source ?? "").toLowerCase();
+  const m = (medium ?? "").toLowerCase();
+  const pago = /paid|cpc|ads|anuncio/.test(m);
+  if (gclid || s === "google") return pago || gclid ? "Anúncio no Google" : "Google";
+  if (s === "ig" || s.includes("instagram")) return pago ? "Anúncio no Instagram" : "Instagram";
+  if (s === "fb" || s.includes("facebook")) return pago ? "Anúncio no Facebook" : "Facebook";
+  if (s === "an" || s.includes("audience")) return "Anúncio da Meta (rede de parceiros)";
+  if (s) return pago ? `Anúncio (${s})` : s;
+  return "Sem origem registrada";
+}
+
+/** user_agent → o aparelho, sem versão nem modelo. */
+function aparelhoDoAgente(ua: string | null): string | null {
+  if (!ua) return null;
+  if (/iPhone/i.test(ua)) return "iPhone";
+  if (/iPad/i.test(ua)) return "iPad";
+  if (/Android/i.test(ua)) return /Mobile/i.test(ua) ? "celular Android" : "tablet Android";
+  if (/Windows/i.test(ua)) return "computador Windows";
+  if (/Macintosh|Mac OS/i.test(ua)) return "Mac";
+  return "outro aparelho";
+}
 
 export async function getContas(): Promise<ContaAdmin[]> {
   await exigirSuperAdmin();
   const db = servico();
 
-  const [{ data: empresas }, { data: assinaturas }] = await Promise.all([
+  const [{ data: empresas }, { data: assinaturas }, origens, donas] = await Promise.all([
     db.from("empresas").select("id, nome, owner_user_id, created_at"),
     db.from("assinaturas").select("*"),
+    // de onde veio o clique — ausência da 152 vira "sem origem", não erro
+    db.from("origem_do_clique").select("empresa_id, utm_source, utm_medium, utm_campaign, gclid, user_agent"),
+    // WhatsApp e guia da DONA de cada conta (a linha dela em membros_equipe)
+    db.from("membros_equipe").select("user_id, empresa_id, whatsapp, guia_dispensado_em, guia_concluido_em").eq("is_owner", true),
   ]);
+  type Origem = { empresa_id: string; utm_source: string | null; utm_medium: string | null; utm_campaign: string | null; gclid: string | null; user_agent: string | null };
+  const origemPor = new Map(((origens.data ?? []) as Origem[]).map((o) => [o.empresa_id, o]));
+  type Dona = { user_id: string; empresa_id: string; whatsapp: string | null; guia_dispensado_em?: string | null; guia_concluido_em?: string | null };
+  const donaPor = new Map(((donas.data ?? []) as Dona[]).map((d) => [d.empresa_id, d]));
 
   // Paginado até o fim: com >1000 logins, a primeira versão mostrava a
   // dona da conta como "sem e-mail" e escondia o banimento dela.
-  const todosUsuarios: { id: string; email?: string }[] = [];
+  const todosUsuarios: { id: string; email?: string; last_sign_in_at?: string | null }[] = [];
   for (let page = 1; page <= 20; page++) {
     const { data: lote } = await db.auth.admin.listUsers({ page, perPage: 1000 });
     const users = lote?.users ?? [];
@@ -154,27 +202,43 @@ export async function getContas(): Promise<ContaAdmin[]> {
 
   const contas: ContaAdmin[] = [];
   for (const e of empresas ?? []) {
-    const [{ count: membros }, { count: eventos }, { data: ult }] =
+    const [{ count: membros }, { data: evs }, { data: ult }, conv, tar, forn] =
       await Promise.all([
         db
           .from("membros_equipe")
           .select("*", { count: "exact", head: true })
           .eq("empresa_id", e.id)
           .eq("status", "ativo"),
-        db
-          .from("events")
-          .select("*", { count: "exact", head: true })
-          .eq("empresa_id", e.id),
+        // a CIDADE vem junto: é o que responde "de onde ela é"
+        db.from("events").select("city").eq("empresa_id", e.id),
         db
           .from("activities")
           .select("created_at")
           .eq("empresa_id", e.id)
           .order("created_at", { ascending: false })
           .limit(1),
+        db.from("evento_convidado").select("id", { count: "exact", head: true }).eq("empresa_id", e.id),
+        db.from("tasks").select("id", { count: "exact", head: true }).eq("empresa_id", e.id),
+        db.from("roteiro_links").select("id", { count: "exact", head: true }).eq("empresa_id", e.id),
       ]);
 
     const dona = usuarioPorId.get(e.owner_user_id);
     const a = porEmpresa.get(e.id);
+    const o = origemPor.get(e.id);
+    const d = donaPor.get(e.id);
+
+    // cidades por frequência, sem repetir e sem vazio. A cidade é digitada
+    // à mão: "Governador valadares" e "Governador Valadares" são a mesma,
+    // então a chave ignora maiúscula e acento, e aparece a primeira grafia.
+    const contagem = new Map<string, { nome: string; n: number }>();
+    for (const x of (evs ?? []) as { city: string | null }[]) {
+      const c = x.city?.trim().replace(/\s+/g, " ");
+      if (!c) continue;
+      const chave = c.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+      const atual = contagem.get(chave);
+      contagem.set(chave, { nome: atual?.nome ?? c, n: (atual?.n ?? 0) + 1 });
+    }
+    const cidades = [...contagem.values()].sort((p, q) => q.n - p.n).map((c) => c.nome).slice(0, 3);
     contas.push({
       empresaId: e.id,
       nome: e.nome,
@@ -185,7 +249,7 @@ export async function getContas(): Promise<ContaAdmin[]> {
         ((dona as unknown as { banned_until?: string | null })?.banned_until) ??
         null,
       membros: membros ?? 0,
-      eventos: eventos ?? 0,
+      eventos: (evs ?? []).length,
       ultimaAtividade: ult?.[0]?.created_at ?? null,
       assinatura: a
         ? {
@@ -196,8 +260,23 @@ export async function getContas(): Promise<ContaAdmin[]> {
             inicio: a.inicio,
             canceladaEm: a.cancelada_em,
             observacao: a.observacao,
+            testeTerminaEm: (a.teste_termina_em as string | null) ?? null,
           }
         : null,
+      origem: o
+        ? {
+            canal: canalDaOrigem(o.utm_source, o.utm_medium, o.gclid),
+            campanha: o.utm_campaign ?? null,
+            aparelho: aparelhoDoAgente(o.user_agent),
+          }
+        : null,
+      cidades,
+      ultimoLogin: dona?.last_sign_in_at ?? null,
+      whatsapp: d?.whatsapp?.trim() || null,
+      convidados: conv.count ?? 0,
+      tarefas: tar.count ?? 0,
+      fornecedores: forn.count ?? 0,
+      guia: d?.guia_concluido_em ? "concluiu" : d?.guia_dispensado_em ? "pulou" : "em andamento",
     });
   }
 

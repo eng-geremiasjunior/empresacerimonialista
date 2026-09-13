@@ -36,6 +36,92 @@ function dataBr(iso: string | null): string {
   return `${d}/${m}/${a}`;
 }
 
+/** "13/09 às 10:58", no fuso do país — igual no servidor e no navegador. */
+function diaEHora(iso: string | null): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  const dia = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" });
+  const hora = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
+  return `${dia} às ${hora}`;
+}
+
+/** WhatsApp como o link do app precisa: só dígitos, com 55. */
+function linkWhatsapp(tel: string): string {
+  const d = tel.replace(/\D/g, "");
+  return `https://wa.me/${d.length <= 11 ? `55${d}` : d}`;
+}
+
+/**
+ * QUEM É E O QUE FEZ. "Não sei de onde ela é, sei nada" — o dono, no dia
+ * da primeira conta de uma desconhecida. Só o que já estava no banco:
+ * nenhum campo novo foi pedido no cadastro.
+ */
+function QuemE({ conta }: { conta: ContaAdmin }) {
+  const a = conta.assinatura;
+  const linhas: { rotulo: string; valor: string }[] = [
+    {
+      rotulo: "Veio de",
+      valor: conta.origem
+        ? [conta.origem.canal, conta.origem.aparelho ? `pelo ${conta.origem.aparelho}` : null].filter(Boolean).join(" · ")
+        : "Sem origem registrada",
+    },
+    { rotulo: "Eventos em", valor: conta.cidades.length ? conta.cidades.join(", ") : "—" },
+    { rotulo: "Último acesso", valor: diaEHora(conta.ultimoLogin) },
+    {
+      rotulo: "Já usou",
+      valor: `${conta.eventos} ${conta.eventos === 1 ? "evento" : "eventos"} · ${conta.convidados} ${conta.convidados === 1 ? "convidado" : "convidados"} · ${conta.tarefas} ${conta.tarefas === 1 ? "tarefa" : "tarefas"} · ${conta.fornecedores} ${conta.fornecedores === 1 ? "fornecedor" : "fornecedores"}`,
+    },
+    { rotulo: "Guia", valor: conta.guia },
+  ];
+  if (a?.status === "trial" && a.testeTerminaEm) {
+    linhas.push({ rotulo: "Teste", valor: `termina em ${dataBr(a.testeTerminaEm)}` });
+  }
+
+  return (
+    <div className="mt-3 flex flex-wrap items-end justify-between gap-3 border-t border-stone-100 pt-3">
+      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
+        {linhas.map((l) => (
+          <div key={l.rotulo} className="contents">
+            <dt className="text-stone-400">{l.rotulo}</dt>
+            <dd className="text-stone-700">{l.valor}</dd>
+          </div>
+        ))}
+        {conta.origem?.campanha && (
+          <div className="contents">
+            <dt className="text-stone-400">Campanha</dt>
+            {/* o número da Meta, para achar no Gerenciador de Anúncios */}
+            <dd className="font-mono text-[11px] text-stone-500">{conta.origem.campanha}</dd>
+          </div>
+        )}
+      </dl>
+      <div className="flex gap-2">
+        {conta.donaEmail && (
+          <a
+            href={`mailto:${conta.donaEmail}`}
+            className="rounded-lg border border-stone-200 px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50"
+          >
+            E-mail
+          </a>
+        )}
+        {conta.whatsapp ? (
+          <a
+            href={linkWhatsapp(conta.whatsapp)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
+          >
+            WhatsApp
+          </a>
+        ) : (
+          <span className="rounded-lg px-2 py-1.5 text-xs text-stone-400" title="Ela ainda não preencheu o WhatsApp em Configurações">
+            sem WhatsApp
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function banida(c: ContaAdmin): boolean {
   return Boolean(c.banidaAte && new Date(c.banidaAte) > new Date());
 }
@@ -269,6 +355,8 @@ function Linha({
           )}
         </div>
       </div>
+
+      <QuemE conta={conta} />
 
       {erro && <p className="mt-2 text-xs text-red-600">{erro}</p>}
       {editando && (
