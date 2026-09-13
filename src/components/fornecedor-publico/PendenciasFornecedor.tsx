@@ -6,7 +6,9 @@ import { Calendar, Check, MapPin, Paperclip, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { enviarArquivo } from "@/lib/contratos-cliente";
 import { formatDate } from "@/lib/format";
+import { RoteiroDoFornecedor } from "@/components/fornecedor-publico/RoteiroDoFornecedor";
 import type {
+  EventoDoRoteiroPublico,
   PendenciaPublica,
   PendenciasData,
 } from "@/app/fornecedor/[hash]/page";
@@ -21,6 +23,9 @@ export function PendenciasFornecedor({
   initial: PendenciasData;
 }) {
   const [itens, setItens] = useState<PendenciaPublica[]>(initial.pendencias);
+  const [roteiro, setRoteiro] = useState<EventoDoRoteiroPublico[]>(
+    initial.roteiro ?? []
+  );
   const [enviando, setEnviando] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [subindo, setSubindo] = useState<string | null>(null);
@@ -31,6 +36,44 @@ export function PendenciasFornecedor({
   // quebra a hidratação em produção — por isso só depois de montar.
   const [montado, setMontado] = useState(false);
   useEffect(() => setMontado(true), []);
+
+  /**
+   * O ROTEIRO SE ATUALIZA SOZINHO — é a promessa do link desde o começo
+   * ("gera link público que atualiza sozinho quando o roteiro muda"), e
+   * sem isto ela seria falsa: a cerimonialista adia a cerimônia em meia
+   * hora e o fornecedor, com a página aberta no bolso desde as duas, vê
+   * o horário velho.
+   *
+   * Meio minuto, e só com a aba à vista: quem deixou o link aberto e foi
+   * trabalhar não fica pedindo página ao servidor a tarde inteira. E ao
+   * VOLTAR para a aba a busca é imediata — é esse o momento em que ele
+   * olha.
+   *
+   * Só o roteiro entra no estado. As pendências têm resposta otimista
+   * ("respondido, obrigado") e sobrescrevê-las aqui apagaria da tela o
+   * que ele acabou de responder.
+   */
+  useEffect(() => {
+    const supabase = createClient();
+    let vivo = true;
+
+    async function buscar() {
+      if (document.visibilityState !== "visible") return;
+      const { data } = await supabase.rpc("consultar_pendencias_fornecedor", {
+        p_hash: hash,
+      });
+      const novo = (data as PendenciasData | null)?.roteiro;
+      if (vivo && novo) setRoteiro(novo);
+    }
+
+    const relogio = setInterval(buscar, 30_000);
+    document.addEventListener("visibilitychange", buscar);
+    return () => {
+      vivo = false;
+      clearInterval(relogio);
+      document.removeEventListener("visibilitychange", buscar);
+    };
+  }, [hash]);
 
   async function responder(id: string, resposta: Resposta) {
     setEnviando(id);
@@ -124,7 +167,10 @@ export function PendenciasFornecedor({
               : `Tem ${abertas} coisas esperando você.`}
         </p>
 
-        {porEvento.length === 0 && (
+        {/* A caixa de "nada por aqui" só quando não há NADA — antes da
+            158 esta página era só pendências, e quem tem o roteiro
+            abaixo não precisa ser avisado de que a tela está vazia. */}
+        {porEvento.length === 0 && roteiro.length === 0 && (
           <div className="mt-8 rounded-xl border border-gray-200 bg-white p-8 text-center">
             <p className="text-sm text-gray-600">
               Quando a cerimonialista precisar de algo, aparece aqui neste
@@ -176,6 +222,10 @@ export function PendenciasFornecedor({
         </div>
 
         {erro && <p className="mt-4 text-center text-sm text-red-600">{erro}</p>}
+
+        {/* O roteiro DELE, sempre — mesmo sem nada pendente. É o que
+            torna o link útil antes de ela pedir qualquer coisa. */}
+        <RoteiroDoFornecedor roteiro={roteiro} />
 
         <p className="mt-8 text-center text-xs text-gray-400">
           Guarde este link: ele vale para todos os eventos que você faz com{" "}

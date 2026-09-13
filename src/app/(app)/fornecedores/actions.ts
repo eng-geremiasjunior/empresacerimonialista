@@ -7,6 +7,7 @@
 import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { garantirAcessoDoFornecedor } from "@/lib/supabase/acesso-fornecedor";
 import {
   slugCategoria,
   type FaixaPreco,
@@ -299,6 +300,11 @@ export async function vincularAoEvento(
   }
 
   if (error) return { error: "Não foi possível vincular ao evento" };
+
+  // O link público nasce junto com o vínculo (158) — aqui também, senão
+  // quem vincula em lote pela tela de fornecedores continua entregando
+  // link que não abre.
+  await garantirAcessoDoFornecedor(supabase, eventId, limpos);
 
   revalidatePath("/fornecedores");
   revalidatePath(`/eventos/${eventId}/fornecedores`);

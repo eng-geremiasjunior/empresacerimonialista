@@ -27,6 +27,14 @@ export type Fornecedor = {
    */
   hashDoLink: string | null;
   /**
+   * fornecedor_acesso.hash — a porta permanente do fornecedor, que
+   * atravessa os eventos dela e abre `/fornecedor/<hash>`. É outro hash,
+   * de outra tabela: `hashDoLink` acima é do vínculo e só serve para
+   * `/eventos/[id]/roteiro/publico/<hash>`. Nulo enquanto a 158 não
+   * criar o acesso deste fornecedor.
+   */
+  hashDoAcesso: string | null;
+  /**
    * roteiro_links.confirmar_em (157) — a data em que o convite automático
    * sai SÓ para ele. Nulo = segue o padrão do evento. O buffet confirma
    * com um mês, a banda com uma semana.

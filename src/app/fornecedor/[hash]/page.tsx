@@ -25,10 +25,33 @@ export type PendenciaPublica = {
   evento: { nome: string | null; data: string | null; local: string | null };
 };
 
+/** Um item do roteiro que é DELE — não o dia inteiro da cerimonialista. */
+export type ItemDoRoteiroPublico = {
+  id: string;
+  hora: string | null;
+  titulo: string;
+  descricao: string | null;
+  duracao_minutos: number | null;
+};
+
+export type EventoDoRoteiroPublico = {
+  evento: {
+    nome: string | null;
+    data: string | null;
+    hora: string | null;
+    local: string | null;
+    cidade: string | null;
+  };
+  confirmado: boolean;
+  itens: ItemDoRoteiroPublico[] | null;
+};
+
 export type PendenciasData = {
   fornecedor: { nome: string };
   empresa: { nome: string | null; logo_url: string | null };
   pendencias: PendenciaPublica[];
+  /** ausente enquanto a 158 não tiver sido aplicada — e ausente é vazio */
+  roteiro?: EventoDoRoteiroPublico[];
 };
 
 // Duas leituras no mesmo render (título e página) viram uma só.

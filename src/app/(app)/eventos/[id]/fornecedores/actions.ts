@@ -3,6 +3,7 @@
 import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { garantirAcessoDoFornecedor } from "@/lib/supabase/acesso-fornecedor";
 import {
   enviarConfirmacaoFornecedor,
   type EventoParaConfirmar,
@@ -85,6 +86,9 @@ export async function vincularFornecedor(
   }
 
   if (error) return { error: "Não foi possível vincular o fornecedor" };
+
+  // O link público nasce junto com o vínculo (158).
+  await garantirAcessoDoFornecedor(supabase, eventId, [supplierId]);
 
   revalidatePath(`/eventos/${eventId}/fornecedores`);
   revalidatePath(`/eventos/${eventId}/roteiro`);

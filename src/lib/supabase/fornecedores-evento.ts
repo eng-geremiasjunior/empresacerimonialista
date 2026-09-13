@@ -90,7 +90,7 @@ export const getFornecedoresDoEvento = cache(
   async (eventId: string): Promise<DadosFornecedores> => {
     const supabase = createClient();
 
-    const [vinculos, confRes, evRes, pedidosRes, roteiroRes, dinheiroRes] =
+    const [vinculos, confRes, evRes, pedidosRes, roteiroRes, dinheiroRes, acessoRes] =
       await Promise.all([
       lerVinculos(supabase, eventId),
       supabase
@@ -128,7 +128,28 @@ export const getFornecedoresDoEvento = cache(
         .eq("event_id", eventId)
         .eq("type", "despesa")
         .not("supplier_id", "is", null),
+      // O HASH QUE A PÁGINA PÚBLICA ACEITA (158).
+      //
+      // O link oferecido aqui era montado com o hash do VÍNCULO, e a
+      // página `/fornecedor/[hash]` resolve o hash do ACESSO — outra
+      // tabela, outro hash. Medido em 11/09/2026: dos 74 vínculos do
+      // banco, zero abriam. Todo fornecedor que recebeu esse link viu
+      // "Link inválido".
+      //
+      // A RLS já limita à empresa dela, então não há filtro de empresa
+      // aqui. Sem a 158 aplicada, a lista vem vazia e o link cai no hash
+      // antigo — que a função da 158 também aceita.
+      supabase.from("fornecedor_acesso").select("supplier_id, hash, revogado_em"),
     ]);
+
+    const acessoPor = new Map<string, string>();
+    for (const a of (acessoRes.data ?? []) as {
+      supplier_id: string;
+      hash: string;
+      revogado_em: string | null;
+    }[]) {
+      if (!a.revogado_em) acessoPor.set(a.supplier_id, a.hash);
+    }
 
     const pedidosPor = new Map<string, Fornecedor["pedidos"]>();
     for (const p of pedidosRes.data ?? []) {
@@ -211,7 +232,15 @@ export const getFornecedoresDoEvento = cache(
         whatsapp: l.suppliers!.whatsapp,
         confirmadoNoEvento: l.confirmed,
         vinculadoEm: l.created_at,
+        // O hash do VÍNCULO, e não o do acesso. Quem consome este campo
+        // monta `/eventos/[id]/roteiro/publico/<hash>`, e aquela rota
+        // resolve por `roteiro_publico()`, que só conhece roteiro_links.
+        // Trocar aqui quebrava o link que hoje funciona — medido em
+        // 11/09/2026: as duas funções públicas são espelhadas e
+        // exclusivas, cada uma só aceita o hash da sua tabela.
         hashDoLink: l.hash,
+        // O hash do ACESSO, para quem monta `/fornecedor/<hash>`.
+        hashDoAcesso: acessoPor.get(l.supplier_id) ?? null,
         confirmarEm: l.confirmar_em ?? null,
         convite: convitePor.get(l.supplier_id) ?? null,
         pedidos: pedidosPor.get(l.supplier_id) ?? [],
