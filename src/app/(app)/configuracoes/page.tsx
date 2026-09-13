@@ -6,6 +6,10 @@ import {
   RoteiroPadraoSection,
   type ItemRoteiroPadrao,
 } from "@/components/configuracoes/RoteiroPadraoSection";
+import { ExplicacoesSection } from "@/components/configuracoes/ExplicacoesSection";
+import { GuiaSection } from "@/components/configuracoes/GuiaSection";
+import { getEstadoDoGuia } from "@/lib/supabase/guia-vivo";
+import { getExplicacoesLigadas } from "@/lib/supabase/explicacoes";
 import { nomeTemplateLembrete, whatsappConfigurado } from "@/lib/whatsapp";
 import { CalendarClock } from "lucide-react";
 
@@ -42,6 +46,13 @@ export default async function ConfiguracoesPage() {
   const { data: cargoData } = await supabase.rpc("meu_cargo");
   const cargo = (cargoData as { empresa_id: string; cargo: string }[] | null)?.[0];
   const proprietaria = cargo?.cargo === "proprietaria";
+
+  // Lida por função (159), não por `select` em membros_equipe: campo
+  // desconhecido derruba a consulta INTEIRA no PostgREST, e a leitura
+  // acima é a que traz nome e WhatsApp desta tela.
+  const explicacoesLigadas = await getExplicacoesLigadas();
+  // O guia do primeiro acesso (160). Null = sem guia; a secao nao aparece.
+  const guia = await getEstadoDoGuia();
 
   let empresa: {
     id: string;
@@ -108,6 +119,16 @@ export default async function ConfiguracoesPage() {
         }
         email={email}
         initials={initials}
+      />
+
+      {/* Preferência da PESSOA, e por isso vizinha do perfil — não da
+          empresa. Quem desligou o "?" pela própria ficha só tem este
+          caminho de volta. */}
+      <ExplicacoesSection ligadas={explicacoesLigadas} />
+
+      <GuiaSection
+        dispensado={!!guia?.dispensadoEm}
+        concluido={!!guia?.concluidoEm}
       />
 
       {empresa && (

@@ -490,6 +490,8 @@ export function PlanejamentoEvento({
       </div>
 
       {/* faixa de contexto (fixa nos dois modos; encolhe no Amplo) */}
+      {/* alvo do passo 2 do guia (160): escala e cenario vivem aqui */}
+      <div data-guia="contexto-evento">
       <FaixaContexto
         verba={plano.verba}
         objetivos={plano.objetivos}
@@ -536,6 +538,7 @@ export function PlanejamentoEvento({
         onIrParaObjetivo={irParaObjetivo}
         onManterAviso={() => setAvisoFechado(true)}
       />
+      </div>
 
       {/* controle de visualização (§6) */}
       <div
@@ -624,7 +627,9 @@ export function PlanejamentoEvento({
         </button>
       </div>
 
+      {/* alvo do passo 3 do guia (160): e aqui que se decide */}
       {/* miolo — só ele troca */}
+      <div data-guia="mapa-planejamento">
       {mapaAberto ? (
         <MapaMental
           tipoEvento={tipoEvento}
@@ -695,6 +700,7 @@ export function PlanejamentoEvento({
           onAbrirDecisao={abrirDrawer}
         />
       )}
+      </div>
 
       {/* drawer da decisão (§10) — a timeline atrás não se move */}
       {drawer && (

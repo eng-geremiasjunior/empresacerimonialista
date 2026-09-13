@@ -20,6 +20,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { FaseId, FasesEvento } from "@/lib/supabase/resumo-evento";
+import { ExplicacaoDoMenu } from "@/components/ajuda/ExplicacaoDoMenu";
+import { explicacaoDoEvento } from "@/lib/explicacoes-do-menu";
 
 const SEGMENTO: Record<FaseId, string> = {
   planejamento: "planejamento",
@@ -54,13 +56,21 @@ export function FasesDoEvento({
         const href = `/eventos/${eventId}/${SEGMENTO[fase.id]}`;
         const ativa = pathname.startsWith(href);
         const pct = Math.max(0, Math.min(100, fase.pct));
+        // A ficha do "?" é pedida pelo SEGMENTO da rota, não pelo id da
+        // fase: "execucao" por dentro é "roteiro" no endereço, e é o
+        // endereço que a pessoa reconhece.
+        const explicacao = explicacaoDoEvento(SEGMENTO[fase.id]);
 
         return (
-          <Link
+          // O cartão deixou de SER o link e passou a CONTER um: o "?" não
+          // pode ficar dentro de uma âncora (botão dentro de link é HTML
+          // inválido, e o clique viraria navegação). O link continua
+          // cobrindo o cartão inteiro pelo `after:inset-0`, então a área
+          // de clique é a mesma de antes; o "?" sobe com z-10 e é a única
+          // ilha fora dela.
+          <div
             key={fase.id}
-            href={href}
-            aria-current={ativa ? "page" : undefined}
-            className={`flex flex-col gap-1 px-4 pb-3 pt-3.5 transition-colors ${
+            className={`relative flex flex-col gap-1 px-4 pb-3 pt-3.5 transition-colors ${
               i > 0
                 ? "border-t border-[color:var(--ev-card-border-soft)] sm:border-l sm:border-t-0"
                 : ""
@@ -71,14 +81,28 @@ export function FasesDoEvento({
             }`}
           >
             <div className="flex items-baseline justify-between gap-2">
-              <span
-                className={`text-sm ${
-                  ativa
-                    ? "font-semibold text-[color:var(--ev-text-strong)]"
-                    : "font-medium text-[color:var(--ev-text-body)]"
-                }`}
-              >
-                {ROTULO[fase.id]}
+              <span className="flex items-center gap-1.5">
+                <Link
+                  href={href}
+                  aria-current={ativa ? "page" : undefined}
+                  className={`text-sm after:absolute after:inset-0 ${
+                    ativa
+                      ? "font-semibold text-[color:var(--ev-text-strong)]"
+                      : "font-medium text-[color:var(--ev-text-body)]"
+                  }`}
+                >
+                  {ROTULO[fase.id]}
+                </Link>
+                {explicacao && (
+                  <span className="relative z-10 flex items-center">
+                    <ExplicacaoDoMenu
+                      rotulo={ROTULO[fase.id]}
+                      explicacao={explicacao}
+                      tom="claro"
+                      ancora="solto"
+                    />
+                  </span>
+                )}
               </span>
               <span
                 aria-hidden
@@ -126,7 +150,7 @@ export function FasesDoEvento({
             </span>
 
             <span className="sr-only">{`${pct}% concluído. ${fase.contagem}`}</span>
-          </Link>
+          </div>
         );
       })}
     </nav>

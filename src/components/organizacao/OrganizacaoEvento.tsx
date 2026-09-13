@@ -248,7 +248,9 @@ export function OrganizacaoEvento({
 
   return (
     <TipoEventoCtx.Provider value={tipoEvento ?? null}>
-    <div style={{ fontFamily: "var(--font-ui)", color: "var(--text-strong)" }}>
+    {/* alvo dos passos 4 e 5 do guia (160): a tarefa que nasceu da
+        decisao, e o andamento que so a pessoa da. */}
+    <div data-guia="lista-organizacao" style={{ fontFamily: "var(--font-ui)", color: "var(--text-strong)" }}>
       {!org.dataEvento && <BannerDataOrg eventId={eventId} />}
       {org.pendencias.length > 0 && (
         <PendenciasFinanceiras eventId={eventId} pendencias={org.pendencias} />
@@ -1496,7 +1498,7 @@ function TarefaDrawer({
                         });
                       }}
                     >
-                      ⚡ Disparar agora manualmente
+                      Enviar agora
                     </Button>
                     {tarefa?.convite ? (
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: tarefa.convite.status === "respondido" ? "var(--salvia-600)" : tarefa.convite.status === "expirado" ? "var(--state-late)" : "var(--state-wait)" }}>

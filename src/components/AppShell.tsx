@@ -7,6 +7,10 @@ import { useEffect, useState } from "react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Avatar } from "@/components/ui/Avatar";
 import { CopilotoSidebarCard } from "@/components/layout/CopilotoSidebarCard";
+import { ExplicacaoDoMenu } from "@/components/ajuda/ExplicacaoDoMenu";
+import { ProvedorDasExplicacoes } from "@/components/ajuda/ContextoDasExplicacoes";
+import { explicacaoDe } from "@/lib/explicacoes-do-menu";
+import { definirExplicacoes } from "@/app/(app)/actions";
 
 const ICONS: Record<string, string> = {
   dashboard:
@@ -199,6 +203,12 @@ type Props = {
    * assinatura: quem descobre o congelamento está no meio de um roteiro.
    */
   congelamento: Congelamento | null;
+  /**
+   * Mostrar o "?" ao lado de cada item do menu (159). Preferência de
+   * PESSOA, não da empresa: quem entrou ontem precisa das fichas mesmo
+   * quando a proprietária já desligou as dela.
+   */
+  explicacoes: boolean;
   signOut: () => Promise<void>;
   children: React.ReactNode;
 };
@@ -210,6 +220,7 @@ export function AppShell({
   prazosFrase,
   esperaFrase,
   congelamento,
+  explicacoes,
   signOut,
   children,
 }: Props) {
@@ -225,6 +236,21 @@ export function AppShell({
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [today, setToday] = useState("");
+
+  // O "?" some NA HORA, sem esperar o banco: quem desliga quer o menu
+  // limpo agora. A gravação vai junto, e é ela que faz a escolha
+  // sobreviver ao recarregar e chegar ao outro computador.
+  const [mostrarExplicacoes, setMostrarExplicacoes] = useState(explicacoes);
+  useEffect(() => setMostrarExplicacoes(explicacoes), [explicacoes]);
+  const desativarExplicacoes = () => {
+    setMostrarExplicacoes(false);
+    void definirExplicacoes(false).then((r) => {
+      // Não deu para gravar: o "?" volta. Deixá-lo escondido só até o
+      // próximo recarregar seria pior que não esconder — a pessoa acharia
+      // que decidiu, e a decisão evaporaria sem ela ver.
+      if (!r.ok) setMostrarExplicacoes(true);
+    });
+  };
 
   // Data calculada no cliente para evitar divergência de hidratação
   useEffect(() => {
@@ -285,21 +311,42 @@ export function AppShell({
         </button>
       </div>
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 pb-4">
-        {navVisivel.map((item) => (
-          <Link
-            key={item.label}
-            href={item.href}
-            onClick={() => setOpen(false)}
-            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-              isActive(pathname, item.href)
-                ? "bg-stone-800 text-white"
-                : "text-stone-400 hover:bg-stone-800/60 hover:text-white"
-            }`}
-          >
-            <Icon name={item.icon} />
-            {item.label}
-          </Link>
-        ))}
+        {/* O fundo (ativo/hover) mudou de lugar: era do próprio link, agora
+            é da linha inteira — senão o "?" ficaria de fora do realce, como
+            um botão solto ao lado do item. O link continua sendo TODO o
+            resto da linha, então a área de clique para navegar não
+            encolheu. */}
+        {navVisivel.map((item) => {
+          const ativo = isActive(pathname, item.href);
+          const explicacao = mostrarExplicacoes ? explicacaoDe(item.href) : null;
+          return (
+            <div
+              key={item.label}
+              className={`group flex items-center rounded-lg transition-colors ${
+                explicacao ? "pr-2" : ""
+              } ${ativo ? "bg-stone-800" : "hover:bg-stone-800/60"}`}
+            >
+              {/* gap-2.5 em vez de gap-3 quando há "?": o rótulo mais longo
+                  do menu ("Agenda de Fornecedores") cabia por pouco, e o
+                  botão comeu essa folga. */}
+              <Link
+                href={item.href}
+                onClick={() => setOpen(false)}
+                className={`flex min-w-0 flex-1 items-center ${
+                  explicacao ? "gap-2.5 pr-1" : "gap-3"
+                } rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  ativo ? "text-white" : "text-stone-400 group-hover:text-white"
+                }`}
+              >
+                <Icon name={item.icon} className="h-5 w-5 shrink-0" />
+                <span className="truncate">{item.label}</span>
+              </Link>
+              {explicacao ? (
+                <ExplicacaoDoMenu rotulo={item.label} explicacao={explicacao} />
+              ) : null}
+            </div>
+          );
+        })}
 
       </nav>
       <div className="border-t border-stone-800 p-3">
@@ -312,6 +359,11 @@ export function AppShell({
   );
 
   return (
+    // O provedor abraça a casca INTEIRA, e não só o menu: o "?" também
+    // aparece nas fases e nas abas de dentro do evento, que são `children`.
+    <ProvedorDasExplicacoes
+      valor={{ ligadas: mostrarExplicacoes, desativar: desativarExplicacoes }}
+    >
     <div className="min-h-screen lg:flex">
       {/* Sidebar mobile (drawer) + desktop (fixa) */}
       {open && (
@@ -391,5 +443,6 @@ export function AppShell({
         </main>
       </div>
     </div>
+    </ProvedorDasExplicacoes>
   );
 }

@@ -6,8 +6,9 @@
 // NOME · TIPO para ela saber que resposta buscar. Contagem é de "campos
 // vazios", nunca "% preenchido". Sem asterisco, sem validação agressiva.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { X } from "lucide-react";
+import { FornecedorFormModal } from "@/components/fornecedores/FornecedorFormModal";
 import { createClient } from "@/lib/supabase/client";
 import type { Decisao } from "@/lib/supabase/planejamento";
 import {
@@ -333,6 +334,23 @@ function CampoHora({
   );
 }
 
+// O CAMPO DE FORNECEDOR — e o furo que ele tinha.
+//
+// Era só um `select` do que já existe no cadastro. Quem chegava numa
+// decisão que pede fornecedor sem ter nenhum cadastrado via uma lista
+// vazia e ficava presa: tinha de sair do Planejamento, ir em
+// Fornecedores, cadastrar, voltar e reabrir o balão. O dono, que usa o
+// sistema todo dia, esbarrou nisso e resumiu: "não quero algo que precise
+// ficar indo de tela em tela pra funcionar".
+//
+// O caminho já existia no sistema, em outro lugar: o modal de vínculo do
+// evento oferece "Cadastrar novo fornecedor" e reaproveita o
+// FornecedorFormModal. Aqui é o mesmo gesto.
+//
+// O cadastro novo entra na lista LOCAL e já sai escolhido. O
+// `router.refresh()` do modal traz a lista canônica do servidor depois —
+// mas esperar por ela deixaria o campo vazio por um segundo, logo depois
+// de a pessoa ter acabado de digitar o nome.
 function CampoFornecedor({
   campo,
   salvar,
@@ -344,10 +362,21 @@ function CampoFornecedor({
   suppliers: SupplierRef[];
   disabled?: boolean;
 }) {
-  const atual = suppliers.find((s) => s.id === campo.valorSupplierId) ?? null;
+  const [novos, setNovos] = useState<SupplierRef[]>([]);
+  const [cadastrando, setCadastrando] = useState(false);
+  const lista = useMemo(() => {
+    const vistos = new Set(suppliers.map((s) => s.id));
+    return [...suppliers, ...novos.filter((n) => !vistos.has(n.id))];
+  }, [suppliers, novos]);
+
+  const atual = lista.find((s) => s.id === campo.valorSupplierId) ?? null;
   const foco = useCampoFoco();
+  const vazio = lista.length === 0;
+
   return (
-    <div style={{ position: "relative" }}>
+    <>
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+    <div style={{ position: "relative", flex: 1, minWidth: 0 }}>
       {atual && (
         <span
           aria-hidden
@@ -388,8 +417,10 @@ function CampoFornecedor({
           ...foco.style,
         }}
       >
-        <option value="">selecionar no CRM</option>
-        {suppliers.map((s) => (
+        <option value="">
+          {vazio ? "nenhum fornecedor cadastrado" : "selecionar no CRM"}
+        </option>
+        {lista.map((s) => (
           <option key={s.id} value={s.id}>
             {s.name}
           </option>
@@ -409,6 +440,45 @@ function CampoFornecedor({
         ▾
       </span>
     </div>
+
+      {/* Cadastrar SEM SAIR DAQUI. Some quando o campo está travado —
+          decisão fechada não ganha fornecedor novo. */}
+      {!disabled && (
+        <button
+          type="button"
+          onClick={() => setCadastrando(true)}
+          title="Cadastrar um fornecedor sem sair desta decisão"
+          aria-label="Cadastrar um fornecedor sem sair desta decisão"
+          style={{
+            flexShrink: 0,
+            width: 34,
+            height: 34,
+            borderRadius: 8,
+            border: `1px solid ${vazio ? C.ameixa : C.bordaMedia}`,
+            background: vazio ? C.tint : "#fff",
+            color: vazio ? C.ameixa : C.meta,
+            fontFamily: F_UI,
+            fontSize: 16,
+            lineHeight: 1,
+            cursor: "pointer",
+          }}
+        >
+          +
+        </button>
+      )}
+    </div>
+
+      {cadastrando && (
+        <FornecedorFormModal
+          onClose={() => setCadastrando(false)}
+          onCreated={(id, nome) => {
+            setNovos((antes) => [...antes, { id, name: nome }]);
+            // Já sai escolhido: ela cadastrou PARA usar aqui.
+            salvar(campo, id);
+          }}
+        />
+      )}
+    </>
   );
 }
 

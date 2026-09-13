@@ -30,9 +30,11 @@ export function FornecedorFormModal({
 }: {
   editar?: Fornecedor;
   onClose: () => void;
-  // Chamado com o id do fornecedor recém-criado (só no modo criação).
-  // Usado pelo modal de vínculo do evento para ligar o novo fornecedor.
-  onCreated?: (id: string) => void | Promise<void>;
+  // Chamado com o id e o NOME do fornecedor recém-criado (só no modo
+  // criação). O vínculo do evento usa só o id; o campo de fornecedor do
+  // Planejamento precisa também do nome, para mostrar o cadastro novo já
+  // escolhido sem esperar o servidor responder de novo.
+  onCreated?: (id: string, nome: string) => void | Promise<void>;
 }) {
   const router = useRouter();
   const [f, setF] = useState<FornecedorInput>({
@@ -78,7 +80,7 @@ export function FornecedorFormModal({
         return;
       }
       if (!editar && r.id && onCreated) {
-        await onCreated(r.id);
+        await onCreated(r.id, f.name.trim());
       }
       onClose();
       router.refresh();

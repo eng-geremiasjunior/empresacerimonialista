@@ -89,6 +89,8 @@ export default async function EventosPage({
           </a>
           <Link
             href="/eventos/novo"
+            /* alvo do passo 1 do guia do primeiro acesso (160) */
+            data-guia="novo-evento"
             className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
           >
             + Novo evento

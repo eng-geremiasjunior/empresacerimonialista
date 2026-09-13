@@ -4,11 +4,15 @@ import { createClient } from "@/lib/supabase/server";
 import { garantirEmpresaDoUsuario, getMeuCargo } from "@/lib/supabase/equipe";
 import { precisaAssinar } from "@/lib/supabase/porta-da-assinatura";
 import { getEspera } from "@/lib/supabase/espera-solicitacoes";
+import { getExplicacoesLigadas } from "@/lib/supabase/explicacoes";
+import { getEstadoDoGuia } from "@/lib/supabase/guia-vivo";
+import { passoAtual, terminou } from "@/lib/guia-vivo";
 import { fraseDoCopiloto } from "@/lib/espera-core";
 import { getAlertasCopiloto } from "@/lib/supabase/queries";
 import { frasePrazos, resumirPrazos } from "@/lib/copiloto-prazos";
 import { AppShell, type Congelamento } from "@/components/AppShell";
 import { TaskNotifications } from "@/components/TaskNotifications";
+import { GuiaVivo } from "@/components/guia/GuiaVivo";
 import { signOut } from "./actions";
 
 /**
@@ -101,7 +105,8 @@ export default async function AppLayout({
 
   // Em série, cada navegação do app esperava as 3 consultas dos prazos
   // TERMINAREM antes de começar as da espera. Nada aqui depende do outro.
-  const [prazosFrase, esperaFrase, congelamento] = await Promise.all([
+  const [prazosFrase, esperaFrase, congelamento, explicacoes, estadoDoGuia] =
+    await Promise.all([
     getAlertasCopiloto()
       .then((alertas) => frasePrazos(resumirPrazos(alertas.map((a) => a.tipo))))
       .catch(() => null),
@@ -115,6 +120,12 @@ export default async function AppLayout({
           .catch(() => "Não deu para checar os fornecedores agora.")
       : Promise.resolve(null),
     congelamentoDaConta().catch(() => null),
+    // O "?" ao lado de cada item do menu (159). Falha vira `true` dentro
+    // da própria leitura: o padrão tem de servir a quem está chegando.
+    getExplicacoesLigadas(),
+    // O guia do primeiro acesso (160): as duas datas e os cinco fatos
+    // numa viagem so. Falha vira null — sem guia, nunca tela quebrada.
+    getEstadoDoGuia(),
   ]);
 
   return (
@@ -125,6 +136,7 @@ export default async function AppLayout({
         prazosFrase={prazosFrase}
         esperaFrase={esperaFrase}
         congelamento={congelamento}
+        explicacoes={explicacoes}
         avatarUrl={
           ((user.user_metadata as { avatar_url?: string | null } | null)
             ?.avatar_url as string | null) ?? null
@@ -133,6 +145,10 @@ export default async function AppLayout({
       >
         {children}
       </AppShell>
+      {/* Fora do AppShell: o recorte cobre a tela inteira, barra lateral
+          inclusive, e o passo 1 aponta justamente para um botao de fora
+          do conteudo. */}
+      <GuiaVivo guia={passoAtual(estadoDoGuia)} terminou={terminou(estadoDoGuia)} />
       <TaskNotifications />
     </>
   );
