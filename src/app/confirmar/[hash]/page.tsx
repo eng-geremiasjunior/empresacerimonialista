@@ -80,6 +80,8 @@ export default async function ConfirmarPage({
         qr: await qrSvg(linkDaCredencial(publicBase(), credencialBruta.checkin_hash)),
         codigo: credencialBruta.codigo,
         nome: credencialBruta.nome,
+        // para o botão "Guardar no meu WhatsApp" do cartão de entrada
+        link: linkDaCredencial(publicBase(), credencialBruta.checkin_hash),
       }
     : null;
 

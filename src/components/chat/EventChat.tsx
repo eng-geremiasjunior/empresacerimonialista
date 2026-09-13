@@ -49,7 +49,7 @@ export function EventChat({ eventId, suppliers, initialSupplierId }: Props) {
       const name =
         suppliers.find((s) => s.id === message.supplier_id)?.name ??
         "Fornecedor";
-      toast(`💬 ${name}: ${message.message.slice(0, 60)}`, { id: message.id });
+      toast(`${name}: ${message.message.slice(0, 60)}`, { id: message.id });
     }
   );
 
@@ -166,7 +166,7 @@ export function EventChat({ eventId, suppliers, initialSupplierId }: Props) {
               </p>
             ) : conversation.length === 0 ? (
               <p className="pt-10 text-center text-sm text-stone-400">
-                Nenhuma mensagem ainda. Diga um oi! 👋
+                Nenhuma mensagem ainda.
               </p>
             ) : (
               conversation.map((message) => (

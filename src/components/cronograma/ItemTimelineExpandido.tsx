@@ -10,7 +10,7 @@
 // whitespace-nowrap nos badges evitam transbordo/sobreposição.
 
 import { useEffect, useRef, useState } from "react";
-import { Briefcase, MoreVertical, Pencil, Phone, UserRound } from "lucide-react";
+import { Bookmark, Briefcase, MoreVertical, Pencil, Phone, UserRound } from "lucide-react";
 import { formatTime } from "@/lib/format";
 import { categoriaLabel } from "@/lib/fornecedores-shared";
 import {
@@ -353,10 +353,10 @@ export function ItemTimelineExpandido({
           <div className="flex flex-shrink-0 items-start justify-between gap-3 2xl:w-[124px] 2xl:flex-col 2xl:items-end">
             {item.etapa_obrigatoria && (
               <span
-                className="whitespace-nowrap text-[12.5px] font-semibold"
+                className="inline-flex items-center gap-1 whitespace-nowrap text-[12.5px] font-semibold"
                 style={{ color: "#6B6884" }}
               >
-                🔖 Obrigatória
+                <Bookmark size={13} aria-hidden /> Obrigatória
               </span>
             )}
             <div className="relative flex flex-shrink-0 items-center gap-1.5" ref={menuRef}>

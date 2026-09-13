@@ -39,18 +39,8 @@ export const TIPO_DESCRICAO: Record<EventType, string> = {
   outro: "Para o que não se encaixa nos demais",
 };
 
-export const TIPO_EMOJI: Record<EventType, string> = {
-  casamento: "💍",
-  debutante: "👑",
-  formatura: "🎓",
-  aniversario: "🎂",
-  bodas: "💐",
-  cha_revelacao: "🎈",
-  batizado: "🕊️",
-  corporativo: "🏢",
-  show: "🎤",
-  outro: "✨",
-};
+// Os emojis por tipo (💍 👑 🎓…) saíram em 13/09/2026 — o ícone de cada
+// tipo agora é desenhado, em components/catalogo/IconeDoTipo.
 
 // Um tipo de evento que ela nunca abriu não tem linha em
 // empresa_conteudo_institucional — os formulários precisam de algo para

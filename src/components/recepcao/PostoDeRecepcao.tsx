@@ -1043,12 +1043,16 @@ export function PostoDeRecepcao({ hash, posto }: { hash: string; posto: PostoPub
             {operador}
           </button>
         </div>
+        {/* "4 de 3 chegaram" parecia conta errada: quem não confirmou
+            também passa pela porta. Enquanto cabe, "3 de 5"; quando
+            passa, só quantos chegaram — a referência já não ajuda quem
+            está com uma fila na frente. */}
         <p className="text-xl font-semibold">
           {posto.posto_nome} ·{" "}
           <span className="tabular-nums">
-            {presentes} de {esperados}
+            {presentes > esperados ? presentes : `${presentes} de ${esperados}`}
           </span>{" "}
-          chegaram
+          {presentes === 1 && presentes > esperados ? "chegou" : "chegaram"}
         </p>
         {fila.length > 0 && (
           <p className="mt-1 flex items-center gap-2 text-sm text-[--state-wait]" role="status">
@@ -1254,8 +1258,11 @@ export function PostoDeRecepcao({ hash, posto }: { hash: string; posto: PostoPub
 
           {!convidadoAtual.presente_em && titularMarcado && (
             <div className="mt-3 flex min-h-14 items-center justify-between gap-3 px-1">
+              {/* Era "+0 sem nome" — o nome da coluna, não o que a
+                  recepcionista vê: gente que veio junto e não está na
+                  lista com nome próprio. */}
               <span className="text-lg">
-                +{semNome} sem nome
+                Acompanhantes
               </span>
               <Passos
                 valor={semNome}

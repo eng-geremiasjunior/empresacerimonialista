@@ -25,9 +25,9 @@ import { RegraConvidadosForm } from "@/components/configuracoes/RegraConvidadosF
 import {
   tipoValido,
   rotuloTipo,
-  TIPO_EMOJI,
   CONTEUDO_PADRAO,
 } from "@/lib/catalogo";
+import { IconeDoTipo } from "@/components/catalogo/IconeDoTipo";
 import type { PortfolioFoto } from "@/lib/portfolio";
 
 export const dynamic = "force-dynamic";
@@ -209,7 +209,7 @@ export default async function CatalogoTipoPage({
           ← Catálogo
         </Link>
         <h1 className="mt-1 flex items-center gap-2 text-xl font-semibold text-gray-900">
-          <span aria-hidden>{TIPO_EMOJI[tipo]}</span>
+          <IconeDoTipo tipo={tipo} tamanho={20} className="text-gray-500" />
           {rotuloTipo(tipo)}
         </h1>
         <p className="text-sm text-gray-500">

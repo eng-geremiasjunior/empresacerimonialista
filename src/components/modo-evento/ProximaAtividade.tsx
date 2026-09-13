@@ -19,7 +19,9 @@ export function ProximaAtividade({ item, eventDate, now, t }: Props) {
   if (!item) {
     return (
       <div className={`rounded-2xl border p-5 text-center ${t.panel}`}>
-        <p className={t.sub}>Nenhuma atividade pendente. Tudo concluído! 🎉</p>
+        {/* Sem emoji e sem exclamação: "Tudo concluído! 🎉" era a voz de
+            app de hábitos, e o dono foi direto — "tira a credibilidade". */}
+        <p className={t.sub}>Nenhuma atividade pendente.</p>
       </div>
     );
   }

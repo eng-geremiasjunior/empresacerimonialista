@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Mail, MessageCircle, Printer, RefreshCw } from "lucide-react";
 import {
   alertasCronograma,
   contagemRegressiva,
@@ -147,7 +148,7 @@ export function PainelLateralCronograma({
         </div>
         {alertas.length === 0 ? (
           <p className="text-[12.5px] text-[#6B6884]">
-            Tudo tranquilo por aqui 🎉
+            Nenhum alerta.
           </p>
         ) : (
           <div className="flex flex-col gap-4">
@@ -190,25 +191,25 @@ export function PainelLateralCronograma({
             href={`/eventos/${eventId}/fornecedores`}
             className="flex items-center gap-2 rounded-[9px] border border-[#ECEBF3] px-[11px] py-2.5 text-[12.5px] font-semibold text-[#3D3A52] hover:bg-[#F6F6FA]"
           >
-            ✉ Enviar lembrete
+            <Mail size={14} aria-hidden /> Enviar lembrete
           </Link>
           <button
             onClick={onAtualizarStatus}
             className="flex items-center gap-2 rounded-[9px] border border-[#ECEBF3] px-[11px] py-2.5 text-left text-[12.5px] font-semibold text-[#3D3A52] hover:bg-[#F6F6FA]"
           >
-            ↻ Atualizar status
+            <RefreshCw size={14} aria-hidden /> Atualizar status
           </button>
           <Link
             href={`/eventos/${eventId}/comunicacao`}
             className="flex items-center gap-2 rounded-[9px] border border-[#ECEBF3] px-[11px] py-2.5 text-[12.5px] font-semibold text-[#3D3A52] hover:bg-[#F6F6FA]"
           >
-            💬 Ver comunicação
+            <MessageCircle size={14} aria-hidden /> Ver comunicação
           </Link>
           <button
             onClick={() => window.print()}
             className="flex items-center gap-2 rounded-[9px] border border-[#ECEBF3] px-[11px] py-2.5 text-left text-[12.5px] font-semibold text-[#3D3A52] hover:bg-[#F6F6FA]"
           >
-            🖶 Imprimir
+            <Printer size={14} aria-hidden /> Imprimir
           </button>
         </div>
       </section>

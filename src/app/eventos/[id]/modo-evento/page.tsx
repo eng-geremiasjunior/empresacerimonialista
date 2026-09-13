@@ -77,7 +77,7 @@ export default async function ModoEventoPage({
     vivos.forEach((p, i) => {
       qrPorPosto[p.id] = svgs[i];
     });
-    chegadas = { eventId, painel, qrPorPosto, linkBase };
+    chegadas = { eventId, painel, qrPorPosto, linkBase, dataEvento: (eventRes.data as { date?: string } | null)?.date ?? null };
   }
 
   const event = eventRes.data as unknown as {

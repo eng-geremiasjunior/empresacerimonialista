@@ -1,6 +1,7 @@
 "use client";
 
 import toast from "react-hot-toast";
+import { CheckCircle2, Clock } from "lucide-react";
 
 export type TaskNotice = {
   taskId: string;
@@ -46,8 +47,8 @@ function showToast(notice: TaskNotice, onOpen: () => void) {
             : "border-green-300 bg-green-50 text-green-900"
         }`}
       >
-        <span aria-hidden className="mt-0.5">
-          {isWarning ? "⏰" : "✅"}
+        <span aria-hidden className="mt-0.5 shrink-0">
+          {isWarning ? <Clock size={16} /> : <CheckCircle2 size={16} />}
         </span>
         <span className="font-medium leading-snug">{noticeLabel(notice)}</span>
       </button>

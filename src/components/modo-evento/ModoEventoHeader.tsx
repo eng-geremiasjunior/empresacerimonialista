@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { differenceInCalendarDays } from "date-fns";
+import { Moon, Sun, X } from "lucide-react";
 import type { ModoTheme } from "@/lib/modo-tema";
 
 type Props = {
@@ -53,14 +54,16 @@ export function ModoEventoHeader({
             aria-label="Alternar tema"
             className={`rounded-full p-2 ${t.sub} hover:opacity-70`}
           >
-            {isDark ? "☀️" : "🌙"}
+            {/* ícone desenhado, não emoji: o emoji muda de cara em cada
+                celular e não segue a cor do tema */}
+            {isDark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
           <Link
             href={`/eventos/${eventId}`}
             aria-label="Sair do Modo Evento"
-            className={`rounded-full p-2 text-lg ${t.sub} hover:opacity-70`}
+            className={`rounded-full p-2 ${t.sub} hover:opacity-70`}
           >
-            ✕
+            <X size={18} />
           </Link>
         </div>
       </div>

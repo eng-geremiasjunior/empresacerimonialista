@@ -70,8 +70,7 @@ export function ResumoFinal({
       <div className={`w-full max-w-md rounded-2xl border p-6 ${t.panel}`}>
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-4xl">🎉</p>
-            <h2 className="mt-2 text-2xl font-bold">
+            <h2 className="text-2xl font-bold">
               {concluidos === total ? "Evento concluído" : "Resumo do evento"}
             </h2>
           </div>
@@ -97,7 +96,7 @@ export function ResumoFinal({
               {atrasos === 1 ? "" : "s"} (média de {mediaAtraso} min)
             </p>
           ) : (
-            <p className={t.sub}>Nenhum item começou atrasado 🎯</p>
+            <p className={t.sub}>Nenhum item começou atrasado.</p>
           )}
           {problemas > 0 && (
             <p className={t.sub}>

@@ -75,6 +75,8 @@ export function AutocadastroConvidado({
         emailEnviado?: boolean;
         qr?: string;
         codigo?: string;
+        /** o hash da credencial — a rota já devolvia, a tela ignorava */
+        checkinHash?: string;
       };
       setEnviando(false);
 
@@ -84,7 +86,19 @@ export function AutocadastroConvidado({
       }
       setEmailChegou(r.emailEnviado !== false);
       setCredencial(
-        vai && r.qr && r.codigo ? { qr: r.qr, codigo: r.codigo, nome: nome.trim() } : null
+        vai && r.qr && r.codigo
+          ? {
+              qr: r.qr,
+              codigo: r.codigo,
+              nome: nome.trim(),
+              // O mesmo endereço que o QR desenha. `location.origin` e não
+              // uma base configurada: esta página é pública e já está no
+              // domínio certo — é nele que o convidado vai reabrir.
+              link: r.checkinHash
+                ? `${window.location.origin}/entrada/${r.checkinHash.toLowerCase()}`
+                : undefined,
+            }
+          : null
       );
       setPasso("pronto");
     } catch {
@@ -128,7 +142,9 @@ export function AutocadastroConvidado({
   return (
     <div className="rsvp-cartao">
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <span className="rsvp-nome">Você foi convidado para</span>
+        {/* "Você foi convidado" era masculino numa lista em que metade
+            são convidadas. "Um convite para" diz o mesmo sem escolher. */}
+        <span className="rsvp-nome">Um convite para</span>
         <h1 className="rsvp-titulo">
           {convitePara} {anfitrioes}
         </h1>

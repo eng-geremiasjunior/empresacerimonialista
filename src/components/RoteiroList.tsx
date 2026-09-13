@@ -6,7 +6,7 @@
 // fornecedores (Etapa 2) via polling leve.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Printer } from "lucide-react";
+import { Info, Plus, Printer } from "lucide-react";
 import {
   createRoteiroItem,
   updateRoteiroItem,
@@ -299,7 +299,7 @@ export function RoteiroList({
             </span>
             <span className="flex-1" />
             <span className="flex items-center gap-2">
-              📍
+              <Info size={14} className="shrink-0 text-[#6C5DD3]" aria-hidden />
               <span>
                 <strong className="text-[#17162A]">Dica do Copiloto:</strong>{" "}
                 itens obrigatórios impactam diretamente o andamento do evento.

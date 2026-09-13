@@ -3,10 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import {
   TIPOS_CATALOGO,
   TIPO_DESCRICAO,
-  TIPO_EMOJI,
   rotuloTipo,
 } from "@/lib/catalogo";
 import type { EventType } from "@/lib/types";
+import { IconeDoTipo } from "@/components/catalogo/IconeDoTipo";
+import { Calculator, Palette } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -65,8 +66,8 @@ export default async function CatalogoPage() {
         href="/catalogo/precificacao"
         className="group flex items-start gap-3 rounded-xl border border-gray-200 bg-white p-5 transition-colors hover:border-gray-300 hover:bg-gray-50"
       >
-        <span className="text-xl" aria-hidden>
-          🧮
+        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600" aria-hidden>
+          <Calculator size={17} strokeWidth={1.75} />
         </span>
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold text-gray-900">
@@ -82,8 +83,8 @@ export default async function CatalogoPage() {
         href="/catalogo/paletas"
         className="group flex items-start gap-3 rounded-xl border border-gray-200 bg-white p-5 transition-colors hover:border-gray-300 hover:bg-gray-50"
       >
-        <span className="text-xl" aria-hidden>
-          🎨
+        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600" aria-hidden>
+          <Palette size={17} strokeWidth={1.75} />
         </span>
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold text-gray-900">Paletas</h2>
@@ -103,8 +104,8 @@ export default async function CatalogoPage() {
               className="group rounded-xl border border-gray-200 bg-white p-5 transition-colors hover:border-gray-300 hover:bg-gray-50"
             >
               <div className="flex items-start gap-3">
-                <span className="text-xl" aria-hidden>
-                  {TIPO_EMOJI[tipo]}
+                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+                  <IconeDoTipo tipo={tipo} tamanho={17} />
                 </span>
                 <div className="min-w-0 flex-1">
                   <h2 className="text-sm font-semibold text-gray-900">

@@ -227,7 +227,7 @@ export function ModoEvento({
               onClick={() => setResumoAberto(true)}
               className="mt-4 w-full rounded-2xl bg-emerald-600 py-3 text-sm font-semibold text-white hover:bg-emerald-700"
             >
-              🎉 Ver resumo do evento
+              Ver resumo do evento
             </button>
           )}
 

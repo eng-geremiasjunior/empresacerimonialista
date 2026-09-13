@@ -14,8 +14,11 @@ import { createClient } from "@supabase/supabase-js";
 type Confirmacao = "aguardando" | "confirmado" | "nao_vai";
 
 /** O que a tela precisa para desenhar a entrada: o SVG já pronto (vem do
- *  servidor — o único que desenha QR), o código curto e o nome. */
-export type Credencial = { qr: string; codigo: string; nome: string };
+ *  servidor — o único que desenha QR), o código curto e o nome.
+ *
+ *  `link` é o endereço /entrada/<hash> — o mesmo que o QR carrega. Com ele
+ *  o convidado consegue GUARDAR a entrada (ver CredencialEntrada). */
+export type Credencial = { qr: string; codigo: string; nome: string; link?: string };
 
 const ERROS_RESPOSTA: Record<string, string> = {
   encerrado: "As confirmações já foram encerradas. Fale direto com os anfitriões.",
@@ -68,6 +71,53 @@ export function CredencialEntrada({ credencial }: { credencial: Credencial }) {
           {credencial.codigo}
         </strong>
       </span>
+
+      {/* GUARDAR A ENTRADA. Medido numa simulação (13/09/2026): quem se
+          cadastra pelo link do evento vê o QR uma vez, e se fechar a tela
+          não tem como voltar — o e-mail com o QR não estava saindo, e esse
+          convidado não tem link pessoal. O WhatsApp sem número abre o app
+          dele e deixa escolher para quem mandar; ele manda para si mesmo.
+          Não passa pela API da Meta, não custa nada e não depende de
+          e-mail nenhum. */}
+      {credencial.link && (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 6,
+            marginTop: 8,
+            width: "100%",
+          }}
+        >
+          <a
+            href={`https://wa.me/?text=${encodeURIComponent(
+              `Minha entrada para o evento — mostrar na recepção: ${credencial.link}`
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              width: "100%",
+              maxWidth: 280,
+              padding: "12px 16px",
+              borderRadius: 12,
+              border: "1px solid currentColor",
+              color: "inherit",
+              fontSize: 15,
+              textDecoration: "none",
+            }}
+          >
+            Guardar no meu WhatsApp
+          </a>
+          <span style={{ fontSize: 13, opacity: 0.7, textAlign: "center", color: "inherit" }}>
+            Ou tire um print desta tela. Na entrada, é só mostrar o QR.
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -182,7 +232,7 @@ export function ConfirmacaoConvidado({
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <span className="rsvp-nome">{nome},</span>
         <h1 className="rsvp-titulo">
-          você foi convidado para {convitePara} {anfitrioes}
+          um convite para {convitePara} {anfitrioes}
         </h1>
       </div>
 
