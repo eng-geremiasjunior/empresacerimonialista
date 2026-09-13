@@ -35,7 +35,9 @@ export type PassoDoGuia = {
     | "definiu_contexto"
     | "decidiu"
     | "tarefa_nasceu"
-    | "deu_andamento";
+    | "deu_andamento"
+    | "tem_convidado"
+    | "tem_tarefa";
   titulo: string;
   /** Fala com ela, sobre o trabalho dela. Nunca sobre a mecânica. */
   texto: string;
@@ -100,6 +102,41 @@ export const PASSOS: PassoDoGuia[] = [
   },
 ];
 
+// O CAMINHO DO EVENTO SEM MÉTODO.
+//
+// Medido em 13/09/2026, com a primeira cliente de verdade: nenhum
+// aniversário, bodas, batizado, formatura ou chá revelação do sistema
+// nasceu com Planejamento — o método de decisões só existe para
+// casamento, 15 anos, corporativo e show (o dono confirmou: "aniversário
+// não tem método"). A cliente criou um aniversário, e o guia de cinco
+// passos a mandaria dizer escala e cenário num Planejamento vazio: beco
+// sem saída, cuja única porta era "Pular" — que desliga o guia para
+// sempre.
+//
+// Nesses eventos o guia percorre o que EXISTE neles: a lista de
+// convidados e a primeira tarefa. O passo 1 é o mesmo.
+export const PASSOS_SEM_METODO: PassoDoGuia[] = [
+  PASSOS[0],
+  {
+    id: "convidados",
+    fato: "tem_convidado",
+    titulo: "Monte a lista de convidados",
+    texto:
+      "Mande o convite no WhatsApp e cada pessoa confirma sozinha — ou adicione à mão quem você já sabe. É a mesma lista que a sua cliente vê no portal dela.",
+    alvo: "convidados-rsvp",
+    rota: "/eventos/:id/rsvp",
+  },
+  {
+    id: "primeira-tarefa",
+    fato: "tem_tarefa",
+    titulo: "Anote a primeira tarefa do evento",
+    texto:
+      "O que precisa ser resolvido e até quando. A tarefa ganha prazo e responsável, e aparece para você no dia certo — sem depender de memória.",
+    alvo: "nova-tarefa",
+    rota: "/eventos/:id/organizacao",
+  },
+];
+
 /** O que `meu_guia()` devolve, já em português e sem `any`. */
 export type EstadoDoGuia = {
   dispensadoEm: string | null;
@@ -110,7 +147,17 @@ export type EstadoDoGuia = {
   decidiu: boolean;
   tarefaNasceu: boolean;
   deuAndamento: boolean;
+  /** o evento do guia nasceu com Planejamento (tem objetivos)? */
+  temMetodo: boolean;
+  temConvidado: boolean;
+  temTarefa: boolean;
 };
+
+/** Os passos que valem para ESTE evento. Antes de existir evento, o
+ *  caminho completo — o passo 1 é igual nos dois. */
+export function passosDoEvento(estado: EstadoDoGuia): PassoDoGuia[] {
+  return !estado.criouEvento || estado.temMetodo ? PASSOS : PASSOS_SEM_METODO;
+}
 
 export type GuiaNaTela = {
   passo: PassoDoGuia;
@@ -135,6 +182,10 @@ function venceu(estado: EstadoDoGuia, fato: PassoDoGuia["fato"]): boolean {
       return estado.tarefaNasceu;
     case "deu_andamento":
       return estado.deuAndamento;
+    case "tem_convidado":
+      return estado.temConvidado;
+    case "tem_tarefa":
+      return estado.temTarefa;
   }
 }
 
@@ -150,10 +201,11 @@ export function passoAtual(estado: EstadoDoGuia | null): GuiaNaTela | null {
   if (!estado) return null;
   if (estado.dispensadoEm || estado.concluidoEm) return null;
 
-  const i = PASSOS.findIndex((p) => !venceu(estado, p.fato));
-  if (i === -1) return null; // os cinco vencidos: quem chamar deve carimbar
+  const passos = passosDoEvento(estado);
+  const i = passos.findIndex((p) => !venceu(estado, p.fato));
+  if (i === -1) return null; // todos vencidos: quem chamar deve carimbar
 
-  const passo = PASSOS[i];
+  const passo = passos[i];
 
   // A rota que pede `:id` sem evento para pôr no lugar vira NULL, não
   // vira "/eventos/:id/planejamento". Eu tinha deixado o texto cru
@@ -172,15 +224,15 @@ export function passoAtual(estado: EstadoDoGuia | null): GuiaNaTela | null {
   return {
     passo,
     numero: i + 1,
-    total: PASSOS.length,
+    total: passos.length,
     rota,
     vencidos: i,
   };
 }
 
-/** Os cinco fatos são verdade: o guia acabou e precisa ser carimbado. */
+/** Todos os fatos do caminho deste evento são verdade: carimbar. */
 export function terminou(estado: EstadoDoGuia | null): boolean {
   if (!estado) return false;
   if (estado.dispensadoEm || estado.concluidoEm) return false;
-  return PASSOS.every((p) => venceu(estado, p.fato));
+  return passosDoEvento(estado).every((p) => venceu(estado, p.fato));
 }

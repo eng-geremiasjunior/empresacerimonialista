@@ -324,6 +324,8 @@ export function RsvpDoEvento({
         {/* adicionar à mão: nome e WhatsApp, e só. O resto a pessoa
             preenche quando confirmar pelo link dela. */}
         <form
+          // alvo do guia em evento sem método: o passo "monte a lista"
+          data-guia="convidados-rsvp"
           className="flex flex-wrap gap-2"
           onSubmit={(e) => {
             e.preventDefault();

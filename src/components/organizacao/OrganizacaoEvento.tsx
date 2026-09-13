@@ -275,10 +275,14 @@ export function OrganizacaoEvento({
             Fonte única — cada tarefa nasce de uma decisão e aparece só aqui.
           </p>
         </div>
-        <Button onClick={() => setSel("nova")}>
-          <Plus size={15} />
-          Nova tarefa
-        </Button>
+        {/* alvo do guia em evento SEM método (aniversário, bodas…): lá
+            a primeira tarefa nasce à mão, não de uma decisão */}
+        <span data-guia="nova-tarefa" className="inline-flex">
+          <Button onClick={() => setSel("nova")}>
+            <Plus size={15} />
+            Nova tarefa
+          </Button>
+        </span>
       </div>
 
       <PainelQuantidades

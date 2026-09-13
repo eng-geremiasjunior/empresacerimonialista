@@ -59,10 +59,13 @@ export async function GET(request: NextRequest) {
   if (token_hash && type) {
     const { error } = await supabase.auth.verifyOtp({ type, token_hash });
     if (error) {
-      return NextResponse.redirect(`${origin}/portal/entrar?erro=link`);
+      // Mesma porta de erro do fluxo com `code`. Este ramo tinha ficado
+      // para trás e mandava a cerimonialista para a porta da CLIENTE —
+      // o erro que o comentário acima já descrevia como corrigido.
+      return NextResponse.redirect(`${origin}${portaDeErro}`);
     }
     return NextResponse.redirect(`${origin}${destino}`);
   }
 
-  return NextResponse.redirect(`${origin}/portal/entrar?erro=link`);
+  return NextResponse.redirect(`${origin}${portaDeErro}`);
 }
