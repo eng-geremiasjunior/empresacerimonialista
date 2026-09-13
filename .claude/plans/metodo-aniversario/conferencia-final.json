@@ -1,0 +1,50 @@
+{
+ "contagens": {
+  "objetivos": 15,
+  "ligadosNaBase": 7,
+  "decisoes": 20,
+  "campos": 60,
+  "perguntasCliente": 23,
+  "tarefas": 25,
+  "arquetipos": 7,
+  "deltas": 59,
+  "roteiro": 21,
+  "checklist": 32,
+  "recursos": 5
+ },
+ "tokensNovosNoCheck": {
+  "escala": [
+   "ate_150",
+   "acima_150"
+  ],
+  "cenario": [
+   "primeiro_ano",
+   "infantil",
+   "adolescente",
+   "adulto",
+   "sessenta_mais"
+  ]
+ },
+ "combinacoes": [
+  "(sem porte) + (sem faixa): 7 objetivos, 11 decisões, maior prazo 30d, verba 82 [buffet:50 decoracao:12 bolo_doces:7 lembrancinhas:3 foto_video:10]",
+  "(sem porte) + primeiro_ano: 10 objetivos, 14 decisões, maior prazo 30d, verba 100 [buffet:54 decoracao:16 bolo_doces:8 lembrancinhas:4 foto_video:14 recreacao:4]",
+  "(sem porte) + infantil: 8 objetivos, 12 decisões, maior prazo 30d, verba 100 [buffet:58 decoracao:14 bolo_doces:8 lembrancinhas:4 foto_video:10 recreacao:6]",
+  "(sem porte) + adolescente: 9 objetivos, 14 decisões, maior prazo 30d, verba 100 [buffet:50 decoracao:10 bolo_doces:6 lembrancinhas:4 foto_video:10 musica:16 portaria:4]",
+  "(sem porte) + adulto: 8 objetivos, 12 decisões, maior prazo 30d, verba 100 [buffet:52 decoracao:10 bolo_doces:6 foto_video:10 musica:12 bar:10]",
+  "(sem porte) + sessenta_mais: 9 objetivos, 13 decisões, maior prazo 30d, verba 100 [buffet:60 decoracao:12 bolo_doces:6 foto_video:10 musica:12]",
+  "ate_150 + (sem faixa): 7 objetivos, 11 decisões, maior prazo 30d, verba 82 [buffet:50 decoracao:12 bolo_doces:7 lembrancinhas:3 foto_video:10]",
+  "ate_150 + primeiro_ano: 10 objetivos, 14 decisões, maior prazo 30d, verba 100 [buffet:54 decoracao:16 bolo_doces:8 lembrancinhas:4 foto_video:14 recreacao:4]",
+  "ate_150 + infantil: 8 objetivos, 12 decisões, maior prazo 30d, verba 100 [buffet:58 decoracao:14 bolo_doces:8 lembrancinhas:4 foto_video:10 recreacao:6]",
+  "ate_150 + adolescente: 9 objetivos, 14 decisões, maior prazo 30d, verba 100 [buffet:50 decoracao:10 bolo_doces:6 lembrancinhas:4 foto_video:10 musica:16 portaria:4]",
+  "ate_150 + adulto: 8 objetivos, 12 decisões, maior prazo 30d, verba 100 [buffet:52 decoracao:10 bolo_doces:6 foto_video:10 musica:12 bar:10]",
+  "ate_150 + sessenta_mais: 9 objetivos, 13 decisões, maior prazo 30d, verba 100 [buffet:60 decoracao:12 bolo_doces:6 foto_video:10 musica:12]",
+  "acima_150 + (sem faixa): 7 objetivos, 11 decisões, maior prazo 45d, verba 82 [buffet:50 decoracao:12 bolo_doces:7 lembrancinhas:3 foto_video:10]",
+  "acima_150 + primeiro_ano: 10 objetivos, 14 decisões, maior prazo 45d, verba 100 [buffet:54 decoracao:16 bolo_doces:8 lembrancinhas:4 foto_video:14 recreacao:4]",
+  "acima_150 + infantil: 8 objetivos, 12 decisões, maior prazo 45d, verba 100 [buffet:58 decoracao:14 bolo_doces:8 lembrancinhas:4 foto_video:10 recreacao:6]",
+  "acima_150 + adolescente: 9 objetivos, 14 decisões, maior prazo 45d, verba 100 [buffet:50 decoracao:10 bolo_doces:6 lembrancinhas:4 foto_video:10 musica:16 portaria:4]",
+  "acima_150 + adulto: 8 objetivos, 12 decisões, maior prazo 45d, verba 100 [buffet:52 decoracao:10 bolo_doces:6 foto_video:10 musica:12 bar:10]",
+  "acima_150 + sessenta_mais: 9 objetivos, 13 decisões, maior prazo 45d, verba 100 [buffet:60 decoracao:12 bolo_doces:6 foto_video:10 musica:12]"
+ ],
+ "erros": [],
+ "avisos": []
+}

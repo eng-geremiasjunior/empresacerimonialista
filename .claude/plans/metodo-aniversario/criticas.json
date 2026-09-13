@@ -1,0 +1,285 @@
+[
+ {
+  "lente": "dominio",
+  "resultado": {
+   "problemas": [
+    {
+     "severidade": "alta",
+     "onde": "checklist montagem (brinquedos_monitores) + objetivos local e recreacao",
+     "problema": "O checklist do dia não cobre os riscos físicos da festa infantil: piscina, pula-pula e infláveis, e primeiros socorros. O único item de segurança é genérico.",
+     "evidencia": "O único item é brinquedos_monitores, \"Brinquedos conferidos e monitores orientados\". O objetivo local descreve \"Salão, chácara, condomínio ou casa\", lugares onde piscina é comum, e nenhum item, campo ou tarefa fala em piscina, cama elástica, rede de proteção, kit de primeiros socorros ou pronto-socorro. O campo regras de aniv_local_contratar pede só \"horário, som, caução\". Afogamento está entre as principais causas de morte de crianças de 1 a 4 anos no Brasil. Numa chácara de festa adulta, piscina com álcool é o mesmo risco.",
+     "correcao": "No bloco montagem: (1) piscina_isolada \"Piscina cercada ou com um adulto só para vigiar durante a festa\", requer_objetivo local. (2) Reescrever brinquedos_monitores para \"Brinquedos fixados e com rede, um monitor em cada e crianças separadas por tamanho\", requer recreacao. (3) primeiros_socorros \"Kit de primeiros socorros à mão e pronto-socorro mais próximo anotado\", requer_objetivo vazio. No label do campo regras, trocar para \"Regras do local (horário, som, caução, piscina)\"."
+    },
+    {
+     "severidade": "alta",
+     "onde": "aniv_formato_definir e aniv_conforto_definir (campos); nenhum campo com sensibilidade",
+     "problema": "Ninguém pergunta a alergia ou restrição alimentar de quem faz aniversário, nem os cuidados de saúde de quem faz 60 anos ou mais. Com isso, o aniversário não usa o mecanismo de dado sensível que o sistema já tem.",
+     "evidencia": "O RSVP coleta restrição só do convidado (ConfirmacaoConvidado.tsx:299). A tarefa \"Passar ao buffet ... as restrições da lista\" não pega a criança da festa, que não é convidada. aniv_bolo_doces_contratar pergunta só massa e recheio, e é o bolo que precisa ser adaptado (APLV, glúten, amendoim, bebê sem açúcar). O delta de 60+ em bolo_doces cita \"opção sem açúcar\" só no porque, que ninguém lê no dia. O casamento tem alergias e medicamentos com sensibilidade alergia/medicamento (146:213-229). O botão que compartilha a alergia com UM fornecedor é genérico, filtra por sensibilidade='alergia' (roteiro/alergia-actions.ts:17-26), e hoje não teria o que mostrar num aniversário.",
+     "correcao": "Em aniv_formato_definir (ambos, 30 dias): campo alergias, tipo texto, sensibilidade 'alergia', pergunta_cliente \"Quem faz aniversário tem alguma alergia ou restrição alimentar?\". Em aniv_conforto_definir (só 60+): campo medicamentos, tipo texto, sensibilidade 'medicamento', pergunta \"Quem faz aniversário toma remédio no horário da festa ou precisa de algum cuidado (cansaço, cuidador)?\". Os dois códigos estão livres na curadoria da 146. O rascunho precisa ganhar a coluna sensibilidade nos campos."
+    },
+    {
+     "severidade": "media",
+     "onde": "objetivo buffet (faixa 30/40/55), deltas de faixa de primeiro_ano, infantil e sessenta_mais, objetivo recreacao",
+     "problema": "O teto do buffet está abaixo do que custa um pacote real, e na base a própria sugestão de distribuição estoura esse teto. Na festa infantil, a recreação ainda recebe verba por fora do pacote que já a inclui.",
+     "evidencia": "Os deltas sobem o ideal do buffet para 50, 52 e 54 sem set_faixa_pct_max: fica 1 a 5 pontos do teto 55. Na base sem faixa (o estado do evento de 17/10 hoje), a distribuição normaliza pelos objetivos ativos (planejamento/actions.ts:288-303; 40+13+10+8=71) e dá ao buffet 56,3%. Isso passa de teto+1, e planejamento.ts:380-388 acusa \"distribuição desatualizada\" logo depois de sugerir. No domínio, o pacote de buffet infantil (comida, bebida, monitores, brinquedos, som e garçons) costuma ser 60 a 70% da festa. Recreação a 10% por fora (\"Monitores e brinquedos que o pacote não traz\") conta duas vezes o que o pacote já traz.",
+     "correcao": "Buffet com teto 70 na base, e set_faixa_pct_max 65 no 60+. Infantil: buffet 58, decoração 14, bolo_doces 12, foto 10, recreação 6. Primeiro ano: buffet 54, decoração 16, bolo_doces 12, foto 14, recreação 4. As duas somam 100. Porque da recreação: \"Personagem, oficina ou brinquedo que o pacote não traz.\" Validar os números com a cerimonialista."
+    },
+    {
+     "severidade": "media",
+     "onde": "aniv_lembrancinhas_definir, tarefa \"Encomendar as lembrancinhas\", recurso lembrancinhas, checklist lembrancinhas_separadas, roteiro lembrancinhas",
+     "problema": "A lembrancinha vem por padrão em todas as faixas, inclusive nas festas de 40 e de 70 anos. Além disso, o prazo de encomenda não comporta a produção.",
+     "evidencia": "Tudo pende de bolo_doces, que está ativo em todas as faixas: a decisão com a pergunta \"Que lembrancinha você quer dar aos convidados?\", o recurso de 0,6 por pessoa, o checklist (requer bolo_doces) e o item de roteiro com condicao vazia. O próprio delta de adulto diz \"pouca lembrancinha\". A tarefa de encomenda está a 20 dias, e o porque diz que a produção leva de 2 a 3 semanas: chega na véspera, sem margem para aprovar a arte.",
+     "correcao": "Criar o objetivo lembrancinhas (ativo_padrao true, faixa pequena tirada de bolo_doces), com desativar_objetivo em adulto e sessenta_mais e ativar_objetivo em primeiro_ano, infantil e adolescente. Na festa teen, kit e chinelo são costume. Mover para esse objetivo a decisão, o recurso e o requer do checklist. O item de roteiro vira um por faixa com condicao. Decisão com offset 25 e prioridade 90; tarefa a 24."
+    },
+    {
+     "severidade": "media",
+     "onde": "delta adolescente desativar bar, recurso cerveja (objetivo bar), checklist sem_alcool_menores",
+     "problema": "A festa adolescente perde o bar de drinks sem álcool, item central dessa idade. E o aviso de não servir álcool a menor só aparece quando a portaria está ligada.",
+     "evidencia": "O delta diz \"Não se serve bebida alcoólica a menores\" e desliga o bar inteiro. O método da debutante no mesmo sistema tem deb_drinks_jovem_definir \"Definir o bar de drinks sem álcool\". Religar o bar no adolescente semearia o recurso cerveja (3 latas por pessoa), porque ele mora em bar. sem_alcool_menores tem requer_objetivo portaria, então aparece só no adolescente. No infantil e no primeiro ano, com bebida_alcoolica do_buffet, há cerveja dos pais e crianças e adolescentes circulando. Servir álcool a menor é crime (ECA art. 243).",
+     "correcao": "Ativar bar no adolescente (faixa ~6, tirada do buffet), com porque \"Drinks sem álcool seguram a pista\". Tirar o recurso cerveja do método: quem traz bebida já é decidido em bebida_alcoolica, e a quantidade é do buffet ou entra à mão. sem_alcool_menores com requer_objetivo vazio e título \"Garçons avisados: nenhuma bebida alcoólica para menores de 18\"."
+    },
+    {
+     "severidade": "media",
+     "onde": "aniv_cardapio_fechar (bebida_alcoolica, cardapio) e aniv_buffet_contratar (tarefa de regras, isencao_ate)",
+     "problema": "Quem traz a bebida e o que entra no cardápio são decididos a 10 dias da festa, tarde demais: num buffet de pacote isso se fecha na assinatura. O campo de isenção também deixa de fora a meia entrada de criança.",
+     "evidencia": "bebida_alcoolica (do_buffet|comprada_pela_cliente|nenhuma) e a pergunta \"O que não pode faltar no cardápio?\" estão em aniv_cardapio_fechar, offset 10. Bebida de fora exige autorização e taxa de rolha, que se negociam antes de assinar. A tarefa \"Pedir ao buffet as regras da casa (som, velas, decoração de fora)\" esquece bebida e doces de fora, o que muitos buffets infantis proíbem ou cobram. isencao_ate só guarda a idade isenta, e é comum a regra \"até 5 não paga, de 6 a 10 paga meia\".",
+     "correcao": "Mover bebida_alcoolica para aniv_buffet_contratar. Tarefa: \"Pedir ao buffet as regras da casa (som, velas, bebida, doces e decoração de fora)\". Label de regra_excedente: \"Meia de criança, hora extra e convidado excedente\". aniv_cardapio_fechar fica com o número final e as restrições."
+    },
+    {
+     "severidade": "baixa",
+     "onde": "aniv_portaria_contratar (saida_menores) e tarefa \"Avisar os pais dos convidados...\"",
+     "problema": "A regra de saída dos menores está presa a uma decisão de contratar. Festa teen pequena, sem segurança, fica sem saída boa. E a opção \"livre\" não deveria existir.",
+     "evidencia": "Numa festa teen em casa ou condomínio sem segurança, decidir a decisão gera as 4 tarefas de contrato de um contrato que não existe. Marcar não se aplica apaga do portal a pergunta \"Como os convidados menores de idade podem ir embora?\". A opção livre, para menor à noite, deixa família e cerimonialista expostas se algo acontecer na saída.",
+     "correcao": "Criar aniv_saida_menores_definir (portaria, ambos, 14/7/21, prioridade 69) com saida_menores, opções com_responsavel|com_autorizacao_dos_pais, e a tarefa \"Avisar os pais...\". aniv_portaria_contratar fica só com fornecedor, valor e seguranças."
+    },
+    {
+     "severidade": "baixa",
+     "onde": "roteiro: lembrancinhas, fotos_decoracao; falta montagem do som",
+     "problema": "A lembrancinha só é entregue nos últimos 30 minutos. A foto da família com a mesa do bolo intacta não está no roteiro. E o DJ ou a banda não tem hora de chegar e montar.",
+     "evidencia": "Parabéns aos 150 e bolo aos 170, mas lembrancinhas só aos 210/30. Na festa infantil a saída começa logo depois do parabéns, e quem sai entre 170 e 210 vai embora sem lembrancinha. fotos_decoracao (-30) fala só da decoração. chegada_foto existe (-60), mas a música, ligada em adolescente, adulto e 60+, só aparece em \"Abertura da pista\", que é o que o link desse fornecedor mostraria.",
+     "correcao": "lembrancinhas: offset 170, duração 70. fotos_decoracao vira \"Fotos da família na mesa do bolo\". Um item \"Montagem do som\" por faixa (condicao adolescente, adulto, sessenta_mais), por exemplo a -150, sem coincidir com chegada_equipe."
+    },
+    {
+     "severidade": "baixa",
+     "onde": "roteiro pista_adulto e porque do delta adulto em musica",
+     "problema": "Na festa adulta, a pista tem só 60 minutos.",
+     "evidencia": "pista_adulto fica aos 180 e fim_festa aos 240, sem condicao. O delta diz \"a pista começa depois do parabéns\". Na festa adulta com DJ, a pista abre depois do serviço e segue depois do parabéns, que acontece com todo mundo já na festa. O próprio recurso cerveja fala em festa de 4 a 5 horas.",
+     "correcao": "pista_adulto aos ~90 minutos, depois de servico_buffet. Porque: \"A pista abre depois do serviço e segue depois do parabéns.\""
+    },
+    {
+     "severidade": "baixa",
+     "onde": "checklist lugares_mobilidade e parabens_bebe",
+     "problema": "Um item de 60+ aparece em todas as faixas, e um item de planejamento está no checklist do dia.",
+     "evidencia": "lugares_mobilidade tem requer_objetivo vazio e repete cadeiras_encosto (requer conforto), enquanto quatro deltas desligam conforto dizendo que acesso é da festa de 60+. parabens_bebe, \"Parabéns marcado para antes da soneca\", está na recepção: durante a festa não se marca horário. Isso já é a tarefa \"Ajustar o horário do parabéns à rotina do bebê\" (8 dias), mais o item de roteiro bebe_parabens.",
+     "correcao": "lugares_mobilidade com requer_objetivo conforto, ou fundido em cadeiras_encosto. Remover parabens_bebe."
+    },
+    {
+     "severidade": "baixa",
+     "onde": "objetivo homenagem (aniv_homenagem_definir, tarefa e checklist video_homenagem)",
+     "problema": "O vídeo da homenagem não tem tela garantida nem alguém responsável por colocar para rodar.",
+     "evidencia": "A única tarefa é \"Receber as fotos e as mensagens para o vídeo\" (14). O checklist testa \"no som e na tela\", mas nada garante que exista TV ou projetor, cabo e alguém responsável. Salão alugado e chácara costumam não ter telão. Descobrir isso na montagem é tarde.",
+     "correcao": "Tarefa em aniv_homenagem_definir: \"Garantir a tela, o som e quem coloca o vídeo\", offset 10, vinculo execucao."
+    },
+    {
+     "severidade": "baixa",
+     "onde": "aniv_foto_contratar (campos)",
+     "problema": "Não está combinado se o fotógrafo pode publicar foto de criança.",
+     "evidencia": "Os campos são só fornecedor, valor, horas_cobertura e momentos_foto. Em festa infantil, o fotógrafo publica fotos da criança da festa e das convidadas. A LGPD (art. 14) pede consentimento de um dos pais para dado de criança, e isso é atrito comum depois da festa.",
+     "correcao": "Campo publicacao_fotos, tipo escolha, opções pode_publicar|so_familia|nao_publicar, com pergunta_cliente \"O fotógrafo pode publicar fotos da festa nas redes dele?\"."
+    },
+    {
+     "severidade": "baixa",
+     "onde": "tarefa \"Acertar hora extra e convidados excedentes\" (offset -1) e checklist desmontagem",
+     "problema": "O excedente é cobrado no encerramento da festa, mas não há conferência da contagem no dia.",
+     "evidencia": "O buffet costuma apresentar a contagem e cobrar excedente e hora extra antes de a família sair. O checklist tem contagem_entrada e fim_do_horario, mas nenhum item confere a contagem final antes de pagar. A tarefa no dia seguinte chega depois da cobrança.",
+     "correcao": "Item de desmontagem excedentes_conferidos, \"Contagem final e excedentes conferidos com o buffet antes de pagar\", requer buffet. A tarefa -1 fica para o que vier cobrado depois."
+    },
+    {
+     "severidade": "baixa",
+     "onde": "arquétipo cenario infantil \"Infantil (2 a 12 anos)\"",
+     "problema": "A faixa junta duas festas diferentes, e as perguntas abertas não levantam esse corte.",
+     "evidencia": "A faixa liga recreação \"Monitores e brinquedos\" e desliga música (\"o som fica com o espaço e a recreação\"). De 2 a 5 anos, os pais ficam e a proporção de monitor é alta. De 9 a 12 anos, a festa costuma ser DJ ou balada kids, karaokê, oficina, sem piscina de bolinha, com os pais deixando e buscando. As perguntas abertas só discutem o primeiro ano e o corte 60/70.",
+     "correcao": "Levar à cerimonialista o corte \"infantil (2 a 8)\" e \"pré-adolescente (9 a 12)\", este com música ligada. Se ficar uma faixa só, acrescentar a pergunta às perguntas_abertas."
+    }
+   ],
+   "veredito": "Achei 2 problemas de severidade alta, 4 médios e 8 baixos. Recomendo corrigir os 2 altos e os 4 médios antes de levar o método à cerimonialista. A base se sustenta: faixa etária como cenário, cada faixa desligando o que é das outras, antecedência compatível com o evento de 17/10 e prazos de pós-evento em tarefas. O que falta é do dia real de um aniversário. (1) Segurança: o checklist não fala em piscina, pula-pula ou primeiros socorros, e esses são os maiores riscos físicos da festa infantil. (2) Saúde: ninguém pergunta a alergia de quem faz aniversário nem os remédios da pessoa de 60+. O sistema já tem campo sensível com compartilhamento para um único fornecedor, e o aniversário não o usa. (3) Verba: o teto de 55% do buffet está abaixo do pacote real. Na base, a própria sugestão passa do teto e o sistema acusa distribuição desatualizada. A recreação infantil ainda recebe verba por fora do pacote. (4) A lembrancinha vem por padrão nas festas adulta e 60+. (5) O adolescente perde o bar sem álcool, e o aviso de não servir álcool a menor não aparece no infantil. (6) Quem traz a bebida é decidido a 10 dias, depois do contrato do buffet. Os demais são ajustes de roteiro (lembrancinha só no fim, pista adulta de 60 minutos, montagem do som), itens de checklist fora do lugar, telão da homenagem, uso de imagem das crianças, excedente cobrado no dia e o corte da faixa infantil de 2 a 12 anos. Nenhum campo expõe custo interno no portal. Consultei ConfirmacaoConvidado.tsx, 146, alergia-actions.ts, planejamento/actions.ts e planejamento.ts; nada foi editado."
+  }
+ },
+ {
+  "lente": "conformidade",
+  "resultado": {
+   "problemas": [
+    {
+     "severidade": "media",
+     "onde": "recursos cerveja (objetivo bar) e pulseiras (objetivo portaria)",
+     "problema": "Os dois recursos de objetivos que só a faixa etária liga nunca chegam sozinhos a nenhum evento. Os recursos são instanciados uma vez, no INSERT, quando escala e cenario ainda estão nulos, e o gatilho que reaplica o arquétipo não chama instanciar_recursos_evento. Um aniversário adulto nasce com bar ligado e checklist 'Bar abastecido', mas sem a cerveja para contar. O mesmo vale para a pulseira no adolescente.",
+     "evidencia": "132_show_e_recursos.sql:434-438 (aplicar_arquetipos e depois instanciar_recursos, no INSERT); novo/actions.ts:233-239 (o cenario só é gravado depois do insert, por escreverCampo); 083_planejamento_campos_tipados.sql:318-335 (trg_aplicar_arquetipos só chama aplicar_arquetipos_evento); 132:358 (só objetivos com eo.ativo); operacao/actions.ts:161-171 (o único outro caminho é o botão 'buscar itens novos do método'). O corporativo já tem a mesma falha em agua_mesa, placas_nome e trofeus.",
+     "correcao": "Opção A, de código, aditiva e protegida por not exists: em salvarCampo (planejamento/actions.ts:135-141), depois do update de escala ou cenario, chamar rpc('instanciar_recursos_evento'). Isso conserta também o corporativo; o dono decide. Opção B: registrar em perguntas_abertas que cerveja e pulseiras dependem do botão, ou tirar esses dois recursos do método."
+    },
+    {
+     "severidade": "media",
+     "onde": "deltas desativar_objetivo repetidos nas 5 faixas (homenagem no adulto, musica no infantil e no primeiro_ano, bar no sessenta_mais, entre outros)",
+     "problema": "O desativar explícito é reaplicado sempre que o porte OU a faixa mudam. Qualquer objetivo que a cerimonialista ligou à mão volta a desligar, e a decisão já decidida some do Planejamento e do portal, enquanto as tarefas e o orçamento do fornecedor ficam. Isso contradiz o próprio 'porque' do delta adulto/homenagem ('a cerimonialista liga à mão') e as perguntas abertas sobre DJ na festa infantil e bebida nos 60+: ligar à mão só dura até ela tocar no chip de porte.",
+     "evidencia": "083_planejamento_campos_tipados.sql:250-270 (todo delta do escala E do cenario atuais é reexecutado, inclusive o desativar); 083:325-327 (o gatilho dispara em mudança de escala OU de cenario); 083:203-204 (a promessa 'escolha manual preservada' vale só sem operação explícita); PlanejamentoEvento.tsx:507-511 (o chip de porte grava pelo salvarCampo, que atualiza events).",
+     "correcao": "Tirar o desativar dos objetivos em que a ativação manual é plausível e está nas perguntas abertas: homenagem no adulto, musica no infantil e no primeiro_ano, bar no sessenta_mais. Manter o desativar só onde o item é contraindicado: bar e portaria para menores, bebe e recreacao fora da faixa. Aceitar que, nesses poucos casos, a troca de faixa deixa o objetivo ligado. A alternativa é corrigir o 'porque' e dizer em perguntas_abertas que a ativação manual é desfeita a cada troca de porte ou faixa."
+    },
+    {
+     "severidade": "media",
+     "onde": "roteiro com condicao por faixa (recreacao_inicio, recreacao_primeiro_ano, pista_adolescente, bebe_parabens, homenagem_familia, video_primeiro_ano, reunir_criancas, pista_adulto, saida_acompanhada)",
+     "problema": "Os itens por faixa só existem num evento criado pelo assistente completo com a faixa escolhida no passo de configuração. Não chegam: ao evento da cliente de 17/10, que já existe; ao evento vindo de orçamento aprovado; ao fluxo rápido; e a quem escolhe ou troca a faixa depois no Planejamento. O resumo vende 'roteiro variando por faixa' e 'vídeo no roteiro', mas na maioria dos caminhos só a base aparece.",
+     "evidencia": "novo/actions.ts:126-139 (o token vira chave só na criação, e o roteiro só é montado se incluirTimeline); roteiro-template.ts:86-91 (filtro por condicao); 112_roteiro_por_ancora.sql:498-511 (o orçamento aprovado insere só itens com condicao is null); 083:208-315 (aplicar_arquetipos_evento não mexe em roteiro_items).",
+     "correcao": "Aceitar e documentar. Garantir que o que é crítico por faixa também esteja no checklist do dia, que é semeado sob demanda e acompanha o objetivo ativo; saida_menores, criancas_entregues e parabens_bebe já estão lá. Se o dono quiser o roteiro por faixa em evento existente, é código novo: ao gravar o cenario, inserir os metodo_roteiro_item com condicao igual ao token que o evento ainda não tem, com origem 'calculado'. Para a cliente de 17/10, o backfill só consegue inserir a base."
+    },
+    {
+     "severidade": "media",
+     "onde": "resumo, lista do que o código TS precisa (hoje: PORTE_POR_PUBLICO, PERGUNTA_CENARIO, musica_parabens)",
+     "problema": "A lista está incompleta para o conteúdo aparecer direito na tela. Faltam: (1) a entrada do aniversário em RoteiroPadraoSection, sem a qual a proprietária não ajusta o roteiro modelo; (2) a tela de objetivo desligado, que diz 'Não se aplica a este casamento' em recreação, bar e portaria, que agora nascem desligados; (3) 'defina a data do casamento' no Planejamento, no Modo Amplo e no drawer; (4) o bloco 'Cerimônia' vazio no ajuste do checklist; (5) na impressão de música, trocar o literal deb_parabens_musica e o bloco 'Parabéns' para ler também musica_parabens (a lista usa .in por código).",
+     "evidencia": "RoteiroPadraoSection.tsx:20-23 (só casamento e debutante); ModoFoco.tsx:538 e 549; PlanejamentoEvento.tsx:412; ModoAmplo.tsx:184; DrawerDecisao.tsx:1010; ChecklistDoDiaAjuste.tsx:95-99 (esconde só 'colacao' vazio); imprimir/musica/[id]/page.tsx:44-51 e 85; capacidades.ts:80-88; StepEstruturacao.tsx:30-32.",
+     "correcao": "Acrescentar ao resumo: (a) PORTE_POR_PUBLICO.aniversario = [{ate:50,'ate_50'},{ate:150,'51_a_150'},{ate:Infinity,'acima_150'}]; (b) PERGUNTA_CENARIO.aniversario; (c) 'musica_parabens' no .in e no bloco Parabéns; (d) entrada {key:'aniversario', label:'Aniversário', ancora:'o início da festa'} em RoteiroPadraoSection; (e) os textos 'casamento' → 'evento' nas 5 linhas citadas; (f) esconder 'cerimonia' vazio como 'colacao'; (g) se aprovado, a chamada de recursos no salvarCampo."
+    },
+    {
+     "severidade": "baixa",
+     "onde": "valores \"\" do JSON em roteiro.condicao, checklist.requer_objetivo e tarefas.vinculo",
+     "problema": "No banco, vazio precisa ser NULL. Copiado literalmente, '' falha em silêncio. A condicao '' tira toda a base do roteiro de evento vindo de orçamento. O requer_objetivo '' faz 9 itens de base do checklist nunca nascerem (reuniao_equipe, kit_parabens, som_testado, presentes_identificados, parabens_prontos, presentes_entregues, pagamentos_feitos, avarias, lugares_mobilidade). O vinculo '' estoura o CHECK no insert.",
+     "evidencia": "112_roteiro_por_ancora.sql:510 ('mr.condicao is null'); 125_formatura_e_cortejo_geral.sql:450-452 ('t.requer_objetivo_codigo is null or exists…'); 073_vinculo_modulo_tarefa.sql:14 (CHECK 'is null or in (execucao, financeiro)'); o molde usa null::text (141:432, 141:474, 141:278).",
+     "correcao": "Na migração, nullif(v.cond,''), nullif(v.req,'') e nullif(v.vinc,''), como a 141 já faz com opcoes e unidade (141:175-176). Somar à conferência uma linha 'nenhuma condicao/requer_objetivo igual a string vazia'."
+    },
+    {
+     "severidade": "baixa",
+     "onde": "checklist do dia ao trocar de faixa",
+     "problema": "Os desativar explícitos limpam os objetivos, mas não o checklist. O checklist é semeado sob demanda e só insere: se a tela do roteiro abriu com a faixa infantil, 'Brinquedos conferidos', 'Crianças identificadas' e 'Todas as crianças entregues' continuam lá depois da troca para adolescente ou adulto. A promessa de 'troca de faixa sem lixo' não vale para o dia da festa.",
+     "evidencia": "125_formatura_e_cortejo_geral.sql:428-464 (só insert com not exists, nenhum delete por objetivo inativo); roteiro/page.tsx:27 (semeia a cada abertura).",
+     "correcao": "Aceitar e registrar em perguntas_abertas, ou pedir código novo que, ao gravar o cenario, apague os evento_checklist_dia ainda não marcados cujo template exige objetivo agora inativo. Não mexer na função genérica sem o dono aprovar."
+    },
+    {
+     "severidade": "baixa",
+     "onde": "campo soneca (tipo hora, pergunta_cliente) em aniv_bebe_rotina",
+     "problema": "Seria a primeira pergunta de hora do portal em qualquer método, e o portal não tem controle de hora: cai numa caixa de texto livre. Resposta como '14h' ou '2 da tarde' é recusada pela RPC com hora_invalida, e a tela mostra só 'Não foi possível salvar.'",
+     "evidencia": "RespostaPergunta.tsx:154-223 (ramos para sim_nao, escolha, data e numero; o resto vira textarea); RespostaPergunta.tsx:25-31 (ERROS sem hora_invalida); 114_resposta_vira_estado.sql:502-507 (cast ::time); nenhum outro metodo_campo 'hora' tem pergunta (141:193, 132:717, 132:751 são da equipe).",
+     "correcao": "Opção A: trocar soneca para 'texto' ('Em que horário o bebê costuma dormir?'), já que ninguém lê o valor como hora. Opção B, de código: um ramo input type='time' e a mensagem hora_invalida em RespostaPergunta."
+    },
+    {
+     "severidade": "baixa",
+     "onde": "checklist lugares_mobilidade (requer_objetivo vazio)",
+     "problema": "O item de mobilidade reduzida nasce em todo aniversário, inclusive no primeiro ano e no infantil. Repete cadeiras_encosto e idosos_acompanhados, que já exigem conforto, o objetivo que o desenho reserva para os 60+.",
+     "evidencia": "JSON do checklist: lugares_mobilidade com requer_objetivo \"\" contra cadeiras_encosto e idosos_acompanhados com 'conforto'; 125:450-452 (item sem exigência nasce sempre).",
+     "correcao": "Pôr requer_objetivo 'conforto' ou remover o item, que já está coberto por cadeiras_encosto."
+    },
+    {
+     "severidade": "baixa",
+     "onde": "tarefas 'Aprovar com a cliente o projeto da decoração' (30→21), 'Alugar mesas, cadeiras e louça que o local não tem' (30→21), 'Combinar o transporte de quem precisa' (30→21)",
+     "problema": "A distância de 9 dias entre a decisão e a tarefa joga essas tarefas para o dia da festa em evento criado com 9 dias ou menos de antecedência, caso real dos dados (aniversários criados com 0 e 8 dias). A decisão comprimida vence hoje, a tarefa herda o deslocamento e bate no teto da data. Alugar a louça no dia da festa é erro.",
+     "evidencia": "142_metodo_corporativo_ajustes.sql:111-115 e 127-130 (v_shift = prazo − (data − offset); least(v_data, …)); 142:263-290 (offset maior que os dias restantes vai para hoje). Com 8 dias: shift 22, e a tarefa de 21 vence em least(data, data+1) = data.",
+     "correcao": "Aproximar as três de sua decisão (offset 25 a 28) ou pendurá-las numa decisão de offset menor. Manter a distância em até cerca de 7 dias, como as demais."
+    },
+    {
+     "severidade": "baixa",
+     "onde": "campo tema em aniv_formato_definir (sem estilo_desejado no método)",
+     "problema": "A extração do briefing grava o estilo só em estilo_desejado. No aniversário ela devolve 'O estilo não entrou: este evento não tem o campo de estilo', e o que veio do briefing se perde. As cores entram, porque paleta_cores existe.",
+     "evidencia": "briefing-extracao-actions.ts:491-493; 146_as_perguntas_do_portal_de_volta.sql:90 (estilo_desejado é código curado com texto de casamento).",
+     "correcao": "Decisão do dono. Opção A: somar estilo_desejado (texto) em aniv_decoracao_contratar com pergunta_cliente própria, obrigatória para escapar do texto de casamento da 146, como 'Que clima você quer na decoração?'. Opção B: aceitar o aviso e manter só tema."
+    },
+    {
+     "severidade": "baixa",
+     "onde": "recurso pulseiras (objetivo portaria) e checklist pulseiras_criancas (requer recreacao)",
+     "problema": "O recurso e o item do dia não se encontram. Na festa infantil, o checklist manda identificar as crianças na entrada, mas não há pulseira para contar ou comprar. No adolescente, o recurso existe e nenhum item do dia o usa.",
+     "evidencia": "JSON: recursos.pulseiras objetivo 'portaria'; checklist pulseiras_criancas requer_objetivo 'recreacao'; 132:347-362 (recurso só de objetivo ativo).",
+     "correcao": "Pendurar o recurso na recreação ou criar um segundo código (pulseiras_criancas em recreacao). O código do recurso precisa ser único no tipo."
+    }
+   ],
+   "veredito": "A mecânica básica passa: nenhum problema grave e 4 médios. Conferido item a item:\n- **Valores aceitos:** tipos de campo dentro dos 9 (114:45-46); operações de delta dentro das 9 (083:172-177); eixos, responsáveis, regra de recurso e blocos do checklist válidos.\n- **Códigos de decisão:** as 19 levam o prefixo aniv_ e não colidem com nada (grep nas migrações).\n- **Campos especiais:** escala, cenario, verba_total e reserva_pct aparecem exatamente uma vez, e as opções de escala e cenario batem com os 8 arquétipos.\n- **Tokens novos:** os 3 de porte e os 5 de faixa não colidem com nenhum token da 141:55-72, mas exigem recriar os dois CHECKs.\n- **Verba:** a faixa ideal soma 100 na base (contando os objetivos desligados) e 100 entre os ativos de cada uma das 5 faixas. min ≤ ideal ≤ max vale depois de todo delta. Como a 083:229-247 refaz a base a partir do template, a troca de faixa não deixa faixa velha.\n- **Prioridade:** acompanha o prazo nas 15 combinações de porte e faixa.\n- **Contratação e códigos:** 'contratar' aparece só em contratação. Todo delta e todo requer_objetivo apontam para código que existe. Só há uma âncora com offset 0.\n- **Condições do roteiro:** usam só tokens de faixa.\n- **Perguntas curadas:** paleta_cores, playlist e lista_veto trazem texto próprio, então escapam do texto de casamento da 146:132-134. Não há campo moeda duplicado nem dado interno em decisão da cliente.\n- **Tamanho e prazos:** a base tem 11 decisões, com offset máximo de 30.\n\n**A faixa etária:**\n- **Na criação:** só é conhecida se PERGUNTA_CENARIO ganhar a linha do aniversário, e não existe no fluxo rápido nem no evento vindo de orçamento. No INSERT, o instanciar roda com escala e cenario nulos e só refaz a base (132:435). Logo depois, o assistente grava escala e cenario pelo salvarCampo (novo/actions.ts:233-239). Isso atualiza events e dispara trg_aplicar_arquetipos (083:325-327), então objetivos, prazos e verba já nascem conforme a faixa na mesma requisição.\n- **Escolhida ou trocada depois:** o banco reaplica. Só as decisões pendentes voltam aos prazos e prioridades do template, as decididas e os campos preenchidos não são tocados. Mas o ligado e desligado muda mesmo com decisão já decidida, e três partes não acompanham: roteiro, recursos e itens antigos do checklist.\n\n**Pontos a corrigir:**\n- Recursos de objetivo ligado pela faixa nunca chegam sozinhos.\n- O desativar explícito desfaz a ativação manual a cada troca de porte.\n- O roteiro por faixa só existe na criação completa.\n- A lista de código do resumo está incompleta.\n- Vazio (\"\") precisa virar NULL na migração.\n\n**Prazo da cliente de 17/10:** 'sem compressão' só vale se o backfill rodar até 17/09, com 30 dias ou mais até a data. A partir de 18/09, as 4 decisões de 30 dias vencem 'hoje'."
+  }
+ },
+ {
+  "lente": "produto",
+  "resultado": {
+   "veredito": "O método pode ir para a revisão da cerimonialista, mas antes precisa de quatro correções de conteúdo (soneca, lugares_mobilidade, saída dos menores, porte) e de uma troca de texto no código, que tem de entrar no ar antes da migração. As regras duras batem. Conferi: soma 100 em cada faixa, prioridade que desce junto com o prazo, nenhum prazo abaixo de 2 dias, um só campo de dinheiro por decisão, e os deltas de faixa ligam o que é da faixa e desligam o que é das outras. Nenhum código da curadoria da 146 (arquivo 146_as_perguntas_do_portal_de_volta.sql) fica sem texto próprio: paleta_cores, playlist e lista_veto já vêm com pergunta. Nenhuma decisão da cliente ou compartilhada guarda custo interno. Não há emoji nem linguagem gamificada. A distribuição da verba normaliza pelos objetivos ligados (actions.ts:288-303), então a base somar 71 antes da escolha da faixa não deixa buraco.\n\nO QUE ACONTECE COM A PRIMEIRA CLIENTE (17/10), SE O MÉTODO FOR APLICADO NO EVENTO DELA ENTRE 14 E 16/09:\n- **Planejamento:** nascem 14 objetivos (6 ligados) e 19 decisões, das quais 11 têm prazo. A compressão não entra.\n- **Prazos da base:** 4 decisões em 17/09 (verba, formato, buffet, decoração), 1 em 22/09 (foto), 3 em 26/09, e as últimas em 07/10, 10/10 e 12/10. Nada nasce vencido.\n- **Depois de escolher a faixa:**\n  - infantil: 12 decisões;\n  - adulto: 13;\n  - adolescente: 13, com 5 decisões em 17/09;\n  - primeiro ano: 14, com 5 em 17/09 e 5 em 26/09;\n  - 60 anos ou mais: 14, com 5 em 17/09.\n- **Se a aplicação cair de 17/09 (UTC) em diante:** as decisões de 30 dias nascem \"para hoje\" e ficam vencidas no dia seguinte. Aplicada em 22/09, são 5 para hoje (motor de prazos na 142:217-291). O resumo promete \"sem compressão\", mas isso só vale até 16/09.\n- **Tarefas:** nenhuma nasce antes de ela decidir. São 31 na base (16 delas as 4 de contrato de cada fornecedor) e chegam a 41 no adolescente. Se ela fechar buffet e decoração antes de 17/09, recebe 8 tarefas de contrato para 17/09. Marcar como decidido o que ela já fechou por fora gera essas tarefas para o próprio dia.\n- **Guia:** pula de \"2 de 3\" para \"2 de 5\". O passo 2 é possível: os campos escala e cenario existem, há arquétipo nos dois eixos, e a migração precisa pôr os 8 códigos novos no CHECK. O passo 4 também é possível, porque toda decisão gera tarefa.\n- **Roteiro:** o evento dela não ganha nenhum, porque o roteiro do método só é lido na criação pelo assistente. Se o dono aprovar semear o roteiro no evento dela, entram só os 12 itens sem condição. A base se sustenta sozinha, mas os 9 itens da faixa nunca chegam.\n- **Checklist do dia e recursos:** 17 itens na primeira vez que ela abrir a tela, e 6 recursos.\n- **Portal:** 9 perguntas na base e de 12 a 15 depois da faixa.\n\nO que protege essa cliente sem código especial para ela:\n1. Pôr no ar a correção de texto (problema 1) antes da migração.\n2. Aplicar a migração até 16/09, antes das 21h de Brasília.\n3. Corrigir os problemas de conteúdo abaixo.",
+   "problemas": [
+    {
+     "severidade": "alta",
+     "onde": "Código do Planejamento que o aniversário passa a exibir: src/components/planejamento/DrawerDecisao.tsx:897, ModoFoco.tsx:538 e 549, MapaMental.tsx:572, PlanejamentoEvento.tsx:412, ModoAmplo.tsx:184, DrawerDecisao.tsx:1010",
+     "problema": "Assim que o método entrar no evento, a primeira cliente vai ler 'noivos' e 'casamento' no aniversário. O texto aparece no primeiro clique que o guia manda dar (passo 3, 'Tome uma decisão').",
+     "evidencia": "DrawerDecisao.tsx:886-898 mostra 'Estes campos são o roteiro da conversa com os noivos. Preencha durante a reunião.' sempre que a decisão tem campo vazio, e no começo todas têm. ModoFoco.tsx:549 escreve 'Não se aplica a este casamento' no botão de desligar um objetivo, que é exatamente o gesto de quem não quer Portaria ou Bar. MapaMental.tsx:572 diz 'Arquitetura do casamento de uma olhada'. PlanejamentoEvento:412, ModoAmplo:184 e DrawerDecisao:1010 só aparecem sem data (o evento dela tem data), mas atingem os próximos aniversários. A frase do drawer também explica o sistema, o que a regra de ouro proíbe.",
+     "correcao": "Pôr no ar antes da migração, sem mexer em dado de nenhum tipo:\n- remover a frase do drawer inteira;\n- trocar para 'Não se aplica a este evento';\n- usar no mapa o rótulo por tipo que já existe em MapaMental.tsx:247-258;\n- trocar 'data do casamento' por 'data do evento'."
+    },
+    {
+     "severidade": "media",
+     "onde": "Campo soneca (tipo hora, pergunta ao cliente) da decisão aniv_bebe_rotina",
+     "problema": "Esta seria a primeira pergunta do tipo hora no portal, e o portal não trata esse tipo. A mãe digita uma resposta natural e recebe um erro genérico. A dica '(ex.: 14:00)' já é um remendo que explica o sistema.",
+     "evidencia": "RespostaPergunta.tsx:169-222 tem ramo para sim_nao, escolha, data e número. O tipo hora cai no textarea livre. A RPC portal_escrever_campo (114_resposta_vira_estado.sql:502-507) converte o texto para time e devolve 'hora_invalida' para 'por volta das 14h' ou 'depois do almoço'. ERROS (RespostaPergunta.tsx:25-31) não tem essa chave, e a linha 113 mostra só 'Não foi possível salvar.'.",
+     "correcao": "Trocar soneca para tipo texto, com rótulo 'Soneca' e pergunta 'Em que horário o bebê costuma dormir durante o dia?', sem exemplo de formato. Nenhuma tela lê valor_hora desse campo: quem usa a resposta é a tarefa 'Ajustar o horário do parabéns à rotina do bebê'."
+    },
+    {
+     "severidade": "media",
+     "onde": "Checklist do dia, item lugares_mobilidade (bloco montagem, requer_objetivo vazio)",
+     "problema": "Um item de convidado idoso ou com mobilidade reduzida entra em todo aniversário, inclusive na festa de 1 ano, na infantil e na adolescente. Isso contradiz a separação do objetivo conforto e a regra do dono: 'nada de item de adulto numa festa de 3 anos'.",
+     "evidencia": "Os deltas de primeiro ano, infantil, adolescente e adulto desligam o objetivo conforto ('Acesso e transporte de convidados idosos são da festa de 60 anos ou mais'). Mesmo assim, lugares_mobilidade não exige objetivo e repete o que cadeiras_encosto ('caminho sem degrau até a mesa e o banheiro') e idosos_acompanhados já cobrem, ambos presos a conforto. semear_checklist_dia (125:428-464) semeia ao abrir a tela e nunca remove. No evento da cliente, o item entra na primeira abertura, qualquer que seja a faixa.",
+     "correcao": "Apagar lugares_mobilidade, porque cadeiras_encosto já cobre o caso. Se a cerimonialista quiser os dois itens, pôr requer_objetivo 'conforto'."
+    },
+    {
+     "severidade": "media",
+     "onde": "Deltas de faixa etária que desligam objetivos, com a escala ate_50 | 51_a_150 | acima_150",
+     "problema": "Qualquer troca de porte reaplica os deltas da faixa e desliga, sem aviso, o objetivo que a cerimonialista ligou à mão. O próprio método empurra casos comuns para esse caminho manual, e o corte de 50 convidados cai no meio da faixa típica de 30 a 100.",
+     "evidencia": "trg_aplicar_arquetipos (083:318-335) roda aplicar_arquetipos_evento quando muda a escala OU o cenário. O laço (083:250-270) executa de novo todo desativar_objetivo da faixa. O delta adulto/homenagem diz 'Nos marcos de 30, 40 ou 50 anos a cerimonialista liga à mão'. As perguntas abertas 5, 6 e 7 tratam bar nos 60+, DJ na festa infantil e homenagem no adulto como exceções de ligar à mão.\n\nCaso concreto: festa de 50 anos com 45 convidados, homenagem ligada à mão. A lista sobe para 70 e ela troca o chip de porte. A homenagem é desligada, as perguntas somem do portal (o portal filtra objetivo ativo) e as decisões perdem o prazo (142:188-195). O delta ate_50 só mexe em 3 prazos, e em 4 a 9 dias.",
+     "correcao": "No método:\n- escala com dois arquétipos, ate_150 (a base, sem delta) e acima_150, com PORTE_POR_PUBLICO em 150 e sem os 3 deltas de ate_50. Assim a faixa típica de 30 a 100 nunca troca de porte;\n- não desenhar exceção como 'liga à mão'. Se a cerimonialista confirmar que homenagem nos marcos do adulto é comum, a faixa adulto liga.\n\nDecisão à parte para o dono: reaplicar ligar/desligar só quando o cenário muda é mudança na 083 e afeta o corporativo."
+    },
+    {
+     "severidade": "media",
+     "onde": "Objetivo portaria: decisão aniv_portaria_contratar com o campo saida_menores, tarefa 'Avisar os pais…', checklist saida_menores e sem_alcool_menores",
+     "problema": "A regra de saída dos menores e a checagem de álcool dependem de haver fornecedor de segurança. Numa festa adolescente pequena sem segurança, o gesto natural é desligar Portaria, e com ele somem a regra de saída, o aviso aos pais e o 'nenhuma bebida alcoólica para menores'.",
+     "evidencia": "saida_menores mora numa decisão com 'contratar' no código. As duas checagens do dia têm requer_objetivo 'portaria'. A pergunta aberta 10 prevê o caso ('Festa de adolescente pequena, em casa ou condomínio, ainda contrata segurança?'). O roteiro saida_acompanhada, com condição 'adolescente', continua dizendo 'conforme a regra combinada', uma regra que deixou de existir. No adolescente o bar vem desligado, mas o campo bebida_alcoolica aceita 'do_buffet', então essa checagem é a única trava.",
+     "correcao": "Separar a norma do fornecedor, dentro do mesmo objetivo (renomear para 'Entrada e saída'):\n- aniv_saida_combinar, 'Combinar a saída dos menores': ambos, 14/7/21 dias, prioridade 70, com saida_menores e a tarefa de aviso aos pais;\n- aniv_seguranca_contratar, 'Contratar a segurança': 14 dias, prioridade 69, com fornecedor, valor_contratado, segurancas e a tarefa 'Combinar com a segurança a lista e a regra de saída'.\n\nSem segurança, marca-se só a contratação como 'não se aplica' (isso recalcula os prazos). O objetivo continua ligado e as duas checagens do dia continuam. O adolescente passa a ter 14 decisões, como o primeiro ano e os 60+."
+    },
+    {
+     "severidade": "baixa",
+     "onde": "Objetivo local (ativo_padrao false, ligado à mão para a festa montada peça a peça)",
+     "problema": "O feitio mais comum fora da casa de festas depende de ligar um objetivo à mão. Ligar não recalcula prazos, então 'Fechar o local' fica sem 'vence em' até a próxima mudança de estado.",
+     "evidencia": "alternarObjetivoAtivo (actions.ts:319-334) só faz o update de ativo. Nenhum gatilho em evento_objetivo chama redistribuir_decisoes_evento, e o motor zera o prazo das decisões de objetivo desligado (142:188-195). A pergunta aberta 4 sugere que esse feitio é frequente.",
+     "correcao": "Correção genérica no código, a aprovar pelo dono: alternarObjetivoAtivo chama redistribuir_decisoes_evento depois do update. Vale para todos os tipos e não mexe em dado de ninguém. No método não há o que mudar."
+    },
+    {
+     "severidade": "baixa",
+     "onde": "PERGUNTA_CENARIO 'Quem faz aniversário?' e nomes dos arquétipos de cenário",
+     "problema": "A pergunta pede uma pessoa e as respostas são faixas de idade. Ela pode ser lida como pedido do nome, que vai em events.name. Os rótulos também estão inconsistentes.",
+     "evidencia": "StepEstruturacao.tsx:97-110 mostra a pergunta e os chips com os nomes do arquétipo: 'Primeiro ano', 'Infantil (2 a 12 anos)', 'Adolescente (13 a 17)', 'Adulto (18 a 59)', '60 anos ou mais'. Os dois do meio perdem o 'anos'.",
+     "correcao": "Perguntar 'Qual a idade de quem faz aniversário?' e padronizar os nomes: 'Primeiro ano', '2 a 12 anos', '13 a 17 anos', '18 a 59 anos', '60 anos ou mais'. O rótulo do campo ('Faixa etária') já diz o que é, então dispensa 'Infantil', 'Adolescente' e 'Adulto'."
+    },
+    {
+     "severidade": "baixa",
+     "onde": "Campo tema (pergunta ao cliente) da decisão aniv_formato_definir",
+     "problema": "A dica da pergunta aponta para festa de criança e aparece para todas as faixas, inclusive 60 anos ou mais.",
+     "evidencia": "'Qual é o tema ou o estilo da festa? (personagem, época ou referência)': 'personagem' é o exemplo de festa infantil, e a pergunta não tem condição de faixa.",
+     "correcao": "'Qual é o tema ou o estilo da festa? (uma época, um lugar, uma cor ou uma referência)'."
+    },
+    {
+     "severidade": "baixa",
+     "onde": "Tarefa 'Pedir orçamentos aos fornecedores que faltam' (decisão aniv_formato_definir, 28 dias)",
+     "problema": "A tarefa repete o que o mapa já mostra (as contratações pendentes), é vaga ('que faltam') e vence depois dos prazos que deveria anteceder.",
+     "evidencia": "Buffet e decoração vencem a 30 dias (17/09 no evento da cliente) e a tarefa vence a 28 (19/09). Cada contratação já nasce com 'Solicitar e receber o contrato'.",
+     "correcao": "Remover. A base fica com 30 tarefas."
+    },
+    {
+     "severidade": "baixa",
+     "onde": "Checklist do dia, item parabens_bebe (bloco recepcao: 'Parabéns marcado para antes da soneca')",
+     "problema": "É uma decisão de planejamento, não uma conferência do dia. A quarta repetição do mesmo assunto não reduz erro.",
+     "evidencia": "O mesmo conteúdo já está na decisão aniv_bebe_rotina, na tarefa 'Ajustar o horário do parabéns à rotina do bebê' (8 dias) e no roteiro bebe_parabens ('Bebê alimentado e trocado para o parabéns', minuto 110). Na recepção, o horário do parabéns já está fechado.",
+     "correcao": "Remover parabens_bebe. O roteiro e espaco_bebe já cobrem o dia."
+    },
+    {
+     "severidade": "baixa",
+     "onde": "Roteiro saida_acompanhada (minuto 225, 30 min, condição adolescente) e fim_festa (minuto 240)",
+     "problema": "A saída dos menores termina 15 minutos depois do fim do horário contratado, o que empurra a hora extra. É o mesmo padrão de sobreposição que a 142 corrigiu no corporativo.",
+     "evidencia": "225 + 30 = 255, depois do fim do horário (240) e junto com a desmontagem (255). A 142:326-335 moveu encerramento e desmontagem para depois de um item condicional pelo mesmo motivo.",
+     "correcao": "saida_acompanhada no minuto 210 com 30 min de duração, terminando junto com o fim do horário contratado."
+    },
+    {
+     "severidade": "baixa",
+     "onde": "Decisão aniv_lembrancinhas_definir, dentro de bolo_doces (objetivo sempre ligado)",
+     "problema": "A decisão não pode ser desligada por faixa, então a festa adulta e a de 60+ sempre carregam 'Definir as lembrancinhas' com prazo a 21 dias, embora o próprio método duvide do costume nessas faixas.",
+     "evidencia": "O delta adulto de bolo_doces diz 'pouca lembrancinha', e a pergunta aberta 8 pergunta se ainda é costume no adulto e nos 60+. Deltas só ligam ou desligam objetivos, não decisões. A decisão soma à pilha de 26/09 (3 a 5 decisões no mesmo dia).",
+     "correcao": "Levar o campo lembrancinha, com a mesma pergunta, para aniv_bolo_doces_contratar, e pendurar 'Encomendar as lembrancinhas' (20 dias) nessa decisão. A base cai para 10 decisões e a pilha de 26/09 perde uma."
+    }
+   ]
+  }
+ }
+]

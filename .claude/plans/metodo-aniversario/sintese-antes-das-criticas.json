@@ -1,0 +1,2428 @@
+{
+ "resumo": "Parte do rascunho 1: âncora no início da festa (a hora que o assistente já pede) com parabéns aos 150 minutos; 11 decisões na base, nenhuma acima de 30 dias, então o evento de 17/10 nasce sem compressão; pós-evento em tarefas negativas; liberacao_fornecedores; controle de excedentes. Faixa etária é o cenario (primeiro_ano, infantil, adolescente, adulto, sessenta_mais) porque bebê, recreação, pista, bar, portaria, homenagem e acesso mudam a operação; porte é a escala. Do 3: conforto separado da homenagem, que liga também no primeiro ano com vídeo no roteiro; verba somando 100 em cada faixa; foto e música antecipadas com prioridade; soneca; crianças entregues; restrições vindas do RSVP. Do 2: buffet com o que inclui e isenção infantil, local à parte desligado com regras e capacidade, bebida alcoólica como escolha, pagamentos do dia, saída dos menores. Código: PORTE_POR_PUBLICO 50/150, PERGUNTA_CENARIO \"Quem faz aniversário?\", musica_parabens na impressão de música.",
+ "objetivos": [
+  {
+   "codigo": "estrutura",
+   "nome": "Formato e verba",
+   "descricao": "Faixa etária, porte, idade, tema e quanto se pode gastar.",
+   "ordem": 0,
+   "ativo_padrao": true,
+   "faixa_min": null,
+   "faixa_ideal": null,
+   "faixa_max": null
+  },
+  {
+   "codigo": "buffet",
+   "nome": "Buffet e casa de festas",
+   "descricao": "Casa de festas ou buffet, o que o pacote inclui, o que se serve e até que horas.",
+   "ordem": 1,
+   "ativo_padrao": true,
+   "faixa_min": 30,
+   "faixa_ideal": 40,
+   "faixa_max": 55
+  },
+  {
+   "codigo": "local",
+   "nome": "Local à parte",
+   "descricao": "Salão, chácara, condomínio ou casa, e o mobiliário que falta alugar.",
+   "ordem": 2,
+   "ativo_padrao": false,
+   "faixa_min": 3,
+   "faixa_ideal": 5,
+   "faixa_max": 15
+  },
+  {
+   "codigo": "decoracao",
+   "nome": "Decoração",
+   "descricao": "Mesa do bolo, painel, mesas dos convidados e o tema aplicado.",
+   "ordem": 3,
+   "ativo_padrao": true,
+   "faixa_min": 10,
+   "faixa_ideal": 13,
+   "faixa_max": 20
+  },
+  {
+   "codigo": "bolo_doces",
+   "nome": "Bolo, doces e lembrancinhas",
+   "descricao": "O bolo, os docinhos e o que cada convidado leva para casa.",
+   "ordem": 4,
+   "ativo_padrao": true,
+   "faixa_min": 6,
+   "faixa_ideal": 10,
+   "faixa_max": 14
+  },
+  {
+   "codigo": "foto_video",
+   "nome": "Foto e vídeo",
+   "descricao": "Cobertura da festa e os momentos que não podem faltar.",
+   "ordem": 5,
+   "ativo_padrao": true,
+   "faixa_min": 6,
+   "faixa_ideal": 8,
+   "faixa_max": 14
+  },
+  {
+   "codigo": "dia_da_festa",
+   "nome": "Convidados e dia da festa",
+   "descricao": "Convite, confirmação de presença, parabéns e o roteiro de cada fornecedor.",
+   "ordem": 6,
+   "ativo_padrao": true,
+   "faixa_min": null,
+   "faixa_ideal": null,
+   "faixa_max": null
+  },
+  {
+   "codigo": "recreacao",
+   "nome": "Recreação",
+   "descricao": "Monitores, brinquedos e atividades para as crianças.",
+   "ordem": 7,
+   "ativo_padrao": false,
+   "faixa_min": 4,
+   "faixa_ideal": 8,
+   "faixa_max": 12
+  },
+  {
+   "codigo": "bebe",
+   "nome": "Rotina do bebê",
+   "descricao": "Soneca e quem cuida do bebê durante a festa.",
+   "ordem": 8,
+   "ativo_padrao": false,
+   "faixa_min": null,
+   "faixa_ideal": null,
+   "faixa_max": null
+  },
+  {
+   "codigo": "musica",
+   "nome": "Música e pista",
+   "descricao": "DJ ou banda e o que deve e o que não pode tocar.",
+   "ordem": 9,
+   "ativo_padrao": false,
+   "faixa_min": 6,
+   "faixa_ideal": 8,
+   "faixa_max": 14
+  },
+  {
+   "codigo": "bar",
+   "nome": "Bar e drinks",
+   "descricao": "Bartender, drinks e a reposição até o fim da festa.",
+   "ordem": 10,
+   "ativo_padrao": false,
+   "faixa_min": 4,
+   "faixa_ideal": 6,
+   "faixa_max": 12
+  },
+  {
+   "codigo": "portaria",
+   "nome": "Portaria e saída",
+   "descricao": "Seguranças, lista na entrada e a saída dos convidados menores.",
+   "ordem": 11,
+   "ativo_padrao": false,
+   "faixa_min": 1,
+   "faixa_ideal": 2,
+   "faixa_max": 5
+  },
+  {
+   "codigo": "homenagem",
+   "nome": "Homenagem",
+   "descricao": "Quem fala e o vídeo com fotos e mensagens da família.",
+   "ordem": 12,
+   "ativo_padrao": false,
+   "faixa_min": null,
+   "faixa_ideal": null,
+   "faixa_max": null
+  },
+  {
+   "codigo": "conforto",
+   "nome": "Acesso e conforto",
+   "descricao": "Acesso sem degrau, banheiro, cadeiras e transporte de quem tem mobilidade reduzida.",
+   "ordem": 13,
+   "ativo_padrao": false,
+   "faixa_min": null,
+   "faixa_ideal": null,
+   "faixa_max": null
+  }
+ ],
+ "decisoes": [
+  {
+   "objetivo": "estrutura",
+   "codigo": "aniv_verba_definir",
+   "titulo": "Definir a verba da festa",
+   "responsavel": "ambos",
+   "offset_ideal": 30,
+   "offset_min": 21,
+   "offset_max": 60,
+   "prioridade": 100,
+   "ordem": 1,
+   "porque": "Sem teto definido, cada orçamento vira negociação e a festa estoura na reta final."
+  },
+  {
+   "objetivo": "estrutura",
+   "codigo": "aniv_formato_definir",
+   "titulo": "Definir o formato da festa",
+   "responsavel": "ambos",
+   "offset_ideal": 30,
+   "offset_min": 21,
+   "offset_max": 60,
+   "prioridade": 99,
+   "ordem": 2,
+   "porque": "Faixa etária, porte e tema decidem quais fornecedores entram e em que ordem contratar."
+  },
+  {
+   "objetivo": "conforto",
+   "codigo": "aniv_conforto_definir",
+   "titulo": "Planejar o acesso e o transporte dos convidados",
+   "responsavel": "ambos",
+   "offset_ideal": 30,
+   "offset_min": 14,
+   "offset_max": 45,
+   "prioridade": 98,
+   "ordem": 1,
+   "porque": "Saber antes quem usa cadeira de rodas ou andador evita escolher local com degrau e banheiro longe."
+  },
+  {
+   "objetivo": "buffet",
+   "codigo": "aniv_buffet_contratar",
+   "titulo": "Fechar o buffet",
+   "responsavel": "ambos",
+   "offset_ideal": 30,
+   "offset_min": 21,
+   "offset_max": 90,
+   "prioridade": 97,
+   "ordem": 1,
+   "porque": "É o maior gasto, e o pacote diz o que já vem incluído, até que horas e quanto custa o excedente."
+  },
+  {
+   "objetivo": "local",
+   "codigo": "aniv_local_contratar",
+   "titulo": "Fechar o local",
+   "responsavel": "ambos",
+   "offset_ideal": 30,
+   "offset_min": 21,
+   "offset_max": 90,
+   "prioridade": 96,
+   "ordem": 1,
+   "porque": "Na festa montada por partes, capacidade e regras do local travam som, horário e mobiliário."
+  },
+  {
+   "objetivo": "decoracao",
+   "codigo": "aniv_decoracao_contratar",
+   "titulo": "Contratar a decoração",
+   "responsavel": "ambos",
+   "offset_ideal": 30,
+   "offset_min": 14,
+   "offset_max": 60,
+   "prioridade": 94,
+   "ordem": 1,
+   "porque": "Decoração temática precisa do tema e das cores fechados para produzir a tempo."
+  },
+  {
+   "objetivo": "foto_video",
+   "codigo": "aniv_foto_contratar",
+   "titulo": "Contratar foto e vídeo",
+   "responsavel": "ambos",
+   "offset_ideal": 25,
+   "offset_min": 14,
+   "offset_max": 60,
+   "prioridade": 92,
+   "ordem": 1,
+   "porque": "Os fotógrafos de festa fecham primeiro a agenda de fim de semana."
+  },
+  {
+   "objetivo": "musica",
+   "codigo": "aniv_musica_contratar",
+   "titulo": "Contratar a música",
+   "responsavel": "ambos",
+   "offset_ideal": 25,
+   "offset_min": 14,
+   "offset_max": 60,
+   "prioridade": 91,
+   "ordem": 1,
+   "porque": "DJ ou banda de sábado fecha cedo, e o repertório precisa chegar antes do dia."
+  },
+  {
+   "objetivo": "dia_da_festa",
+   "codigo": "aniv_convite_enviar",
+   "titulo": "Fechar a lista e enviar o convite",
+   "responsavel": "ambos",
+   "offset_ideal": 21,
+   "offset_min": 14,
+   "offset_max": 30,
+   "prioridade": 90,
+   "ordem": 1,
+   "porque": "O prazo de confirmação é o que permite fechar o número com o buffet."
+  },
+  {
+   "objetivo": "recreacao",
+   "codigo": "aniv_recreacao_contratar",
+   "titulo": "Contratar a recreação",
+   "responsavel": "ambos",
+   "offset_ideal": 21,
+   "offset_min": 10,
+   "offset_max": 45,
+   "prioridade": 89,
+   "ordem": 1,
+   "porque": "Monitores e brinquedos na medida das crianças evitam a festa sem controle."
+  },
+  {
+   "objetivo": "bolo_doces",
+   "codigo": "aniv_bolo_doces_contratar",
+   "titulo": "Encomendar o bolo e os doces",
+   "responsavel": "ambos",
+   "offset_ideal": 21,
+   "offset_min": 10,
+   "offset_max": 45,
+   "prioridade": 88,
+   "ordem": 1,
+   "porque": "A confeitaria agenda por semana e precisa de sabor e quantidade antes de produzir."
+  },
+  {
+   "objetivo": "bar",
+   "codigo": "aniv_bar_contratar",
+   "titulo": "Contratar o bar",
+   "responsavel": "ambos",
+   "offset_ideal": 21,
+   "offset_min": 10,
+   "offset_max": 45,
+   "prioridade": 87,
+   "ordem": 1,
+   "porque": "Drinks, horas de serviço e insumos combinados evitam bebida acabando no meio da festa."
+  },
+  {
+   "objetivo": "bolo_doces",
+   "codigo": "aniv_lembrancinhas_definir",
+   "titulo": "Definir as lembrancinhas",
+   "responsavel": "ambos",
+   "offset_ideal": 21,
+   "offset_min": 14,
+   "offset_max": 30,
+   "prioridade": 86,
+   "ordem": 2,
+   "porque": "Lembrancinha personalizada leva de duas a três semanas de produção."
+  },
+  {
+   "objetivo": "homenagem",
+   "codigo": "aniv_homenagem_definir",
+   "titulo": "Definir a homenagem",
+   "responsavel": "noivos",
+   "offset_ideal": 21,
+   "offset_min": 10,
+   "offset_max": 30,
+   "prioridade": 85,
+   "ordem": 1,
+   "porque": "Vídeo e falas dependem de fotos e mensagens que a família demora a juntar."
+  },
+  {
+   "objetivo": "portaria",
+   "codigo": "aniv_portaria_contratar",
+   "titulo": "Contratar a portaria e a segurança",
+   "responsavel": "ambos",
+   "offset_ideal": 14,
+   "offset_min": 7,
+   "offset_max": 30,
+   "prioridade": 70,
+   "ordem": 1,
+   "porque": "Festa de menores exige controle de quem entra e de como cada um vai embora."
+  },
+  {
+   "objetivo": "buffet",
+   "codigo": "aniv_cardapio_fechar",
+   "titulo": "Fechar o cardápio com o buffet",
+   "responsavel": "ambos",
+   "offset_ideal": 10,
+   "offset_min": 7,
+   "offset_max": 15,
+   "prioridade": 60,
+   "ordem": 2,
+   "porque": "O buffet pede cardápio e número final cerca de uma semana antes para comprar e escalar equipe."
+  },
+  {
+   "objetivo": "bebe",
+   "codigo": "aniv_bebe_rotina",
+   "titulo": "Combinar a rotina do bebê no dia",
+   "responsavel": "noivos",
+   "offset_ideal": 10,
+   "offset_min": 5,
+   "offset_max": 21,
+   "prioridade": 58,
+   "ordem": 1,
+   "porque": "O parabéns precisa acontecer com o bebê acordado e alimentado."
+  },
+  {
+   "objetivo": "dia_da_festa",
+   "codigo": "aniv_parabens_definir",
+   "titulo": "Combinar o momento do parabéns",
+   "responsavel": "ambos",
+   "offset_ideal": 7,
+   "offset_min": 3,
+   "offset_max": 14,
+   "prioridade": 50,
+   "ordem": 2,
+   "porque": "Família, música, foto e bolo precisam estar prontos no mesmo minuto."
+  },
+  {
+   "objetivo": "dia_da_festa",
+   "codigo": "aniv_roteiro_fechar",
+   "titulo": "Fechar o roteiro com os fornecedores",
+   "responsavel": "cerimonialista",
+   "offset_ideal": 5,
+   "offset_min": 2,
+   "offset_max": 10,
+   "prioridade": 40,
+   "ordem": 3,
+   "porque": "Cada fornecedor precisa da hora de chegar e montar, e o saldo de cada um precisa estar separado."
+  }
+ ],
+ "campos": [
+  {
+   "decisao": "aniv_verba_definir",
+   "codigo": "verba_total",
+   "label": "Verba total",
+   "tipo": "moeda",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 1,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_verba_definir",
+   "codigo": "reserva_pct",
+   "label": "Reserva para imprevistos",
+   "tipo": "numero",
+   "opcoes": "",
+   "unidade": "%",
+   "ordem": 2,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_formato_definir",
+   "codigo": "idade",
+   "label": "Idade que completa",
+   "tipo": "numero",
+   "opcoes": "",
+   "unidade": "anos",
+   "ordem": 1,
+   "pergunta_cliente": "Quantos anos serão comemorados?"
+  },
+  {
+   "decisao": "aniv_formato_definir",
+   "codigo": "tema",
+   "label": "Tema",
+   "tipo": "texto",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 2,
+   "pergunta_cliente": "Qual é o tema ou o estilo da festa? (personagem, época ou referência)"
+  },
+  {
+   "decisao": "aniv_formato_definir",
+   "codigo": "escala",
+   "label": "Porte",
+   "tipo": "escolha",
+   "opcoes": "ate_50|51_a_150|acima_150",
+   "unidade": "",
+   "ordem": 3,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_formato_definir",
+   "codigo": "cenario",
+   "label": "Faixa etária",
+   "tipo": "escolha",
+   "opcoes": "primeiro_ano|infantil|adolescente|adulto|sessenta_mais",
+   "unidade": "",
+   "ordem": 4,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_conforto_definir",
+   "codigo": "mobilidade",
+   "label": "Convidados com mobilidade reduzida",
+   "tipo": "texto",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 1,
+   "pergunta_cliente": "Algum convidado usa cadeira de rodas, andador ou precisa de ajuda para andar?"
+  },
+  {
+   "decisao": "aniv_conforto_definir",
+   "codigo": "acesso_ok",
+   "label": "Acesso e banheiro sem degrau",
+   "tipo": "sim_nao",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 2,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_conforto_definir",
+   "codigo": "transporte",
+   "label": "Quem precisa de transporte",
+   "tipo": "texto",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 3,
+   "pergunta_cliente": "Algum convidado vai precisar de transporte para chegar ou voltar?"
+  },
+  {
+   "decisao": "aniv_buffet_contratar",
+   "codigo": "fornecedor",
+   "label": "Buffet ou casa de festas",
+   "tipo": "fornecedor",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 1,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_buffet_contratar",
+   "codigo": "valor_contratado",
+   "label": "Valor contratado",
+   "tipo": "moeda",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 2,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_buffet_contratar",
+   "codigo": "inclui",
+   "label": "O que o pacote inclui",
+   "tipo": "texto",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 3,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_buffet_contratar",
+   "codigo": "isencao_ate",
+   "label": "Crianças isentas até",
+   "tipo": "numero",
+   "opcoes": "",
+   "unidade": "anos",
+   "ordem": 4,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_buffet_contratar",
+   "codigo": "duracao_contratada",
+   "label": "Duração contratada",
+   "tipo": "numero",
+   "opcoes": "",
+   "unidade": "horas",
+   "ordem": 5,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_buffet_contratar",
+   "codigo": "regra_excedente",
+   "label": "Hora extra e convidado excedente",
+   "tipo": "texto",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 6,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_local_contratar",
+   "codigo": "fornecedor",
+   "label": "Local",
+   "tipo": "fornecedor",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 1,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_local_contratar",
+   "codigo": "valor_contratado",
+   "label": "Valor contratado",
+   "tipo": "moeda",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 2,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_local_contratar",
+   "codigo": "capacidade",
+   "label": "Capacidade",
+   "tipo": "numero",
+   "opcoes": "",
+   "unidade": "pessoas",
+   "ordem": 3,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_local_contratar",
+   "codigo": "regras",
+   "label": "Regras do local (horário, som, caução)",
+   "tipo": "texto",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 4,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_decoracao_contratar",
+   "codigo": "fornecedor",
+   "label": "Decoração",
+   "tipo": "fornecedor",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 1,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_decoracao_contratar",
+   "codigo": "valor_contratado",
+   "label": "Valor contratado",
+   "tipo": "moeda",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 2,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_decoracao_contratar",
+   "codigo": "paleta_cores",
+   "label": "Cores",
+   "tipo": "texto",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 3,
+   "pergunta_cliente": "Quais cores você quer ver na festa?"
+  },
+  {
+   "decisao": "aniv_decoracao_contratar",
+   "codigo": "itens_decoracao",
+   "label": "Itens da decoração",
+   "tipo": "texto",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 4,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_foto_contratar",
+   "codigo": "fornecedor",
+   "label": "Foto e vídeo",
+   "tipo": "fornecedor",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 1,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_foto_contratar",
+   "codigo": "valor_contratado",
+   "label": "Valor contratado",
+   "tipo": "moeda",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 2,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_foto_contratar",
+   "codigo": "horas_cobertura",
+   "label": "Horas de cobertura",
+   "tipo": "numero",
+   "opcoes": "",
+   "unidade": "horas",
+   "ordem": 3,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_foto_contratar",
+   "codigo": "momentos_foto",
+   "label": "Momentos e pessoas que não podem faltar",
+   "tipo": "texto",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 4,
+   "pergunta_cliente": "Que momentos e pessoas não podem faltar nas fotos?"
+  },
+  {
+   "decisao": "aniv_musica_contratar",
+   "codigo": "fornecedor",
+   "label": "DJ ou banda",
+   "tipo": "fornecedor",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 1,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_musica_contratar",
+   "codigo": "valor_contratado",
+   "label": "Valor contratado",
+   "tipo": "moeda",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 2,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_musica_contratar",
+   "codigo": "playlist",
+   "label": "O que precisa tocar",
+   "tipo": "texto",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 3,
+   "pergunta_cliente": "Que músicas ou estilos precisam tocar na festa?"
+  },
+  {
+   "decisao": "aniv_musica_contratar",
+   "codigo": "lista_veto",
+   "label": "O que não pode tocar",
+   "tipo": "texto",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 4,
+   "pergunta_cliente": "Tem alguma música ou estilo que não pode tocar?"
+  },
+  {
+   "decisao": "aniv_convite_enviar",
+   "codigo": "prazo_resposta",
+   "label": "Prazo para confirmar presença",
+   "tipo": "data",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 1,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_recreacao_contratar",
+   "codigo": "fornecedor",
+   "label": "Recreação",
+   "tipo": "fornecedor",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 1,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_recreacao_contratar",
+   "codigo": "valor_contratado",
+   "label": "Valor contratado",
+   "tipo": "moeda",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 2,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_recreacao_contratar",
+   "codigo": "monitores",
+   "label": "Monitores",
+   "tipo": "numero",
+   "opcoes": "",
+   "unidade": "pessoas",
+   "ordem": 3,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_recreacao_contratar",
+   "codigo": "brincadeiras",
+   "label": "Brincadeiras e atrações",
+   "tipo": "texto",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 4,
+   "pergunta_cliente": "Quais brincadeiras ou atrações não podem faltar para as crianças?"
+  },
+  {
+   "decisao": "aniv_bolo_doces_contratar",
+   "codigo": "fornecedor",
+   "label": "Confeitaria",
+   "tipo": "fornecedor",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 1,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_bolo_doces_contratar",
+   "codigo": "valor_contratado",
+   "label": "Valor contratado",
+   "tipo": "moeda",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 2,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_bolo_doces_contratar",
+   "codigo": "sabor_bolo",
+   "label": "Massa e recheio do bolo",
+   "tipo": "texto",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 3,
+   "pergunta_cliente": "Qual sabor de massa e recheio você quer no bolo?"
+  },
+  {
+   "decisao": "aniv_bolo_doces_contratar",
+   "codigo": "doces",
+   "label": "Doces escolhidos",
+   "tipo": "texto",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 4,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_bar_contratar",
+   "codigo": "fornecedor",
+   "label": "Bar",
+   "tipo": "fornecedor",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 1,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_bar_contratar",
+   "codigo": "valor_contratado",
+   "label": "Valor contratado",
+   "tipo": "moeda",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 2,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_bar_contratar",
+   "codigo": "bebidas",
+   "label": "Drinks e bebidas que não podem faltar",
+   "tipo": "texto",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 3,
+   "pergunta_cliente": "Quais drinks e bebidas não podem faltar?"
+  },
+  {
+   "decisao": "aniv_bar_contratar",
+   "codigo": "horas_servico",
+   "label": "Horas de serviço",
+   "tipo": "numero",
+   "opcoes": "",
+   "unidade": "horas",
+   "ordem": 4,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_lembrancinhas_definir",
+   "codigo": "lembrancinha",
+   "label": "Lembrancinha",
+   "tipo": "texto",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 1,
+   "pergunta_cliente": "Que lembrancinha você quer dar aos convidados?"
+  },
+  {
+   "decisao": "aniv_homenagem_definir",
+   "codigo": "quem_fala",
+   "label": "Quem fala e em que ordem",
+   "tipo": "texto",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 1,
+   "pergunta_cliente": "Quem vai falar ou prestar homenagem na festa?"
+  },
+  {
+   "decisao": "aniv_homenagem_definir",
+   "codigo": "video_homenagem",
+   "label": "Vídeo com fotos",
+   "tipo": "sim_nao",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 2,
+   "pergunta_cliente": "Vai ter vídeo com fotos e mensagens da família?"
+  },
+  {
+   "decisao": "aniv_portaria_contratar",
+   "codigo": "fornecedor",
+   "label": "Portaria e segurança",
+   "tipo": "fornecedor",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 1,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_portaria_contratar",
+   "codigo": "valor_contratado",
+   "label": "Valor contratado",
+   "tipo": "moeda",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 2,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_portaria_contratar",
+   "codigo": "segurancas",
+   "label": "Seguranças",
+   "tipo": "numero",
+   "opcoes": "",
+   "unidade": "pessoas",
+   "ordem": 3,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_portaria_contratar",
+   "codigo": "saida_menores",
+   "label": "Saída dos menores",
+   "tipo": "escolha",
+   "opcoes": "acompanhado_por_adulto|sozinho_com_aviso_dos_pais|livre",
+   "unidade": "",
+   "ordem": 4,
+   "pergunta_cliente": "Como os convidados menores de idade podem ir embora?"
+  },
+  {
+   "decisao": "aniv_cardapio_fechar",
+   "codigo": "cardapio",
+   "label": "Cardápio",
+   "tipo": "texto",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 1,
+   "pergunta_cliente": "O que não pode faltar no cardápio?"
+  },
+  {
+   "decisao": "aniv_cardapio_fechar",
+   "codigo": "bebida_alcoolica",
+   "label": "Bebida alcoólica",
+   "tipo": "escolha",
+   "opcoes": "do_buffet|comprada_pela_cliente|nenhuma",
+   "unidade": "",
+   "ordem": 2,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_bebe_rotina",
+   "codigo": "soneca",
+   "label": "Horário da soneca",
+   "tipo": "hora",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 1,
+   "pergunta_cliente": "Em que horário o bebê costuma dormir? (ex.: 14:00)"
+  },
+  {
+   "decisao": "aniv_bebe_rotina",
+   "codigo": "quem_cuida_bebe",
+   "label": "Quem cuida do bebê na festa",
+   "tipo": "texto",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 2,
+   "pergunta_cliente": "Quem fica com o bebê durante a festa?"
+  },
+  {
+   "decisao": "aniv_parabens_definir",
+   "codigo": "musica_parabens",
+   "label": "Música do parabéns",
+   "tipo": "texto",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 1,
+   "pergunta_cliente": "Qual música vai tocar na hora do parabéns?"
+  },
+  {
+   "decisao": "aniv_parabens_definir",
+   "codigo": "quem_no_bolo",
+   "label": "Quem fica junto do bolo",
+   "tipo": "texto",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 2,
+   "pergunta_cliente": "Quem fica ao lado do bolo na hora do parabéns?"
+  },
+  {
+   "decisao": "aniv_roteiro_fechar",
+   "codigo": "liberacao_fornecedores",
+   "label": "Liberação do local para os fornecedores",
+   "tipo": "hora",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 1,
+   "pergunta_cliente": ""
+  },
+  {
+   "decisao": "aniv_roteiro_fechar",
+   "codigo": "pagamentos_dia",
+   "label": "Pagamentos do dia (quem recebe, quanto e como)",
+   "tipo": "texto",
+   "opcoes": "",
+   "unidade": "",
+   "ordem": 2,
+   "pergunta_cliente": ""
+  }
+ ],
+ "tarefas": [
+  {
+   "decisao": "aniv_verba_definir",
+   "titulo": "Montar o calendário de pagamentos com a cliente",
+   "responsavel": "cerimonialista",
+   "offset": 28,
+   "ordem": 10,
+   "vinculo": "financeiro"
+  },
+  {
+   "decisao": "aniv_formato_definir",
+   "titulo": "Pedir orçamentos aos fornecedores que faltam",
+   "responsavel": "cerimonialista",
+   "offset": 28,
+   "ordem": 10,
+   "vinculo": ""
+  },
+  {
+   "decisao": "aniv_conforto_definir",
+   "titulo": "Conferir no local o acesso sem degrau, o banheiro e as cadeiras",
+   "responsavel": "cerimonialista",
+   "offset": 28,
+   "ordem": 10,
+   "vinculo": ""
+  },
+  {
+   "decisao": "aniv_conforto_definir",
+   "titulo": "Combinar o transporte de quem precisa",
+   "responsavel": "cerimonialista",
+   "offset": 21,
+   "ordem": 11,
+   "vinculo": ""
+  },
+  {
+   "decisao": "aniv_buffet_contratar",
+   "titulo": "Pedir ao buffet as regras da casa (som, velas, decoração de fora)",
+   "responsavel": "cerimonialista",
+   "offset": 28,
+   "ordem": 10,
+   "vinculo": ""
+  },
+  {
+   "decisao": "aniv_local_contratar",
+   "titulo": "Fazer a visita técnica no local com a decoração",
+   "responsavel": "cerimonialista",
+   "offset": 28,
+   "ordem": 10,
+   "vinculo": ""
+  },
+  {
+   "decisao": "aniv_local_contratar",
+   "titulo": "Alugar mesas, cadeiras e louça que o local não tem",
+   "responsavel": "cerimonialista",
+   "offset": 21,
+   "ordem": 11,
+   "vinculo": ""
+  },
+  {
+   "decisao": "aniv_decoracao_contratar",
+   "titulo": "Aprovar com a cliente o projeto da decoração",
+   "responsavel": "cerimonialista",
+   "offset": 21,
+   "ordem": 10,
+   "vinculo": ""
+  },
+  {
+   "decisao": "aniv_lembrancinhas_definir",
+   "titulo": "Encomendar as lembrancinhas",
+   "responsavel": "cerimonialista",
+   "offset": 20,
+   "ordem": 10,
+   "vinculo": ""
+  },
+  {
+   "decisao": "aniv_convite_enviar",
+   "titulo": "Lembrar quem ainda não confirmou presença",
+   "responsavel": "ambos",
+   "offset": 14,
+   "ordem": 10,
+   "vinculo": ""
+  },
+  {
+   "decisao": "aniv_homenagem_definir",
+   "titulo": "Receber as fotos e as mensagens para o vídeo",
+   "responsavel": "cerimonialista",
+   "offset": 14,
+   "ordem": 10,
+   "vinculo": ""
+  },
+  {
+   "decisao": "aniv_bar_contratar",
+   "titulo": "Fechar com o bar a lista de insumos e quem compra",
+   "responsavel": "cerimonialista",
+   "offset": 14,
+   "ordem": 10,
+   "vinculo": ""
+  },
+  {
+   "decisao": "aniv_portaria_contratar",
+   "titulo": "Avisar os pais dos convidados sobre o horário e a regra de saída",
+   "responsavel": "ambos",
+   "offset": 10,
+   "ordem": 10,
+   "vinculo": ""
+  },
+  {
+   "decisao": "aniv_portaria_contratar",
+   "titulo": "Combinar com a segurança a lista e a regra de saída",
+   "responsavel": "cerimonialista",
+   "offset": 7,
+   "ordem": 11,
+   "vinculo": "execucao"
+  },
+  {
+   "decisao": "aniv_bebe_rotina",
+   "titulo": "Ajustar o horário do parabéns à rotina do bebê",
+   "responsavel": "cerimonialista",
+   "offset": 8,
+   "ordem": 10,
+   "vinculo": "execucao"
+  },
+  {
+   "decisao": "aniv_cardapio_fechar",
+   "titulo": "Passar ao buffet o número confirmado e as restrições da lista",
+   "responsavel": "cerimonialista",
+   "offset": 7,
+   "ordem": 10,
+   "vinculo": ""
+  },
+  {
+   "decisao": "aniv_parabens_definir",
+   "titulo": "Repassar o momento do parabéns com fotógrafo, som e buffet",
+   "responsavel": "cerimonialista",
+   "offset": 5,
+   "ordem": 10,
+   "vinculo": "execucao"
+  },
+  {
+   "decisao": "aniv_roteiro_fechar",
+   "titulo": "Enviar o roteiro a cada fornecedor",
+   "responsavel": "cerimonialista",
+   "offset": 4,
+   "ordem": 10,
+   "vinculo": "execucao"
+  },
+  {
+   "decisao": "aniv_roteiro_fechar",
+   "titulo": "Separar os pagamentos do dia (saldo, forma e quem paga)",
+   "responsavel": "cerimonialista",
+   "offset": 3,
+   "ordem": 11,
+   "vinculo": "financeiro"
+  },
+  {
+   "decisao": "aniv_roteiro_fechar",
+   "titulo": "Confirmar a chegada e a entrega de cada fornecedor",
+   "responsavel": "cerimonialista",
+   "offset": 2,
+   "ordem": 12,
+   "vinculo": "execucao"
+  },
+  {
+   "decisao": "aniv_roteiro_fechar",
+   "titulo": "Enviar a lista de convidados à portaria do local",
+   "responsavel": "cerimonialista",
+   "offset": 2,
+   "ordem": 13,
+   "vinculo": "execucao"
+  },
+  {
+   "decisao": "aniv_roteiro_fechar",
+   "titulo": "Acertar hora extra e convidados excedentes",
+   "responsavel": "cerimonialista",
+   "offset": -1,
+   "ordem": 14,
+   "vinculo": "financeiro"
+  },
+  {
+   "decisao": "aniv_roteiro_fechar",
+   "titulo": "Enviar o agradecimento e pedir a avaliação da cliente",
+   "responsavel": "cerimonialista",
+   "offset": -3,
+   "ordem": 15,
+   "vinculo": ""
+  },
+  {
+   "decisao": "aniv_roteiro_fechar",
+   "titulo": "Fechar a prestação de contas",
+   "responsavel": "cerimonialista",
+   "offset": -7,
+   "ordem": 16,
+   "vinculo": "financeiro"
+  }
+ ],
+ "arquetipos": [
+  {
+   "eixo": "escala",
+   "codigo": "ate_50",
+   "nome": "Até 50 convidados",
+   "ordem": 1
+  },
+  {
+   "eixo": "escala",
+   "codigo": "51_a_150",
+   "nome": "51 a 150 convidados",
+   "ordem": 2
+  },
+  {
+   "eixo": "escala",
+   "codigo": "acima_150",
+   "nome": "Acima de 150 convidados",
+   "ordem": 3
+  },
+  {
+   "eixo": "cenario",
+   "codigo": "primeiro_ano",
+   "nome": "Primeiro ano",
+   "ordem": 1
+  },
+  {
+   "eixo": "cenario",
+   "codigo": "infantil",
+   "nome": "Infantil (2 a 12 anos)",
+   "ordem": 2
+  },
+  {
+   "eixo": "cenario",
+   "codigo": "adolescente",
+   "nome": "Adolescente (13 a 17)",
+   "ordem": 3
+  },
+  {
+   "eixo": "cenario",
+   "codigo": "adulto",
+   "nome": "Adulto (18 a 59)",
+   "ordem": 4
+  },
+  {
+   "eixo": "cenario",
+   "codigo": "sessenta_mais",
+   "nome": "60 anos ou mais",
+   "ordem": 5
+  }
+ ],
+ "deltas": [
+  {
+   "eixo": "escala",
+   "arquetipo": "ate_50",
+   "alvo_tipo": "decisao",
+   "alvo_codigo": "aniv_decoracao_contratar",
+   "operacao": "set_offset_ideal",
+   "valor": 21,
+   "porque": "Decoração de festa pequena sai com três semanas de produção."
+  },
+  {
+   "eixo": "escala",
+   "arquetipo": "ate_50",
+   "alvo_tipo": "decisao",
+   "alvo_codigo": "aniv_foto_contratar",
+   "operacao": "set_offset_ideal",
+   "valor": 21,
+   "porque": "Cobertura curta cabe em agenda de fotógrafo com menos antecedência."
+  },
+  {
+   "eixo": "escala",
+   "arquetipo": "ate_50",
+   "alvo_tipo": "decisao",
+   "alvo_codigo": "aniv_musica_contratar",
+   "operacao": "set_offset_ideal",
+   "valor": 21,
+   "porque": "Som de festa pequena se resolve com três semanas."
+  },
+  {
+   "eixo": "escala",
+   "arquetipo": "acima_150",
+   "alvo_tipo": "decisao",
+   "alvo_codigo": "aniv_verba_definir",
+   "operacao": "set_offset_ideal",
+   "valor": 45,
+   "porque": "Festa grande precisa da verba antes de reservar espaço disputado."
+  },
+  {
+   "eixo": "escala",
+   "arquetipo": "acima_150",
+   "alvo_tipo": "decisao",
+   "alvo_codigo": "aniv_formato_definir",
+   "operacao": "set_offset_ideal",
+   "valor": 45,
+   "porque": "O formato vem antes da reserva do espaço grande."
+  },
+  {
+   "eixo": "escala",
+   "arquetipo": "acima_150",
+   "alvo_tipo": "decisao",
+   "alvo_codigo": "aniv_conforto_definir",
+   "operacao": "set_offset_ideal",
+   "valor": 45,
+   "porque": "Quem precisa de acesso sem degrau pesa na escolha do espaço grande."
+  },
+  {
+   "eixo": "escala",
+   "arquetipo": "acima_150",
+   "alvo_tipo": "decisao",
+   "alvo_codigo": "aniv_buffet_contratar",
+   "operacao": "set_offset_ideal",
+   "valor": 45,
+   "porque": "Casa para mais de 150 pessoas tem poucos sábados livres."
+  },
+  {
+   "eixo": "escala",
+   "arquetipo": "acima_150",
+   "alvo_tipo": "decisao",
+   "alvo_codigo": "aniv_local_contratar",
+   "operacao": "set_offset_ideal",
+   "valor": 45,
+   "porque": "Salão e chácara grandes são os primeiros a fechar data."
+  },
+  {
+   "eixo": "escala",
+   "arquetipo": "acima_150",
+   "alvo_tipo": "decisao",
+   "alvo_codigo": "aniv_convite_enviar",
+   "operacao": "set_offset_ideal",
+   "valor": 25,
+   "porque": "Lista grande demora mais para responder."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "primeiro_ano",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "recreacao",
+   "operacao": "ativar_objetivo",
+   "valor": null,
+   "porque": "Irmãos, primos e filhos de amigos precisam de recreação leve."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "primeiro_ano",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "bebe",
+   "operacao": "ativar_objetivo",
+   "valor": null,
+   "porque": "A rotina do bebê decide a hora do parabéns."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "primeiro_ano",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "homenagem",
+   "operacao": "ativar_objetivo",
+   "valor": null,
+   "porque": "O vídeo do primeiro ano é costume dessa festa."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "primeiro_ano",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "musica",
+   "operacao": "desativar_objetivo",
+   "valor": null,
+   "porque": "Em festa de bebê, o som fica com o espaço."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "primeiro_ano",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "bar",
+   "operacao": "desativar_objetivo",
+   "valor": null,
+   "porque": "Bar de drinks não é item de festa de criança."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "primeiro_ano",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "portaria",
+   "operacao": "desativar_objetivo",
+   "valor": null,
+   "porque": "Controle de saída de menores é da festa adolescente."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "primeiro_ano",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "conforto",
+   "operacao": "desativar_objetivo",
+   "valor": null,
+   "porque": "Acesso e transporte de convidados idosos são da festa de 60 anos ou mais."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "primeiro_ano",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "buffet",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 50,
+   "porque": "Casa de festas com pacote concentra a verba."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "primeiro_ano",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "decoracao",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 18,
+   "porque": "Mesa do bolo e painel são o cenário das fotos do bebê."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "primeiro_ano",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "bolo_doces",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 12,
+   "porque": "Doces personalizados e lembrancinha para as famílias."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "primeiro_ano",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "foto_video",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 16,
+   "porque": "No primeiro ano, as fotos são o registro que a família mais cobra."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "primeiro_ano",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "foto_video",
+   "operacao": "set_faixa_pct_max",
+   "valor": 20,
+   "porque": "Acompanha o ideal mais alto da foto, com ensaio antes da festa."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "primeiro_ano",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "recreacao",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 4,
+   "porque": "Recreação só para as outras crianças, com poucos monitores."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "primeiro_ano",
+   "alvo_tipo": "decisao",
+   "alvo_codigo": "aniv_foto_contratar",
+   "operacao": "set_offset_ideal",
+   "valor": 30,
+   "porque": "O fotógrafo costuma fazer um ensaio antes da festa."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "primeiro_ano",
+   "alvo_tipo": "decisao",
+   "alvo_codigo": "aniv_foto_contratar",
+   "operacao": "set_prioridade",
+   "valor": 95,
+   "porque": "A prioridade acompanha o prazo antecipado, logo depois do buffet e do local."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "infantil",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "recreacao",
+   "operacao": "ativar_objetivo",
+   "valor": null,
+   "porque": "Monitores e brinquedos seguram a festa infantil."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "infantil",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "bebe",
+   "operacao": "desativar_objetivo",
+   "valor": null,
+   "porque": "A rotina do bebê é só do primeiro ano."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "infantil",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "musica",
+   "operacao": "desativar_objetivo",
+   "valor": null,
+   "porque": "Na festa infantil, o som fica com o espaço e a recreação."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "infantil",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "bar",
+   "operacao": "desativar_objetivo",
+   "valor": null,
+   "porque": "Bar de drinks não é item de festa de criança."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "infantil",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "portaria",
+   "operacao": "desativar_objetivo",
+   "valor": null,
+   "porque": "As crianças saem com os pais; o controle fica na recreação."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "infantil",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "homenagem",
+   "operacao": "desativar_objetivo",
+   "valor": null,
+   "porque": "Vídeo e falas de homenagem não são costume em festa de criança."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "infantil",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "conforto",
+   "operacao": "desativar_objetivo",
+   "valor": null,
+   "porque": "Acesso e transporte de convidados idosos são da festa de 60 anos ou mais."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "infantil",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "buffet",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 52,
+   "porque": "Casa de festas com pacote concentra a verba da festa infantil."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "infantil",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "decoracao",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 16,
+   "porque": "O tema pesa na decoração da festa infantil."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "infantil",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "bolo_doces",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 12,
+   "porque": "Doces temáticos e lembrancinha por criança."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "infantil",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "foto_video",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 10,
+   "porque": "Cobertura menor que a do primeiro ano."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "infantil",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "recreacao",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 10,
+   "porque": "Monitores e brinquedos que o pacote não traz."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adolescente",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "musica",
+   "operacao": "ativar_objetivo",
+   "valor": null,
+   "porque": "DJ e pista são o centro da festa adolescente."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adolescente",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "portaria",
+   "operacao": "ativar_objetivo",
+   "valor": null,
+   "porque": "Festa de menores exige lista na entrada e saída combinada."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adolescente",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "recreacao",
+   "operacao": "desativar_objetivo",
+   "valor": null,
+   "porque": "Monitores e brinquedos não cabem na festa adolescente."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adolescente",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "bebe",
+   "operacao": "desativar_objetivo",
+   "valor": null,
+   "porque": "A rotina do bebê é só do primeiro ano."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adolescente",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "bar",
+   "operacao": "desativar_objetivo",
+   "valor": null,
+   "porque": "Não se serve bebida alcoólica a menores."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adolescente",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "homenagem",
+   "operacao": "desativar_objetivo",
+   "valor": null,
+   "porque": "Homenagem formal não é costume nessa faixa."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adolescente",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "conforto",
+   "operacao": "desativar_objetivo",
+   "valor": null,
+   "porque": "Acesso e transporte de convidados idosos são da festa de 60 anos ou mais."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adolescente",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "buffet",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 46,
+   "porque": "Parte da verba vai para a pista e a portaria."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adolescente",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "decoracao",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 12,
+   "porque": "A luz da pista substitui parte da decoração."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adolescente",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "bolo_doces",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 8,
+   "porque": "Mesa de doces menor que na festa infantil."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adolescente",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "foto_video",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 11,
+   "porque": "Vídeo curto para redes pesa nessa idade."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adolescente",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "musica",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 18,
+   "porque": "DJ, luz e pista levam a maior fatia depois do buffet."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adolescente",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "musica",
+   "operacao": "set_faixa_pct_max",
+   "valor": 24,
+   "porque": "Acompanha o ideal mais alto da música na festa adolescente."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adolescente",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "portaria",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 5,
+   "porque": "Seguranças e recepção com lista durante a festa inteira."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adolescente",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "portaria",
+   "operacao": "set_faixa_pct_max",
+   "valor": 8,
+   "porque": "Acompanha o ideal mais alto da portaria."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adolescente",
+   "alvo_tipo": "decisao",
+   "alvo_codigo": "aniv_musica_contratar",
+   "operacao": "set_offset_ideal",
+   "valor": 30,
+   "porque": "DJ com iluminação de sábado fecha mais cedo."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adolescente",
+   "alvo_tipo": "decisao",
+   "alvo_codigo": "aniv_musica_contratar",
+   "operacao": "set_prioridade",
+   "valor": 95,
+   "porque": "A prioridade acompanha o prazo antecipado, logo depois do buffet e do local."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adulto",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "musica",
+   "operacao": "ativar_objetivo",
+   "valor": null,
+   "porque": "Na festa adulta, a pista começa depois do parabéns."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adulto",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "bar",
+   "operacao": "ativar_objetivo",
+   "valor": null,
+   "porque": "Drinks e reposição são custo e risco de faltar na festa adulta."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adulto",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "recreacao",
+   "operacao": "desativar_objetivo",
+   "valor": null,
+   "porque": "Recreação é da festa infantil."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adulto",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "bebe",
+   "operacao": "desativar_objetivo",
+   "valor": null,
+   "porque": "A rotina do bebê é só do primeiro ano."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adulto",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "portaria",
+   "operacao": "desativar_objetivo",
+   "valor": null,
+   "porque": "Controle de saída de menores é da festa adolescente."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adulto",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "homenagem",
+   "operacao": "desativar_objetivo",
+   "valor": null,
+   "porque": "Nos marcos de 30, 40 ou 50 anos a cerimonialista liga à mão."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adulto",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "conforto",
+   "operacao": "desativar_objetivo",
+   "valor": null,
+   "porque": "Acesso e transporte de convidados idosos são da festa de 60 anos ou mais."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adulto",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "buffet",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 46,
+   "porque": "Parte da verba vai para o bar e a pista."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adulto",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "decoracao",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 10,
+   "porque": "Decoração mais leve que na festa infantil."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adulto",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "bolo_doces",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 6,
+   "porque": "Mesa de doces menor e pouca lembrancinha."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adulto",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "foto_video",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 10,
+   "porque": "Cobertura padrão de quatro horas."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adulto",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "musica",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 14,
+   "porque": "DJ ou banda com a pista aberta boa parte da festa."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adulto",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "musica",
+   "operacao": "set_faixa_pct_max",
+   "valor": 20,
+   "porque": "Acompanha o ideal mais alto da música na festa adulta."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adulto",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "bar",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 14,
+   "porque": "Bartender e drinks pesam logo depois do buffet."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "adulto",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "bar",
+   "operacao": "set_faixa_pct_max",
+   "valor": 20,
+   "porque": "Acompanha o ideal mais alto do bar na festa adulta."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "sessenta_mais",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "musica",
+   "operacao": "ativar_objetivo",
+   "valor": null,
+   "porque": "Música ao vivo ou DJ para dançar é comum nessa festa."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "sessenta_mais",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "homenagem",
+   "operacao": "ativar_objetivo",
+   "valor": null,
+   "porque": "Falas dos filhos e vídeo com fotos antigas são o momento central."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "sessenta_mais",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "conforto",
+   "operacao": "ativar_objetivo",
+   "valor": null,
+   "porque": "Convidados de mais idade pedem acesso sem degrau, cadeira e transporte."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "sessenta_mais",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "recreacao",
+   "operacao": "desativar_objetivo",
+   "valor": null,
+   "porque": "Recreação é da festa infantil."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "sessenta_mais",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "bebe",
+   "operacao": "desativar_objetivo",
+   "valor": null,
+   "porque": "A rotina do bebê é só do primeiro ano."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "sessenta_mais",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "bar",
+   "operacao": "desativar_objetivo",
+   "valor": null,
+   "porque": "A bebida fica no cardápio do buffet."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "sessenta_mais",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "portaria",
+   "operacao": "desativar_objetivo",
+   "valor": null,
+   "porque": "Controle de saída de menores é da festa adolescente."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "sessenta_mais",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "buffet",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 54,
+   "porque": "Almoço ou jantar servido concentra a verba."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "sessenta_mais",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "decoracao",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 12,
+   "porque": "Decoração mais sóbria."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "sessenta_mais",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "bolo_doces",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 8,
+   "porque": "Mesa de doces menor, com opção sem açúcar."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "sessenta_mais",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "foto_video",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 12,
+   "porque": "A foto das gerações é o que a família guarda."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "sessenta_mais",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "musica",
+   "operacao": "set_faixa_pct_ideal",
+   "valor": 14,
+   "porque": "Música ao vivo pesa mais que o som de festa infantil."
+  },
+  {
+   "eixo": "cenario",
+   "arquetipo": "sessenta_mais",
+   "alvo_tipo": "objetivo",
+   "alvo_codigo": "musica",
+   "operacao": "set_faixa_pct_max",
+   "valor": 20,
+   "porque": "Acompanha o ideal mais alto da música."
+  }
+ ],
+ "roteiro": [
+  {
+   "codigo": "montagem_decoracao",
+   "titulo": "Montagem da decoração",
+   "offset_min": -240,
+   "duracao_min": 180,
+   "condicao": "",
+   "ordem": 10
+  },
+  {
+   "codigo": "chegada_equipe",
+   "titulo": "Chegada da equipe e conferência do local",
+   "offset_min": -120,
+   "duracao_min": 30,
+   "condicao": "",
+   "ordem": 20
+  },
+  {
+   "codigo": "entrega_bolo_doces",
+   "titulo": "Entrega do bolo, dos doces e das lembrancinhas",
+   "offset_min": -90,
+   "duracao_min": 30,
+   "condicao": "",
+   "ordem": 30
+  },
+  {
+   "codigo": "chegada_foto",
+   "titulo": "Chegada da foto e do vídeo",
+   "offset_min": -60,
+   "duracao_min": null,
+   "condicao": "",
+   "ordem": 40
+  },
+  {
+   "codigo": "fotos_decoracao",
+   "titulo": "Fotos da decoração e da mesa do bolo",
+   "offset_min": -30,
+   "duracao_min": 20,
+   "condicao": "",
+   "ordem": 50
+  },
+  {
+   "codigo": "inicio",
+   "titulo": "Início da festa e recepção dos convidados",
+   "offset_min": 0,
+   "duracao_min": 60,
+   "condicao": "",
+   "ordem": 60
+  },
+  {
+   "codigo": "recreacao_inicio",
+   "titulo": "Início da recreação",
+   "offset_min": 15,
+   "duracao_min": 120,
+   "condicao": "infantil",
+   "ordem": 70
+  },
+  {
+   "codigo": "recreacao_primeiro_ano",
+   "titulo": "Espaço das crianças aberto com os monitores",
+   "offset_min": 15,
+   "duracao_min": null,
+   "condicao": "primeiro_ano",
+   "ordem": 75
+  },
+  {
+   "codigo": "servico_buffet",
+   "titulo": "Início do serviço do buffet",
+   "offset_min": 30,
+   "duracao_min": 120,
+   "condicao": "",
+   "ordem": 80
+  },
+  {
+   "codigo": "pista_adolescente",
+   "titulo": "Abertura da pista",
+   "offset_min": 60,
+   "duracao_min": null,
+   "condicao": "adolescente",
+   "ordem": 90
+  },
+  {
+   "codigo": "bebe_parabens",
+   "titulo": "Bebê alimentado e trocado para o parabéns",
+   "offset_min": 110,
+   "duracao_min": 20,
+   "condicao": "primeiro_ano",
+   "ordem": 100
+  },
+  {
+   "codigo": "homenagem_familia",
+   "titulo": "Homenagem da família",
+   "offset_min": 125,
+   "duracao_min": 20,
+   "condicao": "sessenta_mais",
+   "ordem": 110
+  },
+  {
+   "codigo": "video_primeiro_ano",
+   "titulo": "Vídeo do primeiro ano",
+   "offset_min": 135,
+   "duracao_min": 10,
+   "condicao": "primeiro_ano",
+   "ordem": 120
+  },
+  {
+   "codigo": "reunir_criancas",
+   "titulo": "Crianças reunidas pelos monitores para o parabéns",
+   "offset_min": 140,
+   "duracao_min": 10,
+   "condicao": "infantil",
+   "ordem": 130
+  },
+  {
+   "codigo": "parabens",
+   "titulo": "Parabéns e bolo",
+   "offset_min": 150,
+   "duracao_min": 20,
+   "condicao": "",
+   "ordem": 140
+  },
+  {
+   "codigo": "bolo_servido",
+   "titulo": "Bolo servido e doces liberados",
+   "offset_min": 170,
+   "duracao_min": 20,
+   "condicao": "",
+   "ordem": 150
+  },
+  {
+   "codigo": "pista_adulto",
+   "titulo": "Abertura da pista",
+   "offset_min": 180,
+   "duracao_min": null,
+   "condicao": "adulto",
+   "ordem": 160
+  },
+  {
+   "codigo": "lembrancinhas",
+   "titulo": "Entrega das lembrancinhas na saída",
+   "offset_min": 210,
+   "duracao_min": 30,
+   "condicao": "",
+   "ordem": 170
+  },
+  {
+   "codigo": "saida_acompanhada",
+   "titulo": "Saída dos convidados menores conforme a regra combinada",
+   "offset_min": 225,
+   "duracao_min": 30,
+   "condicao": "adolescente",
+   "ordem": 180
+  },
+  {
+   "codigo": "fim_festa",
+   "titulo": "Fim do horário contratado",
+   "offset_min": 240,
+   "duracao_min": null,
+   "condicao": "",
+   "ordem": 190
+  },
+  {
+   "codigo": "desmontagem",
+   "titulo": "Desmontagem, sobras e devoluções",
+   "offset_min": 255,
+   "duracao_min": 60,
+   "condicao": "",
+   "ordem": 200
+  }
+ ],
+ "checklist": [
+  {
+   "codigo": "reuniao_equipe",
+   "bloco": "montagem",
+   "titulo": "Equipe reunida e postos do dia combinados",
+   "ordem": 10,
+   "requer_objetivo": ""
+  },
+  {
+   "codigo": "horarios_buffet",
+   "bloco": "montagem",
+   "titulo": "Horários do serviço e restrições alimentares da lista conferidos com o buffet",
+   "ordem": 20,
+   "requer_objetivo": "buffet"
+  },
+  {
+   "codigo": "decoracao_conferida",
+   "bloco": "montagem",
+   "titulo": "Decoração e mesa do bolo conferidas com o projeto aprovado",
+   "ordem": 30,
+   "requer_objetivo": "decoracao"
+  },
+  {
+   "codigo": "bolo_doces_recebidos",
+   "bloco": "montagem",
+   "titulo": "Bolo e doces recebidos, conferidos e em local fresco",
+   "ordem": 40,
+   "requer_objetivo": "bolo_doces"
+  },
+  {
+   "codigo": "kit_parabens",
+   "bloco": "montagem",
+   "titulo": "Velas, isqueiro, faca e pratos do bolo separados",
+   "ordem": 50,
+   "requer_objetivo": ""
+  },
+  {
+   "codigo": "lembrancinhas_separadas",
+   "bloco": "montagem",
+   "titulo": "Lembrancinhas conferidas e separadas para a saída",
+   "ordem": 60,
+   "requer_objetivo": "bolo_doces"
+  },
+  {
+   "codigo": "som_testado",
+   "bloco": "montagem",
+   "titulo": "Som, microfone e música do parabéns testados",
+   "ordem": 70,
+   "requer_objetivo": ""
+  },
+  {
+   "codigo": "lugares_mobilidade",
+   "bloco": "montagem",
+   "titulo": "Lugares reservados perto do banheiro para quem tem mobilidade reduzida",
+   "ordem": 80,
+   "requer_objetivo": ""
+  },
+  {
+   "codigo": "locacao_conferida",
+   "bloco": "montagem",
+   "titulo": "Mesas, cadeiras e itens alugados recebidos e contados",
+   "ordem": 90,
+   "requer_objetivo": "local"
+  },
+  {
+   "codigo": "brinquedos_monitores",
+   "bloco": "montagem",
+   "titulo": "Brinquedos conferidos e monitores orientados",
+   "ordem": 100,
+   "requer_objetivo": "recreacao"
+  },
+  {
+   "codigo": "espaco_bebe",
+   "bloco": "montagem",
+   "titulo": "Espaço do bebê pronto (trocador, fraldas e lugar para dormir)",
+   "ordem": 110,
+   "requer_objetivo": "bebe"
+  },
+  {
+   "codigo": "bar_abastecido",
+   "bloco": "montagem",
+   "titulo": "Bar abastecido, com gelo, copos e insumos",
+   "ordem": 120,
+   "requer_objetivo": "bar"
+  },
+  {
+   "codigo": "sem_alcool_menores",
+   "bloco": "montagem",
+   "titulo": "Buffet e garçons avisados: nenhuma bebida alcoólica para menores",
+   "ordem": 130,
+   "requer_objetivo": "portaria"
+  },
+  {
+   "codigo": "video_homenagem",
+   "bloco": "montagem",
+   "titulo": "Vídeo da homenagem testado no som e na tela",
+   "ordem": 140,
+   "requer_objetivo": "homenagem"
+  },
+  {
+   "codigo": "cadeiras_encosto",
+   "bloco": "montagem",
+   "titulo": "Cadeiras com encosto e caminho sem degrau até a mesa e o banheiro",
+   "ordem": 150,
+   "requer_objetivo": "conforto"
+  },
+  {
+   "codigo": "contagem_entrada",
+   "bloco": "recepcao",
+   "titulo": "Lista de convidados na entrada e contagem acompanhada",
+   "ordem": 10,
+   "requer_objetivo": "buffet"
+  },
+  {
+   "codigo": "presentes_identificados",
+   "bloco": "recepcao",
+   "titulo": "Presentes recebidos e identificados com o nome de quem deu",
+   "ordem": 20,
+   "requer_objetivo": ""
+  },
+  {
+   "codigo": "pulseiras_criancas",
+   "bloco": "recepcao",
+   "titulo": "Crianças identificadas na entrada com o telefone do responsável",
+   "ordem": 30,
+   "requer_objetivo": "recreacao"
+  },
+  {
+   "codigo": "idosos_acompanhados",
+   "bloco": "recepcao",
+   "titulo": "Convidados com mobilidade reduzida acompanhados na chegada",
+   "ordem": 40,
+   "requer_objetivo": "conforto"
+  },
+  {
+   "codigo": "fotografo_avisado",
+   "bloco": "recepcao",
+   "titulo": "Fotógrafo avisado dos momentos e das pessoas da lista",
+   "ordem": 50,
+   "requer_objetivo": "foto_video"
+  },
+  {
+   "codigo": "parabens_bebe",
+   "bloco": "recepcao",
+   "titulo": "Parabéns marcado para antes da soneca",
+   "ordem": 60,
+   "requer_objetivo": "bebe"
+  },
+  {
+   "codigo": "parabens_prontos",
+   "bloco": "recepcao",
+   "titulo": "Família, fotógrafo e música prontos para o parabéns",
+   "ordem": 70,
+   "requer_objetivo": ""
+  },
+  {
+   "codigo": "saida_menores",
+   "bloco": "recepcao",
+   "titulo": "Convidados menores saindo conforme a regra combinada",
+   "ordem": 80,
+   "requer_objetivo": "portaria"
+  },
+  {
+   "codigo": "fim_do_horario",
+   "bloco": "recepcao",
+   "titulo": "Fim do horário acompanhado, com hora extra só se a cliente aprovar",
+   "ordem": 90,
+   "requer_objetivo": "buffet"
+  },
+  {
+   "codigo": "criancas_entregues",
+   "bloco": "desmontagem",
+   "titulo": "Todas as crianças entregues aos responsáveis",
+   "ordem": 10,
+   "requer_objetivo": "recreacao"
+  },
+  {
+   "codigo": "sobras_embaladas",
+   "bloco": "desmontagem",
+   "titulo": "Sobras de bolo e doces embaladas para a família",
+   "ordem": 20,
+   "requer_objetivo": "bolo_doces"
+  },
+  {
+   "codigo": "presentes_entregues",
+   "bloco": "desmontagem",
+   "titulo": "Presentes, cartões e pertences entregues à família",
+   "ordem": 30,
+   "requer_objetivo": ""
+  },
+  {
+   "codigo": "itens_alugados",
+   "bloco": "desmontagem",
+   "titulo": "Itens alugados contados para devolução",
+   "ordem": 40,
+   "requer_objetivo": "local"
+  },
+  {
+   "codigo": "pagamentos_feitos",
+   "bloco": "desmontagem",
+   "titulo": "Saldos do dia pagos aos fornecedores",
+   "ordem": 50,
+   "requer_objetivo": ""
+  },
+  {
+   "codigo": "avarias",
+   "bloco": "desmontagem",
+   "titulo": "Ocorrências e avarias registradas",
+   "ordem": 60,
+   "requer_objetivo": ""
+  }
+ ],
+ "recursos": [
+  {
+   "objetivo": "buffet",
+   "codigo": "salgados",
+   "nome": "Salgados",
+   "unidade": "unidades",
+   "regra": "por_pessoa",
+   "indice": 12,
+   "compravel": true,
+   "ordem": 10,
+   "porque": "Festa de cerca de 4 horas em que o salgado é a base do cardápio: 12 por convidado, somando adultos e crianças."
+  },
+  {
+   "objetivo": "buffet",
+   "codigo": "bebidas_sem_alcool",
+   "nome": "Refrigerante, suco e água",
+   "unidade": "litros",
+   "regra": "por_pessoa",
+   "indice": 0.8,
+   "compravel": true,
+   "ordem": 20,
+   "porque": "Cerca de 800 ml por pessoa em 4 horas, entre refrigerante, suco e água."
+  },
+  {
+   "objetivo": "buffet",
+   "codigo": "gelo",
+   "nome": "Gelo",
+   "unidade": "kg",
+   "regra": "por_pessoa",
+   "indice": 0.5,
+   "compravel": true,
+   "ordem": 30,
+   "porque": "Meio quilo por pessoa gela as bebidas e abastece os copos até o fim, em qualquer faixa etária."
+  },
+  {
+   "objetivo": "bolo_doces",
+   "codigo": "bolo",
+   "nome": "Bolo",
+   "unidade": "kg",
+   "regra": "por_pessoa",
+   "indice": 0.1,
+   "compravel": true,
+   "ordem": 10,
+   "porque": "100 g por pessoa quando há docinhos na mesa."
+  },
+  {
+   "objetivo": "bolo_doces",
+   "codigo": "docinhos",
+   "nome": "Docinhos",
+   "unidade": "unidades",
+   "regra": "por_pessoa",
+   "indice": 5,
+   "compravel": true,
+   "ordem": 20,
+   "porque": "Cinco por convidado cobrem a mesa decorada e o pós-parabéns."
+  },
+  {
+   "objetivo": "bolo_doces",
+   "codigo": "lembrancinhas",
+   "nome": "Lembrancinhas",
+   "unidade": "unidades",
+   "regra": "por_pessoa",
+   "indice": 0.6,
+   "compravel": true,
+   "ordem": 30,
+   "porque": "Uma por criança ou por família, com pequena sobra: cerca de 60% do público."
+  },
+  {
+   "objetivo": "bar",
+   "codigo": "cerveja",
+   "nome": "Cerveja",
+   "unidade": "latas",
+   "regra": "por_pessoa",
+   "indice": 3,
+   "compravel": true,
+   "ordem": 10,
+   "porque": "Três latas por convidado numa festa adulta de 4 a 5 horas, quando a cerveja não vem do buffet."
+  },
+  {
+   "objetivo": "portaria",
+   "codigo": "pulseiras",
+   "nome": "Pulseiras de identificação",
+   "unidade": "unidades",
+   "regra": "por_pessoa",
+   "indice": 1.1,
+   "compravel": true,
+   "ordem": 10,
+   "porque": "Uma por convidado na entrada, com 10% de sobra para troca e perda."
+  }
+ ],
+ "perguntas_abertas": [
+  "Recorte etário: o primeiro ano precisa de faixa própria? A última faixa começa aos 60 ou aos 70? E a festa de 15 anos sem valsa entra como adolescente, deixando o debutante só para a festa com valsa?",
+  "Prazos: verba, formato, buffet e decoração ficam a 30 dias (45 acima de 150 convidados), foto e música a 25 (30 no primeiro ano e no adolescente). A casa de festas infantil de sábado, sobretudo de outubro a dezembro, pede mais antecedência? A festa de até 50 convidados fecha o buffet com três semanas ou precisa mesmo de um mês?",
+  "Verba por faixa: buffet de 46% a 54%, decoração de 10% a 18%, foto 16% no primeiro ano, música 18% no adolescente, bar 14% no adulto. Isso bate com orçamentos reais da região?",
+  "A base é casa de festas com pacote, e o local à parte é ligado à mão. Nas festas com cerimonialista, a festa montada por partes (salão, chácara, condomínio, casa) é tão comum que o local deveria nascer ligado?",
+  "Bar de drinks só na festa adulta. Nos 60 anos ou mais a bebida alcoólica fica mesmo no cardápio do buffet? E a cerveja dos pais na festa infantil se resolve pelo campo de bebida alcoólica do cardápio?",
+  "Música contratada fica desligada no primeiro ano e na festa infantil. DJ em festa infantil é comum na região?",
+  "A homenagem liga no primeiro ano e a partir dos 60. Nos marcos de 30, 40 e 50 anos o vídeo com fotos é comum a ponto de ligar também no adulto?",
+  "Parabéns aos 150 minutos de uma festa de 4 horas serve para todas as faixas? No primeiro ano ele costuma vir antes, e no adulto mais perto do fim? Lembrancinha na saída ainda é costume em festa adulta e de 60 anos ou mais?",
+  "Excedentes: até que idade os buffets costumam isentar crianças? Quem conta os convidados na entrada, a cerimonialista ou a recepção do buffet? O acerto de hora extra é feito no dia ou depois?",
+  "Festa de adolescente pequena, em casa ou condomínio, ainda contrata segurança? Qual regra de saída as famílias aceitam: acompanhado por adulto, sozinho com aviso dos pais ou livre?",
+  "Índices por pessoa: 12 salgados, 5 docinhos, 100 g de bolo, 0,8 L de bebida sem álcool, 0,5 kg de gelo, 3 latas de cerveja e 0,6 lembrancinha. Mudam muito entre regiões, ou entre festa de tarde e festa de noite?",
+  "Festa surpresa ficou sem campo e sem item próprio. Ela precisa de um item de roteiro para a chegada de quem faz aniversário, ou a cerimonialista resolve à mão?"
+ ]
+}
