@@ -1,0 +1,200 @@
+{
+ "mudancas_codigo": [
+  {
+   "arquivo": "src/lib/capacidades.ts",
+   "o_que": "Linhas 80-88: acrescentar `aniversario: [{ ate: 150, escala: \"ate_150\" }, { ate: Infinity, escala: \"acima_150\" }]`. Sem essa entrada, escalaPorPublico devolve null e o assistente nunca grava o porte (novo/actions.ts:233-239). Na linha 79, atualizar o comentário de \"(141)\" para \"(141, 162)\"."
+  },
+  {
+   "arquivo": "src/components/wizard/StepEstruturacao.tsx",
+   "o_que": "Linhas 30-32: acrescentar `aniversario: \"Qual a idade de quem faz aniversário?\"`.\n- As opções já vêm de metodo_arquetipo pela página (novo/page.tsx), e os chips mostram os nomes da migração: Primeiro ano, 2 a 12 anos, 13 a 17 anos, 18 a 59 anos, 60 anos ou mais.\n- O token escolhido vira chave do roteiro (novo/actions.ts:126-131) e é gravado pelo salvarCampo (novo/actions.ts:233-239), que dispara os deltas (083:318-335). Objetivos, prazos e verba já nascem conforme a faixa.\n- Vale só no fluxo completo. No rápido e no evento vindo de orçamento, a faixa é escolhida depois, no Planejamento."
+  },
+  {
+   "arquivo": "src/components/planejamento/DrawerDecisao.tsx",
+   "o_que": "Linhas 885-900: apagar a faixa \"Estes campos são o roteiro da conversa com os noivos. Preencha durante a reunião.\".\n- Ela aparece em toda decisão com campo vazio, logo no passo 3 do guia. Diz \"noivos\" e ainda explica o sistema.\n- Publicar antes da migração.\n- A linha 1010 (\"data do casamento · data\") não precisa mudar para este método: só aparece em decisão de código data/deb_data (PlanejamentoEvento.tsx:714-717), e o aniversário não tem decisão de data."
+  },
+  {
+   "arquivo": "src/components/planejamento/ModoFoco.tsx",
+   "o_que": "Linha 538: title \"Este assunto não existe neste evento\". Linha 549: \"Não se aplica a este evento\". É o botão de desligar objetivo, gesto comum no aniversário (bar, entrada e saída, local). Publicar antes da migração."
+  },
+  {
+   "arquivo": "src/components/planejamento/MapaMental.tsx",
+   "o_que": "Linha 572: \"Arquitetura do casamento de uma olhada. Clicar num nó leva à decisão no modo Foco.\". Duas saídas: tirar a frase, que explica o sistema, ou usar rotuloTipo (linhas 247-258, que já tem \"Aniversário\")."
+  },
+  {
+   "arquivo": "src/components/planejamento/PlanejamentoEvento.tsx",
+   "o_que": "Linha 412: trocar \"defina a data do casamento\" por \"defina a data do evento\". O texto só aparece em evento sem data, como o que vem de orçamento."
+  },
+  {
+   "arquivo": "src/components/planejamento/ModoAmplo.tsx",
+   "o_que": "Linha 184: trocar \"Defina a data do casamento para ver a jornada mês a mês.\" por \"Defina a data do evento.\"."
+  },
+  {
+   "arquivo": "src/components/configuracoes/RoteiroPadraoSection.tsx",
+   "o_que": "Linhas 20-23: acrescentar `{ key: \"aniversario\", label: \"Aniversário\", ancora: \"o início da festa\" }`, para a proprietária ajustar os 21 deslocamentos.\n\nLinha 65: o ternário é fixo em \"a entrada\" ou \"a cerimônia\", então a aba do aniversário diria \"nasce da hora da cerimônia\". Trocar por texto por tipo, por exemplo um campo horaDe (\"da cerimônia\", \"da entrada\", \"do início da festa\")."
+  },
+  {
+   "arquivo": "src/components/cronograma/ChecklistDoDiaAjuste.tsx",
+   "o_que": "Linhas 95-99: esconder o bloco \"cerimonia\" vazio do mesmo jeito que já se esconde \"colacao\" (mostrar o bloco se não for colacao nem cerimonia, ou se tiver item).\n- O aniversário semeia só montagem, recepção e desmontagem. Sem a mudança, a tela oferece \"Cerimônia\" vazio.\n- O Modo Evento já filtra bloco vazio (ChecklistDoDia.tsx:187).\n- O casamento não muda, porque sempre tem item de cerimônia."
+  },
+  {
+   "arquivo": "src/app/imprimir/musica/[id]/page.tsx",
+   "o_que": "- Linhas 44-51: incluir \"musica_parabens\" na lista do .in.\n- Linha 85: o bloco Parabéns passa a ler `doMetodo.get(\"musica_parabens\") ?? doMetodo.get(\"deb_parabens_musica\") ?? \"\"`.\n- Linha 148: trocar \"Pedidos dos convidados aprovados pelo casal\" por \"Pedidos dos convidados aprovados\".\n- playlist e lista_veto já são lidos, porque o método reusa os códigos."
+  },
+  {
+   "arquivo": "src/components/wizard/EventWizard.tsx",
+   "o_que": "Linhas 165-167: para tipo aniversario, não sugerir \"Aniversário — {cliente}\". No aniversário, o nome do evento vira o \"de quem\" do convite: \"o aniversário de\" + nome (rsvp-convite.ts:21; 129:554). Com a sugestão atual, o convite sairia \"o aniversário de Aniversário — Maria\". Passar suggestedName vazio nesse tipo."
+  },
+  {
+   "arquivo": "src/components/wizard/StepDadosBasicos.tsx",
+   "o_que": "Linhas 76-90: no tipo aniversario, o rótulo passa a \"Quem faz aniversário\", com placeholder \"Nome de quem faz aniversário\" e sem a linha \"Sugestão:\". Pode ser um mapa por tipo, no molde do ROTULO_HORA (linhas 30-36). A hora já cai em \"Hora de início\" (linha 108), que é a âncora do método, então ali nada muda."
+  },
+  {
+   "arquivo": "src/lib/guia-vivo.ts",
+   "o_que": "- Linha 63: incluir \"aniversário\" na lista do passo 1.\n- Linhas 105-117: o comentário deixa de valer, porque cita aniversário e formatura como tipos sem método.\n- PASSOS_SEM_METODO continua valendo para bodas, batizado e chá revelação."
+  },
+  {
+   "arquivo": "src/lib/recursos-do-sistema.ts",
+   "o_que": "Linha 37: incluir o aniversário: \"Casamento, debutante, formatura, corporativo, show e aniversário têm decisões próprias…\"."
+  }
+ ],
+ "migracao": [
+  "**Arquivo e regras:** supabase/migrations/162_metodo_aniversario.sql.\n- Convergente e aditiva, sem delete, tudo guardado por not exists.\n- Não recria portal_falta_decidir, redistribuir_decisoes_evento, aplicar_arquetipos_evento nem semear_checklist_dia.",
+  "**Foto de antes:** tabela temporária com a contagem, por tipo, de objetivos, decisões, campos, tarefas, arquétipos, deltas, roteiro, checklist e recursos, mais evento_objetivo e roteiro_items por tipo de evento. É contra ela que a última conferência compara. Os números literais da 141:963-970 já estão velhos para outros tipos.",
+  "**CHECKs:** recriar events_escala_check e events_cenario_check pela varredura por definição (molde 141:41-73).\n- Manter todos os tokens atuais (141:58-60 e 141:67-70).\n- Escala ganha ate_150 e acima_150.\n- Cenário ganha primeiro_ano, infantil, adolescente, adulto e sessenta_mais.",
+  "**semear_metodo_aniversario(p_empresa_id):** tipo 'aniversario', no molde da 141:79-413.\n- Conteúdo: 15 objetivos, 20 decisões com prefixo aniv_, 60 campos, 61 tarefas (36 de contrato para as 9 decisões %contratar% mais 25 específicas, com join por tipo como na 141:271-273), 7 arquétipos e 59 deltas.\n- Guards not exists iguais aos da 141.\n- No fim, revoke de public e anon.",
+  "**Campos (dentro do seed):**\n- pergunta_cliente = (texto da pergunta <> '') e label_portal = nullif(texto, ''). Assim a curadoria da 146 não sobrescreve (146:132-134).\n- opcoes com string_to_array; nullif na unidade.\n- sensibilidade = case codigo: 'alergias' vira 'alergia', 'medicamentos' vira 'medicamento', o resto fica 'normal'. A 141 não tem essa coluna no insert; molde em 146:213-229.\n- Os \"porque\" de decisões, deltas e recursos viram comentário SQL. metodo_decisao.descricao fica nula, e nenhuma tela a mostra.",
+  "**Tarefas e deltas (dentro do seed):**\n- vinculo_modulo = nullif(vinc, ''), porque o CHECK da 073 recusa string vazia.\n- Os deltas de ativar e desativar vão com valor_num null::numeric.",
+  "**semear_roteiro_aniversario:** 21 itens, 12 deles sem condição. Âncora 'inicio' no minuto 0. condicao = nullif(cond, ''), porque o caminho do orçamento filtra condicao is null (112:510).",
+  "**semear_checklist_dia_aniversario:** 32 itens nos blocos montagem, recepcao e desmontagem, com requer_objetivo_codigo = nullif(req, '').",
+  "**semear_recursos_aniversario:** 5 recursos por pessoa.\n- buffet: salgados 12, bebidas_sem_alcool 0,8 e gelo 0,5.\n- bolo_doces: bolo 0,1 e docinhos 5.",
+  "**Gatilho de empresa nova:** recriar trg_semear_metodo_empresa copiando o corpo vigente da 144:89-118 e acrescentando as 4 chamadas do aniversário. Não copiar da 141:607-634: aquele corpo não tem semear_briefing_casal, e a empresa nova perderia as perguntas do casal.",
+  "**Backfill das empresas:** laço sobre todas as empresas (molde 141:636-645) chamando as 4 funções novas.",
+  "**Aniversários vivos — filtro:** type = 'aniversario', status em ('orcamento', 'confirmado') e date > current_date. O filtro deixa de fora o aniversário de hoje (13/09) da outra empresa e o já concluído.",
+  "**Aniversários vivos — inserts:** objetivos, decisões e campos por insert direto (molde 141:658-710).\n- Pergunta, label e sensibilidade vêm do template pelo gatilho 091:75-102.\n- A verba sobe da coluna para o campo pelo espelho 142:59-66.",
+  "**Porte pelo público (se o dono aprovar):** onde guests > 0 e escala é nula, gravar ate_150 ou acima_150 no valor_opcao do campo escala e em events.escala. O update em events dispara 083:318-335.",
+  "**Prazos:** chamar aplicar_arquetipos_evento em cada aniversário vivo (molde 141:714-724), que faz o rebase e chama a redistribuição da 142:157-295.\n- Rodar até 16/09, antes das 21h de Brasília, porque current_date é UTC.\n- Em 17/09, as decisões de 30 dias nascem para hoje.",
+  "**Recursos dos vivos:** insert direto no molde 141:729-773, com mo.tipo_evento = 'aniversario'. instanciar_recursos_evento não serve aqui: sem sessão, o gate pode_editar_evento (132:336-338) a transforma em no-op.",
+  "**Roteiro base (se o dono aprovar):** só em aniversário vivo sem nenhum roteiro_item.\n- Inserir os itens com condicao nula, no molde 112:498-511: time = events.time + offset (nulo se não houver hora), origem_horario 'calculado', status 'pendente', empresa_id preenchido.\n- O checklist continua sendo semeado ao abrir a tela.",
+  "**Conferência — contagens e estrutura:** todas as linhas devem voltar true.\n- Por empresa: 15 objetivos, 20 decisões todas aniv_, 60 campos, 61 tarefas, 7 arquétipos, 59 deltas, 21 itens de roteiro, 32 do dia e 5 recursos.\n- escala, cenario, verba_total e reserva_pct existem exatamente uma vez.\n- Toda opção de escala e cenario existe como arquétipo.\n- Os CHECKs aceitam os 7 tokens novos e continuam aceitando acima_400, compacta, confraternizacao e casa_de_festas.",
+  "**Conferência — verba:**\n- A faixa ideal soma 100 no modelo e em cada uma das 5 faixas, simulando ligar, desligar e o ideal do delta.\n- min <= ideal <= max depois do delta.\n- estrutura, dia_da_festa, bebe, homenagem e conforto ficam com faixa nula.",
+  "**Conferência — prazos e tarefas:**\n- Toda contratação tem as 4 tarefas.\n- Nenhuma tarefa com offset positivo fica a mais de 7 dias da sua decisão nem antes dela.\n- Na base (objetivos ligados por padrão), nenhuma decisão tem offset acima de 30, e nenhuma decisão tem offset <= 0.\n- A prioridade desce junto com o offset no modelo.",
+  "**Conferência — deltas e checklist:**\n- Todo delta aponta para alvo existente, sem operação cruzada (offset em objetivo, ligar em decisão).\n- Todo requer_objetivo existe.",
+  "**Conferência — valores vazios e roteiro:**\n- Nenhum '' em condicao, requer_objetivo_codigo, vinculo_modulo, unidade ou label_portal.\n- O roteiro tem uma âncora 0, e toda condicao é token de faixa.\n- Códigos de recurso são únicos no tipo.",
+  "**Conferência — campos e perguntas:**\n- Só alergias e medicamentos têm sensibilidade diferente de normal.\n- Nenhuma pergunta em moeda, fornecedor, anexo, escala, cenario, verba_total ou reserva_pct, nem em decisão 'cerimonialista'.\n- Nenhum label_portal do aniversário é igual a um texto da curadoria (146:67-107).",
+  "**Conferência — gatilho e funções:**\n- O gatilho de empresa nova contém as 4 funções e ainda contém semear_briefing_casal.\n- Cada função nova existe uma vez só, sem overload.",
+  "**Conferência — eventos vivos:**\n- Todo aniversário vivo de data futura tem o campo verba_total.\n- Nenhum aniversário com data <= hoje, ou concluído, ganhou objetivo.\n- Nenhuma decisão pendente nasceu com prazo antes de hoje.\n- Nenhum mapa ficou órfão do template.\n- Se o roteiro base for semeado: nenhum evento que já tinha roteiro ganhou item.",
+  "**Conferência — outros tipos:** os métodos dos outros tipos não mudaram de tamanho, e nenhum evento de outro tipo ganhou objetivo ou roteiro (comparação com a foto de antes)."
+ ],
+ "impacto_evento_existente": "Pressupondo a migração aplicada entre 14/09 e 16/09, antes das 21h de Brasília, e os textos de casamento do Planejamento já corrigidos no ar.\n\n**Planejamento**\n- Abre com 15 assuntos. Sete vêm ligados: formato e verba, buffet e casa de festas, decoração, bolo e doces, lembrancinhas, foto e vídeo, e convidados e dia da festa. Os outros 8 esperam a faixa etária.\n- São 11 decisões com prazo, nenhuma atrasada:\n  - 4 para 17/09: verba, formato, buffet e decoração;\n  - 2 para 22/09: foto e vídeo, lembrancinhas;\n  - 2 para 26/09: convite, bolo e doces;\n  - cardápio e número final em 07/10, parabéns em 10/10 e roteiro com os fornecedores em 12/10.\n- Nenhuma tarefa aparece antes de ela decidir algo. Quando decide, as tarefas nascem com prazo e nunca atrasadas. Exemplo: fechar o buffet gera 5 tarefas.\n\n**Ao escolher a faixa etária (um toque no Planejamento)**\n- **Primeiro ano:** liga recreação, rotina do bebê e homenagem. 14 decisões; foto e vídeo sobe para 17/09, e esse dia fica com 5.\n- **2 a 12 anos:** liga recreação. 12 decisões.\n- **13 a 17 anos:** liga música e pista, e entrada e saída. 14 decisões; música sobe para 17/09 (5 nesse dia); saída dos menores e segurança ficam em 03/10.\n- **18 a 59 anos:** liga música e bar e desliga lembrancinhas. 12 decisões.\n- **60 anos ou mais:** liga música, homenagem, e acesso e cuidados, e desliga lembrancinhas. 13 decisões; acesso e cuidados em 17/09 (5 nesse dia).\n\nA referência de verba acompanha a faixa: o buffet sai de 50% na base para 52% a 60%. Se ela escolher depois de 17/09, o que já estava atrasado passa para \"hoje\" e o resto não se mexe.\n\n**Porte**\n- Com até 150 convidados, o porte não muda nada.\n- Se o dono aprovar gravar o porte pelo número de convidados, ela só escolhe a faixa. Se não aprovar, escolhe porte e faixa.\n\n**Guia do primeiro acesso**\n- Muda de \"Passo 2 de 3 — Monte a lista de convidados\" para \"Passo 2 de 5 — Diga o tamanho e o feitio do evento\", e leva ao Planejamento.\n- Esse passo vence quando porte e faixa estão escolhidos. O passo 3 vence com qualquer decisão, e o 4 logo em seguida, porque toda decisão do aniversário gera tarefa.\n- Se ela já tiver posto convidado, volta de 3 de 3 para 2 de 5. Se já concluiu o guia, nada muda.\n- Se apertar \"Pular\", o guia some para sempre.\n- Nenhum convidado, tarefa ou lançamento dela é apagado.\n\n**Roteiro do dia**\n- Continua vazio, a menos que o dono aprove semear a base.\n- Com a aprovação, entram 12 momentos: montagem da decoração e do som, chegada da equipe, entrega do bolo, chegada da foto, fotos da família na mesa do bolo, início da festa, serviço do buffet, parabéns 2h30 depois do início, bolo servido, fim do horário e desmontagem.\n- Os horários saem da hora de início. Sem hora, ficam em branco até ela preencher.\n- Os momentos próprios da faixa (recreação, pista, vídeo do primeiro ano, homenagem, saída dos menores) não chegam ao evento dela. Só chegam a quem cria o evento pelo assistente completo já com a faixa.\n\n**Checklist do dia**\n- Aparece na primeira vez que ela abrir o Roteiro ou o Modo Evento.\n- 20 itens na base; 25 no primeiro ano, 23 de 2 a 12 anos, 21 de 13 a 17, 20 de 18 a 59 e 23 aos 60 ou mais.\n- Se abrir antes de escolher a faixa, os itens da faixa entram na abertura seguinte. O item de lembrancinhas não sai sozinho numa festa adulta: ela esconde com um toque.\n\n**Operação**\n- 5 contas prontas: salgados; refrigerante, suco e água; gelo; bolo; docinhos.\n- As quantidades são multiplicadas pelo número de convidados, ou pelos confirmados quando houver.\n\n**Portal da cliente**\n- \"O que falta decidir\" mostra as 3 primeiras de 10 decisões dela ou compartilhadas.\n- Na base são 11 perguntas: idade, tema, alergia de quem faz aniversário, cores, fotos que não podem faltar, se o fotógrafo pode publicar, lembrancinha, sabor do bolo, cardápio, música do parabéns e quem fica junto do bolo. Conforme a faixa, são de 12 a 17.\n- Ela não vê custo interno, margem nem os pagamentos do dia.\n- A alergia fica marcada como dado sensível e só vai ao buffet por gesto da cerimonialista.\n- O menu Cortejo continua com padrinhos e damas até o dono decidir.\n\n**Janela**\n- **Até 16/09 antes das 21h:** tudo nasce nas datas acima.\n- **Em 17/09:** as 4 decisões de 30 dias nascem para o próprio dia.\n- **A partir de 18/09:** essas 4 nascem para o dia da aplicação e ficam atrasadas no dia seguinte. As de 25 dias passam a nascer para o próprio dia a partir de 22/09, e as de 21 dias a partir de 26/09. As demais mantêm as datas.",
+ "decisoes_do_dono": [
+  {
+   "decisao": "Quando aplicar.",
+   "recomendacao": "Primeiro publicar a correção de texto do Planejamento: DrawerDecisao, ModoFoco, MapaMental, PlanejamentoEvento e ModoAmplo. Depois rodar a migração até 16/09, antes das 21h de Brasília, para o evento de 17/10 nascer com as datas do método."
+  },
+  {
+   "decisao": "Semear o roteiro base no evento da cliente e nos aniversários vivos sem nenhum item de roteiro.",
+   "recomendacao": "Sim. Entram só os 12 itens sem condição, com horário calculado a partir da hora de início e origem 'calculado' (molde 112:498-511). Evento com qualquer item de roteiro não é tocado. Hoje o evento dela não tem roteiro nem por onde ganhar um: o assistente só monta roteiro na criação."
+  },
+  {
+   "decisao": "Gravar o porte a partir do número de convidados no backfill, no campo e em events.escala.",
+   "recomendacao": "Sim, só onde guests > 0. É o que o assistente já faz na criação (novo/actions.ts:233-239), e o passo 2 do guia fica em um toque (só a faixa). O custo é um UPDATE direto no campo, sem o rastro de autoria do portal_escrever_campo (novo/actions.ts:58-61)."
+  },
+  {
+   "decisao": "Roteiro por faixa em evento já criado: ao gravar o cenário, inserir os itens com condição igual ao token que o evento ainda não tem.",
+   "recomendacao": "Não agora. O que é crítico por faixa (crianças entregues, saída dos menores, espaço do bebê, vídeo testado) já está no checklist do dia, que acompanha o objetivo ligado. O código novo em salvarCampo (planejamento/actions.ts:135-141) não teria como evitar duplicata: roteiro_items não guarda o item do modelo, e ela pode ter renomeado o título."
+  },
+  {
+   "decisao": "Chamar instanciar_recursos_evento ao gravar porte ou cenário (planejamento/actions.ts:135-141).",
+   "recomendacao": "Não para o aniversário. Os 5 recursos moram em buffet e bolo e doces, que ficam ligados em toda faixa e chegam na criação. Se quiser, aprovar em mudança separada, como conserto do corporativo (agua_mesa, placas_nome e trofeus nunca chegam sozinhos)."
+  },
+  {
+   "decisao": "Reaplicar ligar/desligar só quando o eixo que mudou é o cenário (083:250-270 e 318-330).",
+   "recomendacao": "Não agora: mexe no casamento (mini_wedding e elopement desligam objetivos pelo porte) e no corporativo (acima_400 liga licenças). No aniversário, o porte não tem delta de ligar/desligar e o corte em 150 torna a troca rara. O resíduo aceito: um objetivo ligado ou desligado à mão contra a faixa volta ao que a faixa manda quando o porte muda. Exemplos: lembrancinha numa festa adulta, bar numa infantil, recreação numa adulta com crianças."
+  },
+  {
+   "decisao": "Papéis de casamento no cortejo do portal do aniversário (portal-pessoas-shared.ts:89-91 cai em padrinhos, madrinhas, damas, pajens e porta-alianças).",
+   "recomendacao": "Tirar o cortejo do aniversário: EXCECOES.aniversario = [\"listaNominal\", \"mesas\", \"siteDoEvento\"] em capacidades.ts:27-30. Isso some com a tela Cortejo no app e no portal, o botão das ações rápidas e a chamada impressa. O método não tem cortejo, e quem fala está na homenagem. Papéis próprios só se a cerimonialista pedir."
+  },
+  {
+   "decisao": "Ligar objetivo à mão recalcular prazos (alternarObjetivoAtivo, planejamento/actions.ts:319-334, chamando redistribuir_decisoes_evento).",
+   "recomendacao": "Sim, em mudança pequena e sem dado. Hoje ligar o Local à parte deixa \"Fechar o local\" sem \"vence em\" até a próxima mudança de estado, porque o motor zera prazo de objetivo desligado (142:188-195). Vale para todos os tipos, e é o comportamento que a 142 já pretendia."
+  },
+  {
+   "decisao": "O checklist do dia não remove item de objetivo que foi desligado depois (125:428-464 só insere).",
+   "recomendacao": "Aceitar. Ela esconde o item na tela do roteiro com um toque. Código para apagar item não marcado de objetivo inativo só se a cerimonialista reclamar, e sem mexer na função genérica sem aprovação."
+  }
+ ],
+ "fora_do_escopo": [
+  "Guia de 5 passos travado em show e formatura: o caminho é escolhido só por existir objetivo (lib/supabase/guia-vivo.ts:50; guia-vivo.ts:159), e o passo 2 exige escala e cenário (160:181-184), que esses tipos não têm. A única saída é Pular.",
+  "Debutante: as faixas ideais somam 105 (122).",
+  "Debutante compacta: 13 set_offset_ideal sem set_offset_min deixam o ideal abaixo do mínimo (espaço em 150 contra mínimo de 280). É o mesmo defeito que a 142 corrigiu no corporativo.",
+  "Debutante: a prioridade não acompanha o prazo (deb_roteiro_fechar, 15 dias e p24, fica acima de deb_rsvp, 21 dias e p19), o que empurra decisões na compressão.",
+  "Assistente de criação: \"o checklist não vai gerar Confirmar para eles\" (StepEstruturacao.tsx:150-153) é falso, porque fornecedoresContratados não é lido e tasks vai vazio (novo/actions.ts:141-149).",
+  "Assistente de criação: \"No rápido, criamos um checklist mínimo (Contrato, Entrada, Confirmar fornecedor)\" (StepDadosBasicos.tsx:270-273) é falso pelo mesmo motivo.",
+  "Impressão de música nunca mostra a valsa nem o parabéns da debutante: lê deb_valsa_musica e deb_parabens_musica (imprimir/musica/[id]/page.tsx:49-50 e 84-85), mas o campo se chama musica (122:211 e 216).",
+  "DrawerDecisao.tsx:1010 escreve \"data do casamento\" na decisão de data da debutante (deb_data).",
+  "OrganizacaoEvento.tsx:1790 pede \"Defina a data do casamento\" em evento sem data de qualquer tipo.",
+  "Confirmação de presença, autocadastro e lembrete dizem \"os noivos\" quando o evento não tem nome, em qualquer tipo (092:140, 094:95, 095:84). O site já usa \"os anfitriões\" (129:554).",
+  "O cortejo do portal da debutante, e de todo tipo sem entrada própria, mostra papéis de casamento (portal-pessoas-shared.ts:89-91).",
+  "Guia de estilo do portal: só a decisão decoracao_briefing do casamento o monta (DrawerDecisao.tsx:44). Nos outros tipos com site, a tela diz para sempre que a cerimonialista \"ainda vai montar o guia com vocês\" (guia-estilo/page.tsx:61).",
+  "Recursos de objetivo ligado depois da criação só chegam pelo botão \"trazer do método\": a instanciação roda com porte e cenário nulos (132:435-438). No corporativo, isso atinge agua_mesa, placas_nome e trofeus.",
+  "RoteiroPadraoSection.tsx:20-23 também deixa formatura, show e corporativo sem ajuste do roteiro modelo.",
+  "Copy que explica o sistema e aparece em todo tipo com arquétipo: FaixaContexto.tsx:939 (\"arquétipo do evento\") e 949-951, guia-vivo.ts:72 e RoteiroPadraoSection.tsx:64-66.",
+  "Extração do briefing: DECISAO_CONTRATAR só conhece códigos de casamento (briefing-extracao-actions.ts:67-75), e estilo_desejado só existe no casamento (491-493).",
+  "Portal: RespostaPergunta não tem controle para pergunta de tipo hora nem mensagem para a recusa hora_invalida (RespostaPergunta.tsx:25-31). Nenhum método usa isso hoje; o primeiro que usar falha com \"Não foi possível salvar.\"."
+ ],
+ "criticas_rejeitadas": [
+  {
+   "problema": "Domínio: o item da piscina com requer_objetivo 'local'.",
+   "motivo": "A base é a casa de festas, com o Local à parte desligado. Preso ao local, o item sumiria justamente na casa de festas ou na chácara com piscina que não entrou como local à parte. Ficou sem exigência, e a pergunta aberta 11 leva à cerimonialista se vale limitar."
+  },
+  {
+   "problema": "Domínio: set_faixa_pct_max 65 do buffet nos 60 anos ou mais.",
+   "motivo": "O teto da base subiu para 70 e o ideal dos 60+ é 60. Um delta a mais não mudaria nenhum aviso."
+  },
+  {
+   "problema": "Domínio: ligar o bar (drinks sem álcool) na festa de 13 a 17 anos.",
+   "motivo": "O bar fica desligado onde há menores, porque é item contraindicado e o desligar é o que protege na reaplicação. O drink sem álcool costuma vir do buffet, e isso foi para a cerimonialista na pergunta aberta 6. A trava \"nenhuma bebida alcoólica para menores de 18\" passou a valer em toda festa, sem exigência de objetivo."
+  },
+  {
+   "problema": "Domínio: item de roteiro de lembrancinhas por faixa, com condição, e recurso de lembrancinhas movido para o objetivo novo.",
+   "motivo": "Roteiro por faixa só chega a evento criado pelo assistente completo, como apontou a crítica de conformidade. A entrega virou item do checklist (\"a partir do parabéns\"), que acompanha o objetivo ligado. O recurso saiu: \"uma por criança ou por família\" não se deriva do número de convidados."
+  },
+  {
+   "problema": "Domínio: \"Montagem do som\" só nas faixas com música (condição adolescente, adulto, sessenta_mais).",
+   "motivo": "Toda festa tem som, inclusive o pacote infantil, e a música do parabéns é testada no checklist. Um item de base chega a todo evento, inclusive ao da cliente e aos que vêm de orçamento, que só recebem itens sem condição (112:510)."
+  },
+  {
+   "problema": "Domínio: publicacao_fotos com três opções (pode_publicar, so_familia, nao_publicar).",
+   "motivo": "A pergunta é se o fotógrafo pode publicar nas redes dele. \"Só para a família\" é entrega, não publicação. Sim ou não se responde em um toque."
+  },
+  {
+   "problema": "Conformidade: PORTE_POR_PUBLICO com três faixas (ate_50, 51_a_150, acima_150).",
+   "motivo": "Prevaleceu a crítica de produto: dois portes com corte em 150. O corte em 50 caía no meio da faixa típica de 30 a 100 convidados. Cada troca de porte reaplica o desligar da faixa, e o delta de até 50 só mexia em 3 prazos."
+  },
+  {
+   "problema": "Conformidade, opção A: chamar instanciar_recursos_evento ao gravar escala ou cenário.",
+   "motivo": "Foi aplicada a opção B: cerveja e pulseiras saíram do método. Os 5 recursos que ficaram moram em objetivos sempre ligados, então o aniversário não depende desse código. O conserto do corporativo ficou como decisão do dono."
+  },
+  {
+   "problema": "Conformidade: desligar só o que é contraindicado (bar e portaria para menores, bebê e recreação). O FINAL também desliga lembrancinhas no adulto e nos 60+.",
+   "motivo": "Lembrancinhas nasce ligada. Sem o desligar, toda festa adulta carregaria decisão, pergunta e checklist de lembrancinha, que é o problema levantado pela crítica de domínio. Custo aceito: ligada à mão numa festa adulta, volta a desligar na próxima troca de porte, o que é raro com o corte em 150."
+  },
+  {
+   "problema": "Conformidade: apagar do checklist do dia os itens de objetivo desligado ao trocar de faixa, ou registrar isso nas perguntas abertas.",
+   "motivo": "É mecânica do sistema, não pergunta de domínio para a cerimonialista. Virou decisão do dono, com a recomendação de aceitar: ela esconde o item na tela."
+  },
+  {
+   "problema": "Conformidade: somar estilo_desejado com pergunta própria para receber o estilo vindo do briefing.",
+   "motivo": "Repetiria o campo tema na mesma conversa. estilo_desejado é código curado com voz de casamento (146:90) e pediria texto próprio só para servir à extração. O aviso \"o estilo não entrou\" fica, e as cores entram por paleta_cores."
+  },
+  {
+   "problema": "Produto: levar o campo lembrancinha para aniv_bolo_doces_contratar e apagar a decisão.",
+   "motivo": "Prevaleceu o objetivo próprio, da crítica de domínio. Delta liga e desliga objetivo, não decisão, e a lembrancinha não é fornecida pela confeitaria cujo contrato gera as 4 tarefas."
+  },
+  {
+   "problema": "Produto e conformidade: \"data do casamento\" do drawer (DrawerDecisao.tsx:1010) na lista de textos a trocar para o aniversário.",
+   "motivo": "O texto só aparece em decisão de código data ou deb_data (PlanejamentoEvento.tsx:714-717), e o aniversário não tem decisão de data. É defeito da debutante e foi para fora do escopo."
+  }
+ ]
+}
