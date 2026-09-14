@@ -137,7 +137,10 @@ export type ContaAdmin = {
   cidades: string[];
   ultimoLogin: string | null;
   whatsapp: string | null;
+  /** nomes na lista de convidados (evento_convidado) */
   convidados: number;
+  /** soma do "quantos convidados" que ela informou ao criar os eventos */
+  convidadosPrevistos: number;
   tarefas: number;
   fornecedores: number;
   /** o guia do primeiro acesso da dona (160) */
@@ -210,7 +213,7 @@ export async function getContas(): Promise<ContaAdmin[]> {
           .eq("empresa_id", e.id)
           .eq("status", "ativo"),
         // a CIDADE vem junto: é o que responde "de onde ela é"
-        db.from("events").select("city").eq("empresa_id", e.id),
+        db.from("events").select("city, guests").eq("empresa_id", e.id),
         db
           .from("activities")
           .select("created_at")
@@ -219,7 +222,8 @@ export async function getContas(): Promise<ContaAdmin[]> {
           .limit(1),
         db.from("evento_convidado").select("id", { count: "exact", head: true }).eq("empresa_id", e.id),
         db.from("tasks").select("id", { count: "exact", head: true }).eq("empresa_id", e.id),
-        db.from("roteiro_links").select("id", { count: "exact", head: true }).eq("empresa_id", e.id),
+        // fornecedores CADASTRADOS por ela (antes contava links de roteiro)
+        db.from("suppliers").select("id", { count: "exact", head: true }).eq("empresa_id", e.id),
       ]);
 
     const dona = usuarioPorId.get(e.owner_user_id);
@@ -231,7 +235,9 @@ export async function getContas(): Promise<ContaAdmin[]> {
     // à mão: "Governador valadares" e "Governador Valadares" são a mesma,
     // então a chave ignora maiúscula e acento, e aparece a primeira grafia.
     const contagem = new Map<string, { nome: string; n: number }>();
-    for (const x of (evs ?? []) as { city: string | null }[]) {
+    let convidadosPrevistos = 0;
+    for (const x of (evs ?? []) as { city: string | null; guests: number | null }[]) {
+      convidadosPrevistos += Number(x.guests) || 0;
       const c = x.city?.trim().replace(/\s+/g, " ");
       if (!c) continue;
       const chave = c.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
@@ -274,6 +280,7 @@ export async function getContas(): Promise<ContaAdmin[]> {
       ultimoLogin: dona?.last_sign_in_at ?? null,
       whatsapp: d?.whatsapp?.trim() || null,
       convidados: conv.count ?? 0,
+      convidadosPrevistos,
       tarefas: tar.count ?? 0,
       fornecedores: forn.count ?? 0,
       guia: d?.guia_concluido_em ? "concluiu" : d?.guia_dispensado_em ? "pulou" : "em andamento",

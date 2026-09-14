@@ -69,7 +69,7 @@ function QuemE({ conta }: { conta: ContaAdmin }) {
     { rotulo: "Último acesso", valor: diaEHora(conta.ultimoLogin) },
     {
       rotulo: "Já usou",
-      valor: `${conta.eventos} ${conta.eventos === 1 ? "evento" : "eventos"} · ${conta.convidados} ${conta.convidados === 1 ? "convidado" : "convidados"} · ${conta.tarefas} ${conta.tarefas === 1 ? "tarefa" : "tarefas"} · ${conta.fornecedores} ${conta.fornecedores === 1 ? "fornecedor" : "fornecedores"}`,
+      valor: `${conta.eventos} ${conta.eventos === 1 ? "evento" : "eventos"} · ${conta.convidados} ${conta.convidados === 1 ? "nome" : "nomes"} na lista de convidados${conta.convidadosPrevistos ? ` (${conta.convidadosPrevistos} previstos)` : ""} · ${conta.tarefas} ${conta.tarefas === 1 ? "tarefa" : "tarefas"} · ${conta.fornecedores} ${conta.fornecedores === 1 ? "fornecedor" : "fornecedores"}`,
     },
     { rotulo: "Guia", valor: conta.guia },
   ];
