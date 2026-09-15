@@ -151,3 +151,23 @@ body[data-tema="neutro"] {
 .vela-item-nav:hover { background: var(--nevoa); color: var(--tinta); }
 .vela-busca:focus-within { border-color: var(--tinta); box-shadow: var(--ring-focus); }
 .vela-foco:focus-visible { outline: none; box-shadow: var(--ring-focus); border-color: var(--accent-quiet); }
+
+/* O "?" das explicações (ajuda contextual) só aparece quando a linha do
+   menu, a aba ou o cartão de fase (.group) recebe o mouse ou o foco. Antes
+   eram até 29 interrogações permanentes numa tela de evento. Em tela de
+   toque não há hover: fica sempre visível. Aberta, fica visível. */
+.ajuda-gatilho {
+  opacity: 0;
+  transition: opacity 120ms;
+}
+.group:hover .ajuda-gatilho,
+.group:focus-within .ajuda-gatilho,
+.ajuda-gatilho:focus-visible,
+.ajuda-gatilho[aria-expanded="true"] {
+  opacity: 1;
+}
+@media (hover: none) {
+  .ajuda-gatilho {
+    opacity: 1;
+  }
+}

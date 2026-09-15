@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { Newsreader } from "next/font/google";
 import { createClient } from "@/lib/supabase/server";
+import { getMeuCargo } from "@/lib/supabase/equipe";
+import { SubNav } from "@/components/SubNav";
+import { VISOES_ORCAMENTOS } from "@/lib/visoes";
 import { OrcamentosTable } from "@/components/orcamentos/OrcamentosTable";
 import { type Orcamento, validadeVencida } from "@/lib/orcamentos";
 import { CORES } from "@/lib/orcamentos-ui";
@@ -48,6 +51,8 @@ export default async function OrcamentosPage({
   };
 }) {
   const supabase = createClient();
+  // só para a visão Catálogo (dona) ao lado de Propostas
+  const { cargo } = await getMeuCargo();
   const page = Math.max(1, Number(searchParams.page) || 1);
   // Padrão: o que foi criado por último aparece primeiro. Antes a lista
   // vinha por data do evento, e um orçamento montado hoje para um casamento
@@ -208,6 +213,7 @@ export default async function OrcamentosPage({
           </Link>
         </div>
       </div>
+      <SubNav itens={VISOES_ORCAMENTOS} cargo={cargo} className="mt-5" />
 
       {error && (
         <div

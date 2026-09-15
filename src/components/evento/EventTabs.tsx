@@ -72,7 +72,7 @@ export function EventTabs({
           // `after:inset-0` devolve ao link a área de clique inteira.
           <span
             key={tab.label}
-            className={`relative flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition-colors ${
+            className={`group relative flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition-colors ${
               active
                 ? "border-[color:var(--ev-text-strong)] text-[color:var(--ev-text-strong)]"
                 : "border-transparent text-[color:var(--ev-text-muted)] hover:text-[color:var(--ev-text-strong)]"

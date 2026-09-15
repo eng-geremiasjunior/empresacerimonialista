@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { getContratosDaTela } from "@/lib/supabase/contratos-tela";
 import { getMeuCargo } from "@/lib/supabase/equipe";
 import { ContratosTela } from "@/components/contratos/ContratosTela";
+import { SubNav } from "@/components/SubNav";
+import { VISOES_FORNECEDORES } from "@/lib/visoes";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +38,8 @@ export default async function ContratosPage() {
   }
 
   return (
+    <div className="space-y-4">
+      <SubNav itens={VISOES_FORNECEDORES} cargo={cargo} />
     <ContratosTela
       linhas={linhas}
       semContrato={semContrato}
@@ -43,5 +47,6 @@ export default async function ContratosPage() {
       escopoEvento={null}
       podeEscrever
     />
+    </div>
   );
 }

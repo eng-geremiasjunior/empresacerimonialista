@@ -22,7 +22,7 @@ export default async function SolicitacoesPage() {
       <div>
         <h1 className="text-xl font-semibold text-gray-900">Solicitações</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Uma mensagem por fornecedor, com tudo que você precisa dele agora.
+          Quem ainda não te respondeu, e as mensagens prontas para sair.
         </p>
       </div>
       <FilaDoDia itens={itens} />

@@ -1,5 +1,8 @@
 import { getAgendaFornecedores } from "@/lib/supabase/agenda-fornecedores";
 import { AgendaFornecedoresTela } from "@/components/agenda/AgendaFornecedores";
+import { getMeuCargo } from "@/lib/supabase/equipe";
+import { SubNav } from "@/components/SubNav";
+import { VISOES_FORNECEDORES } from "@/lib/visoes";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +13,10 @@ export default async function AgendaPage({
 }: {
   searchParams?: { tab?: string };
 }) {
-  const dados = await getAgendaFornecedores();
+  const [dados, { cargo }] = await Promise.all([
+    getAgendaFornecedores(),
+    getMeuCargo(),
+  ]);
 
   if (!dados) {
     return (
@@ -21,9 +27,12 @@ export default async function AgendaPage({
   }
 
   return (
+    <div className="space-y-4">
+      <SubNav itens={VISOES_FORNECEDORES} cargo={cargo} />
     <AgendaFornecedoresTela
       dados={dados}
       tabInicial={searchParams?.tab === "grade" ? "grade" : "reunioes"}
     />
+    </div>
   );
 }

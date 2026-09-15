@@ -73,60 +73,64 @@ type NavItem = {
   href: string;
   // cargos que enxergam o item; ausente = todos.
   cargos?: string[];
+  // grupo do menu (o rótulo pequeno acima); ausente = solto, no fim.
+  grupo?: string;
 };
 
+// Cinco grupos e a Ajuda solta. Antes eram 16 itens planos para a dona.
+// Calendário, Catálogo, Contratos, Agenda de Fornecedores e Assinatura
+// saíram do menu SEM sair do sistema: viraram visões da tela que os explica
+// (Eventos, Orçamentos, Fornecedores, Configurações — ver lib/visoes.ts).
+// As rotas não mudaram; o item-mãe fica ativo nelas (TAMBEM_ATIVO).
 const NAV: NavItem[] = [
-  { label: "Dashboard", icon: "dashboard", href: "/eventos/dashboard" },
-  { label: "Eventos", icon: "eventos", href: "/eventos" },
-  { label: "Orçamentos", icon: "cotacoes", href: "/orcamentos" },
-  { label: "Clientes", icon: "clientes", href: "/clientes" },
+  { label: "Dashboard", icon: "dashboard", href: "/eventos/dashboard", grupo: "Principal" },
+  { label: "Eventos", icon: "eventos", href: "/eventos", grupo: "Principal" },
+  { label: "Orçamentos", icon: "cotacoes", href: "/orcamentos", grupo: "Comercial" },
+  { label: "Clientes", icon: "clientes", href: "/clientes", grupo: "Comercial" },
+  {
+    label: "Solicitações",
+    icon: "solicitacoes",
+    href: "/solicitacoes",
+    cargos: ["proprietaria", "coordenadora", "cerimonialista"],
+    grupo: "Operação",
+  },
+  { label: "Tarefas", icon: "tarefas", href: "/tarefas", grupo: "Operação" },
+  { label: "Fornecedores", icon: "fornecedores", href: "/fornecedores", grupo: "Cadastros" },
   {
     // "Equipe": cabe coordenadora e assistente, não só cerimonialista.
     label: "Equipe",
     icon: "cerimonialistas",
     href: "/cerimonialistas",
     cargos: ["proprietaria", "coordenadora"],
+    grupo: "Cadastros",
   },
-  { label: "Fornecedores", icon: "fornecedores", href: "/fornecedores" },
-  {
-    label: "Solicitações",
-    icon: "solicitacoes",
-    href: "/solicitacoes",
-    cargos: ["proprietaria", "coordenadora", "cerimonialista"],
-  },
-  // contrato é o produto da solicitação — vizinhos de propósito
-  {
-    label: "Contratos",
-    icon: "contratos",
-    href: "/contratos",
-    cargos: ["proprietaria", "coordenadora", "cerimonialista"],
-  },
-  { label: "Agenda de Fornecedores", icon: "agenda", href: "/agenda" },
-  { label: "Tarefas", icon: "tarefas", href: "/tarefas" },
-  { label: "Calendário", icon: "calendario", href: "/calendario" },
   {
     label: "Financeiro",
     icon: "financeiro",
     href: "/financeiro",
     cargos: ["proprietaria"],
+    grupo: "Empresa",
   },
-  {
-    label: "Catálogo",
-    icon: "catalogo",
-    href: "/catalogo",
-    cargos: ["proprietaria"],
-  },
-  {
-    label: "Assinatura",
-    icon: "financeiro",
-    href: "/assinatura",
-    cargos: ["proprietaria"],
-  },
-  { label: "Configurações", icon: "configuracoes", href: "/configuracoes" },
+  { label: "Configurações", icon: "configuracoes", href: "/configuracoes", grupo: "Empresa" },
   { label: "Ajuda", icon: "ajuda", href: "/ajuda" },
 ];
 
+/** As rotas que vivem por dentro de um item do menu (lib/visoes.ts). */
+const TAMBEM_ATIVO: Record<string, string[]> = {
+  "/eventos": ["/calendario"],
+  "/orcamentos": ["/catalogo"],
+  "/fornecedores": ["/contratos", "/agenda"],
+  "/configuracoes": ["/assinatura"],
+};
+
 function isActive(pathname: string, href: string) {
+  if (
+    (TAMBEM_ATIVO[href] ?? []).some(
+      (h) => pathname === h || pathname.startsWith(`${h}/`)
+    )
+  ) {
+    return true;
+  }
   if (href === "/eventos/dashboard") return pathname === href;
   if (href === "/eventos") {
     return (
@@ -234,6 +238,9 @@ export function AppShell({
   const navVisivel = NAV.filter(
     (item) => !item.cargos || (cargo !== null && item.cargos.includes(cargo))
   );
+  // Um grupo só aparece com item visível dentro; a Ajuda (sem grupo) é o
+  // último bloco. A ordem é a de NAV.
+  const grupos = Array.from(new Set(navVisivel.map((item) => item.grupo)));
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [today, setToday] = useState("");
@@ -317,7 +324,15 @@ export function AppShell({
             um botão solto ao lado do item. O link continua sendo TODO o
             resto da linha, então a área de clique para navegar não
             encolheu. */}
-        {navVisivel.map((item) => {
+        {grupos.map((grupo) => (
+          <div key={grupo ?? "solto"} className="pt-3 first:pt-0">
+            {grupo && (
+              <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-stone-500">
+                {grupo}
+              </p>
+            )}
+            <div className="space-y-0.5">
+        {navVisivel.filter((item) => item.grupo === grupo).map((item) => {
           const ativo = isActive(pathname, item.href);
           const explicacao = mostrarExplicacoes ? explicacaoDe(item.href) : null;
           return (
@@ -348,7 +363,9 @@ export function AppShell({
             </div>
           );
         })}
-
+            </div>
+          </div>
+        ))}
       </nav>
       <div className="space-y-2 border-t border-stone-800 p-3">
         {/* Suporte logo ACIMA do Copiloto — lugar pedido pelo dono. */}

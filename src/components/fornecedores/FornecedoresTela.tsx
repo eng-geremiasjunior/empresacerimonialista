@@ -260,7 +260,7 @@ export function FornecedoresTela({
 
   return (
     <div
-      className="flex h-[calc(100dvh-8.5rem)] min-h-[540px] overflow-hidden"
+      className="flex h-[calc(100dvh-11.5rem)] min-h-[540px] overflow-hidden"
       style={{
         border: "1px solid var(--linha)",
         borderRadius: 14,

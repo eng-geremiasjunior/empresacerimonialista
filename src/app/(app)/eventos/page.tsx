@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { SubNav } from "@/components/SubNav";
+import { VISOES_EVENTOS } from "@/lib/visoes";
 import { addDays, format } from "date-fns";
 import {
   CalendarX,
@@ -97,6 +99,7 @@ export default async function EventosPage({
           </Link>
         </div>
       </div>
+      <SubNav itens={VISOES_EVENTOS} />
 
       {/* Indicadores */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">

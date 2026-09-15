@@ -1,6 +1,8 @@
 import { getFornecedoresDaTela } from "@/lib/supabase/fornecedores-tela";
 import { getMeuCargo } from "@/lib/supabase/equipe";
 import { FornecedoresTela } from "@/components/fornecedores/FornecedoresTela";
+import { SubNav } from "@/components/SubNav";
+import { VISOES_FORNECEDORES } from "@/lib/visoes";
 
 // A tela filtra no cliente, então o servidor entrega a lista inteira uma
 // vez — e por isso ela precisa ser sempre fresca: sem `force-dynamic` o
@@ -30,6 +32,8 @@ export default async function FornecedoresPage({
   );
 
   return (
+    <div className="space-y-4">
+      <SubNav itens={VISOES_FORNECEDORES} cargo={cargo} />
     <FornecedoresTela
       linhas={linhas}
       anoCorrente={anoCorrente}
@@ -37,5 +41,6 @@ export default async function FornecedoresPage({
       selecionadoInicial={searchParams?.f ?? null}
       podeEscrever={podeEscrever}
     />
+    </div>
   );
 }

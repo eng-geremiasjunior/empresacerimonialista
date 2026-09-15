@@ -38,6 +38,13 @@ export const GRUPOS_AJUDA: GrupoAjuda[] = [
         resposta:
           "Em Configurações, na seção da empresa (aparece para a proprietária). A logo e o nome saem na proposta, no PDF e no portal da cliente — é a sua marca na frente da cliente, não a do eorganizei.",
       },
+      {
+        id: "onde-foi-parar",
+        pergunta:
+          "Onde foram parar o Calendário, o Catálogo, os Contratos e a Agenda de Fornecedores?",
+        resposta:
+          "Continuam no sistema, cada um dentro da tela que o explica: o Calendário está em Eventos, ao lado da lista; o Catálogo está em Orçamentos; Contratos e Agenda de reuniões estão em Fornecedores; Plano e assinatura está em Configurações. Os endereços antigos continuam abrindo.",
+      },
     ],
   },
   {

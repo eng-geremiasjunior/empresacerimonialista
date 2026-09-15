@@ -221,7 +221,9 @@ export function ExplicacaoDoMenu({
         // 11px: o dono pediu uns 30% menor que os 16px iniciais. Nesse
         // tamanho o traço precisa ser mais claro que o texto ao lado,
         // senão o "?" compete com o nome do item em vez de acompanhá-lo.
-        className={`flex h-[11px] w-[11px] shrink-0 items-center justify-center rounded-full border text-[8px] font-semibold leading-none transition-colors ${
+        // ajuda-gatilho (globals.css): invisível até a linha, a aba ou o
+        // cartão (.group) receber o mouse ou o foco; sempre visível no toque.
+        className={`ajuda-gatilho flex h-[11px] w-[11px] shrink-0 items-center justify-center rounded-full border text-[8px] font-semibold leading-none transition-colors ${
           tom === "claro"
             ? aberta
               ? "border-stone-500 bg-stone-700 text-white"

@@ -1,3 +1,5 @@
+import { SubNav } from "@/components/SubNav";
+import { VISOES_ORCAMENTOS } from "@/lib/visoes";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -45,6 +47,7 @@ export default async function CatalogoPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
+      <SubNav itens={VISOES_ORCAMENTOS} cargo={cargo.cargo} />
       <div>
         <h1 className="text-xl font-semibold text-gray-900">Catálogo</h1>
         <p className="text-sm text-gray-500">

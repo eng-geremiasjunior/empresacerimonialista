@@ -1,3 +1,5 @@
+import { SubNav } from "@/components/SubNav";
+import { VISOES_EVENTOS } from "@/lib/visoes";
 import { createClient } from "@/lib/supabase/server";
 import { Calendar } from "@/components/calendar/Calendar";
 import {
@@ -60,6 +62,7 @@ export default async function CalendarioPage() {
 
   return (
     <div className="space-y-6">
+      <SubNav itens={VISOES_EVENTOS} />
       <div>
         <h1 className="text-xl font-semibold">Calendário</h1>
         <p className="text-sm text-stone-500">

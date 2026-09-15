@@ -70,7 +70,7 @@ export function FasesDoEvento({
           // ilha fora dela.
           <div
             key={fase.id}
-            className={`relative flex flex-col gap-1 px-4 pb-3 pt-3.5 transition-colors ${
+            className={`group relative flex flex-col gap-1 px-4 pb-3 pt-3.5 transition-colors ${
               i > 0
                 ? "border-t border-[color:var(--ev-card-border-soft)] sm:border-l sm:border-t-0"
                 : ""
