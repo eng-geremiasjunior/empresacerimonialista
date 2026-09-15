@@ -48,6 +48,10 @@ export function urlVerificacao(base: string, recibo: string, sha256: string): st
  */
 export function mascararCpf(cpf: string | null | undefined): string {
   const digitos = (cpf ?? "").replace(/\D/g, "");
+  // CNPJ (empresa que assina a proposta corporativa): o miolo, sem as pontas
+  if (digitos.length === 14) {
+    return `**.${digitos.slice(2, 5)}.${digitos.slice(5, 8)}/${digitos.slice(8, 12)}-**`;
+  }
   if (digitos.length !== 11) return "";
   return `***.${digitos.slice(3, 6)}.${digitos.slice(6, 9)}-**`;
 }

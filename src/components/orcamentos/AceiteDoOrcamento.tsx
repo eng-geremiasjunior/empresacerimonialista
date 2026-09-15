@@ -188,7 +188,8 @@ export function AceiteDoOrcamento({
   );
 
   const cpf = mascararCpf(aceite.cpf);
-  const detalhes1 = [cpf ? `CPF ${cpf}` : "", aceite.email ?? "", aceite.telefone ?? ""]
+  const documento = (aceite.cpf ?? "").replace(/\D/g, "").length === 14 ? "CNPJ" : "CPF";
+  const detalhes1 = [cpf ? `${documento} ${cpf}` : "", aceite.email ?? "", aceite.telefone ?? ""]
     .map((s) => s.trim())
     .filter(Boolean);
 

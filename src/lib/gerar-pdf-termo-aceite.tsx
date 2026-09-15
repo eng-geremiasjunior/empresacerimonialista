@@ -84,11 +84,19 @@ function percentual(v: number): string {
   return `${v.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
 }
 
-/** `123.456.789-00` quando são 11 dígitos; senão o que veio. */
+/** `123.456.789-00` (CPF) ou `12.345.678/0001-90` (CNPJ); senão o que veio. */
 function cpfFormatado(cpf: string): string {
   const d = cpf.replace(/\D/g, "");
+  if (d.length === 14) {
+    return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
+  }
   if (d.length !== 11) return cpf;
   return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+}
+
+/** Empresa assina com CNPJ (14 dígitos); pessoa, com CPF. */
+function rotuloDocumento(cpf: string | null): string {
+  return (cpf ?? "").replace(/\D/g, "").length === 14 ? "CNPJ" : "CPF";
 }
 
 // A data do evento chega como `yyyy-MM-dd` (sem hora). Montar um Date a
@@ -390,7 +398,7 @@ function TermoAceitePdf(d: DadosTermoAceite) {
         {/* ---------- QUEM ACEITOU ---------- */}
         <Text style={s.secaoTitulo}>QUEM ACEITOU</Text>
         <Linha rotulo="Nome">{d.assinante1.nome}</Linha>
-        <Linha rotulo="CPF">
+        <Linha rotulo={rotuloDocumento(d.assinante1.cpf)}>
           {d.assinante1.cpf ? cpfFormatado(d.assinante1.cpf) : "não informado"}
         </Linha>
         <Linha rotulo="E-mail">{d.assinante1.email ?? "não informado"}</Linha>

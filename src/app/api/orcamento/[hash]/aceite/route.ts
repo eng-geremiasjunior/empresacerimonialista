@@ -111,7 +111,7 @@ type Dados = {
   contratoSha256: string | null;
 };
 
-const texto =(v: unknown, max = 200): string =>
+const texto = (v: unknown, max = 200): string =>
   typeof v === "string" ? v.trim().slice(0, max) : "";
 const inteiroOuNull = (v: unknown): number | null =>
   typeof v === "number" && Number.isFinite(v) ? Math.trunc(v) : null;
@@ -130,8 +130,16 @@ function validar(c: Corpo): { ok: true; dados: Dados } | { ok: false; erro: stri
   const nome = texto(c.nome);
   if (!nome) return { ok: false, erro: "Informe o nome de quem está aceitando." };
 
-  const cpf = texto(c.cpf, 20).replace(/\D/g, "");
-  if (cpf.length !== 11) return { ok: false, erro: "Informe um CPF válido." };
+  // CPF (11 dígitos) ou CNPJ (14): a proposta corporativa pede "CPF ou
+  // CNPJ" (lib/papel.ts), e empresa assina com CNPJ. O banco guarda só os
+  // dígitos nos dois casos.
+  const cpf = texto(c.cpf, 30).replace(/\D/g, "");
+  if (cpf.length !== 11 && cpf.length !== 14) {
+    return {
+      ok: false,
+      erro: c.tipoEvento === "corporativo" ? "Informe um CPF ou CNPJ válido." : "Informe um CPF válido.",
+    };
+  }
 
   const email = texto(c.email, 254).toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
