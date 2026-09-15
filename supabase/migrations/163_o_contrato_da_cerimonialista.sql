@@ -48,9 +48,20 @@
 --      casamento não fica sem botão na proposta de debutante (a mesma
 --      regra que lib/orcamento-evento.ts já usa no e-mail).
 --
--- NÃO MUDA: nenhuma chave removida ou renomeada na RPC; nenhuma policy
--- nova (evento_documento e a leitura do portal vieram na 162); nenhum
--- balde novo.
+--   5. O TERMO É DE QUEM CONTRATA (decisão do dono, 15/09/2026: "dado de
+--      pagamento e dado pessoal são de visão apenas da pessoa que
+--      contrata"). O portal é aberto a quem a cerimonialista convida — mãe,
+--      pai, outro —, então:
+--        - a policy do portal em evento_documento (162) passa a entregar
+--          SÓ o contrato de prestação. O termo (valor, CPF, e-mail,
+--          telefone) chegava pela API a qualquer conta do portal, mesmo sem
+--          tela nenhuma mostrando;
+--        - portal_linha_do_tempo (089) deixa de devolver o valor do aceite.
+--          A tela já escondia; a função entregava a quem chamasse direto.
+--      Quem contrata recebe o termo por e-mail; a equipe continua vendo.
+--
+-- NÃO MUDA: nenhuma chave removida ou renomeada na RPC pública; nenhum
+-- balde novo; as colunas de portal_linha_do_tempo são as mesmas.
 -- ============================================================
 
 begin;
@@ -385,6 +396,96 @@ $$;
 revoke all on function public.consultar_orcamento_publico(text) from public;
 grant execute on function public.consultar_orcamento_publico(text) to anon, authenticated;
 
+-- ------------------------------------------------------------
+-- 5) O termo é de quem contrata
+-- ------------------------------------------------------------
+-- A mesma policy da 162, agora só com o contrato. A 162 também foi
+-- editada no repositório com este texto, para uma reexecução dela não
+-- reabrir o termo.
+drop policy if exists "evento_documento_portal_le" on public.evento_documento;
+create policy "evento_documento_portal_le"
+  on public.evento_documento for select
+  using (
+    categoria = 'contrato_prestacao'
+    and event_id in (select public.eventos_da_cliente())
+  );
+
+-- Corpo da 089; mudou só o valor do aceite (163). As colunas do retorno
+-- são as mesmas, e por isso create or replace basta.
+create or replace function public.portal_linha_do_tempo(p_event_id uuid)
+returns table (
+  tipo    text,
+  titulo  text,
+  detalhe text,
+  valor   numeric,
+  quando  timestamptz
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select t.tipo, t.titulo, t.detalhe, t.valor, t.quando
+  from (
+    -- 1) o aceite que deu origem ao evento. 163: sem valor — o que ela
+    --    pagou pela assessoria é de quem contrata, não de quem o portal
+    --    alcança
+    select 'aceite'::text        as tipo,
+           'Proposta aceita'::text as titulo,
+           a.pacote_nome         as detalhe,
+           null::numeric         as valor,
+           a.created_at          as quando
+    from public.orcamentos o
+    join public.orcamento_aceites a on a.orcamento_id = o.id
+    where o.evento_gerado_id = p_event_id
+
+    union all
+
+    -- 2) contratações (mesma regra da RPC de contratados)
+    select 'contratacao', c.titulo, c.fornecedor, c.valor, c.decidida_em
+    from (
+      select distinct on (ed.id)
+        ed.titulo,
+        s.name as fornecedor,
+        ed.decidida_em,
+        (select v.valor_numero
+           from public.evento_campo_valor v
+          where v.evento_decisao_id = ed.id
+            and v.codigo = 'valor_contratado'
+            and v.valor_numero is not null
+          limit 1) as valor
+      from public.evento_decisao ed
+      join public.evento_campo_valor forn
+        on forn.evento_decisao_id = ed.id
+       and forn.tipo = 'fornecedor'
+       and forn.valor_supplier_id is not null
+      join public.suppliers s on s.id = forn.valor_supplier_id
+      where ed.event_id = p_event_id
+        and ed.estado = 'decidida'
+      order by ed.id, forn.ordem
+    ) c
+    where c.decidida_em is not null
+
+    union all
+
+    -- 3) compromissos em que ela comparece (passado e futuro; cancelado
+    --    fica fora). Meio-dia como hora neutra evita o dia "escorregar"
+    --    na conversão de fuso quando hora é nula.
+    select 'compromisso', co.titulo, co.local, null::numeric,
+           (co.data + coalesce(co.hora, '12:00'::time))::timestamptz
+    from public.compromisso co
+    where co.event_id = p_event_id
+      and co.responsavel in ('noivos', 'ambos')
+      and co.estado <> 'cancelado'
+  ) t
+  where public.sou_cliente_do_evento(p_event_id)
+     or public.pode_ver_evento(p_event_id)
+  order by t.quando desc nulls last;
+$$;
+
+revoke all on function public.portal_linha_do_tempo(uuid) from public, anon;
+grant execute on function public.portal_linha_do_tempo(uuid) to authenticated;
+
 commit;
 
 -- ------------------------------------------------------------
@@ -487,6 +588,29 @@ select 'consultar_orcamento_publico: security definer, com search_path fixo',
           from pg_proc
          where proname = 'consultar_orcamento_publico'
            and pronamespace = 'public'::regnamespace)
+
+union all
+select 'evento_documento: o portal lê só o contrato — o termo (valor e CPF) nunca',
+       (select qual ilike '%contrato_prestacao%'
+           and qual not ilike '%termo_aceite%'
+           and qual ilike '%eventos_da_cliente%'
+          from pg_policies
+         where schemaname = 'public' and tablename = 'evento_documento'
+           and policyname = 'evento_documento_portal_le')
+
+union all
+select 'portal_linha_do_tempo: o aceite sai sem valor',
+       (select prosrc not ilike '%a.valor_total%'
+           and prosrc ilike '%null::numeric         as valor%'
+           and prosrc ilike '%valor_contratado%'
+          from pg_proc
+         where proname = 'portal_linha_do_tempo'
+           and pronamespace = 'public'::regnamespace)
+
+union all
+select 'portal_linha_do_tempo: só quem tem sessão executa (anon não)',
+       has_function_privilege('authenticated', 'public.portal_linha_do_tempo(uuid)', 'EXECUTE')
+       and not has_function_privilege('anon', 'public.portal_linha_do_tempo(uuid)', 'EXECUTE')
 
 union all
 select 'consultar_orcamento_publico: anon e authenticated executam',

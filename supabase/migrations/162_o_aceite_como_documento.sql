@@ -89,8 +89,10 @@
 --      um termo forjado. A equipe lê pelo mesmo crivo do evento e, sem
 --      evento, pelo mesmo crivo do orçamento (orcamentos_select, 041):
 --      quem não vê a proposta na lista não abre o termo dela. A cliente
---      do portal lê termo e contrato do próprio evento (policy separada,
---      molde da 089), nunca a categoria `outro`. Apagar fica com quem
+--      do portal lê só o CONTRATO do próprio evento (policy separada,
+--      molde da 089) — o termo tem valor e CPF e é só de quem contrata,
+--      que recebe por e-mail (decisão do dono, 15/09/2026; aplicada pela
+--      163). Nunca a categoria `outro`. Apagar fica com quem
 --      responde pela empresa (119) — menos o termo de aceite, que é a
 --      prova que o sistema gerou e ninguém da equipe apaga.
 --
@@ -326,14 +328,18 @@ create policy "evento_documento_le"
         end
   );
 
--- A cliente do portal lê o termo e o contrato do próprio evento — nunca a
--- categoria outro. Policy separada da equipe, no molde da 089: as
--- permissivas somam por OR e o InitPlan é avaliado uma vez por consulta.
+-- A cliente do portal lê só o contrato de prestação do próprio evento.
+-- O termo de aceite NÃO: ele tem o valor aceito, o CPF, o e-mail e o
+-- telefone de quem assinou, e o portal é aberto a quem ela convida (mãe,
+-- pai, outro). Dado de pagamento e dado pessoal são só de quem contrata,
+-- que recebe o termo por e-mail. Nunca a categoria outro. Policy separada
+-- da equipe, no molde da 089: as permissivas somam por OR e o InitPlan é
+-- avaliado uma vez por consulta.
 drop policy if exists "evento_documento_portal_le" on public.evento_documento;
 create policy "evento_documento_portal_le"
   on public.evento_documento for select
   using (
-    categoria in ('termo_aceite', 'contrato_prestacao')
+    categoria = 'contrato_prestacao'
     and event_id in (select public.eventos_da_cliente())
   );
 
@@ -1052,9 +1058,9 @@ select 'evento_documento: a equipe sem evento lê pelo crivo de orcamentos_selec
            and policyname = 'evento_documento_le')
 
 union all
-select 'evento_documento: o portal lê termo e contrato do próprio evento, nunca a categoria outro',
+select 'evento_documento: o portal lê só o contrato do próprio evento — nunca o termo, nunca outro',
        (select qual ilike '%eventos_da_cliente%'
-           and qual ilike '%termo_aceite%'
+           and qual not ilike '%termo_aceite%'
            and qual ilike '%contrato_prestacao%'
            and qual not ilike '%''outro''%'
           from pg_policies

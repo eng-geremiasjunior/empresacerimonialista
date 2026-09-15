@@ -159,8 +159,9 @@ export async function updateSession(request: NextRequest) {
   const isAuthConfirm = pathname.startsWith("/auth/confirm");
   // /c/ junto: a noiva LOGADA no portal abre o próprio site do casamento
   // pelos dois endereços — sem isto seria expulsa para /portal.
-  // /api/documento/ também: o termo e o contrato abrem pelo portal, e a
-  // RLS de evento_documento é quem decide se ela vê aquele arquivo.
+  // /api/documento/ também: o contrato de prestação abre pelo portal, e a
+  // RLS de evento_documento é quem decide se ela vê aquele arquivo (o
+  // termo de aceite a RLS do portal não entrega).
   const isPublicConfirmar =
     pathname.startsWith("/confirmar/") ||
     pathname.startsWith("/c/") ||

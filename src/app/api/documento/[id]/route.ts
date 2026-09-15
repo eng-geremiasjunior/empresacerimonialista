@@ -3,9 +3,10 @@
 //
 // Quem decide é a RLS de evento_documento, lida com a sessão de quem
 // clicou: a equipe vê os documentos da própria empresa (pelo crivo do
-// evento ou do orçamento), a cliente do portal vê o termo e o contrato do
-// próprio evento (162, policy evento_documento_portal_le — a de equipe
-// exige meu_cargo(), que a conta de portal não tem). Só depois disso a chave de serviço
+// evento ou do orçamento), a cliente do portal vê só o contrato de
+// prestação do próprio evento (policy evento_documento_portal_le, 163 — a
+// de equipe exige meu_cargo(), que a conta de portal não tem). O termo de
+// aceite nunca abre pelo portal: tem valor e CPF, e é só de quem contrata. Só depois disso a chave de serviço
 // assina a URL — porque o caminho do termo pode ter o ORÇAMENTO no 2º
 // segmento (a proposta sem data ainda não tem evento), e a política do
 // balde (119) só deixa a sessão dela ler caminhos com evento. A URL vale

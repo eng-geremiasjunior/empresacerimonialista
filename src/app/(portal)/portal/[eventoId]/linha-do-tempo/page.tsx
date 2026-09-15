@@ -100,10 +100,9 @@ export default async function PortalLinhaDoTempoPage({
 /**
  * O contrato de prestação que a cliente aceitou junto da proposta (163).
  * Só o contrato: o modelo da cerimonialista, sem dado da cliente. O termo
- * assinado tem o valor aceito e o CPF, e o portal não mostra os honorários
- * da assessoria (a linha do tempo omite o valor do aceite de propósito) —
- * fica fora até essa decisão ser tomada. A policy do portal (162) filtra
- * por evento da própria cliente; o arquivo abre por /api/documento.
+ * assinado tem o valor aceito e o CPF — dado de pagamento e dado pessoal
+ * são só de quem contrata, que recebe o termo por e-mail. O portal é aberto
+ * a quem ela convida, e a própria RLS do portal (163) não entrega o termo.
  */
 async function contratosDoEvento(eventId: string): Promise<{ id: string }[]> {
   const supabase = createClient();
