@@ -19,18 +19,31 @@ import { plural } from "@/lib/format";
 // mas parcela que a cliente não pagou continua sendo dela.
 //
 // Regra de ouro do projeto: falar em tempo, não em status.
+//
+// A quarta espécie, "aceite", é um prazo DERIVADO: a proposta que a cliente
+// assinou e a cerimonialista ainda não abriu. Não tem data de vencimento
+// própria — o prazo é o de conferir o termo enquanto ele importa. Some
+// quando ela abre o orçamento, ou sozinho em 7 dias; assim continua sendo
+// prazo, não fato: "proposta aceita" para sempre seria estado de novo.
 
-export type TipoPrazo = "pagamento" | "fornecedor" | "tarefa";
+export type TipoPrazo = "pagamento" | "fornecedor" | "tarefa" | "aceite";
 
 export type ResumoPrazos = {
   pagamento: number;
   fornecedor: number;
   tarefa: number;
+  aceite: number;
   total: number;
 };
 
 export function resumirPrazos(tipos: TipoPrazo[]): ResumoPrazos {
-  const r: ResumoPrazos = { pagamento: 0, fornecedor: 0, tarefa: 0, total: 0 };
+  const r: ResumoPrazos = {
+    pagamento: 0,
+    fornecedor: 0,
+    tarefa: 0,
+    aceite: 0,
+    total: 0,
+  };
   for (const t of tipos) {
     r[t] += 1;
     r.total += 1;
@@ -67,6 +80,13 @@ export function frasePrazos(r: ResumoPrazos): string {
   }
   if (r.tarefa > 0) {
     partes.push(plural(r.tarefa, "tarefa atrasada", "tarefas atrasadas"));
+  }
+  // Por último de propósito: é a única espécie que não é cobrança nem
+  // atraso — é boa notícia esperando conferência.
+  if (r.aceite > 0) {
+    partes.push(
+      plural(r.aceite, "proposta aceita para conferir", "propostas aceitas para conferir")
+    );
   }
   return `${partes.join(" · ")}.`;
 }

@@ -52,6 +52,7 @@ import {
   telefoneFormatado,
   valorFormatado,
 } from "@/lib/orcamentos-ui";
+import { linkWhatsapp, textoPropostaWhatsapp } from "@/lib/whatsapp-link";
 
 type Current = {
   busca: string;
@@ -106,7 +107,26 @@ function MenuAcoes({ o }: { o: Orcamento }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const rascunho = o.status === "rascunho";
-  const whats = (o.contato_telefone ?? "").replace(/\D/g, "");
+
+  // A mensagem do WhatsApp leva o endereço completo da proposta — dentro
+  // do aplicativo um caminho relativo não abre nada. O domínio vem do
+  // navegador depois de montar (no servidor não há window), o mesmo que
+  // "Copiar link" entrega; o menu só existe após o clique, então já está
+  // preenchido quando o link é desenhado.
+  const [origem, setOrigem] = useState("");
+  useEffect(() => {
+    setOrigem(window.location.origin);
+  }, []);
+  const tipo =
+    o.tipo_evento === "outro"
+      ? null
+      : (EVENT_TYPE_LABELS[o.tipo_evento as EventType] ?? null);
+  const whatsapp = origem
+    ? linkWhatsapp(
+        o.contato_telefone,
+        textoPropostaWhatsapp(o.contato_nome, tipo, `${origem}/orcamento/${o.hash_publico}`)
+      )
+    : null;
 
   useEffect(() => {
     function fechar(e: MouseEvent) {
@@ -197,9 +217,9 @@ function MenuAcoes({ o }: { o: Orcamento }) {
           >
             <Copy size={14} /> Duplicar
           </button>
-          {whats && (
+          {whatsapp && (
             <a
-              href={`https://wa.me/55${whats}`}
+              href={whatsapp}
               target="_blank"
               rel="noopener noreferrer"
               className={`${item} hover:bg-[#F7F7F5]`}

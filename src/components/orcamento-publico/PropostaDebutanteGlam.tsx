@@ -31,10 +31,17 @@ import {
   Clock, ArrowRight, Sparkles, Calendar, Users, MapPin, Star, Check, X,
   Music, Crown, Camera, Zap, Wine,
 } from "lucide-react";
-import { ModalAceiteProposta } from "@/components/orcamento-publico/ModalAceiteProposta";
+import {
+  ModalAceiteProposta,
+  type ResultadoAceite,
+} from "@/components/orcamento-publico/ModalAceiteProposta";
 import { useCountdownValidade } from "@/components/orcamento-publico/useCountdownValidade";
 import { formatDateBR } from "@/lib/orcamentos";
-import { expirado, type OrcamentoPublicoData } from "@/lib/orcamento-publico";
+import {
+  contatoAposAceite,
+  expirado,
+  type OrcamentoPublicoData,
+} from "@/lib/orcamento-publico";
 import { calcularProposta, precoDePacote } from "@/lib/proposta";
 import {
   INCLUSO_GLAM, ETAPAS_GLAM, CARDS_DIA_GLAM,
@@ -88,6 +95,8 @@ export function PropostaDebutanteGlam({
   const [modal, setModal] = useState(false);
   const [highlight, setHighlight] = useState(false);
   const [aceite, setAceite] = useState(dados.aceite ?? null);
+  // O que a rota devolveu no aceite desta sessão; null na proposta reaberta.
+  const [resultado, setResultado] = useState<ResultadoAceite | null>(null);
 
   const pacote = pacotes.find((p) => p.id === pacoteId) ?? null;
 
@@ -119,7 +128,17 @@ export function PropostaDebutanteGlam({
   const extrasCount = Math.max(0, guests - regra.inclusos);
 
   if (aceite) {
-    return <ReciboGlam aceite={aceite} nomeEmpresa={dados.nome_empresa} nome={nome} />;
+    return (
+      <ReciboGlam
+        aceite={aceite}
+        resultado={resultado}
+        nomeEmpresa={dados.nome_empresa}
+        nome={nome}
+        contato={dados.nome_contato}
+        tipoEvento={dados.tipo_evento}
+        whatsapp={inst?.whatsapp_contato ?? null}
+      />
+    );
   }
 
   return (
@@ -288,7 +307,7 @@ export function PropostaDebutanteGlam({
           hash={hash}
           tema={TEMA_MODAL_GLAM}
           titulo={`Fechar a festa da ${nome}?`}
-          subtitulo="CONTRATO DIGITAL • ASSINATURA"
+          subtitulo="TERMO DE ACEITE • ASSINATURA"
           resumo={`${pacote.nome} • ${guests} convidados • R$ ${brl(valores.total)} • em até ${condicoes.parcelasMaximo}x`}
           nomeInicial={dados.nome_contato}
           pacoteId={pacote.id}
@@ -300,9 +319,10 @@ export function PropostaDebutanteGlam({
           textoBotao="ASSINAR E TRAVAR MINHA DATA →"
           rodape="DOCUMENTO VÁLIDO JURIDICAMENTE • ASSINATURA DIGITAL"
           onFechar={() => setModal(false)}
-          onAceito={(recibo, valor) =>
-            setAceite({ recibo_codigo: recibo, pacote_nome: pacote.nome, valor_total: valor, created_at: new Date().toISOString() })
-          }
+          onAceito={(r) => {
+            setResultado(r);
+            setAceite({ recibo_codigo: r.recibo, pacote_nome: pacote.nome, valor_total: r.valorTotal, created_at: new Date().toISOString() });
+          }}
         />
       )}
     </div>
@@ -740,18 +760,30 @@ const TEMA_MODAL_GLAM = {
 
 
 function ReciboGlam({
-  aceite, nomeEmpresa, nome,
+  aceite, resultado, nomeEmpresa, nome, contato, tipoEvento, whatsapp,
 }: {
   aceite: NonNullable<OrcamentoPublicoData["aceite"]>;
+  resultado: ResultadoAceite | null;
   nomeEmpresa: string;
+  /** Em maiúsculas, como a página inteira trata a debutante. */
   nome: string;
+  /** Como está no orçamento: é o que assina a mensagem do WhatsApp. */
+  contato: string;
+  tipoEvento: string;
+  whatsapp: string | null;
 }) {
+  const depois = contatoAposAceite({
+    recibo: aceite.recibo_codigo,
+    tipoEvento,
+    nomeContato: contato,
+    resultado,
+    whatsappInstitucional: whatsapp,
+  });
   return (
     <div className="glam-root flex min-h-screen items-center justify-center bg-[#111] p-6 text-white">
       <style>{`.glam-root .display{font-family:var(--font-syne),sans-serif}`}</style>
       <div className="w-full max-w-[520px] rounded-[28px] p-8 text-center" style={{ background: "rgba(255,255,255,.06)" }}>
-        <div className="text-[44px]">🎉</div>
-        <h1 className="display mt-3 text-[32px] font-black leading-tight">DATA TRAVADA!</h1>
+        <h1 className="display text-[32px] font-black leading-tight">DATA TRAVADA</h1>
         <p className="mt-2 text-[14px] font-medium text-white/60">
           {nome}, sua festa está reservada com a {nomeEmpresa}.
         </p>
@@ -762,9 +794,27 @@ function ReciboGlam({
             {aceite.pacote_nome} • R$ {brl(Number(aceite.valor_total))}
           </div>
         </div>
-        <p className="mt-5 text-[11.5px] text-white/40">
-          Guarde este código. A gente já vai te chamar pra combinar os próximos passos. 🔥
-        </p>
+        {depois.linhaTermo && (
+          <p className="mt-5 text-[12.5px] font-medium text-white/60">
+            {depois.linhaTermo}
+          </p>
+        )}
+        {depois.linkWhatsapp && (
+          <a
+            href={depois.linkWhatsapp}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-5 block rounded-full py-4 text-[13px] font-black"
+            style={{ background: OURO, color: INK }}
+          >
+            FALAR COM {nomeEmpresa.toUpperCase()} NO WHATSAPP
+          </a>
+        )}
+        {depois.linhaEmail && (
+          <p className="mt-4 text-[12.5px] font-medium text-white/60">
+            {depois.linhaEmail}
+          </p>
+        )}
       </div>
     </div>
   );

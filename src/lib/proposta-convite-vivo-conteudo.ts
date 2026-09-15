@@ -196,7 +196,7 @@ export const TEXTOS_CONVITE_VIVO = {
   // ela está fazendo tem nome próprio — aceitar uma proposta —, e é esse
   // nome que o botão diz, igual em todos os lugares da página.
   fechamentoCta: "ACEITAR A PROPOSTA",
-  contratoEyebrow: "CONTRATO DIGITAL · ASSINATURA",
+  contratoEyebrow: "TERMO DE ACEITE · ASSINATURA",
   barraCta: "ACEITAR PROPOSTA",
   assinarCta: "ACEITAR E ASSINAR A PROPOSTA",
   assinarCtaModal: "ACEITAR E ASSINAR",

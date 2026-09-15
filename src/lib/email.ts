@@ -1,16 +1,23 @@
 // Envio de e-mail via Resend (server-side apenas).
 //
-// Variáveis: RESEND_API_KEY (obrigatória), EMAIL_FROM (remetente) e
-// NEXT_PUBLIC_APP_URL (base dos links). As três precisam existir no
-// ambiente de PRODUÇÃO da Vercel, não só no .env.local — foi o que
-// segurou o módulo inteiro até aqui.
+// Variáveis: RESEND_API_KEY (obrigatória), EMAIL_FROM (remetente, opcional)
+// e NEXT_PUBLIC_APP_URL (base dos links). Precisam existir no ambiente de
+// PRODUÇÃO da Vercel, não só no .env.local — foi o que segurou o módulo
+// inteiro até aqui.
 //
-// Sobre o remetente: o domínio próprio foi verificado no Resend em
-// 03/09/2026. Antes disso a conta ficava em modo de teste e a API recusava
-// (403) qualquer destinatário que não fosse o dono — fornecedor, noiva e
-// convidado não recebiam nada. As mensagens de erro abaixo continuam de pé
-// porque a chave pode faltar, o domínio pode cair e a cerimonialista
-// precisa saber, em português, que tem que mandar o link por WhatsApp.
+// Sobre o remetente: o domínio eorganizei.com.br foi verificado no Resend
+// em 03/09/2026 (DKIM e SPF), e o padrão abaixo já aponta para ele. Antes
+// disso a conta ficava em modo de teste e a API recusava (403) qualquer
+// destinatário que não fosse o dono — fornecedor, cliente e convidado não
+// recebiam nada. Em produção, um EMAIL_FROM esquecido em resend.dev é
+// recusado AQUI, antes da API, com mensagem em português: melhor a
+// cerimonialista saber na hora que mandar o link por WhatsApp.
+//
+// Sobre a resposta: contato@eorganizei.com.br envia, mas não recebe (o MX
+// de entrada nunca foi apontado). Por isso cada envio diz para onde vai a
+// resposta (`replyTo`): o e-mail da cerimonialista quando a mensagem sai em
+// nome dela, o da cliente quando avisa a cerimonialista. EMAIL_REPLY_TO
+// continua valendo como padrão global para quem não informa nada.
 
 import { formatDate, formatTime } from "@/lib/format";
 
@@ -20,18 +27,34 @@ import { appUrl, linkPublico } from "@/lib/app-url";
 // Reexportado porque oito arquivos ja importavam daqui.
 export { appUrl };
 
+const REMETENTE_PADRAO = "eorganizei <contato@eorganizei.com.br>";
+
+/** O endereço dentro de "Nome <endereco>"; sem os sinais, é o texto inteiro. */
+function enderecoDe(remetenteCompleto: string): string {
+  const m = /<([^>]+)>/.exec(remetenteCompleto);
+  return (m ? m[1] : remetenteCompleto).trim();
+}
+
 /**
- * Remetente configurado. O padrão é o domínio próprio, verificado no
- * Resend em 03/09/2026 (DKIM e SPF) — antes disso era o domínio de teste,
- * que a API recusava para qualquer destinatário que não fosse o dono da
- * conta. EMAIL_FROM continua vencendo quando existe.
+ * Remetente. Sem nome, é o configurado (EMAIL_FROM) ou o padrão do domínio
+ * próprio. Com nome, vira "<Nome> via eOrganizei <contato@eorganizei.com.br>":
+ * a cliente vê a marca da cerimonialista na caixa de entrada, mas o
+ * ENDEREÇO nunca muda — é o domínio verificado que garante a entrega.
  *
- * O endereço envia, mas ainda não recebe: o MX de entrada está pendente.
- * Resposta da cliente a este e-mail não chega a lugar nenhum enquanto
- * isso — decisão consciente, anotada aqui para não virar surpresa.
+ * Aspas, sinais de menor/maior e quebras de linha saem do nome porque
+ * quebram o cabeçalho; vírgula e afins exigem o nome entre aspas.
  */
-export function remetente() {
-  return process.env.EMAIL_FROM?.trim() || "eorganizei <contato@eorganizei.com.br>";
+export function remetente(fromNome?: string | null): string {
+  const base = process.env.EMAIL_FROM?.trim() || REMETENTE_PADRAO;
+  const nome = fromNome
+    ?.replace(/["<>\\\r\n]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 60);
+  if (!nome) return base;
+  const exibicao = `${nome} via eOrganizei`;
+  const cabecalho = /[,;:@()[\]]/.test(exibicao) ? `"${exibicao}"` : exibicao;
+  return `${cabecalho} <${enderecoDe(base)}>`;
 }
 
 /** true quando ainda estamos no domínio de teste (não entrega a terceiros). */
@@ -40,17 +63,10 @@ export function envioEmModoTeste() {
 }
 
 /**
- * Para onde vai a RESPOSTA. Sem isto, responder ao e-mail do sistema é
- * escrever para uma caixa que não existe: contato@eorganizei.com.br envia
- * (DKIM e SPF verificados) e não recebe — o MX de entrada nunca foi
- * apontado. Quem responde não recebe erro; a mensagem simplesmente some.
- *
- * SEM PADRÃO, de propósito. Um endereço chutado aqui manda a resposta da
- * cerimonialista para outro buraco, e desta vez com a nossa assinatura em
- * cima. Ausente = comportamento de hoje, que ao menos não promete nada.
- *
- * Quando o domínio ganhar caixa de verdade (encaminhamento ou provedor),
- * é só apagar a variável.
+ * Padrão global de resposta (EMAIL_REPLY_TO), usado só quando o envio não
+ * informa o próprio `replyTo`. SEM PADRÃO, de propósito: um endereço
+ * chutado aqui manda a resposta para um buraco com a nossa assinatura em
+ * cima. Ausente = a resposta cai onde o cabeçalho From aponta.
  */
 export function respostaPara(): string | null {
   return process.env.EMAIL_REPLY_TO?.trim() || null;
@@ -69,16 +85,33 @@ function erroLegivel(status: number, corpo: string): string {
   return `Não foi possível enviar o e-mail agora (erro ${status}).`;
 }
 
+export type EnvioEmail = {
+  to: string;
+  subject: string;
+  html: string;
+  /** para onde vai a resposta; vazio ou ausente cai no padrão global */
+  replyTo?: string | null;
+  /** nome que aparece antes de "via eOrganizei"; o endereço não muda */
+  fromNome?: string | null;
+  /** `content` em base64 — o PDF do termo, o contrato dela */
+  attachments?: { filename: string; content: string }[];
+  /** só letras ASCII, números, "_" e "-" em nome e valor — regra do Resend */
+  tags?: { name: string; value: string }[];
+};
+
+export type ResultadoEnvio =
+  | { ok: true; id: string | null }
+  | { ok: false; error: string };
+
 /**
  * Único ponto de saída de e-mail do sistema. Antes cada função montava a
  * própria chamada, com o remetente repetido em cinco lugares — trocar o
  * domínio significava lembrar dos cinco.
+ *
+ * Devolve o id que o Resend dá à mensagem: é por ele que um recibo de
+ * entrega (webhook) volta a casar com o envio.
  */
-export async function enviarViaResend(dados: {
-  to: string;
-  subject: string;
-  html: string;
-}): Promise<{ ok: boolean; error?: string }> {
+export async function enviarViaResend(dados: EnvioEmail): Promise<ResultadoEnvio> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     return {
@@ -87,6 +120,18 @@ export async function enviarViaResend(dados: {
     };
   }
 
+  // Em produção o domínio de teste não entrega a ninguém além do dono da
+  // conta; recusar antes da API poupa a chamada e diz o motivo certo.
+  if (process.env.VERCEL_ENV === "production" && envioEmModoTeste()) {
+    console.error("[eorganizei:email] EMAIL_FROM aponta para resend.dev em produção — envio recusado");
+    return {
+      ok: false,
+      error: "O remetente de e-mail ainda está no domínio de teste — nada foi entregue. Envie o link por WhatsApp enquanto isso.",
+    };
+  }
+
+  const replyTo = dados.replyTo?.trim() || respostaPara();
+
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -94,22 +139,32 @@ export async function enviarViaResend(dados: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: remetente(),
+      from: remetente(dados.fromNome),
       to: [dados.to],
       subject: dados.subject,
       html: dados.html,
-      // a chave só entra quando existe: mandar reply_to nulo é erro 422
-      ...(respostaPara() ? { reply_to: respostaPara() } : {}),
+      // as chaves só entram quando existem: mandar reply_to nulo é erro 422
+      ...(replyTo ? { reply_to: replyTo } : {}),
+      ...(dados.attachments?.length ? { attachments: dados.attachments } : {}),
+      ...(dados.tags?.length ? { tags: dados.tags } : {}),
     }),
   });
 
   if (!res.ok) {
     const corpo = await res.text();
     // o detalhe técnico fica no log do servidor, não na tela dela
-    console.error(`[vela:email] Resend ${res.status}: ${corpo.slice(0, 300)}`);
+    console.error(`[eorganizei:email] Resend ${res.status}: ${corpo.slice(0, 300)}`);
     return { ok: false, error: erroLegivel(res.status, corpo) };
   }
-  return { ok: true };
+
+  let id: string | null = null;
+  try {
+    const corpo = (await res.json()) as { id?: unknown } | null;
+    if (typeof corpo?.id === "string") id = corpo.id;
+  } catch {
+    // o envio saiu; só o id se perdeu — não é motivo para dizer que falhou
+  }
+  return { ok: true, id };
 }
 
 export type EmailConfirmacao = {
@@ -266,9 +321,13 @@ export type EmailOrcamento = {
   contatoNome: string;
   nomeEmpresa: string;
   hash: string;
+  /** e-mail da cerimonialista: é para lá que a resposta da cliente vai */
+  replyTo?: string | null;
 };
 
 // Aviso ao cliente de que há um orçamento para ele responder (Etapa 5).
+// Sai em nome da empresa dela ("<Empresa> via eOrganizei") e a resposta
+// cai na caixa dela, não na nossa.
 export async function enviarEmailOrcamento(
   dados: EmailOrcamento
 ): Promise<{ ok: boolean; error?: string }> {
@@ -296,5 +355,8 @@ export async function enviarEmailOrcamento(
     to: dados.to,
     subject: `Seu orçamento — ${dados.nomeEmpresa}`,
     html,
+    fromNome: dados.nomeEmpresa,
+    replyTo: dados.replyTo ?? null,
+    tags: [{ name: "finalidade", value: "orcamento_enviado" }],
   });
 }

@@ -254,20 +254,76 @@ export async function duplicarOrcamento(
   return { success: true, id: novo.id };
 }
 
+// Para onde vai a resposta da cliente quando ela responde o e-mail do
+// orçamento. O nosso domínio envia e não recebe, então a resposta precisa
+// cair na caixa dela: primeiro o e-mail de contato do Catálogo para este
+// tipo de evento; sem ele, o de qualquer tipo (o mais recente); sem
+// Catálogo, o de quem conduz a proposta; por último o da proprietária.
+//
+// O Catálogo só é legível pela proprietária (policy da 045). Quando outra
+// pessoa da equipe envia, a consulta volta vazia — sem erro — e a cadeia
+// segue para a equipe, que toda a empresa enxerga.
+async function emailParaResposta(
+  supabase: Awaited<ReturnType<typeof contexto>>["supabase"],
+  empresaId: string,
+  tipoEvento: string | null,
+  responsavelId: string | null
+): Promise<string | null> {
+  const { data: catalogo } = await supabase
+    .from("empresa_conteudo_institucional")
+    .select("tipo_evento, email_contato")
+    .eq("empresa_id", empresaId)
+    .not("email_contato", "is", null)
+    .order("updated_at", { ascending: false });
+  const doCatalogo = (catalogo ?? [])
+    .map((l) => ({ tipo: l.tipo_evento as string | null, email: (l.email_contato as string | null)?.trim() ?? "" }))
+    .filter((l) => l.email);
+  const doTipo = doCatalogo.find((l) => l.tipo === tipoEvento);
+  if (doTipo) return doTipo.email;
+  if (doCatalogo[0]) return doCatalogo[0].email;
+
+  const { data: equipe } = await supabase
+    .from("membros_equipe")
+    .select("id, email, is_owner, cargo")
+    .eq("empresa_id", empresaId)
+    .eq("status", "ativo");
+  const membros = (equipe ?? []).map((m) => ({
+    id: m.id as string,
+    email: (m.email as string | null)?.trim() ?? "",
+    dona: Boolean(m.is_owner) || m.cargo === "proprietaria",
+  }));
+  const responsavel = membros.find((m) => m.id === responsavelId && m.email);
+  if (responsavel) return responsavel.email;
+  const dona = membros.find((m) => m.dona && m.email);
+  return dona?.email || null;
+}
+
 // Envia o orçamento ao cliente: muda status para 'enviado' e, se houver
 // e-mail no contato, dispara o aviso com o link público. O link em si é
 // sempre exibido na tela para copiar (o e-mail é um extra).
+//
+// Devolve também o telefone e o nome do contato (nomes das colunas) para
+// a tela montar o botão de WhatsApp com o link já no texto.
 export async function enviarOrcamento(
   orcamentoId: string
 ): Promise<
   | { error: string }
-  | { success: true; hash: string; emailEnviado: boolean; emailErro?: string }
+  | {
+      success: true;
+      hash: string;
+      emailEnviado: boolean;
+      emailErro?: string;
+      contato_telefone?: string | null;
+      contato_nome?: string;
+    }
 > {
   const { supabase } = await contexto();
 
   const { data: orc } = await supabase
     .from("orcamentos")
-    .select("id, status, hash_publico, contato_nome, contato_email, empresa_id")
+    .select(
+      "id, status, hash_publico, contato_nome, contato_email, contato_telefone, empresa_id, tipo_evento, cerimonialista_responsavel_id"
+    )
     .eq("id", orcamentoId)
     .single();
 
@@ -286,17 +342,26 @@ export async function enviarOrcamento(
   let emailErro: string | undefined;
 
   if (orc.contato_email) {
-    const { data: empresa } = await supabase
-      .from("empresas")
-      .select("nome")
-      .eq("id", orc.empresa_id)
-      .maybeSingle();
+    const [{ data: empresa }, replyTo] = await Promise.all([
+      supabase
+        .from("empresas")
+        .select("nome")
+        .eq("id", orc.empresa_id)
+        .maybeSingle(),
+      emailParaResposta(
+        supabase,
+        orc.empresa_id,
+        orc.tipo_evento ?? null,
+        orc.cerimonialista_responsavel_id ?? null
+      ),
+    ]);
 
     const envio = await enviarEmailOrcamento({
       to: orc.contato_email,
       contatoNome: orc.contato_nome,
       nomeEmpresa: empresa?.nome ?? "eorganizei",
       hash: orc.hash_publico,
+      replyTo,
     });
     emailEnviado = envio.ok;
     if (!envio.ok) emailErro = envio.error;
@@ -304,5 +369,12 @@ export async function enviarOrcamento(
 
   revalidatePath("/orcamentos");
   revalidatePath(`/orcamentos/${orcamentoId}`);
-  return { success: true, hash: orc.hash_publico, emailEnviado, emailErro };
+  return {
+    success: true,
+    hash: orc.hash_publico,
+    emailEnviado,
+    emailErro,
+    contato_telefone: orc.contato_telefone ?? null,
+    contato_nome: orc.contato_nome,
+  };
 }

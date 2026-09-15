@@ -297,10 +297,41 @@ function eventoMorto(ev: { status?: string | null; archived?: boolean | null }):
 }
 
 /**
+ * A quarta consulta dos prazos, separada das outras três de propósito.
+ *
+ * A coluna `aceite_visto_em` vem da migração 162, que o dono aplica à mão —
+ * e um erro em UMA consulta derruba o Copiloto inteiro (o layout cai para
+ * "Não deu para checar os prazos agora."). Parcela a cobrar e fornecedor
+ * sem confirmar não podem sumir da sidebar porque uma coluna nova ainda
+ * não existe no banco. Por isso qualquer falha aqui — coluna inexistente
+ * (42703) ou outra — vira lista vazia, e as três espécies antigas seguem
+ * intactas.
+ */
+async function aceitesParaConferir(
+  supabase: ReturnType<typeof createClient>,
+  desde: string
+): Promise<{ id: string; contato_nome: string; respondido_em: string | null }[]> {
+  try {
+    const { data, error } = await supabase
+      .from("orcamentos")
+      .select("id, contato_nome, respondido_em")
+      .eq("status", "aprovado")
+      .is("aceite_visto_em", null)
+      .gte("respondido_em", desde)
+      .order("respondido_em", { ascending: false })
+      .limit(50);
+    if (error) return [];
+    return (data ?? []) as { id: string; contato_nome: string; respondido_em: string | null }[];
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Os prazos do Copiloto. Fonte ÚNICA — o card da sidebar e o bloco do
  * dashboard leem daqui, e por isso não podem mais divergir.
  *
- * Três espécies, cada uma com a sua regra de vida:
+ * Quatro espécies, cada uma com a sua regra de vida:
  *
  *  - parcela a cobrar: vale MESMO depois do evento. A festa acabou, o
  *    dinheiro que a cliente não pagou continua sendo dela. Inclui o que já
@@ -310,10 +341,13 @@ function eventoMorto(ev: { status?: string | null; archived?: boolean | null }):
  *    festa, confirmar presença não muda nada.
  *  - tarefa atrasada: idem — tarefa de evento que já aconteceu é peso
  *    morto, não pendência.
+ *  - proposta aceita para conferir: a cliente assinou e a cerimonialista
+ *    ainda não abriu o orçamento. Vale por 7 dias a partir do aceite ou
+ *    até ela abrir — o que vier primeiro. Depois disso, já não é prazo.
  */
 // `cache` do React: no dashboard esta função é chamada duas vezes no
 // MESMO render — uma pelo layout (a linha de prazos do Copiloto) e outra
-// pela página (a lista de alertas). São 3 consultas cada. Sem argumentos e
+// pela página (a lista de alertas). São 4 consultas cada. Sem argumentos e
 // só de leitura, então deduplicar não muda resposta nenhuma.
 export const getAlertasCopiloto = cache(async function (): Promise<
   CopilotoAlerta[]
@@ -323,7 +357,7 @@ export const getAlertasCopiloto = cache(async function (): Promise<
   const fim = emDiasBR(7);
   const alertas: CopilotoAlerta[] = [];
 
-  const [tarefasRes, fornecedoresRes, pagamentosRes] = await Promise.all([
+  const [tarefasRes, fornecedoresRes, pagamentosRes, aceites] = await Promise.all([
     supabase
       .from("tasks")
       .select("id, title, due_date, event_id, events!inner(date, status, archived)")
@@ -352,11 +386,17 @@ export const getAlertasCopiloto = cache(async function (): Promise<
       .lte("due_date", fim)
       .order("due_date")
       .limit(200),
+    // `respondido_em` é timestamptz; a meia-noite vai com o fuso de
+    // Brasília explícito para o "7 dias" não encolher nem crescer 3 horas
+    // conforme o fuso do processo.
+    aceitesParaConferir(supabase, `${emDiasBR(-7)}T00:00:00-03:00`),
   ]);
 
-  // Falha de leitura não pode virar "Nada vencendo hoje.". Essa frase é uma
-  // afirmação, e dizê-la porque a consulta quebrou é pior do que não dizer
-  // nada — o layout já sabe cair para "Prazos: —" quando isto lança.
+  // Falha de leitura não pode virar "Nada a cobrar por enquanto.". Essa
+  // frase é uma afirmação, e dizê-la porque a consulta quebrou é pior do
+  // que não dizer nada — o layout já sabe cair para "Não deu para checar os
+  // prazos agora." quando isto lança. (A quarta consulta nunca lança: ela
+  // se protege sozinha, lá em cima.)
   const erro =
     tarefasRes.error ?? fornecedoresRes.error ?? pagamentosRes.error ?? null;
   if (erro) {
@@ -432,6 +472,20 @@ export const getAlertasCopiloto = cache(async function (): Promise<
       texto: `Cobrar ${formatCurrency(Number(row.value))} — ${venceu ? "venceu" : "vence"} ${formatDate(row.due_date)}${label}`,
       href: `/eventos/${row.event_id}/financeiro`,
       ref: row.due_date,
+    });
+  }
+
+  for (const row of aceites) {
+    alertas.push({
+      id: `aceite-${row.id}`,
+      tipo: "aceite",
+      texto: `Proposta aceita: ${row.contato_nome} — conferir o termo`,
+      // O destino é a tela do orçamento, que marca `aceite_visto_em` ao
+      // abrir — é o clique que faz este item sumir.
+      href: `/orcamentos/${row.id}`,
+      // O dia do aceite ordena junto com os vencimentos; a consulta já
+      // exclui `respondido_em` nulo, o `?? hoje` é só para o tipo.
+      ref: row.respondido_em?.slice(0, 10) ?? hoje,
     });
   }
 

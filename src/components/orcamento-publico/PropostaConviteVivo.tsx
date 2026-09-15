@@ -23,11 +23,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ModalAceiteProposta,
+  type ResultadoAceite,
   type TemaModal,
 } from "@/components/orcamento-publico/ModalAceiteProposta";
 import { useCountdownValidade } from "@/components/orcamento-publico/useCountdownValidade";
 import { VideoDeFundo } from "@/components/orcamento-publico/VideoDeFundo";
-import { expirado, type OrcamentoPublicoData } from "@/lib/orcamento-publico";
+import {
+  contatoAposAceite,
+  expirado,
+  type OrcamentoPublicoData,
+} from "@/lib/orcamento-publico";
+import { linkWhatsapp } from "@/lib/whatsapp-link";
 import {
   calcularProposta,
   condicoesDoBanco,
@@ -119,6 +125,8 @@ export function PropostaConviteVivo({
       ? { codigo: dados.aceite.recibo_codigo, total: dados.aceite.valor_total }
       : null
   );
+  // O que a rota devolveu no aceite desta sessão; null na proposta reaberta.
+  const [resultado, setResultado] = useState<ResultadoAceite | null>(null);
 
   const pacote = pacotes.find((p) => p.id === pacoteId) ?? null;
   const venceu = expirado(dados);
@@ -255,7 +263,16 @@ export function PropostaConviteVivo({
       : null,
   ].filter(Boolean) as { valor: string; rotulo: string }[];
 
-  const whats = (inst?.whatsapp_contato ?? "").replace(/\D/g, "");
+  const whats = linkWhatsapp(inst?.whatsapp_contato);
+  const contato = recibo
+    ? contatoAposAceite({
+        recibo: recibo.codigo,
+        tipoEvento: dados.tipo_evento,
+        nomeContato: dados.nome_contato,
+        resultado,
+        whatsappInstitucional: inst?.whatsapp_contato,
+      })
+    : null;
 
   return (
     <div
@@ -1222,6 +1239,31 @@ export function PropostaConviteVivo({
                       <p style={{ margin: "8px 0 0", fontSize: 13, color: marfim(0.75) }}>
                         Recibo {recibo.codigo} · R$ {brl(recibo.total)}
                       </p>
+                      {contato?.linhaTermo && (
+                        <p style={{ margin: "8px 0 0", fontSize: 12, lineHeight: 1.5, color: marfim(0.6) }}>
+                          {contato.linhaTermo}
+                        </p>
+                      )}
+                      {contato?.linkWhatsapp && (
+                        <a
+                          href={contato.linkWhatsapp}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{
+                            display: "block", marginTop: 14, padding: 14, borderRadius: 999,
+                            background: COR.champanhe, color: COR.ameixa, textAlign: "center",
+                            fontSize: 12, fontWeight: 800, letterSpacing: ".06em",
+                            textDecoration: "none",
+                          }}
+                        >
+                          FALAR COM {dados.nome_empresa.toUpperCase()} NO WHATSAPP
+                        </a>
+                      )}
+                      {contato?.linhaEmail && (
+                        <p style={{ margin: "10px 0 0", fontSize: 12, lineHeight: 1.5, color: marfim(0.6) }}>
+                          {contato.linhaEmail}
+                        </p>
+                      )}
                     </div>
                   ) : (
                     <>
@@ -1354,7 +1396,7 @@ export function PropostaConviteVivo({
             </a>
             {whats && (
               <a
-                href={`https://wa.me/55${whats}`}
+                href={whats}
                 target="_blank"
                 rel="noreferrer"
                 style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".16em", color: COR.champanhe }}
@@ -1434,9 +1476,10 @@ export function PropostaConviteVivo({
           textoBotao={T.assinarCtaModal}
           rodape="ASSINATURA COM VALIDADE JURÍDICA"
           onFechar={() => setModal(false)}
-          onAceito={(codigo, total) => {
+          onAceito={(r) => {
             setModal(false);
-            setRecibo({ codigo, total });
+            setRecibo({ codigo: r.recibo, total: r.valorTotal });
+            setResultado(r);
           }}
         />
       )}

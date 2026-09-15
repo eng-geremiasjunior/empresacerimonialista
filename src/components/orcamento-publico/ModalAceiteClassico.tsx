@@ -4,18 +4,24 @@
 //
 // Layout do handoff: painel escuro com o resumo financeiro ao vivo à
 // esquerda, formulário creme à direita com as duas assinaturas lado a
-// lado e checkbox de termos travando o botão. O comportamento (mesma
-// validação, mesma RPC atômica, mesmo retry de janela de deploy) espelha
-// o ModalAceiteProposta — só a pele é do design.
+// lado e a caixa dos termos travando o botão. O comportamento (mesma
+// validação, mesma rota de aceite, mesma recusa com motivo) espelha o
+// ModalAceiteProposta — só a pele é do design.
 //
-// Campos além do design (CPF, telefone, e-mail): o aceite real gera a
-// ficha do contrato na mesma transação, então eles ficam — estilizados
-// como o restante do formulário.
+// Campos além do design (CPF, telefone, e-mail): o aceite vira um termo
+// assinado com esses dados, e o e-mail é para onde ele vai — então os
+// três ficam, estilizados como o restante do formulário.
 
 import { useEffect, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { criarEventoAPartirDoOrcamento } from "@/lib/orcamento-para-evento";
-import { formatDateBR } from "@/lib/orcamentos";
+import { useRouter } from "next/navigation";
+import {
+  emailParece,
+  enviarAceite,
+  MOTIVOS_RECUSA,
+  recusarProposta,
+  type ResultadoAceite,
+} from "@/components/orcamento-publico/ModalAceiteProposta";
+import { TERMOS_ACEITE_TEXTO } from "@/lib/aceite-termo-texto";
 import {
   assinantesDoTipo,
   rotuloAssinante,
@@ -51,9 +57,11 @@ export function ModalAceiteClassico({
   entradaPct,
   tipoEvento,
   dataEvento,
-  localEvento,
+  temPixel = false,
+  nomeEmpresa,
   onFechar,
   onAceito,
+  onRecusado,
 }: {
   hash: string;
   nomeContato: string;
@@ -71,9 +79,14 @@ export function ModalAceiteClassico({
   tipoEvento: string;
   dataEvento: string | null;
   localEvento: string | null;
+  /** A empresa mede a campanha dela com o aceite: a cliente fica sabendo. */
+  temPixel?: boolean;
+  nomeEmpresa?: string;
   onFechar: () => void;
-  onAceito: (recibo: string, valorTotal: number) => void;
+  onAceito: (r: ResultadoAceite) => void;
+  onRecusado?: () => void;
 }) {
+  const router = useRouter();
   const [noiva, setNoiva] = useState("");
   const [noivo, setNoivo] = useState("");
   const [cpf, setCpf] = useState("");
@@ -84,19 +97,30 @@ export function ModalAceiteClassico({
   const [erro, setErro] = useState<string | null>(null);
   const jaEnviou = useRef(false);
 
+  // "Não vou fechar agora": um motivo curto e pronto. Depois de registrada,
+  // o modal vira a confirmação — e a página é relida (router.refresh) para
+  // a proposta chegar com status recusado e o botão de aceite apagado;
+  // sem isso a tela ficaria idêntica, como se nada tivesse acontecido.
+  const [recusando, setRecusando] = useState(false);
+  const [recusado, setRecusado] = useState(false);
+  const [motivo, setMotivo] = useState("");
+  const [enviandoRecusa, setEnviandoRecusa] = useState(false);
+  const [erroRecusa, setErroRecusa] = useState<string | null>(null);
+
   const canvasNoiva = useRef<HTMLCanvasElement>(null);
   const canvasNoivo = useRef<HTMLCanvasElement>(null);
   const [assinouNoiva, setAssinouNoiva] = useState(false);
   const [assinouNoivo, setAssinouNoivo] = useState(false);
 
   // Um casal assina em dois; uma empresa (ou qualquer outro contratante)
-  // assina em um. A RPC é a mesma — o 2º assinante vai null.
+  // assina em um. A rota é a mesma — o 2º assinante vai null.
   const umAssinante = assinantesDoTipo(tipoEvento) === 1;
 
   const podeConfirmar =
     noiva.trim() !== "" &&
     (umAssinante || noivo.trim() !== "") &&
     cpf.trim() !== "" &&
+    emailParece(email) &&
     assinouNoiva &&
     (umAssinante || assinouNoivo) &&
     aceitouTermos &&
@@ -110,65 +134,59 @@ export function ModalAceiteClassico({
 
   async function confirmar() {
     if (jaEnviou.current || !podeConfirmar) return;
+    const assinatura1 = canvasNoiva.current?.toDataURL("image/png");
+    if (!assinatura1) {
+      setErro("Desenhe a assinatura antes de confirmar.");
+      return;
+    }
     jaEnviou.current = true;
     setEnviando(true);
     setErro(null);
 
-    const supabase = createClient();
-    const base = {
-      p_hash: hash,
-      p_pacote_id: pacoteId,
-      p_convidados: convidados,
-      p_extras_ids: extrasIds,
-      p_forma_pagamento: forma,
-      p_parcelas: forma === "vista" ? null : parcelas,
-      p_nome_noiva: noiva.trim(),
-      p_nome_noivo: noivo.trim() || null,
-      p_assinatura_noiva: canvasNoiva.current?.toDataURL("image/png") ?? null,
-      p_assinatura_noivo: canvasNoivo.current?.toDataURL("image/png") ?? null,
-      p_observacoes: null,
-    };
-
-    let { data, error } = await supabase.rpc("registrar_aceite_proposta", {
-      ...base,
-      p_cpf: cpf.trim() || null,
-      p_email: email.trim() || null,
-      p_telefone: telefone.trim() || null,
+    const r = await enviarAceite(hash, {
+      pacoteId,
+      convidados,
+      extrasIds,
+      formaPagamento: forma,
+      parcelas: forma === "vista" ? null : parcelas,
+      nome: noiva.trim(),
+      nome2: umAssinante ? null : noivo.trim() || null,
+      cpf: cpf.trim(),
+      email: email.trim(),
+      telefone: telefone.trim() || null,
+      assinatura1,
+      // Com um assinante o 2º canvas nem existe — e mandar um PNG vazio
+      // dobraria o corpo à toa.
+      assinatura2: umAssinante
+        ? null
+        : canvasNoivo.current?.toDataURL("image/png") ?? null,
+      termosAceitos: true,
+      tipoEvento,
+      dataEvento,
     });
 
-    // Janela de deploy: código novo no ar antes da migração com os campos
-    // de cadastro — o retry sem eles mantém o aceite de pé nesse intervalo.
-    if (error && /Could not find the function/i.test(error.message)) {
-      ({ data, error } = await supabase.rpc("registrar_aceite_proposta", base));
-    }
-
-    // Duas naturezas diferentes de falha, e só uma serve para a noiva:
-    //   data.error  — regra de negócio, e a RPC já devolve em português
-    //                 ("esta proposta expirou", "pacote inválido")
-    //   error.message — transporte/Postgres, em inglês e com nome de
-    //                 tabela. Isso NÃO vai para a tela de fechamento dela.
-    const doNegocio = (data as { error?: string })?.error;
-    if (doNegocio || error) {
-      if (error) console.error("[vela:aceite]", error);
+    if (!r.ok) {
       jaEnviou.current = false;
       setEnviando(false);
-      return setErro(
-        typeof doNegocio === "string" && doNegocio
-          ? doNegocio
-          : "Não conseguimos registrar agora. Tente de novo ou fale com a sua cerimonialista."
-      );
-    }
-
-    // Evento automático — uma falha aqui não derruba o aceite já gravado.
-    try {
-      await criarEventoAPartirDoOrcamento(hash, tipoEvento, dataEvento);
-    } catch {
-      /* a cerimonialista gera pelo painel se precisar */
+      return setErro(r.erro);
     }
 
     setEnviando(false);
-    const d = data as { recibo: string; valor_total: number };
-    onAceito(d.recibo, Number(d.valor_total));
+    onAceito(r.resultado);
+  }
+
+  async function recusar() {
+    if (!motivo || enviandoRecusa) return;
+    setEnviandoRecusa(true);
+    setErroRecusa(null);
+    const rotuloMotivo =
+      MOTIVOS_RECUSA.find((m) => m.valor === motivo)?.rotulo ?? motivo;
+    const r = await recusarProposta(hash, rotuloMotivo);
+    setEnviandoRecusa(false);
+    if (!r.ok) return setErroRecusa(r.erro);
+    setRecusado(true);
+    onRecusado?.();
+    router.refresh();
   }
 
   const rotulo: React.CSSProperties = {
@@ -181,6 +199,60 @@ export function ModalAceiteClassico({
     fontSize: 14, outline: "none", background: "#fff", color: COR.escuro,
     fontFamily: "inherit",
   };
+  const linkDiscreto: React.CSSProperties = {
+    width: "100%", background: "none", border: "none",
+    fontSize: 11, color: COR.texto3, letterSpacing: "0.1em",
+    cursor: "pointer", padding: "8px 0",
+  };
+
+  if (recusado) {
+    return (
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Resposta registrada"
+        onClick={(e) => e.target === e.currentTarget && onFechar()}
+        style={{
+          position: "fixed", inset: 0, zIndex: 100,
+          background: "rgba(249,245,240,0.95)", backdropFilter: "blur(20px)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: 16, overflow: "auto",
+        }}
+      >
+        <div
+          style={{
+            background: "#fff", borderRadius: 28, maxWidth: 440, width: "100%",
+            border: `1px solid ${COR.borda}`, padding: 32,
+            boxShadow: "0 30px 100px -20px rgba(60,36,21,0.4)",
+          }}
+        >
+          <h4
+            style={{
+              margin: 0, fontFamily: SERIF, fontWeight: 600,
+              fontSize: 28, lineHeight: 1, color: COR.escuro,
+            }}
+          >
+            Resposta registrada
+          </h4>
+          <p style={{ margin: "12px 0 0", fontSize: 13, lineHeight: 1.5, color: COR.texto2 }}>
+            {`Sua resposta chegou a ${nomeEmpresa?.trim() || "sua cerimonialista"}.`}
+          </p>
+          <button
+            type="button"
+            onClick={onFechar}
+            style={{
+              marginTop: 20, width: "100%", border: "none", cursor: "pointer",
+              background: COR.escuro, color: "#fff", borderRadius: 999,
+              padding: "14px 0", fontSize: 12, fontWeight: 600,
+              letterSpacing: "0.14em",
+            }}
+          >
+            FECHAR
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -219,7 +291,7 @@ export function ModalAceiteClassico({
                 fontSize: 11, letterSpacing: "0.1em", color: COR.dourado,
               }}
             >
-              📄 CONFIRMAÇÃO DE PROPOSTA
+              CONFIRMAÇÃO DE PROPOSTA
             </div>
             <h4
               style={{
@@ -237,8 +309,8 @@ export function ModalAceiteClassico({
                 color: "rgba(255,255,255,0.7)",
               }}
             >
-              Revise o resumo financeiro ao vivo e assine digitalmente. Seu
-              casamento será travado após a entrada.
+              Revise o resumo financeiro ao vivo e assine digitalmente. A data
+              fica reservada após a entrada.
             </p>
             <div
               style={{
@@ -300,8 +372,8 @@ export function ModalAceiteClassico({
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <label style={rotulo}>
                 {umAssinante
-                  ? rotuloAssinante(tipoEvento).toUpperCase()
-                  : "NOME DA NOIVA"}
+                  ? `${rotuloAssinante(tipoEvento).toUpperCase()} *`
+                  : "NOME DA NOIVA *"}
                 <input
                   value={noiva}
                   onChange={(e) => setNoiva(e.target.value)}
@@ -311,7 +383,7 @@ export function ModalAceiteClassico({
               </label>
               {!umAssinante && (
                 <label style={rotulo}>
-                  NOME DO NOIVO
+                  NOME DO NOIVO *
                   <input
                     value={noivo}
                     onChange={(e) => setNoivo(e.target.value)}
@@ -322,7 +394,7 @@ export function ModalAceiteClassico({
               )}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <label style={rotulo}>
-                  {rotuloDocumentoAssinante(tipoEvento).toUpperCase()}
+                  {`${rotuloDocumentoAssinante(tipoEvento).toUpperCase()} *`}
                   <input
                     value={cpf}
                     onChange={(e) => setCpf(e.target.value)}
@@ -347,14 +419,24 @@ export function ModalAceiteClassico({
                 </label>
               </div>
               <label style={rotulo}>
-                E-MAIL
+                E-MAIL *
                 <input
+                  type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="voce@email.com"
                   inputMode="email"
+                  autoComplete="email"
                   style={campo}
                 />
+                <span
+                  style={{
+                    display: "block", marginTop: 4, fontSize: 11,
+                    letterSpacing: 0, textTransform: "none", color: COR.texto2,
+                  }}
+                >
+                  O termo de aceite vai para este e-mail.
+                </span>
               </label>
             </div>
 
@@ -364,13 +446,13 @@ export function ModalAceiteClassico({
             >
               <Assinatura
                 refCanvas={canvasNoiva}
-                rotulo={umAssinante ? "ASSINATURA" : "ASSINATURA NOIVA"}
+                rotulo={umAssinante ? "ASSINATURA *" : "ASSINATURA NOIVA *"}
                 onMudou={setAssinouNoiva}
               />
               {!umAssinante && (
                 <Assinatura
                   refCanvas={canvasNoivo}
-                  rotulo="ASSINATURA NOIVO"
+                  rotulo="ASSINATURA NOIVO *"
                   onMudou={setAssinouNoivo}
                 />
               )}
@@ -390,10 +472,7 @@ export function ModalAceiteClassico({
                 style={{ marginTop: 2, accentColor: COR.escuro }}
               />
               <span style={{ fontSize: 11, lineHeight: 1.4, color: COR.texto2 }}>
-                Li e aceito os <b>termos da assessoria</b> e autorizo o uso das
-                assinaturas para travamento da data
-                {dataEvento ? ` de ${formatDateBR(dataEvento)}` : ""}
-                {localEvento ? ` no ${localEvento}` : ""}.
+                {TERMOS_ACEITE_TEXTO}
               </span>
             </label>
 
@@ -414,16 +493,76 @@ export function ModalAceiteClassico({
                 opacity: podeConfirmar ? 1 : 0.4,
               }}
             >
-              {enviando ? "ENVIANDO..." : "CONFIRMAR E GERAR CONTRATO →"}
+              {enviando ? "ENVIANDO..." : "CONFIRMAR E ASSINAR"}
             </button>
-            <button
-              onClick={onFechar}
-              style={{
-                marginTop: 8, width: "100%", background: "none", border: "none",
-                fontSize: 11, color: COR.texto3, letterSpacing: "0.1em",
-                cursor: "pointer", padding: "8px 0",
-              }}
-            >
+
+            {temPixel && (
+              <p
+                style={{
+                  margin: "10px 0 0", fontSize: 11, lineHeight: 1.4,
+                  color: COR.texto3, textAlign: "center",
+                }}
+              >
+                {`Seus dados são usados por ${nomeEmpresa?.trim() || "sua cerimonialista"} para o contrato e para medir a campanha dela.`}
+              </p>
+            )}
+
+            {!recusando ? (
+              <button
+                type="button"
+                onClick={() => setRecusando(true)}
+                disabled={enviando}
+                style={{
+                  ...linkDiscreto, marginTop: 8,
+                  textDecoration: "underline", textUnderlineOffset: 3,
+                  opacity: enviando ? 0.4 : 1,
+                }}
+              >
+                Não vou fechar agora
+              </button>
+            ) : (
+              <div
+                style={{
+                  marginTop: 12, display: "flex", gap: 8, alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <select
+                  value={motivo}
+                  onChange={(e) => setMotivo(e.target.value)}
+                  aria-label="Motivo"
+                  style={{ ...campo, marginTop: 0, flex: "1 1 160px", width: "auto" }}
+                >
+                  <option value="">Qual o motivo?</option>
+                  {MOTIVOS_RECUSA.map((m) => (
+                    <option key={m.valor} value={m.valor}>
+                      {m.rotulo}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={recusar}
+                  disabled={!motivo || enviandoRecusa}
+                  style={{
+                    border: `1px solid ${COR.borda}`, background: "#fff",
+                    color: COR.escuro, borderRadius: 999, padding: "10px 20px",
+                    fontSize: 11, fontWeight: 600, letterSpacing: "0.1em",
+                    cursor: !motivo || enviandoRecusa ? "not-allowed" : "pointer",
+                    opacity: !motivo || enviandoRecusa ? 0.4 : 1,
+                  }}
+                >
+                  {enviandoRecusa ? "ENVIANDO..." : "ENVIAR"}
+                </button>
+              </div>
+            )}
+            {erroRecusa && (
+              <p style={{ margin: "8px 0 0", fontSize: 12, color: "#A5544B" }}>
+                {erroRecusa}
+              </p>
+            )}
+
+            <button onClick={onFechar} style={{ ...linkDiscreto, marginTop: 4 }}>
               CANCELAR
             </button>
           </div>
@@ -434,8 +573,14 @@ export function ModalAceiteClassico({
 }
 
 // Canvas de assinatura no traço do design: caixa 110px, borda dourada
-// tracejada, fundo quase-branco. devicePixelRatio para não borrar e
-// touch-action none para o dedo desenhar em vez de rolar.
+// tracejada, fundo quase-branco. touch-action none para o dedo desenhar
+// em vez de rolar.
+//
+// O traço é sempre escuro porque o PNG (transparente) vai para um PDF de
+// fundo branco. O dpr para em 2: com 3 (celulares atuais) o PNG passa do
+// tamanho que o banco aceita e o aceite falha.
+const TRACO = "#1f1f1f";
+
 function Assinatura({
   refCanvas,
   rotulo,
@@ -448,13 +593,13 @@ function Assinatura({
   useEffect(() => {
     const c = refCanvas.current;
     if (!c) return;
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     c.width = c.offsetWidth * dpr;
     c.height = c.offsetHeight * dpr;
     const ctx = c.getContext("2d");
     if (!ctx) return;
     ctx.scale(dpr, dpr);
-    ctx.strokeStyle = COR.escuro;
+    ctx.strokeStyle = TRACO;
     ctx.lineWidth = 1.5;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";

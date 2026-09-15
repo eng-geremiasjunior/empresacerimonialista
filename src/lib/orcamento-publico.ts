@@ -1,4 +1,6 @@
 import { hojeBR } from "@/lib/tempo";
+import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
+import { linkWhatsapp } from "@/lib/whatsapp-link";
 // Tipos e helpers da página pública do orçamento. O shape vem da RPC
 // consultar_orcamento_publico — a tabela nunca é exposta. A Etapa 9
 // ampliou a RPC para trazer também o conteúdo institucional, o processo,
@@ -133,6 +135,71 @@ export type AceiteRpc = {
   valor_total: number;
   created_at: string;
 };
+
+// ---------- o que a tela mostra logo depois do aceite ----------
+// Dois momentos, uma regra. Acabou de aceitar: a rota devolve o número da
+// cerimonialista, o e-mail dela e para onde o termo saiu. Reabriu a
+// proposta já aceita: a RPC pública só guarda recibo, pacote e valor — o
+// número vem do Catálogo e o e-mail do termo não é conhecido, então a
+// tela mostra só o recibo e o botão.
+
+/** "Casamento", "Debutante"… O próprio slug quando o tipo é desconhecido. */
+export function rotuloTipoEvento(tipo: string): string {
+  return EVENT_TYPE_LABELS[tipo as EventType] ?? tipo;
+}
+
+/** A mensagem que o botão de WhatsApp da tela de recibo já deixa escrita. */
+export function textoWhatsappAceite(
+  tipoEvento: string,
+  recibo: string,
+  nomeContato: string
+): string {
+  // "proposta de outro" não é português; sem tipo a frase fecha sem ele.
+  // "Show / Grande porte" vira só "show" no meio da frase.
+  const de =
+    tipoEvento && tipoEvento !== "outro"
+      ? ` de ${rotuloTipoEvento(tipoEvento).split(" / ")[0].toLocaleLowerCase("pt-BR")}`
+      : "";
+  return `Olá! Acabei de aceitar a proposta${de}. Recibo ${recibo}. — ${nomeContato}`;
+}
+
+export type ContatoAposAceite = {
+  /** wa.me com a mensagem pronta; null sem número válido. */
+  linkWhatsapp: string | null;
+  /** Para onde o termo foi. null na proposta reaberta. */
+  linhaTermo: string | null;
+  /** Sem botão de WhatsApp, o e-mail dela. null quando há botão ou reaberta. */
+  linhaEmail: string | null;
+};
+
+export function contatoAposAceite(p: {
+  recibo: string;
+  tipoEvento: string;
+  nomeContato: string;
+  /** O que a rota devolveu; null quando a proposta foi reaberta já aceita. */
+  resultado: {
+    whatsapp: string | null;
+    emailCerimonialista: string | null;
+    emailEnviadoPara: string | null;
+  } | null;
+  whatsappInstitucional: string | null | undefined;
+}): ContatoAposAceite {
+  const link = linkWhatsapp(
+    p.resultado?.whatsapp ?? p.whatsappInstitucional,
+    textoWhatsappAceite(p.tipoEvento, p.recibo, p.nomeContato)
+  );
+  if (!p.resultado) return { linkWhatsapp: link, linhaTermo: null, linhaEmail: null };
+  return {
+    linkWhatsapp: link,
+    linhaTermo: p.resultado.emailEnviadoPara
+      ? `Termo de aceite enviado para ${p.resultado.emailEnviadoPara}`
+      : "Guarde o recibo; sua cerimonialista confirma por e-mail.",
+    linhaEmail:
+      !link && p.resultado.emailCerimonialista
+        ? `Sua cerimonialista entra em contato pelo e-mail ${p.resultado.emailCerimonialista}`
+        : null,
+  };
+}
 
 export function expirado(d: OrcamentoPublicoData): boolean {
   return (

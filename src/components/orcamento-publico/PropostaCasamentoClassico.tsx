@@ -19,7 +19,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { ModalAceiteClassico } from "@/components/orcamento-publico/ModalAceiteClassico";
+import type { ResultadoAceite } from "@/components/orcamento-publico/ModalAceiteProposta";
 import { useCountdownValidade } from "@/components/orcamento-publico/useCountdownValidade";
+import { linkWhatsapp } from "@/lib/whatsapp-link";
 import {
   brl,
   brlInteiro,
@@ -37,10 +39,11 @@ import {
   ETAPAS_CLASSICO,
   SUB_INVESTIMENTO_CLASSICO,
 } from "@/lib/proposta-classico-conteudo";
-import type {
-  BlocoPublico,
-  ComentarioPublico,
-  OrcamentoPublicoData,
+import {
+  contatoAposAceite,
+  type BlocoPublico,
+  type ComentarioPublico,
+  type OrcamentoPublicoData,
 } from "@/lib/orcamento-publico";
 
 /* ---------------- tokens da SPEC ---------------- */
@@ -212,6 +215,8 @@ export function PropostaCasamentoClassico({
       ? { codigo: dados.aceite.recibo_codigo, total: dados.aceite.valor_total }
       : null
   );
+  // O que a rota devolveu no aceite desta sessão; null na proposta reaberta.
+  const [resultado, setResultado] = useState<ResultadoAceite | null>(null);
   const [expandido, setExpandido] = useState<Record<number, boolean>>({});
 
   const tempo = useCountdownValidade(
@@ -291,7 +296,16 @@ export function PropostaCasamentoClassico({
     .toUpperCase();
   const [nomeMarca, ...restoMarca] = dados.nome_empresa.split(/\s+/);
   const fotos = dados.fotos;
-  const whats = inst?.whatsapp_contato?.replace(/\D/g, "") ?? null;
+  const whats = linkWhatsapp(inst?.whatsapp_contato);
+  const contato = recibo
+    ? contatoAposAceite({
+        recibo: recibo.codigo,
+        tipoEvento: dados.tipo_evento,
+        nomeContato: dados.nome_contato,
+        resultado,
+        whatsappInstitucional: inst?.whatsapp_contato,
+      })
+    : null;
 
   const labelSecao: React.CSSProperties = {
     fontFamily: SANS,
@@ -496,7 +510,7 @@ export function PropostaCasamentoClassico({
           }}
         >
           <p style={{ margin: 0, fontSize: 11, fontWeight: 600, letterSpacing: "0.1em" }}>
-            💬 DÚVIDAS?
+            DÚVIDAS?
           </p>
           <p style={{ margin: "6px 0 10px", fontSize: 11, color: COR.texto2 }}>
             Fale direto com a gente. Resposta rápida.
@@ -504,7 +518,7 @@ export function PropostaCasamentoClassico({
           {whats && (
             <a
               className="kd-btn"
-              href={`https://wa.me/${whats}`}
+              href={whats}
               target="_blank"
               rel="noreferrer"
               style={{
@@ -1273,6 +1287,11 @@ export function PropostaCasamentoClassico({
                     <p style={{ margin: "4px 0 0", fontSize: 12, color: "rgba(249,245,240,0.85)" }}>
                       recibo {recibo.codigo} · {brl(recibo.total)}
                     </p>
+                    {contato?.linhaTermo && (
+                      <p style={{ margin: "6px 0 0", fontSize: 11, color: "rgba(249,245,240,0.7)" }}>
+                        {contato.linhaTermo}
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <button
@@ -1731,12 +1750,15 @@ export function PropostaCasamentoClassico({
                 <p style={{ margin: "6px 0 0", fontSize: 13, color: COR.texto2 }}>
                   Recibo <b>{recibo.codigo}</b> · {brl(recibo.total)}
                 </p>
-                {whats && (
+                {contato?.linhaTermo && (
+                  <p style={{ margin: "8px 0 0", fontSize: 12, color: COR.texto3 }}>
+                    {contato.linhaTermo}
+                  </p>
+                )}
+                {contato?.linkWhatsapp && (
                   <a
                     className="kd-btn"
-                    href={`https://wa.me/${whats}?text=${encodeURIComponent(
-                      `Acabamos de aceitar a proposta! Recibo ${recibo.codigo} — ${dados.nome_contato}`
-                    )}`}
+                    href={contato.linkWhatsapp}
                     target="_blank"
                     rel="noreferrer"
                     style={{
@@ -1746,8 +1768,13 @@ export function PropostaCasamentoClassico({
                       textDecoration: "none",
                     }}
                   >
-                    ENVIAR CONFIRMAÇÃO NO WHATSAPP
+                    FALAR COM {dados.nome_empresa.toUpperCase()} NO WHATSAPP
                   </a>
+                )}
+                {contato?.linhaEmail && (
+                  <p style={{ margin: "10px 0 0", fontSize: 12, color: COR.texto3 }}>
+                    {contato.linhaEmail}
+                  </p>
                 )}
               </div>
             ) : (
@@ -1971,9 +1998,10 @@ export function PropostaCasamentoClassico({
           dataEvento={dados.data_evento}
           localEvento={dados.local_evento}
           onFechar={() => setModalAceite(false)}
-          onAceito={(codigo, total) => {
+          onAceito={(r) => {
             setModalAceite(false);
-            setRecibo({ codigo, total });
+            setRecibo({ codigo: r.recibo, total: r.valorTotal });
+            setResultado(r);
           }}
         />
       )}

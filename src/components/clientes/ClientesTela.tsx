@@ -34,6 +34,7 @@ import {
   FILTROS_VAZIOS,
 } from "@/lib/clientes-lista";
 import { registrarContato } from "@/app/(app)/clientes/contato-actions";
+import { linkWhatsapp, primeiroNome } from "@/lib/whatsapp-link";
 
 const C = {
   tinta: "#221E1B",
@@ -56,12 +57,10 @@ const C = {
 
 const MONO = "var(--font-mono, 'IBM Plex Mono', monospace)";
 
+// A conversa abre com o cumprimento já escrito — o resto ela digita.
 function whatsappHref(c: ClienteLinha): string | null {
-  const bruto = c.whatsapp ?? c.telefone;
-  if (!bruto) return null;
-  const d = bruto.replace(/\D/g, "");
-  if (d.length < 10) return null;
-  return `https://wa.me/${d.length <= 11 ? "55" + d : d}`;
+  const nome = primeiroNome(c.nome);
+  return linkWhatsapp(c.whatsapp ?? c.telefone, nome ? `Oi ${nome}` : undefined);
 }
 
 function brlCurto(v: number): string {

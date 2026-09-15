@@ -28,11 +28,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ModalAceiteProposta,
+  type ResultadoAceite,
   type TemaModal,
 } from "@/components/orcamento-publico/ModalAceiteProposta";
 import { useCountdownValidade } from "@/components/orcamento-publico/useCountdownValidade";
 import { VideoDeFundo } from "@/components/orcamento-publico/VideoDeFundo";
-import { expirado, type OrcamentoPublicoData } from "@/lib/orcamento-publico";
+import {
+  contatoAposAceite,
+  expirado,
+  type OrcamentoPublicoData,
+} from "@/lib/orcamento-publico";
+import { linkWhatsapp } from "@/lib/whatsapp-link";
 import {
   calcularProposta,
   condicoesDoBanco,
@@ -149,6 +155,8 @@ export function PropostaCasamentoPraia({
       ? { codigo: dados.aceite.recibo_codigo, total: dados.aceite.valor_total }
       : null
   );
+  // O que a rota devolveu no aceite desta sessão; null na proposta reaberta.
+  const [resultado, setResultado] = useState<ResultadoAceite | null>(null);
 
   const pacote = pacotes.find((p) => p.id === pacoteId) ?? null;
   const venceu = expirado(dados);
@@ -322,7 +330,16 @@ export function PropostaCasamentoPraia({
   ].filter(Boolean) as { valor: string; rotulo: string }[];
 
   const depoimento = (dados.depoimentos ?? [])[0] ?? null;
-  const whats = (inst?.whatsapp_contato ?? "").replace(/\D/g, "");
+  const whats = linkWhatsapp(inst?.whatsapp_contato);
+  const contato = recibo
+    ? contatoAposAceite({
+        recibo: recibo.codigo,
+        tipoEvento: dados.tipo_evento,
+        nomeContato: dados.nome_contato,
+        resultado,
+        whatsappInstitucional: inst?.whatsapp_contato,
+      })
+    : null;
   const tradNomes = tradicoes.map((i) => TRADICOES_PRAIA[i]).filter(Boolean);
   const roteiroFrase =
     tradicoes.length === 0
@@ -970,6 +987,31 @@ export function PropostaCasamentoPraia({
                   <p style={{ margin: "6px 0 0", fontSize: 12.5, color: "rgba(247,242,234,0.85)" }}>
                     Recibo {recibo.codigo} · {brl(recibo.total)}
                   </p>
+                  {contato?.linhaTermo && (
+                    <p style={{ margin: "8px 0 0", fontSize: 11.5, lineHeight: 1.5, color: "rgba(247,242,234,0.65)" }}>
+                      {contato.linhaTermo}
+                    </p>
+                  )}
+                  {contato?.linkWhatsapp && (
+                    <a
+                      href={contato.linkWhatsapp}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        display: "block", marginTop: 14, padding: "13px 0", borderRadius: 2,
+                        background: COR.coral, color: "#fff", textAlign: "center",
+                        fontSize: 11, fontWeight: 700, letterSpacing: "1.6px", fontFamily: SANS,
+                        textDecoration: "none",
+                      }}
+                    >
+                      FALAR COM {dados.nome_empresa.toUpperCase()} NO WHATSAPP
+                    </a>
+                  )}
+                  {contato?.linhaEmail && (
+                    <p style={{ margin: "10px 0 0", fontSize: 11.5, lineHeight: 1.5, color: "rgba(247,242,234,0.65)" }}>
+                      {contato.linhaEmail}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <button
@@ -1137,7 +1179,7 @@ export function PropostaCasamentoPraia({
           </a>
           {whats && (
             <a
-              href={`https://wa.me/55${whats}`}
+              href={whats}
               target="_blank"
               rel="noreferrer"
               style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "1.8px", color: COR.coral }}
@@ -1200,8 +1242,8 @@ export function PropostaCasamentoPraia({
           hash={hash}
           tema={TEMA_MODAL}
           titulo={`Fechar o casamento de ${nome || dados.nome_contato}?`}
-          subtitulo="CONTRATO DIGITAL · ASSINATURA"
-          resumo={`${pacote.nome} · ${convidados} convidados · ${brl(valores.total)}${condicoes.parcelasMaximo > 1 && valores.parcela !== null ? ` · até ${condicoes.parcelasMaximo}× de ${brl(valores.parcela)}` : ""}${temACotar ? " · itens a cotar seguem no contrato" : ""}`}
+          subtitulo="TERMO DE ACEITE · ASSINATURA"
+          resumo={`${pacote.nome} · ${convidados} convidados · ${brl(valores.total)}${condicoes.parcelasMaximo > 1 && valores.parcela !== null ? ` · até ${condicoes.parcelasMaximo}× de ${brl(valores.parcela)}` : ""}${temACotar ? " · itens a cotar fora deste valor" : ""}`}
           nomeInicial={nome || dados.nome_contato}
           pacoteId={pacote.id}
           convidados={convidados}
@@ -1213,11 +1255,12 @@ export function PropostaCasamentoPraia({
           rotuloAssinatura="Assinatura noiva"
           rotuloAssinatura2="Assinatura noivo"
           textoBotao="ASSINAR E TRAVAR A DATA →"
-          rodape="Li e aceito as condições desta proposta. O contrato de assessoria é enviado em seguida."
+          rodape="Termo de aceite assinado e enviado por e-mail."
           onFechar={() => setModal(false)}
-          onAceito={(codigo, total) => {
+          onAceito={(r) => {
             setModal(false);
-            setRecibo({ codigo, total });
+            setRecibo({ codigo: r.recibo, total: r.valorTotal });
+            setResultado(r);
           }}
         />
       )}

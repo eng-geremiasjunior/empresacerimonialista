@@ -41,6 +41,12 @@ export type Orcamento = {
   visitas?: number | null;
   primeira_visita_em?: string | null;
   ultima_visita_em?: string | null;
+  // O aceite como documento (162): quando alguém da equipe abriu o
+  // orçamento depois da assinatura, e a recusa com o motivo. Opcionais
+  // pelo mesmo motivo acima — o dono aplica a migração à mão.
+  aceite_visto_em?: string | null;
+  motivo_recusa?: string | null;
+  recusado_em?: string | null;
   created_at: string;
 };
 

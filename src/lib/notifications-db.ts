@@ -8,7 +8,11 @@ export type NotificationType =
   | "fornecedor"
   // a cliente respondeu pelo portal (091) — o banco agrega por decisão
   // e o "Conferir bloco" marca como lida
-  | "portal";
+  | "portal"
+  // a cliente assinou a proposta (162) ou disse que não vai fechar
+  // agora, com o motivo — os dois abrem o orçamento
+  | "orcamento_aprovado"
+  | "orcamento_recusado";
 
 export type NotificationRow = {
   id: string;

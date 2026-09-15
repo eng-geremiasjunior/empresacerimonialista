@@ -25,8 +25,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatDateBR } from "@/lib/orcamentos";
-import { expirado, type OrcamentoPublicoData } from "@/lib/orcamento-publico";
-import { ModalAceiteProposta } from "@/components/orcamento-publico/ModalAceiteProposta";
+import {
+  contatoAposAceite,
+  expirado,
+  type OrcamentoPublicoData,
+} from "@/lib/orcamento-publico";
+import {
+  ModalAceiteProposta,
+  type ResultadoAceite,
+} from "@/components/orcamento-publico/ModalAceiteProposta";
 import { useCountdownValidade } from "@/components/orcamento-publico/useCountdownValidade";
 import {
   NAV_MAISON, HERO_MAISON, QUEM_SOMOS_MAISON, INCLUSO_MAISON,
@@ -80,6 +87,8 @@ export function PropostaCasamentoMaison({
 
   const [modal, setModal] = useState(false);
   const [aceite, setAceite] = useState(dados.aceite ?? null);
+  // O que a rota devolveu no aceite desta sessão; null na proposta reaberta.
+  const [resultado, setResultado] = useState<ResultadoAceite | null>(null);
   const [ativo, setAtivo] = useState(NAV_MAISON[0].id);
   // sem depoimento a seção some; o índice tem que sumir junto
   const nav = useMemo(
@@ -134,8 +143,10 @@ export function PropostaCasamentoMaison({
     return (
       <ReciboMaison
         aceite={aceite}
+        resultado={resultado}
         nomeEmpresa={dados.nome_empresa}
         contato={dados.nome_contato}
+        tipoEvento={dados.tipo_evento}
         whatsapp={inst?.whatsapp_contato ?? null}
         entradaPct={entradaPct}
       />
@@ -345,14 +356,15 @@ export function PropostaCasamentoMaison({
           textoBotao={MODAL_MAISON.cta}
           rodape={MODAL_MAISON.rodape(entradaPct)}
           onFechar={() => setModal(false)}
-          onAceito={(recibo, total) =>
+          onAceito={(r) => {
+            setResultado(r);
             setAceite({
-              recibo_codigo: recibo,
+              recibo_codigo: r.recibo,
               pacote_nome: pacoteBase?.nome ?? "Proposta",
-              valor_total: total,
+              valor_total: r.valorTotal,
               created_at: new Date().toISOString(),
-            })
-          }
+            });
+          }}
         />
       )}
     </div>
@@ -469,7 +481,7 @@ function SecaoHero({
             ACEITAR PROPOSTA • {brl(valor)} <span>→</span>
           </button>
           <p className="mt-3 text-[10.5px]" style={{ color: TAUPE }}>
-            Entrada de {entradaPct}% • {parcelas}x sem juros • Contrato enviado após o aceite
+            Entrada de {entradaPct}% • {parcelas}x sem juros • Termo de aceite assinado por e-mail
           </p>
         </div>
 
@@ -863,16 +875,25 @@ const TEMA_MODAL_MAISON = {
 
 // Passo 2 do modal do handoff: recibo com breakdown e botão de WhatsApp.
 function ReciboMaison({
-  aceite, nomeEmpresa, contato, whatsapp, entradaPct,
+  aceite, resultado, nomeEmpresa, contato, tipoEvento, whatsapp, entradaPct,
 }: {
   aceite: NonNullable<OrcamentoPublicoData["aceite"]>;
+  resultado: ResultadoAceite | null;
   nomeEmpresa: string;
   contato: string;
+  tipoEvento: string;
   whatsapp: string | null;
   entradaPct: number;
 }) {
   const total = Number(aceite.valor_total);
   const entrada = (total * entradaPct) / 100;
+  const depois = contatoAposAceite({
+    recibo: aceite.recibo_codigo,
+    tipoEvento,
+    nomeContato: contato,
+    resultado,
+    whatsappInstitucional: whatsapp,
+  });
   return (
     <div
       className="maison flex min-h-screen items-center justify-center p-6"
@@ -912,20 +933,27 @@ function ReciboMaison({
           </div>
         </div>
 
-        {whatsapp && (
+        {depois.linhaTermo && (
+          <p className="mt-5 text-[12px]" style={{ color: CORPO }}>
+            {depois.linhaTermo}
+          </p>
+        )}
+        {depois.linkWhatsapp && (
           <a
-            href={`https://wa.me/${whatsapp.replace(/\D/g, "")}`}
+            href={depois.linkWhatsapp}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-6 block rounded-full py-3.5 text-[12px] font-medium"
             style={{ background: "#25D366", color: "#fff", letterSpacing: "0.08em" }}
           >
-            ABRIR WHATSAPP VIP
+            FALAR COM {nomeEmpresa.toUpperCase()} NO WHATSAPP
           </a>
         )}
-        <p className="mt-4 text-[10.5px]" style={{ color: TAUPE }}>
-          Guarde este código. Sua cerimonialista entra em contato com o contrato.
-        </p>
+        {depois.linhaEmail && (
+          <p className="mt-4 text-[12px]" style={{ color: CORPO }}>
+            {depois.linhaEmail}
+          </p>
+        )}
       </div>
     </div>
   );

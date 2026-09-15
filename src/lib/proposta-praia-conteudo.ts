@@ -160,7 +160,7 @@ export const TEXTOS_PRAIA = {
   roteiroEyebrow: "O ROTEIRO DA CERIMÔNIA",
   roteiroDica: "9 TRADIÇÕES · ESCOLHA AS SUAS",
   roteiroVazio: "Nenhuma tradição escolhida ainda. Toque nas que fazem sentido para vocês.",
-  aCotarAviso: "Há itens marcados como “a cotar” — enviamos o valor junto do contrato.",
+  aCotarAviso: "Há itens marcados como “a cotar” — o valor deles fica fora deste total e enviamos em seguida.",
   cartaEyebrow: "UMA CARTA ANTES DE VOCÊ DECIDIR",
   // OS BOTÕES DE ACEITE (08/09/2026). Eram "FECHAR MEU CASAMENTO" e
   // "ASSINAR E TRAVAR A DATA". O dono pediu linguagem profissional: o

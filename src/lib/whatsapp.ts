@@ -6,6 +6,7 @@
 // O RECEBIMENTO do webhook não depende disto para funcionar.
 
 import { linkPublico } from "@/lib/app-url";
+import { normalizarDDI } from "@/lib/whatsapp-link";
 
 const API_VERSION = "v21.0";
 
@@ -32,16 +33,11 @@ export function whatsappConfigurado(): boolean {
 }
 
 // Telefone para a API da Meta: só dígitos, com DDI 55 quando ausente.
-//
-// A armadilha: 55 também é DDD (Santa Maria/RS). "(55) 99999-0000" tem 11
-// dígitos e começa com 55 — mas é DDD+número, não DDI+resto. Quem decide é
-// o TAMANHO: número brasileiro local tem 10-11 dígitos e sempre ganha o
-// DDI; só 12-13 dígitos começando com 55 já vêm com ele.
+// A regra (e a armadilha do DDD 55) mora em whatsapp-link, que também
+// monta os links wa.me do navegador — um só jeito de pôr o DDI, para o
+// número que a API recebe ser o mesmo que o botão abre.
 export function paraFormatoMeta(telefone: string): string | null {
-  const d = (telefone || "").replace(/\D/g, "");
-  if (d.length < 10) return null; // sem DDD não dá para enviar
-  if (d.length <= 11) return `55${d}`; // DDD + número, mesmo começando com 55
-  return d.startsWith("55") ? d : `55${d}`;
+  return normalizarDDI(telefone);
 }
 
 async function enviar(body: Record<string, unknown>): Promise<EnvioWhatsapp> {

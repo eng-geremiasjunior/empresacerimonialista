@@ -4,6 +4,11 @@ import { ArrowLeft, ArrowRight, CalendarCheck, FileDown, Pencil, ExternalLink } 
 import { createClient } from "@/lib/supabase/server";
 import { EnviarOrcamentoBox } from "@/components/orcamentos/EnviarOrcamentoBox";
 import { GerarEventoBox } from "@/components/orcamentos/GerarEventoBox";
+import {
+  AceiteDoOrcamento,
+  type LinhaAceite,
+  type LinhaDocumento,
+} from "@/components/orcamentos/AceiteDoOrcamento";
 import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
 import {
   ORCAMENTO_STATUS_BADGE,
@@ -28,21 +33,57 @@ export default async function VisualizarOrcamentoPage({
 }) {
   const supabase = createClient();
 
-  const [{ data: orcData }, { data: itensData }, { data: empresa }] =
-    await Promise.all([
-      supabase.from("orcamentos").select("*").eq("id", params.id).single(),
-      supabase
-        .from("orcamento_itens")
-        .select("*")
-        .eq("orcamento_id", params.id)
-        .order("ordem"),
-      supabase.from("empresas").select("nome, logo_url").limit(1).maybeSingle(),
-    ]);
+  const [
+    { data: orcData },
+    { data: itensData },
+    { data: empresa },
+    { data: aceiteData },
+    { data: documentosData },
+  ] = await Promise.all([
+    supabase.from("orcamentos").select("*").eq("id", params.id).single(),
+    supabase
+      .from("orcamento_itens")
+      .select("*")
+      .eq("orcamento_id", params.id)
+      .order("ordem"),
+    supabase.from("empresas").select("nome, logo_url").limit(1).maybeSingle(),
+    // O aceite mais novo. `select *` de propósito: as colunas da 162
+    // (cpf, sha256_conteudo…) podem ainda não existir, e assim a leitura
+    // continua funcionando — cada campo ausente vale null no cartão.
+    supabase
+      .from("orcamento_aceites")
+      .select("*")
+      .eq("orcamento_id", params.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    // Termo e contrato ficam amarrados ao orçamento (o termo também ao
+    // aceite), então uma consulta só, em paralelo, traz os dois. Antes
+    // da 162 a tabela não existe: a resposta vem com erro e sem dados,
+    // vira lista vazia e o cartão diz que o termo está em geração.
+    supabase
+      .from("evento_documento")
+      .select("id, categoria, nome, orcamento_aceite_id, created_at")
+      .eq("orcamento_id", params.id)
+      .order("created_at", { ascending: false }),
+  ]);
 
   if (!orcData) notFound();
   const orc = orcData as unknown as Orcamento;
   const itens = (itensData ?? []) as unknown as OrcamentoItem[];
   const badge = ORCAMENTO_STATUS_BADGE[orc.status];
+
+  const aceite = (aceiteData as unknown as LinhaAceite | null) ?? null;
+  const documentos = (documentosData ?? []) as unknown as LinhaDocumento[];
+  // `aceite_visto_em` é da 162: antes da migração vem undefined e vale
+  // como "não visto" — a action que marca falha em silêncio e nada muda
+  // na tela.
+  const aceiteVistoEm = orc.aceite_visto_em ?? null;
+  // O que a cliente aceitou manda sobre o que foi montado: pacote,
+  // extras e desconto escolhidos na hora da assinatura.
+  const totalMostrado = aceite
+    ? Number(aceite.valor_total)
+    : Number(orc.valor_total);
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -112,9 +153,22 @@ export default async function VisualizarOrcamentoPage({
               hashPublico={orc.hash_publico}
               status={orc.status}
               temEmail={Boolean(orc.contato_email)}
+              contatoTelefone={orc.contato_telefone}
+              contatoNome={orc.contato_nome}
+              tipoEvento={orc.tipo_evento}
             />
           </div>
         )}
+
+      {/* O aceite: quem assinou, o que fechou e o termo em PDF */}
+      {aceite && (
+        <AceiteDoOrcamento
+          orcamentoId={orc.id}
+          aceite={aceite}
+          documentos={documentos}
+          marcarVisto={aceiteVistoEm === null}
+        />
+      )}
 
       {/* Prévia da proposta */}
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
@@ -224,8 +278,13 @@ export default async function VisualizarOrcamentoPage({
             <span className="text-sm font-semibold uppercase tracking-wide text-gray-500">
               Total
             </span>
-            <span className="text-2xl font-bold text-gray-900">
-              {formatBRL(Number(orc.valor_total))}
+            <span className="text-right">
+              <span className="block text-2xl font-bold text-gray-900">
+                {formatBRL(totalMostrado)}
+              </span>
+              {aceite && (
+                <span className="text-xs text-gray-500">valor aceito</span>
+              )}
             </span>
           </div>
         </div>

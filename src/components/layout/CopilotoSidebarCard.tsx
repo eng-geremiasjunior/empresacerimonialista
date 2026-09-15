@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowRight, Clock, Sparkles } from "lucide-react";
-
-// mesma frase que frasePrazos() devolve quando não há nada vencendo
-const NADA_VENCENDO = "Nada vencendo hoje.";
+// A frase do vazio vem de quem a produz. Este card tinha a própria cópia
+// ("Nada vencendo hoje.") e frasePrazos() já dizia outra coisa — o zero
+// nunca casava, e "Ver o que vence" ficava aceso sem ter o que ver.
+import { PRAZOS_EM_DIA } from "@/lib/copiloto-prazos";
 
 // Card do Copiloto na sidebar.
 // - Dentro de um evento específico (/eventos/{uuid}/...): contexto do
@@ -67,7 +68,7 @@ export function CopilotoSidebarCard({
         <ContextoEvento eventId={eventId} />
       ) : prazosFrase === null ? (
         <p className="mt-1.5 text-xs leading-snug text-stone-400">Não deu para checar os prazos agora.</p>
-      ) : prazosFrase === NADA_VENCENDO ? (
+      ) : prazosFrase === PRAZOS_EM_DIA ? (
         <p className="mt-1.5 text-xs leading-snug text-stone-400">
           {prazosFrase}
         </p>

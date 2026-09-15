@@ -47,6 +47,10 @@ const ROTAS_PUBLICAS: ((p: string) => boolean)[] = [
   (p) => p === "/comecar",
   // orçamento na mão da cliente (aprova ou recusa)
   (p) => p.startsWith("/orcamento/"),
+  // o aceite da proposta, registrado pelo servidor (o hash é a credencial)
+  (p) => p.startsWith("/api/orcamento/"),
+  // verificação pública do termo de aceite: /aceite/<recibo>?v=<hash>
+  (p) => p.startsWith("/aceite/"),
   // as rotas de cron se protegem sozinhas com Bearer CRON_SECRET
   (p) => p.startsWith("/api/cron/"),
   // cadastro do convidado pelo link do evento
@@ -154,9 +158,13 @@ export async function updateSession(request: NextRequest) {
   const isPortalEntrar = pathname.startsWith("/portal/entrar");
   const isAuthConfirm = pathname.startsWith("/auth/confirm");
   // /c/ junto: a noiva LOGADA no portal abre o próprio site do casamento
-  // pelos dois endereços — sem isto seria expulsa para /portal
+  // pelos dois endereços — sem isto seria expulsa para /portal.
+  // /api/documento/ também: o termo e o contrato abrem pelo portal, e a
+  // RLS de evento_documento é quem decide se ela vê aquele arquivo.
   const isPublicConfirmar =
-    pathname.startsWith("/confirmar/") || pathname.startsWith("/c/");
+    pathname.startsWith("/confirmar/") ||
+    pathname.startsWith("/c/") ||
+    pathname.startsWith("/api/documento/");
 
   // ------------------------------------------------------------------
   // As duas casas do sistema não se misturam.

@@ -8,6 +8,7 @@ import { useFormState, useFormStatus } from "react-dom";
 import { mascararDinheiro } from "@/lib/format";
 import { dinheiroParaMascara } from "@/lib/admin-metricas";
 import type { ContaAdmin } from "@/lib/supabase/admin-painel";
+import { linkWhatsapp } from "@/lib/whatsapp-link";
 import {
   definirBanimento,
   salvarAssinatura,
@@ -45,12 +46,6 @@ function diaEHora(iso: string | null): string {
   return `${dia} às ${hora}`;
 }
 
-/** WhatsApp como o link do app precisa: só dígitos, com 55. */
-function linkWhatsapp(tel: string): string {
-  const d = tel.replace(/\D/g, "");
-  return `https://wa.me/${d.length <= 11 ? `55${d}` : d}`;
-}
-
 /**
  * QUEM É E O QUE FEZ. "Não sei de onde ela é, sei nada" — o dono, no dia
  * da primeira conta de uma desconhecida. Só o que já estava no banco:
@@ -58,6 +53,9 @@ function linkWhatsapp(tel: string): string {
  */
 function QuemE({ conta }: { conta: ContaAdmin }) {
   const a = conta.assinatura;
+  // null tanto sem número quanto com número incompleto (sem DDD): o botão
+  // só aparece quando abre uma conversa de verdade.
+  const wa = linkWhatsapp(conta.whatsapp);
   const linhas: { rotulo: string; valor: string }[] = [
     {
       rotulo: "Veio de",
@@ -103,9 +101,9 @@ function QuemE({ conta }: { conta: ContaAdmin }) {
             E-mail
           </a>
         )}
-        {conta.whatsapp ? (
+        {wa ? (
           <a
-            href={linkWhatsapp(conta.whatsapp)}
+            href={wa}
             target="_blank"
             rel="noopener noreferrer"
             className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
@@ -113,7 +111,14 @@ function QuemE({ conta }: { conta: ContaAdmin }) {
             WhatsApp
           </a>
         ) : (
-          <span className="rounded-lg px-2 py-1.5 text-xs text-stone-400" title="Ela ainda não preencheu o WhatsApp em Configurações">
+          <span
+            className="rounded-lg px-2 py-1.5 text-xs text-stone-400"
+            title={
+              conta.whatsapp
+                ? `WhatsApp salvo sem DDD: ${conta.whatsapp}`
+                : "Ela ainda não preencheu o WhatsApp em Configurações"
+            }
+          >
             sem WhatsApp
           </span>
         )}

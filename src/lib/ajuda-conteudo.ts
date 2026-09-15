@@ -36,7 +36,7 @@ export const GRUPOS_AJUDA: GrupoAjuda[] = [
         id: "logo-empresa",
         pergunta: "Onde coloco a logo e o nome da minha empresa?",
         resposta:
-          "Em Configurações, na seção da empresa (aparece para a proprietária). A logo e o nome saem na proposta, no PDF e no portal da cliente — é a sua marca na frente do casal, não a do eorganizei.",
+          "Em Configurações, na seção da empresa (aparece para a proprietária). A logo e o nome saem na proposta, no PDF e no portal da cliente — é a sua marca na frente da cliente, não a do eorganizei.",
       },
     ],
   },
@@ -82,7 +82,7 @@ export const GRUPOS_AJUDA: GrupoAjuda[] = [
         id: "guia-estilo",
         pergunta: "Como monto e envio o guia de estilo?",
         resposta:
-          "Dentro do Planejamento, na decisão \"Fazer o briefing de decoração\". Escolha uma paleta para começar, ajuste cores, flores, materiais e as referências da cliente, e toque em \"Mandar o casal ver\". O casal aprova pelo portal — e só depois da aprovação o guia pode ser compartilhado com fornecedor.",
+          "Dentro do Planejamento, na decisão \"Fazer o briefing de decoração\". Escolha uma paleta para começar, ajuste cores, flores, materiais e as referências da cliente, e toque em \"Mandar o casal ver\". A cliente aprova pelo portal — e só depois da aprovação o guia pode ser compartilhado com fornecedor.",
       },
       {
         id: "guia-fornecedor",
@@ -94,7 +94,7 @@ export const GRUPOS_AJUDA: GrupoAjuda[] = [
         id: "escolhas-curadas",
         pergunta: "O que são as escolhas curadas?",
         resposta:
-          "É você apresentando 2 a 4 opções prontas para uma decisão (buffet, doces, banda) em vez de encaminhar orçamento solto. O casal escolhe no portal, com os valores e o que está incluso — e a escolha volta para o seu planejamento.",
+          "É você apresentando 2 a 4 opções prontas para uma decisão (buffet, doces, banda) em vez de encaminhar orçamento solto. A cliente escolhe no portal, com os valores e o que está incluso — e a escolha volta para o seu planejamento.",
       },
     ],
   },
@@ -219,21 +219,21 @@ export const GRUPOS_AJUDA: GrupoAjuda[] = [
     perguntas: [
       {
         id: "mandar-proposta",
-        pergunta: "Como mando uma proposta para um casal?",
+        pergunta: "Como mando uma proposta para uma cliente?",
         resposta:
-          "Em Orçamentos → Novo: monte os itens e os pacotes e envie o link. O casal abre uma página com a sua marca, escolhe o pacote, ajusta os extras e assina na tela — você recebe o aceite na hora.",
+          "Em Orçamentos → Novo: monte os itens e os pacotes e envie o link. A cliente abre uma página com a sua marca, escolhe o pacote, ajusta os extras e assina na tela — você recebe o aceite na hora.",
       },
       {
         id: "proposta-aceita",
-        pergunta: "O casal aceitou a proposta. E agora?",
+        pergunta: "A cliente aceitou a proposta. E agora?",
         resposta:
-          "Na lista de Orçamentos a proposta aparece aprovada, com o resumo do aceite. Um clique em \"Criar evento\" transforma a proposta no evento, já com cliente, valores e o planejamento do tipo.",
+          "Se a proposta tinha data, o evento já nasceu no aceite — com cliente, valores e o planejamento do tipo; sem data, você cria pelo botão dentro do orçamento. O termo assinado fica no orçamento e no evento, e a cliente recebe a cópia dele por e-mail.",
       },
       {
         id: "validade-proposta",
         pergunta: "Proposta tem validade?",
         resposta:
-          "Tem — você define os dias ao montar. Vencida, o casal ainda abre o link, mas vê que o prazo passou e o botão de aceitar sai de cena. A lista mostra quais estão vencendo para você renovar antes.",
+          "Tem — você define os dias ao montar. Vencida, a cliente ainda abre o link, mas vê que o prazo passou e o botão de aceitar sai de cena. A lista mostra quais estão vencendo para você renovar antes.",
       },
     ],
   },

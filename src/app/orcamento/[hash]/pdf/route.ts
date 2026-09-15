@@ -7,30 +7,14 @@ import { createClient } from "@/lib/supabase/server";
 import { gerarPdfOrcamento, type ConteudoPdf } from "@/lib/gerar-pdf-orcamento";
 import { resolverTema } from "@/lib/orcamento-temas";
 import { IMAGEM_PADRAO } from "@/lib/landing-imagens";
+// Cada imagem vira data URI ou null: uma inacessível derrubaria o PDF
+// inteiro, e é melhor entregar a proposta sem foto do que não entregar.
+import { comoDataUri } from "@/lib/pdf-imagens";
 import type { OrcamentoPublicoData } from "@/lib/orcamento-publico";
 import type { Orcamento, OrcamentoItem } from "@/lib/orcamentos";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-
-const MAX_IMAGEM = 4 * 1024 * 1024;
-
-// Converte a imagem em data URI. Devolve null em QUALQUER falha: uma
-// imagem inacessível passada ao @react-pdf derruba o PDF inteiro, e é
-// melhor entregar a proposta sem foto do que não entregar.
-async function comoDataUri(url: string): Promise<string | null> {
-  try {
-    const r = await fetch(url, { cache: "no-store" });
-    if (!r.ok) return null;
-    const tipo = r.headers.get("content-type") ?? "";
-    if (!tipo.startsWith("image/")) return null;
-    const buf = Buffer.from(await r.arrayBuffer());
-    if (buf.length === 0 || buf.length > MAX_IMAGEM) return null;
-    return `data:${tipo};base64,${buf.toString("base64")}`;
-  } catch {
-    return null;
-  }
-}
 
 export async function GET(
   req: Request,

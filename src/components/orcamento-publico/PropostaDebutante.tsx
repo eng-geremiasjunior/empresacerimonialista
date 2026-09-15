@@ -23,10 +23,18 @@
 //    seed da migração 058, não números cravados aqui.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ModalAceiteProposta } from "@/components/orcamento-publico/ModalAceiteProposta";
+import {
+  ModalAceiteProposta,
+  type ResultadoAceite,
+} from "@/components/orcamento-publico/ModalAceiteProposta";
 import { useCountdownValidade } from "@/components/orcamento-publico/useCountdownValidade";
 import { formatDateBR } from "@/lib/orcamentos";
-import { expirado, type OrcamentoPublicoData } from "@/lib/orcamento-publico";
+import {
+  contatoAposAceite,
+  expirado,
+  type OrcamentoPublicoData,
+} from "@/lib/orcamento-publico";
+import { linkWhatsapp } from "@/lib/whatsapp-link";
 import { calcularProposta, precoDePacote } from "@/lib/proposta";
 import { IMAGEM_PADRAO } from "@/lib/landing-imagens";
 import {
@@ -89,7 +97,7 @@ export function PropostaDebutante({
   };
 
   const venceu = expirado(dados);
-  const whats = inst?.whatsapp_contato?.replace(/\D/g, "") || null;
+  const whats = linkWhatsapp(inst?.whatsapp_contato);
   const podeResponder = dados.status === "enviado" && !venceu;
 
   const [pacoteId, setPacoteId] = useState<string | null>(
@@ -104,6 +112,8 @@ export function PropostaDebutante({
   const [lightbox, setLightbox] = useState<number | null>(null);
   const [modalAberto, setModalAberto] = useState(false);
   const [aceite, setAceite] = useState(dados.aceite ?? null);
+  // O que a rota devolveu no aceite desta sessão; null na proposta reaberta.
+  const [resultado, setResultado] = useState<ResultadoAceite | null>(null);
 
   const pacote = pacotes.find((p) => p.id === pacoteId) ?? null;
 
@@ -172,8 +182,11 @@ export function PropostaDebutante({
     return (
       <Recibo
         aceite={aceite}
+        resultado={resultado}
         nomeEmpresa={dados.nome_empresa}
         contato={dados.nome_contato}
+        tipoEvento={dados.tipo_evento}
+        whatsapp={inst?.whatsapp_contato ?? null}
       />
     );
   }
@@ -295,7 +308,7 @@ export function PropostaDebutante({
             ACEITAR AGORA →
           </button>
           <div className="text-center text-[9.5px]" style={{ color: "#A8A29A" }}>
-            contrato digital
+            termo de aceite por e-mail
           </div>
         </div>
 
@@ -971,8 +984,13 @@ export function PropostaDebutante({
               </div>
             </div>
           )}
+        </Secao>
+        )}
 
-          <div className="px-0 pb-8 pt-16 text-center">
+        {/* Fechamento e links da página: fora dos depoimentos, para
+            existir mesmo sem depoimento cadastrado. */}
+        <Secao id="fechamento">
+          <div className="px-0 text-center">
             <div className="playfair text-[20px] sm:text-[24px]">
               {FECHAMENTO_DEBUTANTE.linha1}
               <br />
@@ -1007,7 +1025,7 @@ export function PropostaDebutante({
               </a>
               {whats && (
                 <a
-                  href={`https://wa.me/${whats}`}
+                  href={whats}
                   target="_blank"
                   rel="noreferrer"
                   className="underline"
@@ -1019,7 +1037,6 @@ export function PropostaDebutante({
             </div>
           </div>
         </Secao>
-        )}
       </main>
 
       {/* Barra fixa no mobile: a sidebar some, o total não pode sumir junto */}
@@ -1082,14 +1099,15 @@ export function PropostaDebutante({
           textoBotao="CONFIRMAR E ASSINAR →"
           rodape="assinatura digital • comprovante imediato"
           onFechar={() => setModalAberto(false)}
-          onAceito={(recibo, valor) =>
+          onAceito={(r) => {
+            setResultado(r);
             setAceite({
-              recibo_codigo: recibo,
+              recibo_codigo: r.recibo,
               pacote_nome: pacote.nome,
-              valor_total: valor,
+              valor_total: r.valorTotal,
               created_at: new Date().toISOString(),
-            })
-          }
+            });
+          }}
         />
       )}
     </div>
@@ -1169,13 +1187,26 @@ const TEMA_MODAL_DEBUTANTE = {
 
 function Recibo({
   aceite,
+  resultado,
   nomeEmpresa,
   contato,
+  tipoEvento,
+  whatsapp,
 }: {
   aceite: NonNullable<OrcamentoPublicoData["aceite"]>;
+  resultado: ResultadoAceite | null;
   nomeEmpresa: string;
   contato: string;
+  tipoEvento: string;
+  whatsapp: string | null;
 }) {
+  const depois = contatoAposAceite({
+    recibo: aceite.recibo_codigo,
+    tipoEvento,
+    nomeContato: contato,
+    resultado,
+    whatsappInstitucional: whatsapp,
+  });
   return (
     <div
       className="flex min-h-screen items-center justify-center p-6"
@@ -1185,8 +1216,7 @@ function Recibo({
         className="w-full max-w-[520px] rounded-[18px] bg-white p-8 text-center"
         style={{ border: `1px solid ${BORDA}` }}
       >
-        <div className="text-[40px]">👑</div>
-        <h1 className="playfair mt-3 text-[28px]">Proposta aceita!</h1>
+        <h1 className="playfair text-[28px]">Proposta aceita</h1>
         <p className="mt-2 text-[13px]" style={{ color: "#6B6560" }}>
           {contato}, sua festa está reservada com a {nomeEmpresa}.
         </p>
@@ -1202,9 +1232,27 @@ function Recibo({
             {aceite.pacote_nome} • {brl(Number(aceite.valor_total))}
           </div>
         </div>
-        <p className="mt-5 text-[11.5px]" style={{ color: "#A8A29A" }}>
-          Guarde este código. Entraremos em contato para os próximos passos.
-        </p>
+        {depois.linhaTermo && (
+          <p className="mt-5 text-[12.5px]" style={{ color: "#6B6560" }}>
+            {depois.linhaTermo}
+          </p>
+        )}
+        {depois.linkWhatsapp && (
+          <a
+            href={depois.linkWhatsapp}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-5 block rounded-full py-3.5 text-[12px] font-semibold text-white"
+            style={{ background: `linear-gradient(90deg, ${OURO}, #E8CFA0)`, letterSpacing: "0.04em" }}
+          >
+            FALAR COM {nomeEmpresa.toUpperCase()} NO WHATSAPP
+          </a>
+        )}
+        {depois.linhaEmail && (
+          <p className="mt-4 text-[12.5px]" style={{ color: "#6B6560" }}>
+            {depois.linhaEmail}
+          </p>
+        )}
       </div>
     </div>
   );

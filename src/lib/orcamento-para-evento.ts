@@ -2,19 +2,15 @@
 
 // Etapa 6: orçamento aprovado + ficha preenchida => Evento.
 //
-// Os TEMPLATES vêm daqui (lib/event-templates.ts — os mesmos do wizard,
-// sem duplicar regra); a ESCRITA acontece toda dentro da RPC
-// criar_evento_do_orcamento, que roda em transação única.
-//
-// Chamável pela página pública (cliente anônimo): o hash é a credencial,
-// mesmo modelo do restante da Etapa 5.
+// O miolo (templates + RPC criar_evento_do_orcamento) mora em
+// lib/orcamento-evento.ts, porque a rota do aceite também cria o evento —
+// no servidor, sem sessão. Esta action é a porta para quem tem sessão (o
+// painel da cerimonialista) e para a página pública: chama o mesmo miolo
+// e invalida as páginas em cache, que é o que uma rota não tem.
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import {
-  gerarFasesPorTipo,
-  resolverTemplate,
-} from "@/lib/event-templates";
+import { criarEventoDoOrcamento } from "@/lib/orcamento-evento";
 
 export type ResultadoGeracaoEvento =
   | { success: true; eventoId: string; jaExistia: boolean }
@@ -28,49 +24,19 @@ export async function criarEventoAPartirDoOrcamento(
 ): Promise<ResultadoGeracaoEvento> {
   const supabase = createClient();
 
-  // O checklist plano foi aposentado (065): o Planejamento agora é a árvore
-  // do método, instanciada por trigger no insert do evento. Não passamos
-  // mais p_tasks — só fases e a timeline base, que não são "checklist
-  // simples". Respostas vazias ({}) de propósito: o orçamento não passa
-  // pelas perguntas de estruturação do wizard.
-  const arquetipo = resolverTemplate(tipoEvento);
-  const phases = gerarFasesPorTipo(arquetipo);
-  // O roteiro não é montado aqui: a RPC (112) semeia do Playbook da
-  // empresa, dentro do SECURITY DEFINER — o navegador da cliente não
-  // enxerga (nem deve enxergar) o modelo. p_roteiro vai vazio e é
-  // ignorado pela função, como p_tasks desde a 065.
+  const res = await criarEventoDoOrcamento(supabase, hash, tipoEvento, dataEvento ?? null);
 
-  const { data, error } = await supabase.rpc("criar_evento_do_orcamento", {
-    p_hash: hash,
-    p_tasks: [],
-    p_phases: phases,
-    p_data_evento: dataEvento ?? null,
-    p_roteiro: [],
-  });
-
-  if (error) {
-    return { error: "Não foi possível gerar o evento. Tente novamente." };
-  }
-
-  const res = data as {
-    success?: boolean;
-    evento_id?: string;
-    ja_existia?: boolean;
-    error?: string;
-  };
-
-  if (res?.error === "sem_data") return { semData: true };
-  if (res?.error) return { error: res.error };
-  if (!res?.success || !res.evento_id) {
-    return { error: "Não foi possível gerar o evento." };
+  if (res.semData) return { semData: true };
+  if (!res.ok || !res.eventoId) {
+    return { error: res.erro ?? "Não foi possível gerar o evento." };
   }
 
   revalidatePath("/orcamentos");
   revalidatePath("/eventos");
   return {
     success: true,
-    eventoId: res.evento_id,
-    jaExistia: Boolean(res.ja_existia),
+    eventoId: res.eventoId,
+    jaExistia: res.jaExistia,
   };
 }
 

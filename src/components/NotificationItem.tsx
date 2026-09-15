@@ -9,6 +9,8 @@ import {
   MessageSquare,
   Handshake,
   UserRound,
+  FileCheck2,
+  FileX2,
   type LucideIcon,
 } from "lucide-react";
 import type { NotificationRow, NotificationType } from "@/lib/notifications-db";
@@ -20,6 +22,8 @@ const TYPE_ICON: Record<NotificationType, LucideIcon> = {
   mensagem: MessageSquare,
   fornecedor: Handshake,
   portal: UserRound,
+  orcamento_aprovado: FileCheck2,
+  orcamento_recusado: FileX2,
 };
 
 type Props = {

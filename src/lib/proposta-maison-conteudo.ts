@@ -159,10 +159,10 @@ export const PROXIMOS_MAISON = {
   eyebrow: "PRÓXIMOS PASSOS",
   titulo: "Vamos travar\nsua data?",
   paragrafo: (pct: number) =>
-    `Assine digitalmente e receba o contrato + cronograma + lista curada de fornecedores. Entrada de ${pct}% para garantir equipe exclusiva.`,
+    `Assine digitalmente e receba o termo de aceite por e-mail. Contrato, cronograma e lista curada de fornecedores vêm em seguida. Entrada de ${pct}% para garantir equipe exclusiva.`,
   cta: "ACEITAR PROPOSTA AGORA",
   stats: (pct: number) => [
-    { valor: "Na hora", rotulo: "contrato +\ncronograma" },
+    { valor: "Na hora", rotulo: "termo de aceite\npor e-mail" },
     { valor: "18", rotulo: "fornecedores\ncurados" },
     { valor: `${pct}%`, rotulo: "entrada\ntrava equipe" },
   ],
@@ -173,9 +173,9 @@ export const PROXIMOS_MAISON = {
       descricao: "Nome, CPF, e-mail + assinatura na tela. 2 minutos.",
     },
     {
-      titulo: "Contrato + cronograma",
+      titulo: "Termo, contrato e cronograma",
       descricao:
-        "Contrato digital, cronograma detalhado e lista curada de fornecedores.",
+        "O termo assinado chega por e-mail. Contrato, cronograma detalhado e lista curada de fornecedores vêm com a cerimonialista.",
     },
     {
       titulo: "Pagamento da entrada",
@@ -194,5 +194,5 @@ export const MODAL_MAISON = {
   dicaAssinatura: "Desenhe acima com o dedo ou mouse",
   cta: "ASSINAR E TRAVAR DATA →",
   rodape: (pct: number) =>
-    `Contrato digital na hora do aceite • Entrada ${pct}% • parcelado sem juros`,
+    `Termo de aceite assinado e enviado por e-mail • Entrada ${pct}% • parcelado sem juros`,
 };
