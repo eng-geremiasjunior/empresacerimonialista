@@ -267,7 +267,7 @@ const DENTRO_DO_EVENTO: ExplicacaoDoEvento[] = [
   {
     chave: "contratos",
     href: "",
-    oQueE: "Os contratos deste evento, de cada fornecedor.",
+    oQueE: "Os contratos deste evento: o de cada fornecedor e, quando a proposta foi aceita, o termo e o contrato da cliente.",
     paraQue:
       "O fornecedor sobe o arquivo pelo link dele e o contrato cai aqui — na véspera você não procura anexo no WhatsApp.",
     comoUsar:

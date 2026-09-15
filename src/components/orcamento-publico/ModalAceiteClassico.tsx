@@ -19,9 +19,10 @@ import {
   enviarAceite,
   MOTIVOS_RECUSA,
   recusarProposta,
+  type ContratoDaProposta,
   type ResultadoAceite,
 } from "@/components/orcamento-publico/ModalAceiteProposta";
-import { TERMOS_ACEITE_TEXTO } from "@/lib/aceite-termo-texto";
+import { termosAceiteTexto } from "@/lib/aceite-termo-texto";
 import {
   assinantesDoTipo,
   rotuloAssinante,
@@ -59,6 +60,7 @@ export function ModalAceiteClassico({
   dataEvento,
   temPixel = false,
   nomeEmpresa,
+  contrato = null,
   onFechar,
   onAceito,
   onRecusado,
@@ -82,6 +84,8 @@ export function ModalAceiteClassico({
   /** A empresa mede a campanha dela com o aceite: a cliente fica sabendo. */
   temPixel?: boolean;
   nomeEmpresa?: string;
+  /** O contrato dela, quando a proposta tem: citado no texto e aberto pelo link. */
+  contrato?: ContratoDaProposta;
   onFechar: () => void;
   onAceito: (r: ResultadoAceite) => void;
   onRecusado?: () => void;
@@ -163,6 +167,7 @@ export function ModalAceiteClassico({
       termosAceitos: true,
       tipoEvento,
       dataEvento,
+      contratoSha256: contrato?.sha256 ?? null,
     });
 
     if (!r.ok) {
@@ -472,9 +477,23 @@ export function ModalAceiteClassico({
                 style={{ marginTop: 2, accentColor: COR.escuro }}
               />
               <span style={{ fontSize: 11, lineHeight: 1.4, color: COR.texto2 }}>
-                {TERMOS_ACEITE_TEXTO}
+                {termosAceiteTexto(contrato?.nome)}
               </span>
             </label>
+            {contrato && (
+              <a
+                href={`/api/orcamento/${encodeURIComponent(hash)}/contrato`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-block", marginTop: 8, marginLeft: 12,
+                  fontSize: 11.5, color: COR.escuro, textDecoration: "underline",
+                  textUnderlineOffset: 2,
+                }}
+              >
+                Ler o contrato
+              </a>
+            )}
 
             {erro && (
               <p style={{ margin: "12px 0 0", fontSize: 12, color: "#A5544B" }}>

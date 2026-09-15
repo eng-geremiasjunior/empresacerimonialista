@@ -305,6 +305,7 @@ export function PropostaDebutanteGlam({
       {modal && pacote && (
         <ModalAceiteProposta
           hash={hash}
+          contrato={dados.contrato ?? null}
           tema={TEMA_MODAL_GLAM}
           titulo={`Fechar a festa da ${nome}?`}
           subtitulo="TERMO DE ACEITE • ASSINATURA"

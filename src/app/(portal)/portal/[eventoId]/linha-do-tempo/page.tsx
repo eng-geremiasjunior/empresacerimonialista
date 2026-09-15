@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { getEventoDoPortal, getLinhaDoTempo } from "@/lib/supabase/portal";
 import { brl } from "@/components/planejamento/celebra";
 import { TopoInterno } from "@/components/portal/TopoInterno";
 import { Cartao } from "@/components/portal/Nucleo";
 import { ItemLinhaDoTempo } from "@/components/portal/Linhas";
 import { dataCurta } from "@/components/portal/datas";
+import { FileText, TAMANHO, TRACO } from "@/components/portal/icones";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +21,10 @@ export default async function PortalLinhaDoTempoPage({
   const evento = await getEventoDoPortal(params.eventoId);
   if (!evento) notFound();
 
-  const itens = await getLinhaDoTempo(evento.id);
+  const [itens, contratos] = await Promise.all([
+    getLinhaDoTempo(evento.id),
+    contratosDoEvento(evento.id),
+  ]);
   const agora = new Date().toISOString();
 
   const descricaoDe = (item: (typeof itens)[number]): string | null => {
@@ -66,6 +71,49 @@ export default async function PortalLinhaDoTempoPage({
           </div>
         </Cartao>
       )}
+
+      {contratos.map((c) => (
+        <Cartao key={c.id} padding="var(--esp-6)">
+          <a
+            href={`/api/documento/${c.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "var(--esp-4)",
+              minHeight: "var(--toque-min)",
+              color: "var(--cor-texto-forte)",
+              textDecoration: "none",
+              fontSize: "var(--ts-meta)",
+            }}
+          >
+            <FileText size={TAMANHO} strokeWidth={TRACO} style={{ flexShrink: 0, color: "var(--cor-texto-suave)" }} />
+            <span>Contrato de prestação de serviço</span>
+          </a>
+        </Cartao>
+      ))}
     </div>
   );
+}
+
+/**
+ * O contrato de prestação que a cliente aceitou junto da proposta (163).
+ * Só o contrato: o modelo da cerimonialista, sem dado da cliente. O termo
+ * assinado tem o valor aceito e o CPF, e o portal não mostra os honorários
+ * da assessoria (a linha do tempo omite o valor do aceite de propósito) —
+ * fica fora até essa decisão ser tomada. A policy do portal (162) filtra
+ * por evento da própria cliente; o arquivo abre por /api/documento.
+ */
+async function contratosDoEvento(eventId: string): Promise<{ id: string }[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("evento_documento")
+    .select("id")
+    .eq("event_id", eventId)
+    .eq("categoria", "contrato_prestacao")
+    .order("created_at", { ascending: false })
+    .limit(1);
+  if (error) return [];
+  return (data ?? []) as { id: string }[];
 }

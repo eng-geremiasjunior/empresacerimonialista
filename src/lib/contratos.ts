@@ -18,12 +18,15 @@
 // (contratos-cliente.ts) já sabe executar os dois. A migração de
 // provedor não deve tocar em componente nenhum.
 //
-// O balde `contratos` guarda duas famílias de arquivo, com caminhos que
+// O balde `contratos` guarda três famílias de arquivo, com caminhos que
 // as políticas da 119 leem do mesmo jeito (empresa no 1º segmento,
 // evento no 2º):
 //   - o contrato do FORNECEDOR: empresa/evento/solicitacao/arquivo
 //   - os documentos da CLIENTE (termo de aceite em PDF, contrato de
 //     prestação): empresa/{evento ou orçamento}/documentos/{documento}/arquivo
+//   - o MODELO de contrato dela (163): empresa/modelos/{padrao|tipo}/{envio}/arquivo
+//     — sem evento no 2º segmento, a sessão não lê; o servidor copia para
+//     os documentos da cliente no aceite
 // O termo nasce no servidor, antes de o evento existir quando a proposta
 // não tem data — por isso o 2º segmento pode ser o orçamento. A sessão
 // dela não lê esse caminho (a 119 exige evento); quem assina a leitura é
@@ -103,6 +106,57 @@ export function caminhoDoDocumento(
   nome: string
 ): string {
   return `${empresaId}/${eventoOuOrcamentoId}/documentos/${documentoId}/${nomeSeguro(nome)}`;
+}
+
+/**
+ * O modelo de contrato de prestação que ELA sobe (163): um padrão da
+ * empresa e, se quiser, um por tipo de evento. Mesmo balde, pasta que não
+ * é de evento — o 2º segmento "modelos" faz a política do balde (119)
+ * negar a leitura pela sessão, e só o servidor assina. O id no 4º segmento
+ * faz cada envio morar num caminho novo: trocar o modelo nunca sobrescreve
+ * o arquivo que um aceite já copiou.
+ */
+export function caminhoDoModelo(
+  empresaId: string,
+  tipoEvento: string | null,
+  envioId: string,
+  nome: string
+): string {
+  return `${prefixoDoModelo(empresaId, tipoEvento)}${envioId}/${nomeSeguro(nome)}`;
+}
+
+/** `{empresa}/modelos/{padrao|tipo}/` — o que o CHECK da 163 e a action conferem. */
+export function prefixoDoModelo(empresaId: string, tipoEvento: string | null): string {
+  return `${empresaId}/modelos/${tipoEvento ?? "padrao"}/`;
+}
+
+/**
+ * Copia um arquivo dentro do mesmo balde, no servidor. É como o modelo
+ * dela vira documento do aceite: a cópia fica no evento e não muda quando
+ * ela troca o modelo depois.
+ */
+export async function copiarArquivo(
+  admin: SupabaseClient,
+  balde: string,
+  de: string,
+  para: string
+): Promise<boolean> {
+  const { error } = await admin.storage.from(balde).copy(de, para);
+  if (error) {
+    console.error(`[eorg:storage] copiar ${balde}/${de} -> ${para}: ${error.message}`);
+    return false;
+  }
+  return true;
+}
+
+/** Apaga um arquivo que o servidor mesmo gravou (o modelo substituído). */
+export async function apagarArquivo(
+  admin: SupabaseClient,
+  balde: string,
+  caminho: string
+): Promise<void> {
+  const { error } = await admin.storage.from(balde).remove([caminho]);
+  if (error) console.error(`[eorg:storage] apagar ${balde}/${caminho}: ${error.message}`);
 }
 
 /** Permissão de envio para UM caminho só, com validade curta. */

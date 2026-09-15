@@ -342,6 +342,7 @@ export function PropostaCasamentoMaison({
       {modal && (
         <ModalAceiteProposta
           hash={hash}
+          contrato={dados.contrato ?? null}
           tema={TEMA_MODAL_MAISON}
           titulo={MODAL_MAISON.subtitulo}
           subtitulo={MODAL_MAISON.titulo}

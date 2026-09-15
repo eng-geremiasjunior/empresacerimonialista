@@ -22,6 +22,7 @@ import { VideoTeaserForm } from "@/components/configuracoes/VideoTeaserForm";
 import { PacotesForm } from "@/components/configuracoes/PacotesForm";
 import { ExtrasForm } from "@/components/configuracoes/ExtrasForm";
 import { RegraConvidadosForm } from "@/components/configuracoes/RegraConvidadosForm";
+import { ContratoModeloForm } from "@/components/configuracoes/ContratoModeloForm";
 import {
   tipoValido,
   rotuloTipo,
@@ -87,6 +88,7 @@ export default async function CatalogoTipoPage({
     extrasRes,
     fotosRes,
     blocosRes,
+    padraoRes,
   ] = await Promise.all([
     supabase
       .from("empresas")
@@ -143,6 +145,13 @@ export default async function CatalogoTipoPage({
       .eq("tipo_evento", tipo)
       .order("secao")
       .order("ordem"),
+    // 163 — o contrato padrão da empresa, em consulta própria: antes da
+    // migração a coluna não existe e o erro não pode levar a de cima junto
+    supabase
+      .from("empresas")
+      .select("contrato_modelo_nome")
+      .eq("id", cargo.empresa_id)
+      .maybeSingle(),
   ]);
 
   // A coluna tipo_evento só existe depois da 057: sem ela toda consulta
@@ -198,6 +207,18 @@ export default async function CatalogoTipoPage({
     ativo: boolean;
   }[];
   const fotos = (fotosRes.data ?? []) as PortfolioFoto[];
+
+  // 163 — sem a migração, padraoRes volta erro e a subseção não aparece
+  const contratoDisponivel = !padraoRes.error;
+  const padraoNome =
+    (padraoRes.data as { contrato_modelo_nome?: string | null } | null)?.contrato_modelo_nome ?? null;
+  const linhaConteudo = conteudoRes.data as {
+    contrato_modelo_nome?: string | null;
+    contrato_modelo_em?: string | null;
+  } | null;
+  const contratoDoTipo = linhaConteudo?.contrato_modelo_nome
+    ? { nome: linhaConteudo.contrato_modelo_nome, em: linhaConteudo.contrato_modelo_em ?? null }
+    : null;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -378,6 +399,15 @@ export default async function CatalogoTipoPage({
             >
               <CondicoesPagamentoForm tipoEvento={tipo} inicial={conteudo} />
             </SubSecao>
+
+            {contratoDisponivel && (
+              <SubSecao
+                titulo="Contrato de prestação de serviço"
+                descricao={`Só para ${rotuloTipo(tipo).toLowerCase()}. Sem um próprio, vale o contrato da empresa, de Configurações.`}
+              >
+                <ContratoModeloForm tipo={tipo} inicial={contratoDoTipo} padraoNome={padraoNome} />
+              </SubSecao>
+            )}
           </section>
 
           <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">

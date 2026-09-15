@@ -11,7 +11,8 @@ import { GuiaSection } from "@/components/configuracoes/GuiaSection";
 import { getEstadoDoGuia } from "@/lib/supabase/guia-vivo";
 import { getExplicacoesLigadas } from "@/lib/supabase/explicacoes";
 import { nomeTemplateLembrete, whatsappConfigurado } from "@/lib/whatsapp";
-import { CalendarClock } from "lucide-react";
+import { CalendarClock, FileSignature } from "lucide-react";
+import { ContratoModeloForm } from "@/components/configuracoes/ContratoModeloForm";
 
 export const dynamic = "force-dynamic";
 
@@ -60,13 +61,31 @@ export default async function ConfiguracoesPage() {
     logo_url: string | null;
   } | null = null;
 
+  // O contrato modelo (163) em consulta própria: coluna que ainda não
+  // existe derruba a consulta inteira no PostgREST, e a de cima é a que
+  // traz o nome e a logo.
+  let contratoModelo: { nome: string; em: string | null } | null = null;
+  let contratoDisponivel = false;
+
   if (proprietaria && cargo) {
-    const { data } = await supabase
-      .from("empresas")
-      .select("id, nome, logo_url")
-      .eq("id", cargo.empresa_id)
-      .maybeSingle();
+    const [{ data }, modelo] = await Promise.all([
+      supabase
+        .from("empresas")
+        .select("id, nome, logo_url")
+        .eq("id", cargo.empresa_id)
+        .maybeSingle(),
+      supabase
+        .from("empresas")
+        .select("contrato_modelo_nome, contrato_modelo_em")
+        .eq("id", cargo.empresa_id)
+        .maybeSingle(),
+    ]);
     empresa = data;
+    contratoDisponivel = !modelo.error;
+    const m = modelo.data as { contrato_modelo_nome: string | null; contrato_modelo_em: string | null } | null;
+    contratoModelo = m?.contrato_modelo_nome
+      ? { nome: m.contrato_modelo_nome, em: m.contrato_modelo_em }
+      : null;
   }
 
   // Os deslocamentos do roteiro (112). RLS: todos leem, só a
@@ -137,6 +156,23 @@ export default async function ConfiguracoesPage() {
           empresaNome={empresa.nome}
           initialLogoUrl={empresa.logo_url}
         />
+      )}
+
+      {empresa && contratoDisponivel && (
+        <section className="rounded-xl border border-gray-200 bg-white p-6">
+          <div className="mb-4 flex items-center gap-2">
+            <FileSignature size={18} className="text-gray-400" />
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900">
+                Contrato de prestação de serviço
+              </h2>
+              <p className="text-xs text-gray-500">
+                A cliente lê na proposta e recebe junto do termo assinado.
+              </p>
+            </div>
+          </div>
+          <ContratoModeloForm tipo={null} inicial={contratoModelo} />
+        </section>
       )}
 
       {proprietaria && <RoteiroPadraoSection itens={roteiroPadrao} />}

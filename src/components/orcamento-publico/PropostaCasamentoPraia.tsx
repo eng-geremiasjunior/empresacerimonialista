@@ -1240,6 +1240,7 @@ export function PropostaCasamentoPraia({
       {modal && pacote && (
         <ModalAceiteProposta
           hash={hash}
+          contrato={dados.contrato ?? null}
           tema={TEMA_MODAL}
           titulo={`Fechar o casamento de ${nome || dados.nome_contato}?`}
           subtitulo="TERMO DE ACEITE · ASSINATURA"

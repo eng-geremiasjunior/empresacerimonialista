@@ -227,7 +227,13 @@ export const GRUPOS_AJUDA: GrupoAjuda[] = [
         id: "proposta-aceita",
         pergunta: "A cliente aceitou a proposta. E agora?",
         resposta:
-          "Se a proposta tinha data, o evento já nasceu no aceite — com cliente, valores e o planejamento do tipo; sem data, você cria pelo botão dentro do orçamento. O termo assinado fica no orçamento e no evento, e a cliente recebe a cópia dele por e-mail.",
+          "Se a proposta tinha data, o evento já nasceu no aceite — com cliente, valores e o planejamento do tipo; sem data, você cria pelo botão dentro do orçamento. O termo assinado fica no orçamento e no evento, e a cliente recebe a cópia dele por e-mail — com o seu contrato junto, se você subiu um.",
+      },
+      {
+        id: "contrato-da-cliente",
+        pergunta: "Onde coloco o meu contrato de prestação de serviço?",
+        resposta:
+          "Em Configurações, o contrato em PDF que vale para todas as propostas. Se um tipo de evento usa outro contrato, suba no Catálogo daquele tipo. A cliente lê o contrato na proposta antes de aceitar e recebe junto do termo assinado; trocar o arquivo depois não muda o que ela já aceitou.",
       },
       {
         id: "validade-proposta",

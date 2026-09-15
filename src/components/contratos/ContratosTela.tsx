@@ -14,7 +14,7 @@
 import { useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, X } from "lucide-react";
+import { FileText, Search, X } from "lucide-react";
 import {
   contarVisoes,
   filtrarLinhas,
@@ -53,12 +53,26 @@ const T = {
 
 type Resultado = { error: string } | { success: true } | null | void;
 
+/** Termo de aceite e contrato de prestação da cliente (162/163). */
+export type DocumentoDaCliente = {
+  id: string;
+  categoria: "termo_aceite" | "contrato_prestacao";
+  nome: string;
+  criadoEm: string;
+};
+
+const ROTULO_DOCUMENTO: Record<DocumentoDaCliente["categoria"], string> = {
+  termo_aceite: "Termo de aceite assinado",
+  contrato_prestacao: "Contrato de prestação",
+};
+
 export function ContratosTela({
   linhas,
   semContrato,
   hoje,
   escopoEvento,
   podeEscrever,
+  documentosDaCliente = [],
 }: {
   linhas: ContratoLinha[];
   semContrato: SemContratoLinha[];
@@ -66,6 +80,8 @@ export function ContratosTela({
   /** quando presente, a tela é a aba de UM evento */
   escopoEvento: { id: string; nome: string } | null;
   podeEscrever: boolean;
+  /** só na aba do evento: o que a cliente assinou */
+  documentosDaCliente?: DocumentoDaCliente[];
 }) {
   const router = useRouter();
   const [q, setQ] = useState("");
@@ -124,6 +140,36 @@ export function ContratosTela({
             : "Do pedido à conferência, em todos os eventos."}
         </p>
       </div>
+
+      {documentosDaCliente.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ font: `500 11px/1.4 ${T.mono}`, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--cinza)" }}>
+            Da cliente
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {documentosDaCliente.map((d) => (
+              <a
+                key={d.id}
+                href={`/api/documento/${d.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={d.nome}
+                style={{
+                  display: "flex", alignItems: "center", gap: 8, maxWidth: "100%",
+                  padding: "8px 12px", borderRadius: 10, background: "var(--papel)",
+                  border: "1px solid var(--cinza-2)", color: "var(--tinta)",
+                  font: `500 13px/1.3 ${T.ui}`, textDecoration: "none",
+                }}
+              >
+                <FileText size={15} color="var(--cinza-3)" strokeWidth={1.75} />
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {ROTULO_DOCUMENTO[d.categoria]}
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* busca + visões */}
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>

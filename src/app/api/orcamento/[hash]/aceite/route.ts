@@ -11,28 +11,34 @@
 //
 // Ordem, e o que é obrigatório:
 //   1. limite por origem, corpo e validação    (recusa aqui)
+//   1b. o contrato que a cliente leu ainda é   (409: recarregar e ler de novo)
+//       o modelo vigente
 //   2. registrar_aceite_proposta               (o aceite em si; falhou, 4xx/5xx)
-//   3. evento, termo em PDF, e-mails           (melhor esforço: um passo que
-//      cai não derruba a resposta — a rotina aceites-pendentes completa
-//      o que faltou)
+//   3. evento, contrato copiado, termo em PDF,  (melhor esforço: um passo que
+//      e-mails                                  cai não derruba a resposta — a
+//                                               rotina aceites-pendentes
+//                                               completa o que faltou)
 //
 // runtime nodejs porque o @react-pdf não roda no edge; force-dynamic e
 // force-no-store porque uma rota pública nova sem isso é cacheada.
 
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { TERMOS_ACEITE_TEXTO, TERMOS_ACEITE_VERSAO } from "@/lib/aceite-termo";
+import { TERMOS_ACEITE_VERSAO, termosAceiteTexto } from "@/lib/aceite-termo";
 // Só o tipo (apagado na compilação): a resposta desta rota é o que os
 // modais recebem em onAceito, e o formato mora com quem consome.
 import type { ResultadoAceite } from "@/components/orcamento-publico/ModalAceiteProposta";
 import { appUrl } from "@/lib/app-url";
 import { enviarEmailAceiteCerimonialista } from "@/lib/email-aceite";
 import {
+  anexarContratoDoAceite,
   contatoDaEmpresa,
+  contratoDoOrcamento,
   criarEventoDoOrcamento,
   emailDaCerimonialista,
   enviarTermoParaCliente,
   gerarEGuardarTermo,
+  modeloDeContrato,
   tipoEventoLabel,
 } from "@/lib/orcamento-evento";
 
@@ -83,6 +89,8 @@ type Corpo = {
   termosAceitos?: unknown;
   tipoEvento?: unknown;
   dataEvento?: unknown;
+  /** SHA-256 do contrato que o modal mostrou; null = a proposta não tinha contrato */
+  contratoSha256?: unknown;
 };
 
 type Dados = {
@@ -100,9 +108,10 @@ type Dados = {
   assinatura2: string | null;
   tipoEvento: string | null;
   dataEvento: string | null;
+  contratoSha256: string | null;
 };
 
-const texto = (v: unknown, max = 200): string =>
+const texto =(v: unknown, max = 200): string =>
   typeof v === "string" ? v.trim().slice(0, max) : "";
 const inteiroOuNull = (v: unknown): number | null =>
   typeof v === "number" && Number.isFinite(v) ? Math.trunc(v) : null;
@@ -171,6 +180,9 @@ function validar(c: Corpo): { ok: true; dados: Dados } | { ok: false; erro: stri
       assinatura2,
       tipoEvento: texto(c.tipoEvento, 40) || null,
       dataEvento: /^\d{4}-\d{2}-\d{2}$/.test(texto(c.dataEvento, 10)) ? texto(c.dataEvento, 10) : null,
+      contratoSha256: /^[0-9a-f]{64}$/.test(texto(c.contratoSha256, 64))
+        ? texto(c.contratoSha256, 64)
+        : null,
     },
   };
 }
@@ -248,6 +260,44 @@ export async function POST(
     );
   }
 
+  // A proposta, antes do aceite: o contrato que vale depende da empresa e
+  // do tipo, e o texto que a cliente marcou depende do contrato.
+  const { data: orc } = await supabase
+    .from("orcamentos")
+    .select("id, empresa_id, tipo_evento, data_evento, cerimonialista_responsavel_id, status")
+    .eq("hash_publico", params.hash)
+    .maybeSingle();
+  const orcamento = orc as {
+    id: string;
+    empresa_id: string;
+    tipo_evento: string;
+    data_evento: string | null;
+    cerimonialista_responsavel_id: string | null;
+    status: string;
+  } | null;
+  const tipoEvento = orcamento?.tipo_evento ?? d.tipoEvento ?? "outro";
+
+  // ---- 1b. o contrato que ela leu ainda é o que vale --------------
+  // O modal manda o SHA-256 do contrato que mostrou. Se a cerimonialista
+  // trocou, tirou ou pôs um contrato depois que a página abriu, a cliente
+  // estaria aceitando um arquivo que não leu: recusa e pede para recarregar.
+  // Proposta já aceita não passa por aqui — a RPC devolve o recibo antigo.
+  const modelo =
+    orcamento && orcamento.status !== "aprovado"
+      ? await modeloDeContrato(supabase, orcamento.empresa_id, orcamento.tipo_evento)
+      : null;
+  if (orcamento && orcamento.status !== "aprovado" && (modelo?.sha256 ?? null) !== d.contratoSha256) {
+    return NextResponse.json(
+      {
+        ok: false,
+        erro: modelo
+          ? "O contrato desta proposta foi atualizado. Recarregue a página e leia a versão nova antes de aceitar."
+          : "O contrato desta proposta foi retirado. Recarregue a página antes de aceitar.",
+      },
+      { status: 409 }
+    );
+  }
+
   // ---- 2. o aceite em si ------------------------------------------
   const base = {
     p_hash: params.hash,
@@ -271,7 +321,9 @@ export async function POST(
     p_ip: ip === "desconhecido" ? null : ip,
     p_user_agent: userAgent || null,
     p_termos_versao: TERMOS_ACEITE_VERSAO,
-    p_termos_texto: TERMOS_ACEITE_TEXTO,
+    // o mesmo texto que o modal mostrou: com contrato, o nome do arquivo
+    // entra na frase — e a frase entra no SHA-256 da linha
+    p_termos_texto: termosAceiteTexto(modelo?.nome ?? null),
   });
 
   // Janela de deploy: o código novo no ar antes da 162 ser aplicada, ou o
@@ -313,20 +365,6 @@ export async function POST(
   // ---- 3. melhor esforço ------------------------------------------
   // Daqui para baixo nada derruba a resposta: o aceite já está gravado.
 
-  const { data: orc } = await supabase
-    .from("orcamentos")
-    .select("id, empresa_id, tipo_evento, data_evento, cerimonialista_responsavel_id")
-    .eq("hash_publico", params.hash)
-    .maybeSingle();
-  const orcamento = orc as {
-    id: string;
-    empresa_id: string;
-    tipo_evento: string;
-    data_evento: string | null;
-    cerimonialista_responsavel_id: string | null;
-  } | null;
-  const tipoEvento = orcamento?.tipo_evento ?? d.tipoEvento ?? "outro";
-
   // (a) o evento — sem data a RPC devolve sem_data e a cerimonialista
   // gera pelo painel; qualquer outro erro só vai para o log
   try {
@@ -338,6 +376,26 @@ export async function POST(
     );
   } catch (e) {
     console.error("[eorg:aceite] evento:", e instanceof Error ? e.message : e);
+  }
+
+  // (a2) o contrato dela vira documento do aceite — ANTES do termo, que
+  // cita o contrato pelo nome e pelo SHA-256, e antes do e-mail, que anexa.
+  // Aceite repetido só lê: quem anexa é o primeiro (ou a rotina de reenvio),
+  // e duas requisições simultâneas copiando dariam dois contratos.
+  let contratoNome: string | null = null;
+  if (aceiteId && temHash) {
+    try {
+      const contrato = jaExistia
+        ? orcamento
+          ? await contratoDoOrcamento(supabase, orcamento.id)
+          : null
+        : modelo
+          ? await anexarContratoDoAceite(supabase, aceiteId, modelo.sha256)
+          : null;
+      contratoNome = contrato?.nome ?? null;
+    } catch (e) {
+      console.error("[eorg:aceite] contrato:", e instanceof Error ? e.message : e);
+    }
   }
 
   // (b) o termo em PDF
@@ -436,6 +494,7 @@ export async function POST(
     whatsapp,
     emailCerimonialista,
     emailEnviadoPara,
+    contratoNome,
   };
 
   return NextResponse.json({ ok: true, aceiteId, ...resultado });

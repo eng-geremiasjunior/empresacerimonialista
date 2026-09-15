@@ -1085,6 +1085,7 @@ export function PropostaDebutante({
       {modalAberto && pacote && (
         <ModalAceiteProposta
           hash={hash}
+          contrato={dados.contrato ?? null}
           tema={TEMA_MODAL_DEBUTANTE}
           titulo="Aceitar proposta"
           subtitulo="Confirme seus dados e assine para reservar a data"

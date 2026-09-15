@@ -26,7 +26,7 @@ import {
 } from "@/lib/papel";
 // O mesmo texto que a rota grava na linha do aceite — módulo puro, sem
 // cópia local: a caixa mostra exatamente o que o servidor registra.
-import { TERMOS_ACEITE_TEXTO } from "@/lib/aceite-termo-texto";
+import { termosAceiteTexto } from "@/lib/aceite-termo-texto";
 
 export type TemaModal = {
   fundo: string;
@@ -61,7 +61,12 @@ export type ResultadoAceite = {
   emailCerimonialista: string | null;
   /** E-mail da cliente quando o termo saiu; null quando o envio falhou. */
   emailEnviadoPara: string | null;
+  /** Nome do contrato de prestação anexado ao aceite; null sem contrato. */
+  contratoNome: string | null;
 };
+
+/** O contrato que a proposta mostra antes do aceite (consultar_orcamento_publico, 163). */
+export type ContratoDaProposta = { nome: string; sha256: string } | null;
 
 /** Validação mínima: tem @ e um ponto depois dele. O resto é do Resend. */
 export function emailParece(email: string): boolean {
@@ -131,6 +136,7 @@ export async function enviarAceite(
     termosAceitos: true;
     tipoEvento: string;
     dataEvento: string | null;
+    contratoSha256: string | null;
   }
 ): Promise<{ ok: true; resultado: ResultadoAceite } | { ok: false; erro: string }> {
   try {
@@ -168,6 +174,8 @@ export async function enviarAceite(
           typeof r.emailEnviadoPara === "string" && r.emailEnviadoPara
             ? r.emailEnviadoPara
             : null,
+        contratoNome:
+          typeof r.contratoNome === "string" && r.contratoNome ? r.contratoNome : null,
       },
     };
   } catch (e) {
@@ -197,6 +205,7 @@ export function ModalAceiteProposta({
   rodape,
   temPixel = false,
   nomeEmpresa,
+  contrato = null,
   onFechar,
   onAceito,
   onRecusado,
@@ -222,6 +231,8 @@ export function ModalAceiteProposta({
   /** A empresa mede a campanha dela com o aceite: a cliente fica sabendo. */
   temPixel?: boolean;
   nomeEmpresa?: string;
+  /** O contrato dela, quando a proposta tem: citado no texto e aberto pelo link. */
+  contrato?: ContratoDaProposta;
   onFechar: () => void;
   onAceito: (r: ResultadoAceite) => void;
   onRecusado?: () => void;
@@ -297,6 +308,7 @@ export function ModalAceiteProposta({
       termosAceitos: true,
       tipoEvento,
       dataEvento,
+      contratoSha256: contrato?.sha256 ?? null,
     });
 
     if (!r.ok) {
@@ -496,9 +508,20 @@ export function ModalAceiteProposta({
             style={{ accentColor: tema.acento }}
           />
           <span className="text-[11.5px] leading-snug" style={{ color: tema.textoSuave }}>
-            {TERMOS_ACEITE_TEXTO}
+            {termosAceiteTexto(contrato?.nome)}
           </span>
         </label>
+        {contrato && (
+          <a
+            href={`/api/orcamento/${encodeURIComponent(hash)}/contrato`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-6 mt-1.5 inline-block text-[11.5px] underline underline-offset-2"
+            style={{ color: tema.texto }}
+          >
+            Ler o contrato
+          </a>
+        )}
 
         {erro && (
           <p className="mt-4 rounded-lg p-2.5 text-[12px]" style={{ background: "#FDECEC", color: "#9B2C2C" }}>

@@ -202,7 +202,10 @@ const s = StyleSheet.create({
   totalRotulo: { fontSize: 10, fontFamily: "Helvetica-Bold" },
   totalValor: { fontSize: 18, fontFamily: "Helvetica-Bold" },
   // assinaturas
-  assinaturaBloco: { marginTop: 10, marginBottom: 4 },
+  // as duas assinaturas lado a lado, num bloco que não se parte: antes cada
+  // uma era um bloco próprio e a segunda caía sozinha na página seguinte
+  assinaturas: { flexDirection: "row", flexWrap: "wrap", gap: 24, marginTop: 10, marginBottom: 4 },
+  assinaturaBloco: {},
   assinaturaImagem: { width: 200, height: 60, objectFit: "contain" },
   assinaturaAusente: {
     width: 200,
@@ -280,7 +283,7 @@ function Assinatura({
   dataUri: string | null;
 }) {
   return (
-    <View style={s.assinaturaBloco} wrap={false}>
+    <View style={s.assinaturaBloco}>
       {dataUri ? (
         // eslint-disable-next-line jsx-a11y/alt-text
         <Image src={dataUri} style={s.assinaturaImagem} />
@@ -396,18 +399,20 @@ function TermoAceitePdf(d: DadosTermoAceite) {
           <Linha rotulo="Segundo assinante">{d.assinante2.nome}</Linha>
         ) : null}
 
-        <Assinatura
-          nome={d.assinante1.nome}
-          legenda="Assinatura eletrônica"
-          dataUri={d.assinante1.assinaturaDataUri}
-        />
-        {d.assinante2 ? (
+        <View style={s.assinaturas} wrap={false}>
           <Assinatura
-            nome={d.assinante2.nome}
-            legenda="Assinatura eletrônica do segundo assinante"
-            dataUri={d.assinante2.assinaturaDataUri}
+            nome={d.assinante1.nome}
+            legenda="Assinatura eletrônica"
+            dataUri={d.assinante1.assinaturaDataUri}
           />
-        ) : null}
+          {d.assinante2 ? (
+            <Assinatura
+              nome={d.assinante2.nome}
+              legenda="Assinatura do segundo assinante"
+              dataUri={d.assinante2.assinaturaDataUri}
+            />
+          ) : null}
+        </View>
 
         {/* ---------- REGISTRO ---------- */}
         <Text style={s.secaoTitulo}>REGISTRO</Text>

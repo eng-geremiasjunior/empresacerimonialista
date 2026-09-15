@@ -1980,6 +1980,7 @@ export function PropostaCasamentoClassico({
       {modalAceite && pacote && (
         <ModalAceiteClassico
           hash={hash}
+          contrato={dados.contrato ?? null}
           nomeContato={dados.nome_contato}
           pacoteId={pacote.id}
           pacoteNome={pacote.nome}

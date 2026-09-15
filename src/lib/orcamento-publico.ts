@@ -91,7 +91,13 @@ export type OrcamentoPublicoData = {
   // 101 — podem vir undefined enquanto a migração não roda
   blocos?: BlocoPublico[];
   comentarios?: ComentarioPublico[];
+  // 163 — o contrato de prestação dela. Aberta: o modelo vigente (o modal
+  // cita e devolve o sha256). Aceita: o que foi anexado ao aceite
+  // (aceito=true). undefined antes da 163; null sem contrato.
+  contrato?: ContratoPublico | null;
 };
+
+export type ContratoPublico = { nome: string; sha256: string; aceito: boolean };
 
 
 // ---------- proposta interativa (migração 056) ----------
@@ -181,6 +187,7 @@ export function contatoAposAceite(p: {
     whatsapp: string | null;
     emailCerimonialista: string | null;
     emailEnviadoPara: string | null;
+    contratoNome?: string | null;
   } | null;
   whatsappInstitucional: string | null | undefined;
 }): ContatoAposAceite {
@@ -192,7 +199,9 @@ export function contatoAposAceite(p: {
   return {
     linkWhatsapp: link,
     linhaTermo: p.resultado.emailEnviadoPara
-      ? `Termo de aceite enviado para ${p.resultado.emailEnviadoPara}`
+      ? p.resultado.contratoNome
+        ? `Termo de aceite e contrato enviados para ${p.resultado.emailEnviadoPara}`
+        : `Termo de aceite enviado para ${p.resultado.emailEnviadoPara}`
       : "Guarde o recibo; sua cerimonialista confirma por e-mail.",
     linhaEmail:
       !link && p.resultado.emailCerimonialista

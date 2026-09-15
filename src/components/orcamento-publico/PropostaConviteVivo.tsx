@@ -1462,6 +1462,7 @@ export function PropostaConviteVivo({
       {modal && pacote && (
         <ModalAceiteProposta
           hash={hash}
+          contrato={dados.contrato ?? null}
           tema={TEMA_MODAL}
           titulo={`Fechar a noite de ${nome || dados.nome_contato}?`}
           subtitulo={T.contratoEyebrow}

@@ -15,7 +15,13 @@ import "server-only";
 // componente cliente não pode importar um módulo server-only. Aqui só a
 // reexportação, para quem roda no servidor continuar importando daqui.
 
-export { TERMOS_ACEITE_VERSAO, TERMOS_ACEITE_TEXTO } from "@/lib/aceite-termo-texto";
+export {
+  TERMOS_ACEITE_VERSAO,
+  TERMOS_ACEITE_TEXTO,
+  termosAceiteTexto,
+  contratoCitadoNoTermo,
+  nomeDoContratoNoTermo,
+} from "@/lib/aceite-termo-texto";
 
 /**
  * O verificador que vai na URL: os 12 primeiros caracteres hex do hash.

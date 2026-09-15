@@ -20,7 +20,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { BALDE_CONTRATOS, baixarArquivo } from "@/lib/contratos";
-import { enviarTermoParaCliente, gerarEGuardarTermo } from "@/lib/orcamento-evento";
+import {
+  anexarContratoDoAceite,
+  enviarTermoParaCliente,
+  gerarEGuardarTermo,
+} from "@/lib/orcamento-evento";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -131,6 +135,14 @@ export async function GET(request: NextRequest) {
     let pdf: Buffer | null = null;
     try {
       if (precisaGerar) {
+        // o contrato vem antes: o termo cita o contrato anexo pelo nome e
+        // pelo SHA-256. Sem o hash que a cliente leu, só entra o modelo que
+        // já estava lá antes do aceite (anexarContratoDoAceite decide).
+        try {
+          await anexarContratoDoAceite(supabase, aceite.id, null);
+        } catch (e) {
+          console.error(`[eorg:aceites-pendentes] contrato ${aceite.id}:`, e instanceof Error ? e.message : e);
+        }
         const r = await gerarEGuardarTermo(supabase, aceite.id);
         if (!r) {
           falhas.push(`termo ${aceite.id}`);

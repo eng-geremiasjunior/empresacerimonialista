@@ -19,11 +19,15 @@ import "server-only";
 // componente — quem chama é rota ou action, no servidor.
 
 import { createHash, randomUUID } from "node:crypto";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { createClient as createServiceClient, type SupabaseClient } from "@supabase/supabase-js";
 import { gerarFasesPorTipo, resolverTemplate } from "@/lib/event-templates";
 import { appUrl } from "@/lib/app-url";
 import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
-import { urlVerificacao } from "@/lib/aceite-termo";
+import {
+  contratoCitadoNoTermo,
+  nomeDoContratoNoTermo,
+  urlVerificacao,
+} from "@/lib/aceite-termo";
 import { comoDataUri } from "@/lib/pdf-imagens";
 import { qrDataUri } from "@/lib/qr";
 import {
@@ -32,8 +36,10 @@ import {
 } from "@/lib/gerar-pdf-termo-aceite";
 import {
   BALDE_CONTRATOS,
+  apagarArquivo,
   baixarArquivo,
   caminhoDoDocumento,
+  copiarArquivo,
   gravarArquivo,
 } from "@/lib/contratos";
 import { enviarEmailAceiteCliente } from "@/lib/email-aceite";
@@ -109,6 +115,8 @@ export async function criarEventoDoOrcamento(
     return falhou("Não foi possível gerar o evento.");
   }
 
+  await ligarDocumentosAoEvento(hash, res.evento_id);
+
   return {
     ok: true,
     eventoId: res.evento_id,
@@ -116,6 +124,42 @@ export async function criarEventoDoOrcamento(
     semData: false,
     erro: null,
   };
+}
+
+/**
+ * Proposta aceita sem data não gera evento na hora: o termo (e o contrato)
+ * nascem pendurados só no orçamento. Quando o evento nasce depois — pelo
+ * painel, com a data — os documentos passam a apontar para ele, senão
+ * não aparecem na aba Contratos do evento nem no portal da cliente (a
+ * policy do portal lê por event_id). Chave de serviço porque
+ * evento_documento não tem policy de UPDATE para sessão nenhuma, de
+ * propósito (162). Melhor esforço: falhar aqui não desfaz o evento.
+ */
+async function ligarDocumentosAoEvento(hash: string, eventoId: string): Promise<void> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return;
+  const admin = createServiceClient(url, key, {
+    auth: { persistSession: false },
+    global: { fetch: (i, init) => fetch(i, { ...init, cache: "no-store" }) },
+  });
+  try {
+    const { data: orc } = await admin
+      .from("orcamentos")
+      .select("id, evento_gerado_id")
+      .eq("hash_publico", hash)
+      .maybeSingle();
+    const o = orc as { id: string; evento_gerado_id: string | null } | null;
+    if (!o || o.evento_gerado_id !== eventoId) return;
+    const { error } = await admin
+      .from("evento_documento")
+      .update({ event_id: eventoId })
+      .eq("orcamento_id", o.id)
+      .is("event_id", null);
+    if (error) console.error(`[eorg:aceite] ligar documentos ao evento ${eventoId}: ${error.message}`);
+  } catch (e) {
+    console.error("[eorg:aceite] ligar documentos:", e instanceof Error ? e.message : e);
+  }
 }
 
 // ------------------------------------------------------------------
@@ -165,11 +209,12 @@ type LinhaOrcamento = {
   cidade_evento: string | null;
   evento_gerado_id: string | null;
   cerimonialista_responsavel_id: string | null;
+  hash_publico: string;
 };
 
 type LinhaEmpresa = { id: string; nome: string; logo_url: string | null };
 
-type LinhaDocumento = {
+export type LinhaDocumento = {
   id: string;
   storage_path: string;
   nome: string;
@@ -246,7 +291,7 @@ async function lerContexto(
   const { data: orcamento } = await admin
     .from("orcamentos")
     .select(
-      "id, empresa_id, tipo_evento, data_evento, local_evento, cidade_evento, evento_gerado_id, cerimonialista_responsavel_id"
+      "id, empresa_id, tipo_evento, data_evento, local_evento, cidade_evento, evento_gerado_id, cerimonialista_responsavel_id, hash_publico"
     )
     .eq("id", a.orcamento_id)
     .maybeSingle();
@@ -284,7 +329,7 @@ async function documentoDoAceite(
  * orçamento (pelo aceite ou anexado depois). Amarrado ao orçamento, não
  * ao aceite: o contrato é da proposta inteira.
  */
-async function contratoDoOrcamento(
+export async function contratoDoOrcamento(
   admin: SupabaseClient,
   orcamentoId: string
 ): Promise<LinhaDocumento | null> {
@@ -297,6 +342,172 @@ async function contratoDoOrcamento(
     .limit(1)
     .maybeSingle();
   return (data as LinhaDocumento | null) ?? null;
+}
+
+// ------------------------------------------------------------------
+// O contrato de prestação dela (163)
+// ------------------------------------------------------------------
+
+export type ModeloVigente = {
+  caminho: string;
+  nome: string;
+  sha256: string;
+  em: string | null;
+};
+
+type LinhaModelo = {
+  contrato_modelo_path: string | null;
+  contrato_modelo_nome: string | null;
+  contrato_modelo_sha256: string | null;
+  contrato_modelo_em: string | null;
+};
+
+const COLUNAS_MODELO =
+  "contrato_modelo_path, contrato_modelo_nome, contrato_modelo_sha256, contrato_modelo_em";
+
+/**
+ * O modelo que vale para esta empresa e este tipo: a exceção do tipo; sem
+ * ela, o padrão da empresa; sem os dois, null. Antes da 163 as colunas não
+ * existem, a leitura volta erro e a resposta é "sem contrato". O caminho
+ * só vale dentro da pasta da própria empresa — o CHECK da 163 já garante,
+ * e quem assina com a chave de serviço confere de novo.
+ */
+export async function modeloDeContrato(
+  admin: SupabaseClient,
+  empresaId: string,
+  tipoEvento: string
+): Promise<ModeloVigente | null> {
+  const [doTipo, daEmpresa] = await Promise.all([
+    admin
+      .from("empresa_conteudo_institucional")
+      .select(COLUNAS_MODELO)
+      .eq("empresa_id", empresaId)
+      .eq("tipo_evento", tipoEvento)
+      .maybeSingle(),
+    admin.from("empresas").select(COLUNAS_MODELO).eq("id", empresaId).maybeSingle(),
+  ]);
+  const valido = (l: LinhaModelo | null): ModeloVigente | null =>
+    l?.contrato_modelo_path &&
+    l.contrato_modelo_nome &&
+    l.contrato_modelo_sha256 &&
+    l.contrato_modelo_path.startsWith(`${empresaId}/modelos/`)
+      ? {
+          caminho: l.contrato_modelo_path,
+          nome: l.contrato_modelo_nome,
+          sha256: l.contrato_modelo_sha256,
+          em: l.contrato_modelo_em,
+        }
+      : null;
+  return (
+    valido(doTipo.error ? null : (doTipo.data as LinhaModelo | null)) ??
+    valido(daEmpresa.error ? null : (daEmpresa.data as LinhaModelo | null))
+  );
+}
+
+/**
+ * Copia o modelo de contrato para os documentos da cliente e registra em
+ * evento_documento, amarrado ao aceite. Convergente: já existe contrato no
+ * orçamento, devolve ele.
+ *
+ * Só anexa o que a cliente aceitou. O texto gravado na linha diz se ela
+ * aceitou com contrato e com qual nome de arquivo; o hash diz qual arquivo:
+ *   - na rota, `sha256Lido` é o do contrato que o modal mostrou — o modelo
+ *     de agora tem de ser esse;
+ *   - na rotina de reenvio não há esse hash: só vale o modelo que já
+ *     estava lá ANTES do aceite (subiu antes, com o nome citado). Modelo
+ *     trocado depois do aceite não é o que ela leu, e não entra.
+ * E a cópia é conferida byte a byte pelo SHA-256 antes de valer.
+ */
+export async function anexarContratoDoAceite(
+  admin: SupabaseClient,
+  aceiteId: string,
+  sha256Lido: string | null
+): Promise<LinhaDocumento | null> {
+  const ctx = await lerContexto(admin, aceiteId);
+  if (!ctx) return null;
+  const { aceite, orcamento } = ctx;
+
+  const existente = await contratoDoOrcamento(admin, orcamento.id);
+  if (existente) return existente;
+
+  const citado = contratoCitadoNoTermo(aceite.termos_texto);
+  if (!citado) return null; // aceitou sem contrato
+
+  const modelo = await modeloDeContrato(admin, orcamento.empresa_id, orcamento.tipo_evento);
+  if (!modelo) {
+    console.error(`[eorg:aceite] aceite ${aceiteId} cita contrato, mas não há modelo vigente`);
+    return null;
+  }
+  if (sha256Lido) {
+    if (modelo.sha256 !== sha256Lido) {
+      console.error(`[eorg:aceite] aceite ${aceiteId}: o modelo mudou entre a leitura e o aceite`);
+      return null;
+    }
+  } else {
+    const subiuAntes =
+      !!modelo.em && new Date(modelo.em).getTime() <= new Date(aceite.created_at).getTime();
+    if (!subiuAntes || nomeDoContratoNoTermo(modelo.nome) !== citado) {
+      console.error(
+        `[eorg:aceite] aceite ${aceiteId}: o modelo de agora não é o que foi aceito; contrato não anexado`
+      );
+      return null;
+    }
+  }
+
+  const documentoId = randomUUID();
+  const caminho = caminhoDoDocumento(
+    orcamento.empresa_id,
+    orcamento.evento_gerado_id ?? orcamento.id,
+    documentoId,
+    modelo.nome
+  );
+  if (!(await copiarArquivo(admin, BALDE_CONTRATOS, modelo.caminho, caminho))) return null;
+
+  const copia = await baixarArquivo(admin, BALDE_CONTRATOS, caminho);
+  const sha256 = copia ? sha256De(copia) : null;
+  if (!copia || sha256 !== modelo.sha256) {
+    console.error(`[eorg:aceite] aceite ${aceiteId}: a cópia do contrato não confere com o modelo`);
+    await apagarArquivo(admin, BALDE_CONTRATOS, caminho);
+    return null;
+  }
+
+  const { error } = await admin.from("evento_documento").insert({
+    id: documentoId,
+    empresa_id: orcamento.empresa_id,
+    event_id: orcamento.evento_gerado_id,
+    orcamento_id: orcamento.id,
+    orcamento_aceite_id: aceite.id,
+    categoria: "contrato_prestacao",
+    storage_path: caminho,
+    nome: modelo.nome,
+    sha256,
+    bytes: copia.length,
+    // o arquivo é dela; o sistema só copiou
+    origem: "cerimonialista",
+  });
+  if (error) {
+    console.error(`[eorg:aceite] registrar contrato do aceite ${aceiteId}: ${error.message}`);
+    await apagarArquivo(admin, BALDE_CONTRATOS, caminho);
+    return null;
+  }
+
+  return { id: documentoId, storage_path: caminho, nome: modelo.nome, sha256, enviado_em: null };
+}
+
+/**
+ * O arquivo que a proposta pública abre em "Ler o contrato": o contrato
+ * anexado ao aceite, quando há; enquanto a proposta está aberta, o modelo
+ * vigente. Devolve o caminho no balde — quem assina é a rota.
+ */
+export async function contratoParaLer(
+  admin: SupabaseClient,
+  orcamento: { id: string; empresa_id: string; tipo_evento: string; status: string }
+): Promise<string | null> {
+  const doc = await contratoDoOrcamento(admin, orcamento.id);
+  if (doc) return doc.storage_path.startsWith(`${orcamento.empresa_id}/`) ? doc.storage_path : null;
+  if (orcamento.status === "aprovado") return null;
+  const modelo = await modeloDeContrato(admin, orcamento.empresa_id, orcamento.tipo_evento);
+  return modelo?.caminho ?? null;
 }
 
 /**
@@ -619,10 +830,12 @@ export async function enviarTermoParaCliente(
     },
     termoPdf,
     contratoPdf,
-    // sem portal para a cliente ainda: contrato grande demais fica para a
-    // cerimonialista mandar; quando o portal mostrar documentos, o link
-    // entra aqui
-    contratoLink: null,
+    // contrato grande demais para anexo: o mesmo link que a proposta usa em
+    // "Ler o contrato" (o hash da proposta é a credencial, e ele já chega
+    // à cliente no e-mail do orçamento)
+    contratoLink: contratoDoc
+      ? `${appUrl()}/api/orcamento/${encodeURIComponent(orcamento.hash_publico)}/contrato`
+      : null,
     // a mesma frase do botão da tela de recibo: um texto só nos dois lugares
     whatsappLink: linkWhatsapp(
       contato.whatsapp,
