@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import { publicBase } from "@/lib/app-url";
-import { createClient } from "@/lib/supabase/server";
 import { getEventoDoPortal } from "@/lib/supabase/portal";
 import { getConvidados, resumirConvidados } from "@/lib/supabase/portal-pessoas";
 import { rotuloPublico, tem } from "@/lib/capacidades";
@@ -38,12 +37,6 @@ export default async function PortalConvidadosPage({
 
   // o link ÚNICO do evento — o caminho principal: ela espalha, cada um
   // se cadastra sozinho
-  const supabase = createClient();
-  const { data: ev } = await supabase
-    .from("events")
-    .select("rsvp_hash, rsvp_aberto, rsvp_lembrete_dias")
-    .eq("id", evento.id)
-    .maybeSingle();
 
   return (
     <div className="portal-tela">
@@ -55,12 +48,12 @@ export default async function PortalConvidadosPage({
         apoio="Mande o link para quem vai — cada pessoa se cadastra sozinha. Quem não se cadastrar entra aqui, à mão."
       />
 
-      {ev?.rsvp_hash && (
+      {evento.rsvp.hash && (
         <LinkDoEvento
           eventoId={evento.id}
           tipo={evento.tipo}
-          url={`${baseUrl}/confirmar/evento/${ev.rsvp_hash}`}
-          aberto={ev.rsvp_aberto !== false}
+          url={`${baseUrl}/confirmar/evento/${evento.rsvp.hash}`}
+          aberto={evento.rsvp.aberto}
         />
       )}
 
@@ -68,7 +61,7 @@ export default async function PortalConvidadosPage({
         <LembreteConvidados
           eventoId={evento.id}
           dataEvento={evento.data}
-          diasAtuais={ev?.rsvp_lembrete_dias ?? null}
+          diasAtuais={evento.rsvp.lembreteDias}
           aguardando={resumo.aguardando}
           confirmados={resumo.confirmados}
         />

@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import { rotuloCortejo } from "@/lib/papel";
-import { createClient } from "@/lib/supabase/server";
 import { getEventoDoPortal } from "@/lib/supabase/portal";
 import { getCortejo } from "@/lib/supabase/portal-pessoas";
 import { tem } from "@/lib/capacidades";
@@ -21,13 +20,7 @@ export default async function PortalCortejoPage({
   // Evento ligado (a colação de uma formatura): a lista da turma é UMA e
   // vive no evento principal. Gravar aqui criaria uma segunda lista que a
   // equipe nunca veria — melhor apontar o caminho do que divergir.
-  const supabase = createClient();
-  const { data: euMesmo } = await supabase
-    .from("events")
-    .select("evento_pai_id")
-    .eq("id", evento.id)
-    .maybeSingle();
-  if (euMesmo?.evento_pai_id) {
+  if (evento.eventoPaiId) {
     return (
       <div className="portal-tela">
         <TopoInterno

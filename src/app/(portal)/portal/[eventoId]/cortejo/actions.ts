@@ -6,6 +6,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getEventoDoPortal } from "@/lib/supabase/portal";
 import { papeisDoTipo } from "@/lib/portal-pessoas-shared";
 
 export type CortejoForm = {
@@ -25,17 +26,10 @@ const limpo = (v: string | null | undefined, max = 120) =>
 
 // O papel válido depende do TIPO do evento (125): a lista de casamento e
 // a de formatura não se misturam. O tipo vem do banco, não do cliente.
-async function papelValido(
-  supabase: ReturnType<typeof createClient>,
-  eventoId: string,
-  papel: string
-): Promise<boolean> {
-  const { data } = await supabase
-    .from("events")
-    .select("type")
-    .eq("id", eventoId)
-    .maybeSingle();
-  return papeisDoTipo(data?.type as string | undefined).includes(papel);
+async function papelValido(eventoId: string, papel: string): Promise<boolean> {
+  // pela janela do portal (164): a conta do portal não lê events direto
+  const evento = await getEventoDoPortal(eventoId);
+  return papeisDoTipo(evento?.tipo).includes(papel);
 }
 
 function revalidar(eventoId: string) {
@@ -51,7 +45,7 @@ export async function adicionarPessoaCortejo(
   if (!nome) return { error: "Informe o nome." };
 
   const supabase = createClient();
-  if (!(await papelValido(supabase, eventoId, form.papel))) {
+  if (!(await papelValido(eventoId, form.papel))) {
     return { error: "Papel inválido." };
   }
 
@@ -107,7 +101,7 @@ export async function atualizarPessoaCortejo(
     .eq("event_id", eventoId)
     .maybeSingle();
   if (!atual) return { error: "Pessoa não encontrada." };
-  if (form.papel !== atual.papel && !(await papelValido(supabase, eventoId, form.papel))) {
+  if (form.papel !== atual.papel && !(await papelValido(eventoId, form.papel))) {
     return { error: "Papel inválido." };
   }
   const { error } = await supabase

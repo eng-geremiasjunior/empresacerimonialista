@@ -36,7 +36,51 @@ export type EventoDoPortal = {
   papel: string;
   diasRestantes: number | null;
   marca: { nome: string; logoUrl: string | null } | null;
+  /** 164: o que as telas de dentro precisam além do cabeçalho — vem da
+   *  mesma janela, e nenhuma tela do portal lê `events` direto. */
+  rsvp: { hash: string | null; aberto: boolean; lembreteDias: number | null };
+  eventoPaiId: string | null;
 };
+
+/** Uma linha de portal_meus_eventos (164). */
+type LinhaJanela = {
+  id: string;
+  tipo: string;
+  nome: string | null;
+  data: string;
+  hora: string | null;
+  local_evento: string | null;
+  cidade: string | null;
+  papel: string;
+  empresa_nome: string | null;
+  empresa_logo_url: string | null;
+  rsvp_hash: string | null;
+  rsvp_aberto: boolean | null;
+  rsvp_lembrete_dias: number | null;
+  evento_pai_id: string | null;
+};
+
+/** O embed antigo (086), só enquanto a 164 não está aplicada. */
+type LinhaEmbed = {
+  papel: string;
+  events: {
+    id: string;
+    type: EventType;
+    name: string | null;
+    date: string;
+    time: string | null;
+    location: string | null;
+    city: string | null;
+    rsvp_hash: string | null;
+    rsvp_aberto: boolean | null;
+    rsvp_lembrete_dias: number | null;
+    evento_pai_id: string | null;
+    empresas?: { nome: string; logo_url: string | null } | null;
+  } | null;
+};
+
+const EMBED_ANTIGO =
+  "papel, events(id, type, name, date, time, location, city, rsvp_hash, rsvp_aberto, rsvp_lembrete_dias, evento_pai_id, empresas(nome, logo_url))";
 
 export type ContatoCerimonialista = {
   nome: string | null;
@@ -140,99 +184,121 @@ export const getUsuarioPortal = cache(async () => {
   return user;
 });
 
+/** Uma linha da janela → o formato que as telas leem. */
+function daJanela(l: LinhaJanela): EventoDoPortal {
+  return {
+    id: l.id,
+    tipo: l.tipo as EventType,
+    nome: l.nome,
+    data: l.data,
+    hora: l.hora,
+    local: l.local_evento,
+    cidade: l.cidade,
+    papel: l.papel,
+    diasRestantes: diasAte(l.data),
+    marca: l.empresa_nome
+      ? { nome: l.empresa_nome, logoUrl: l.empresa_logo_url ?? null }
+      : null,
+    rsvp: {
+      hash: l.rsvp_hash,
+      aberto: l.rsvp_aberto !== false,
+      lembreteDias: l.rsvp_lembrete_dias,
+    },
+    eventoPaiId: l.evento_pai_id,
+  };
+}
+
+function doEmbed(l: LinhaEmbed): EventoDoPortal | null {
+  const ev = l.events;
+  if (!ev) return null;
+  return {
+    id: ev.id,
+    tipo: ev.type,
+    nome: ev.name,
+    data: ev.date,
+    hora: ev.time,
+    local: ev.location,
+    cidade: ev.city,
+    papel: l.papel,
+    diasRestantes: diasAte(ev.date),
+    marca: ev.empresas
+      ? { nome: ev.empresas.nome, logoUrl: ev.empresas.logo_url ?? null }
+      : null,
+    rsvp: {
+      hash: ev.rsvp_hash,
+      aberto: ev.rsvp_aberto !== false,
+      lembreteDias: ev.rsvp_lembrete_dias,
+    },
+    eventoPaiId: ev.evento_pai_id,
+  };
+}
+
+/**
+ * A janela do portal para o evento (portal_meus_eventos, 164): só o que
+ * as telas usam — nunca o valor do contrato nem a verba, que são de quem
+ * contrata. null = a função ainda não existe (164 não aplicada): quem
+ * chama cai no embed antigo, que só funciona enquanto a policy antiga
+ * existe. Assim a ordem do deploy (SQL antes ou depois do código) não
+ * derruba o portal.
+ */
+async function pelaJanela(
+  supabase: ReturnType<typeof createClient>,
+  eventId: string | null
+): Promise<EventoDoPortal[] | null> {
+  const { data, error } = await supabase.rpc("portal_meus_eventos", {
+    p_event_id: eventId,
+  });
+  if (error) {
+    if (!/could not find the function/i.test(error.message)) {
+      console.error(`[portal] portal_meus_eventos: ${error.message}`);
+    }
+    return null;
+  }
+  return ((data ?? []) as LinhaJanela[]).map(daJanela);
+}
+
 /** Eventos em que a pessoa logada tem acesso ativo. */
 export async function getEventosDaCliente(): Promise<EventoDoPortal[]> {
   const user = await getUsuarioPortal();
   if (!user) return [];
   const supabase = createClient();
+  const janela = await pelaJanela(supabase, null);
+  if (janela) return janela; // já vem em ordem de data
+
   // O filtro por user_id casa com o índice parcial da 086. Sem ele a
   // consulta varria evento_acesso inteiro autorizando linha a linha.
   const { data } = await supabase
     .from("evento_acesso")
-    .select("papel, events(id, type, name, date, time, location, city)")
+    .select(EMBED_ANTIGO)
     .eq("status", "ativo")
     .eq("user_id", user.id);
-
-  const linhas = (data ?? []) as unknown as {
-    papel: string;
-    events: {
-      id: string;
-      type: EventType;
-      name: string | null;
-      date: string;
-      time: string | null;
-      location: string | null;
-      city: string | null;
-    } | null;
-  }[];
-
-  return linhas
-    .filter((l) => l.events !== null)
-    .map((l) => ({
-      id: l.events!.id,
-      tipo: l.events!.type,
-      nome: l.events!.name,
-      data: l.events!.date,
-      hora: l.events!.time,
-      local: l.events!.location,
-      cidade: l.events!.city,
-      papel: l.papel,
-      diasRestantes: diasAte(l.events!.date),
-      marca: null,
-    }))
+  return ((data ?? []) as unknown as LinhaEmbed[])
+    .map(doEmbed)
+    .filter((e): e is EventoDoPortal => e !== null)
     .sort((a, b) => a.data.localeCompare(b.data));
 }
 
 /**
- * Um evento específico + a marca da cerimonialista, em UMA query (embed
- * events → empresas). null = sem vínculo (a RLS não devolveu nada).
- * cache(): layout e page pedem — o banco responde uma vez.
+ * Um evento específico + a marca da cerimonialista, pela janela (164).
+ * null = sem vínculo. cache(): layout e page pedem — o banco responde
+ * uma vez.
  */
 export const getEventoDoPortal = cache(
   async (eventId: string): Promise<EventoDoPortal | null> => {
     const user = await getUsuarioPortal();
     if (!user) return null;
     const supabase = createClient();
+    const janela = await pelaJanela(supabase, eventId);
+    if (janela) return janela[0] ?? null;
+
     const { data } = await supabase
       .from("evento_acesso")
-      .select(
-        "papel, events(id, type, name, date, time, location, city, empresas(nome, logo_url))"
-      )
+      .select(EMBED_ANTIGO)
       .eq("event_id", eventId)
       .eq("user_id", user.id)
       .eq("status", "ativo")
       .maybeSingle();
-
-    const linha = data as unknown as {
-      papel: string;
-      events: {
-        id: string;
-        type: EventType;
-        name: string | null;
-        date: string;
-        time: string | null;
-        location: string | null;
-        city: string | null;
-        empresas: { nome: string; logo_url: string | null } | null;
-      } | null;
-    } | null;
-
-    if (!linha?.events) return null;
-    const ev = linha.events;
-    return {
-      id: ev.id,
-      tipo: ev.type,
-      nome: ev.name,
-      data: ev.date,
-      hora: ev.time,
-      local: ev.location,
-      cidade: ev.city,
-      papel: linha.papel,
-      diasRestantes: diasAte(ev.date),
-      marca: ev.empresas
-        ? { nome: ev.empresas.nome, logoUrl: ev.empresas.logo_url ?? null }
-        : null,
-    };
+    return data ? doEmbed(data as unknown as LinhaEmbed) : null;
   }
 );
 

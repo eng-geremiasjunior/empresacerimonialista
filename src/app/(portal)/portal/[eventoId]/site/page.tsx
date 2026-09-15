@@ -28,7 +28,7 @@ export default async function PortalSitePage({
   if (!tem(evento.tipo, "siteDoEvento")) notFound();
 
   const supabase = createClient();
-  const [{ data: site }, { data: ev }, { data: fotosRaw }, { data: musicas }, { data: recados }] =
+  const [{ data: site }, { data: fotosRaw }, { data: musicas }, { data: recados }] =
     await Promise.all([
       supabase
         .from("evento_site")
@@ -37,7 +37,6 @@ export default async function PortalSitePage({
         )
         .eq("event_id", evento.id)
         .maybeSingle(),
-      supabase.from("events").select("rsvp_hash").eq("id", evento.id).maybeSingle(),
       supabase
         .from("evento_album_foto")
         .select("id, storage_path, autor, oculta")
@@ -78,8 +77,8 @@ export default async function PortalSitePage({
   const urlSite = site?.publicado
     ? site.slug
       ? `${publicBase()}/c/${site.slug}`
-      : ev?.rsvp_hash
-        ? `${publicBase()}/confirmar/evento/${ev.rsvp_hash}`
+      : evento.rsvp.hash
+        ? `${publicBase()}/confirmar/evento/${evento.rsvp.hash}`
         : null
     : null;
 
