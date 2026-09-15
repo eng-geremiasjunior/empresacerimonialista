@@ -36,11 +36,13 @@ export function FiltrosRapidosPainel({
       current.arquivados
   );
 
+  // Faixa vazia não vira filtro: "Críticos 0" é um número que não ajuda a
+  // decidir nada. A faixa ativa continua mesmo zerada, para dar como sair.
   const faixas = [
     { key: "critico", label: "Críticos", n: saude.criticos, dot: "text-red-500" },
     { key: "atencao", label: "Atenção", n: saude.atencao, dot: "text-amber-500" },
     { key: "saudavel", label: "Saudáveis", n: saude.saudaveis, dot: "text-emerald-500" },
-  ];
+  ].filter((f) => f.n > 0 || current.saude === f.key);
 
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -126,6 +128,7 @@ export function FiltrosRapidosPainel({
       </div>
 
       {/* Saúde do evento — clicável para filtrar por faixa */}
+      {faixas.length > 0 && (
       <div className="mt-4">
         <p className="mb-1.5 text-xs font-medium text-gray-400">Saúde do evento</p>
         <div className="space-y-0.5">
@@ -149,6 +152,7 @@ export function FiltrosRapidosPainel({
           })}
         </div>
       </div>
+      )}
 
       {/* Mostrar arquivados */}
       <label className="mt-3 flex cursor-pointer items-center gap-2 border-t border-gray-100 pt-3 text-sm text-gray-600">

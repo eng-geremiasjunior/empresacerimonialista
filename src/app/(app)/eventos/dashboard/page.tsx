@@ -6,7 +6,6 @@ import {
   Calendar,
   DollarSign,
   FileText,
-  Users,
   type LucideIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -22,7 +21,6 @@ import {
 import {
   getAlertasCopiloto,
   getBriefingHoje,
-  getClientesAtivos,
   getCotacoesAbertas,
   getEventsByStatus,
   getEventsByType,
@@ -42,7 +40,8 @@ const SAUDE_VAZIA: Saude = {
   semDados: true,
 };
 import { getSaldoEmpresaMes } from "@/lib/supabase/financeiro-empresa";
-import { SAUDE_UI, type Saude } from "@/lib/saude-evento";
+import { SAUDE_UI, saudeEmPalavras, type Saude } from "@/lib/saude-evento";
+import { getMeuCargo } from "@/lib/supabase/equipe";
 import { formatCurrency, formatDate } from "@/lib/format";
 import {
   EVENT_STATUS_LABELS,
@@ -129,7 +128,6 @@ export default async function DashboardPage() {
     kpiEventos,
     kpiFaturamento,
     cotacoesAbertas,
-    clientesAtivos,
     statusCounts,
     typeCounts,
     performance,
@@ -146,12 +144,16 @@ export default async function DashboardPage() {
     getKpiEventosEmAndamento(),
     getKpiFaturamentoMes(),
     getCotacoesAbertas(),
-    getClientesAtivos(),
     getEventsByStatus(),
     getEventsByType(),
     getPerformanceMes(),
     getSaldoEmpresaMes(),
   ]);
+  // Os números do negócio (faturamento, eventos em andamento, em
+  // orçamento) são da dona; quem conduz um evento abre o Dashboard para
+  // saber o que precisa de atenção, não para ver o caixa.
+  const { cargo } = await getMeuCargo();
+  const dona = cargo === "proprietaria";
 
   // getSaudeBulk devolve uma entrada por id pedido (percorre eventIds,
   // não as linhas), então a falta abaixo não deve acontecer. Se acontecer,
@@ -201,15 +203,6 @@ export default async function DashboardPage() {
         tone: "neutral",
       },
     },
-    {
-      icon: Users,
-      kpi: {
-        title: "Clientes ativos",
-        value: String(clientesAtivos),
-        sub: "com evento em andamento",
-        tone: "neutral",
-      },
-    },
   ];
 
   const statusSlices: DonutSlice[] = statusCounts.map((s) => ({
@@ -243,17 +236,17 @@ export default async function DashboardPage() {
         alertas={alertas}
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {kpis.map(({ kpi, icon }) => (
-          <KpiCard key={kpi.title} kpi={kpi} icon={icon} />
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <DonutCard title="Eventos por status" unit="eventos" data={statusSlices} />
-        <DonutCard title="Eventos por tipo" unit="eventos" data={typeSlices} />
-        <MonthPerformance items={performanceItems} />
-      </div>
+      {/* Radar primeiro: o Copiloto acima, os eventos com o ponto de saúde
+          logo abaixo, e os números do negócio só para a dona, em três
+          cartões. Rosquinhas, desempenho e resumo financeiro não somem:
+          ficam recolhidos em "Números do mês", no fim — quem quer, abre. */}
+      {dona && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {kpis.map(({ kpi, icon }) => (
+            <KpiCard key={kpi.title} kpi={kpi} icon={icon} />
+          ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="space-y-3 lg:col-span-2">
@@ -298,8 +291,8 @@ export default async function DashboardPage() {
                             className={`h-2 w-2 rounded-full ${ui.bar}`}
                             aria-hidden
                           />
-                          <span className="text-sm font-semibold text-gray-900 tabular-nums">
-                            {saude.score}%
+                          <span className="text-xs font-medium text-gray-500">
+                            {saudeEmPalavras(saude)}
                           </span>
                         </div>
                       </div>
@@ -318,13 +311,28 @@ export default async function DashboardPage() {
         </div>
 
         <div className="space-y-4">
-          <ResumoFinanceiro data={financeiro} empresa={saldoEmpresa} />
           <ActivityFeed
             activities={activities}
             referenceIso={now.toISOString()}
           />
         </div>
       </div>
+
+      <details className="group rounded-xl border border-gray-200 bg-white">
+        <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 marker:content-none [&::-webkit-details-marker]:hidden">
+          Números do mês
+          <span className="text-xs text-gray-400 group-open:hidden">mostrar</span>
+          <span className="hidden text-xs text-gray-400 group-open:inline">esconder</span>
+        </summary>
+        <div className="space-y-4 border-t border-gray-100 p-4">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <DonutCard title="Eventos por status" unit="eventos" data={statusSlices} />
+            <DonutCard title="Eventos por tipo" unit="eventos" data={typeSlices} />
+            <MonthPerformance items={performanceItems} />
+          </div>
+          <ResumoFinanceiro data={financeiro} empresa={saldoEmpresa} />
+        </div>
+      </details>
     </div>
   );
 }
