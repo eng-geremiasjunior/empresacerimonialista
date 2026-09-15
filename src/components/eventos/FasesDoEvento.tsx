@@ -23,6 +23,13 @@ import type { FaseId, FasesEvento } from "@/lib/supabase/resumo-evento";
 import { ExplicacaoDoMenu } from "@/components/ajuda/ExplicacaoDoMenu";
 import { explicacaoDoEvento } from "@/lib/explicacoes-do-menu";
 
+// Sequência de verdade, então numerada: é a ordem em que o evento anda.
+const EYEBROW: Record<FaseId, string> = {
+  planejamento: "1 · Planejar",
+  organizacao: "2 · Organizar",
+  execucao: "3 · Executar",
+};
+
 const SEGMENTO: Record<FaseId, string> = {
   planejamento: "planejamento",
   organizacao: "organizacao",
@@ -80,6 +87,9 @@ export function FasesDoEvento({
                 : "hover:bg-[color:var(--ev-card-border-soft)]"
             }`}
           >
+            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--ev-text-faint)]">
+              {EYEBROW[fase.id]}
+            </span>
             <div className="flex items-baseline justify-between gap-2">
               <span className="flex items-center gap-1.5">
                 <Link
@@ -103,12 +113,6 @@ export function FasesDoEvento({
                     />
                   </span>
                 )}
-              </span>
-              <span
-                aria-hidden
-                className="shrink-0 font-mono text-[11px] tabular-nums text-[color:var(--ev-text-faint)]"
-              >
-                {pct}%
               </span>
             </div>
 

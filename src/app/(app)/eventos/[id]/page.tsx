@@ -4,22 +4,15 @@
 import Link from "next/link";
 import {
   AtSign,
-  CalendarDays,
   CircleUserRound,
-  Clock,
   Mail,
-  MapPin,
   MessageCircle,
   Phone,
-  Sparkles,
-  Tag,
-  Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getResumoEvento } from "@/lib/supabase/resumo-evento";
 import { Avatar } from "@/components/ui/Avatar";
 import { avatarPublicUrl } from "@/lib/avatar";
-import { StatusOperacional } from "@/components/eventos/StatusOperacional";
 import { ResumoOperacional } from "@/components/eventos/ResumoOperacional";
 import { AcoesRapidas } from "@/components/eventos/AcoesRapidas";
 import { ColacaoLigada, type ElosColacao } from "@/components/eventos/ColacaoLigada";
@@ -208,6 +201,9 @@ export default async function ResumoPage({
     `${EVENT_TYPE_LABELS[resumo.event.type]}${resumo.client?.name ? ` — ${resumo.client.name}` : ""}`;
 
   const c = resumo.client;
+  const op = resumo.operacional;
+  const temNumeros =
+    op.checklistTotal + op.cronogramaItens + op.fornecedoresTotal + op.comunicacaoNaoLidas > 0;
   const contatos = [
     c?.phone && { icon: Phone, texto: c.phone },
     c?.email && { icon: Mail, texto: c.email },
@@ -218,31 +214,6 @@ export default async function ResumoPage({
     <div className="grid gap-8 lg:grid-cols-3">
       {/* Coluna principal */}
       <div className="space-y-8 lg:col-span-2">
-        <StatusOperacional
-          eventId={eventId}
-          saude={resumo.saude}
-          criterios={resumo.criterios}
-        />
-
-        <ResumoOperacional eventId={eventId} op={resumo.operacional} />
-
-        {briefing && (
-          <BriefingExtracaoCaixa
-            eventId={eventId}
-            extracaoId={briefing.id}
-            proposta={briefing.proposta}
-            fornecedores={briefing.fornecedores}
-          />
-        )}
-
-        {avisosDoBriefing.length > 0 && aplicadaRes.data && (
-          <AvisosDoBriefing
-            eventId={eventId}
-            extracaoId={aplicadaRes.data.id as string}
-            avisos={avisosDoBriefing}
-          />
-        )}
-
         {/* Cliente */}
         <section>
           <div className="flex items-center justify-between">
@@ -330,79 +301,43 @@ export default async function ResumoPage({
           )}
         </section>
 
-        {/* Visão geral do evento */}
-        <section>
-          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-gray-900">
-            <Sparkles size={15} className="text-indigo-500" />
-            Visão geral do evento
-          </h2>
-          <div className="mt-3 grid gap-4 sm:grid-cols-3">
-            {(
-              [
-                {
-                  icon: Tag,
-                  label: "Tipo de evento",
-                  valor: EVENT_TYPE_LABELS[resumo.event.type],
-                },
-                {
-                  icon: CalendarDays,
-                  label: "Data",
-                  valor: formatDate(resumo.event.date),
-                },
-                {
-                  icon: MapPin,
-                  label: "Local",
-                  valor: resumo.event.location || resumo.event.city || "—",
-                },
-                textoConvidados && {
-                  icon: Users,
-                  label: "Convidados esperados",
-                  valor: textoConvidados,
-                },
-                resumo.event.time && {
-                  icon: Clock,
-                  label: "Início previsto",
-                  valor: resumo.event.time.slice(0, 5),
-                },
-              ].filter(Boolean) as {
-                icon: typeof Tag;
-                label: string;
-                valor: string;
-              }[]
-            ).map(({ icon: Icon, label, valor }) => (
-              <div key={label} className="flex items-start gap-2.5">
-                <Icon size={16} className="mt-0.5 shrink-0 text-gray-400" />
-                <div className="min-w-0">
-                  <p className="text-xs text-gray-400">{label}</p>
-                  <p
-                    title={valor}
-                    className="truncate text-sm font-medium text-gray-800"
-                  >
-                    {valor}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
         <NotasRapidas
           eventId={eventId}
           notas={notas}
           currentUserId={user?.id ?? null}
         />
+        {/* Só quando há o que contar: num evento recém-criado, quatro
+            cartões "0/0" não ajudam ninguém a decidir nada. */}
+        {temNumeros && (
+          <ResumoOperacional eventId={eventId} op={resumo.operacional} />
+        )}
+        {briefing && (
+          <BriefingExtracaoCaixa
+            eventId={eventId}
+            extracaoId={briefing.id}
+            proposta={briefing.proposta}
+            fornecedores={briefing.fornecedores}
+          />
+        )}
+        {avisosDoBriefing.length > 0 && aplicadaRes.data && (
+          <AvisosDoBriefing
+            eventId={eventId}
+            extracaoId={aplicadaRes.data.id as string}
+            avisos={avisosDoBriefing}
+          />
+        )}
       </div>
 
       {/* Coluna lateral */}
       <div className="space-y-6">
-        {elosColacao && <ColacaoLigada eventId={eventId} elo={elosColacao} />}
+        <ProximasAtividades eventId={eventId} proximas={resumo.proximas} />
         <AcoesRapidas
           eventId={eventId}
           eventLabel={eventLabel}
           tipo={resumo.event.type}
         />
+        {elosColacao && <ColacaoLigada eventId={eventId} elo={elosColacao} />}
         <AssistenteEvento eventId={eventId} />
-        <ProximasAtividades eventId={eventId} proximas={resumo.proximas} />
       </div>
     </div>
   );

@@ -1,19 +1,24 @@
 "use client";
 
-// Aba Resumo — visão da fase aberta. O primeiro bloco é sempre o "Resumo
-// do Copiloto", para nenhuma fase abrir vazia (handoff: vela-fases-evento).
+// O bloco de atenção do evento — o ÚNICO. Fica no layout, logo abaixo dos
+// cartões de fase, em todas as abas.
 //
-// Copiloto por regras, não IA: cada selo ✔/⚠ é contagem determinística
-// sobre tarefas, fornecedores, parcelas e roteiro — calculada em
-// resumo-evento.ts, ao lado do percentual da fase. Nada de texto genérico.
+// Até 15/09/2026 os mesmos alertas de saúde apareciam três vezes (na linha
+// do cartão de fase, aqui como "Resumo do Copiloto" e no "Requer atenção"
+// da aba Resumo). Agora é um bloco só, e cada linha responde: o que
+// aconteceu, por que importa agora e o que fazer (saude-evento.ts).
 //
-// É client porque a fase vem da query string, e layout do App Router não
+// Copiloto por regras, não IA: cada linha é contagem determinística sobre
+// tarefas, fornecedores, parcelas e roteiro. Nada de texto genérico.
+//
+// É client porque a fase vem da query string (os selos e o próximo passo
+// do estado "sob controle" são da fase aberta), e layout do App Router não
 // recebe searchParams.
 
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import type { Saude, SaudeAba } from "@/lib/saude-evento";
+import type { Saude } from "@/lib/saude-evento";
 import type { FaseId, FasesEvento } from "@/lib/supabase/resumo-evento";
 
 // Tokens do chrome do evento (default = cores de hoje; tema neutro remapeia).
@@ -22,22 +27,7 @@ const TEAL_TINT = "var(--ev-accent-tint, #e7f4f1)";
 const AMBER = "var(--ev-warn, #b07514)";
 const AMBER_TINT = "var(--ev-warn-tint, #f8efdd)";
 
-const ABA_HREF: Record<SaudeAba, string> = {
-  tarefas: "organizacao",
-  fornecedores: "fornecedores",
-  financeiro: "financeiro",
-  roteiro: "roteiro",
-};
-
-// Que abas pertencem a cada fase. Determinístico, e é a mesma divisão que
-// o cálculo de progresso usa.
-const ABAS_DA_FASE: Record<FaseId, SaudeAba[]> = {
-  planejamento: ["tarefas"],
-  organizacao: ["fornecedores", "financeiro"],
-  execucao: ["roteiro"],
-};
-
-// Para onde a fase leva — o próximo passo concreto dela.
+// Para onde a fase leva quando não há nada a resolver — o próximo passo.
 const ATALHO_DA_FASE: Record<FaseId, { rotulo: string; seg: string }> = {
   planejamento: { rotulo: "Abrir tarefas", seg: "organizacao" },
   organizacao: { rotulo: "Abrir fornecedores", seg: "fornecedores" },
@@ -94,64 +84,92 @@ export function ResumoDaFase({
   const params = useSearchParams();
   const ativa = (params.get("fase") as FaseId | null) ?? fases.sugerida;
   const fase = fases.lista.find((f) => f.id === ativa) ?? fases.lista[0];
-
-  const abas = ABAS_DA_FASE[fase.id];
-  const alertas = saude.alertas.filter((a) => abas.includes(a.aba));
   const atalho = ATALHO_DA_FASE[fase.id];
+  const alertas = saude.alertas;
+  const sobControle = alertas.length === 0;
+  const feitos = fase.selos.filter((s) => s.tipo === "ok");
 
   return (
     <section className="overflow-hidden rounded-xl border border-[color:var(--ev-card-border-soft)] bg-[color:var(--ev-card-bg)]">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[color:var(--ev-card-border-soft)] px-[18px] py-4">
-        <div className="flex items-center gap-[9px]">
-          <span
-            className="h-1.5 w-1.5 rounded-full"
-            style={{ background: TEAL }}
-            aria-hidden
-          />
-          <h2 className="text-[15px] font-bold text-[color:var(--ev-text-strong)]">
-            Resumo do Copiloto
-          </h2>
-          <span className="text-[13px] text-[color:var(--ev-text-muted)]">{fase.rotulo}</span>
+      <div className="flex items-center gap-[9px] border-b border-[color:var(--ev-card-border-soft)] px-[18px] py-3.5">
+        <span
+          className="h-1.5 w-1.5 rounded-full"
+          style={{ background: sobControle ? TEAL : AMBER }}
+          aria-hidden
+        />
+        <h2 className="text-[15px] font-bold text-[color:var(--ev-text-strong)]">
+          {sobControle ? "Sob controle" : "Requer atenção"}
+        </h2>
+        {!sobControle && (
+          <span className="text-[13px] text-[color:var(--ev-text-muted)]">
+            {alertas.length === 1 ? "1 ponto" : `${alertas.length} pontos`}
+          </span>
+        )}
+      </div>
+
+      {sobControle ? (
+        <div className="flex flex-col gap-[11px] px-[18px] py-4">
+          {feitos.length > 0 ? (
+            feitos.map((selo, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-2.5 text-[12.5px] text-[color:var(--ev-text-body)]"
+              >
+                <IconeSelo tipo="ok" />
+                {selo.texto}
+              </div>
+            ))
+          ) : (
+            <p className="text-[12.5px] text-[color:var(--ev-text-muted)]">
+              Nada pendente neste evento por enquanto.
+            </p>
+          )}
         </div>
-        <span className="text-[11.5px] text-[color:var(--ev-text-faint)]">
-          cálculo por regras · {fase.pct}% · {fase.contagem}
-        </span>
-      </div>
+      ) : (
+        <ul className="divide-y divide-[color:var(--ev-card-border-soft)]">
+          {alertas.map((alerta, i) => (
+            <li
+              key={i}
+              className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-[18px] py-3"
+            >
+              <div className="flex min-w-0 flex-1 items-start gap-2.5">
+                <span className="mt-0.5">
+                  <IconeSelo tipo="warn" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[13px] font-medium text-[color:var(--ev-text-strong)]">
+                    {alerta.texto}
+                  </p>
+                  {alerta.porque && (
+                    <p className="text-[12px] text-[color:var(--ev-text-muted)]">
+                      {alerta.porque}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <Link
+                href={`/eventos/${eventId}/${alerta.destino}`}
+                className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[color:var(--ev-card-border)] px-2.5 py-1 text-[12px] font-semibold text-[color:var(--ev-text-body)] transition-colors hover:border-[color:var(--ev-text-faint)] hover:text-[color:var(--ev-text-strong)]"
+              >
+                {alerta.acao}
+                <ArrowRight size={12} />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
 
-      <div className="flex flex-col gap-[11px] px-[18px] py-4">
-        {fase.selos.map((selo, i) => (
-          <div
-            key={i}
-            className="flex items-center gap-2.5 text-[12.5px] text-[color:var(--ev-text-body)]"
-          >
-            <IconeSelo tipo={selo.tipo} />
-            {selo.texto}
-          </div>
-        ))}
-
-        {/* Alertas do Copiloto que pertencem a esta fase — clicáveis, levam
-            direto para onde resolver. */}
-        {alertas.map((alerta, i) => (
+      {sobControle && (
+        <div className="border-t border-[color:var(--ev-card-border-soft)] px-[18px] py-3">
           <Link
-            key={`a-${i}`}
-            href={`/eventos/${eventId}/${ABA_HREF[alerta.aba]}`}
-            className="flex items-center gap-2.5 text-[12.5px] text-[color:var(--ev-text-body)] hover:text-[color:var(--ev-text-strong)]"
+            href={`/eventos/${eventId}/${atalho.seg}`}
+            className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-[color:var(--ev-text-body)] hover:text-[color:var(--ev-text-strong)]"
           >
-            <IconeSelo tipo="warn" />
-            {alerta.texto}
+            {atalho.rotulo}
+            <ArrowRight size={13} />
           </Link>
-        ))}
-      </div>
-
-      <div className="border-t border-[color:var(--ev-card-border-soft)] px-[18px] py-3">
-        <Link
-          href={`/eventos/${eventId}/${atalho.seg}`}
-          className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-[color:var(--ev-text-body)] hover:text-[color:var(--ev-text-strong)]"
-        >
-          {atalho.rotulo}
-          <ArrowRight size={13} />
-        </Link>
-      </div>
+        </div>
+      )}
     </section>
   );
 }

@@ -4,7 +4,7 @@ import type { Saude, SaudeAba } from "@/lib/saude-evento";
 import type { ResumoEvento } from "@/lib/supabase/resumo-evento";
 
 const ABA_PATH: Record<SaudeAba, string> = {
-  tarefas: "tarefas",
+  tarefas: "organizacao",
   fornecedores: "fornecedores",
   financeiro: "financeiro",
   roteiro: "roteiro",
@@ -59,7 +59,7 @@ export function StatusOperacional({
           {saude.alertas.map((a) => (
             <li key={a.texto}>
               <Link
-                href={`/eventos/${eventId}/${ABA_PATH[a.aba]}`}
+                href={`/eventos/${eventId}/${a.destino ?? ABA_PATH[a.aba]}`}
                 className="group flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900"
               >
                 <AlertTriangle size={15} className="shrink-0 text-amber-500" />

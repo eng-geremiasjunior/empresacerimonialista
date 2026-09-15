@@ -136,7 +136,17 @@ export async function getCabecalhoEvento(
     if (diasMaisVencida === null || d > diasMaisVencida) diasMaisVencida = d;
   }
 
+  // Dias até o evento: alimenta o "por que importa" dos alertas e a
+  // contagem da Execução ("Faltam 47 dias").
+  const diasParaEvento = dataEvento
+    ? differenceInCalendarDays(
+        new Date(`${dataEvento}T00:00:00`),
+        new Date(`${hoje}T00:00:00`)
+      )
+    : null;
+
   const saude = calcularSaudeEvento({
+    diasParaEvento,
     tarefasTotal,
     tarefasConcluidas,
     fornecedoresTotal: fornTotal,
@@ -184,14 +194,6 @@ export async function getCabecalhoEvento(
     (i) => i.status_novo === "problema"
   ).length;
 
-  // Dias até o evento: é a contagem que a Execução mostra enquanto o dia
-  // não chega ("Faltam 47 dias" no mockup).
-  const diasParaEvento = dataEvento
-    ? differenceInCalendarDays(
-        new Date(`${dataEvento}T00:00:00`),
-        new Date(`${hoje}T00:00:00`)
-      )
-    : null;
 
   // ---- Selos do Copiloto: ✔/⚠ por regra, sobre o mesmo dado ----
   const tarefasVencidas = tasks.filter(

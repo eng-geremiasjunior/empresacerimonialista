@@ -9,6 +9,7 @@ import { FasesDoEvento } from "@/components/eventos/FasesDoEvento";
 import { ResumoDaFase } from "@/components/eventos/ResumoDaFase";
 import { getCabecalhoEvento } from "@/lib/supabase/resumo-evento";
 import { formatDate } from "@/lib/format";
+import { rotuloPublico } from "@/lib/capacidades";
 import {
   EVENT_STATUS_LABELS,
   EVENT_TYPE_LABELS,
@@ -38,7 +39,7 @@ export default async function EventoLayout({
 
   const { data } = await supabase
     .from("events")
-    .select("id, type, name, date, location, city, status, clients(name)")
+    .select("id, type, name, date, time, location, city, status, guests, clients(name)")
     .eq("id", params.id)
     .single();
 
@@ -49,9 +50,11 @@ export default async function EventoLayout({
     type: EventType;
     name: string | null;
     date: string;
+    time: string | null;
     location: string | null;
     city: string | null;
     status: EventStatus;
+    guests: number | null;
     clients: { name: string } | null;
   };
 
@@ -76,6 +79,17 @@ export default async function EventoLayout({
         : `Realizado em ${formatDate(event.date)}`;
 
   const local = event.location || event.city;
+  // A linha de meta responde "que evento é este" sem abrir aba nenhuma:
+  // tipo (quando o título é um nome e não o diz), data e hora, local,
+  // público e proximidade.
+  const tipo = event.name ? EVENT_TYPE_LABELS[event.type] : null;
+  const hora = event.time ? ` às ${event.time.slice(0, 5)}` : "";
+  const publico =
+    event.guests != null && event.guests > 0
+      ? event.type === "show"
+        ? `${event.guests.toLocaleString("pt-BR")} de público esperado`
+        : `${event.guests.toLocaleString("pt-BR")} ${rotuloPublico(event.type)}`
+      : null;
 
   // Modo Evento: destaque cresce com a proximidade (item 2).
   const modoDestaque = dias <= 7 && dias >= 0;
@@ -123,8 +137,11 @@ export default async function EventoLayout({
               </Link>
             </div>
             <p className="mt-1 text-sm text-[color:var(--ev-text-muted)]">
+              {tipo ? `${tipo} · ` : ""}
               {formatDate(event.date)}
+              {hora}
               {local ? ` · ${local}` : ""}
+              {publico ? ` · ${publico}` : ""}
               {" · "}
               <span
                 className={
