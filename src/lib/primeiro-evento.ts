@@ -23,6 +23,7 @@ import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
 import { registrarConversao } from "@/lib/conversoes";
+import { ehContaDaCasa } from "@/lib/contas-da-casa";
 
 /** Evento mais antigo criado há mais que isto não é "agora". */
 const JANELA_MS = 10 * 60 * 1000;
@@ -39,18 +40,6 @@ function servico() {
       fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
     },
   });
-}
-
-/** As contas da casa (dono e vitrine) não são público de anúncio. */
-function ehDaCasa(email: string | null | undefined): boolean {
-  const e = (email ?? "").trim().toLowerCase();
-  if (!e) return false;
-  if (e.endsWith("@eorganizei.com.br")) return true;
-  const donos = (process.env.SUPER_ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((x) => x.trim().toLowerCase())
-    .filter(Boolean);
-  return donos.includes(e);
 }
 
 async function avisar(eventoId: string): Promise<void> {
@@ -88,7 +77,8 @@ async function avisar(eventoId: string): Promise<void> {
   if (!dona) return;
   const { data: usuario } = await db.auth.admin.getUserById(dona);
   const email = usuario?.user?.email ?? null;
-  if (ehDaCasa(email)) return;
+  // as contas da casa (dono e vitrine) não são público de anúncio
+  if (ehContaDaCasa(email)) return;
 
   // IP e navegador são os do CADASTRO: quando o evento nasce de um
   // orçamento aceito, quem está do outro lado é a cliente dela — e o

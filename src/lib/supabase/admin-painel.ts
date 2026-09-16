@@ -145,6 +145,9 @@ export type ContaAdmin = {
   fornecedores: number;
   /** o guia do primeiro acesso da dona (160) */
   guia: "em andamento" | "pulou" | "concluiu";
+  /** o que ela respondeu no cadastro (16/09/2026) — nulo em conta antiga */
+  eventos3Meses: string | null;
+  instagram: string | null;
 };
 
 /** utm_source/utm_medium → como o dono fala. */
@@ -158,6 +161,10 @@ function canalDaOrigem(source: string | null, medium: string | null, gclid: stri
   if (s === "an" || s.includes("audience")) return "Anúncio da Meta (rede de parceiros)";
   if (s) return pago ? `Anúncio (${s})` : s;
   return "Sem origem registrada";
+}
+
+function textoOuNulo(v: unknown): string | null {
+  return typeof v === "string" && v.trim() ? v.trim() : null;
 }
 
 /** user_agent → o aparelho, sem versão nem modelo. */
@@ -190,7 +197,12 @@ export async function getContas(): Promise<ContaAdmin[]> {
 
   // Paginado até o fim: com >1000 logins, a primeira versão mostrava a
   // dona da conta como "sem e-mail" e escondia o banimento dela.
-  const todosUsuarios: { id: string; email?: string; last_sign_in_at?: string | null }[] = [];
+  const todosUsuarios: {
+    id: string;
+    email?: string;
+    last_sign_in_at?: string | null;
+    user_metadata?: Record<string, unknown> | null;
+  }[] = [];
   for (let page = 1; page <= 20; page++) {
     const { data: lote } = await db.auth.admin.listUsers({ page, perPage: 1000 });
     const users = lote?.users ?? [];
@@ -284,6 +296,8 @@ export async function getContas(): Promise<ContaAdmin[]> {
       tarefas: tar.count ?? 0,
       fornecedores: forn.count ?? 0,
       guia: d?.guia_concluido_em ? "concluiu" : d?.guia_dispensado_em ? "pulou" : "em andamento",
+      eventos3Meses: textoOuNulo(dona?.user_metadata?.eventos_3_meses),
+      instagram: textoOuNulo(dona?.user_metadata?.instagram),
     });
   }
 

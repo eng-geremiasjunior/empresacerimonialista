@@ -9,6 +9,7 @@ import { mascararDinheiro } from "@/lib/format";
 import { dinheiroParaMascara } from "@/lib/admin-metricas";
 import type { ContaAdmin } from "@/lib/supabase/admin-painel";
 import { linkWhatsapp } from "@/lib/whatsapp-link";
+import { descreverEventos3Meses } from "@/lib/cadastro-qualificacao";
 import {
   definirBanimento,
   salvarAssinatura,
@@ -48,8 +49,9 @@ function diaEHora(iso: string | null): string {
 
 /**
  * QUEM É E O QUE FEZ. "Não sei de onde ela é, sei nada" — o dono, no dia
- * da primeira conta de uma desconhecida. Só o que já estava no banco:
- * nenhum campo novo foi pedido no cadastro.
+ * da primeira conta de uma desconhecida. Quase tudo já estava no banco;
+ * desde 16/09/2026 o cadastro também pergunta WhatsApp, eventos nos
+ * próximos três meses e o @ do Instagram (cadastro-qualificacao.ts).
  */
 function QuemE({ conta }: { conta: ContaAdmin }) {
   const a = conta.assinatura;
@@ -63,6 +65,11 @@ function QuemE({ conta }: { conta: ContaAdmin }) {
         ? [conta.origem.canal, conta.origem.aparelho ? `pelo ${conta.origem.aparelho}` : null].filter(Boolean).join(" · ")
         : "Sem origem registrada",
     },
+    // o que ela respondeu no cadastro — só existe em conta criada depois
+    // de 16/09/2026
+    ...(conta.eventos3Meses
+      ? [{ rotulo: "Disse que tem", valor: descreverEventos3Meses(conta.eventos3Meses) ?? conta.eventos3Meses }]
+      : []),
     { rotulo: "Eventos em", valor: conta.cidades.length ? conta.cidades.join(", ") : "—" },
     { rotulo: "Último acesso", valor: diaEHora(conta.ultimoLogin) },
     {
@@ -93,6 +100,16 @@ function QuemE({ conta }: { conta: ContaAdmin }) {
         )}
       </dl>
       <div className="flex gap-2">
+        {conta.instagram && (
+          <a
+            href={`https://instagram.com/${encodeURIComponent(conta.instagram)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-lg border border-stone-200 px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50"
+          >
+            @{conta.instagram}
+          </a>
+        )}
         {conta.donaEmail && (
           <a
             href={`mailto:${conta.donaEmail}`}

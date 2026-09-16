@@ -27,6 +27,9 @@ import { createClient as createServico } from "@supabase/supabase-js";
 import { registrarConversao } from "@/lib/conversoes";
 import { COOKIE_ORIGEM } from "@/lib/marketing";
 import { portaoDoTeste, fimDoTeste } from "@/lib/supabase/teste-gratis";
+import { normalizarDDI } from "@/lib/whatsapp-link";
+import { ehEventos3Meses, normalizarInstagram } from "@/lib/cadastro-qualificacao";
+import { enviarBoasVindas } from "@/lib/email-ativacao";
 
 /** Mesmo cliente de serviço do checkout: `assinaturas` não tem policy de escrita. */
 function servico() {
@@ -86,6 +89,9 @@ export async function criarContaDeTeste(dados: {
   negocio: string;
   email: string;
   senha: string;
+  whatsapp: string;
+  eventos3m: string;
+  instagram?: string;
 }): Promise<ResultadoCriarConta> {
   const portao = await portaoDoTeste();
   if (!portao.aberto) {
@@ -103,6 +109,14 @@ export async function criarContaDeTeste(dados: {
   if (negocio.length < 2) return { error: "Escreva o nome do seu negócio." };
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { error: "Confira o e-mail digitado." };
   if (senha.length < 6) return { error: "A senha precisa de pelo menos 6 caracteres." };
+  const whatsapp = normalizarDDI(dados.whatsapp);
+  if (!whatsapp) return { error: "Confira o WhatsApp — com DDD, só números." };
+  const eventos3m = dados.eventos3m;
+  if (!ehEventos3Meses(eventos3m)) {
+    return { error: "Diga quantos eventos você tem nos próximos 3 meses." };
+  }
+  // opcional: um @ que não parece @ não recusa o cadastro, só não é guardado
+  const instagram = normalizarInstagram(dados.instagram);
 
   const db = servico();
 
@@ -115,8 +129,16 @@ export async function criarContaDeTeste(dados: {
     email,
     password: senha,
     email_confirm: true,
-    // as mesmas chaves que o gatilho de signup lê
-    user_metadata: { empresa: negocio, name: nome },
+    // `empresa` e `name` são as chaves que o gatilho de signup lê; as
+    // outras três são a qualificação do cadastro (cadastro-qualificacao.ts),
+    // que o painel do dono mostra
+    user_metadata: {
+      empresa: negocio,
+      name: nome,
+      whatsapp,
+      eventos_3_meses: eventos3m,
+      ...(instagram ? { instagram } : {}),
+    },
   });
 
   let userId = criada?.user?.id ?? null;
@@ -161,6 +183,18 @@ export async function criarContaDeTeste(dados: {
       if (erroApagar) console.error("[vela:teste] login órfão não apagado:", userId);
     }
     return { error: "Não foi possível abrir sua conta agora. Tente de novo em alguns instantes." };
+  }
+
+  // O WhatsApp vai para a ficha dela na equipe — é de lá que o painel do
+  // dono e as telas de equipe leem. Falhar aqui não impede a conta: o
+  // número também ficou no login.
+  {
+    const { error: erroZap } = await db
+      .from("membros_equipe")
+      .update({ whatsapp })
+      .eq("user_id", userId)
+      .eq("empresa_id", empresaId);
+    if (erroZap) console.error("[vela:teste] whatsapp da dona:", erroZap.code ?? "sem código");
   }
 
   // O TESTE. `plano: "essencial"` não é enfeite — é o que segura o teto
@@ -234,6 +268,10 @@ export async function criarContaDeTeste(dados: {
     // medição não derruba cadastro
     console.error("[vela:conversao] conta de teste:", String(e).slice(0, 200));
   }
+
+  // O primeiro e-mail do teste (email-ativacao.ts). Nunca derruba o
+  // cadastro; se não sair agora, a rotina diária tenta de novo.
+  await enviarBoasVindas({ userId, email, nome, termina, eventos3m });
 
   return { ok: true };
 }

@@ -2,8 +2,11 @@
 
 // A tela do teste de sete dias.
 //
-// Quatro campos e nenhum cartão — é o degrau que não existia entre o
-// anúncio e a primeira conta criada. Do clique até a primeira tela do
+// Poucos campos e nenhum cartão — é o degrau que não existia entre o
+// anúncio e a primeira conta criada. Desde 16/09/2026 são sete: WhatsApp,
+// eventos nos próximos três meses e o @ do Instagram (opcional) entraram
+// para o dono saber quem chegou e ter como falar com ela durante o teste
+// (ver lib/cadastro-qualificacao.ts). Do clique até a primeira tela do
 // sistema não há confirmação de e-mail no meio: a conta nasce
 // confirmada, a sessão abre aqui e ela cai no painel.
 //
@@ -16,6 +19,8 @@ import { createClient } from "@/lib/supabase/client";
 import { criarContaDeTeste } from "@/app/criar-conta/actions";
 import { guardarOrigemDoClique } from "@/lib/marketing";
 import { useEffect } from "react";
+import { normalizarDDI } from "@/lib/whatsapp-link";
+import { EVENTOS_3_MESES, type Eventos3Meses } from "@/lib/cadastro-qualificacao";
 
 const C = {
   fundo: "#FAF8F5",
@@ -40,6 +45,10 @@ export function CriarContaGratis({
   const [negocio, setNegocio] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [verSenha, setVerSenha] = useState(false);
+  const [whatsapp, setWhatsapp] = useState("");
+  const [eventos3m, setEventos3m] = useState<Eventos3Meses | null>(null);
+  const [instagram, setInstagram] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [jaTemConta, setJaTemConta] = useState(false);
   const [enviando, setEnviando] = useState(false);
@@ -55,6 +64,8 @@ export function CriarContaGratis({
     negocio.trim().length >= 2 &&
     /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim()) &&
     senha.length >= 6 &&
+    normalizarDDI(whatsapp) !== null &&
+    eventos3m !== null &&
     !enviando;
 
   async function enviar(e: React.FormEvent) {
@@ -66,7 +77,15 @@ export function CriarContaGratis({
 
     let r;
     try {
-      r = await criarContaDeTeste({ nome, negocio, email, senha });
+      r = await criarContaDeTeste({
+        nome,
+        negocio,
+        email,
+        senha,
+        whatsapp,
+        eventos3m: eventos3m ?? "",
+        instagram,
+      });
     } catch {
       setErro("Não foi possível criar a conta agora. Tente de novo em alguns instantes.");
       setEnviando(false);
@@ -145,6 +164,9 @@ export function CriarContaGratis({
           placeholder="pode ser o seu próprio nome"
           style={campo}
         />
+        <p style={{ margin: "6px 0 0", fontSize: "12.5px", color: C.meta }}>
+          Exclusivo para assessoras e cerimonialistas.
+        </p>
       </div>
       <div>
         <label htmlFor="cc-email" style={rotulo}>
@@ -160,20 +182,113 @@ export function CriarContaGratis({
         />
       </div>
       <div>
-        <label htmlFor="cc-senha" style={rotulo}>
-          Senha
+        <label htmlFor="cc-whatsapp" style={rotulo}>
+          WhatsApp
         </label>
         <input
-          id="cc-senha"
-          type="password"
-          value={senha}
-          onChange={(e) => setSenha(e.target.value)}
-          autoComplete="new-password"
+          id="cc-whatsapp"
+          type="tel"
+          inputMode="tel"
+          value={whatsapp}
+          onChange={(e) => setWhatsapp(e.target.value)}
+          autoComplete="tel"
+          placeholder="(11) 99999-0000"
           style={campo}
         />
         <p style={{ margin: "6px 0 0", fontSize: "12.5px", color: C.meta }}>
+          Com DDD. É por ele que a gente te ajuda durante o teste.
+        </p>
+      </div>
+      <div>
+        <label htmlFor="cc-senha" style={rotulo}>
+          Senha
+        </label>
+        <div style={{ position: "relative" }}>
+          <input
+            id="cc-senha"
+            type={verSenha ? "text" : "password"}
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
+            autoComplete="new-password"
+            style={{ ...campo, paddingRight: "84px" }}
+          />
+          {/* no lugar do "confirme sua senha": ver o que digitou */}
+          <button
+            type="button"
+            onClick={() => setVerSenha((v) => !v)}
+            aria-pressed={verSenha}
+            style={{
+              position: "absolute",
+              right: "6px",
+              top: "6px",
+              height: "34px",
+              padding: "0 10px",
+              border: "none",
+              borderRadius: "6px",
+              background: "transparent",
+              color: C.meta,
+              fontFamily: "inherit",
+              fontSize: "13px",
+              cursor: "pointer",
+            }}
+          >
+            {verSenha ? "Esconder" : "Mostrar"}
+          </button>
+        </div>
+        <p style={{ margin: "6px 0 0", fontSize: "12.5px", color: C.meta }}>
           Pelo menos 6 caracteres.
         </p>
+      </div>
+
+      <fieldset style={{ margin: 0, padding: 0, border: "none" }}>
+        <legend style={{ ...rotulo, padding: 0 }}>
+          Quantos eventos você tem nos próximos 3 meses?
+        </legend>
+        <div role="radiogroup" style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+          {EVENTOS_3_MESES.map((o) => {
+            const marcado = eventos3m === o.valor;
+            return (
+              <button
+                key={o.valor}
+                type="button"
+                role="radio"
+                aria-checked={marcado}
+                onClick={() => setEventos3m(o.valor)}
+                style={{
+                  minHeight: "42px",
+                  padding: "0 14px",
+                  borderRadius: "8px",
+                  border: `1px solid ${marcado ? C.ameixa : C.borda}`,
+                  background: marcado ? "#F3EBF0" : "#FFFFFF",
+                  color: marcado ? "#4A2A40" : C.corpo,
+                  fontFamily: "inherit",
+                  fontSize: "14.5px",
+                  fontWeight: marcado ? 600 : 500,
+                  cursor: "pointer",
+                }}
+              >
+                {o.rotulo}
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
+
+      <div>
+        <label htmlFor="cc-instagram" style={rotulo}>
+          @ do Instagram profissional{" "}
+          <span style={{ fontWeight: 400, color: C.meta }}>(opcional)</span>
+        </label>
+        <input
+          id="cc-instagram"
+          value={instagram}
+          onChange={(e) => setInstagram(e.target.value)}
+          autoComplete="off"
+          autoCapitalize="none"
+          spellCheck={false}
+          placeholder="@seuperfil"
+          style={campo}
+        />
       </div>
 
       {erro && (

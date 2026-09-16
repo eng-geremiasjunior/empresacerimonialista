@@ -40,6 +40,9 @@ const ROTINAS = [
   // a promoção de lançamento guarda só o dia em que a escada começou; é
   // esta rotina que troca o preço na operadora quando o degrau vira
   "promocao-degrau",
+  // os e-mails do teste grátis: dia 2 e fim do teste (email-ativacao.ts).
+  // O cron roda às 12h UTC — 9h em Brasília, hora de caixa de entrada.
+  "ativacao",
 ] as const;
 
 export async function GET(request: NextRequest) {
