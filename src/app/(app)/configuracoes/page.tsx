@@ -11,7 +11,7 @@ import { GuiaSection } from "@/components/configuracoes/GuiaSection";
 import { getEstadoDoGuia } from "@/lib/supabase/guia-vivo";
 import { getExplicacoesLigadas } from "@/lib/supabase/explicacoes";
 import { nomeTemplateLembrete, whatsappConfigurado } from "@/lib/whatsapp";
-import { CalendarClock, CreditCard, FileSignature, Globe } from "lucide-react";
+import { CalendarClock, FileSignature, Globe } from "lucide-react";
 import { ContratoModeloForm } from "@/components/configuracoes/ContratoModeloForm";
 
 export const dynamic = "force-dynamic";
@@ -229,29 +229,6 @@ export default async function ConfiguracoesPage() {
             className="mt-3 inline-block rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
           >
             Abrir o Catálogo →
-          </Link>
-        </section>
-      )}
-
-      {/* Assinatura saiu do menu lateral (15/09): plano não disputa lugar
-          com a operação do dia. A rota é a mesma; a porta de cobrança
-          continua no servidor, em (app)/layout.tsx. */}
-      {proprietaria && (
-        <section className="rounded-xl border border-gray-200 bg-white px-6 py-5">
-          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-gray-900">
-            <CreditCard size={15} className="text-gray-500" />
-            Plano e assinatura
-          </h2>
-          <p className="mt-0.5 text-xs text-gray-500">
-            Quanto custa, quantos eventos em andamento o plano permite e
-            quantas pessoas podem ter login. Troca de plano, cobrança e
-            cancelamento.
-          </p>
-          <Link
-            href="/assinatura"
-            className="mt-3 inline-block rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
-          >
-            Abrir plano e assinatura →
           </Link>
         </section>
       )}

@@ -43,7 +43,7 @@ export const GRUPOS_AJUDA: GrupoAjuda[] = [
         pergunta:
           "Onde foram parar o Calendário, o Catálogo, os Contratos e a Agenda de Fornecedores?",
         resposta:
-          "Continuam no sistema, cada um dentro da tela que o explica: o Calendário está em Eventos, ao lado da lista; o Catálogo está em Gestão comercial; Contratos e Agenda de reuniões estão em Fornecedores; Plano e assinatura está em Configurações. Os endereços antigos continuam abrindo.",
+          "Continuam no sistema, cada um dentro da tela que o explica: o Calendário está em Eventos, ao lado da lista; o Catálogo está em Gestão comercial; Contratos e Agenda de reuniões estão em Fornecedores. Os endereços antigos continuam abrindo.",
       },
     ],
   },

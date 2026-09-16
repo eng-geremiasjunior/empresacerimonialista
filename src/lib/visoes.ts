@@ -5,7 +5,8 @@
 // sistema: cada um passou a viver dentro da tela que o explica, como uma
 // visão ao lado da principal (Eventos: Lista · Calendário; Gestão
 // comercial, que se chamava Orçamentos: Propostas · Catálogo; Fornecedores: Cadastro · Contratos · Agenda de
-// reuniões; Configurações: Plano e assinatura). As rotas não mudaram.
+// reuniões). As rotas não mudaram. A Assinatura, que tinha ido para dentro
+// de Configurações, voltou ao menu lateral em 16/09/2026.
 //
 // Uma lista só, lida pela página-mãe e pelas páginas-filhas, para as abas
 // serem as mesmas nos dois lugares. Os cargos repetem os do item que
