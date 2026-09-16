@@ -12,7 +12,12 @@ export type NotificationType =
   // a cliente assinou a proposta (162) ou disse que não vai fechar
   // agora, com o motivo — os dois abrem o orçamento
   | "orcamento_aprovado"
-  | "orcamento_recusado";
+  | "orcamento_recusado"
+  // agenda com fornecedor (069) e comentário da cliente na proposta (101)
+  | "compromisso"
+  | "orcamento_comentario"
+  // alguém pediu orçamento pela página pública (165)
+  | "pedido_orcamento";
 
 export type NotificationRow = {
   id: string;

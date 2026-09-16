@@ -11,6 +11,9 @@ import {
   UserRound,
   FileCheck2,
   FileX2,
+  CalendarClock,
+  MessageSquareText,
+  Inbox,
   type LucideIcon,
 } from "lucide-react";
 import type { NotificationRow, NotificationType } from "@/lib/notifications-db";
@@ -24,6 +27,9 @@ const TYPE_ICON: Record<NotificationType, LucideIcon> = {
   portal: UserRound,
   orcamento_aprovado: FileCheck2,
   orcamento_recusado: FileX2,
+  compromisso: CalendarClock,
+  orcamento_comentario: MessageSquareText,
+  pedido_orcamento: Inbox,
 };
 
 type Props = {

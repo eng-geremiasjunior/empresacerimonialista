@@ -106,6 +106,31 @@ export default function PrivacidadePage() {
         cerimonialista; a pedido, dados pessoais podem ser removidos.
       </Secao>
 
+      <Secao titulo="Pedido de orçamento pela página da cerimonialista">
+        Cada cerimonialista pode publicar uma página de apresentação com um
+        formulário de pedido de orçamento. Quando você envia esse formulário,
+        o nome, o WhatsApp, o e-mail (se informado) e os dados do evento que
+        você descreveu são entregues <b>a essa cerimonialista</b>, que é a{" "}
+        <b>controladora</b> desses dados; o eorganizei apenas os guarda e os
+        exibe para ela. A finalidade é uma só: responder ao seu pedido. Não
+        usamos esses dados para anúncios, não os vendemos e não os
+        compartilhamos com outras cerimonialistas.
+        <p style={{ marginTop: 10 }}>
+          Pedidos encerrados são mantidos por até <b>24 meses</b> e depois
+          anonimizados. Você pode pedir a exclusão antes disso, à
+          cerimonialista ou pelo contato no fim desta página.
+        </p>
+        <p style={{ marginTop: 10 }}>
+          Nas páginas públicas das cerimonialistas contamos, <b>por dia</b>,
+          quantas visitas houve, quantos toques nos botões de WhatsApp e
+          Instagram e quantos pedidos foram enviados. Esses números são
+          agregados e <b>não identificam quem visitou</b>: não usamos cookie,
+          não guardamos o seu endereço de rede e não há como ligar uma visita
+          a uma pessoa. Um toque no botão do WhatsApp conta como toque — o
+          sistema não sabe se você chegou a enviar a mensagem.
+        </p>
+      </Secao>
+
       <Secao titulo="Seus direitos">
         Titulares de dados podem solicitar acesso, correção ou exclusão das
         suas informações. Basta entrar em contato pelo e-mail abaixo.
