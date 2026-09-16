@@ -204,7 +204,7 @@ export default async function ConfiguracoesPage() {
           </h2>
           <p className="mt-0.5 text-xs text-gray-500">
             O endereço para divulgar o seu trabalho. Quem pede orçamento por
-            ela aparece em Orçamentos.
+            ela aparece em Gestão comercial.
           </p>
           <Link
             href="/orcamentos/pagina"

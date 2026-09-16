@@ -1,6 +1,6 @@
 "use client";
 
-// As visões de uma tela-mãe (Eventos, Orçamentos, Fornecedores).
+// As visões de uma tela-mãe (Eventos, Gestão comercial, Fornecedores).
 //
 // É MENU, e menu se destaca do conteúdo. A primeira versão eram abas
 // finas, de texto cinza, logo abaixo do título — e o dono, que conhece o

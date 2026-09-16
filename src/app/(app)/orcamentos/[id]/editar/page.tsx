@@ -46,7 +46,7 @@ export default async function EditarOrcamentoPage({
         href="/orcamentos"
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900"
       >
-        <ArrowLeft size={15} /> Voltar para orçamentos
+        <ArrowLeft size={15} /> Voltar para as propostas
       </Link>
       <h1 className="mb-5 text-xl font-semibold text-gray-900">
         Editar orçamento

@@ -25,6 +25,7 @@ import {
   erroDoSlug,
   faltaParaPublicar,
   normalizarInstagram,
+  normalizarPixelMeta,
   sugerirSlug,
   textoParaBio,
   type ServicoDaPagina,
@@ -78,6 +79,7 @@ type Props = {
     motivos: string[];
     whatsapp: string;
     instagram: string;
+    pixelMeta: string;
   };
   fotos: Foto[];
   depoimentos: Depoimento[];
@@ -124,6 +126,7 @@ export function EditorPagina({
     whatsappFormatado(inicial.whatsapp || whatsappSugerido || "")
   );
   const [instagram, setInstagram] = useState(inicial.instagram);
+  const [pixelMeta, setPixelMeta] = useState(inicial.pixelMeta);
   const [fotos, setFotos] = useState(fotosIniciais);
   const [depoimentos, setDepoimentos] = useState(depoimentosIniciais);
 
@@ -138,6 +141,7 @@ export function EditorPagina({
     motivos: inicial.motivos,
     whatsapp: inicial.whatsapp,
     instagram: inicial.instagram,
+    pixelMeta: inicial.pixelMeta,
   });
 
   const [aviso, setAviso] = useState<{ tipo: "ok" | "erro"; texto: string; onde: string } | null>(
@@ -160,6 +164,7 @@ export function EditorPagina({
     motivos: motivos.map((m) => m.trim()).filter(Boolean),
     whatsapp: normalizarWhatsapp(whatsapp) ?? "",
     instagram: normalizarInstagram(instagram) ?? instagram.trim(),
+    pixelMeta: normalizarPixelMeta(pixelMeta) ?? pixelMeta.trim(),
   };
 
   // O WhatsApp que veio do Catálogo, intocado, não é "mudança": é o valor
@@ -223,6 +228,10 @@ export function EditorPagina({
       mostrar("salvar", "erro", "Confira o Instagram: só o nome do perfil.");
       return false;
     }
+    if (pixelMeta.trim() && !normalizarPixelMeta(pixelMeta)) {
+      mostrar("salvar", "erro", "Confira o pixel: só o número do pixel da Meta.");
+      return false;
+    }
     const r = await salvarPagina({
       titulo: conteudoAtual.titulo || null,
       posicionamento: conteudoAtual.posicionamento || null,
@@ -233,12 +242,15 @@ export function EditorPagina({
       motivos: conteudoAtual.motivos,
       whatsapp: conteudoAtual.whatsapp || null,
       instagram: conteudoAtual.instagram || null,
+      pixelMeta: conteudoAtual.pixelMeta || null,
     });
     if ("error" in r) {
       mostrar("salvar", "erro", r.error);
       return false;
     }
     setSalvoConteudo({ ...conteudoAtual, servicos: conteudoAtual.servicos });
+    // colou o código inteiro da Meta: o campo passa a mostrar só o número
+    setPixelMeta(conteudoAtual.pixelMeta);
     return true;
   }
 
@@ -672,6 +684,32 @@ export function EditorPagina({
             className={inputClass}
           />
         </div>
+      </section>
+
+      {/* ------------------------------------------------ anúncios */}
+      <section className={secaoClass}>
+        <label htmlFor="pagina-pixel" className={labelClass}>
+          Pixel da Meta <span className="font-normal text-gray-500">(opcional)</span>
+        </label>
+        <input
+          id="pagina-pixel"
+          value={pixelMeta}
+          onChange={(e) => setPixelMeta(e.target.value)}
+          onBlur={() => {
+            const numero = normalizarPixelMeta(pixelMeta);
+            if (numero) setPixelMeta(numero);
+          }}
+          inputMode="numeric"
+          autoComplete="off"
+          spellCheck={false}
+          placeholder="Só o número do pixel"
+          className={`${inputClass} sm:max-w-xs`}
+        />
+        <p className="mt-2 text-xs leading-relaxed text-gray-500">
+          O pixel só é ativado para quem permitir. A vitrine envia à Meta a visita, o
+          toque no WhatsApp e o pedido enviado, sem nome, telefone ou e-mail. No
+          Gerenciador de Eventos, deixe desligada a correspondência avançada automática.
+        </p>
       </section>
 
       {/* ------------------------------------------------ fotos */}

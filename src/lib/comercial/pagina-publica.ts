@@ -28,6 +28,8 @@ export type PaginaEditavel = {
   motivos: string[];
   whatsapp: string | null;
   instagram: string | null;
+  /** o pixel da Meta dela: só o número */
+  pixelMeta: string | null;
 };
 
 /** O que a RPC `pagina_publica` devolve. Lista fechada: nada interno. */
@@ -45,6 +47,11 @@ export type PaginaPublica = {
   motivos: string[];
   whatsapp: string | null;
   instagram: string | null;
+  /**
+   * O pixel da Meta dela (165, fim da tarde de 16/09/2026). A página só o
+   * carrega publicada, para quem não é da casa, depois do "Permitir".
+   */
+  pixel_meta?: string | null;
   fotos: { url: string; legenda: string | null; tipo_evento: EventType }[];
   /**
    * `tipo_evento` é o que deixa o depoimento em destaque acompanhar o
@@ -155,6 +162,21 @@ export function normalizarInstagram(valor: string | null): string | null {
     .replace(/[/?].*$/, "");
   if (!limpo) return null;
   return /^[A-Za-z0-9._]{1,30}$/.test(limpo) ? limpo : null;
+}
+
+/* ------------------------------------------------------------------ */
+/* O pixel da Meta dela                                                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Só o número do pixel. Aceita o que ela colar — o número solto, "ID:
+ * 1234…" ou até o código inteiro da Meta — e fica com a primeira
+ * sequência de 10 a 20 dígitos. Código nunca passa daqui: a página monta
+ * o pixel sozinha, a partir do número.
+ */
+export function normalizarPixelMeta(valor: string | null | undefined): string | null {
+  const m = /(?:^|\D)(\d{10,20})(?!\d)/.exec(valor ?? "");
+  return m ? m[1] : null;
 }
 
 /* ------------------------------------------------------------------ */

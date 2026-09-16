@@ -24,7 +24,7 @@ const serif = Newsreader({
 });
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Orçamentos — eorganizei" };
+export const metadata = { title: "Gestão comercial — eorganizei" };
 
 const PER_PAGE = 20;
 
@@ -196,7 +196,7 @@ export default async function OrcamentosPage({
               letterSpacing: "-0.3px",
             }}
           >
-            Orçamentos
+            Gestão comercial
           </h1>
           <p className="mt-1 text-[14px]" style={{ color: CORES.secundario }}>
             Monte propostas e acompanhe aprovações

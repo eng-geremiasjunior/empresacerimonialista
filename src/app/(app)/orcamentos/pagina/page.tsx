@@ -1,6 +1,6 @@
 // A página pública da cerimonialista — o editor.
 //
-// Visão de Orçamentos, ao lado de Propostas e do Catálogo: é o começo do
+// Visão da Gestão comercial, ao lado de Propostas e do Catálogo: é o começo do
 // caminho comercial (Página → Pedido → Proposta → Aceite → Evento). Só a
 // proprietária entra, pela mesma régua do Catálogo: é a cara da empresa
 // lá fora.
@@ -44,7 +44,7 @@ export default async function PaginaPublicaEditorPage() {
       supabase
         .from("empresa_pagina")
         .select(
-          "slug, publicada, publicada_em, titulo, posicionamento, para_quem, cidade, tipos_atendidos, servicos, motivos, whatsapp, instagram"
+          "slug, publicada, publicada_em, titulo, posicionamento, para_quem, cidade, tipos_atendidos, servicos, motivos, whatsapp, instagram, pixel_meta"
         )
         .eq("empresa_id", empresaId)
         .maybeSingle(),
@@ -102,6 +102,7 @@ export default async function PaginaPublicaEditorPage() {
     motivos: string[] | null;
     whatsapp: string | null;
     instagram: string | null;
+    pixel_meta: string | null;
   } | null;
 
   const whatsappDoCatalogo =
@@ -166,6 +167,7 @@ export default async function PaginaPublicaEditorPage() {
           motivos: pag?.motivos ?? [],
           whatsapp: pag?.whatsapp ?? "",
           instagram: pag?.instagram ?? "",
+          pixelMeta: pag?.pixel_meta ?? "",
         }}
         fotos={fotos}
         depoimentos={depoimentos}

@@ -15,9 +15,13 @@
 //
 // O tipo escolhido e o "enviado" moram no estado da vitrine: o primeiro
 // muda o depoimento em destaque, o segundo troca o botão da barra fixa.
+//
+// O formulário promete que os dados vão só para ela. Com o pixel da Meta
+// dela ligado, quem garante isso é a trava da configuração automática
+// (lib/comercial/pixel-vitrine.ts): sem ela, o script da Meta leria os
+// campos a cada clique em botão.
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import {
   CAMPOS_DO_PEDIDO,
@@ -29,6 +33,7 @@ import {
 import { exemploDeWhatsapp, textoWhatsappPagina } from "@/lib/comercial/pagina-publica";
 import { linkWhatsapp } from "@/lib/whatsapp-link";
 import { hojeBR } from "@/lib/tempo";
+import { eventoDoPixel } from "@/lib/comercial/pixel-vitrine";
 import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
 import { LinkMedido, chegadaDaAba } from "./MedirPagina";
 import { useVitrine } from "./VitrineViva";
@@ -177,6 +182,8 @@ export function FormularioPedido({
         return;
       }
       marcarEnviado();
+      // o pixel dela, se a pessoa permitiu: só o fato, sem dado nenhum
+      eventoDoPixel("Lead");
     } catch {
       setErroGeral("Sem conexão. Tente de novo ou fale pelo WhatsApp.");
     } finally {
@@ -436,7 +443,8 @@ export function FormularioPedido({
           </button>
           <p className="vt-aviso-dados">
             Seus dados vão só para {nomeEmpresa}, para responder ao seu pedido.{" "}
-            <Link href="/privacidade">Política de privacidade</Link>
+            {/* página inteira nova: o pixel desta aba não segue para outras telas */}
+            <a href="/privacidade#vitrine">Política de privacidade</a>
           </p>
           {erroGeral && (
             <p role="alert" className="vt-erro vt-erro-geral">

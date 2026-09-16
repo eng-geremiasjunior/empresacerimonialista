@@ -16,6 +16,7 @@ import {
   erroDoSlug,
   faltaParaPublicar,
   normalizarInstagram,
+  normalizarPixelMeta,
   type PaginaEditavel,
 } from "@/lib/comercial/pagina-publica";
 import { normalizarWhatsapp, whatsappValido } from "@/lib/comercial/pedidos";
@@ -59,6 +60,7 @@ const FRASES_DO_BANCO = [
   "até 3 motivos",
   "motivo longo demais",
   "antes de publicar",
+  "Pixel inválido",
 ];
 
 function fraseDoBanco(mensagem: string | undefined, padrao: string): string {
@@ -88,6 +90,11 @@ export async function salvarPagina(dados: PaginaEditavel): Promise<Resultado> {
   if (instagramCru && !instagram) {
     return { error: "Confira o Instagram: só o nome do perfil." };
   }
+  const pixelCru = dados.pixelMeta?.trim() || null;
+  const pixelMeta = normalizarPixelMeta(pixelCru);
+  if (pixelCru && !pixelMeta) {
+    return { error: "Confira o pixel: só o número do pixel da Meta." };
+  }
 
   const tipos = Array.from(new Set(dados.tiposAtendidos)).filter(
     (t) => t in EVENT_TYPE_LABELS
@@ -116,6 +123,7 @@ export async function salvarPagina(dados: PaginaEditavel): Promise<Resultado> {
       motivos,
       whatsapp: whatsappCru ? normalizarWhatsapp(whatsappCru) : null,
       instagram,
+      pixel_meta: pixelMeta,
       atualizado_por: ctx.userId,
     },
     { onConflict: "empresa_id" }

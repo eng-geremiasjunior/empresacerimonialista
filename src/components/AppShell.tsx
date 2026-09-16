@@ -80,12 +80,14 @@ type NavItem = {
 // Cinco grupos e a Ajuda solta. Antes eram 16 itens planos para a dona.
 // Calendário, Catálogo, Contratos, Agenda de Fornecedores e Assinatura
 // saíram do menu SEM sair do sistema: viraram visões da tela que os explica
-// (Eventos, Orçamentos, Fornecedores, Configurações — ver lib/visoes.ts).
+// (Eventos, Gestão comercial, Fornecedores, Configurações — ver lib/visoes.ts).
 // As rotas não mudaram; o item-mãe fica ativo nelas (TAMBEM_ATIVO).
 const NAV: NavItem[] = [
   { label: "Dashboard", icon: "dashboard", href: "/eventos/dashboard", grupo: "Principal" },
   { label: "Eventos", icon: "eventos", href: "/eventos", grupo: "Principal" },
-  { label: "Orçamentos", icon: "cotacoes", href: "/orcamentos", grupo: "Comercial" },
+  // "Gestão comercial" (dono, 16/09/2026): propostas, pedidos, vitrine e
+  // catálogo. A rota continua /orcamentos.
+  { label: "Gestão comercial", icon: "cotacoes", href: "/orcamentos", grupo: "Comercial" },
   { label: "Clientes", icon: "clientes", href: "/clientes", grupo: "Comercial" },
   {
     label: "Solicitações",

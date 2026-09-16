@@ -50,7 +50,7 @@ const carregarPrevia = cache(async (ref: string): Promise<PaginaPublica | null> 
   const [pagRes, empRes, fotosRes, depRes, atualRes] = await Promise.all([
     supabase
       .from("empresa_pagina")
-      .select("titulo, posicionamento, para_quem, cidade, tipos_atendidos, servicos, motivos, whatsapp, instagram")
+      .select("titulo, posicionamento, para_quem, cidade, tipos_atendidos, servicos, motivos, whatsapp, instagram, pixel_meta")
       .eq("empresa_id", empresaId)
       .maybeSingle(),
     supabase.from("empresas").select("nome, logo_url").eq("id", empresaId).maybeSingle(),
@@ -92,6 +92,7 @@ const carregarPrevia = cache(async (ref: string): Promise<PaginaPublica | null> 
     motivos: string[] | null;
     whatsapp: string | null;
     instagram: string | null;
+    pixel_meta: string | null;
   } | null;
   const atual = (atualRes.data as { slug?: string } | null)?.slug;
   if (!pag || !atual) return null;
@@ -110,6 +111,7 @@ const carregarPrevia = cache(async (ref: string): Promise<PaginaPublica | null> 
     motivos: pag.motivos ?? [],
     whatsapp: pag.whatsapp,
     instagram: pag.instagram,
+    pixel_meta: pag.pixel_meta,
     fotos: ((fotosRes.data ?? []) as PaginaPublica["fotos"]),
     depoimentos: ((depRes.data ?? []) as PaginaPublica["depoimentos"]),
   };

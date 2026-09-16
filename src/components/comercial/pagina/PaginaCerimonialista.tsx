@@ -24,6 +24,7 @@ import {
   comoFunciona,
   fraseParaQuem,
   iniciaisDoNome,
+  normalizarPixelMeta,
   textoWhatsappPagina,
   tiposEmLinha,
   type PaginaPublica,
@@ -34,6 +35,7 @@ import { DepoimentosVitrine } from "./DepoimentosVitrine";
 import { FormularioPedido } from "./FormularioPedido";
 import { GaleriaVitrine } from "./GaleriaVitrine";
 import { LinkMedido, MedirPagina } from "./MedirPagina";
+import { PixelDaVitrine, PreferenciasDoPixel } from "./PixelDaVitrine";
 import { AnimacoesVitrine, BarraVitrine, EstadoDaVitrine, TopoVitrine } from "./VitrineViva";
 
 /** O rótulo pequeno de cada seção, com a linha fina que cresce embaixo. */
@@ -81,6 +83,9 @@ export function PaginaCerimonialista({
   const medir = contar && !previa;
   const wa = linkWhatsapp(pagina.whatsapp, textoWhatsappPagina());
   const insta = pagina.instagram ? `https://instagram.com/${pagina.instagram}` : null;
+  // o pixel dela: só na vitrine publicada, para quem não é da casa (e,
+  // dentro do componente, só depois de a pessoa permitir)
+  const pixel = medir ? normalizarPixelMeta(pagina.pixel_meta) : null;
 
   // A 1ª foto abre a página. Com uma foto só, ela não se repete embaixo:
   // a seção "Eventos realizados" some e a legenda vem na apresentação.
@@ -279,8 +284,15 @@ export function PaginaCerimonialista({
             {cidade ? ` · ${cidade}` : ""}
           </div>
           <div>
-            <Link href="/privacidade">Privacidade</Link>
+            {/* página inteira nova, como os outros links para fora da vitrine:
+                o pixel dela nunca segue na mesma aba para outra tela */}
+            <a href="/privacidade#vitrine">Privacidade</a>
           </div>
+          {pixel && (
+            <div>
+              <PreferenciasDoPixel />
+            </div>
+          )}
           <div>
             <a href="/planos" className="vt-rodape-marca">
               Página feita com eorganizei
@@ -289,6 +301,8 @@ export function PaginaCerimonialista({
         </footer>
 
         <BarraVitrine whatsapp={wa} slug={slug} contar={medir} previa={previa} />
+
+        {pixel && <PixelDaVitrine pixelId={pixel} slug={slug} nomeEmpresa={nome} />}
 
         <AnimacoesVitrine />
       </div>

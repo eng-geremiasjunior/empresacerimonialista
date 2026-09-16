@@ -106,7 +106,7 @@ export default function PrivacidadePage() {
         cerimonialista; a pedido, dados pessoais podem ser removidos.
       </Secao>
 
-      <Secao titulo="Pedido de orçamento pela vitrine da cerimonialista">
+      <Secao id="vitrine" titulo="Pedido de orçamento pela vitrine da cerimonialista">
         Cada cerimonialista pode publicar uma vitrine profissional, uma página de apresentação com um
         formulário de pedido de orçamento. Quando você envia esse formulário,
         o nome, o WhatsApp, o e-mail (se informado) e os dados do evento que
@@ -115,6 +115,18 @@ export default function PrivacidadePage() {
         exibe para ela. A finalidade é uma só: responder ao seu pedido. Não
         usamos esses dados para anúncios, não os vendemos e não os
         compartilhamos com outras cerimonialistas.
+        <p style={{ marginTop: 10 }}>
+          <b>Pixel da Meta da cerimonialista.</b> Se a cerimonialista cadastrou
+          o pixel da Meta dela, a vitrine pergunta antes se você permite
+          ativá-lo. Sem a sua permissão, o código da Meta nem é carregado. Com
+          ela, a Meta passa a receber dados de navegação (como a página
+          visitada e os cookies dela no seu navegador), tratados conforme a
+          política de privacidade da Meta, para os anúncios dessa
+          cerimonialista. A vitrine envia à Meta só três avisos: a visita, o
+          toque no botão do WhatsApp e o envio do pedido, sem o seu nome,
+          WhatsApp, e-mail ou mensagem. Você muda a escolha quando quiser, pelo
+          link no rodapé da vitrine.
+        </p>
         <p style={{ marginTop: 10 }}>
           Pedidos encerrados são mantidos por até <b>24 meses</b> e depois
           anonimizados. Você pode pedir a exclusão antes disso, à
@@ -186,9 +198,17 @@ const lista: React.CSSProperties = {
   gap: 8,
 };
 
-function Secao({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+function Secao({
+  titulo,
+  id,
+  children,
+}: {
+  titulo: string;
+  id?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <section style={{ marginTop: 24 }}>
+    <section id={id} style={{ marginTop: 24 }}>
       <h2 style={{ fontSize: 17, fontWeight: 600, margin: "0 0 6px" }}>{titulo}</h2>
       <div style={{ color: "#3D3835" }}>{children}</div>
     </section>

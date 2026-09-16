@@ -3,8 +3,8 @@
 // Em 15/09/2026 o menu lateral tinha 16 itens planos. Calendário, Catálogo,
 // Contratos, Agenda de Fornecedores e Assinatura saíram do menu SEM sair do
 // sistema: cada um passou a viver dentro da tela que o explica, como uma
-// visão ao lado da principal (Eventos: Lista · Calendário; Orçamentos:
-// Propostas · Catálogo; Fornecedores: Cadastro · Contratos · Agenda de
+// visão ao lado da principal (Eventos: Lista · Calendário; Gestão
+// comercial, que se chamava Orçamentos: Propostas · Catálogo; Fornecedores: Cadastro · Contratos · Agenda de
 // reuniões; Configurações: Plano e assinatura). As rotas não mudaram.
 //
 // Uma lista só, lida pela página-mãe e pelas páginas-filhas, para as abas

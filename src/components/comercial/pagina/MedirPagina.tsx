@@ -18,6 +18,7 @@
 
 import { useEffect } from "react";
 import { chegadaDaVisita, type Chegada } from "@/lib/comercial/origem";
+import { eventoDoPixel } from "@/lib/comercial/pixel-vitrine";
 
 type Toque = "page_view" | "whatsapp_click" | "instagram_click";
 
@@ -126,6 +127,8 @@ export function LinkMedido({
       className={className}
       onClick={() => {
         if (contar) registrar(slug, tipo);
+        // o pixel dela, se a pessoa permitiu: toque, não mensagem enviada
+        if (tipo === "whatsapp_click") eventoDoPixel("Contact");
       }}
     >
       {children}

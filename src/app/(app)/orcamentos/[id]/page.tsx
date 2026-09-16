@@ -92,7 +92,7 @@ export default async function VisualizarOrcamentoPage({
           href="/orcamentos"
           className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900"
         >
-          <ArrowLeft size={15} /> Voltar para orçamentos
+          <ArrowLeft size={15} /> Voltar para as propostas
         </Link>
         <div className="flex items-center gap-2">
           {orc.status === "rascunho" && (

@@ -43,7 +43,7 @@ export const GRUPOS_AJUDA: GrupoAjuda[] = [
         pergunta:
           "Onde foram parar o Calendário, o Catálogo, os Contratos e a Agenda de Fornecedores?",
         resposta:
-          "Continuam no sistema, cada um dentro da tela que o explica: o Calendário está em Eventos, ao lado da lista; o Catálogo está em Orçamentos; Contratos e Agenda de reuniões estão em Fornecedores; Plano e assinatura está em Configurações. Os endereços antigos continuam abrindo.",
+          "Continuam no sistema, cada um dentro da tela que o explica: o Calendário está em Eventos, ao lado da lista; o Catálogo está em Gestão comercial; Contratos e Agenda de reuniões estão em Fornecedores; Plano e assinatura está em Configurações. Os endereços antigos continuam abrindo.",
       },
     ],
   },
@@ -228,7 +228,7 @@ export const GRUPOS_AJUDA: GrupoAjuda[] = [
         id: "mandar-proposta",
         pergunta: "Como mando uma proposta para uma cliente?",
         resposta:
-          "Em Orçamentos → Novo: monte os itens e os pacotes e envie o link. A cliente abre uma página com a sua marca, escolhe o pacote, ajusta os extras e assina na tela — você recebe o aceite na hora.",
+          "Em Gestão comercial → Novo orçamento: monte os itens e os pacotes e envie o link. A cliente abre uma página com a sua marca, escolhe o pacote, ajusta os extras e assina na tela — você recebe o aceite na hora.",
       },
       {
         id: "proposta-aceita",
@@ -246,7 +246,7 @@ export const GRUPOS_AJUDA: GrupoAjuda[] = [
         id: "pagina-publica",
         pergunta: "Como divulgo meu trabalho e recebo pedidos de orçamento?",
         resposta:
-          "Em Orçamentos → Vitrine profissional: escreva a apresentação, escolha os tipos de evento, os serviços, as fotos e os depoimentos que vão aparecer, e publique. O endereço é seu para pôr na bio do Instagram. Quem preencher o formulário da vitrine chega em Orçamentos, na aba Pedidos, com o evento já descrito, e um clique abre a proposta preenchida. O botão de WhatsApp da vitrine abre a conversa com você; o sistema conta o toque, mas não sabe se a mensagem foi enviada.",
+          "Em Gestão comercial → Vitrine profissional: escreva a apresentação, escolha os tipos de evento, os serviços, as fotos e os depoimentos que vão aparecer, e publique. O endereço é seu para pôr na bio do Instagram. Quem preencher o formulário da vitrine chega em Gestão comercial, na aba Pedidos, com o evento já descrito, e um clique abre a proposta preenchida. O botão de WhatsApp da vitrine abre a conversa com você; o sistema conta o toque, mas não sabe se a mensagem foi enviada. Se você anuncia na Meta, cole o número do seu pixel: ele só é ativado para quem permitir.",
       },
       {
         id: "validade-proposta",

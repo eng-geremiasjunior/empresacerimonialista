@@ -92,7 +92,7 @@ export async function enviarEmailPedidoParaCerimonialista(dados: {
         </a>
       </p>
       <p style="font-size:13px;color:#6B6884">
-        O pedido também está no eOrganizei, em Orçamentos:<br />
+        O pedido também está no eOrganizei, em Gestão comercial:<br />
         ${appUrl()}/orcamentos/pedidos
       </p>
     </div>

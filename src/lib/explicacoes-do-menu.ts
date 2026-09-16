@@ -48,7 +48,7 @@ export const EXPLICACOES_DO_MENU: ExplicacaoDoMenu[] = [
     paraQue:
       "A cliente abre um link com a sua marca, escolhe o pacote e assina na tela — o aceite chega na hora, sem PDF indo e voltando.",
     comoUsar:
-      "Orçamentos → Novo. Monte os itens, defina a validade e envie o link. Quando ela aceitar, um clique vira evento.",
+      "Gestão comercial → Novo orçamento. Monte os itens, defina a validade e envie o link. Quando ela aceitar, um clique vira evento.",
   },
   {
     href: "/clientes",

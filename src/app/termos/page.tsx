@@ -174,7 +174,12 @@ export default function TermosPage() {
           fotos e pelo <b>consentimento de quem aparece nelas</b>, e pela
           autorização de quem assina os depoimentos. Quem pede orçamento pela
           sua vitrine é <b>seu</b> contato: você é a controladora desses dados,
-          e nós os guardamos e mostramos só para você.
+          e nós os guardamos e mostramos só para você. Se você cadastrar o{" "}
+          <b>pixel da Meta</b> na vitrine, ele só é ativado para quem
+          permitir, e você também é a controladora do que a Meta receber para
+          os seus anúncios. Mantenha desligada a correspondência avançada
+          automática no Gerenciador de Eventos: a vitrine promete a quem pede
+          orçamento que os dados do pedido vão só para você.
         </p>
         <p style={p}>
           Depois do cancelamento, mantemos os dados da sua conta por um período

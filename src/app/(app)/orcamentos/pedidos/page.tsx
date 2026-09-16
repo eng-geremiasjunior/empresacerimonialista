@@ -1,6 +1,6 @@
 // Pedidos de orçamento — a fila de quem pediu pela página pública.
 //
-// Visão de Orçamentos, ao lado de Propostas: o pedido é o que vem ANTES da
+// Visão da Gestão comercial, ao lado de Propostas: o pedido é o que vem ANTES da
 // proposta. Ninguém cadastra nada aqui; o pedido chega sozinho, e sai da
 // fila quando vira proposta ou quando é encerrado.
 

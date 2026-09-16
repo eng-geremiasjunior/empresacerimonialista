@@ -21,6 +21,12 @@
 -- formulário). É conteúdo que ela já publica; nada mais sai. Reaplicar
 -- o arquivo inteiro troca só a função.
 --
+-- 16/09/2026, fim da tarde: a vitrine ganha o pixel da Meta DELA
+-- (empresa_pagina.pixel_meta, só números). A leitura pública passa a
+-- entregar o número — que de qualquer forma iria para o código da
+-- página —, e o navegador só carrega o pixel na vitrine publicada, para
+-- quem não é da casa, depois de a pessoa permitir.
+--
 -- O QUE ESTA MIGRAÇÃO ABRE. Hoje a proposta só nasce se a cerimonialista
 -- digitar o contato: quem a procura pelo Instagram cai num WhatsApp que
 -- ela responde à mão, e nada disso entra no sistema. Esta é a porta que
@@ -187,6 +193,26 @@ begin
       );
   end if;
 end $$;
+
+-- O pixel da Meta DELA. Só o número: código colado nunca entra (abriria a
+-- página para qualquer script de terceiro).
+alter table public.empresa_pagina add column if not exists pixel_meta text;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'empresa_pagina_pixel_check'
+      and conrelid = 'public.empresa_pagina'::regclass
+  ) then
+    alter table public.empresa_pagina
+      add constraint empresa_pagina_pixel_check
+      check (pixel_meta is null or pixel_meta ~ '^[0-9]{10,20}$');
+  end if;
+end $$;
+
+comment on column public.empresa_pagina.pixel_meta is
+  'ID do pixel da Meta da cerimonialista, só dígitos. A vitrine publicada só o carrega depois que o visitante permite; nunca na prévia, para a casa ou em página com credencial.';
 
 alter table public.empresa_pagina enable row level security;
 
@@ -527,6 +553,14 @@ begin
     end if;
   end if;
 
+  -- o pixel: só os dígitos do que ela colou ("ID: 1234..." vira o número)
+  if new.pixel_meta is not null then
+    new.pixel_meta := nullif(regexp_replace(new.pixel_meta, '[^0-9]', '', 'g'), '');
+    if new.pixel_meta is not null and new.pixel_meta !~ '^[0-9]{10,20}$' then
+      raise exception 'Pixel inválido: use só o número do pixel da Meta';
+    end if;
+  end if;
+
   -- tipos de evento: os mesmos 10 do sistema (domínio da 057/132)
   if array_length(new.tipos_atendidos, 1) is not null then
     if array_length(new.tipos_atendidos, 1) > 10 then
@@ -852,6 +886,8 @@ begin
     'motivos', to_json(v_pag.motivos),
     'whatsapp', v_pag.whatsapp,
     'instagram', v_pag.instagram,
+    -- o pixel dela: o navegador só o carrega depois de a pessoa permitir
+    'pixel_meta', v_pag.pixel_meta,
     'fotos', coalesce((
       select json_agg(f)
       from (
@@ -1374,6 +1410,24 @@ select 'fotos e depoimentos só vão para a página quando ela escolher',
 union all
 select 'o depoimento da página leva o tipo do evento (o destaque acompanha o formulário)',
        (select prosrc ilike '%dp.tipo_evento%'
+          from pg_proc where proname = 'pagina_publica'
+           and pronamespace = 'public'::regnamespace and pronargs = 1)
+
+union all
+select 'o pixel da vitrine é só um número (nada de código colado)',
+       exists (select 1 from information_schema.columns
+               where table_schema = 'public' and table_name = 'empresa_pagina'
+                 and column_name = 'pixel_meta')
+       and exists (select 1 from pg_constraint
+                   where conname = 'empresa_pagina_pixel_check'
+                     and conrelid = 'public.empresa_pagina'::regclass)
+       and (select prosrc ilike '%new.pixel_meta%' from pg_proc
+            where proname = 'trg_empresa_pagina_valida'
+              and pronamespace = 'public'::regnamespace and pronargs = 0)
+
+union all
+select 'a leitura pública entrega o número do pixel',
+       (select prosrc ilike '%v_pag.pixel_meta%'
           from pg_proc where proname = 'pagina_publica'
            and pronamespace = 'public'::regnamespace and pronargs = 1)
 
