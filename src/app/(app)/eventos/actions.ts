@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { EVENT_TYPE_LABELS } from "@/lib/types";
 import { hojeBR } from "@/lib/tempo";
+import { avisarSeForOPrimeiroEvento } from "@/lib/primeiro-evento";
 
 export type EventFormState = { error: string } | null;
 
@@ -265,6 +266,7 @@ export async function importarEventos(
 
   const erros: { linha: number; motivo: string }[] = [];
   let criados = 0;
+  let primeiroCriado: string | null = null;
 
   for (let i = 0; i < linhas.length; i++) {
     const l = linhas[i];
@@ -309,14 +311,18 @@ export async function importarEventos(
       clientId = novo.id;
     }
 
-    const { error: evErr } = await supabase.from("events").insert({
-      cerimonialista_id: user.id,
-      client_id: clientId,
-      type: tipo,
-      date: dataStr,
-      location: l.local?.trim() || null,
-      status: "orcamento",
-    });
+    const { data: evNovo, error: evErr } = await supabase
+      .from("events")
+      .insert({
+        cerimonialista_id: user.id,
+        client_id: clientId,
+        type: tipo,
+        date: dataStr,
+        location: l.local?.trim() || null,
+        status: "orcamento",
+      })
+      .select("id")
+      .single();
     if (evErr) {
       // Bateu no teto do plano: as linhas seguintes bateriam também. Uma
       // frase honesta nesta e para de tentar — cada tentativa a mais seria
@@ -336,7 +342,11 @@ export async function importarEventos(
       continue;
     }
     criados++;
+    primeiroCriado ??= (evNovo?.id as string | undefined) ?? null;
   }
+
+  // quem importa a agenda inteira de uma vez também começou a usar
+  await avisarSeForOPrimeiroEvento(primeiroCriado);
 
   revalidatePath("/eventos");
   return { criados, erros };

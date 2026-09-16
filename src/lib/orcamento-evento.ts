@@ -22,6 +22,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { createClient as createServiceClient, type SupabaseClient } from "@supabase/supabase-js";
 import { gerarFasesPorTipo, resolverTemplate } from "@/lib/event-templates";
 import { appUrl } from "@/lib/app-url";
+import { avisarSeForOPrimeiroEvento } from "@/lib/primeiro-evento";
 import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
 import {
   contratoCitadoNoTermo,
@@ -116,6 +117,8 @@ export async function criarEventoDoOrcamento(
   }
 
   await ligarDocumentosAoEvento(hash, res.evento_id);
+  // o primeiro evento da conta pode nascer de uma proposta aceita
+  if (!res.ja_existia) await avisarSeForOPrimeiroEvento(res.evento_id);
 
   return {
     ok: true,

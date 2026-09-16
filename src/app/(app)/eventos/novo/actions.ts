@@ -12,6 +12,7 @@ import {
   type PropostaBriefingV2,
 } from "@/lib/briefing-core";
 import { itensDaProposta } from "@/lib/briefing-aplicacao";
+import { avisarSeForOPrimeiroEvento } from "@/lib/primeiro-evento";
 import { salvarCampo } from "@/app/(app)/eventos/[id]/planejamento/actions";
 import type { TipoCampo } from "@/lib/planejamento-shared";
 import {
@@ -316,6 +317,9 @@ export async function criarEventoCompleto(
       console.error("[vela:novo-evento] proposta do briefing:", e);
     }
   }
+
+  // (d) o primeiro evento da conta vira conversão (primeiro-evento.ts)
+  await avisarSeForOPrimeiroEvento(eventId);
 
   revalidatePath("/eventos");
   revalidatePath("/eventos/dashboard");

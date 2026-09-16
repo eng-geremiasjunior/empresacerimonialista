@@ -58,7 +58,7 @@ export type OrigemDoClique = {
 
 export type Conversao = {
   /** o nome de cada lado é traduzido abaixo */
-  tipo: "conta_criada" | "checkout_iniciado" | "assinatura";
+  tipo: "conta_criada" | "primeiro_evento" | "checkout_iniciado" | "assinatura";
   /** e-mail de quem converteu; vira SHA-256 antes de sair */
   email?: string | null;
   valor?: number;
@@ -80,11 +80,15 @@ export type Conversao = {
 // dobraria a receita no relatório e o número deixaria de servir.
 const NOME_META = {
   conta_criada: "CompleteRegistration",
+  // Nenhum evento padrão da Meta diz "começou a usar". Nome próprio, que
+  // a campanha escolhe como qualquer outro (ver primeiro-evento.ts).
+  primeiro_evento: "PrimeiroEvento",
   checkout_iniciado: "InitiateCheckout",
   assinatura: "Purchase",
 } as const;
 const NOME_GA = {
   conta_criada: "sign_up",
+  primeiro_evento: "primeiro_evento",
   checkout_iniciado: "begin_checkout",
   assinatura: "purchase",
 } as const;
