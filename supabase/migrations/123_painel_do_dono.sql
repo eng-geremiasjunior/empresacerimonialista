@@ -83,6 +83,26 @@ create table if not exists public.gastos_aquisicao (
 alter table public.gastos_aquisicao enable row level security;
 
 -- ------------------------------------------------------------
+-- 4) Contas da casa — fora dos números do painel (16/09/2026)
+-- ------------------------------------------------------------
+-- As contas do próprio dono (a de administrador, as de teste, as do
+-- vídeo) entravam no MRR, no churn e na lista de clientes: a conta de
+-- teste com cortesia de R$ 1 aparecia como assinante, e cada teste de
+-- cancelamento virava churn. Uma linha aqui = a empresa sai das métricas
+-- e vai para um grupo à parte na tela Contas.
+--
+-- Tabela própria, e não uma coluna em empresas: a dona de empresa edita
+-- a própria linha de empresas, e não pode tirar a si mesma dos números.
+-- Aqui vale o mesmo modelo das tabelas acima: RLS ligada, NENHUMA
+-- policy — só o painel, com a chave de serviço, lê e escreve.
+create table if not exists public.contas_da_casa (
+  empresa_id  uuid primary key references public.empresas (id) on delete cascade,
+  marcada_em  timestamptz not null default now()
+);
+
+alter table public.contas_da_casa enable row level security;
+
+-- ------------------------------------------------------------
 -- Conferência — todas as linhas devem voltar `true`.
 -- ------------------------------------------------------------
 select 'assinaturas: RLS ligada' as item,
@@ -104,6 +124,12 @@ select 'gastos_aquisicao: RLS ligada, nenhuma policy',
         where oid = 'public.gastos_aquisicao'::regclass)
        and not exists (select 1 from pg_policies
                        where schemaname = 'public' and tablename = 'gastos_aquisicao')
+union all
+select 'contas_da_casa: RLS ligada, nenhuma policy',
+       (select relrowsecurity from pg_class
+        where oid = 'public.contas_da_casa'::regclass)
+       and not exists (select 1 from pg_policies
+                       where schemaname = 'public' and tablename = 'contas_da_casa')
 union all
 select 'uma assinatura por empresa (unique)',
        exists (select 1 from pg_indexes

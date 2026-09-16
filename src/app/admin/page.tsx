@@ -440,7 +440,7 @@ export default async function AdminMetricasPage({
   // 12 barras mensais, 8 trimestrais (24 meses) ou 3 anuais (36). Tudo
   // sai de UMA leitura — getSerieMensal não repete a query por mês.
   const quantosMeses = periodo === "ano" ? 36 : periodo === "tri" ? 24 : 12;
-  const [{ meses: serie, eventos, criadasEm }, portao] = await Promise.all([
+  const [{ meses: serie, eventos, criadasEm, contasDaCasa }, portao] = await Promise.all([
     getSerieMensal(mes, quantosMeses),
     // null enquanto a 154 não tiver sido aplicada neste banco
     getPortaoDoTeste(),
@@ -540,6 +540,13 @@ export default async function AdminMetricasPage({
             {mes === mesAtual ? ` · ${m.emTrial} em trial hoje` : ""} ·{" "}
             {m.novasNoMes} novas no mês · {m.canceladasNoMes} canceladas
           </p>
+          {/* as contas do dono (123): a frase existe para ninguém achar que
+              sumiu cliente quando os números caírem depois da separação */}
+          {contasDaCasa > 0 && (
+            <p className="mt-0.5 text-[12px] text-[#8b8c91]">
+              {contasDaCasa} {contasDaCasa === 1 ? "conta da casa fica" : "contas da casa ficam"} fora de todos os números
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Periodos mes={mes} atual={periodo} />

@@ -12,6 +12,7 @@ import { linkWhatsapp } from "@/lib/whatsapp-link";
 import { descreverEventos3Meses } from "@/lib/cadastro-qualificacao";
 import {
   definirBanimento,
+  definirContaDaCasa,
   salvarAssinatura,
   type ResultadoAdmin,
 } from "../actions";
@@ -281,8 +282,17 @@ function Linha({
   const [confirmandoBan, setConfirmandoBan] = useState(false);
   const [ocupado, comecar] = useTransition();
   const [erro, setErro] = useState<string | null>(null);
+  const [mudandoCasa, comecarCasa] = useTransition();
   const estaBanida = banida(conta);
   const a = conta.assinatura;
+
+  function alternarCasa() {
+    setErro(null);
+    comecarCasa(async () => {
+      const r = await definirContaDaCasa(conta.empresaId, !conta.daCasa);
+      if (r.error) setErro(r.error);
+    });
+  }
 
   function alternarBan() {
     setErro(null);
@@ -317,6 +327,19 @@ function Linha({
             {conta.eventos} eventos · última atividade{" "}
             {dataBr(conta.ultimaAtividade)}
           </p>
+          {/* conta do próprio dono: sai de todos os números do painel */}
+          <button
+            type="button"
+            onClick={alternarCasa}
+            disabled={mudandoCasa}
+            className="mt-1.5 text-xs text-stone-500 underline underline-offset-2 hover:text-stone-800 disabled:opacity-50"
+          >
+            {mudandoCasa
+              ? "…"
+              : conta.daCasa
+                ? "Não é minha: voltar para clientes"
+                : "É minha: tirar dos números"}
+          </button>
         </div>
 
         <div className="flex items-center gap-2">
@@ -406,11 +429,36 @@ export function TabelaContas({
       </p>
     );
   }
+  // As contas da casa vêm por último, à parte: não são clientes, e os
+  // números do painel já não as contam.
+  const clientes = contas.filter((c) => !c.daCasa);
+  const daCasa = contas.filter((c) => c.daCasa);
   return (
-    <div className="space-y-3">
-      {contas.map((c) => (
-        <Linha key={c.empresaId} conta={c} planos={planos} />
-      ))}
+    <div className="space-y-8">
+      <div className="space-y-3">
+        {clientes.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-stone-300 bg-white p-6 text-center text-sm text-stone-500">
+            Nenhuma conta de cliente ainda.
+          </p>
+        ) : (
+          clientes.map((c) => <Linha key={c.empresaId} conta={c} planos={planos} />)
+        )}
+      </div>
+      {daCasa.length > 0 && (
+        <section aria-labelledby="contas-da-casa" className="space-y-3">
+          <div>
+            <h2 id="contas-da-casa" className="text-sm font-semibold text-stone-900">
+              Contas da casa ({daCasa.length})
+            </h2>
+            <p className="mt-0.5 text-xs text-stone-500">
+              As suas: administrador, testes e vídeo. Ficam fora da receita, dos cancelamentos e das contas criadas.
+            </p>
+          </div>
+          {daCasa.map((c) => (
+            <Linha key={c.empresaId} conta={c} planos={planos} />
+          ))}
+        </section>
+      )}
     </div>
   );
 }

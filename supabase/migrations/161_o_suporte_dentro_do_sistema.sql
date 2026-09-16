@@ -38,6 +38,21 @@ create table if not exists public.suporte_mensagem (
   created_at           timestamptz not null default now()
 );
 
+-- O aviso por e-mail da resposta (16/09/2026). A resposta só aparecia
+-- dentro do sistema: quem não entrava de novo nunca sabia que tinha sido
+-- respondida, e o dono não tinha como saber se ela viu. Agora cada
+-- resposta sai também por e-mail, e a linha guarda o que o envio devolveu:
+--   aviso_email_id        o id do Resend, para perguntar a situação
+--   aviso_email_em        quando a API aceitou o envio
+--   aviso_email_situacao  a última situação conhecida (entregue, enviado,
+--                         atrasado, nao_chegou, spam) — "entregue" é o
+--                         provedor dela ter aceitado, não leitura
+--   aviso_email_falha     a frase do erro, quando o envio não saiu
+alter table public.suporte_mensagem add column if not exists aviso_email_id text;
+alter table public.suporte_mensagem add column if not exists aviso_email_em timestamptz;
+alter table public.suporte_mensagem add column if not exists aviso_email_situacao text;
+alter table public.suporte_mensagem add column if not exists aviso_email_falha text;
+
 create index if not exists idx_suporte_conversa
   on public.suporte_mensagem (user_id, created_at);
 
@@ -194,6 +209,15 @@ select 'as duas funcoes existem e sao security definer',
           where n.nspname = 'public'
             and p.proname in ('enviar_mensagem_suporte', 'minha_conversa_suporte')
             and p.prosecdef
+       )
+
+union all
+select 'o aviso por e-mail tem as quatro colunas',
+       (
+         select count(*) = 4 from information_schema.columns
+          where table_schema = 'public' and table_name = 'suporte_mensagem'
+            and column_name in ('aviso_email_id', 'aviso_email_em',
+                                'aviso_email_situacao', 'aviso_email_falha')
        )
 
 union all

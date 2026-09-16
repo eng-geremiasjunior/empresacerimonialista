@@ -6,8 +6,11 @@
 
 import { revalidatePath } from "next/cache";
 import {
+  avisarRespostaPorEmailDb,
   definirBanimentoDb,
+  definirContaDaCasaDb,
   responderSuporteDb,
+  type ResultadoDoAviso,
   salvarAssinaturaDb,
   salvarGastoDb,
   salvarPortaoDoTesteDb,
@@ -117,18 +120,54 @@ export async function salvarPortaoDoTeste(
   }
 }
 
-/** A resposta do dono a uma conversa da caixinha de suporte (161). */
+/**
+ * A resposta do dono a uma conversa da caixinha de suporte (161). Sai
+ * também por e-mail; o que o envio fez volta junto, para a tela dizer.
+ */
 export async function responderSuporte(
   userId: string,
   texto: string
-): Promise<ResultadoAdmin> {
+): Promise<ResultadoAdmin & Partial<ResultadoDoAviso>> {
   try {
     if (!userId) return { error: "Conversa inválida." };
-    await responderSuporteDb(userId, texto);
+    const aviso = await responderSuporteDb(userId, texto);
     revalidatePath("/admin/suporte");
-    return { ok: true };
+    return { ok: true, ...aviso };
   } catch (e) {
     console.error("[eorganizei:admin] responderSuporte:", e);
     return { error: e instanceof Error ? e.message : "Não foi possível responder." };
+  }
+}
+
+/** O aviso por e-mail de uma resposta que ficou sem ele. */
+export async function avisarRespostaPorEmail(
+  mensagemId: string
+): Promise<ResultadoAdmin & Partial<ResultadoDoAviso>> {
+  try {
+    if (!mensagemId) return { error: "Resposta inválida." };
+    const aviso = await avisarRespostaPorEmailDb(mensagemId);
+    revalidatePath("/admin/suporte");
+    return { ok: true, ...aviso };
+  } catch (e) {
+    console.error("[eorganizei:admin] avisarRespostaPorEmail:", e);
+    return { error: e instanceof Error ? e.message : "Não foi possível avisar." };
+  }
+}
+
+/** Marca (ou desmarca) uma conta como da casa: fora dos números do painel. */
+export async function definirContaDaCasa(
+  empresaId: string,
+  daCasa: boolean
+): Promise<ResultadoAdmin> {
+  try {
+    if (!empresaId) return { error: "Conta inválida." };
+    await definirContaDaCasaDb(empresaId, daCasa);
+    revalidatePath("/admin");
+    revalidatePath("/admin/contas");
+    revalidatePath("/admin/suporte");
+    return { ok: true };
+  } catch (e) {
+    console.error("[eorganizei:admin] definirContaDaCasa:", e);
+    return { error: e instanceof Error ? e.message : "Não foi possível salvar." };
   }
 }

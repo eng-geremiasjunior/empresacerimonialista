@@ -65,6 +65,15 @@ export function CaixaDeSuporte() {
     } catch {
       /* navegador que bloqueia armazenamento: caixa aberta, sem memória */
     }
+    // O botão do e-mail da resposta chega com ?suporte=abrir: a caixinha
+    // abre sozinha (e abrir é o que conta a resposta como vista), e o
+    // parâmetro sai do endereço para recarregar não abrir de novo.
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("suporte") === "abrir") {
+      setAberta(true);
+      url.searchParams.delete("suporte");
+      window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+    }
   }, []);
 
   const carregar = useCallback(async (marcarLidas: boolean) => {

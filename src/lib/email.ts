@@ -167,6 +167,77 @@ export async function enviarViaResend(dados: EnvioEmail): Promise<ResultadoEnvio
   return { ok: true, id };
 }
 
+/**
+ * O que o Resend sabe de um envio, em palavras do painel.
+ *
+ * "entregue" é o provedor da pessoa ter aceitado a mensagem — não é
+ * leitura. Abertura e clique (quando o rastreio está ligado) também caem
+ * em "entregue": o pixel de abertura mente (o Mail da Apple abre tudo
+ * sozinho), e o painel não afirma o que não sabe.
+ */
+export type SituacaoDoEmail = "entregue" | "enviado" | "atrasado" | "nao_chegou" | "spam";
+
+export function situacaoPeloEvento(evento: unknown): SituacaoDoEmail | null {
+  switch (evento) {
+    case "delivered":
+    case "opened":
+    case "clicked":
+      return "entregue";
+    case "sent":
+    case "queued":
+    case "scheduled":
+      return "enviado";
+    case "delivery_delayed":
+      return "atrasado";
+    case "bounced":
+    case "failed":
+    case "canceled":
+      return "nao_chegou";
+    case "complained":
+      return "spam";
+    default:
+      return null;
+  }
+}
+
+/** Situação final: não muda mais, não precisa perguntar de novo. */
+export function situacaoFinal(s: SituacaoDoEmail | null): boolean {
+  return s === "entregue" || s === "nao_chegou" || s === "spam";
+}
+
+// A chave de envio (RESEND_API_KEY) costuma ser "só envio": o Resend
+// recusa a leitura com 401. Ler a situação pede uma chave com acesso de
+// leitura (RESEND_API_KEY_LEITURA). Recusada uma vez, o processo para de
+// perguntar — cada conversa aberta seria mais uma chamada perdida.
+let leituraRecusada = false;
+
+/**
+ * Pergunta ao Resend a situação de um envio. Nulo quando não deu para
+ * saber (sem chave de leitura, fora do ar, limite de chamadas): o painel
+ * mostra o que já tinha, sem inventar.
+ */
+export async function situacaoDoEmail(id: string): Promise<SituacaoDoEmail | null> {
+  const apiKey = process.env.RESEND_API_KEY_LEITURA?.trim() || process.env.RESEND_API_KEY;
+  if (!apiKey || !id || leituraRecusada) return null;
+  try {
+    const res = await fetch(`https://api.resend.com/emails/${encodeURIComponent(id)}`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      cache: "no-store",
+      signal: AbortSignal.timeout(4000),
+    });
+    if (res.status === 401 || res.status === 403) {
+      leituraRecusada = true;
+      console.warn("[eorganizei:email] a chave do Resend não lê envios: situação do e-mail indisponível");
+      return null;
+    }
+    if (!res.ok) return null;
+    const corpo = (await res.json()) as { last_event?: unknown } | null;
+    return situacaoPeloEvento(corpo?.last_event);
+  } catch {
+    return null;
+  }
+}
+
 export type EmailConfirmacao = {
   to: string;
   supplierName: string;

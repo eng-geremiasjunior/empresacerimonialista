@@ -20,6 +20,13 @@ import {
   type MetricasDoMes,
 } from "@/lib/admin-metricas";
 import { hojeBR } from "@/lib/tempo";
+import {
+  situacaoDoEmail,
+  situacaoFinal,
+  type ResultadoEnvio,
+  type SituacaoDoEmail,
+} from "@/lib/email";
+import { enviarEmailRespostaSuporte } from "@/lib/email-suporte";
 
 // ------------------------------------------------------------------
 // O gate
@@ -95,6 +102,53 @@ async function lerTudo<T>(
   return tudo;
 }
 
+// ------------------------------------------------------------------
+// Contas da casa (123, seção 4)
+// ------------------------------------------------------------------
+// As contas do próprio dono (administrador, testes, vídeo) ficam fora de
+// todos os números do painel e num grupo à parte em Contas.
+
+type Servico = ReturnType<typeof servico>;
+
+function tabelaAusente(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  return (
+    error.code === "42P01" ||
+    error.code === "PGRST205" ||
+    /could not find the table|does not exist/i.test(error.message ?? "")
+  );
+}
+
+/**
+ * As empresas marcadas como da casa. Sem a tabela (123 ainda não
+ * reaplicada), nenhuma: o painel segue como antes, sem cair.
+ */
+async function idsDaCasa(db: Servico): Promise<Set<string>> {
+  const { data, error } = await db.from("contas_da_casa").select("empresa_id");
+  if (error) {
+    if (!tabelaAusente(error)) {
+      console.error("[eorganizei:admin] contas da casa:", error.code, (error.message ?? "").slice(0, 120));
+    }
+    return new Set();
+  }
+  return new Set((data ?? []).map((r) => r.empresa_id as string));
+}
+
+export async function definirContaDaCasaDb(empresaId: string, daCasa: boolean): Promise<void> {
+  await exigirSuperAdmin();
+  const db = servico();
+  const { error } = daCasa
+    ? await db.from("contas_da_casa").upsert({ empresa_id: empresaId }, { onConflict: "empresa_id" })
+    : await db.from("contas_da_casa").delete().eq("empresa_id", empresaId);
+  if (error) {
+    throw new Error(
+      tabelaAusente(error)
+        ? "Reaplique a migração 123 no Supabase para separar as contas da casa."
+        : `Não foi possível salvar: ${error.message}`
+    );
+  }
+}
+
 type LinhaEvento = {
   empresa_id: string;
   tipo: EventoAssinatura["tipo"];
@@ -148,6 +202,8 @@ export type ContaAdmin = {
   /** o que ela respondeu no cadastro (16/09/2026) — nulo em conta antiga */
   eventos3Meses: string | null;
   instagram: string | null;
+  /** conta do próprio dono: fora dos números, num grupo à parte */
+  daCasa: boolean;
 };
 
 /** utm_source/utm_medium → como o dono fala. */
@@ -182,13 +238,14 @@ export async function getContas(): Promise<ContaAdmin[]> {
   await exigirSuperAdmin();
   const db = servico();
 
-  const [{ data: empresas }, { data: assinaturas }, origens, donas] = await Promise.all([
+  const [{ data: empresas }, { data: assinaturas }, origens, donas, casa] = await Promise.all([
     db.from("empresas").select("id, nome, owner_user_id, created_at"),
     db.from("assinaturas").select("*"),
     // de onde veio o clique — ausência da 152 vira "sem origem", não erro
     db.from("origem_do_clique").select("empresa_id, utm_source, utm_medium, utm_campaign, gclid, user_agent"),
     // WhatsApp e guia da DONA de cada conta (a linha dela em membros_equipe)
     db.from("membros_equipe").select("user_id, empresa_id, whatsapp, guia_dispensado_em, guia_concluido_em").eq("is_owner", true),
+    idsDaCasa(db),
   ]);
   type Origem = { empresa_id: string; utm_source: string | null; utm_medium: string | null; utm_campaign: string | null; gclid: string | null; user_agent: string | null };
   const origemPor = new Map(((origens.data ?? []) as Origem[]).map((o) => [o.empresa_id, o]));
@@ -298,6 +355,7 @@ export async function getContas(): Promise<ContaAdmin[]> {
       guia: d?.guia_concluido_em ? "concluiu" : d?.guia_dispensado_em ? "pulou" : "em andamento",
       eventos3Meses: textoOuNulo(dona?.user_metadata?.eventos_3_meses),
       instagram: textoOuNulo(dona?.user_metadata?.instagram),
+      daCasa: casa.has(e.id),
     });
   }
 
@@ -341,8 +399,10 @@ export type SerieDoPainel = {
   meses: MetricasDoMes[];
   /** log inteiro, para as contagens do relatório */
   eventos: EventoAssinatura[];
-  /** `empresas.created_at` de todas as contas — "contas criadas no mês" */
+  /** `empresas.created_at` das contas de clientes — "contas criadas no mês" */
   criadasEm: string[];
+  /** quantas contas da casa ficaram fora de todos os números acima */
+  contasDaCasa: number;
 };
 
 /**
@@ -362,7 +422,7 @@ export async function getSerieMensal(
 
   const meses = mesesAte(mesFinal, n);
 
-  const [assinaturas, eventos, { data: gastos }, empresas] = await Promise.all([
+  const [assinaturas, eventos, { data: gastos }, empresas, casa] = await Promise.all([
     lerTudo<{
       empresa_id: string;
       status: AssinaturaAdmin["status"];
@@ -399,23 +459,26 @@ export async function getSerieMensal(
       .select("mes, valor")
       .gte("mes", `${meses[0]}-01`)
       .lte("mes", `${mesFinal}-01`),
-    lerTudo<{ created_at: string }>(
+    lerTudo<{ id: string; created_at: string }>(
       (de, ate) =>
         db
           .from("empresas")
-          .select("created_at")
+          .select("id, created_at")
           .order("created_at", { ascending: true })
           .range(de, ate),
       "as contas"
     ),
+    idsDaCasa(db),
   ]);
 
-  const a: AssinaturaAdmin[] = assinaturas.map((r) => ({
+  // As contas da casa saem de TUDO aqui: assinatura, histórico e contas
+  // criadas. É esta leitura que alimenta todos os números do painel.
+  const a: AssinaturaAdmin[] = assinaturas.filter((r) => !casa.has(r.empresa_id)).map((r) => ({
     empresaId: r.empresa_id,
     status: r.status,
     testeTerminaEm: r.teste_termina_em ?? null,
   }));
-  const ev: EventoAssinatura[] = eventos.map((r) => ({
+  const ev: EventoAssinatura[] = eventos.filter((r) => !casa.has(r.empresa_id)).map((r) => ({
     empresaId: r.empresa_id,
     tipo: r.tipo,
     valorAntes: r.valor_antes === null ? null : Number(r.valor_antes),
@@ -432,7 +495,8 @@ export async function getSerieMensal(
       calcularMetricas(a, ev, gastoPorMes.get(m) ?? null, m)
     ),
     eventos: ev,
-    criadasEm: empresas.map((e) => e.created_at),
+    criadasEm: empresas.filter((e) => !casa.has(e.id)).map((e) => e.created_at),
+    contasDaCasa: casa.size,
   };
 }
 
@@ -663,6 +727,12 @@ export async function salvarPortaoDoTesteDb(input: {
 // funções da cliente; o dono lê e responde AQUI, com a chave de serviço,
 // atrás do mesmo gate de toda esta camada. A tabela não tem policy
 // nenhuma: fora destas funções e das duas RPCs da cliente, ninguém a vê.
+//
+// Desde 16/09/2026 cada resposta sai também por e-mail, e a conversa diz
+// o que se sabe dela: "vista" (a pessoa abriu a caixinha com a resposta
+// na tela) e a situação do e-mail no Resend ("entregue" = o provedor dela
+// aceitou; não é leitura). As colunas do aviso vêm da 161 reaplicada: sem
+// elas, o e-mail sai do mesmo jeito, e a tela só não mostra a situação.
 
 export type ConversaSuporteResumo = {
   userId: string;
@@ -673,7 +743,15 @@ export type ConversaSuporteResumo = {
   ultimaEm: string;
   ultimoAutor: "cliente" | "eorganizei";
   naoLidas: number;
+  /** a última palavra é nossa, e a pessoa ainda não abriu a caixinha */
+  respostaNaoVista: boolean;
+  daCasa: boolean;
 };
+
+export type AvisoPorEmail =
+  | { estado: "sem_aviso" }
+  | { estado: "falhou"; falha: string }
+  | { estado: "enviado"; em: string; situacao: SituacaoDoEmail };
 
 export type MensagemSuporteAdmin = {
   id: string;
@@ -681,7 +759,19 @@ export type MensagemSuporteAdmin = {
   texto: string;
   pagina: string | null;
   em: string;
+  /** nas nossas respostas: quando a pessoa abriu a caixinha com ela na tela */
+  vistaEm: string | null;
+  /** nulo nas mensagens dela, e enquanto a 161 não for reaplicada */
+  aviso: AvisoPorEmail | null;
 };
+
+export type PessoaDoSuporte = {
+  primeiroNome: string;
+  ultimoLogin: string | null;
+  whatsapp: string | null;
+};
+
+export type ResultadoDoAviso = { aviso: "enviado" | "falhou" | "sem_email"; falha?: string };
 
 type LinhaSuporte = {
   id: string;
@@ -691,7 +781,13 @@ type LinhaSuporte = {
   texto: string;
   pagina: string | null;
   lida_pelo_suporte_em: string | null;
+  lida_pela_cliente_em: string | null;
   created_at: string;
+  // da 161 reaplicada (16/09/2026); ausentes antes disso
+  aviso_email_id?: string | null;
+  aviso_email_em?: string | null;
+  aviso_email_situacao?: string | null;
+  aviso_email_falha?: string | null;
 };
 
 export async function contarSuporteNaoLidas(): Promise<number> {
@@ -708,11 +804,14 @@ export async function contarSuporteNaoLidas(): Promise<number> {
 export async function getConversasSuporte(): Promise<ConversaSuporteResumo[]> {
   await exigirSuperAdmin();
   const db = servico();
-  const { data, error } = await db
-    .from("suporte_mensagem")
-    .select("id, empresa_id, user_id, autor, texto, pagina, lida_pelo_suporte_em, created_at")
-    .order("created_at", { ascending: false })
-    .limit(3000);
+  const [{ data, error }, casa] = await Promise.all([
+    db
+      .from("suporte_mensagem")
+      .select("id, empresa_id, user_id, autor, texto, pagina, lida_pelo_suporte_em, lida_pela_cliente_em, created_at")
+      .order("created_at", { ascending: false })
+      .limit(3000),
+    idsDaCasa(db),
+  ]);
   if (error || !data) return [];
   const linhas = data as LinhaSuporte[];
 
@@ -748,18 +847,37 @@ export async function getConversasSuporte(): Promise<ConversaSuporteResumo[]> {
         ultimaEm: ultima.created_at,
         ultimoAutor: ultima.autor,
         naoLidas: msgs.filter((x) => x.autor === "cliente" && !x.lida_pelo_suporte_em).length,
+        respostaNaoVista: ultima.autor === "eorganizei" && !ultima.lida_pela_cliente_em,
+        daCasa: casa.has(ultima.empresa_id),
       };
     })
     .sort((a, b) => (a.ultimaEm < b.ultimaEm ? 1 : -1));
 }
 
-/** Abrir a conversa conta como ler: as mensagens da cliente ganham a data. */
+const SITUACOES: SituacaoDoEmail[] = ["entregue", "enviado", "atrasado", "nao_chegou", "spam"];
+const comoSituacao = (v: unknown): SituacaoDoEmail =>
+  SITUACOES.includes(v as SituacaoDoEmail) ? (v as SituacaoDoEmail) : "enviado";
+
+/**
+ * Quantas situações de e-mail a conversa aberta pergunta ao Resend de uma
+ * vez. A API aceita 2 chamadas por segundo; a situação final fica gravada
+ * e não é perguntada de novo.
+ */
+const CONSULTAS_AO_RESEND = 4;
+
+/**
+ * Abrir a conversa conta como ler: as mensagens da cliente ganham a data.
+ * Das nossas respostas, a tela recebe se a pessoa viu e o que o e-mail
+ * fez; a situação que ainda pode mudar é perguntada ao Resend e guardada.
+ */
 export async function getConversaSuporte(userId: string): Promise<MensagemSuporteAdmin[]> {
   await exigirSuperAdmin();
   const db = servico();
   const { data, error } = await db
     .from("suporte_mensagem")
-    .select("id, autor, texto, pagina, created_at")
+    // todas as colunas: as do aviso só existem com a 161 reaplicada, e
+    // pedi-las pelo nome derrubaria a conversa inteira antes disso
+    .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: true })
     .limit(500);
@@ -770,12 +888,120 @@ export async function getConversaSuporte(userId: string): Promise<MensagemSuport
     .eq("user_id", userId)
     .eq("autor", "cliente")
     .is("lida_pelo_suporte_em", null);
-  return (data as { id: string; autor: "cliente" | "eorganizei"; texto: string; pagina: string | null; created_at: string }[]).map(
-    (m) => ({ id: m.id, autor: m.autor, texto: m.texto, pagina: m.pagina, em: m.created_at })
-  );
+
+  const linhas = data as LinhaSuporte[];
+  const comColunasDoAviso = linhas.some((l) => "aviso_email_em" in l);
+
+  const aPerguntar = linhas
+    .filter(
+      (l) =>
+        l.autor === "eorganizei" &&
+        l.aviso_email_id &&
+        !situacaoFinal(comoSituacao(l.aviso_email_situacao))
+    )
+    .slice(-CONSULTAS_AO_RESEND);
+  for (const l of aPerguntar) {
+    const s = await situacaoDoEmail(l.aviso_email_id as string);
+    if (s && s !== l.aviso_email_situacao) {
+      l.aviso_email_situacao = s;
+      await db.from("suporte_mensagem").update({ aviso_email_situacao: s }).eq("id", l.id);
+    }
+  }
+
+  return linhas.map((m) => {
+    let aviso: AvisoPorEmail | null = null;
+    if (m.autor === "eorganizei" && comColunasDoAviso) {
+      aviso = m.aviso_email_em
+        ? { estado: "enviado", em: m.aviso_email_em, situacao: comoSituacao(m.aviso_email_situacao) }
+        : m.aviso_email_falha
+          ? { estado: "falhou", falha: m.aviso_email_falha }
+          : { estado: "sem_aviso" };
+    }
+    return {
+      id: m.id,
+      autor: m.autor,
+      texto: m.texto,
+      pagina: m.pagina,
+      em: m.created_at,
+      vistaEm: m.autor === "eorganizei" ? m.lida_pela_cliente_em : null,
+      aviso,
+    };
+  });
 }
 
-export async function responderSuporteDb(userId: string, texto: string): Promise<void> {
+/** Quem é a pessoa da conversa: o nome para o WhatsApp, o último login e o número. */
+export async function getPessoaDoSuporte(userId: string): Promise<PessoaDoSuporte> {
+  await exigirSuperAdmin();
+  const db = servico();
+  const [{ data: u }, { data: m }] = await Promise.all([
+    db.auth.admin.getUserById(userId),
+    db
+      .from("membros_equipe")
+      .select("nome, whatsapp")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  const nome = ((m?.nome as string | null) ?? "").trim();
+  return {
+    primeiroNome: nome.split(/\s+/)[0] ?? "",
+    ultimoLogin: u?.user?.last_sign_in_at ?? null,
+    whatsapp: ((m?.whatsapp as string | null) ?? "").trim() || null,
+  };
+}
+
+/**
+ * Manda a resposta por e-mail e guarda o que o envio devolveu. Nunca
+ * lança: a resposta já está gravada, e o e-mail que falha vira aviso na
+ * tela do dono, não erro.
+ */
+async function avisarPorEmail(
+  db: Servico,
+  linha: { id: string; user_id: string; texto: string }
+): Promise<ResultadoDoAviso> {
+  const [{ data: u }, { data: m }] = await Promise.all([
+    db.auth.admin.getUserById(linha.user_id),
+    db
+      .from("membros_equipe")
+      .select("nome")
+      .eq("user_id", linha.user_id)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  const para = u?.user?.email?.trim();
+  if (!para) return { aviso: "sem_email" };
+
+  let r: ResultadoEnvio;
+  try {
+    r = await enviarEmailRespostaSuporte({
+      para,
+      nome: (m?.nome as string | null) ?? null,
+      texto: linha.texto,
+    });
+  } catch (e) {
+    console.error("[eorganizei:admin] aviso do suporte:", e instanceof Error ? e.message : e);
+    r = { ok: false, error: "Não foi possível enviar o e-mail agora." };
+  }
+
+  const registro = r.ok
+    ? {
+        aviso_email_id: r.id,
+        aviso_email_em: new Date().toISOString(),
+        aviso_email_situacao: "enviado",
+        aviso_email_falha: null,
+      }
+    : { aviso_email_falha: r.error.slice(0, 200) };
+  const { error } = await db.from("suporte_mensagem").update(registro).eq("id", linha.id);
+  if (error) {
+    // 161 ainda não reaplicada: o e-mail saiu (ou não), só não fica registrado
+    console.error("[eorganizei:admin] registro do aviso:", error.code, (error.message ?? "").slice(0, 120));
+  }
+  return r.ok ? { aviso: "enviado" } : { aviso: "falhou", falha: r.error };
+}
+
+export async function responderSuporteDb(userId: string, texto: string): Promise<ResultadoDoAviso> {
   await exigirSuperAdmin();
   const limpo = texto.trim();
   if (!limpo) throw new Error("Escreva a resposta.");
@@ -791,11 +1017,35 @@ export async function responderSuporteDb(userId: string, texto: string): Promise
     .limit(1)
     .maybeSingle();
   if (!ultima) throw new Error("Conversa não encontrada.");
-  const { error } = await db.from("suporte_mensagem").insert({
-    empresa_id: ultima.empresa_id,
-    user_id: userId,
-    autor: "eorganizei",
-    texto: limpo,
-  });
-  if (error) throw new Error(`Não foi possível responder: ${error.message}`);
+  const { data: nova, error } = await db
+    .from("suporte_mensagem")
+    .insert({
+      empresa_id: ultima.empresa_id,
+      user_id: userId,
+      autor: "eorganizei",
+      texto: limpo,
+    })
+    .select("id")
+    .single();
+  if (error || !nova) throw new Error(`Não foi possível responder: ${error?.message}`);
+  return avisarPorEmail(db, { id: nova.id as string, user_id: userId, texto: limpo });
+}
+
+/** O aviso por e-mail de uma resposta que ainda não teve (ou cujo envio falhou). */
+export async function avisarRespostaPorEmailDb(mensagemId: string): Promise<ResultadoDoAviso> {
+  await exigirSuperAdmin();
+  const db = servico();
+  const { data, error } = await db
+    .from("suporte_mensagem")
+    .select("*")
+    .eq("id", mensagemId)
+    .maybeSingle();
+  if (error || !data) throw new Error("Resposta não encontrada.");
+  const l = data as LinhaSuporte;
+  if (l.autor !== "eorganizei" || !l.user_id) throw new Error("Só as nossas respostas vão por e-mail.");
+  if (!("aviso_email_em" in l)) {
+    throw new Error("Reaplique a migração 161 no Supabase para avisar por e-mail.");
+  }
+  if (l.aviso_email_em) throw new Error("Esta resposta já foi avisada por e-mail.");
+  return avisarPorEmail(db, { id: l.id, user_id: l.user_id, texto: l.texto });
 }

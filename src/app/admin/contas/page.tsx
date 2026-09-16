@@ -9,6 +9,8 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminContasPage() {
   const [contas, catalogo] = await Promise.all([getContas(), getCatalogoDePlanos()]);
+  const casa = contas.filter((c) => c.daCasa).length;
+  const clientes = contas.length - casa;
 
   // O rótulo é montado AQUI, no servidor: a tabela é client e não pode
   // puxar @/lib/planos (ele lê cookies via next/headers). Ela recebe só
@@ -29,9 +31,9 @@ export default async function AdminContasPage() {
       <div>
         <h1 className="text-xl font-semibold text-stone-900">Contas</h1>
         <p className="mt-1 text-sm text-stone-500">
-          {contas.length} {contas.length === 1 ? "empresa" : "empresas"} no
-          sistema. Banir suspende todos os logins da conta e derruba as
-          sessões; nada é apagado.
+          {clientes} {clientes === 1 ? "conta de cliente" : "contas de clientes"}
+          {casa > 0 ? ` e ${casa} da casa` : ""}. Banir suspende todos os
+          logins da conta e derruba as sessões; nada é apagado.
         </p>
       </div>
       <TabelaContas contas={contas} planos={planos} />
