@@ -58,6 +58,7 @@ import {
   prepararAnexoContrato,
 } from "@/app/(app)/eventos/[id]/fornecedores/anexo-actions";
 import { enviarArquivo } from "@/lib/contratos-cliente";
+import { EVENTO_LINK_COPIADO } from "@/lib/guia-vivo";
 
 const F_UI = "var(--font-ui)";
 const F_TITLE = "var(--font-title)";
@@ -1110,6 +1111,8 @@ function LinkDoFornecedor({
     // window só existe no cliente, e este componente é de cliente — mas
     // a cópia só acontece no clique, então nunca roda na hidratação.
     await navigator.clipboard.writeText(`${window.location.origin}${caminho}`);
+    // fecha o último passo do guia da reta final
+    window.dispatchEvent(new Event(EVENTO_LINK_COPIADO));
     setCopiado(true);
     setTimeout(() => setCopiado(false), 2000);
   }

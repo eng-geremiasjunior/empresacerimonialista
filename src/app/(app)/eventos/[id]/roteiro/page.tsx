@@ -183,7 +183,7 @@ export default async function RoteiroPage({
       />
 
       {suppliers.length > 0 && (
-        <section className="mt-10 print:hidden">
+        <section data-guia="links-fornecedores" className="mt-10 print:hidden">
           <h2 className="text-base font-semibold">Links para fornecedores</h2>
           <p className="mt-1 text-sm text-stone-500">
             Envie o link para cada fornecedor: ele vê só os itens dele, sem

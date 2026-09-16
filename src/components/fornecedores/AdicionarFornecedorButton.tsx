@@ -23,6 +23,7 @@ export function AdicionarFornecedorButton({
   return (
     <>
       <button
+        data-guia="adicionar-fornecedor"
         onClick={() => setAberto(true)}
         className={`flex h-10 items-center gap-1.5 whitespace-nowrap rounded-lg px-4 text-sm font-semibold ${cls}`}
       >

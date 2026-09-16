@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { EVENTO_LINK_COPIADO } from "@/lib/guia-vivo";
 
 export function CopyLinkButton({ path }: { path: string }) {
   const [copied, setCopied] = useState(false);
@@ -9,6 +10,10 @@ export function CopyLinkButton({ path }: { path: string }) {
     await navigator.clipboard.writeText(`${window.location.origin}${path}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+    // o link do roteiro de um fornecedor fecha o último passo do guia
+    if (path.includes("/roteiro/publico/")) {
+      window.dispatchEvent(new Event(EVENTO_LINK_COPIADO));
+    }
   }
 
   return (

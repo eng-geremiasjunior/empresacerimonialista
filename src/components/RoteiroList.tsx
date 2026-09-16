@@ -173,6 +173,7 @@ export function RoteiroList({
             </a>
             {!adding && (
               <button
+                data-guia="novo-item-roteiro"
                 onClick={() => {
                   setAdding(true);
                   setEditingId(null);

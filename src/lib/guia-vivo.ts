@@ -37,7 +37,10 @@ export type PassoDoGuia = {
     | "tarefa_nasceu"
     | "deu_andamento"
     | "tem_convidado"
-    | "tem_tarefa";
+    | "tem_tarefa"
+    | "tem_fornecedor"
+    | "tem_responsavel"
+    | "copiou_link";
   titulo: string;
   /** Fala com ela, sobre o trabalho dela. Nunca sobre a mecânica. */
   texto: string;
@@ -137,6 +140,59 @@ export const PASSOS_SEM_METODO: PassoDoGuia[] = [
   },
 ];
 
+// O CAMINHO DA RETA FINAL.
+//
+// Medido em 12–16/09/2026, com as primeiras contas vindas de anúncio: quem
+// chega com um evento daqui a dez dias não está planejando — as decisões
+// foram tomadas há meses. O caminho do método pedia escala, cenário e uma
+// decisão; ela via o pedido de refazer o que já está feito e pulava. Das
+// sete, cinco pularam, e nenhuma voltou.
+//
+// Para esse evento, o que o sistema resolve HOJE é o dia: quem faz o quê,
+// a que horas, e o fornecedor sabendo disso sem uma mensagem por pessoa.
+// O dono tinha tirado o roteiro do começo do guia por um motivo certo — o
+// casamento de catorze meses não precisa dele agora. A regra continua: o
+// roteiro só entra quando o evento está PERTO.
+//
+// O último passo não tem rastro no banco: copiar o link é um gesto do
+// navegador. O botão de copiar avisa o guia (EVENTO_LINK_COPIADO), e o
+// guia se carimba como concluído.
+export const RETA_FINAL_DIAS = 45;
+
+/** Disparado no `window` quando ela copia o link de um fornecedor. */
+export const EVENTO_LINK_COPIADO = "eorg:link-do-fornecedor-copiado";
+
+export const PASSOS_RETA_FINAL: PassoDoGuia[] = [
+  PASSOS[0],
+  {
+    id: "fornecedores",
+    fato: "tem_fornecedor",
+    titulo: "Traga os fornecedores deste evento",
+    texto:
+      "Buffet, DJ, fotografia: vincule quem já está contratado. É com eles que o dia do evento acontece.",
+    alvo: "adicionar-fornecedor",
+    rota: "/eventos/:id/fornecedores",
+  },
+  {
+    id: "responsavel",
+    fato: "tem_responsavel",
+    titulo: "Diga quem faz cada horário",
+    texto:
+      "Crie um item do roteiro — ou abra um que já está lá — e escolha o fornecedor responsável. Cada um passa a ter a parte dele do dia.",
+    alvo: "novo-item-roteiro",
+    rota: "/eventos/:id/roteiro",
+  },
+  {
+    id: "link",
+    fato: "copiou_link",
+    titulo: "Mande o roteiro para o fornecedor",
+    texto:
+      "Copie o link e cole no WhatsApp dele. Ele vê só os horários dele, no celular, sem baixar nada — e o que você mudar aqui, o link já mostra.",
+    alvo: "links-fornecedores",
+    rota: "/eventos/:id/roteiro",
+  },
+];
+
 /** O que `meu_guia()` devolve, já em português e sem `any`. */
 export type EstadoDoGuia = {
   dispensadoEm: string | null;
@@ -151,12 +207,21 @@ export type EstadoDoGuia = {
   temMetodo: boolean;
   temConvidado: boolean;
   temTarefa: boolean;
+  /** dias até a data do evento do guia (negativo = já passou; null = sem data) */
+  diasAteOEvento: number | null;
+  /** há fornecedor vinculado ao evento do guia? */
+  temFornecedor: boolean;
+  /** algum item do roteiro tem fornecedor responsável? */
+  temResponsavel: boolean;
 };
 
 /** Os passos que valem para ESTE evento. Antes de existir evento, o
- *  caminho completo — o passo 1 é igual nos dois. */
+ *  caminho completo — o passo 1 é igual nos três. */
 export function passosDoEvento(estado: EstadoDoGuia): PassoDoGuia[] {
-  return !estado.criouEvento || estado.temMetodo ? PASSOS : PASSOS_SEM_METODO;
+  if (!estado.criouEvento) return PASSOS;
+  const d = estado.diasAteOEvento;
+  if (d !== null && d >= 0 && d <= RETA_FINAL_DIAS) return PASSOS_RETA_FINAL;
+  return estado.temMetodo ? PASSOS : PASSOS_SEM_METODO;
 }
 
 export type GuiaNaTela = {
@@ -186,6 +251,13 @@ function venceu(estado: EstadoDoGuia, fato: PassoDoGuia["fato"]): boolean {
       return estado.temConvidado;
     case "tem_tarefa":
       return estado.temTarefa;
+    case "tem_fornecedor":
+      return estado.temFornecedor;
+    case "tem_responsavel":
+      return estado.temResponsavel;
+    // só o navegador sabe; quem fecha este passo é o GuiaVivo
+    case "copiou_link":
+      return false;
   }
 }
 

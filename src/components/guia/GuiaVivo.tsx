@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { dispensarGuia, concluirGuia } from "@/app/(app)/actions";
-import type { GuiaNaTela } from "@/lib/guia-vivo";
+import { EVENTO_LINK_COPIADO, type GuiaNaTela } from "@/lib/guia-vivo";
 
 /**
  * O recorte do guia: escurece a tela, abre um buraco em volta do alvo e
@@ -17,10 +17,16 @@ import type { GuiaNaTela } from "@/lib/guia-vivo";
  *    furo. A pessoa pode clicar em QUALQUER lugar, inclusive fora do
  *    buraco, e o sistema funciona normal. O guia aponta; não prende.
  *
- * 2. "PULAR POR AGORA" SEMPRE VISÍVEL. Ele é cliente da HostGator há três
- *    anos e o tutorial de lá continua aparecendo, sem um jeito de dizer
- *    que não quer. Aqui o botão está no cartão, sempre, e pular é
- *    definitivo: o guia não volta sozinho nunca mais.
+ * 2. DIZER "NÃO QUERO" É UM CLIQUE, SEMPRE VISÍVEL. Ele é cliente da
+ *    HostGator há três anos e o tutorial de lá continua aparecendo, sem um
+ *    jeito de dizer que não quer. Aqui o cartão tem, sempre, os dois:
+ *    "Pular por agora" esconde até o próximo acesso (a aba fechada), e
+ *    "Não mostrar mais" é definitivo — o guia não volta sozinho nunca mais.
+ *
+ *    Até 16/09/2026 havia um botão só, "Pular por agora", que gravava o
+ *    definitivo. O texto prometia uma coisa e o banco fazia outra: cinco
+ *    das sete primeiras contas de anúncio clicaram nele, provavelmente
+ *    para ver a tela por trás, e perderam o guia para sempre.
  *
  * 3. ACABA. Quando os cinco fatos ficam verdadeiros, o guia se carimba
  *    como concluído e some para sempre.
@@ -37,6 +43,7 @@ const LARGURA_CARTAO = 340;
 /** Altura suposta do cartão, para decidir se ele cabe. Folgada de propósito. */
 const ALTURA_CARTAO = 220;
 const MARGEM = 16;
+const CHAVE_PULOU = "eorg:guia:pulou-agora";
 
 type Caixa = { top: number; left: number; width: number; height: number };
 
@@ -53,10 +60,35 @@ export function GuiaVivo({
   const [alvo, setAlvo] = useState<Caixa | null>(null);
   const [montado, setMontado] = useState(false);
   const carimbou = useRef(false);
+  /** "Pular por agora": vale até ela fechar a aba (sessionStorage). */
+  const [pulouAgora, setPulouAgora] = useState(false);
   /** Em que passo eu ja rolei a tela ate o alvo. Uma vez por passo. */
   const rolouNoPasso = useRef<string | null>(null);
 
-  useEffect(() => setMontado(true), []);
+  useEffect(() => {
+    // lido só depois de montar: no servidor não existe sessionStorage, e
+    // ler no primeiro render quebraria a hidratação
+    try {
+      setPulouAgora(sessionStorage.getItem(CHAVE_PULOU) === "1");
+    } catch {
+      // navegador sem armazenamento: o guia só não lembra do "agora"
+    }
+    setMontado(true);
+  }, []);
+
+  // O último passo da reta final é copiar o link de um fornecedor — gesto
+  // do navegador, sem rastro no banco. O botão de copiar avisa; o guia se
+  // carimba como concluído, uma vez só.
+  useEffect(() => {
+    if (guia?.passo.fato !== "copiou_link") return;
+    const aoCopiar = () => {
+      if (carimbou.current) return;
+      carimbou.current = true;
+      void concluirGuia().then(() => router.refresh());
+    };
+    window.addEventListener(EVENTO_LINK_COPIADO, aoCopiar);
+    return () => window.removeEventListener(EVENTO_LINK_COPIADO, aoCopiar);
+  }, [guia, router]);
 
   // O carimbo de concluído roda UMA vez por sessão de página. Sem a
   // trava, um re-render no meio da resposta dispararia a segunda chamada.
@@ -137,7 +169,7 @@ export function GuiaVivo({
     };
   }, [guia, montado, medir]);
 
-  if (!guia || !montado || terminou) return null;
+  if (!guia || !montado || terminou || pulouAgora) return null;
 
   const { passo, numero, total, rota } = guia;
   const aquiNao = rota !== null && !pathname.startsWith(rota);
@@ -321,7 +353,12 @@ export function GuiaVivo({
           <button
             type="button"
             onClick={() => {
-              void dispensarGuia().then(() => router.refresh());
+              try {
+                sessionStorage.setItem(CHAVE_PULOU, "1");
+              } catch {
+                // sem armazenamento, esconde só até a próxima tela
+              }
+              setPulouAgora(true);
             }}
             style={{
               border: "1px solid #E6E0D8",
@@ -337,6 +374,26 @@ export function GuiaVivo({
             Pular por agora
           </button>
         </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            void dispensarGuia().then(() => router.refresh());
+          }}
+          style={{
+            marginTop: 10,
+            border: "none",
+            background: "none",
+            padding: 0,
+            fontSize: 12,
+            color: "#928A81",
+            textDecoration: "underline",
+            textUnderlineOffset: 2,
+            cursor: "pointer",
+          }}
+        >
+          Não mostrar mais
+        </button>
       </div>
     </>
   );
