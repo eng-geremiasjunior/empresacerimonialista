@@ -243,6 +243,12 @@ export const GRUPOS_AJUDA: GrupoAjuda[] = [
           "Em Configurações, o contrato em PDF que vale para todas as propostas. Se um tipo de evento usa outro contrato, suba no Catálogo daquele tipo. A cliente lê o contrato na proposta antes de aceitar e recebe junto do termo assinado; trocar o arquivo depois não muda o que ela já aceitou.",
       },
       {
+        id: "pagina-publica",
+        pergunta: "Como divulgo meu trabalho e recebo pedidos de orçamento?",
+        resposta:
+          "Em Orçamentos → Página pública: escreva a apresentação, escolha os tipos de evento, os serviços, as fotos e os depoimentos que vão aparecer, e publique. O endereço é seu para pôr na bio do Instagram. Quem preencher o formulário da página chega em Orçamentos com o evento já descrito, e um clique abre a proposta preenchida. O botão de WhatsApp da página abre a conversa com você; o sistema conta o toque, mas não sabe se a mensagem foi enviada.",
+      },
+      {
         id: "validade-proposta",
         pergunta: "Proposta tem validade?",
         resposta:

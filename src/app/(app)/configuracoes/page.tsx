@@ -11,7 +11,7 @@ import { GuiaSection } from "@/components/configuracoes/GuiaSection";
 import { getEstadoDoGuia } from "@/lib/supabase/guia-vivo";
 import { getExplicacoesLigadas } from "@/lib/supabase/explicacoes";
 import { nomeTemplateLembrete, whatsappConfigurado } from "@/lib/whatsapp";
-import { CalendarClock, CreditCard, FileSignature } from "lucide-react";
+import { CalendarClock, CreditCard, FileSignature, Globe } from "lucide-react";
 import { ContratoModeloForm } from "@/components/configuracoes/ContratoModeloForm";
 
 export const dynamic = "force-dynamic";
@@ -195,6 +195,25 @@ export default async function ConfiguracoesPage() {
           Abrir minha grade →
         </Link>
       </section>
+
+      {proprietaria && (
+        <section className="rounded-xl border border-gray-200 bg-white px-6 py-5">
+          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-gray-900">
+            <Globe size={15} className="text-gray-500" />
+            Página pública
+          </h2>
+          <p className="mt-0.5 text-xs text-gray-500">
+            O endereço para divulgar o seu trabalho. Quem pede orçamento por
+            ela aparece em Orçamentos.
+          </p>
+          <Link
+            href="/orcamentos/pagina"
+            className="mt-3 inline-block rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Abrir a página pública →
+          </Link>
+        </section>
+      )}
 
       {proprietaria && (
         <section className="rounded-xl border border-gray-200 bg-white px-6 py-5">

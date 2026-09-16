@@ -20,8 +20,12 @@ export const VISOES_EVENTOS: Visao[] = [
   { label: "Calendário", href: "/calendario" },
 ];
 
+// Página pública (16/09/2026): o começo do caminho comercial — a página
+// traz o pedido, o pedido vira proposta. Só a dona, como o Catálogo: é a
+// cara da empresa lá fora.
 export const VISOES_ORCAMENTOS: Visao[] = [
   { label: "Propostas", href: "/orcamentos" },
+  { label: "Página pública", href: "/orcamentos/pagina", cargos: ["proprietaria"] },
   { label: "Catálogo", href: "/catalogo", cargos: ["proprietaria"] },
 ];
 
