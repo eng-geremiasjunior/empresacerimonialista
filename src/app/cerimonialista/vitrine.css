@@ -1392,6 +1392,34 @@
   }
 }
 
+/* ACRÉSCIMO: no computador o conteúdo fica numa coluna CENTRALIZADA
+   (regra do dono, 16/09/2026: "deve ser centralizado no computador"). O
+   desenho é fluido e, em tela larga, encostava tudo à esquerda. Fundos,
+   faixas e linhas continuam de ponta a ponta; só o recuo lateral cresce
+   até o conteúdo caber na coluna. A coluna tem a largura que o desenho
+   já dava ao formulário (900 px). No celular o recuo é o do desenho. */
+.vt {
+  --vt-coluna: 900px;
+}
+.vt .vt-topo,
+.vt .vt-previa,
+.vt .vt-abertura-texto,
+.vt .vt-abertura-sem-foto,
+.vt .vt-apresentacao,
+.vt .vt-secao,
+.vt .vt-faixa,
+.vt .vt-depoimentos,
+.vt .vt-orcamento,
+.vt .vt-instagram,
+.vt .vt-rodape {
+  padding-left: max(20px, calc((100% - var(--vt-coluna)) / 2));
+  padding-right: max(20px, calc((100% - var(--vt-coluna)) / 2));
+}
+.vt .vt-barra {
+  padding-left: max(14px, calc((100% - var(--vt-coluna)) / 2));
+  padding-right: max(14px, calc((100% - var(--vt-coluna)) / 2));
+}
+
 /* ACRÉSCIMO: -webkit- para o Safari no vidro do cabeçalho */
 .vt .vt-topo {
   -webkit-backdrop-filter: blur(8px);
