@@ -1,24 +1,29 @@
 import type { Metadata } from "next";
-import { Figtree, Fraunces } from "next/font/google";
+import { EB_Garamond, Jost } from "next/font/google";
+import "./vitrine.css";
 
-// A página pública da cerimonialista tem voz própria: não é o painel do
-// eOrganizei, é a vitrine dela. Fraunces nos títulos (serifa com calor,
-// sem cara de convite de casamento — a página atende os nove tipos de
-// evento) e Figtree no corpo, legível no celular.
+// A vitrine profissional tem a voz do portal da cliente: EB Garamond nos
+// títulos e citações, Jost no texto e na interface (desenho do Claude
+// Design, 16/09/2026). Não é o painel do eOrganizei: a área profissional
+// (Inter / Instrument Sans) não entra aqui.
 //
 // As fontes moram no layout e não na página: next/font resolve a família
-// na compilação do módulo (a mesma regra escrita em orcamento/layout.tsx).
+// na compilação do módulo, e declarar a mesma família em arquivos irmãos
+// quebra o build de produção (lição do /confirmar). Variáveis próprias,
+// porque o desenho usa o peso 600 da Jost, que o portal não carrega.
 
-const titulo = Fraunces({
+const titulo = EB_Garamond({
   subsets: ["latin"],
+  weight: ["400", "500"],
   style: ["normal", "italic"],
-  variable: "--font-pagina-titulo",
+  variable: "--fonte-vitrine-titulo",
   display: "swap",
 });
 
-const corpo = Figtree({
+const corpo = Jost({
   subsets: ["latin"],
-  variable: "--font-pagina-corpo",
+  weight: ["300", "400", "500", "600"],
+  variable: "--fonte-vitrine-corpo",
   display: "swap",
 });
 

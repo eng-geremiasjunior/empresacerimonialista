@@ -1,34 +1,48 @@
 "use client";
 
-// O pedido de orçamento, na página pública.
+// O pedido de orçamento, na vitrine.
 //
 // Seis perguntas e uma mensagem. Só nome, WhatsApp e tipo do evento são
 // obrigatórios: quem ainda não tem data é justamente quem mais precisa de
 // assessoria, e um formulário que exige data manda essa pessoa embora.
 //
+// Todos os erros aparecem de uma vez, cada um embaixo do seu campo, e
+// somem quando o campo é editado. Nada do que a pessoa digitou é apagado.
+//
 // O que vai junto, e ninguém vê: a origem da visita (a mesma que o
 // contador usou), um campo-isca invisível para pessoas e a hora em que o
 // formulário apareceu. Nada de cookie.
+//
+// O tipo escolhido e o "enviado" moram no estado da vitrine: o primeiro
+// muda o depoimento em destaque, o segundo troca o botão da barra fixa.
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { MessageCircle } from "lucide-react";
-import { LIMITES_PEDIDO, validarPedido } from "@/lib/comercial/pedidos";
-import { textoWhatsappPagina } from "@/lib/comercial/pagina-publica";
+import { ChevronDown } from "lucide-react";
+import {
+  CAMPOS_DO_PEDIDO,
+  LIMITES_PEDIDO,
+  errosDoPedido,
+  validarPedido,
+  type CampoDoPedido,
+} from "@/lib/comercial/pedidos";
+import { exemploDeWhatsapp, textoWhatsappPagina } from "@/lib/comercial/pagina-publica";
 import { linkWhatsapp } from "@/lib/whatsapp-link";
 import { hojeBR } from "@/lib/tempo";
 import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
 import { LinkMedido, chegadaDaAba } from "./MedirPagina";
+import { useVitrine } from "./VitrineViva";
 
-const campoClass =
-  "w-full rounded-xl border border-[color:var(--pg-linha)] bg-[color:var(--pg-papel)] px-4 py-3 text-[15px] text-[color:var(--pg-tinta)] placeholder:text-[color:var(--pg-suave)] focus:border-[color:var(--pg-tinta)] focus:outline-none focus:ring-2 focus:ring-[color:var(--pg-acento-claro)] disabled:opacity-60";
-const rotuloClass = "mb-1.5 block text-sm font-medium text-[color:var(--pg-tinta)]";
+// o texto livre cresce com o que a pessoa escreve (valores do desenho)
+const LINHAS_MIN = 3;
+const LINHAS_MAX = 8;
+const CARACTERES_POR_LINHA = 120;
+const AVISO_PERTO_DO_LIMITE = 460;
 
-type Estado =
-  | { fase: "preenchendo" }
-  | { fase: "enviando" }
-  | { fase: "enviado" }
-  | { fase: "erro"; texto: string; campo?: string };
+type Erros = Partial<Record<CampoDoPedido, string>>;
+
+const ehCampo = (c: unknown): c is CampoDoPedido =>
+  typeof c === "string" && (CAMPOS_DO_PEDIDO as readonly string[]).includes(c);
 
 export function FormularioPedido({
   slug,
@@ -45,17 +59,20 @@ export function FormularioPedido({
   contar: boolean;
   previa: boolean;
 }) {
+  const { tipo, escolherTipo, enviado, marcarEnviado } = useVitrine();
   const [nome, setNome] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [email, setEmail] = useState("");
-  const [tipo, setTipo] = useState<string>(tipos.length === 1 ? tipos[0] : "");
   const [data, setData] = useState("");
   const [semData, setSemData] = useState(false);
   const [cidade, setCidade] = useState("");
   const [convidados, setConvidados] = useState("");
   const [mensagem, setMensagem] = useState("");
   const [site, setSite] = useState(""); // a isca
-  const [estado, setEstado] = useState<Estado>({ fase: "preenchendo" });
+  const [erros, setErros] = useState<Erros>({});
+  const [erroGeral, setErroGeral] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const tituloEnviado = useRef<HTMLHeadingElement>(null);
 
   // A hora em que o formulário apareceu e o "hoje" do calendário vêm do
   // navegador DEPOIS de montar: lidos no render, divergiriam do servidor
@@ -67,35 +84,61 @@ export function FormularioPedido({
     setHoje(hojeBR());
   }, []);
 
+  // enviado: a confirmação entra no lugar do formulário e recebe o foco
+  useEffect(() => {
+    if (enviado) tituloEnviado.current?.focus();
+  }, [enviado]);
+
   const wa = linkWhatsapp(whatsappEmpresa, textoWhatsappPagina());
-  const erroEm = (campo: string) =>
-    estado.fase === "erro" && estado.campo === campo ? estado.texto : null;
+  const travado = enviando || previa;
+
+  /** muda o campo e apaga o erro dele */
+  const editar =
+    <T,>(campo: CampoDoPedido | null, definir: (v: T) => void) =>
+    (valor: T) => {
+      definir(valor);
+      if (campo && erros[campo]) {
+        setErros((e) => {
+          const resto = { ...e };
+          delete resto[campo];
+          return resto;
+        });
+      }
+    };
+
+  function focarPrimeiro(e: Erros) {
+    const campo = CAMPOS_DO_PEDIDO.find((c) => e[c]);
+    const el = campo ? document.getElementById(`pedido-${campo}`) : null;
+    if (!el) return;
+    el.scrollIntoView({ block: "center" });
+    el.focus({ preventScroll: true });
+  }
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
-    if (previa || estado.fase === "enviando") return;
+    if (travado) return;
+    setErroGeral(null);
 
-    const v = validarPedido(
-      {
-        nome,
-        whatsapp,
-        email,
-        tipoEvento: tipo,
-        dataEvento: semData ? null : data,
-        cidade,
-        convidados,
-        mensagem,
-      },
-      hojeBR(),
-      tipos
-    );
+    const entrada = {
+      nome,
+      whatsapp,
+      email,
+      tipoEvento: tipo,
+      dataEvento: semData ? null : data,
+      cidade,
+      convidados,
+      mensagem,
+    };
+    const achados = errosDoPedido(entrada, hojeBR(), tipos);
+    const v = validarPedido(entrada, hojeBR(), tipos);
     if (!v.ok) {
-      setEstado({ fase: "erro", texto: v.erro, campo: v.campo });
-      document.getElementById(`pedido-${v.campo}`)?.focus();
+      setErros(achados);
+      focarPrimeiro(achados);
       return;
     }
 
-    setEstado({ fase: "enviando" });
+    setErros({});
+    setEnviando(true);
     const chegada = chegadaDaAba(slug);
     try {
       const r = await fetch(`/api/pagina/${encodeURIComponent(slug)}/pedido`, {
@@ -122,34 +165,34 @@ export function FormularioPedido({
         | { ok?: boolean; erro?: string; campo?: string }
         | null;
       if (!r.ok || !j?.ok) {
-        setEstado({
-          fase: "erro",
-          texto: j?.erro ?? "Não foi possível enviar agora. Tente de novo ou fale pelo WhatsApp.",
-          campo: j?.campo,
-        });
+        const texto = j?.erro ?? "Não foi possível enviar agora. Tente de novo ou fale pelo WhatsApp.";
+        const campo = j?.campo;
+        if (ehCampo(campo)) {
+          const doServidor: Erros = { [campo]: texto };
+          setErros(doServidor);
+          focarPrimeiro(doServidor);
+        } else {
+          setErroGeral(texto);
+        }
         return;
       }
-      setEstado({ fase: "enviado" });
+      marcarEnviado();
     } catch {
-      setEstado({
-        fase: "erro",
-        texto: "Sem conexão. Tente de novo ou fale pelo WhatsApp.",
-      });
+      setErroGeral("Sem conexão. Tente de novo ou fale pelo WhatsApp.");
+    } finally {
+      setEnviando(false);
     }
   }
 
-  if (estado.fase === "enviado") {
+  if (enviado) {
     return (
-      <div
-        role="status"
-        className="rounded-2xl border border-[color:var(--pg-linha)] bg-[color:var(--pg-papel)] p-6 sm:p-8"
-      >
-        <p className="font-[family-name:var(--font-pagina-titulo)] text-2xl text-[color:var(--pg-tinta)]">
-          Pedido enviado.
-        </p>
-        <p className="mt-2 text-[15px] leading-relaxed text-[color:var(--pg-suave)]">
-          {nomeEmpresa} vai analisar as informações do seu evento e responde pelo
-          WhatsApp ou por e-mail.
+      <div className="vt-enviado" role="status">
+        <h2 ref={tituloEnviado} tabIndex={-1} className="vt-h2-enviado">
+          Pedido enviado
+        </h2>
+        <p className="vt-corpo">
+          {nomeEmpresa} vai analisar as informações do seu evento e responde pelo WhatsApp ou por
+          e-mail.
         </p>
         {wa && (
           <LinkMedido
@@ -157,9 +200,8 @@ export function FormularioPedido({
             slug={slug}
             tipo="whatsapp_click"
             contar={contar}
-            className="mt-5 inline-flex items-center gap-2 rounded-full border border-[color:var(--pg-linha)] px-5 py-2.5 text-sm font-medium text-[color:var(--pg-tinta)] transition hover:bg-[color:var(--pg-acento-claro)]"
+            className="vt-botao-adiantar"
           >
-            <MessageCircle size={16} aria-hidden />
             Adiantar a conversa pelo WhatsApp
           </LinkMedido>
         )}
@@ -167,193 +209,247 @@ export function FormularioPedido({
     );
   }
 
-  const enviando = estado.fase === "enviando";
+  const linhas = Math.min(
+    LINHAS_MAX,
+    LINHAS_MIN + Math.floor(mensagem.length / CARACTERES_POR_LINHA)
+  );
+  const erroDe = (campo: CampoDoPedido) =>
+    erros[campo] ? (
+      <p id={`pedido-${campo}-erro`} className="vt-erro">
+        {erros[campo]}
+      </p>
+    ) : null;
+  const marcasDeErro = (campo: CampoDoPedido) =>
+    erros[campo]
+      ? {
+          "data-erro": "",
+          "aria-invalid": true as const,
+          "aria-describedby": `pedido-${campo}-erro`,
+        }
+      : {};
 
   return (
-    <form
-      onSubmit={enviar}
-      noValidate
-      className="space-y-5 rounded-2xl border border-[color:var(--pg-linha)] bg-[color:var(--pg-papel)] p-6 sm:p-8"
-    >
-      <div className="grid gap-5 sm:grid-cols-2">
-        <div>
-          <label htmlFor="pedido-nome" className={rotuloClass}>
-            Seu nome
+    <>
+      <form onSubmit={enviar} noValidate className="vt-formulario">
+        <h2 className="vt-h2-formulario">Conte sobre o seu evento</h2>
+
+        <div className="vt-campo">
+          <label htmlFor="pedido-nome" className="vt-campo-rotulo">
+            Seu nome *
           </label>
           <input
             id="pedido-nome"
+            type="text"
+            className="vt-entrada"
+            placeholder="Nome e sobrenome"
             value={nome}
-            onChange={(e) => setNome(e.target.value)}
+            onChange={(e) => editar("nome", setNome)(e.target.value)}
             maxLength={LIMITES_PEDIDO.nomeMax}
             autoComplete="name"
             required
-            aria-invalid={Boolean(erroEm("nome"))}
-            className={campoClass}
+            disabled={travado}
+            {...marcasDeErro("nome")}
           />
+          {erroDe("nome")}
         </div>
-        <div>
-          <label htmlFor="pedido-whatsapp" className={rotuloClass}>
-            WhatsApp
+
+        <div className="vt-campo">
+          <label htmlFor="pedido-whatsapp" className="vt-campo-rotulo">
+            WhatsApp *
           </label>
           <input
             id="pedido-whatsapp"
+            type="tel"
+            className="vt-entrada"
+            placeholder={exemploDeWhatsapp(whatsappEmpresa)}
             value={whatsapp}
-            onChange={(e) => setWhatsapp(e.target.value)}
+            onChange={(e) => editar("whatsapp", setWhatsapp)(e.target.value)}
             inputMode="tel"
             autoComplete="tel"
-            placeholder="(DDD) número"
             required
-            aria-invalid={Boolean(erroEm("whatsapp"))}
-            className={campoClass}
+            disabled={travado}
+            {...marcasDeErro("whatsapp")}
           />
+          {erroDe("whatsapp")}
         </div>
-      </div>
 
-      <div>
-        <label htmlFor="pedido-email" className={rotuloClass}>
-          E-mail <span className="font-normal text-[color:var(--pg-suave)]">(se quiser)</span>
-        </label>
-        <input
-          id="pedido-email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          maxLength={LIMITES_PEDIDO.email}
-          autoComplete="email"
-          aria-invalid={Boolean(erroEm("email"))}
-          className={campoClass}
-        />
-      </div>
-
-      <div className="grid gap-5 sm:grid-cols-2">
-        <div>
-          <label htmlFor="pedido-tipoEvento" className={rotuloClass}>
-            Tipo de evento
-          </label>
-          <select
-            id="pedido-tipoEvento"
-            value={tipo}
-            onChange={(e) => setTipo(e.target.value)}
-            required
-            aria-invalid={Boolean(erroEm("tipoEvento"))}
-            className={campoClass}
-          >
-            {tipos.length !== 1 && <option value="">Escolha</option>}
-            {tipos.map((t) => (
-              <option key={t} value={t}>
-                {EVENT_TYPE_LABELS[t]}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="pedido-dataEvento" className={rotuloClass}>
-            Data do evento
+        <div className="vt-campo">
+          <label htmlFor="pedido-email" className="vt-campo-rotulo">
+            E-mail (opcional)
           </label>
           <input
-            id="pedido-dataEvento"
-            type="date"
-            value={semData ? "" : data}
-            min={hoje}
-            onChange={(e) => setData(e.target.value)}
-            disabled={semData}
-            aria-invalid={Boolean(erroEm("dataEvento"))}
-            className={campoClass}
+            id="pedido-email"
+            type="email"
+            className="vt-entrada"
+            placeholder="voce@email.com"
+            value={email}
+            onChange={(e) => editar("email", setEmail)(e.target.value)}
+            maxLength={LIMITES_PEDIDO.email}
+            autoComplete="email"
+            disabled={travado}
+            {...marcasDeErro("email")}
           />
-          <label className="mt-2 flex items-center gap-2 text-sm text-[color:var(--pg-suave)]">
+          {erroDe("email")}
+        </div>
+
+        <div className="vt-campo">
+          <label htmlFor="pedido-tipoEvento" className="vt-campo-rotulo">
+            Tipo de evento *
+          </label>
+          <div className="vt-selecao-caixa">
+            <select
+              id="pedido-tipoEvento"
+              className="vt-selecao"
+              value={tipo}
+              onChange={(e) => editar("tipoEvento", escolherTipo)(e.target.value)}
+              required
+              disabled={travado}
+              {...marcasDeErro("tipoEvento")}
+            >
+              {tipos.length !== 1 && <option value="">Selecione</option>}
+              {tipos.map((t) => (
+                <option key={t} value={t}>
+                  {EVENT_TYPE_LABELS[t] ?? t}
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={16} strokeWidth={2} aria-hidden className="vt-selecao-seta" />
+          </div>
+          {erroDe("tipoEvento")}
+        </div>
+
+        <div className="vt-campo-data">
+          <div
+            className="vt-data-recolhe"
+            data-recolhida={semData ? "" : undefined}
+            aria-hidden={semData ? true : undefined}
+          >
+            <div className="vt-data-dentro">
+              <label htmlFor="pedido-dataEvento" className="vt-campo-rotulo">
+                Data do evento
+              </label>
+              <input
+                id="pedido-dataEvento"
+                type="date"
+                className="vt-entrada-data"
+                value={semData ? "" : data}
+                min={hoje}
+                onChange={(e) => editar("dataEvento", setData)(e.target.value)}
+                disabled={travado || semData}
+                {...marcasDeErro("dataEvento")}
+              />
+            </div>
+          </div>
+          {!semData && erroDe("dataEvento")}
+          <label className="vt-sem-data">
             <input
               type="checkbox"
+              className="vt-caixa"
               checked={semData}
-              onChange={(e) => setSemData(e.target.checked)}
-              className="h-4 w-4 rounded border-[color:var(--pg-linha)]"
+              onChange={(e) => editar("dataEvento", setSemData)(e.target.checked)}
+              disabled={travado}
             />
             Ainda não tenho a data
           </label>
         </div>
-      </div>
 
-      <div className="grid gap-5 sm:grid-cols-2">
-        <div>
-          <label htmlFor="pedido-cidade" className={rotuloClass}>
-            Cidade ou local
+        <div className="vt-campo">
+          <label htmlFor="pedido-cidade" className="vt-campo-rotulo">
+            Cidade ou local (opcional)
           </label>
           <input
             id="pedido-cidade"
+            type="text"
+            className="vt-entrada"
+            placeholder="Onde vai ser"
             value={cidade}
             onChange={(e) => setCidade(e.target.value)}
             maxLength={LIMITES_PEDIDO.cidade}
             autoComplete="address-level2"
-            className={campoClass}
+            disabled={travado}
           />
         </div>
-        <div>
-          <label htmlFor="pedido-convidados" className={rotuloClass}>
-            Convidados <span className="font-normal text-[color:var(--pg-suave)]">(aproximado)</span>
+
+        <div className="vt-campo">
+          <label htmlFor="pedido-convidados" className="vt-campo-rotulo">
+            Convidados, aproximado (opcional)
           </label>
           <input
             id="pedido-convidados"
+            type="text"
+            className="vt-entrada"
+            placeholder="120"
             value={convidados}
-            onChange={(e) => setConvidados(e.target.value.replace(/[^0-9]/g, ""))}
+            onChange={(e) =>
+              editar("convidados", setConvidados)(e.target.value.replace(/[^0-9]/g, ""))
+            }
             inputMode="numeric"
-            aria-invalid={Boolean(erroEm("convidados"))}
-            className={campoClass}
+            disabled={travado}
+            {...marcasDeErro("convidados")}
+          />
+          {erroDe("convidados")}
+        </div>
+
+        <div className="vt-campo-largo">
+          <div className="vt-campo-cabeca">
+            <label htmlFor="pedido-mensagem" className="vt-campo-rotulo-largo">
+              Conte um pouco do que você imagina (opcional)
+            </label>
+            <span
+              className="vt-contagem"
+              data-visivel={mensagem.length ? "" : undefined}
+              data-alta={mensagem.length > AVISO_PERTO_DO_LIMITE ? "" : undefined}
+              aria-live="polite"
+            >
+              {mensagem.length} / {LIMITES_PEDIDO.mensagem}
+            </span>
+          </div>
+          <textarea
+            id="pedido-mensagem"
+            className="vt-area"
+            placeholder="Estilo, horário, o que não pode faltar"
+            value={mensagem}
+            onChange={(e) => setMensagem(e.target.value.slice(0, LIMITES_PEDIDO.mensagem))}
+            maxLength={LIMITES_PEDIDO.mensagem}
+            rows={linhas}
+            disabled={travado}
           />
         </div>
-      </div>
 
-      <div>
-        <label htmlFor="pedido-mensagem" className={rotuloClass}>
-          Conte um pouco do que você imagina{" "}
-          <span className="font-normal text-[color:var(--pg-suave)]">(se quiser)</span>
-        </label>
-        <textarea
-          id="pedido-mensagem"
-          value={mensagem}
-          onChange={(e) => setMensagem(e.target.value)}
-          maxLength={LIMITES_PEDIDO.mensagem}
-          rows={4}
-          className={campoClass}
-        />
-      </div>
+        {/* A isca: invisível e fora da ordem de tabulação. Pessoa não preenche. */}
+        <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
+          <label htmlFor="pedido-site">Site</label>
+          <input
+            id="pedido-site"
+            name="site"
+            tabIndex={-1}
+            autoComplete="off"
+            value={site}
+            onChange={(e) => setSite(e.target.value)}
+          />
+        </div>
 
-      {/* A isca: invisível e fora da ordem de tabulação. Pessoa não preenche. */}
-      <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
-        <label htmlFor="pedido-site">Site</label>
-        <input
-          id="pedido-site"
-          name="site"
-          tabIndex={-1}
-          autoComplete="off"
-          value={site}
-          onChange={(e) => setSite(e.target.value)}
-        />
-      </div>
-
-      {estado.fase === "erro" && (
-        <p role="alert" className="text-sm text-[#9B3B2E]">
-          {estado.texto}
+        <div className="vt-envio">
+          <button type="submit" className="vt-botao-enviar" disabled={travado}>
+            {enviando && <span className="vt-giro" aria-hidden="true" />}
+            <span>{enviando ? "Enviando…" : "Pedir orçamento"}</span>
+          </button>
+          <p className="vt-aviso-dados">
+            Seus dados vão só para {nomeEmpresa}, para responder ao seu pedido.{" "}
+            <Link href="/privacidade">Política de privacidade</Link>
+          </p>
+          {erroGeral && (
+            <p role="alert" className="vt-erro vt-erro-geral">
+              {erroGeral}
+            </p>
+          )}
+        </div>
+      </form>
+      {previa && (
+        <p className="vt-aviso-previa">
+          Desativado na prévia. Publique a vitrine para receber pedidos.
         </p>
       )}
-
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <button
-          type="submit"
-          disabled={enviando || previa}
-          className="rounded-full bg-[color:var(--pg-acento)] px-7 py-3 text-[15px] font-medium text-white transition hover:opacity-90 disabled:opacity-50"
-        >
-          {enviando ? "Enviando…" : "Pedir orçamento"}
-        </button>
-        {previa && (
-          <p className="text-sm text-[color:var(--pg-suave)]">Na prévia o formulário não envia.</p>
-        )}
-      </div>
-
-      <p className="text-xs leading-relaxed text-[color:var(--pg-suave)]">
-        Seus dados vão só para {nomeEmpresa}, para responder ao seu pedido.{" "}
-        <Link href="/privacidade" className="underline hover:text-[color:var(--pg-tinta)]">
-          Política de privacidade
-        </Link>
-      </p>
-    </form>
+    </>
   );
 }

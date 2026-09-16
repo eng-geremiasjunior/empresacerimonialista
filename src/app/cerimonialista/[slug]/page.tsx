@@ -66,7 +66,7 @@ const carregarPrevia = cache(async (ref: string): Promise<PaginaPublica | null> 
       .limit(24),
     supabase
       .from("empresa_depoimentos")
-      .select("texto, autor, contexto")
+      .select("texto, autor, contexto, tipo_evento")
       .eq("empresa_id", empresaId)
       .eq("ativo", true)
       .eq("na_pagina", true)

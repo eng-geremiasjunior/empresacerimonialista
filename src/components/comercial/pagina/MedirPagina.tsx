@@ -104,6 +104,7 @@ export function LinkMedido({
   className,
   children,
   rotulo,
+  foco,
 }: {
   href: string;
   slug: string;
@@ -112,6 +113,8 @@ export function LinkMedido({
   className?: string;
   children: React.ReactNode;
   rotulo?: string;
+  /** tabIndex: -1 quando o link está numa barra escondida */
+  foco?: number;
 }) {
   return (
     <a
@@ -119,6 +122,7 @@ export function LinkMedido({
       target="_blank"
       rel="noopener noreferrer"
       aria-label={rotulo}
+      tabIndex={foco}
       className={className}
       onClick={() => {
         if (contar) registrar(slug, tipo);

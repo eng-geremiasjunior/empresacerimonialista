@@ -15,6 +15,12 @@
 -- são trocadas, e o que faltava é acrescentado. Não houve exposição no
 -- intervalo: sem página publicada, as funções públicas não fazem nada.
 --
+-- 16/09/2026, à tarde: a leitura pública passa a entregar também o tipo
+-- de evento de cada depoimento marcado para a página (o desenho novo da
+-- vitrine põe em destaque o depoimento do tipo que a pessoa escolhe no
+-- formulário). É conteúdo que ela já publica; nada mais sai. Reaplicar
+-- o arquivo inteiro troca só a função.
+--
 -- O QUE ESTA MIGRAÇÃO ABRE. Hoje a proposta só nasce se a cerimonialista
 -- digitar o contato: quem a procura pelo Instagram cai num WhatsApp que
 -- ela responde à mão, e nada disso entra no sistema. Esta é a porta que
@@ -859,7 +865,9 @@ begin
     'depoimentos', coalesce((
       select json_agg(d)
       from (
-        select dp.texto, dp.autor, dp.contexto
+        -- o tipo deixa o depoimento em destaque acompanhar o tipo de
+        -- evento que a pessoa escolhe no formulário da vitrine
+        select dp.texto, dp.autor, dp.contexto, dp.tipo_evento
         from public.empresa_depoimentos dp
         where dp.empresa_id = v_empresa and dp.ativo and dp.na_pagina
         order by dp.ordem, dp.created_at
@@ -1362,6 +1370,12 @@ select 'fotos e depoimentos só vão para a página quando ela escolher',
        and (select prosrc ilike '%pf.na_pagina%' and prosrc ilike '%dp.na_pagina%'
               from pg_proc where proname = 'pagina_publica'
                and pronamespace = 'public'::regnamespace and pronargs = 1)
+
+union all
+select 'o depoimento da página leva o tipo do evento (o destaque acompanha o formulário)',
+       (select prosrc ilike '%dp.tipo_evento%'
+          from pg_proc where proname = 'pagina_publica'
+           and pronamespace = 'public'::regnamespace and pronargs = 1)
 
 union all
 select 'as cinco funções da página existem, uma vez cada',

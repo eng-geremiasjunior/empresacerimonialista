@@ -1,0 +1,1429 @@
+/*
+ * A vitrine profissional — a página pública da cerimonialista.
+ *
+ * GERADO a partir do desenho do Claude Design
+ * ("Pagina do cerimonialista - eOrganizei.dc.html", 16/09/2026) por
+ * ferramentas/sim/gerar-vitrine-css.mjs (ferramenta local, fora do git):
+ * as cores e as medidas saem do estilo em linha de cada elemento e do
+ * script do protótipo, sem redigitar. Os ACRÉSCIMOS no fim são o que o
+ * desenho não trouxe. Para mudar o visual, mude o desenho e gere de novo.
+ *
+ * Tudo preso a .vt: esta folha é global (o App Router não isola CSS por
+ * rota) e não pode vazar para o resto do sistema.
+ *
+ * Cor: o desenho pedia o ameixa do painel; a vitrine usa verde-oliva
+ * escuro (decisão do dono, 16/09/2026), trocado no fim da geração.
+ *
+ * Fontes: o desenho pede "EB Garamond" e "Jost" pelo nome; o next/font
+ * gera nomes com hash, então cada font-family começa pela variável do
+ * layout (13 trocas) e mantém o nome como reserva.
+ */
+
+/* do <style> do desenho, presos à raiz */
+.vt {
+  -webkit-font-smoothing: antialiased;
+}
+.vt :where(a) {
+  color: #4e5c2e;
+  text-decoration: underline;
+}
+/* O desenho foi feito sem reset: o que ele não declara vem do padrão do
+   navegador. O app tem o reset do Tailwind (altura de linha 1.5, caixa
+   border-box, link sem sublinhado, texto de exemplo mais claro), que aqui
+   volta ao padrão, com os valores MEDIDOS no protótipo aberto no Chrome
+   (ferramentas/sim/medir-prototipo.mjs). */
+.vt {
+  line-height: normal;
+}
+.vt *,
+.vt *::before,
+.vt *::after {
+  box-sizing: content-box;
+}
+.vt :where(input, textarea)::placeholder {
+  color: rgb(117, 117, 117);
+  opacity: 1;
+}
+.vt .vt-caixa {
+  margin: 3px 3px 3px 4px;
+  box-sizing: border-box;
+}
+
+/* o desenho escurecia o link para uma cor que sobrou do estudo 5b;
+   aqui vai o mesmo tom escuro do botão sob o mouse */
+.vt :where(a:hover) {
+  color: #3a4422;
+}
+.vt :where(input, select, textarea, button) {
+  font-family: inherit;
+}
+.vt :where(a, button, [tabindex]):focus-visible {
+  outline: 2px solid #4e5c2e;
+  outline-offset: 2px;
+}
+.vt :where(img) {
+  max-width: 100%;
+}
+/* a âncora do formulário não fica escondida atrás do cabeçalho fixo */
+.vt #orcamento {
+  scroll-margin-top: 72px;
+}
+.vt .vt-so-leitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* #0 <div> */
+.vt {
+  font-family: var(--fonte-vitrine-corpo),Jost,Helvetica,Arial,sans-serif;
+  color: #3d3835;
+  background: #faf8f5;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* #1 <div> */
+.vt .vt-topo {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 11px 20px;
+  background: rgba(250,248,245,.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid #e6e0d8;
+  transform: translateY(-102%);
+  opacity: 0;
+  transition: transform .32s cubic-bezier(.22,.7,.3,1),opacity .28s ease;
+}
+
+/* #2 <span> */
+.vt .vt-topo-nome {
+  font-family: var(--fonte-vitrine-titulo),'EB Garamond',Georgia,serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #221e1b;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* #3 <a> */
+.vt .vt-topo-botao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  background: #4e5c2e;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.vt .vt-topo-botao:active {
+  transform: translateY(1px);
+}
+
+@media (hover: hover) {
+  .vt .vt-topo-botao:hover {
+    background: #3a4422;
+  }
+}
+
+/* #4 <div> */
+.vt .vt-previa {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  align-items: baseline;
+  padding: 12px 20px;
+  background: #f2eee9;
+  border-bottom: 1px solid #e6e0d8;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #3d3835;
+}
+
+/* #5 <a> */
+.vt .vt-previa-link {
+  font-weight: 600;
+}
+
+/* #6 <div> */
+.vt .vt-abertura {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4/5;
+  max-height: 74vh;
+  overflow: hidden;
+}
+
+/* #7 <div> */
+.vt .vt-abertura-foto {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(45deg,#3a352f 0 9px,#46403a 9px 18px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  transform-origin: 52% 45%;
+}
+
+/* #9 <div> */
+.vt .vt-abertura-veu {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top,rgba(34,30,27,.9) 0%,rgba(34,30,27,.32) 46%,rgba(34,30,27,.36) 100%);
+}
+
+/* #10 <div> */
+.vt .vt-abertura-texto {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 28px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* #11 <p> */
+.vt .vt-abertura-cidade {
+  margin: 0 0 12px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .17em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.82);
+}
+
+/* #12 <h1> */
+.vt .vt-abertura-nome {
+  margin: 0;
+  font-family: var(--fonte-vitrine-titulo),'EB Garamond',Georgia,serif;
+  font-size: 34px;
+  font-weight: 500;
+  line-height: 1.1;
+  color: #fff;
+  text-wrap: pretty;
+  max-width: 22ch;
+}
+
+/* #13 <p> */
+.vt .vt-abertura-tipos {
+  margin: 12px 0 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: rgba(255,255,255,.88);
+}
+
+/* #14 <div> */
+.vt .vt-apresentacao {
+  padding: 30px 20px;
+  border-bottom: 1px solid #e6e0d8;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* #15 <p> */
+.vt .vt-rotulo {
+  margin: 0 0 13px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .17em;
+  text-transform: uppercase;
+  color: #6b6259;
+}
+
+/* #16 <p> */
+.vt .vt-lead {
+  margin: 0;
+  font-family: var(--fonte-vitrine-titulo),'EB Garamond',Georgia,serif;
+  font-size: 21px;
+  line-height: 1.42;
+  color: #221e1b;
+  text-wrap: pretty;
+  max-width: 34ch;
+}
+
+/* #17 <p> */
+.vt .vt-texto {
+  margin: 16px 0 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #3d3835;
+  text-wrap: pretty;
+  max-width: 62ch;
+}
+
+/* #18 <p> */
+.vt .vt-para-quem {
+  margin: 14px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #6b6259;
+}
+
+/* #19 <div> */
+.vt .vt-chamadas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+  max-width: 520px;
+}
+
+/* #20 <a> */
+.vt .vt-chamada-principal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  padding: 0 24px;
+  background: #4e5c2e;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 8px;
+  box-sizing: border-box;
+  flex: 1 1 200px;
+  transition: background .18s ease,transform .1s ease;
+}
+
+.vt .vt-chamada-principal:active {
+  transform: translateY(1px);
+}
+
+@media (hover: hover) {
+  .vt .vt-chamada-principal:hover {
+    background: #3a4422;
+  }
+}
+
+/* #21 <a> */
+.vt .vt-chamada-secundaria {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  padding: 0 24px;
+  border: 1.5px solid #221e1b;
+  color: #221e1b;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 8px;
+  box-sizing: border-box;
+  flex: 1 1 200px;
+  transition: background .18s ease,transform .1s ease;
+}
+
+.vt .vt-chamada-secundaria:active {
+  transform: translateY(1px);
+}
+
+@media (hover: hover) {
+  .vt .vt-chamada-secundaria:hover {
+    background: #f2eee9;
+  }
+}
+
+/* #22 <div> */
+.vt .vt-secao {
+  padding: 34px 20px;
+  border-bottom: 1px solid #e6e0d8;
+  display: flex;
+  flex-direction: column;
+}
+
+/* #24 <h2> */
+.vt .vt-h2-servicos {
+  margin: 0 0 6px;
+  font-family: var(--fonte-vitrine-titulo),'EB Garamond',Georgia,serif;
+  font-size: 27px;
+  font-weight: 500;
+  line-height: 1.18;
+  color: #221e1b;
+  text-wrap: pretty;
+}
+
+/* #25 <div> */
+.vt .vt-servicos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(260px,1fr));
+  gap: 0 40px;
+  margin-top: 10px;
+}
+
+/* #26 <div> */
+.vt .vt-servico {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  gap: 0 14px;
+  padding: 18px 0;
+  border-top: 1px solid #e6e0d8;
+  min-width: 0;
+}
+
+/* #27 <span> */
+.vt .vt-servico-n {
+  font-family: var(--fonte-vitrine-titulo),'EB Garamond',Georgia,serif;
+  font-size: 13px;
+  color: #6b6259;
+  padding-top: 3px;
+}
+
+/* #28 <div> */
+.vt .vt-servico-corpo {
+  min-width: 0;
+}
+
+/* #29 <b> */
+.vt .vt-servico-nome {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #221e1b;
+}
+
+/* #30 <p> */
+.vt .vt-corpo {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #3d3835;
+  text-wrap: pretty;
+}
+
+/* #33 <h2> */
+.vt .vt-h2-eventos {
+  margin: 0 0 18px;
+  font-family: var(--fonte-vitrine-titulo),'EB Garamond',Georgia,serif;
+  font-size: 27px;
+  font-weight: 500;
+  line-height: 1.18;
+  color: #221e1b;
+  text-wrap: pretty;
+}
+
+/* #34 <div> */
+.vt .vt-album {
+  columns: 180px 4;
+  column-gap: 10px;
+}
+
+/* #35 <div> */
+.vt .vt-foto {
+  /* dinâmico no desenho: aspect-ratio — ver abaixo */
+  margin: 0 0 10px;
+  break-inside: avoid;
+  border-radius: 6px;
+  overflow: hidden;
+  background: repeating-linear-gradient(45deg,#efeae3 0 8px,#f7f4ef 8px 16px);
+  border: 1px solid #e6e0d8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: transform .5s cubic-bezier(.22,.7,.3,1),opacity .5s ease,clip-path .9s cubic-bezier(.3,.8,.2,1);
+}
+
+.vt .vt-foto:focus-visible {
+  outline: 2px solid #4e5c2e;
+  outline-offset: 2px;
+}
+
+@media (hover: hover) {
+  .vt .vt-foto:hover {
+    transform: scale(.988);
+  }
+}
+
+/* #37 <a> */
+.vt .vt-botao-mais {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  margin-top: 16px;
+  padding: 0 24px;
+  border: 1.5px solid #221e1b;
+  color: #221e1b;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 8px;
+  box-sizing: border-box;
+  align-self: flex-start;
+  transition: background .18s ease;
+}
+
+@media (hover: hover) {
+  .vt .vt-botao-mais:hover {
+    background: #f2eee9;
+  }
+}
+
+/* #38 <div> */
+.vt .vt-faixa {
+  background: #221e1b;
+  padding: 44px 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* #39 <p> */
+.vt .vt-faixa-rotulo {
+  margin: 0 0 15px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .17em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.62);
+}
+
+/* #41 <p> */
+.vt .vt-faixa-texto {
+  margin: 0;
+  font-family: var(--fonte-vitrine-titulo),'EB Garamond',Georgia,serif;
+  font-size: 22px;
+  line-height: 1.42;
+  color: #fff;
+  text-wrap: pretty;
+  max-width: 36ch;
+}
+
+/* #42 <p> */
+.vt .vt-faixa-quem {
+  margin: 18px 0 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.66);
+}
+
+/* #43 <div> */
+.vt .vt-depoimentos {
+  padding: 10px 20px 30px;
+  border-bottom: 1px solid #e6e0d8;
+  display: flex;
+  flex-direction: column;
+}
+
+/* #44 <div> */
+.vt .vt-depoimentos-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(280px,1fr));
+  gap: 0 40px;
+}
+
+/* #45 <div> */
+.vt .vt-depoimento {
+  padding: 20px 0;
+  border-bottom: 1px solid #e6e0d8;
+  min-width: 0;
+}
+
+/* #46 <p> */
+.vt .vt-depoimento-texto {
+  margin: 0 0 8px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #221e1b;
+  text-wrap: pretty;
+}
+
+/* #47 <span> */
+.vt .vt-depoimento-quem {
+  font-size: 12.5px;
+  color: #6b6259;
+}
+
+/* #50 <h2> */
+.vt .vt-h2-roteiro {
+  margin: 0 0 22px;
+  font-family: var(--fonte-vitrine-titulo),'EB Garamond',Georgia,serif;
+  font-size: 27px;
+  font-weight: 500;
+  line-height: 1.18;
+  color: #221e1b;
+  text-wrap: pretty;
+}
+
+/* #51 <div> */
+.vt .vt-roteiro {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  max-width: 60ch;
+}
+
+/* #52 <div> */
+.vt .vt-roteiro-trilho {
+  position: absolute;
+  left: 9px;
+  top: 6px;
+  bottom: 6px;
+  width: 1px;
+  background: #e6e0d8;
+}
+
+/* #53 <div> */
+.vt .vt-roteiro-fio {
+  position: absolute;
+  left: 9px;
+  top: 6px;
+  width: 1px;
+  height: 0;
+  background: #4e5c2e;
+}
+
+/* #54 <div> */
+.vt .vt-passo {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  gap: 0 14px;
+  min-width: 0;
+  position: relative;
+}
+
+/* #55 <span> */
+.vt .vt-passo-n {
+  font-family: var(--fonte-vitrine-titulo),'EB Garamond',Georgia,serif;
+  font-size: 13px;
+  color: #6b6259;
+  background: #faf8f5;
+  padding: 2px 0;
+}
+
+/* #68 <div> */
+.vt .vt-motivos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(260px,1fr));
+  gap: 0 40px;
+}
+
+/* #69 <div> */
+.vt .vt-motivo {
+  padding: 16px 0;
+  border-top: 1px solid #e6e0d8;
+  min-width: 0;
+}
+
+/* #70 <p> */
+.vt .vt-motivo-texto {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #221e1b;
+  text-wrap: pretty;
+}
+
+/* #71 <div> */
+.vt .vt-orcamento {
+  padding: 36px 20px;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid #e6e0d8;
+}
+
+/* #73 <div> */
+.vt .vt-enviado {
+  max-width: 52ch;
+  animation: vt-fadeUpA .4s ease;
+}
+
+/* #74 <h2> */
+.vt .vt-h2-enviado {
+  margin: 0 0 12px;
+  font-family: var(--fonte-vitrine-titulo),'EB Garamond',Georgia,serif;
+  font-size: 27px;
+  font-weight: 500;
+  line-height: 1.18;
+  color: #221e1b;
+}
+
+/* #76 <a> */
+.vt .vt-botao-adiantar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  margin-top: 24px;
+  padding: 0 24px;
+  border: 1.5px solid #221e1b;
+  color: #221e1b;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 8px;
+  box-sizing: border-box;
+  transition: background .18s ease;
+}
+
+@media (hover: hover) {
+  .vt .vt-botao-adiantar:hover {
+    background: #f2eee9;
+  }
+}
+
+/* #77 <div> */
+.vt .vt-formulario {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(300px,1fr));
+  gap: 0 40px;
+  max-width: 900px;
+}
+
+/* #78 <h2> */
+.vt .vt-h2-formulario {
+  margin: 0 0 18px;
+  font-family: var(--fonte-vitrine-titulo),'EB Garamond',Georgia,serif;
+  font-size: 27px;
+  font-weight: 500;
+  line-height: 1.18;
+  color: #221e1b;
+  grid-column: 1/-1;
+}
+
+/* #79 <div> */
+.vt .vt-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 15px;
+  min-width: 0;
+}
+
+/* #80 <b> */
+.vt .vt-campo-rotulo {
+  font-size: 12px;
+  font-weight: 600;
+  color: #221e1b;
+}
+
+/* #82 <p> */
+.vt .vt-erro {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: #8a4239;
+  animation: vt-fadeUpA .22s ease;
+}
+
+/* #89 <input> */
+.vt .vt-entrada {
+  /* dinâmico no desenho: background — ver abaixo */
+  min-height: 46px;
+  border: 1px solid #d8d2c8;
+  padding: 0 13px;
+  font-size: 14px;
+  color: #221e1b;
+  box-sizing: border-box;
+  border-radius: 8px;
+}
+
+.vt .vt-entrada:focus-visible {
+  border-color: #221e1b;
+  box-shadow: 0 0 0 3px rgba(78,92,46,.22);
+  outline: none;
+}
+
+/* #92 <select> */
+.vt .vt-selecao {
+  /* dinâmico no desenho: border, background — ver abaixo */
+  min-height: 46px;
+  padding: 0 13px;
+  font-size: 14px;
+  color: #221e1b;
+  box-sizing: border-box;
+  border-radius: 8px;
+  appearance: none;
+}
+
+.vt .vt-selecao:focus-visible {
+  border-color: #221e1b;
+  box-shadow: 0 0 0 3px rgba(78,92,46,.22);
+  outline: none;
+}
+
+/* #94 <div> */
+.vt .vt-campo-data {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+  min-width: 0;
+}
+
+/* #95 <div> */
+.vt .vt-data-recolhe {
+  /* dinâmico no desenho: max-height, opacity — ver abaixo */
+  overflow: hidden;
+  transition: max-height .24s cubic-bezier(.3,.8,.2,1),opacity .2s ease;
+}
+
+/* #96 <div> */
+.vt .vt-data-dentro {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 4px;
+}
+
+/* #98 <input> */
+.vt .vt-entrada-data {
+  /* dinâmico no desenho: background — ver abaixo */
+  min-height: 46px;
+  border: 1px solid #d8d2c8;
+  padding: 0 13px;
+  font-size: 14px;
+  color: #221e1b;
+  box-sizing: border-box;
+  border-radius: 8px;
+  width: 100%;
+}
+
+.vt .vt-entrada-data:focus-visible {
+  border-color: #221e1b;
+  box-shadow: 0 0 0 3px rgba(78,92,46,.22);
+  outline: none;
+}
+
+/* #99 <label> */
+.vt .vt-sem-data {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-height: 44px;
+  font-size: 13.5px;
+  color: #3d3835;
+  cursor: pointer;
+}
+
+/* #100 <input> */
+.vt .vt-caixa {
+  width: 18px;
+  height: 18px;
+  accent-color: #4e5c2e;
+  flex: none;
+}
+
+/* #107 <div> */
+.vt .vt-campo-largo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 15px;
+  grid-column: 1/-1;
+  min-width: 0;
+}
+
+/* #108 <div> */
+.vt .vt-campo-cabeca {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+/* #109 <b> */
+.vt .vt-campo-rotulo-largo {
+  font-size: 12px;
+  font-weight: 600;
+  color: #221e1b;
+  flex: 1;
+}
+
+/* #110 <span> */
+.vt .vt-contagem {
+  /* dinâmico no desenho: color, opacity — ver abaixo */
+  font-size: 11.5px;
+  transition: color .2s ease,opacity .2s ease;
+}
+
+/* #111 <textarea> */
+.vt .vt-area {
+  /* dinâmico no desenho: background — ver abaixo */
+  border: 1px solid #d8d2c8;
+  padding: 12px 13px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #221e1b;
+  box-sizing: border-box;
+  border-radius: 8px;
+  resize: vertical;
+  transition: height .2s ease;
+}
+
+.vt .vt-area:focus-visible {
+  border-color: #221e1b;
+  box-shadow: 0 0 0 3px rgba(78,92,46,.22);
+  outline: none;
+}
+
+/* #112 <div> */
+.vt .vt-envio {
+  grid-column: 1/-1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  align-items: center;
+}
+
+/* #113 <button> */
+.vt .vt-botao-enviar {
+  /* dinâmico no desenho: background, color, border, cursor — ver abaixo */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 50px;
+  padding: 0 28px;
+  font-size: 15px;
+  font-weight: 600;
+  box-sizing: border-box;
+  border-radius: 8px;
+  transition: background .18s ease,transform .1s ease;
+}
+
+.vt .vt-botao-enviar:active {
+  transform: translateY(1px);
+}
+
+/* #114 <span> */
+.vt .vt-giro {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,.45);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: vt-spin .8s linear infinite;
+}
+
+/* #115 <p> */
+.vt .vt-aviso-dados {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #6b6259;
+  flex: 1 1 260px;
+}
+
+/* #116 <p> */
+.vt .vt-aviso-previa {
+  margin: 14px 0 0;
+  font-size: 12.5px;
+  color: #6b6259;
+}
+
+/* #117 <div> */
+.vt .vt-instagram {
+  padding: 26px 20px;
+  border-bottom: 1px solid #e6e0d8;
+  display: flex;
+}
+
+/* #118 <a> */
+.vt .vt-botao-instagram {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  padding: 0 24px;
+  border: 1.5px solid #221e1b;
+  color: #221e1b;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 8px;
+  box-sizing: border-box;
+  transition: background .18s ease;
+}
+
+@media (hover: hover) {
+  .vt .vt-botao-instagram:hover {
+    background: #f2eee9;
+  }
+}
+
+/* #119 <div> */
+.vt .vt-rodape {
+  padding: 26px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12.5px;
+  line-height: 1.75;
+  color: #6b6259;
+  margin-top: auto;
+}
+
+/* #120 <div> */
+.vt .vt-barra {
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  display: flex;
+  gap: 9px;
+  padding: 11px 14px;
+  background: #faf8f5;
+  border-top: 1px solid #e6e0d8;
+  box-shadow: 0 -4px 16px rgba(34,30,27,.07);
+  transition: transform .3s cubic-bezier(.22,.7,.3,1);
+}
+
+/* #121 <a> */
+.vt .vt-barra-principal {
+  /* dinâmico no desenho: background — ver abaixo */
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  padding: 0 18px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 8px;
+  box-sizing: border-box;
+  transition: background .18s ease,transform .1s ease;
+}
+
+.vt .vt-barra-principal:active {
+  transform: translateY(1px);
+}
+
+@media (hover: hover) {
+  .vt .vt-barra-principal:hover {
+    background: #3a4422;
+  }
+}
+
+/* #122 <a> */
+.vt .vt-barra-whatsapp {
+  flex: none;
+  width: 58px;
+  min-height: 50px;
+  border: 1.5px solid #221e1b;
+  color: #221e1b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 8px;
+  box-sizing: border-box;
+  transition: background .18s ease;
+}
+
+@media (hover: hover) {
+  .vt .vt-barra-whatsapp:hover {
+    background: #f2eee9;
+  }
+}
+
+/* #123 <div> */
+.vt .vt-foto-aberta {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(34,30,27,.94);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px;
+  box-sizing: border-box;
+  animation: vt-overlayIn .2s ease;
+  cursor: zoom-out;
+}
+
+/* #124 <div> */
+.vt .vt-foto-aberta-img {
+  /* dinâmico no desenho: aspect-ratio — ver abaixo */
+  max-width: min(92vw,900px);
+  max-height: 74vh;
+  width: 100%;
+  background: repeating-linear-gradient(45deg,#efeae3 0 8px,#f7f4ef 8px 16px);
+  border: 1px solid rgba(255,255,255,.14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: vt-photoIn .28s cubic-bezier(.22,.7,.3,1);
+}
+
+/* #126 <div> */
+.vt .vt-foto-aberta-legenda {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: center;
+  animation: vt-fadeUpA .34s ease;
+}
+
+/* #127 <p> */
+.vt .vt-foto-aberta-tipo {
+  margin: 0;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .17em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.6);
+}
+
+/* #128 <p> */
+.vt .vt-foto-aberta-texto {
+  margin: 0;
+  font-family: var(--fonte-vitrine-titulo),'EB Garamond',Georgia,serif;
+  font-size: 17px;
+  color: #fff;
+  text-align: center;
+}
+
+/* #129 <p> */
+.vt .vt-foto-aberta-dica {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: rgba(255,255,255,.55);
+}
+
+/* campos: fundo livre e travado (fundoCampo), borda de erro (bordaNome/bordaZap/bordaTipo) */
+.vt .vt-entrada,
+.vt .vt-selecao,
+.vt .vt-entrada-data,
+.vt .vt-area {
+  background: #ffffff;
+}
+.vt .vt-entrada:disabled,
+.vt .vt-selecao:disabled,
+.vt .vt-entrada-data:disabled,
+.vt .vt-area:disabled {
+  background: #f2eee9;
+}
+.vt .vt-selecao {
+  border: 1px solid #d8d2c8;
+}
+.vt [data-erro].vt-entrada,
+.vt [data-erro].vt-selecao {
+  border: 1.5px solid #a5544b;
+}
+
+/* "Ainda não tenho a data": a data recolhe (altData/opData) */
+.vt .vt-data-recolhe {
+  max-height: 86px;
+  opacity: 1;
+}
+.vt .vt-data-recolhe[data-recolhida] {
+  max-height: 0px;
+  opacity: 0;
+}
+
+/* contagem do texto livre (corContagem/opContagem) */
+.vt .vt-contagem {
+  color: #6b6259;
+  opacity: 0;
+}
+.vt .vt-contagem[data-visivel] {
+  opacity: 1;
+}
+.vt .vt-contagem[data-alta] {
+  color: #8a4239;
+}
+
+/* botão de enviar: livre e travado (fundoBotao/corBotao/bordaBotao/cursorBotao/hoverBotao) */
+.vt .vt-botao-enviar {
+  background: #4e5c2e;
+  color: #ffffff;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.vt .vt-botao-enviar:disabled {
+  background: #f2eee9;
+  color: #928a81;
+  border: 1px solid #e6e0d8;
+  cursor: default;
+}
+@media (hover: hover) {
+  .vt .vt-botao-enviar:hover {
+    background: #3a4422;
+  }
+  .vt .vt-botao-enviar:disabled:hover {
+    background: #f2eee9;
+  }
+}
+
+/* barra fixa: some enquanto a abertura aparece; cinza na prévia (fundoBarra) */
+.vt .vt-barra[data-escondida] {
+  transform: translateY(112%);
+}
+.vt .vt-barra-principal {
+  background: #4e5c2e;
+}
+.vt .vt-barra-principal[data-previa] {
+  background: #c3bcb2;
+}
+@media (hover: hover) {
+  .vt .vt-barra-principal[data-previa]:hover {
+    background: #c3bcb2;
+  }
+}
+
+/* cabeçalho compacto: aparece quando a abertura sai da tela */
+.vt .vt-topo[data-visivel] {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* depoimento em destaque: reanima ao trocar o tipo (animDep); duas
+   animações iguais com nomes diferentes, para o navegador recomeçar */
+.vt .vt-faixa-giro-par {
+  animation: vt-fadeUpA .45s ease;
+}
+.vt .vt-faixa-giro-impar {
+  animation: vt-fadeUpB .45s ease;
+}
+
+/* a linha fina sob o rótulo (montarAnimacoes) */
+.vt .vt-rotulo-linha {
+  display: block;
+  height: 1px;
+  margin-top: 9px;
+  background: #cfc7bc;
+  transition: width .85s cubic-bezier(.3,.8,.2,1);
+  width: 46px;
+}
+.vt .vt-rotulo-linha[data-antes] {
+  width: 0;
+}
+
+/* o álbum: as fotos reais no lugar das listras, e as entradas (montarAnimacoes) */
+.vt .vt-foto {
+  display: block;
+  width: 100%;
+  padding: 0;
+  background: #efeae3;
+  font: inherit;
+  color: inherit;
+}
+.vt .vt-foto img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+}
+.vt .vt-foto[data-mascara] {
+  clip-path: inset(0 0 100% 0);
+}
+.vt .vt-foto[data-revelada] {
+  clip-path: inset(0 0 0 0);
+}
+.vt .vt-foto[data-assentando] {
+  opacity: 0;
+  transform: translateY(12px) rotate(var(--vt-giro, 0deg));
+}
+.vt .vt-foto[data-giro="impar"] {
+  --vt-giro: 1.4deg;
+}
+.vt .vt-foto[data-giro="par"] {
+  --vt-giro: -1.2deg;
+}
+
+/* a abertura: a foto real ocupa a faixa; ken burns só com movimento liberado */
+.vt .vt-abertura-foto {
+  background: #3a352f;
+}
+.vt .vt-abertura-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .vt .vt-abertura-foto {
+    animation: vt-kb 22s ease-out forwards;
+  }
+}
+
+/* a foto em tela cheia: a imagem real guarda a proporção dela */
+.vt .vt-foto-aberta-img {
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  background: transparent;
+}
+
+/* ACRÉSCIMO: a abertura sem nenhuma foto vira faixa de texto sobre a
+   tinta da faixa do depoimento (README, bloco 3) */
+.vt .vt-abertura-sem-foto {
+  background: #221e1b;
+  padding: 44px 20px 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* ACRÉSCIMO: a logo dela, em qualquer proporção e sem recorte, e as
+   iniciais quando não há logo (README: círculo de 46px) */
+.vt .vt-marca {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  height: 46px;
+  box-sizing: border-box;
+}
+.vt .vt-marca-logo {
+  max-width: 140px;
+  padding: 4px 6px;
+  background: #ffffff;
+  border: 1px solid var(--linha);
+  border-radius: var(--r-sm);
+}
+.vt .vt-marca-logo img {
+  display: block;
+  max-height: 36px;
+  max-width: 126px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+.vt .vt-marca-iniciais {
+  width: 46px;
+  border-radius: 50%;
+  border: 1px solid var(--cinza-2);
+  background: var(--nevoa);
+  color: var(--cinza-3);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+.vt .vt-abertura-texto .vt-marca,
+.vt .vt-abertura-sem-foto .vt-marca {
+  margin-bottom: 16px;
+}
+
+/* ACRÉSCIMO: o desenho tira a seta nativa do seletor e não põe outra;
+   sem seta, o campo não parece escolha */
+.vt .vt-selecao-caixa {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.vt .vt-selecao {
+  padding-right: 38px;
+}
+.vt .vt-selecao-seta {
+  position: absolute;
+  right: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--cinza-3);
+}
+
+/* ACRÉSCIMO: botões de verdade onde o desenho tinha links de mentira */
+.vt .vt-botao-mais {
+  background: transparent;
+  cursor: pointer;
+}
+.vt .vt-foto-aberta-fechar {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgba(255,255,255,.3);
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ACRÉSCIMO: erro que não é de um campo (sem conexão, limite de envios) */
+.vt .vt-erro-geral {
+  flex-basis: 100%;
+}
+
+/* ACRÉSCIMO: o rodapé leva ao eOrganizei sem parecer link */
+.vt .vt-rodape-marca {
+  color: inherit;
+  text-decoration: none;
+}
+@media (hover: hover) {
+  .vt .vt-rodape-marca:hover {
+    color: inherit;
+    text-decoration: underline;
+  }
+}
+
+/* ACRÉSCIMO: -webkit- para o Safari no vidro do cabeçalho */
+.vt .vt-topo {
+  -webkit-backdrop-filter: blur(8px);
+}
+
+@keyframes vt-spin {to { transform:rotate(360deg) } }
+
+@keyframes vt-kb {from { transform:scale(1.08) } to { transform:scale(1) } }
+
+@keyframes vt-fadeUpA {from { opacity:0;transform:translateY(9px) } to { opacity:1;transform:none } }
+
+@keyframes vt-fadeUpB {from { opacity:0;transform:translateY(9px) } to { opacity:1;transform:none } }
+
+@keyframes vt-overlayIn {from { opacity:0 } to { opacity:1 } }
+
+@keyframes vt-photoIn {from { opacity:0;transform:scale(.93) } to { opacity:1;transform:none } }
+
+/* movimento reduzido: nada anima; o giro do "Enviando" continua,
+   porque é o aviso de que algo está acontecendo */
+@media (prefers-reduced-motion: reduce) {
+  .vt *,
+  .vt *::before,
+  .vt *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .vt .vt-giro {
+    animation-duration: 0.8s !important;
+    animation-iteration-count: infinite !important;
+  }
+  .vt .vt-barra[data-escondida] {
+    transform: none;
+  }
+}

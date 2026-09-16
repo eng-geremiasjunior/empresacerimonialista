@@ -46,7 +46,18 @@ export type PaginaPublica = {
   whatsapp: string | null;
   instagram: string | null;
   fotos: { url: string; legenda: string | null; tipo_evento: EventType }[];
-  depoimentos: { texto: string; autor: string; contexto: string | null }[];
+  /**
+   * `tipo_evento` é o que deixa o depoimento em destaque acompanhar o
+   * tipo escolhido no formulário. Opcional: a leitura pública só passa a
+   * entregá-lo depois da 165 reaplicada; sem ele, a ordem fica a do
+   * Catálogo.
+   */
+  depoimentos: {
+    texto: string;
+    autor: string;
+    contexto: string | null;
+    tipo_evento?: EventType | null;
+  }[];
 };
 
 /* ------------------------------------------------------------------ */
@@ -199,32 +210,68 @@ export function textoParaBio(endereco: string): string {
 }
 
 /**
- * "Como funciona" — quatro passos, com o nome dela no meio.
+ * "Como funciona" — quatro passos, com o nome dela no meio. O texto é o
+ * do desenho da vitrine (Claude Design, 16/09/2026).
  *
  * Fixo de propósito: é a parte que explica o ATENDIMENTO, e quem chega na
  * página quer saber o que acontece depois de mandar a mensagem. O último
  * passo fala do que ela entrega, não da ferramenta que ela usa: quem está
  * lendo não vai contratar o eOrganizei.
  */
-export function comoFunciona(nomeEmpresa: string): { titulo: string; texto: string }[] {
-  const quem = nomeEmpresa.trim() || "a equipe";
+export function comoFunciona(nomeEmpresa: string): string[] {
+  const quem = nomeEmpresa.trim() || "A equipe";
   return [
-    {
-      titulo: "Você conta do seu evento",
-      texto: "Data, cidade, quantas pessoas e o que você já imagina.",
-    },
-    {
-      titulo: `${quem} analisa`,
-      texto: "Cada evento é diferente, então a conversa começa pelo seu.",
-    },
-    {
-      titulo: "Você recebe uma proposta",
-      texto: "Com o que está incluso, valores e condições, por escrito.",
-    },
-    {
-      titulo: "A organização começa",
-      texto:
-        "Fechado o contrato, você acompanha fornecedores, prazos e o roteiro do dia.",
-    },
+    "Você conta do seu evento: data, cidade, quantas pessoas e o que imagina.",
+    `${quem} analisa: cada evento é diferente.`,
+    "Você recebe uma proposta, com o que está incluso, valores e condições, por escrito.",
+    "A organização começa: fechado o contrato, você acompanha fornecedores, prazos e o roteiro do dia.",
   ];
+}
+
+/**
+ * Os tipos atendidos numa linha só, para a abertura. Acima de cinco, a
+ * linha resume ("… · e mais 3"): a abertura é o nome dela, não a lista.
+ */
+export function tiposEmLinha(rotulos: string[]): string {
+  const MAX = 5;
+  if (rotulos.length <= MAX) return rotulos.join(" · ");
+  return `${rotulos.slice(0, MAX).join(" · ")} · e mais ${rotulos.length - MAX}`;
+}
+
+const CONECTORES = new Set(["de", "da", "do", "das", "dos", "e", "&"]);
+
+/** "Cerimonial Ipê" → "CI"; o que fica no círculo quando não há logo. */
+export function iniciaisDoNome(nome: string): string {
+  const palavras = nome
+    .split(/\s+/)
+    .filter((p) => /^\p{L}/u.test(p) && !CONECTORES.has(p.toLowerCase()));
+  const letras = palavras
+    .slice(0, 2)
+    .map((p) => p.charAt(0).toUpperCase())
+    .join("");
+  return letras || nome.trim().charAt(0).toUpperCase() || "·";
+}
+
+/**
+ * "casais, famílias e empresas" → "Para casais, famílias e empresas."
+ * Aceita o texto já começando por "Para", e fecha a frase com ponto.
+ */
+export function fraseParaQuem(paraQuem: string | null): string | null {
+  const texto = paraQuem?.trim();
+  if (!texto) return null;
+  const corpo = /^para\s/i.test(texto) ? texto.slice(5).trimStart() : texto;
+  if (!corpo) return null;
+  const frase = `Para ${corpo.charAt(0).toLowerCase()}${corpo.slice(1)}`;
+  return /[.!?]$/.test(frase) ? frase : `${frase}.`;
+}
+
+/**
+ * O exemplo do campo de WhatsApp com o DDD dela: quem chega à vitrine
+ * quase sempre é da mesma região.
+ */
+export function exemploDeWhatsapp(whatsappEmpresa: string | null): string {
+  const d = (whatsappEmpresa ?? "").replace(/\D/g, "");
+  const local = (d.length === 12 || d.length === 13) && d.startsWith("55") ? d.slice(2) : d;
+  const ddd = /^[1-9][0-9]/.test(local) && local.length >= 10 ? local.slice(0, 2) : "00";
+  return `(${ddd}) 90000-0000`;
 }

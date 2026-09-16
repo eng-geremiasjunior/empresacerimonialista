@@ -118,85 +118,137 @@ export type PedidoValidado = {
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
+/** Os campos que podem dar erro, na ordem em que aparecem na tela. */
+export const CAMPOS_DO_PEDIDO = [
+  "nome",
+  "whatsapp",
+  "email",
+  "tipoEvento",
+  "dataEvento",
+  "convidados",
+] as const;
+export type CampoDoPedido = (typeof CAMPOS_DO_PEDIDO)[number];
+
 /**
- * Seis campos e uma mensagem. Só nome, WhatsApp e tipo são obrigatórios:
- * quem ainda não tem data é exatamente quem mais precisa de assessoria, e
- * um formulário que exige data manda essa pessoa embora.
+ * Uma frase por problema, curta e sem ponto: aparece embaixo do campo,
+ * como no desenho da vitrine. A rota devolve a mesma frase, então a tela
+ * fala igual quando o erro vem do servidor.
+ */
+export const ERROS_DO_PEDIDO = {
+  nome: "Informe o seu nome",
+  whatsapp: "Informe um WhatsApp com DDD",
+  email: "Confira o e-mail",
+  tipoEvento: "Escolha o tipo de evento",
+  tipoForaDaLista: "Escolha um dos tipos de evento atendidos",
+  dataEvento: "Confira a data do evento",
+  dataPassada: "Essa data já passou",
+  convidados: "Informe um número aproximado de convidados",
+} as const;
+
+/** A entrada limpa: é o que vai ao banco quando não há erro. */
+function lerPedido(entrada: EntradaDoPedido) {
+  const convidados = entrada.convidados;
+  return {
+    nome: (entrada.nome ?? "").trim().slice(0, LIMITES_PEDIDO.nomeMax),
+    whatsapp: normalizarWhatsapp(entrada.whatsapp),
+    email: (entrada.email ?? "").trim().toLowerCase(),
+    tipo: (entrada.tipoEvento ?? "").trim(),
+    data: (entrada.dataEvento ?? "").trim() || null,
+    convidados:
+      convidados === null || convidados === undefined || convidados === ""
+        ? null
+        : Number(convidados),
+    cidade: (entrada.cidade ?? "").trim().slice(0, LIMITES_PEDIDO.cidade) || null,
+    mensagem: (entrada.mensagem ?? "").trim().slice(0, LIMITES_PEDIDO.mensagem) || null,
+  };
+}
+
+/**
+ * Todos os problemas do pedido de uma vez, campo a campo: o formulário
+ * mostra cada um embaixo do seu campo, sem obrigar a pessoa a descobrir
+ * um erro por envio.
+ *
+ * Só nome, WhatsApp e tipo são obrigatórios: quem ainda não tem data é
+ * exatamente quem mais precisa de assessoria, e um formulário que exige
+ * data manda essa pessoa embora.
  *
  * `hoje` entra por parâmetro (nunca `new Date()` aqui): este módulo roda
  * no servidor em UTC e no navegador em Brasília, e a data lida no render
  * já quebrou hidratação neste projeto.
  */
+export function errosDoPedido(
+  entrada: EntradaDoPedido,
+  hoje: string,
+  tiposAceitos?: string[]
+): Partial<Record<CampoDoPedido, string>> {
+  const v = lerPedido(entrada);
+  const erros: Partial<Record<CampoDoPedido, string>> = {};
+
+  if (v.nome.length < LIMITES_PEDIDO.nomeMin) erros.nome = ERROS_DO_PEDIDO.nome;
+
+  if (!v.whatsapp || !/^[0-9]{10,11}$/.test(v.whatsapp)) {
+    erros.whatsapp = ERROS_DO_PEDIDO.whatsapp;
+  }
+
+  if (v.email && (!EMAIL.test(v.email) || v.email.length > LIMITES_PEDIDO.email)) {
+    erros.email = ERROS_DO_PEDIDO.email;
+  }
+
+  // hasOwn, e não `in`: "toString" também está "em" qualquer objeto
+  if (!v.tipo || !Object.prototype.hasOwnProperty.call(EVENT_TYPE_LABELS, v.tipo)) {
+    erros.tipoEvento = ERROS_DO_PEDIDO.tipoEvento;
+  } else if (tiposAceitos && tiposAceitos.length > 0 && !tiposAceitos.includes(v.tipo)) {
+    erros.tipoEvento = ERROS_DO_PEDIDO.tipoForaDaLista;
+  }
+
+  if (v.data !== null) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(v.data)) {
+      erros.dataEvento = ERROS_DO_PEDIDO.dataEvento;
+    } else if (v.data < hoje) {
+      // Comparação de texto: as duas datas são yyyy-MM-dd, e comparar
+      // string evita fuso no meio (a régua do sistema é hojeBR).
+      erros.dataEvento = ERROS_DO_PEDIDO.dataPassada;
+    }
+  }
+
+  if (v.convidados !== null) {
+    const n = v.convidados;
+    if (!Number.isFinite(n) || !Number.isInteger(n)
+        || n < LIMITES_PEDIDO.convidadosMin || n > LIMITES_PEDIDO.convidadosMax) {
+      erros.convidados = ERROS_DO_PEDIDO.convidados;
+    }
+  }
+
+  return erros;
+}
+
+/**
+ * O pedido pronto para o banco, ou o PRIMEIRO problema na ordem da tela
+ * (é o que a rota devolve). A régua é a de `errosDoPedido`.
+ */
 export function validarPedido(
   entrada: EntradaDoPedido,
   hoje: string,
   tiposAceitos?: string[]
-): { ok: true; dados: PedidoValidado } | { ok: false; erro: string; campo: string } {
-  const nome = (entrada.nome ?? "").trim().slice(0, LIMITES_PEDIDO.nomeMax);
-  if (nome.length < LIMITES_PEDIDO.nomeMin) {
-    return { ok: false, campo: "nome", erro: "Informe seu nome." };
+): { ok: true; dados: PedidoValidado } | { ok: false; erro: string; campo: CampoDoPedido } {
+  const erros = errosDoPedido(entrada, hoje, tiposAceitos);
+  for (const campo of CAMPOS_DO_PEDIDO) {
+    const erro = erros[campo];
+    if (erro) return { ok: false, campo, erro };
   }
 
-  const whatsapp = normalizarWhatsapp(entrada.whatsapp);
-  if (!whatsapp || !/^[0-9]{10,11}$/.test(whatsapp)) {
-    return { ok: false, campo: "whatsapp", erro: "Informe um WhatsApp com DDD." };
-  }
-
-  const emailCru = (entrada.email ?? "").trim().toLowerCase();
-  if (emailCru && (!EMAIL.test(emailCru) || emailCru.length > LIMITES_PEDIDO.email)) {
-    return { ok: false, campo: "email", erro: "Confira o e-mail." };
-  }
-
-  const tipo = (entrada.tipoEvento ?? "").trim();
-  if (!tipo || !(tipo in EVENT_TYPE_LABELS)) {
-    return { ok: false, campo: "tipoEvento", erro: "Escolha o tipo do evento." };
-  }
-  if (tiposAceitos && tiposAceitos.length > 0 && !tiposAceitos.includes(tipo)) {
-    return {
-      ok: false,
-      campo: "tipoEvento",
-      erro: "Escolha um dos tipos de evento atendidos.",
-    };
-  }
-
-  const data = (entrada.dataEvento ?? "").trim() || null;
-  if (data !== null) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) {
-      return { ok: false, campo: "dataEvento", erro: "Confira a data do evento." };
-    }
-    // Comparação de texto: as duas datas são yyyy-MM-dd, e comparar
-    // string evita fuso no meio (a régua do sistema é hojeBR).
-    if (data < hoje) {
-      return { ok: false, campo: "dataEvento", erro: "Essa data já passou." };
-    }
-  }
-
-  let convidados: number | null = null;
-  if (entrada.convidados !== null && entrada.convidados !== undefined && entrada.convidados !== "") {
-    const n = Number(entrada.convidados);
-    if (!Number.isFinite(n) || !Number.isInteger(n)
-        || n < LIMITES_PEDIDO.convidadosMin || n > LIMITES_PEDIDO.convidadosMax) {
-      return {
-        ok: false,
-        campo: "convidados",
-        erro: "Informe um número aproximado de convidados.",
-      };
-    }
-    convidados = n;
-  }
-
+  const v = lerPedido(entrada);
   return {
     ok: true,
     dados: {
-      nome,
-      whatsapp,
-      email: emailCru || null,
-      tipoEvento: tipo as EventType,
-      dataEvento: data,
-      cidade: (entrada.cidade ?? "").trim().slice(0, LIMITES_PEDIDO.cidade) || null,
-      convidados,
-      mensagem:
-        (entrada.mensagem ?? "").trim().slice(0, LIMITES_PEDIDO.mensagem) || null,
+      nome: v.nome,
+      whatsapp: v.whatsapp as string,
+      email: v.email || null,
+      tipoEvento: v.tipo as EventType,
+      dataEvento: v.data,
+      cidade: v.cidade,
+      convidados: v.convidados,
+      mensagem: v.mensagem,
     },
   };
 }
