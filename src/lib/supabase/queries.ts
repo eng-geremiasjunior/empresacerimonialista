@@ -328,6 +328,31 @@ async function aceitesParaConferir(
 }
 
 /**
+ * A quinta consulta: pedidos da página pública parados há mais de 24 h.
+ * Protegida como a dos aceites — tabela nova (165) ou falha de leitura
+ * vira lista vazia e não derruba as outras espécies. A RLS já limita aos
+ * cargos que respondem pedido; para a assistente a lista vem vazia.
+ */
+async function pedidosSemResposta(
+  supabase: ReturnType<typeof createClient>
+): Promise<{ id: string; nome: string; tipo_evento: EventType; created_at: string }[]> {
+  try {
+    const limite = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data, error } = await supabase
+      .from("pedido_orcamento")
+      .select("id, nome, tipo_evento, created_at")
+      .eq("status", "novo")
+      .lt("created_at", limite)
+      .order("created_at", { ascending: true })
+      .limit(50);
+    if (error) return [];
+    return (data ?? []) as { id: string; nome: string; tipo_evento: EventType; created_at: string }[];
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Os prazos do Copiloto. Fonte ÚNICA — o card da sidebar e o bloco do
  * dashboard leem daqui, e por isso não podem mais divergir.
  *
@@ -357,7 +382,7 @@ export const getAlertasCopiloto = cache(async function (): Promise<
   const fim = emDiasBR(7);
   const alertas: CopilotoAlerta[] = [];
 
-  const [tarefasRes, fornecedoresRes, pagamentosRes, aceites] = await Promise.all([
+  const [tarefasRes, fornecedoresRes, pagamentosRes, aceites, pedidos] = await Promise.all([
     supabase
       .from("tasks")
       .select("id, title, due_date, event_id, events!inner(date, status, archived)")
@@ -390,6 +415,7 @@ export const getAlertasCopiloto = cache(async function (): Promise<
     // Brasília explícito para o "7 dias" não encolher nem crescer 3 horas
     // conforme o fuso do processo.
     aceitesParaConferir(supabase, `${emDiasBR(-7)}T00:00:00-03:00`),
+    pedidosSemResposta(supabase),
   ]);
 
   // Falha de leitura não pode virar "Nada a cobrar por enquanto.". Essa
@@ -486,6 +512,16 @@ export const getAlertasCopiloto = cache(async function (): Promise<
       // O dia do aceite ordena junto com os vencimentos; a consulta já
       // exclui `respondido_em` nulo, o `?? hoje` é só para o tipo.
       ref: row.respondido_em?.slice(0, 10) ?? hoje,
+    });
+  }
+
+  for (const row of pedidos) {
+    alertas.push({
+      id: `pedido-${row.id}`,
+      tipo: "pedido",
+      texto: `Pedido de orçamento sem resposta: ${row.nome} — ${EVENT_TYPE_LABELS[row.tipo_evento] ?? "evento"}`,
+      href: "/orcamentos/pedidos",
+      ref: row.created_at.slice(0, 10),
     });
   }
 

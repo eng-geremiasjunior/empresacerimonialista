@@ -3,6 +3,7 @@ import { Newsreader } from "next/font/google";
 import { createClient } from "@/lib/supabase/server";
 import { getMeuCargo } from "@/lib/supabase/equipe";
 import { SubNav } from "@/components/SubNav";
+import { PedidosRecebidos } from "@/components/comercial/pedidos/PedidosRecebidos";
 import { VISOES_ORCAMENTOS } from "@/lib/visoes";
 import { OrcamentosTable } from "@/components/orcamentos/OrcamentosTable";
 import { type Orcamento, validadeVencida } from "@/lib/orcamentos";
@@ -214,6 +215,10 @@ export default async function OrcamentosPage({
         </div>
       </div>
       <SubNav itens={VISOES_ORCAMENTOS} cargo={cargo} className="mt-5" />
+
+      {/* quem pediu orçamento pela página e ainda espera resposta; some
+          quando não há ninguém */}
+      <PedidosRecebidos />
 
       {error && (
         <div

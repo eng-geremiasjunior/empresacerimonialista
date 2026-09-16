@@ -47,6 +47,11 @@ export type Orcamento = {
   aceite_visto_em?: string | null;
   motivo_recusa?: string | null;
   recusado_em?: string | null;
+  // A porta de entrada (165): o pedido da página pública que originou a
+  // proposta, por onde a negociação entrou e quando a proposta saiu.
+  pedido_id?: string | null;
+  canal?: "manual" | "pagina_publica" | "proposta" | "outro";
+  enviado_em?: string | null;
   created_at: string;
 };
 

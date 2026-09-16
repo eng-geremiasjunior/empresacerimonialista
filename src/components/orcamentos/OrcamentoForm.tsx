@@ -49,14 +49,30 @@ function paraDrafts(itens: OrcamentoItem[]): ItemDraft[] {
   }));
 }
 
+/** O pedido da página pública que a proposta vai responder (165). */
+export type ProposicaoDoPedido = {
+  pedidoId: string;
+  nome: string;
+  telefone: string;
+  email: string | null;
+  tipo: string;
+  data: string | null;
+  cidade: string | null;
+  convidados: number | null;
+  /** "Casamento · 21/10/2027 · Goiânia · há 3 horas" — montado no servidor */
+  resumo: string;
+};
+
 export function OrcamentoForm({
   orcamento,
   itensIniciais,
   modelos,
+  doPedido,
 }: {
   orcamento?: Orcamento;
   itensIniciais?: OrcamentoItem[];
   modelos: ModeloPrecificacao[];
+  doPedido?: ProposicaoDoPedido | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -64,14 +80,20 @@ export function OrcamentoForm({
   const [modalAberto, setModalAberto] = useState(false);
 
   // Seção 1
-  const [contatoNome, setContatoNome] = useState(orcamento?.contato_nome ?? "");
+  // Numa proposta nova que responde a um pedido, o que a pessoa já
+  // escreveu na página entra pronto: ela não digita de novo.
+  const [contatoNome, setContatoNome] = useState(
+    orcamento?.contato_nome ?? doPedido?.nome ?? ""
+  );
   const [contatoTelefone, setContatoTelefone] = useState(
-    orcamento?.contato_telefone ?? ""
+    orcamento?.contato_telefone ?? doPedido?.telefone ?? ""
   );
   const [contatoEmail, setContatoEmail] = useState(
-    orcamento?.contato_email ?? ""
+    orcamento?.contato_email ?? doPedido?.email ?? ""
   );
-  const [tipoEvento, setTipoEvento] = useState(orcamento?.tipo_evento ?? "");
+  const [tipoEvento, setTipoEvento] = useState(
+    orcamento?.tipo_evento ?? doPedido?.tipo ?? ""
+  );
   const [templateProposta, setTemplateProposta] = useState(
     orcamento?.template_proposta ?? ""
   );
@@ -81,17 +103,21 @@ export function OrcamentoForm({
   // não ficar sem opção casada nem gravar "" no banco.
   const templateSelecionado =
     templateProposta || templatesDoTipo?.[0]?.valor || "";
-  const [dataEvento, setDataEvento] = useState(orcamento?.data_evento ?? "");
+  const [dataEvento, setDataEvento] = useState(
+    orcamento?.data_evento ?? doPedido?.data ?? ""
+  );
   const [localEvento, setLocalEvento] = useState(
     orcamento?.local_evento ?? ""
   );
   const [cidadeEvento, setCidadeEvento] = useState(
-    orcamento?.cidade_evento ?? ""
+    orcamento?.cidade_evento ?? doPedido?.cidade ?? ""
   );
   const [convidados, setConvidados] = useState(
     orcamento?.numero_convidados != null
       ? String(orcamento.numero_convidados)
-      : ""
+      : doPedido?.convidados != null
+        ? String(doPedido.convidados)
+        : ""
   );
 
   // Seção 2
@@ -167,6 +193,7 @@ export function OrcamentoForm({
       numero_convidados: nConvidados,
       validade_dias: validadeDias,
       itens: itens.map(({ draftId: _d, ...i }, idx) => ({ ...i, ordem: idx })),
+      pedido_id: orcamento ? null : (doPedido?.pedidoId ?? null),
     };
     startTransition(async () => {
       const res = await salvarOrcamento(orcamento?.id ?? null, payload);
@@ -180,6 +207,13 @@ export function OrcamentoForm({
 
   return (
     <div className="space-y-6">
+      {doPedido && !orcamento && (
+        <p className="rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm text-gray-600">
+          Respondendo ao pedido de{" "}
+          <span className="font-medium text-gray-900">{doPedido.nome}</span>:{" "}
+          {doPedido.resumo}
+        </p>
+      )}
       {/* SEÇÃO 1 — contato e evento potencial */}
       <section className="rounded-xl border border-gray-200 bg-white p-5">
         <h2 className="mb-4 text-sm font-semibold text-gray-900">

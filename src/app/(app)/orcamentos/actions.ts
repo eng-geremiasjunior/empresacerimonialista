@@ -36,6 +36,11 @@ export type OrcamentoPayload = {
   numero_convidados: number | null;
   validade_dias: number;
   itens: ItemPayload[];
+  /**
+   * O pedido da página pública que esta proposta responde (165). Só vale
+   * na criação: a proposta herda o canal do pedido, e o pedido sai da fila.
+   */
+  pedido_id?: string | null;
 };
 
 function validar(p: OrcamentoPayload): string | null {
@@ -104,6 +109,7 @@ export async function salvarOrcamento(
   };
 
   let id = orcamentoId;
+  let pedido: { id: string; canal: string } | null = null;
 
   if (id) {
     // Edição só de rascunho (enviado/aprovado é histórico do cliente).
@@ -129,10 +135,23 @@ export async function salvarOrcamento(
       .eq("orcamento_id", id);
     if (delErr) return { error: "Não foi possível atualizar os itens." };
   } else {
+    // O pedido é lido pela sessão: a RLS só devolve pedido da empresa e de
+    // quem pode respondê-lo. Id de fora (ou de outra empresa) não liga nada
+    // e não impede a proposta de nascer.
+    if (payload.pedido_id) {
+      const { data: p } = await supabase
+        .from("pedido_orcamento")
+        .select("id, canal")
+        .eq("id", payload.pedido_id)
+        .maybeSingle();
+      pedido = (p as { id: string; canal: string } | null) ?? null;
+    }
+
     const { data: criado, error } = await supabase
       .from("orcamentos")
       .insert({
         ...campos,
+        ...(pedido ? { pedido_id: pedido.id, canal: pedido.canal } : {}),
         empresa_id: empresaId,
         // quem cria a proposta conduz o evento que nascer dela — sem isso
         // o evento gerado fica sem responsável e só a dona o enxerga
@@ -162,6 +181,18 @@ export async function salvarOrcamento(
       }))
     );
     if (itensErr) return { error: "Não foi possível salvar os itens." };
+  }
+
+  // O pedido sai da fila: virou proposta. Melhor esforço — a proposta já
+  // existe e aponta para ele; se esta escrita falhar, o pedido só continua
+  // aparecendo como aberto até ela encerrar.
+  if (pedido) {
+    const { error: pedErr } = await supabase
+      .from("pedido_orcamento")
+      .update({ status: "em_proposta", orcamento_id: id })
+      .eq("id", pedido.id);
+    if (pedErr) console.error("[eorg:pedido] ligar a proposta:", pedErr.code, pedErr.message);
+    revalidatePath("/orcamentos/pedidos");
   }
 
   revalidatePath("/orcamentos");
@@ -222,6 +253,9 @@ export async function duplicarOrcamento(
       cidade_evento: orc.cidade_evento,
       numero_convidados: orc.numero_convidados,
       validade_dias: orc.validade_dias,
+      // a cópia continua sabendo de onde a negociação veio (165)
+      canal: orc.canal ?? "manual",
+      pedido_id: orc.pedido_id ?? null,
     })
     .select("id")
     .single();

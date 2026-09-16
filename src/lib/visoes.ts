@@ -25,6 +25,8 @@ export const VISOES_EVENTOS: Visao[] = [
 // cara da empresa lá fora.
 export const VISOES_ORCAMENTOS: Visao[] = [
   { label: "Propostas", href: "/orcamentos" },
+  // quem pediu orçamento pela página: responde quem conduz proposta
+  { label: "Pedidos", href: "/orcamentos/pedidos", cargos: CONDUZ },
   { label: "Página pública", href: "/orcamentos/pagina", cargos: ["proprietaria"] },
   { label: "Catálogo", href: "/catalogo", cargos: ["proprietaria"] },
 ];

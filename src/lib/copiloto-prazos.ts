@@ -25,13 +25,18 @@ import { plural } from "@/lib/format";
 // própria — o prazo é o de conferir o termo enquanto ele importa. Some
 // quando ela abre o orçamento, ou sozinho em 7 dias; assim continua sendo
 // prazo, não fato: "proposta aceita" para sempre seria estado de novo.
+//
+// A quinta, "pedido" (165), também é derivada: alguém pediu orçamento pela
+// página pública e, 24 horas depois, o pedido ainda não virou proposta nem
+// foi encerrado. Some quando ela responde ou encerra.
 
-export type TipoPrazo = "pagamento" | "fornecedor" | "tarefa" | "aceite";
+export type TipoPrazo = "pagamento" | "fornecedor" | "tarefa" | "pedido" | "aceite";
 
 export type ResumoPrazos = {
   pagamento: number;
   fornecedor: number;
   tarefa: number;
+  pedido: number;
   aceite: number;
   total: number;
 };
@@ -41,6 +46,7 @@ export function resumirPrazos(tipos: TipoPrazo[]): ResumoPrazos {
     pagamento: 0,
     fornecedor: 0,
     tarefa: 0,
+    pedido: 0,
     aceite: 0,
     total: 0,
   };
@@ -80,6 +86,11 @@ export function frasePrazos(r: ResumoPrazos): string {
   }
   if (r.tarefa > 0) {
     partes.push(plural(r.tarefa, "tarefa atrasada", "tarefas atrasadas"));
+  }
+  if (r.pedido > 0) {
+    partes.push(
+      plural(r.pedido, "pedido de orçamento sem resposta", "pedidos de orçamento sem resposta")
+    );
   }
   // Por último de propósito: é a única espécie que não é cobrança nem
   // atraso — é boa notícia esperando conferência.
