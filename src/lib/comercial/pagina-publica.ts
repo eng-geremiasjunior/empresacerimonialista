@@ -184,14 +184,13 @@ export function faltaParaPublicar(p: {
 /**
  * A mensagem que já vai escrita no WhatsApp de quem toca no botão.
  *
- * Diz de onde a pessoa veio — é o que permite à cerimonialista saber que
- * a página está funcionando, num canal onde o sistema não enxerga nada.
- * Clique não é mensagem: esta frase é a única pista, e ela chega pela
- * conversa, não por contador.
+ * Diz de onde a pessoa veio: é a pista que chega pela conversa, num canal
+ * onde o sistema não enxerga nada (clique não é mensagem enviada). Sem o
+ * nome da empresa na frase: "Vi a página da Studio X" tropeça no gênero,
+ * e "sua página" serve para qualquer nome.
  */
-export function textoWhatsappPagina(nomeEmpresa: string): string {
-  const de = nomeEmpresa.trim() ? ` da ${nomeEmpresa.trim()}` : "";
-  return `Olá! Vi a página${de} e gostaria de um orçamento para o meu evento.`;
+export function textoWhatsappPagina(): string {
+  return "Olá! Vi a sua página e gostaria de um orçamento para o meu evento.";
 }
 
 /** O que ela cola na bio do Instagram. */

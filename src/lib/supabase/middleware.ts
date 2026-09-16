@@ -68,6 +68,11 @@ const ROTAS_PUBLICAS: ((p: string) => boolean)[] = [
   (p) => p.startsWith("/confirmar/"),
   // o destino do QR do convidado: mostra o código de entrada e nada mais
   (p) => p.startsWith("/entrada/"),
+  // a página pública da cerimonialista e o formulário dela (165): sem
+  // credencial na URL; o banco só devolve página publicada, e o pedido é
+  // gravado pelo servidor, depois dos freios da rota
+  (p) => p.startsWith("/cerimonialista/"),
+  (p) => p.startsWith("/api/pagina/"),
   // o site do casamento pelo endereço bonito (/c/ana-e-bruno)
   (p) => p.startsWith("/c/"),
   // guia de estilo na mão do fornecedor
