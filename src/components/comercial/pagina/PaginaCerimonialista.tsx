@@ -117,7 +117,7 @@ export function PaginaCerimonialista({
 
       {previa && (
         <div className="bg-[color:var(--pg-tinta)] px-4 py-2.5 text-center text-sm text-white">
-          Prévia: esta página ainda não está no ar, só você vê.{" "}
+          Prévia: sua vitrine ainda não está no ar, só você vê.{" "}
           <Link href="/orcamentos/pagina" className="underline underline-offset-2">
             Voltar ao editor
           </Link>

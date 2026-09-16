@@ -200,7 +200,7 @@ export default async function ConfiguracoesPage() {
         <section className="rounded-xl border border-gray-200 bg-white px-6 py-5">
           <h2 className="flex items-center gap-1.5 text-sm font-semibold text-gray-900">
             <Globe size={15} className="text-gray-500" />
-            Página pública
+            Vitrine profissional
           </h2>
           <p className="mt-0.5 text-xs text-gray-500">
             O endereço para divulgar o seu trabalho. Quem pede orçamento por
@@ -210,7 +210,7 @@ export default async function ConfiguracoesPage() {
             href="/orcamentos/pagina"
             className="mt-3 inline-block rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
           >
-            Abrir a página pública →
+            Abrir a vitrine →
           </Link>
         </section>
       )}

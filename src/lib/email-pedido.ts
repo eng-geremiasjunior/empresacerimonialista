@@ -8,7 +8,7 @@
 //
 //  1. O assunto nunca leva dado pessoal. Assunto aparece na notificação
 //     do celular, na tela de bloqueio, no preview de quem passa do lado.
-//     "Novo pedido de orçamento pela sua página" diz o que ela precisa;
+//     "Novo pedido de orçamento pela sua vitrine" diz o que ela precisa;
 //     o nome está dentro.
 //  2. A confirmação NÃO devolve nada do que a pessoa escreveu — nem o
 //     nome. O formulário é aberto ao mundo e o e-mail de destino é
@@ -77,7 +77,7 @@ export async function enviarEmailPedidoParaCerimonialista(dados: {
       <p style="font-size:15px;line-height:1.6">
         ${p.repetido
           ? "Um contato que já havia pedido orçamento mandou o formulário de novo:"
-          : "Alguém pediu um orçamento pela sua página:"}
+          : "Alguém pediu um orçamento pela sua vitrine profissional:"}
       </p>
       <div style="border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;margin:16px 0;font-size:15px;line-height:1.7">
         ${linhas.join("<br />")}
@@ -100,7 +100,7 @@ export async function enviarEmailPedidoParaCerimonialista(dados: {
 
   return enviarViaResend({
     to: dados.to,
-    subject: "Novo pedido de orçamento pela sua página",
+    subject: "Novo pedido de orçamento pela sua vitrine",
     html,
     fromNome: dados.nomeEmpresa,
     replyTo: p.email,

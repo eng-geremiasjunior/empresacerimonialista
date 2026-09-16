@@ -215,7 +215,7 @@ export const ORIGEM_LABEL: Record<OrigemDoAcesso, string> = {
 };
 
 /**
- * "pela página (Instagram)" — de onde o pedido veio, em palavras.
+ * "pela vitrine (Instagram)" — de onde o pedido veio, em palavras.
  *
  * A campanha só aparece quando existe: quem não anuncia não precisa ver
  * um campo vazio explicando que não anuncia.
@@ -231,8 +231,8 @@ export function origemEmPalavras(p: {
   const campanha = p.utm_campaign?.trim();
   const origem = ORIGEM_LABEL[p.origem_acesso] ?? ORIGEM_LABEL.outro;
   return campanha
-    ? `pela página (${origem} · ${campanha})`
-    : `pela página (${origem})`;
+    ? `pela vitrine (${origem} · ${campanha})`
+    : `pela vitrine (${origem})`;
 }
 
 /**

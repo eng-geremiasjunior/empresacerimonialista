@@ -11,28 +11,41 @@
 // serem as mesmas nos dois lugares. Os cargos repetem os do item que
 // existia no menu (AppShell): quem não via o item não vê a visão.
 
-export type Visao = { label: string; href: string; cargos?: string[] };
+// O ícone vai como nome (componente não atravessa do servidor para o
+// cliente); o SubNav resolve o nome.
+export type IconeDaVisao =
+  | "lista"
+  | "calendario"
+  | "propostas"
+  | "pedidos"
+  | "pagina"
+  | "catalogo"
+  | "cadastro"
+  | "contratos"
+  | "agenda";
+
+export type Visao = { label: string; href: string; icone: IconeDaVisao; cargos?: string[] };
 
 const CONDUZ = ["proprietaria", "coordenadora", "cerimonialista"];
 
 export const VISOES_EVENTOS: Visao[] = [
-  { label: "Lista", href: "/eventos" },
-  { label: "Calendário", href: "/calendario" },
+  { label: "Lista", href: "/eventos", icone: "lista" },
+  { label: "Calendário", href: "/calendario", icone: "calendario" },
 ];
 
-// Página pública (16/09/2026): o começo do caminho comercial — a página
+// Vitrine profissional (16/09/2026): o começo do caminho comercial — a página
 // traz o pedido, o pedido vira proposta. Só a dona, como o Catálogo: é a
 // cara da empresa lá fora.
 export const VISOES_ORCAMENTOS: Visao[] = [
-  { label: "Propostas", href: "/orcamentos" },
+  { label: "Propostas", href: "/orcamentos", icone: "propostas" },
   // quem pediu orçamento pela página: responde quem conduz proposta
-  { label: "Pedidos", href: "/orcamentos/pedidos", cargos: CONDUZ },
-  { label: "Página pública", href: "/orcamentos/pagina", cargos: ["proprietaria"] },
-  { label: "Catálogo", href: "/catalogo", cargos: ["proprietaria"] },
+  { label: "Pedidos", href: "/orcamentos/pedidos", icone: "pedidos", cargos: CONDUZ },
+  { label: "Vitrine profissional", href: "/orcamentos/pagina", icone: "pagina", cargos: ["proprietaria"] },
+  { label: "Catálogo", href: "/catalogo", icone: "catalogo", cargos: ["proprietaria"] },
 ];
 
 export const VISOES_FORNECEDORES: Visao[] = [
-  { label: "Cadastro", href: "/fornecedores" },
-  { label: "Contratos", href: "/contratos", cargos: CONDUZ },
-  { label: "Agenda de reuniões", href: "/agenda" },
+  { label: "Cadastro", href: "/fornecedores", icone: "cadastro" },
+  { label: "Contratos", href: "/contratos", icone: "contratos", cargos: CONDUZ },
+  { label: "Agenda de reuniões", href: "/agenda", icone: "agenda" },
 ];

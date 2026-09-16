@@ -178,6 +178,9 @@ export default async function OrcamentosPage({
       className={`${serif.variable} mx-auto max-w-[1080px]`}
       style={{ color: CORES.texto }}
     >
+      {/* o menu das visões vem primeiro, no mesmo lugar em todas elas */}
+      <SubNav itens={VISOES_ORCAMENTOS} cargo={cargo} className="mb-5" />
+
       {/* topbar: data por extenso */}
       <p className="text-[12.5px] capitalize" style={{ color: CORES.terciario }}>
         {hoje}
@@ -214,7 +217,6 @@ export default async function OrcamentosPage({
           </Link>
         </div>
       </div>
-      <SubNav itens={VISOES_ORCAMENTOS} cargo={cargo} className="mt-5" />
 
       {/* quem pediu orçamento pela página e ainda espera resposta; some
           quando não há ninguém */}

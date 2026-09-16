@@ -246,7 +246,7 @@ export const GRUPOS_AJUDA: GrupoAjuda[] = [
         id: "pagina-publica",
         pergunta: "Como divulgo meu trabalho e recebo pedidos de orçamento?",
         resposta:
-          "Em Orçamentos → Página pública: escreva a apresentação, escolha os tipos de evento, os serviços, as fotos e os depoimentos que vão aparecer, e publique. O endereço é seu para pôr na bio do Instagram. Quem preencher o formulário da página chega em Orçamentos com o evento já descrito, e um clique abre a proposta preenchida. O botão de WhatsApp da página abre a conversa com você; o sistema conta o toque, mas não sabe se a mensagem foi enviada.",
+          "Em Orçamentos → Vitrine profissional: escreva a apresentação, escolha os tipos de evento, os serviços, as fotos e os depoimentos que vão aparecer, e publique. O endereço é seu para pôr na bio do Instagram. Quem preencher o formulário da vitrine chega em Orçamentos, na aba Pedidos, com o evento já descrito, e um clique abre a proposta preenchida. O botão de WhatsApp da vitrine abre a conversa com você; o sistema conta o toque, mas não sabe se a mensagem foi enviada.",
       },
       {
         id: "validade-proposta",

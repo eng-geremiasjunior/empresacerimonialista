@@ -515,7 +515,9 @@ export function OrcamentosTable({
       </div>
 
       {/* Dois blocos: a lista e o trilho de prazos */}
-      <div className="mt-6 grid items-start gap-6 lg:grid-cols-[1.55fr_1fr]">
+      {/* grid-cols-1 no celular: sem coluna definida, o item mais largo
+          esticava a página inteira para os lados (medido em 16/09/2026) */}
+      <div className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-[1.55fr_1fr]">
         <section>
           <div className="flex flex-wrap items-center justify-between gap-2 pb-3">
             <span className="uppercase" style={rotuloBloco}>

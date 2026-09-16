@@ -79,6 +79,8 @@ export default async function EventosPage({
 
   return (
     <div className="space-y-5">
+      {/* o menu das visões vem primeiro, no mesmo lugar em todas elas */}
+      <SubNav itens={VISOES_EVENTOS} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold text-gray-900">Eventos</h1>
         <div className="flex items-center gap-2">
@@ -99,7 +101,6 @@ export default async function EventosPage({
           </Link>
         </div>
       </div>
-      <SubNav itens={VISOES_EVENTOS} />
 
       {/* Indicadores */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">

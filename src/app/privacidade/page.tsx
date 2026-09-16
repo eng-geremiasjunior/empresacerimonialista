@@ -106,8 +106,8 @@ export default function PrivacidadePage() {
         cerimonialista; a pedido, dados pessoais podem ser removidos.
       </Secao>
 
-      <Secao titulo="Pedido de orçamento pela página da cerimonialista">
-        Cada cerimonialista pode publicar uma página de apresentação com um
+      <Secao titulo="Pedido de orçamento pela vitrine da cerimonialista">
+        Cada cerimonialista pode publicar uma vitrine profissional, uma página de apresentação com um
         formulário de pedido de orçamento. Quando você envia esse formulário,
         o nome, o WhatsApp, o e-mail (se informado) e os dados do evento que
         você descreveu são entregues <b>a essa cerimonialista</b>, que é a{" "}

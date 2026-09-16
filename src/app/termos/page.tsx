@@ -167,13 +167,13 @@ export default function TermosPage() {
           nós. Não vendemos dados e não os usamos para publicidade.
         </p>
         <p style={p}>
-          <b>Sua página pública.</b> Se você publicar a página de apresentação,
-          o conteúdo dela — textos, logo, fotos do portfólio e depoimentos — é
+          <b>Sua vitrine profissional.</b> Se você publicar a sua vitrine (a
+          página de apresentação), o conteúdo dela — textos, logo, fotos do portfólio e depoimentos — é
           seu e fica visível para qualquer pessoa na internet, inclusive para
           buscadores. Você responde pelo que publica: pelo direito de uso das
           fotos e pelo <b>consentimento de quem aparece nelas</b>, e pela
           autorização de quem assina os depoimentos. Quem pede orçamento pela
-          sua página é <b>seu</b> contato: você é a controladora desses dados,
+          sua vitrine é <b>seu</b> contato: você é a controladora desses dados,
           e nós os guardamos e mostramos só para você.
         </p>
         <p style={p}>

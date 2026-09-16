@@ -166,7 +166,7 @@ export function faltaParaPublicar(p: {
   tiposAtendidos: string[];
 }): string[] {
   const falta: string[] = [];
-  if (!p.slug) falta.push("Escolha o endereço da sua página.");
+  if (!p.slug) falta.push("Escolha o endereço da sua vitrine.");
   if (!p.whatsapp) falta.push("Informe o WhatsApp que recebe os contatos.");
   if (!p.posicionamento?.trim()) {
     falta.push("Escreva a apresentação: quem você é e como trabalha.");

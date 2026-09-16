@@ -278,7 +278,7 @@ export function EditorPagina({
       const r = await publicarPagina();
       if ("error" in r) return mostrar("status", "erro", r.error);
       setPublicada(true);
-      mostrar("status", "ok", "A página está no ar.");
+      mostrar("status", "ok", "A vitrine está no ar.");
     });
   }
 
@@ -288,7 +288,7 @@ export function EditorPagina({
       const r = await despublicarPagina();
       if ("error" in r) return mostrar("status", "erro", r.error);
       setPublicada(false);
-      mostrar("status", "ok", "A página saiu do ar.");
+      mostrar("status", "ok", "A vitrine saiu do ar.");
     });
   }
 
@@ -352,7 +352,7 @@ export function EditorPagina({
                 className={botaoSecundario}
               >
                 <ExternalLink size={13} />
-                {publicada ? "Abrir a página" : "Ver como fica"}
+                {publicada ? "Abrir a vitrine" : "Ver como fica"}
               </a>
             )}
             {publicada ? (
@@ -407,7 +407,7 @@ export function EditorPagina({
 
         {!logoUrl && (
           <p className="mt-4 text-xs text-gray-500">
-            A página vai sem logo.{" "}
+            A vitrine vai sem logo.{" "}
             <Link href="/configuracoes" className="underline hover:text-gray-800">
               Adicionar em Configurações
             </Link>
@@ -425,7 +425,7 @@ export function EditorPagina({
       {/* ------------------------------------------------ endereço */}
       <section className={secaoClass}>
         <label htmlFor="pagina-slug" className={labelClass}>
-          Endereço da página
+          Endereço da vitrine
         </label>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <span className="shrink-0 text-sm text-gray-500">{host}/cerimonialista/</span>
@@ -457,7 +457,7 @@ export function EditorPagina({
 
       {/* ------------------------------------------------ apresentação */}
       <section className={`${secaoClass} space-y-5`}>
-        <h2 className="text-sm font-semibold text-gray-900">O que a página diz</h2>
+        <h2 className="text-sm font-semibold text-gray-900">O que a vitrine diz</h2>
 
         <div>
           <label htmlFor="pagina-titulo" className={labelClass}>
@@ -677,7 +677,7 @@ export function EditorPagina({
       {/* ------------------------------------------------ fotos */}
       <section className={secaoClass}>
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-sm font-semibold text-gray-900">Fotos na página</h2>
+          <h2 className="text-sm font-semibold text-gray-900">Fotos na vitrine</h2>
           {fotos.length > 0 && (
             <div className="flex gap-2">
               <button
@@ -710,10 +710,10 @@ export function EditorPagina({
           <>
             <p className="mt-1 text-xs text-gray-500">
               {fotosMarcadas === 0
-                ? "Nenhuma marcada: a página vai sem fotos."
+                ? "Nenhuma marcada: a vitrine vai sem fotos."
                 : fotosMarcadas > FOTOS_NA_PAGINA
-                  ? `${fotosMarcadas} marcadas; a página mostra as ${FOTOS_NA_PAGINA} primeiras.`
-                  : `${fotosMarcadas} de ${fotos.length} vão para a página.`}
+                  ? `${fotosMarcadas} marcadas; a vitrine mostra as ${FOTOS_NA_PAGINA} primeiras.`
+                  : `${fotosMarcadas} de ${fotos.length} vão para a vitrine.`}
             </p>
             <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-6">
               {fotos.map((f) => (
@@ -721,7 +721,7 @@ export function EditorPagina({
                   key={f.id}
                   type="button"
                   aria-pressed={f.naPagina}
-                  aria-label={`${f.naPagina ? "Tirar da" : "Pôr na"} página: ${f.legenda || rotuloTipo(f.tipo)}`}
+                  aria-label={`${f.naPagina ? "Tirar da" : "Pôr na"} vitrine: ${f.legenda || rotuloTipo(f.tipo)}`}
                   onClick={() => alternar("foto", [f.id], !f.naPagina)}
                   className={`relative aspect-square overflow-hidden rounded-lg border-2 transition ${
                     f.naPagina ? "border-gray-900" : "border-transparent opacity-50 hover:opacity-80"
@@ -744,7 +744,7 @@ export function EditorPagina({
 
       {/* ------------------------------------------------ depoimentos */}
       <section className={secaoClass}>
-        <h2 className="text-sm font-semibold text-gray-900">Depoimentos na página</h2>
+        <h2 className="text-sm font-semibold text-gray-900">Depoimentos na vitrine</h2>
         {depoimentos.length === 0 ? (
           <p className="mt-2 text-sm text-gray-500">
             Nenhum depoimento cadastrado.{" "}

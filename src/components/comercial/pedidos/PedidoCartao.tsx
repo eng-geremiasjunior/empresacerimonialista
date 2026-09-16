@@ -23,7 +23,7 @@ export type PedidoVisto = {
   resumo: string;
   /** "há 3 horas" */
   quando: string;
-  /** "pela página (Instagram)" */
+  /** "pela vitrine (Instagram)" */
   origem: string;
   repeticoes: number;
   clienteJaCadastrada: boolean;

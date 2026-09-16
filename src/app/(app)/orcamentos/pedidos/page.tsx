@@ -53,7 +53,7 @@ export default async function PedidosPage({
       <SubNav itens={VISOES_ORCAMENTOS} cargo={cargo} />
       <div>
         <h1 className="text-xl font-semibold text-gray-900">Pedidos de orçamento</h1>
-        <p className="text-sm text-gray-500">Quem pediu orçamento pela sua página pública</p>
+        <p className="text-sm text-gray-500">Quem pediu orçamento pela sua vitrine profissional</p>
       </div>
 
       <nav aria-label="Situação dos pedidos" className="flex flex-wrap gap-2">
@@ -89,7 +89,7 @@ export default async function PedidosPage({
             <p className="mt-2">
               Os pedidos chegam pela{" "}
               <Link href="/orcamentos/pagina" className="underline hover:text-gray-800">
-                página pública
+                vitrine profissional
               </Link>
               .
             </p>

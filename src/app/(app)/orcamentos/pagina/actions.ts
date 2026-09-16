@@ -72,7 +72,7 @@ function fraseDoBanco(mensagem: string | undefined, padrao: string): string {
 /** O conteúdo da página. Não mexe no endereço nem na publicação. */
 export async function salvarPagina(dados: PaginaEditavel): Promise<Resultado> {
   const ctx = await daDona();
-  if (!ctx) return { error: "Só a proprietária edita a página." };
+  if (!ctx) return { error: "Só a proprietária edita a vitrine." };
 
   const texto = (v: string | null | undefined, max: number) => {
     const t = (v ?? "").trim();
@@ -128,11 +128,11 @@ export async function salvarPagina(dados: PaginaEditavel): Promise<Resultado> {
     if (error.message?.includes("antes de publicar")) {
       return {
         error: comMaiuscula(
-          "a página está no ar: " + error.message.replace(" antes de publicar", "")
+          "a vitrine está no ar: " + error.message.replace(" antes de publicar", "")
         ),
       };
     }
-    return { error: fraseDoBanco(error.message, "Não foi possível salvar a página.") };
+    return { error: fraseDoBanco(error.message, "Não foi possível salvar a vitrine.") };
   }
 
   revalidatePath("/orcamentos/pagina");
@@ -144,7 +144,7 @@ export async function definirEndereco(
   slug: string
 ): Promise<{ ok: true; slug: string } | { error: string }> {
   const ctx = await daDona();
-  if (!ctx) return { error: "Só a proprietária define o endereço da página." };
+  if (!ctx) return { error: "Só a proprietária define o endereço da vitrine." };
 
   const s = slug.trim().toLowerCase();
   const erro = erroDoSlug(s);
@@ -174,7 +174,7 @@ export async function definirEndereco(
  */
 export async function publicarPagina(): Promise<Resultado> {
   const ctx = await daDona();
-  if (!ctx) return { error: "Só a proprietária publica a página." };
+  if (!ctx) return { error: "Só a proprietária publica a vitrine." };
 
   const { data: pag } = await ctx.supabase
     .from("empresa_pagina")
@@ -196,8 +196,8 @@ export async function publicarPagina(): Promise<Resultado> {
     .eq("empresa_id", ctx.empresaId)
     .select("empresa_id");
 
-  if (error) return { error: fraseDoBanco(error.message, "Não foi possível publicar a página.") };
-  if (!data || data.length === 0) return { error: "Salve a página antes de publicar." };
+  if (error) return { error: fraseDoBanco(error.message, "Não foi possível publicar a vitrine.") };
+  if (!data || data.length === 0) return { error: "Salve a vitrine antes de publicar." };
 
   revalidatePath("/orcamentos/pagina");
   return { ok: true };
@@ -206,14 +206,14 @@ export async function publicarPagina(): Promise<Resultado> {
 /** Tira do ar. O endereço continua dela; quem abrir o link vê "página não encontrada". */
 export async function despublicarPagina(): Promise<Resultado> {
   const ctx = await daDona();
-  if (!ctx) return { error: "Só a proprietária tira a página do ar." };
+  if (!ctx) return { error: "Só a proprietária tira a vitrine do ar." };
 
   const { error } = await ctx.supabase
     .from("empresa_pagina")
     .update({ publicada: false, atualizado_por: ctx.userId })
     .eq("empresa_id", ctx.empresaId);
 
-  if (error) return { error: fraseDoBanco(error.message, "Não foi possível tirar a página do ar.") };
+  if (error) return { error: fraseDoBanco(error.message, "Não foi possível tirar a vitrine do ar.") };
   revalidatePath("/orcamentos/pagina");
   return { ok: true };
 }
@@ -228,7 +228,7 @@ export async function marcarNaPagina(
   valor: boolean
 ): Promise<Resultado> {
   const ctx = await daDona();
-  if (!ctx) return { error: "Só a proprietária escolhe o que aparece na página." };
+  if (!ctx) return { error: "Só a proprietária escolhe o que aparece na vitrine." };
 
   const lista = ids.filter((id) => UUID.test(id)).slice(0, 200);
   if (lista.length === 0) return { ok: true };
