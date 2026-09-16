@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Newsreader } from "next/font/google";
 import { createClient } from "@/lib/supabase/server";
 import { getMeuCargo } from "@/lib/supabase/equipe";
 import { SubNav } from "@/components/SubNav";
@@ -9,19 +8,8 @@ import { OrcamentosTable } from "@/components/orcamentos/OrcamentosTable";
 import { type Orcamento, validadeVencida } from "@/lib/orcamentos";
 import { CORES } from "@/lib/orcamentos-ui";
 import { hojeBR } from "@/lib/tempo";
-
-// Serif do redesign. Carregada só nesta rota (não no layout) para não
-// pesar no resto do painel, que segue com a tipografia atual.
-const serif = Newsreader({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-serif-orcamentos",
-  display: "swap",
-  // O next/font não tem métricas de fallback para esta família e avisa no
-  // build; declarar a fonte de reserva resolve e evita o salto de layout.
-  fallback: ["Georgia", "Times New Roman", "serif"],
-  adjustFontFallback: false,
-});
+// Serif do redesign, declarada num módulo só: o Relatório usa a mesma.
+import { serifComercial as serif } from "@/lib/fontes-comercial";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Gestão comercial — eorganizei" };

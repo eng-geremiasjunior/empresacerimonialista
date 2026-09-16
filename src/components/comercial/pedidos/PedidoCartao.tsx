@@ -106,8 +106,9 @@ export function PedidoCartao({ pedido, compacto = false }: { pedido: PedidoVisto
       : null,
   ].filter(Boolean);
 
+  // o id é o endereço que o Relatório usa para abrir este pedido na fila
   return (
-    <li className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
+    <li id={`pedido-${pedido.id}`} className="scroll-mt-24 rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <p className="text-[15px] font-semibold text-gray-900">{pedido.nome}</p>
         <p className="text-xs text-gray-500">{pedido.quando}</p>

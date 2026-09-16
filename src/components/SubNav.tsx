@@ -17,14 +17,16 @@
 // "Catálogo". Com menos de duas visões visíveis para o cargo, a barra nem
 // aparece — uma aba sozinha não é navegação.
 //
-// No celular as abas quebram em linhas, todas à vista: uma aba escondida
-// à direita, esperando a pessoa arrastar a barra, é menu que ninguém acha.
+// No celular (e em qualquer largura em que não caibam numa linha só) as
+// abas quebram em linhas, todas à vista: uma aba escondida à direita,
+// esperando a pessoa arrastar a barra, é menu que ninguém acha.
 // E nada de rolagem vertical, que aparecia no Windows como duas setinhas
 // ao lado das abas.
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BarChart3,
   BookOpen,
   CalendarClock,
   CalendarDays,
@@ -45,6 +47,7 @@ const ICONES: Record<IconeDaVisao, LucideIcon> = {
   calendario: CalendarDays,
   propostas: FileText,
   pedidos: Inbox,
+  relatorio: BarChart3,
   pagina: Globe,
   catalogo: BookOpen,
   cadastro: Truck,
@@ -79,7 +82,7 @@ export function SubNav({
       aria-label="Visões desta tela"
       className={`max-w-full ${className ?? ""}`}
     >
-      <ul className="flex flex-wrap items-center gap-1 rounded-xl border border-stone-200 bg-stone-100 p-1 sm:inline-flex sm:flex-nowrap">
+      <ul className="flex flex-wrap items-center gap-1 rounded-xl border border-stone-200 bg-stone-100 p-1 sm:inline-flex">
         {visiveis.map((i) => {
           const ativa = i.href === ativo;
           const Icone = ICONES[i.icone];

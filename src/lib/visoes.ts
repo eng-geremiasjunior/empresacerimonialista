@@ -18,6 +18,7 @@ export type IconeDaVisao =
   | "calendario"
   | "propostas"
   | "pedidos"
+  | "relatorio"
   | "pagina"
   | "catalogo"
   | "cadastro"
@@ -40,6 +41,9 @@ export const VISOES_ORCAMENTOS: Visao[] = [
   { label: "Propostas", href: "/orcamentos", icone: "propostas" },
   // quem pediu orçamento pela página: responde quem conduz proposta
   { label: "Pedidos", href: "/orcamentos/pedidos", icone: "pedidos", cargos: CONDUZ },
+  // o resultado da empresa (valores fechados): dona e coordenadora, as
+  // mesmas que já veem todas as propostas
+  { label: "Relatório", href: "/orcamentos/relatorio", icone: "relatorio", cargos: ["proprietaria", "coordenadora"] },
   { label: "Vitrine profissional", href: "/orcamentos/pagina", icone: "pagina", cargos: ["proprietaria"] },
   { label: "Catálogo", href: "/catalogo", icone: "catalogo", cargos: ["proprietaria"] },
 ];
