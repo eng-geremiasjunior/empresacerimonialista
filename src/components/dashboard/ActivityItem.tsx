@@ -45,14 +45,24 @@ export function ActivityItem({ activity, now }: Props) {
             {relativeTime(activity.createdAt, now)}
           </p>
         </div>
+        {/* a 166 descreve uma mudança por linha */}
         {activity.description && (
-          <p className="text-sm leading-snug text-stone-600">
+          <p className="line-clamp-3 whitespace-pre-line text-sm leading-snug text-stone-600">
             {activity.description}
           </p>
         )}
-        {activity.eventName && (
+        {(activity.eventName || activity.autor) && (
           <p className="mt-0.5 truncate text-xs text-stone-400">
-            {activity.eventName}
+            {[
+              activity.eventName,
+              activity.autor
+                ? activity.autor === "Sistema"
+                  ? "pelo sistema"
+                  : `por ${activity.autor}`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
         )}
       </div>

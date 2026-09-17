@@ -87,6 +87,8 @@ export type Activity = {
   eventId: string | null;
   eventName: string | null;
   createdAt: string; // ISO
+  /** quem fez (166): o nome de quem estava logado, ou "Sistema" */
+  autor?: string | null;
   /** Sobrescrevem os padrões da categoria quando presentes. */
   icon?: string;
   color?: string;

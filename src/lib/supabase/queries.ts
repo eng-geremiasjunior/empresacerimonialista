@@ -21,16 +21,18 @@ const monthRange = (monthsAgo: number) => {
   return { from: iso(startOfMonth(base)), to: iso(endOfMonth(base)) };
 };
 
-// Feed de atividades reais (log automático via trigger; ver 008_activities.sql).
-// RLS limita às atividades da cerimonialista logada. Se a tabela ainda não
-// existe, retorna [] (o feed mostra o estado vazio, sem quebrar o dashboard).
+// Feed de atividades reais (log automático via trigger; ver 008_activities.sql
+// e 166, que passou a dizer o que mudou e quem fez). RLS limita às
+// atividades da cerimonialista logada. Se a tabela ainda não existe,
+// retorna [] (o feed mostra o estado vazio, sem quebrar o dashboard).
 export async function getRecentActivities(limit = 20): Promise<Activity[]> {
   const supabase = createClient();
   const { data } = await supabase
     .from("activities")
-    .select(
-      "id, category, type, title, description, event_id, event_name, created_at"
-    )
+    // todas as colunas: `autor` só existe com a 166 aplicada
+    .select("*")
+    // o "Evento atualizado" antigo, sem dizer o quê, não ocupa o feed
+    .or("type.neq.evento_editado,description.not.is.null")
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -44,6 +46,7 @@ export async function getRecentActivities(limit = 20): Promise<Activity[]> {
       event_id: string | null;
       event_name: string | null;
       created_at: string;
+      autor?: string | null;
     };
     return {
       id: record.id,
@@ -54,6 +57,7 @@ export async function getRecentActivities(limit = 20): Promise<Activity[]> {
       eventId: record.event_id,
       eventName: record.event_name,
       createdAt: record.created_at,
+      autor: record.autor ?? null,
     };
   });
 }
