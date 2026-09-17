@@ -69,6 +69,12 @@ export const fetchCache = "force-no-store";
 export const maxDuration = 60;
 
 const ROTINAS = [
+  // PRIMEIRA de propósito (17/09/2026): a régua de e-mails do teste
+  // ficava em 11º e não chegava a rodar — a função tem 60 segundos para
+  // a lista inteira, e em 17/09 nenhuma conta de teste tinha recebido
+  // "dia 2" nem "fim do teste". Quem fala com quem está decidindo
+  // assinar não pode depender do que sobra do tempo.
+  "ativacao",
   "confirmacoes",
   "orcamentos-expirados",
   "agendamentos",
@@ -88,9 +94,6 @@ const ROTINAS = [
   // a promoção de lançamento guarda só o dia em que a escada começou; é
   // esta rotina que troca o preço na operadora quando o degrau vira
   "promocao-degrau",
-  // os e-mails do teste grátis: dia 2 e fim do teste (email-ativacao.ts).
-  // O cron roda às 12h UTC — 9h em Brasília, hora de caixa de entrada.
-  "ativacao",
   // o uso do sistema (painel do dono) some depois de 13 meses, e os
   // registros de rotina, e-mail, erro e IA também têm prazo
   "uso-antigo",

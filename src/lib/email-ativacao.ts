@@ -1,28 +1,38 @@
 import "server-only";
 
-// Os três e-mails do teste grátis (16/09/2026).
+// A régua de e-mails do teste grátis (16/09/2026, ampliada em 17/09).
 //
 // As sete primeiras contas vindas de anúncio entraram, fecharam a aba e
-// nunca mais ouviram falar do eOrganizei: não existia e-mail nenhum depois
-// do cadastro. Nenhuma voltou em outro dia. Estes três existem para que o
-// teste não morra em silêncio:
+// nunca mais ouviram falar do eOrganizei. Esta régua existe para que o
+// teste não morra em silêncio, e para chamar de volta quem não assinou.
 //
+// DURANTE O TESTE
 //   boas_vindas — na hora do cadastro: por onde começar;
-//   dia_2       — dois dias depois: o próximo passo DO EVENTO DELA (ou o
-//                 convite para cadastrar o primeiro, se não há nenhum);
-//   fim_teste   — dois dias antes do fim: o que acontece e como seguir.
+//   dia_1       — não voltou e a conta está vazia: cadastre o 1º evento;
+//   dia_2       — o próximo passo DO EVENTO dela;
+//   dia_3       — a Vitrine profissional, o link que traz pedido;
+//   dia_5       — faltam 2 dias, e o preço aparece pela primeira vez;
+//   fim_teste   — último dia: assinar, com o preço e o convite.
+//
+// DEPOIS DO TESTE (quem não assinou)
+//   pos_2, pos_7, pos_14, pos_21, pos_30, pos_45, pos_60, pos_90 —
+//   cada marco manda UM e-mail; quem chega atrasado recebe só o marco
+//   em que está, nunca a fila inteira.
 //
 // Quem fala é o dono, pelo nome: é quem construiu o sistema, e é ele quem
 // vai responder. O texto segue a regra da casa — fala do trabalho dela,
 // nunca da mecânica, e sem linguagem de jogo.
 //
-// NUNCA DUAS VEZES. O registro de envio mora em `app_metadata` do login
-// (eorg_ativacao: { boas_vindas, dia_2, fim_teste }), que só o servidor
-// escreve — sem migração e sem tabela nova. Só se marca o que o Resend
-// aceitou: envio que falhou fica para a rotina do dia seguinte.
+// NUNCA DUAS VEZES, e NO MÁXIMO UM POR DIA. O registro de envio mora em
+// `app_metadata` do login (eorg_ativacao), que só o servidor escreve —
+// sem migração e sem tabela nova. Só se marca o que o Resend aceitou:
+// envio que falhou fica para a rotina do dia seguinte. Quem clicar em
+// "não quero mais receber" ganha `sem_email` e sai da régua.
 
+import { createHmac } from "node:crypto";
 import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
 import { enviarViaResend } from "@/lib/email";
+import { appUrl } from "@/lib/app-url";
 import { ehContaDaCasa } from "@/lib/contas-da-casa";
 import { hojeBR } from "@/lib/tempo";
 import {
@@ -31,15 +41,56 @@ import {
   diaBR,
   diasEntre,
   htmlBoasVindas,
+  htmlDia1,
   htmlDia2,
+  htmlDia3,
+  htmlDia5,
   htmlFimTeste,
+  htmlPos14,
+  htmlPos2,
+  htmlPos21,
+  htmlPos30,
+  htmlPos45,
+  htmlPos60,
+  htmlPos7,
+  htmlPos90,
+  type DadosDoEmail,
+  type EmailPronto,
   type EventoDela,
 } from "@/lib/email-ativacao-textos";
 
-type Marca = "boas_vindas" | "dia_2" | "fim_teste";
-type Marcas = Partial<Record<Marca, string>>;
+export const MARCAS = [
+  "boas_vindas",
+  "dia_1",
+  "dia_2",
+  "dia_3",
+  "dia_5",
+  "fim_teste",
+  "pos_2",
+  "pos_7",
+  "pos_14",
+  "pos_21",
+  "pos_30",
+  "pos_45",
+  "pos_60",
+  "pos_90",
+] as const;
+export type Marca = (typeof MARCAS)[number];
+type Marcas = Partial<Record<Marca, string>> & { sem_email?: string };
 
 const CHAVE = "eorg_ativacao";
+
+/** Os marcos de depois do teste: dias desde o fim → e-mail. */
+const DEPOIS: { dias: number; marca: Marca }[] = [
+  { dias: 2, marca: "pos_2" },
+  { dias: 7, marca: "pos_7" },
+  { dias: 14, marca: "pos_14" },
+  { dias: 21, marca: "pos_21" },
+  { dias: 30, marca: "pos_30" },
+  { dias: 45, marca: "pos_45" },
+  { dias: 60, marca: "pos_60" },
+  { dias: 90, marca: "pos_90" },
+];
 
 function servico(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -70,18 +121,58 @@ async function marcar(db: SupabaseClient, userId: string, marca: Marca) {
   if (error) console.error("[eorg:ativacao] marcar", marca, error.message);
 }
 
+/* ------------------------------------------------------------------ */
+/* Os links do e-mail                                                  */
+/* ------------------------------------------------------------------ */
+
+/** A assinatura do link de saída: sem ela, qualquer um descadastra qualquer um. */
+export function assinaturaDeSaida(userId: string): string {
+  const segredo = process.env.CRON_SECRET ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+  return createHmac("sha256", segredo).update(userId).digest("hex").slice(0, 32);
+}
+
+function linkDeSaida(userId: string): string {
+  return `${appUrl()}/api/email/sair?u=${userId}&t=${assinaturaDeSaida(userId)}`;
+}
+
+/**
+ * O link que abre a sessão dela e cai na tela certa, sem digitar senha.
+ *
+ * É o mesmo caminho do "esqueci minha senha": o GoTrue devolve um token
+ * de uso único e a rota /auth/confirm troca por sessão. Se o provedor
+ * recusar (conta sem e-mail confirmado, limite), o e-mail sai mesmo
+ * assim — o botão normal continua levando à tela, pedindo login.
+ */
+async function linkSemSenha(
+  db: SupabaseClient,
+  email: string,
+  destino: string
+): Promise<string | null> {
+  try {
+    const { data, error } = await db.auth.admin.generateLink({
+      type: "magiclink",
+      email,
+      options: { redirectTo: `${appUrl()}${destino}` },
+    });
+    const hash = (data?.properties as { hashed_token?: string } | undefined)?.hashed_token;
+    if (error || !hash) return null;
+    return `${appUrl()}/auth/confirm?token_hash=${hash}&type=magiclink&next=${encodeURIComponent(destino)}`;
+  } catch {
+    return null;
+  }
+}
+
 async function mandar(
   db: SupabaseClient,
   u: Pick<User, "id" | "email">,
   marca: Marca,
-  assunto: string,
-  html: string
+  email: EmailPronto
 ): Promise<boolean> {
   if (!u.email) return false;
   const r = await enviarViaResend({
     to: u.email,
-    subject: assunto,
-    html,
+    subject: email.assunto,
+    html: email.html,
     fromNome: ASSINA(),
     replyTo: RESPONDER_PARA(),
     tags: [{ name: "tipo", value: `ativacao_${marca}` }],
@@ -92,6 +183,22 @@ async function mandar(
   }
   await marcar(db, u.id, marca);
   return true;
+}
+
+/**
+ * Monta o e-mail duas vezes: a primeira para saber o destino do botão, a
+ * segunda com o link sem senha já apontando para essa mesma tela.
+ */
+async function comLinks(
+  db: SupabaseClient,
+  email: string,
+  userId: string,
+  montar: (d: DadosDoEmail) => EmailPronto
+): Promise<EmailPronto> {
+  const sair = linkDeSaida(userId);
+  const semLinks = montar({ nome: "", sair });
+  const entrar = await linkSemSenha(db, email, semLinks.destino);
+  return montar({ nome: "", entrarSemSenha: entrar, sair });
 }
 
 /**
@@ -109,8 +216,12 @@ export async function enviarBoasVindas(p: {
     if (ehContaDaCasa(p.email)) return;
     const db = servico();
     if (!db) return;
-    const { assunto, html } = htmlBoasVindas(p.nome, p.termina, p.eventos3m);
-    await mandar(db, { id: p.userId, email: p.email }, "boas_vindas", assunto, html);
+    const sair = linkDeSaida(p.userId);
+    const base = { nome: p.nome, termina: p.termina, eventos3m: p.eventos3m, sair };
+    const destino = htmlBoasVindas(base).destino;
+    const entrar = await linkSemSenha(db, p.email, destino);
+    const email = htmlBoasVindas({ ...base, entrarSemSenha: entrar });
+    await mandar(db, { id: p.userId, email: p.email }, "boas_vindas", email);
   } catch (e) {
     console.error("[eorg:ativacao] boas-vindas", String(e).slice(0, 200));
   }
@@ -122,32 +233,67 @@ export async function enviarBoasVindas(p: {
 
 export type ResumoAtivacao = {
   contasEmTeste: number;
-  enviados: Record<Marca, number>;
+  contasDepoisDoTeste: number;
+  enviados: Partial<Record<Marca, number>>;
   falharam: number;
 };
 
+/** O evento que interessa: o próximo a acontecer; sem nenhum futuro, o último. */
+async function eventoDaVez(
+  db: SupabaseClient,
+  empresaId: string,
+  hoje: string
+): Promise<{ evento: EventoDela | null; total: number }> {
+  const { data } = await db
+    .from("events")
+    .select("id, type, date, created_at")
+    .eq("empresa_id", empresaId)
+    .or("archived.is.null,archived.eq.false")
+    .order("created_at", { ascending: false })
+    .limit(50);
+  const todos = (data ?? []) as (EventoDela & { created_at: string })[];
+  const futuros = todos
+    .filter((x) => x.date && x.date.slice(0, 10) >= hoje)
+    .sort((a, b) => (a.date! < b.date! ? -1 : 1));
+  const escolhido = futuros[0] ?? todos[0] ?? null;
+  if (!escolhido) return { evento: null, total: todos.length };
+  // sem objetivos, o evento não tem Planejamento para onde mandar
+  const { count, error } = await db
+    .from("evento_objetivo")
+    .select("id", { count: "exact", head: true })
+    .eq("event_id", escolhido.id);
+  return {
+    evento: { ...escolhido, temMetodo: error ? undefined : (count ?? 0) > 0 },
+    total: todos.length,
+  };
+}
+
 /**
- * Chamada uma vez por dia (/api/cron/ativacao). Olha só contas em teste.
- * Uma mensagem por conta por dia, com o fim do teste na frente.
+ * Chamada uma vez por dia (/api/cron/ativacao). Olha contas em teste e
+ * contas cujo teste acabou sem assinatura. Uma mensagem por conta por dia.
  */
 export async function rodarAtivacao(agora = new Date()): Promise<ResumoAtivacao> {
   const resumo: ResumoAtivacao = {
     contasEmTeste: 0,
-    enviados: { boas_vindas: 0, dia_2: 0, fim_teste: 0 },
+    contasDepoisDoTeste: 0,
+    enviados: {},
     falharam: 0,
   };
   const db = servico();
   if (!db) return resumo;
   const hoje = hojeBR(agora);
+  const contar = (m: Marca) => {
+    resumo.enviados[m] = (resumo.enviados[m] ?? 0) + 1;
+  };
 
+  // status 'trial' cobre os dois lados: quem ainda está testando e quem
+  // deixou o teste vencer sem assinar (assinar muda o status).
   const { data: testes, error } = await db
     .from("assinaturas")
     .select("empresa_id, teste_termina_em")
-    .eq("status", "trial")
-    .gte("teste_termina_em", hoje);
+    .eq("status", "trial");
   if (error) throw new Error(`assinaturas: ${error.message}`);
   const lista = (testes ?? []) as { empresa_id: string; teste_termina_em: string | null }[];
-  resumo.contasEmTeste = lista.length;
   if (!lista.length) return resumo;
 
   const { data: empresas } = await db
@@ -175,58 +321,85 @@ export async function rodarAtivacao(agora = new Date()): Promise<ResumoAtivacao>
     if (banida && new Date(banida) > agora) continue;
 
     const marcas = marcasDe(u);
+    if (marcas.sem_email) continue;
+
     const nome = String((u.user_metadata as Record<string, unknown> | undefined)?.name ?? "");
     const desdeCadastro = diasEntre(diaBR(e.created_at), hoje);
     const paraFim = t.teste_termina_em ? diasEntre(hoje, t.teste_termina_em) : null;
+    const emTeste = paraFim === null || paraFim >= 0;
+    if (emTeste) resumo.contasEmTeste += 1;
+    else resumo.contasDepoisDoTeste += 1;
 
-    let feito: boolean | null = null;
-    if (paraFim !== null && paraFim <= 2 && desdeCadastro >= 2 && !marcas.fim_teste) {
-      const { count } = await db
-        .from("events")
-        .select("id", { count: "exact", head: true })
-        .eq("empresa_id", e.id);
-      const m = htmlFimTeste(nome, t.teste_termina_em!, hoje, count ?? 0);
-      feito = await mandar(db, u, "fim_teste", m.assunto, m.html);
-      if (feito) resumo.enviados.fim_teste += 1;
-    } else if (desdeCadastro >= 2 && desdeCadastro <= 4 && !marcas.dia_2) {
-      // o evento que interessa: o próximo a acontecer; sem nenhum futuro,
-      // o último que ela cadastrou
-      const { data: evs } = await db
-        .from("events")
-        .select("id, type, date, created_at")
-        .eq("empresa_id", e.id)
-        .or("archived.is.null,archived.eq.false")
-        .order("created_at", { ascending: false })
-        .limit(50);
-      const todos = (evs ?? []) as (EventoDela & { created_at: string })[];
-      const futuros = todos
-        .filter((x) => x.date && x.date.slice(0, 10) >= hoje)
-        .sort((a, b) => (a.date! < b.date! ? -1 : 1));
-      const escolhido = futuros[0] ?? todos[0] ?? null;
-      let evento: EventoDela | null = escolhido;
-      if (escolhido) {
-        // sem objetivos, o evento não tem Planejamento para onde mandar
-        const { count, error: erroObj } = await db
-          .from("evento_objetivo")
-          .select("id", { count: "exact", head: true })
-          .eq("event_id", escolhido.id);
-        evento = { ...escolhido, temMetodo: erroObj ? undefined : (count ?? 0) > 0 };
-      }
-      const m = htmlDia2(nome, evento, hoje);
-      feito = await mandar(db, u, "dia_2", m.assunto, m.html);
-      if (feito) resumo.enviados.dia_2 += 1;
-    } else if (desdeCadastro <= 1 && !marcas.boas_vindas) {
-      // o de boas-vindas que não saiu na hora do cadastro
-      const eventos3m = String((u.user_metadata as Record<string, unknown> | undefined)?.eventos_3_meses ?? "") || null;
-      const m = htmlBoasVindas(nome, t.teste_termina_em, eventos3m);
-      feito = await mandar(db, u, "boas_vindas", m.assunto, m.html);
-      if (feito) resumo.enviados.boas_vindas += 1;
+    // quem recebe o quê, hoje
+    let marca: Marca | null = null;
+    if (emTeste) {
+      if (paraFim !== null && paraFim <= 1 && desdeCadastro >= 2 && !marcas.fim_teste) marca = "fim_teste";
+      else if (paraFim !== null && paraFim <= 2 && desdeCadastro >= 3 && !marcas.dia_5) marca = "dia_5";
+      else if (desdeCadastro >= 3 && desdeCadastro <= 5 && !marcas.dia_3) marca = "dia_3";
+      else if (desdeCadastro >= 2 && desdeCadastro <= 4 && !marcas.dia_2) marca = "dia_2";
+      else if (desdeCadastro === 1 && !marcas.dia_1) marca = "dia_1";
+      else if (desdeCadastro <= 1 && !marcas.boas_vindas) marca = "boas_vindas";
+    } else {
+      // só o marco em que ela está, nunca a fila inteira
+      const desdeFim = -(paraFim as number);
+      const alcancados = DEPOIS.filter((m) => m.dias <= desdeFim);
+      const atual = alcancados[alcancados.length - 1];
+      if (atual && !marcas[atual.marca]) marca = atual.marca;
     }
-    if (feito === false) resumo.falharam += 1;
+    if (!marca) continue;
+
+    // os dados que o texto do dia precisa
+    const precisaEvento = marca === "dia_1" || marca === "dia_2" || marca === "dia_5";
+    const { evento, total } =
+      precisaEvento || marca === "pos_2" || marca === "pos_14" || marca === "fim_teste"
+        ? await eventoDaVez(db, e.id, hoje)
+        : { evento: null, total: 0 };
+    if (marca === "dia_1" && total > 0) continue; // já cadastrou: o dia 1 não faz sentido
+
+    const eventos3m =
+      String((u.user_metadata as Record<string, unknown> | undefined)?.eventos_3_meses ?? "") || null;
+
+    const montar = (d: DadosDoEmail): EmailPronto => {
+      const base = { ...d, nome };
+      switch (marca) {
+        case "boas_vindas":
+          return htmlBoasVindas({ ...base, termina: t.teste_termina_em, eventos3m });
+        case "dia_1":
+          return htmlDia1(base);
+        case "dia_2":
+          return htmlDia2({ ...base, evento, hoje });
+        case "dia_3":
+          return htmlDia3({ ...base, termina: t.teste_termina_em });
+        case "dia_5":
+          return htmlDia5({ ...base, termina: t.teste_termina_em!, hoje, evento });
+        case "fim_teste":
+          return htmlFimTeste({ ...base, termina: t.teste_termina_em!, hoje, eventos: total });
+        case "pos_2":
+          return htmlPos2({ ...base, eventos: total });
+        case "pos_7":
+          return htmlPos7(base);
+        case "pos_14":
+          return htmlPos14({ ...base, eventos: total });
+        case "pos_21":
+          return htmlPos21(base);
+        case "pos_30":
+          return htmlPos30(base);
+        case "pos_45":
+          return htmlPos45(base);
+        case "pos_60":
+          return htmlPos60(base);
+        default:
+          return htmlPos90(base);
+      }
+    };
+
+    const email = await comLinks(db, u.email, u.id, (d) => montar({ ...d, nome }));
+    const feito = await mandar(db, u, marca, email);
+    if (feito) contar(marca);
+    else resumo.falharam += 1;
     // o Resend aceita poucas chamadas por segundo
-    if (feito !== null) await new Promise((r) => setTimeout(r, 600));
+    await new Promise((r) => setTimeout(r, 600));
   }
 
   return resumo;
 }
-

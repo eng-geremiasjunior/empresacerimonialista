@@ -153,7 +153,15 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     // A cliente que abre um link do portal sem sessão volta para a porta
     // dela, não para o login da cerimonialista.
-    url.pathname = pathname.startsWith("/portal") ? "/portal/entrar" : "/login";
+    const paraOPortal = pathname.startsWith("/portal");
+    url.pathname = paraOPortal ? "/portal/entrar" : "/login";
+    // Guarda para onde ela ia: quem clica no botão de um e-mail ("Abrir o
+    // meu evento") e está deslogada entrava e caía no dashboard, sem
+    // relação com o que clicou. O login devolve ao destino.
+    url.search = "";
+    if (!paraOPortal && pathname !== "/") {
+      url.searchParams.set("next", pathname + request.nextUrl.search);
+    }
     return NextResponse.redirect(url);
   }
 

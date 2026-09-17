@@ -95,7 +95,7 @@ async function precoDeEntrada(): Promise<string | null> {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams?: { erro?: string; criar?: string; entrar?: string };
+  searchParams?: { erro?: string; criar?: string; entrar?: string; next?: string };
 }) {
   if (!supabaseConfigured) return <SetupInstructions />;
 
@@ -133,6 +133,7 @@ export default async function LoginPage({
             criarConta={criar}
             precoDeEntrada={preco}
             quem={quem}
+            destino={searchParams?.next ?? null}
           />
         </section>
       </main>

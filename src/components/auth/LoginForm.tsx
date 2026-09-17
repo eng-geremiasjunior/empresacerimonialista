@@ -17,7 +17,18 @@ export function LoginForm({
   criarConta = false,
   precoDeEntrada = null,
   quem = "dona",
+  destino = null,
 }: {
+  /**
+   * `?next=/eventos/123` — para onde ir DEPOIS de entrar.
+   *
+   * Quem clica no botão de um e-mail ("Abrir o meu evento") e está
+   * deslogada caía no login e perdia o destino: entrava e via o
+   * dashboard, sem nenhuma relação com o que tinha clicado. Só caminho
+   * interno é aceito (tem de começar com uma barra e não pode ser "//",
+   * que o navegador leria como outro domínio).
+   */
+  destino?: string | null;
   /** Vem do ?erro= da URL — /auth/confirm manda para cá quando o link do
    *  e-mail não serviu (expirou, já foi usado, ou foi aberto em outro
    *  aparelho). O portal já fazia isso; a área profissional chegava aqui
@@ -93,7 +104,11 @@ export function LoginForm({
         setLoading(false);
         return;
       }
-      router.push("/eventos/dashboard");
+      const paraOnde =
+        destino && destino.startsWith("/") && !destino.startsWith("//")
+          ? destino
+          : "/eventos/dashboard";
+      router.push(paraOnde);
       router.refresh();
     } else {
       // O nome do negócio vira o nome da empresa no provisionamento
