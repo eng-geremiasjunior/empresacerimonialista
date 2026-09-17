@@ -19,7 +19,7 @@
 // digitado em texto livre antes do envio.
 
 import { createClient } from "@/lib/supabase/server";
-import { hojeBR, inicioDoDiaBR } from "@/lib/tempo";
+import { hojeBR, inicioDoDiaBR, somarDias } from "@/lib/tempo";
 import { categoriaLabel } from "@/lib/fornecedores-shared";
 import { rotuloResponsavel } from "@/lib/papel";
 
@@ -132,12 +132,21 @@ export async function montarContextoEvento(
             : `já aconteceu há ${Math.abs(diasAte)} dias`;
 
   // Sem a data de hoje, "o que vence esta semana?" era chute do modelo:
-  // a mesma pergunta voltava "até 23/09" e "até 24/09".
+  // a mesma pergunta voltava "até 23/09" e "até 24/09". Mesmo com a data,
+  // ele errava a conta — então a marca de tempo de cada prazo sai daqui,
+  // pronta ("vence esta semana" = de hoje até domingo).
   const hojeIso = hojeBR();
-  const diaDaSemana = new Date(`${hojeIso}T12:00:00Z`).toLocaleDateString("pt-BR", {
-    weekday: "long",
-    timeZone: "UTC",
-  });
+  const meioDia = new Date(`${hojeIso}T12:00:00Z`);
+  const diaDaSemana = meioDia.toLocaleDateString("pt-BR", { weekday: "long", timeZone: "UTC" });
+  const domingoIso = somarDias(hojeIso, (7 - meioDia.getUTCDay()) % 7);
+  const quando = (iso: string | null): string => {
+    if (!iso) return "";
+    const d = iso.slice(0, 10);
+    if (d < hojeIso) return " · atrasada";
+    if (d === hojeIso) return " · vence hoje";
+    if (d <= domingoIso) return " · vence esta semana";
+    return "";
+  };
 
   const partes: string[] = [];
 
@@ -208,7 +217,7 @@ export async function montarContextoEvento(
         ),
         ...pendentes.map(
           (d) =>
-            `- [pendente] ${d.titulo}${d.prazo_previsto ? ` (decidir até ${dataBR(d.prazo_previsto)})` : ""} — responsável: ${rotuloResponsavel(d.responsavel, ev.type)}`
+            `- [pendente] ${d.titulo}${d.prazo_previsto ? ` (decidir até ${dataBR(d.prazo_previsto)}${quando(d.prazo_previsto)})` : ""} — responsável: ${rotuloResponsavel(d.responsavel, ev.type)}`
         ),
       ].join("\n")
   );
@@ -220,7 +229,7 @@ export async function montarContextoEvento(
         .slice(0, 40)
         .map(
           (t) =>
-            `- ${t.title}${t.due_date ? ` (vence ${dataBR(t.due_date)})` : " (sem prazo)"}${t.responsavel ? ` — ${rotuloResponsavel(t.responsavel, ev.type)}` : ""}`
+            `- ${t.title}${t.due_date ? ` (vence ${dataBR(t.due_date)}${quando(t.due_date)})` : " (sem prazo)"}${t.responsavel ? ` — ${rotuloResponsavel(t.responsavel, ev.type)}` : ""}`
         )
         .join("\n")
   );
@@ -254,7 +263,7 @@ export async function montarContextoEvento(
           .slice(0, 20)
           .map(
             (t) =>
-              `- ${t.type === "receita" ? "parcela a receber" : "parcela a pagar"} vence ${dataBR(t.due_date)} (conta ${t.conta})`
+              `- ${t.type === "receita" ? "parcela a receber" : "parcela a pagar"} vence ${dataBR(t.due_date)}${quando(t.due_date)} (conta ${t.conta})`
           )
           .join("\n")
     );

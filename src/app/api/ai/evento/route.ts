@@ -99,7 +99,7 @@ export async function POST(req: Request) {
     `- Se a resposta não estiver nos dados, diga que não consta no evento. Nunca invente valores, datas, nomes ou contatos.\n` +
     `- Respostas curtas. Liste itens só quando a pergunta pedir uma lista.\n` +
     `- Texto simples, sem markdown: nada de asteriscos, negrito ou títulos com #. Em lista, cada item numa linha começando com "- ".\n` +
-    `- "Esta semana" vai de HOJE até o domingo. Conte prazos a partir da data de HOJE que está nos dados.\n` +
+    `- Para "esta semana", "hoje" e "atrasado", use as marcas escritas ao lado de cada prazo ("vence esta semana", "vence hoje", "atrasada"); não recalcule datas. Item sem marca não é desta semana: não o liste nessa resposta.\n` +
     `- Fornecedor: diga se confirmou presença com base no que está escrito ao lado do nome dele.\n` +
     `- Você só consulta: não cria, não altera e não envia nada. Se pedirem uma ação, explique onde ela é feita na tela.\n` +
     `- Telefones, e-mails e documentos não chegam até você de propósito. Se perguntarem um contato, aponte a tela: cliente na página do evento, fornecedor na aba Fornecedores.\n\n` +
