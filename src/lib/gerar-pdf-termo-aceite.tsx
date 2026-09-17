@@ -41,6 +41,14 @@ export type DadosTermoAceite = {
     valorConvidadosExtra: number;
     extras: { nome: string; preco: number }[];
     valorExtras: number;
+    /**
+     * De onde veio o valor (162, item 9): calculadora (pacote + convidados +
+     * extras), proposta (os itens da própria proposta) ou
+     * pacote_recomendado (valor único sem valor próprio). Nulo = anterior,
+     * sempre calculadora.
+     */
+    origemValor: string | null;
+    itens: { nome: string; valor: number }[];
     formaPagamento: string;
     parcelas: number | null;
     descontoPercentual: number | null;
@@ -311,6 +319,8 @@ function Assinatura({
 function TermoAceitePdf(d: DadosTermoAceite) {
   const sn = d.snapshot;
   const excedentes = Math.max(0, sn.convidados - sn.convidadosInclusos);
+  // anterior ao item 9 da 162 (nulo) também é calculadora
+  const calculadora = sn.origemValor == null || sn.origemValor === "calculadora";
   const temDesconto = (sn.descontoPercentual ?? 0) > 0;
   const navegador = d.userAgent ? d.userAgent.slice(0, 120) : null;
 
@@ -342,37 +352,69 @@ function TermoAceitePdf(d: DadosTermoAceite) {
         <Linha rotulo="Tipo de evento">{d.tipoEventoLabel}</Linha>
         <Linha rotulo="Data do evento">{dataDoEvento(d.dataEvento)}</Linha>
         {d.localEvento ? <Linha rotulo="Local">{d.localEvento}</Linha> : null}
-        <Linha rotulo="Pacote" detalhe={brl(sn.pacotePreco)}>
-          {sn.pacoteNome}
-        </Linha>
-        <Linha
-          rotulo="Convidados"
-          detalhe={
-            `${sn.convidadosInclusos} inclusos no pacote; ${brl(sn.valorPorConvidadoExtra)} por convidado a mais` +
-            (excedentes > 0
-              ? `. ${excedentes} a mais: ${brl(sn.valorConvidadosExtra)}`
-              : "")
-          }
-        >
-          {sn.convidados} convidados
-        </Linha>
-        <View style={s.linha} wrap={false}>
-          <Text style={s.rotulo}>Extras</Text>
-          <View style={{ flex: 1 }}>
-            {sn.extras.length === 0 ? (
-              <Text style={s.valor}>nenhum</Text>
+        {calculadora ? (
+          <>
+            <Linha rotulo="Pacote" detalhe={brl(sn.pacotePreco)}>
+              {sn.pacoteNome}
+            </Linha>
+            <Linha
+              rotulo="Convidados"
+              detalhe={
+                `${sn.convidadosInclusos} inclusos no pacote; ${brl(sn.valorPorConvidadoExtra)} por convidado a mais` +
+                (excedentes > 0
+                  ? `. ${excedentes} a mais: ${brl(sn.valorConvidadosExtra)}`
+                  : "")
+              }
+            >
+              {sn.convidados} convidados
+            </Linha>
+            <View style={s.linha} wrap={false}>
+              <Text style={s.rotulo}>Extras</Text>
+              <View style={{ flex: 1 }}>
+                {sn.extras.length === 0 ? (
+                  <Text style={s.valor}>nenhum</Text>
+                ) : (
+                  sn.extras.map((e, i) => (
+                    <Text key={`${e.nome}-${i}`} style={s.valor}>
+                      {e.nome} — {brl(e.preco)}
+                    </Text>
+                  ))
+                )}
+                {sn.extras.length > 1 ? (
+                  <Text style={s.valorDetalhe}>Total dos extras: {brl(sn.valorExtras)}</Text>
+                ) : null}
+              </View>
+            </View>
+          </>
+        ) : (
+          <>
+            {/* valor único: a proposta pelos itens dela, ou o pacote que a
+                página mostrou — sem convidados a mais nem extras */}
+            {sn.origemValor === "proposta" ? (
+              <View style={s.linha}>
+                <Text style={s.rotulo}>Itens da proposta</Text>
+                <View style={{ flex: 1 }}>
+                  {sn.itens.length === 0 ? (
+                    <Text style={s.valor}>{sn.pacoteNome}</Text>
+                  ) : (
+                    sn.itens.map((it, i) => (
+                      <Text key={`${it.nome}-${i}`} style={s.valor}>
+                        {it.nome} — {brl(it.valor)}
+                      </Text>
+                    ))
+                  )}
+                </View>
+              </View>
             ) : (
-              sn.extras.map((e, i) => (
-                <Text key={`${e.nome}-${i}`} style={s.valor}>
-                  {e.nome} — {brl(e.preco)}
-                </Text>
-              ))
+              <Linha rotulo="Pacote" detalhe={brl(sn.pacotePreco)}>
+                {sn.pacoteNome}
+              </Linha>
             )}
-            {sn.extras.length > 1 ? (
-              <Text style={s.valorDetalhe}>Total dos extras: {brl(sn.valorExtras)}</Text>
+            {sn.convidados > 0 ? (
+              <Linha rotulo="Convidados">{sn.convidados} convidados</Linha>
             ) : null}
-          </View>
-        </View>
+          </>
+        )}
         <Linha rotulo="Forma de pagamento">
           {rotuloFormaPagamento(sn.formaPagamento, sn.parcelas)}
         </Linha>

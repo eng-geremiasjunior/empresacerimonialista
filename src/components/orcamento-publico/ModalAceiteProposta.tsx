@@ -63,6 +63,9 @@ export type ResultadoAceite = {
   emailEnviadoPara: string | null;
   /** Nome do contrato de prestação anexado ao aceite; null sem contrato. */
   contratoNome: string | null;
+  /** O que a linha do aceite gravou como pacote ("Proposta personalizada"
+   *  quando o valor é o da própria proposta). */
+  pacoteNome: string | null;
 };
 
 /** O contrato que a proposta mostra antes do aceite (consultar_orcamento_publico, 163). */
@@ -121,7 +124,8 @@ export async function recusarProposta(
 export async function enviarAceite(
   hash: string,
   corpo: {
-    pacoteId: string;
+    /** null no modelo de valor único com valor próprio: o banco usa o da proposta */
+    pacoteId: string | null;
     convidados: number | null;
     extrasIds: string[];
     formaPagamento: "vista" | "parcelado";
@@ -176,6 +180,7 @@ export async function enviarAceite(
             : null,
         contratoNome:
           typeof r.contratoNome === "string" && r.contratoNome ? r.contratoNome : null,
+        pacoteNome: typeof r.pacoteNome === "string" && r.pacoteNome ? r.pacoteNome : null,
       },
     };
   } catch (e) {
@@ -192,6 +197,7 @@ export function ModalAceiteProposta({
   resumo,
   nomeInicial,
   pacoteId,
+  valorProprio = false,
   convidados,
   extrasIds,
   formaPagamento = "parcelado",
@@ -217,6 +223,12 @@ export function ModalAceiteProposta({
   resumo?: string;
   nomeInicial?: string;
   pacoteId: string | null;
+  /**
+   * A proposta tem valor próprio e o modelo mostra só ele (Maison): o
+   * aceite não pede pacote, e o valor gravado é o da proposta, lido no
+   * servidor (162, item 9).
+   */
+  valorProprio?: boolean;
   convidados: number | null;
   extrasIds: string[];
   formaPagamento?: "vista" | "parcelado";
@@ -279,7 +291,7 @@ export function ModalAceiteProposta({
 
   async function confirmar() {
     if (jaEnviou.current || !podeConfirmar) return;
-    if (!pacoteId) {
+    if (!pacoteId && !valorProprio) {
       setErro("Esta proposta ainda não tem um pacote configurado.");
       return;
     }
@@ -293,7 +305,7 @@ export function ModalAceiteProposta({
     setErro(null);
 
     const r = await enviarAceite(hash, {
-      pacoteId,
+      pacoteId: pacoteId ?? null,
       convidados,
       extrasIds,
       formaPagamento,

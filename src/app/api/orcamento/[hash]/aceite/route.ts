@@ -94,7 +94,8 @@ type Corpo = {
 };
 
 type Dados = {
-  pacoteId: string;
+  /** null quando o navegador não mandou: o banco decide se precisa (162, item 9) */
+  pacoteId: string | null;
   convidados: number | null;
   extrasIds: string[];
   formaPagamento: "vista" | "parcelado";
@@ -162,8 +163,11 @@ function validar(c: Corpo): { ok: true; dados: Dados } | { ok: false; erro: stri
     assinatura2 = c.assinatura2;
   }
 
-  const pacoteId = texto(c.pacoteId, 64);
-  if (!UUID.test(pacoteId)) return { ok: false, erro: "Escolha um pacote." };
+  // O pacote é opcional aqui: no modelo de valor único (Maison) com valor
+  // próprio o banco usa o valor da proposta e ignora o pacote; nos modelos
+  // com calculadora a RPC recusa sem pacote ("escolha um pacote").
+  const pacoteBruto = texto(c.pacoteId, 64);
+  const pacoteId = UUID.test(pacoteBruto) ? pacoteBruto : null;
 
   const formaPagamento = c.formaPagamento === "vista" ? "vista" : "parcelado";
   const parcelas = formaPagamento === "parcelado" ? inteiroOuNull(c.parcelas) : null;
@@ -213,6 +217,7 @@ type RespostaRpc = {
   error?: string;
   recibo?: string;
   aceite_id?: string;
+  pacote_nome?: string | null;
   valor_total?: number | string;
   valor_entrada?: number | string | null;
   valor_parcela?: number | string | null;
@@ -357,10 +362,11 @@ export async function POST(
 
   const r = (data ?? {}) as RespostaRpc;
   if (r.error || !r.success || !r.recibo) {
-    return NextResponse.json(
-      { ok: false, erro: r.error ?? "Não foi possível registrar o aceite." },
-      { status: 400 }
-    );
+    // as mensagens da RPC vêm em minúscula ("esta proposta expirou")
+    const erro = r.error
+      ? r.error.charAt(0).toUpperCase() + r.error.slice(1) + (/[.!?]$/.test(r.error) ? "" : ".")
+      : "Não foi possível registrar o aceite.";
+    return NextResponse.json({ ok: false, erro }, { status: 400 });
   }
 
   const recibo = r.recibo;
@@ -503,6 +509,7 @@ export async function POST(
     emailCerimonialista,
     emailEnviadoPara,
     contratoNome,
+    pacoteNome: typeof r.pacote_nome === "string" && r.pacote_nome ? r.pacote_nome : null,
   };
 
   return NextResponse.json({ ok: true, aceiteId, ...resultado });

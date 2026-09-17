@@ -181,6 +181,9 @@ type LinhaAceite = {
   valor_convidados_extra: number | string | null;
   extras: unknown;
   valor_extras: number | string | null;
+  /** 162 item 9: calculadora | proposta | pacote_recomendado; ausente antes dela */
+  origem_valor?: string | null;
+  itens?: unknown;
   forma_pagamento: string;
   parcelas: number | null;
   desconto_percentual: number | string | null;
@@ -257,6 +260,20 @@ function extrasDe(v: unknown): { nome: string; preco: number }[] {
       return {
         nome: typeof o.nome === "string" ? o.nome : "",
         preco: num(o.preco as number | string | null),
+      };
+    })
+    .filter((x) => x.nome);
+}
+
+/** `[{nome, valor}]` dos itens gravados no aceite — sem confiar no formato. */
+function itensDe(v: unknown): { nome: string; valor: number }[] {
+  if (!Array.isArray(v)) return [];
+  return v
+    .map((x) => {
+      const o = (x ?? {}) as { nome?: unknown; valor?: unknown };
+      return {
+        nome: typeof o.nome === "string" ? o.nome : "",
+        valor: num(o.valor as number | string | null),
       };
     })
     .filter((x) => x.nome);
@@ -675,6 +692,8 @@ export async function gerarEGuardarTermo(
       valorConvidadosExtra: num(aceite.valor_convidados_extra),
       extras: extrasDe(aceite.extras),
       valorExtras: num(aceite.valor_extras),
+      origemValor: aceite.origem_valor ?? null,
+      itens: itensDe(aceite.itens),
       formaPagamento: aceite.forma_pagamento,
       parcelas: aceite.parcelas,
       descontoPercentual: numOuNull(aceite.desconto_percentual),
@@ -825,6 +844,8 @@ export async function enviarTermoParaCliente(
       pacoteNome: aceite.pacote_nome,
       convidados: aceite.convidados,
       extras: extrasDe(aceite.extras),
+      origemValor: aceite.origem_valor ?? null,
+      itens: itensDe(aceite.itens),
       formaPagamento: aceite.forma_pagamento,
       parcelas: aceite.parcelas,
       valorEntrada: numOuNull(aceite.valor_entrada),

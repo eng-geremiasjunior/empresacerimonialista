@@ -55,6 +55,9 @@ export type LinhaAceite = {
   termos_versao?: string | null;
   termos_aceitos?: boolean | null;
   sha256_conteudo?: string | null;
+  /** 162 item 9: calculadora | proposta | pacote_recomendado */
+  origem_valor?: string | null;
+  itens?: unknown;
 };
 
 /** O que a tela precisa de `evento_documento` para montar os links. */
@@ -135,6 +138,17 @@ function extrasDe(bruto: unknown): { nome: string; preco: number }[] {
     .filter((x) => x.nome !== "");
 }
 
+/** Os itens gravados no aceite quando o valor é o da proposta. */
+function itensDe(bruto: unknown): { nome: string; valor: number }[] {
+  if (!Array.isArray(bruto)) return [];
+  return bruto
+    .map((x) => {
+      const o = (x ?? {}) as { nome?: unknown; valor?: unknown };
+      return { nome: String(o.nome ?? "").trim(), valor: numero(o.valor as number) };
+    })
+    .filter((x) => x.nome !== "");
+}
+
 function Assinante({
   nome,
   png,
@@ -182,6 +196,9 @@ export function AceiteDoOrcamento({
   const desconto = numero(aceite.valor_desconto);
   const descontoPct = numero(aceite.desconto_percentual);
   const extras = extrasDe(aceite.extras);
+  // valor da própria proposta (Maison): o que ela aceitou são os itens
+  const daProposta = aceite.origem_valor === "proposta";
+  const itens = daProposta ? itensDe(aceite.itens) : [];
   const convidadosAlem = Math.max(
     0,
     numero(aceite.convidados) - numero(aceite.convidados_inclusos)
@@ -255,13 +272,29 @@ export function AceiteDoOrcamento({
         </div>
 
         <dl className="mt-6 grid grid-cols-2 gap-x-8 gap-y-3 text-sm sm:grid-cols-3">
-          <div>
-            <dt className="text-xs text-gray-400">Pacote</dt>
-            <dd className="font-medium text-gray-900">{aceite.pacote_nome}</dd>
-            <dd className="text-xs text-gray-500">
-              {formatBRL(numero(aceite.pacote_preco))}
-            </dd>
-          </div>
+          {daProposta ? (
+            <div>
+              <dt className="text-xs text-gray-400">Itens da proposta</dt>
+              {itens.length === 0 ? (
+                <dd className="font-medium text-gray-900">{aceite.pacote_nome}</dd>
+              ) : (
+                itens.map((x, i) => (
+                  <dd key={i} className="text-gray-900">
+                    {x.nome}{" "}
+                    <span className="text-xs text-gray-500">{formatBRL(x.valor)}</span>
+                  </dd>
+                ))
+              )}
+            </div>
+          ) : (
+            <div>
+              <dt className="text-xs text-gray-400">Pacote</dt>
+              <dd className="font-medium text-gray-900">{aceite.pacote_nome}</dd>
+              <dd className="text-xs text-gray-500">
+                {formatBRL(numero(aceite.pacote_preco))}
+              </dd>
+            </div>
+          )}
           <div>
             <dt className="text-xs text-gray-400">Convidados</dt>
             <dd className="font-medium text-gray-900">{aceite.convidados}</dd>

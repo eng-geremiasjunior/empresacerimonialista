@@ -111,6 +111,25 @@
 --      tipo, data, primeiro nome e quantos assinaram. Nunca CPF, valor,
 --      assinatura nem e-mail: o que prova é o hash, não o dado.
 --
+--   9. O VALOR ACEITO É O QUE A CLIENTE VIU (17/09/2026). O modelo Maison
+--      mostra um valor só — o da proposta (a soma dos itens) — e o aceite
+--      gravava o preço do pacote do Catálogo mais convidados a mais: a
+--      cliente assinou R$ 11.960 e o recibo, o termo, a proposta e o
+--      evento ficaram com R$ 2.860. Agora a RPC decide pelo modelo gravado
+--      na proposta, nunca pelo que o navegador mandar:
+--        * casamento_maison com valor próprio: o total é
+--          orcamentos.valor_total, lido com a trava; os itens entram na
+--          linha (coluna itens) e no hash; o pacote é ignorado;
+--        * casamento_maison sem valor próprio: o pacote que a página
+--          mostra (o recomendado, senão o primeiro da lista), sem
+--          convidados a mais nem extras;
+--        * os modelos com calculadora (Clássico, Praia e os três de
+--          debutante): a conta de sempre, que é a da página.
+--      Nos dois primeiros casos a forma é sempre entrada + parcelas, como
+--      a página mostra. `origem_valor` diz qual dos três valeu. O JSON do
+--      hash ganhou 'origem_valor' e 'itens' (depois de 'valor_extras'):
+--      aceite anterior a esta data tem o hash sem essas duas chaves.
+--
 -- Aditiva. Conferência no fim, tudo `true`.
 -- ============================================================
 
@@ -137,6 +156,11 @@ alter table public.orcamento_aceites
   add column if not exists sha256_conteudo text;
 alter table public.orcamento_aceites
   add column if not exists origem_confirmacao text;
+-- item 9 do cabeçalho (17/09/2026)
+alter table public.orcamento_aceites
+  add column if not exists origem_valor text;
+alter table public.orcamento_aceites
+  add column if not exists itens jsonb;
 
 -- CHECK fora do ADD COLUMN: inline ele não é convergente (lição da 143/145)
 do $$
@@ -149,6 +173,17 @@ begin
     alter table public.orcamento_aceites
       add constraint orcamento_aceites_origem_confirmacao_check
       check (origem_confirmacao is null or origem_confirmacao in ('email', 'whatsapp'));
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint
+     where conname = 'orcamento_aceites_origem_valor_check'
+       and conrelid = 'public.orcamento_aceites'::regclass
+  ) then
+    alter table public.orcamento_aceites
+      add constraint orcamento_aceites_origem_valor_check
+      check (origem_valor is null
+             or origem_valor in ('calculadora', 'proposta', 'pacote_recomendado'));
   end if;
 end $$;
 
@@ -172,6 +207,10 @@ comment on column public.orcamento_aceites.sha256_conteudo is
   'SHA-256 (hex) do JSON canônico da linha, calculado pela RPC no insert. Os 12 primeiros caracteres são o verificador do QR.';
 comment on column public.orcamento_aceites.origem_confirmacao is
   'Reservado: por onde a pessoa confirmou a identidade (email | whatsapp). Hoje sempre nulo.';
+comment on column public.orcamento_aceites.origem_valor is
+  'De onde veio o valor aceito: calculadora (pacote + convidados + extras, a conta da página), proposta (o valor da própria proposta, no modelo de valor único) ou pacote_recomendado (valor único sem valor próprio: o pacote que a página mostrou). Nulo = aceite anterior a 17/09/2026, sempre pela calculadora.';
+comment on column public.orcamento_aceites.itens is
+  'Os itens da proposta no instante do aceite, quando o valor aceito é o dela ([{nome, valor}]). Entram no SHA-256 da linha.';
 
 -- ------------------------------------------------------------
 -- 2) Imutável: UPDATE cai; DELETE passa (cascade de orcamentos/empresas)
@@ -441,6 +480,13 @@ declare
   v_created_at   timestamptz;
   v_sha256       text;
   v_aceite_id    uuid;
+  -- de onde vem o valor (item 9 do cabeçalho)
+  v_origem_valor text;
+  v_itens        jsonb;
+  v_pac_nome     text;
+  v_pac_preco    numeric;
+  v_forma        text;
+  v_parcelas     int;
 begin
   -- FOR UPDATE: a trava do orçamento serializa aceites simultâneos. Sem
   -- ela, dois cliques na mesma proposta viram duas linhas imutáveis com
@@ -460,6 +506,7 @@ begin
     return json_build_object(
       'success', true, 'recibo', v_existente.recibo_codigo,
       'aceite_id', v_existente.id,
+      'pacote_nome', v_existente.pacote_nome,
       'valor_total', v_existente.valor_total,
       'valor_entrada', v_existente.valor_entrada,
       'valor_parcela', v_existente.valor_parcela,
@@ -487,39 +534,93 @@ begin
   where empresa_id = v_orc.empresa_id
     and tipo_evento = v_orc.tipo_evento;
 
-  select * into v_pac from public.empresa_pacotes
-  where id = p_pacote_id and empresa_id = v_orc.empresa_id
-    and tipo_evento = v_orc.tipo_evento and ativo;
-  if not found then
-    return json_build_object('error', 'pacote inválido');
-  end if;
+  -- O MODELO DECIDE DE ONDE VEM O VALOR (item 9 do cabeçalho). O modelo
+  -- vem da proposta, lida aqui com a trava; o navegador não escolhe.
+  if coalesce(v_orc.template_proposta, '') = 'casamento_maison' then
+    -- VALOR ÚNICO: o que a página mostrou. O pacote e as quantidades que o
+    -- navegador mandar não entram na conta.
+    if coalesce(v_orc.valor_total, 0) > 0 then
+      -- o valor da proposta (a soma dos itens, mantida pelo gatilho da 041)
+      v_origem_valor := 'proposta';
+      v_pac_nome     := 'Proposta personalizada';
+      v_pac_preco    := v_orc.valor_total;
+      select coalesce(jsonb_agg(jsonb_build_object('nome', i.nome, 'valor', i.valor_calculado)
+                                order by i.ordem, i.created_at), '[]'::jsonb)
+        into v_itens
+      from public.orcamento_itens i
+      where i.orcamento_id = v_orc.id;
+    else
+      -- sem valor próprio, a página mostra o pacote recomendado do
+      -- Catálogo, senão o primeiro da lista (a ordem de
+      -- consultar_orcamento_publico), sem convidados a mais nem extras
+      select * into v_pac from public.empresa_pacotes p
+      where p.empresa_id = v_orc.empresa_id
+        and p.tipo_evento = v_orc.tipo_evento
+        and p.ativo
+      order by coalesce(p.recomendado, false) desc, p.ordem, p.created_at
+      limit 1;
+      if not found then
+        return json_build_object('error', 'esta proposta ainda não tem valor');
+      end if;
+      v_origem_valor := 'pacote_recomendado';
+      v_pac_nome     := v_pac.nome;
+      v_pac_preco    := v_pac.preco;
+    end if;
 
-  v_conv_inclusos := coalesce(v_cfg.convidados_inclusos, 150);
-  v_val_por_conv  := coalesce(v_cfg.valor_por_convidado_extra, 0);
-  v_convidados := greatest(
-    coalesce(v_cfg.convidados_min, 50),
-    least(coalesce(v_cfg.convidados_max, 300), coalesce(p_convidados, v_cfg.convidados_inclusos))
-  );
-  v_val_conv := greatest(0, v_convidados - v_conv_inclusos) * v_val_por_conv;
+    v_convidados    := coalesce(v_orc.numero_convidados, 0);
+    v_conv_inclusos := v_convidados;
+    v_val_por_conv  := 0;
+    v_val_conv      := 0;
+    v_subtotal      := v_pac_preco;
+    -- a página deste modelo não oferece à vista: entrada + parcelas, com
+    -- os mesmos padrões dela (30% e até 7x)
+    v_forma    := 'parcelado';
+    v_parcelas := nullif(coalesce(v_cfg.condicao_parcelas_maximo, 7), 0);
+  else
+    -- CALCULADORA (Clássico, Praia e os três de debutante): pacote +
+    -- convidados a mais + extras, a mesma conta da página (lib/proposta.ts)
+    if p_pacote_id is null then
+      return json_build_object('error', 'escolha um pacote');
+    end if;
+    select * into v_pac from public.empresa_pacotes
+    where id = p_pacote_id and empresa_id = v_orc.empresa_id
+      and tipo_evento = v_orc.tipo_evento and ativo;
+    if not found then
+      return json_build_object('error', 'pacote inválido');
+    end if;
+    v_origem_valor := 'calculadora';
+    v_pac_nome     := v_pac.nome;
+    v_pac_preco    := v_pac.preco;
 
-  select coalesce(jsonb_agg(jsonb_build_object('nome', x.nome, 'preco', x.preco)), '[]'::jsonb),
-         coalesce(sum(x.preco), 0)
-    into v_extras, v_val_extras
-  from public.empresa_extras x
-  where x.empresa_id = v_orc.empresa_id and x.tipo_evento = v_orc.tipo_evento and x.ativo
-    and x.id = any(coalesce(p_extras_ids, '{}'::uuid[]));
+    v_conv_inclusos := coalesce(v_cfg.convidados_inclusos, 150);
+    v_val_por_conv  := coalesce(v_cfg.valor_por_convidado_extra, 0);
+    v_convidados := greatest(
+      coalesce(v_cfg.convidados_min, 50),
+      least(coalesce(v_cfg.convidados_max, 300), coalesce(p_convidados, v_cfg.convidados_inclusos))
+    );
+    v_val_conv := greatest(0, v_convidados - v_conv_inclusos) * v_val_por_conv;
 
-  v_subtotal := v_pac.preco + v_val_conv + v_val_extras;
+    select coalesce(jsonb_agg(jsonb_build_object('nome', x.nome, 'preco', x.preco)), '[]'::jsonb),
+           coalesce(sum(x.preco), 0)
+      into v_extras, v_val_extras
+    from public.empresa_extras x
+    where x.empresa_id = v_orc.empresa_id and x.tipo_evento = v_orc.tipo_evento and x.ativo
+      and x.id = any(coalesce(p_extras_ids, '{}'::uuid[]));
 
-  if p_forma_pagamento = 'vista' then
-    v_desc_pct := coalesce(v_cfg.condicao_desconto_a_vista_percentual, 0);
-    v_desconto := v_subtotal * v_desc_pct / 100.0;
+    v_subtotal := v_pac.preco + v_val_conv + v_val_extras;
+    v_forma    := p_forma_pagamento;
+    v_parcelas := p_parcelas;
+
+    if p_forma_pagamento = 'vista' then
+      v_desc_pct := coalesce(v_cfg.condicao_desconto_a_vista_percentual, 0);
+      v_desconto := v_subtotal * v_desc_pct / 100.0;
+    end if;
   end if;
 
   v_total   := v_subtotal - v_desconto;
   v_entrada := v_total * coalesce(v_cfg.condicao_entrada_percentual, 30) / 100.0;
-  if p_forma_pagamento <> 'vista' and coalesce(p_parcelas, 0) > 0 then
-    v_parcela := (v_total - v_entrada) / p_parcelas;
+  if v_forma <> 'vista' and coalesce(v_parcelas, 0) > 0 then
+    v_parcela := (v_total - v_entrada) / v_parcelas;
   end if;
 
   select upper(regexp_replace(substring(e.nome from 1 for 2), '[^a-zA-Z]', 'X', 'g'))
@@ -548,16 +649,18 @@ begin
   v_sha256 := encode(sha256(convert_to(json_build_object(
     'recibo',                    v_codigo,
     'orcamento_id',              v_orc.id,
-    'pacote_nome',               v_pac.nome,
-    'pacote_preco',              v_pac.preco,
+    'pacote_nome',               v_pac_nome,
+    'pacote_preco',              v_pac_preco,
     'convidados',                v_convidados,
     'convidados_inclusos',       v_conv_inclusos,
     'valor_por_convidado_extra', v_val_por_conv,
     'valor_convidados_extra',    v_val_conv,
     'extras',                    v_extras,
     'valor_extras',              v_val_extras,
-    'forma_pagamento',           p_forma_pagamento,
-    'parcelas',                  p_parcelas,
+    'origem_valor',              v_origem_valor,
+    'itens',                     v_itens,
+    'forma_pagamento',           v_forma,
+    'parcelas',                  v_parcelas,
     'desconto_percentual',       v_desc_pct,
     'valor_desconto',            v_desconto,
     'valor_total',               v_total,
@@ -586,19 +689,23 @@ begin
     extras, valor_extras, forma_pagamento, parcelas, desconto_percentual,
     valor_desconto, valor_total, valor_entrada, valor_parcela,
     nome_noiva, nome_noivo, assinatura_noiva, assinatura_noivo, observacoes,
+    origem_valor, itens,
     ip_origem, user_agent, cpf, email, telefone,
     termos_versao, termos_texto, termos_aceitos, sha256_conteudo, created_at
   ) values (
-    v_orc.id, v_codigo, v_pac.nome, v_pac.preco, v_convidados,
+    v_orc.id, v_codigo, v_pac_nome, v_pac_preco, v_convidados,
     v_conv_inclusos, v_val_por_conv, v_val_conv,
-    v_extras, v_val_extras, p_forma_pagamento, p_parcelas, v_desc_pct,
+    v_extras, v_val_extras, v_forma, v_parcelas, v_desc_pct,
     v_desconto, v_total, v_entrada, v_parcela,
     v_nome1, v_nome2, p_assinatura_noiva, p_assinatura_noivo, v_obs,
+    v_origem_valor, v_itens,
     v_ip, v_ua, v_cpf, v_email, v_telefone,
     v_termos_versao, v_termos_texto, (v_termos_versao is not null), v_sha256, v_created_at
   )
   returning id into v_aceite_id;
 
+  -- valor_total: o mesmo número que a página mostrou e a linha gravou. No
+  -- valor único com valor próprio ele já era esse (v_total veio dele).
   update public.orcamentos
   set status = 'aprovado', respondido_em = now(),
       valor_total = v_total, updated_at = now(),
@@ -617,17 +724,21 @@ begin
     (select e.owner_user_id from public.empresas e where e.id = v_orc.empresa_id)
   ) into v_dono;
 
-  -- só pacote, valor e recibo: nada de dado pessoal no sino (cabeçalho, 5)
+  -- só pacote, valor e recibo: nada de dado pessoal no sino (cabeçalho, 5).
+  -- O valor no formato do Brasil: G e D seguem o idioma do banco (inglês)
+  -- e o sino dizia "R$ 11,960.00"; vírgula e ponto fixos, trocados.
   if v_dono is not null then
     insert into public.notifications (cerimonialista_id, type, title, message, link)
     values (v_dono, 'orcamento_aprovado',
       v_nome1 || ' aceitou a proposta',
-      v_pac.nome || ' — R$ ' || to_char(v_total, 'FM999G999G990D00') || ' · recibo ' || v_codigo,
+      v_pac_nome || ' — R$ ' || translate(to_char(v_total, 'FM999,999,990.00'), ',.', '.,')
+        || ' · recibo ' || v_codigo,
       '/orcamentos/' || v_orc.id);
   end if;
 
   return json_build_object(
     'success', true, 'recibo', v_codigo, 'aceite_id', v_aceite_id,
+    'pacote_nome', v_pac_nome,
     'valor_total', v_total, 'valor_entrada', v_entrada, 'valor_parcela', v_parcela,
     'sha256_conteudo', v_sha256, 'ja_existia', false
   );
@@ -1146,4 +1257,55 @@ select 'evento_documento: morre com o orçamento (cascade), como a linha do acei
                 where conrelid = 'public.evento_documento'::regclass
                   and contype = 'f'
                   and confrelid = 'public.orcamentos'::regclass
-                  and confdeltype = 'c');
+                  and confdeltype = 'c')
+
+-- ---- item 9: o valor aceito é o que a cliente viu (17/09/2026) ----
+union all
+select 'orcamento_aceites: origem_valor e itens existem, com o CHECK da origem',
+       (select count(*) = 2 from information_schema.columns
+         where table_schema = 'public' and table_name = 'orcamento_aceites'
+           and column_name in ('origem_valor', 'itens'))
+       and exists (select 1 from pg_constraint
+                    where conname = 'orcamento_aceites_origem_valor_check'
+                      and conrelid = 'public.orcamento_aceites'::regclass)
+
+union all
+select 'a de 18: no Maison o valor vem da proposta, lido com a trava, e não do pacote',
+       (select prosrc ilike '%template_proposta, '''') = ''casamento_maison''%'
+           and prosrc ilike '%:= v_orc.valor_total;%'
+           and prosrc ilike '%from public.orcamento_itens i%'
+          from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+         where n.nspname = 'public' and p.proname = 'registrar_aceite_proposta'
+           and p.pronargs = 18)
+
+union all
+select 'a de 18: sem valor próprio, o pacote é o que a página mostra (recomendado, senão o primeiro)',
+       (select prosrc ilike '%order by coalesce(p.recomendado, false) desc, p.ordem, p.created_at%'
+          from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+         where n.nspname = 'public' and p.proname = 'registrar_aceite_proposta'
+           and p.pronargs = 18)
+
+union all
+select 'a de 18: o hash e a linha cobrem a origem do valor e os itens',
+       (select prosrc ilike '%''origem_valor'',%'
+           and prosrc ilike '%''itens'',%'
+           and prosrc ilike '%origem_valor, itens,%'
+           and prosrc ilike '%v_origem_valor, v_itens,%'
+          from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+         where n.nspname = 'public' and p.proname = 'registrar_aceite_proposta'
+           and p.pronargs = 18)
+
+union all
+select 'a de 18: da gravação em diante, só o nome e o preço decididos (nada de v_pac direto)',
+       (select position('v_pac.' in substr(prosrc, position('insert into public.orcamento_aceites' in prosrc))) = 0
+           and position('insert into public.orcamento_aceites' in prosrc) > 0
+          from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+         where n.nspname = 'public' and p.proname = 'registrar_aceite_proposta'
+           and p.pronargs = 18)
+
+union all
+select 'a de 18: o sino escreve o valor no formato do Brasil (11.960,00)',
+       (select prosrc ilike '%translate(to_char(v_total, ''FM999,999,990.00''), '',.'', ''.,'')%'
+          from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+         where n.nspname = 'public' and p.proname = 'registrar_aceite_proposta'
+           and p.pronargs = 18);

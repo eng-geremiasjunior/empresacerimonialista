@@ -50,8 +50,39 @@ const OFF = "#FAF8F5";
 const CARD = "#FDFBF7";
 const BORDA = "#E8DDD2";
 
-const brl = (v: number) =>
-  `R$ ${Number(v).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`;
+// Centavos só quando existem: arredondar R$ 11.960,50 para R$ 11.961 seria
+// mostrar um número e o termo gravar outro.
+const brl = (v: number) => {
+  const n = Math.round(Number(v) * 100) / 100;
+  const casas = Number.isInteger(n) ? 0 : 2;
+  return `R$ ${n.toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas })}`;
+};
+
+// As regras de CSS do modelo. Por dangerouslySetInnerHTML e não como filho
+// de <style>: o servidor escapa as aspas do texto (content:"") e o React
+// descarta a página inteira na hidratação (#418/#423/#425, 17/09/2026).
+const CSS_BASE_MAISON = `
+        .maison{font-family:var(--font-inter),system-ui,sans-serif}
+        .maison .serif{font-family:var(--font-titulo),Georgia,serif}
+        .maison .cursiva{font-family:var(--font-cursiva),cursive}`;
+
+const CSS_MAISON = `${CSS_BASE_MAISON}
+        @keyframes goldPulse{0%,100%{opacity:.45;transform:scale(1)}50%{opacity:1;transform:scale(1.35)}}
+        .maison .dot-ouro{animation:goldPulse 2.5s ease-in-out infinite}
+        @keyframes badgePulse{0%,100%{box-shadow:0 0 0 0 rgba(184,147,90,.35)}50%{box-shadow:0 0 0 10px rgba(184,147,90,0)}}
+        .maison .badge-pulse{animation:badgePulse 3s ease-in-out infinite}
+        @keyframes shimmer{0%{transform:translateX(-120%) skewX(-20deg)}100%{transform:translateX(320%) skewX(-20deg)}}
+        .maison .btn-shine{position:relative;overflow:hidden}
+        .maison .btn-shine::after{content:"";position:absolute;top:0;bottom:0;width:40px;
+          background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);
+          animation:shimmer 2.8s ease-in-out infinite}
+        .maison .foto-hover{transition:transform .5s ease}
+        .maison .foto-hover:hover{transform:scale(1.03)}
+        @media (prefers-reduced-motion:reduce){
+          .maison .dot-ouro,.maison .badge-pulse,.maison .btn-shine::after{animation:none}
+          .maison .foto-hover{transition:none}
+        }
+`;
 
 export function PropostaCasamentoMaison({
   hash,
@@ -70,12 +101,18 @@ export function PropostaCasamentoMaison({
 
   // Valor único: o do orçamento; se ainda não houver, o pacote recomendado
   // do Catálogo. Este template não tem calculadora — é proposta fechada.
+  // O aceite grava exatamente este valor: o banco decide pelo mesmo
+  // critério (registrar_aceite_proposta, 162 item 9), sem ler o navegador.
   const pacoteBase =
     pacotes.find((p) => p.recomendado) ?? pacotes[0] ?? null;
-  const valor =
-    Number(dados.valor_total) > 0
-      ? Number(dados.valor_total)
-      : Number(pacoteBase?.preco ?? 0);
+  const valorProprio = Number(dados.valor_total) > 0;
+  const valor = valorProprio
+    ? Number(dados.valor_total)
+    : Number(pacoteBase?.preco ?? 0);
+  // com valor próprio, o que a proposta inclui são os itens dela
+  const itensDaProposta = valorProprio
+    ? (dados.itens ?? []).map((i) => i.nome).filter(Boolean)
+    : [];
 
   const entradaPct = inst?.condicao_entrada_percentual ?? 30;
   const parcelas = inst?.condicao_parcelas_maximo ?? 7;
@@ -83,7 +120,8 @@ export function PropostaCasamentoMaison({
   const parcela = parcelas > 0 ? (valor - entrada) / parcelas : 0;
 
   const venceu = expirado(dados);
-  const podeResponder = dados.status === "enviado" && !venceu;
+  // sem valor nenhum (sem itens e sem pacote no Catálogo) não há o que aceitar
+  const podeResponder = dados.status === "enviado" && !venceu && valor > 0;
 
   const [modal, setModal] = useState(false);
   const [aceite, setAceite] = useState(dados.aceite ?? null);
@@ -155,26 +193,7 @@ export function PropostaCasamentoMaison({
 
   return (
     <div className="maison" style={{ background: OFF, color: ESPRESSO, minHeight: "100vh" }}>
-      <style>{`
-        .maison{font-family:var(--font-inter),system-ui,sans-serif}
-        .maison .serif{font-family:var(--font-titulo),Georgia,serif}
-        .maison .cursiva{font-family:var(--font-cursiva),cursive}
-        @keyframes goldPulse{0%,100%{opacity:.45;transform:scale(1)}50%{opacity:1;transform:scale(1.35)}}
-        .maison .dot-ouro{animation:goldPulse 2.5s ease-in-out infinite}
-        @keyframes badgePulse{0%,100%{box-shadow:0 0 0 0 rgba(184,147,90,.35)}50%{box-shadow:0 0 0 10px rgba(184,147,90,0)}}
-        .maison .badge-pulse{animation:badgePulse 3s ease-in-out infinite}
-        @keyframes shimmer{0%{transform:translateX(-120%) skewX(-20deg)}100%{transform:translateX(320%) skewX(-20deg)}}
-        .maison .btn-shine{position:relative;overflow:hidden}
-        .maison .btn-shine::after{content:"";position:absolute;top:0;bottom:0;width:40px;
-          background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);
-          animation:shimmer 2.8s ease-in-out infinite}
-        .maison .foto-hover{transition:transform .5s ease}
-        .maison .foto-hover:hover{transform:scale(1.03)}
-        @media (prefers-reduced-motion:reduce){
-          .maison .dot-ouro,.maison .badge-pulse,.maison .btn-shine::after{animation:none}
-          .maison .foto-hover{transition:none}
-        }
-      `}</style>
+      <style dangerouslySetInnerHTML={{ __html: CSS_MAISON }} />
 
       {/* TOPBAR 44px */}
       <div
@@ -310,7 +329,8 @@ export function PropostaCasamentoMaison({
           entradaPct={entradaPct}
           parcela={parcela}
           parcelas={parcelas}
-          pacote={pacoteBase}
+          pacote={valorProprio ? null : pacoteBase}
+          itensDaProposta={itensDaProposta}
           onAceitar={abrir}
           podeResponder={podeResponder}
         />
@@ -348,7 +368,8 @@ export function PropostaCasamentoMaison({
           subtitulo={MODAL_MAISON.titulo}
           resumo={`${brl(valor)} • Entrada ${entradaPct}%`}
           nomeInicial={dados.nome_contato}
-          pacoteId={pacoteBase?.id ?? null}
+          pacoteId={valorProprio ? null : pacoteBase?.id ?? null}
+          valorProprio={valorProprio}
           convidados={dados.numero_convidados}
           extrasIds={[]}
           parcelas={parcelas}
@@ -361,7 +382,9 @@ export function PropostaCasamentoMaison({
             setResultado(r);
             setAceite({
               recibo_codigo: r.recibo,
-              pacote_nome: pacoteBase?.nome ?? "Proposta",
+              pacote_nome:
+                r.pacoteNome ??
+                (valorProprio ? "Proposta personalizada" : pacoteBase?.nome ?? "Proposta"),
               valor_total: r.valorTotal,
               created_at: new Date().toISOString(),
             });
@@ -666,20 +689,26 @@ function SecaoNoDia() {
 
 // 6 — INVESTIMENTO: valor único, sem calculadora
 function SecaoInvestimento({
-  valor, entrada, entradaPct, parcela, parcelas, pacote, onAceitar, podeResponder,
+  valor, entrada, entradaPct, parcela, parcelas, pacote, itensDaProposta, onAceitar, podeResponder,
 }: {
   valor: number;
   entrada: number;
   entradaPct: number;
   parcela: number;
   parcelas: number;
+  /** null quando o valor é o da proposta: o nome do pacote não vale aqui */
   pacote: Pacote | null;
+  /** os itens da proposta, quando o valor é o dela */
+  itensDaProposta: string[];
   onAceitar: () => void;
   podeResponder: boolean;
 }) {
-  const itens = (pacote?.inclui ?? []).length > 0
-    ? pacote!.inclui
-    : INCLUSO_MAISON.map((i) => i.titulo);
+  const itens =
+    itensDaProposta.length > 0
+      ? itensDaProposta
+      : (pacote?.inclui ?? []).length > 0
+        ? pacote!.inclui
+        : INCLUSO_MAISON.map((i) => i.titulo);
 
   return (
     <Secao id="investimento" fundo="#F5F1EB">
@@ -900,11 +929,7 @@ function ReciboMaison({
       className="maison flex min-h-screen items-center justify-center p-6"
       style={{ background: OFF, color: ESPRESSO }}
     >
-      <style>{`
-        .maison{font-family:var(--font-inter),system-ui,sans-serif}
-        .maison .serif{font-family:var(--font-titulo),Georgia,serif}
-        .maison .cursiva{font-family:var(--font-cursiva),cursive}
-      `}</style>
+      <style dangerouslySetInnerHTML={{ __html: CSS_BASE_MAISON }} />
       <div
         className="w-full max-w-[520px] rounded-[20px] p-8 text-center"
         style={{ background: CARD, border: `0.5px solid ${BORDA}`, boxShadow: "0 20px 60px -20px rgba(60,36,21,.15)" }}

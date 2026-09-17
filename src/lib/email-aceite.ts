@@ -60,6 +60,10 @@ export async function enviarEmailAceiteCliente(p: {
     pacoteNome: string;
     convidados: number;
     extras: { nome: string; preco: number }[];
+    /** 'proposta' = o valor aceito é o da própria proposta (162, item 9) */
+    origemValor?: string | null;
+    /** os itens da proposta, quando o valor é o dela */
+    itens?: { nome: string; valor: number }[];
     formaPagamento: string;
     parcelas: number | null;
     valorEntrada: number | null;
@@ -102,8 +106,20 @@ export async function enviarEmailAceiteCliente(p: {
 
   // --- resumo do que ela fechou ---
   const linhas: string[] = [];
-  linhas.push(linhaResumo("Pacote", escaparHtml(r.pacoteNome)));
-  linhas.push(linhaResumo("Convidados", String(r.convidados)));
+  if (r.origemValor === "proposta" && (r.itens ?? []).length > 0) {
+    // o valor é o da proposta: o que ela fechou são os itens dela
+    linhas.push(
+      linhaResumo(
+        "Proposta",
+        (r.itens ?? [])
+          .map((i) => `${escaparHtml(i.nome)} <span style="color:#6B6884">— ${formatBRL(i.valor)}</span>`)
+          .join("<br>")
+      )
+    );
+  } else {
+    linhas.push(linhaResumo("Pacote", escaparHtml(r.pacoteNome)));
+  }
+  if (r.convidados > 0) linhas.push(linhaResumo("Convidados", String(r.convidados)));
   if (r.extras.length > 0) {
     linhas.push(
       linhaResumo(
