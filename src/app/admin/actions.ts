@@ -6,7 +6,9 @@
 
 import { revalidatePath } from "next/cache";
 import {
+  type AgoraDaConta,
   avisarRespostaPorEmailDb,
+  getAgoraDasContas,
   definirBanimentoDb,
   definirContaDaCasaDb,
   responderSuporteDb,
@@ -169,5 +171,19 @@ export async function definirContaDaCasa(
   } catch (e) {
     console.error("[eorganizei:admin] definirContaDaCasa:", e);
     return { error: e instanceof Error ? e.message : "Não foi possível salvar." };
+  }
+}
+
+/**
+ * Quem está no sistema agora, para a tela Contas se atualizar sozinha.
+ * Null quando a leitura falha: a tela mantém o que já mostrava, em vez de
+ * apagar todo mundo para offline.
+ */
+export async function agoraDasContas(): Promise<Record<string, AgoraDaConta> | null> {
+  try {
+    return await getAgoraDasContas();
+  } catch (e) {
+    console.error("[eorganizei:admin] agoraDasContas:", e instanceof Error ? e.message.slice(0, 120) : e);
+    return null;
   }
 }

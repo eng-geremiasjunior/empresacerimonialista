@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 // Página pública (fora do grupo autenticado): exigida pela Meta para
 // publicar o app de WhatsApp Business. Liberada no middleware.
 export default function PrivacidadePage() {
-  const atualizacao = "agosto de 2026";
+  const atualizacao = "setembro de 2026";
   return (
     <main
       style={{
@@ -104,6 +104,15 @@ export default function PrivacidadePage() {
         agendamento de horários dos eventos. Mantemos os registros enquanto o
         evento estiver ativo e pelo período necessário ao histórico da
         cerimonialista; a pedido, dados pessoais podem ser removidos.
+      </Secao>
+
+      <Secao id="uso" titulo="Uso do sistema pela equipe">
+        Quando alguém da equipe de uma cerimonialista usa o eorganizei,
+        registramos em que área do sistema a pessoa está (por exemplo,
+        &ldquo;Planejamento&rdquo;), quando esteve e por quanto tempo. Não
+        registramos o que aparece na tela nem o que é digitado. Usamos esse
+        registro para dar suporte e melhorar o serviço (legítimo interesse,
+        art. 7º, IX) e o apagamos depois de 13 meses.
       </Secao>
 
       <Secao id="vitrine" titulo="Pedido de orçamento pela vitrine da cerimonialista">

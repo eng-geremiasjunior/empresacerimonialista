@@ -43,6 +43,8 @@ const ROTINAS = [
   // os e-mails do teste grátis: dia 2 e fim do teste (email-ativacao.ts).
   // O cron roda às 12h UTC — 9h em Brasília, hora de caixa de entrada.
   "ativacao",
+  // o uso do sistema (painel do dono) some depois de 13 meses
+  "uso-antigo",
 ] as const;
 
 export async function GET(request: NextRequest) {

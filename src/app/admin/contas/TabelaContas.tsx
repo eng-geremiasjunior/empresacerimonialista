@@ -3,14 +3,16 @@
 // A tabela de contas e as duas alavancas: assinatura (editor inline) e
 // banimento (com confirmação explícita — é a ação mais dura do sistema).
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { mascararDinheiro } from "@/lib/format";
 import { dinheiroParaMascara } from "@/lib/admin-metricas";
-import type { ContaAdmin } from "@/lib/supabase/admin-painel";
+import type { AgoraDaConta, ContaAdmin } from "@/lib/supabase/admin-painel";
+import { minutosEmPalavras } from "@/lib/presenca";
 import { linkWhatsapp } from "@/lib/whatsapp-link";
 import { descreverEventos3Meses } from "@/lib/cadastro-qualificacao";
 import {
+  agoraDasContas,
   definirBanimento,
   definirContaDaCasa,
   salvarAssinatura,
@@ -35,6 +37,11 @@ const STATUS_ROTULO: Record<string, string> = {
 
 function dataBr(iso: string | null): string {
   if (!iso) return "—";
+  // Com hora, o dia é o de Brasília: cortar o texto dava o dia em UTC, e a
+  // conta criada às 21h22 aparecia "desde" o dia seguinte.
+  if (iso.length > 10) {
+    return new Date(iso).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+  }
   const [a, m, d] = iso.slice(0, 10).split("-");
   return `${d}/${m}/${a}`;
 }
@@ -46,6 +53,45 @@ function diaEHora(iso: string | null): string {
   const dia = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" });
   const hora = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
   return `${dia} às ${hora}`;
+}
+
+/** "4 dias · 3 h 20 min · mais abertas: Planejamento (14), Propostas (6)" */
+function usoDaSemana(conta: ContaAdmin): string {
+  const u = conta.uso;
+  if (!u) return "sem registro ainda";
+  if (u.dias7 === 0) return `nenhum uso nos últimos 7 dias (${u.dias30} ${u.dias30 === 1 ? "dia" : "dias"} nos últimos 30)`;
+  const partes = [
+    `${u.dias7} ${u.dias7 === 1 ? "dia" : "dias"}`,
+    minutosEmPalavras(u.minutos7),
+  ];
+  if (u.areas.length) {
+    partes.push(`mais abertas: ${u.areas.map((a) => `${a.area} (${a.aberturas})`).join(", ")}`);
+  }
+  partes.push(`${u.dias30} ${u.dias30 === 1 ? "dia" : "dias"} nos últimos 30`);
+  return partes.join(" · ");
+}
+
+/** A linha "ao vivo" / "offline" de cada conta. */
+function LinhaAgora({ agora }: { agora: AgoraDaConta | null }) {
+  if (agora?.aoVivo) {
+    return (
+      <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs">
+        <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
+        <span className="font-medium text-emerald-700">ao vivo</span>
+        <span className="text-stone-600">
+          · {agora.area}
+          {agora.pessoas > 1 ? ` · ${agora.pessoas} pessoas` : ""} · entrou {agora.quando}
+        </span>
+      </p>
+    );
+  }
+  return (
+    <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-stone-500">
+      <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-stone-300" />
+      <span>offline</span>
+      <span>{agora ? `· visto ${agora.quando}, em ${agora.area}` : "· sem registro ainda"}</span>
+    </p>
+  );
 }
 
 /**
@@ -78,6 +124,7 @@ function QuemE({ conta }: { conta: ContaAdmin }) {
       valor: `${conta.eventos} ${conta.eventos === 1 ? "evento" : "eventos"} · ${conta.convidados} ${conta.convidados === 1 ? "nome" : "nomes"} na lista de convidados${conta.convidadosPrevistos ? ` (${conta.convidadosPrevistos} previstos)` : ""} · ${conta.tarefas} ${conta.tarefas === 1 ? "tarefa" : "tarefas"} · ${conta.fornecedores} ${conta.fornecedores === 1 ? "fornecedor" : "fornecedores"}`,
     },
     { rotulo: "Guia", valor: conta.guia },
+    { rotulo: "Uso na semana", valor: usoDaSemana(conta) },
   ];
   if (a?.status === "trial" && a.testeTerminaEm) {
     linhas.push({ rotulo: "Teste", valor: `termina em ${dataBr(a.testeTerminaEm)}` });
@@ -272,9 +319,11 @@ function EditorAssinatura({
 }
 
 function Linha({
+  agora,
   conta,
   planos,
 }: {
+  agora: AgoraDaConta | null;
   conta: ContaAdmin;
   planos: OpcaoDePlano[];
 }) {
@@ -322,6 +371,7 @@ function Linha({
           <p className="mt-0.5 text-xs text-stone-500">
             {conta.donaEmail ?? "sem e-mail"} · desde {dataBr(conta.criadaEm)}
           </p>
+          <LinhaAgora agora={agora} />
           <p className="mt-1 font-mono text-xs text-stone-400">
             {conta.membros} {conta.membros === 1 ? "pessoa" : "pessoas"} ·{" "}
             {conta.eventos} eventos · última atividade{" "}
@@ -422,6 +472,44 @@ export function TabelaContas({
   contas: ContaAdmin[];
   planos: OpcaoDePlano[];
 }) {
+  // AO VIVO: a presença chega pronta do servidor e se renova a cada 30 s,
+  // só com a aba à vista, sem recarregar a tela inteira. Falha na leitura
+  // mantém o que estava.
+  const [agoraPor, setAgoraPor] = useState<Record<string, AgoraDaConta | null>>(() =>
+    Object.fromEntries(contas.map((c) => [c.empresaId, c.agora]))
+  );
+  useEffect(() => {
+    let vivo = true;
+    const renovar = () => {
+      if (document.visibilityState !== "visible") return;
+      void agoraDasContas().then((r) => {
+        if (!vivo || !r) return;
+        setAgoraPor(Object.fromEntries(contas.map((c) => [c.empresaId, r[c.empresaId] ?? null])));
+      });
+    };
+    const relogio = window.setInterval(renovar, 30_000);
+    document.addEventListener("visibilitychange", renovar);
+    return () => {
+      vivo = false;
+      window.clearInterval(relogio);
+      document.removeEventListener("visibilitychange", renovar);
+    };
+  }, [contas]);
+
+  // quem está ao vivo sobe; o resto mantém a ordem do servidor
+  const ordenadas = useMemo(
+    () =>
+      contas
+        .map((c, i) => ({ c, i }))
+        .sort(
+          (x, y) =>
+            Number(Boolean(agoraPor[y.c.empresaId]?.aoVivo)) -
+              Number(Boolean(agoraPor[x.c.empresaId]?.aoVivo)) || x.i - y.i
+        )
+        .map((x) => x.c),
+    [contas, agoraPor]
+  );
+
   if (contas.length === 0) {
     return (
       <p className="rounded-xl border border-dashed border-stone-300 bg-white p-8 text-center text-sm text-stone-500">
@@ -431,17 +519,43 @@ export function TabelaContas({
   }
   // As contas da casa vêm por último, à parte: não são clientes, e os
   // números do painel já não as contam.
-  const clientes = contas.filter((c) => !c.daCasa);
-  const daCasa = contas.filter((c) => c.daCasa);
+  const clientes = ordenadas.filter((c) => !c.daCasa);
+  const daCasa = ordenadas.filter((c) => c.daCasa);
+  const aoVivo = clientes.filter((c) => agoraPor[c.empresaId]?.aoVivo);
   return (
     <div className="space-y-8">
+      <div className="rounded-xl border border-stone-200 bg-white px-4 py-3">
+        <p className="flex flex-wrap items-center gap-x-2 text-sm">
+          <span
+            aria-hidden
+            className={`h-2 w-2 shrink-0 rounded-full ${aoVivo.length ? "bg-emerald-500" : "bg-stone-300"}`}
+          />
+          <span className="font-medium text-stone-900">
+            {aoVivo.length === 0
+              ? "Nenhuma conta de cliente no sistema agora"
+              : `${aoVivo.length} ${aoVivo.length === 1 ? "conta de cliente" : "contas de clientes"} no sistema agora`}
+          </span>
+          <span className="text-xs text-stone-400">atualiza a cada 30 s</span>
+        </p>
+        {aoVivo.length > 0 && (
+          <ul className="mt-1.5 space-y-0.5 text-xs text-stone-600">
+            {aoVivo.map((c) => (
+              <li key={c.empresaId}>
+                {c.nome} · {agoraPor[c.empresaId]?.area}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
       <div className="space-y-3">
         {clientes.length === 0 ? (
           <p className="rounded-xl border border-dashed border-stone-300 bg-white p-6 text-center text-sm text-stone-500">
             Nenhuma conta de cliente ainda.
           </p>
         ) : (
-          clientes.map((c) => <Linha key={c.empresaId} conta={c} planos={planos} />)
+          clientes.map((c) => (
+            <Linha key={c.empresaId} agora={agoraPor[c.empresaId] ?? null} conta={c} planos={planos} />
+          ))
         )}
       </div>
       {daCasa.length > 0 && (
@@ -455,7 +569,7 @@ export function TabelaContas({
             </p>
           </div>
           {daCasa.map((c) => (
-            <Linha key={c.empresaId} conta={c} planos={planos} />
+            <Linha key={c.empresaId} agora={agoraPor[c.empresaId] ?? null} conta={c} planos={planos} />
           ))}
         </section>
       )}

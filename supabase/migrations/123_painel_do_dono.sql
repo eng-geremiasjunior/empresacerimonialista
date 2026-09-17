@@ -103,6 +103,119 @@ create table if not exists public.contas_da_casa (
 alter table public.contas_da_casa enable row level security;
 
 -- ------------------------------------------------------------
+-- 5) Quem está usando o sistema agora, e o quê (16/09/2026)
+-- ------------------------------------------------------------
+-- Pedido do dono: ver no painel quem está "ao vivo" e em que área, e se
+-- as contas estão usando o sistema, sem ver dado nenhum. Guarda só o NOME
+-- DA ÁREA ("Evento › Planejamento"): nunca o endereço com ids, nunca o que
+-- aparece na tela, nunca o que foi digitado.
+--
+-- presenca: uma linha por pessoa, com a área e a última vez que a tela
+-- dela deu sinal (a cada minuto, com a aba à vista). "Ao vivo" é sinal
+-- recente; a leitura decide o prazo.
+-- uso_diario: por pessoa, dia (de Brasília) e área, quantas vezes abriu e
+-- quantos minutos ficou. Some depois de 13 meses (rotina diária).
+--
+-- Mesmo modelo das tabelas acima: RLS ligada e NENHUMA policy, só o
+-- painel lê, com a chave de serviço. Quem escreve é a própria pessoa, pela
+-- função abaixo, e só a própria linha.
+create table if not exists public.presenca (
+  user_id     uuid primary key references auth.users (id) on delete cascade,
+  empresa_id  uuid not null references public.empresas (id) on delete cascade,
+  area        text not null,
+  -- início desta visita: sem sinal por 10 minutos, a próxima é outra
+  desde       timestamptz not null default now(),
+  visto_em    timestamptz not null default now()
+);
+
+alter table public.presenca enable row level security;
+
+create index if not exists presenca_empresa_idx
+  on public.presenca (empresa_id, visto_em desc);
+
+create table if not exists public.uso_diario (
+  user_id     uuid not null references auth.users (id) on delete cascade,
+  empresa_id  uuid not null references public.empresas (id) on delete cascade,
+  dia         date not null,
+  area        text not null,
+  aberturas   int not null default 0,
+  minutos     int not null default 0,
+  primary key (user_id, dia, area)
+);
+
+alter table public.uso_diario enable row level security;
+
+create index if not exists uso_diario_empresa_idx
+  on public.uso_diario (empresa_id, dia desc);
+create index if not exists uso_diario_dia_idx
+  on public.uso_diario (dia);
+
+create or replace function public.registrar_presenca(
+  p_area  text,
+  p_abriu boolean default false
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid     uuid := auth.uid();
+  v_empresa uuid;
+  v_antes   timestamptz;
+  v_minuto  boolean;
+  v_area    text := left(btrim(regexp_replace(coalesce(p_area, ''), '[[:cntrl:]]', '', 'g')), 60);
+  v_dia     date := (now() at time zone 'America/Sao_Paulo')::date;
+begin
+  if v_uid is null then
+    return;
+  end if;
+  -- só o nome de uma área: nada que pareça id ou endereço
+  if v_area = '' or v_area ~ '[0-9a-fA-F]{8}-' or v_area ~ '[/?=@]' then
+    v_area := 'Outra tela';
+  end if;
+
+  select m.empresa_id into v_empresa
+    from public.membros_equipe m
+   where m.user_id = v_uid and m.status = 'ativo'
+   order by m.created_at asc
+   limit 1;
+  if v_empresa is null then
+    return;
+  end if;
+
+  select p.visto_em into v_antes from public.presenca p where p.user_id = v_uid;
+  -- o sinal de vida conta um minuto; duas abas abertas não contam dois
+  v_minuto := not p_abriu and (v_antes is null or v_antes < now() - interval '50 seconds');
+
+  insert into public.presenca as p (user_id, empresa_id, area, desde, visto_em)
+  values (v_uid, v_empresa, v_area, now(), now())
+  on conflict (user_id) do update
+     set empresa_id = excluded.empresa_id,
+         area       = excluded.area,
+         desde      = case when p.visto_em < now() - interval '10 minutes'
+                           then now() else p.desde end,
+         visto_em   = now();
+
+  if p_abriu or v_minuto then
+    insert into public.uso_diario as u (user_id, empresa_id, dia, area, aberturas, minutos)
+    values (v_uid, v_empresa, v_dia, v_area,
+            case when p_abriu then 1 else 0 end,
+            case when v_minuto then 1 else 0 end)
+    on conflict (user_id, dia, area) do update
+       set empresa_id = excluded.empresa_id,
+           aberturas  = u.aberturas + case when p_abriu then 1 else 0 end,
+           minutos    = u.minutos + case when v_minuto then 1 else 0 end;
+  end if;
+exception when others then
+  -- registrar presença nunca derruba a tela de ninguém
+  raise warning 'registrar_presenca: %', sqlerrm;
+end $$;
+
+revoke all on function public.registrar_presenca(text, boolean) from public, anon;
+grant execute on function public.registrar_presenca(text, boolean) to authenticated;
+
+-- ------------------------------------------------------------
 -- Conferência — todas as linhas devem voltar `true`.
 -- ------------------------------------------------------------
 select 'assinaturas: RLS ligada' as item,
@@ -130,6 +243,24 @@ select 'contas_da_casa: RLS ligada, nenhuma policy',
         where oid = 'public.contas_da_casa'::regclass)
        and not exists (select 1 from pg_policies
                        where schemaname = 'public' and tablename = 'contas_da_casa')
+union all
+select 'presenca: RLS ligada, nenhuma policy',
+       (select relrowsecurity from pg_class
+        where oid = 'public.presenca'::regclass)
+       and not exists (select 1 from pg_policies
+                       where schemaname = 'public' and tablename = 'presenca')
+union all
+select 'uso_diario: RLS ligada, nenhuma policy',
+       (select relrowsecurity from pg_class
+        where oid = 'public.uso_diario'::regclass)
+       and not exists (select 1 from pg_policies
+                       where schemaname = 'public' and tablename = 'uso_diario')
+union all
+select 'registrar_presenca: a chave anônima não executa',
+       not has_function_privilege('anon', 'public.registrar_presenca(text, boolean)', 'execute')
+union all
+select 'registrar_presenca: quem está logado executa',
+       has_function_privilege('authenticated', 'public.registrar_presenca(text, boolean)', 'execute')
 union all
 select 'uma assinatura por empresa (unique)',
        exists (select 1 from pg_indexes

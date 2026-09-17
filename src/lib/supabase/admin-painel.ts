@@ -19,7 +19,8 @@ import {
   type EventoAssinatura,
   type MetricasDoMes,
 } from "@/lib/admin-metricas";
-import { hojeBR } from "@/lib/tempo";
+import { hojeBR, somarDias } from "@/lib/tempo";
+import { AO_VIVO_ATE_MS, haQuantoTempo } from "@/lib/presenca";
 import {
   situacaoDoEmail,
   situacaoFinal,
@@ -158,6 +159,128 @@ type LinhaEvento = {
 };
 
 // ------------------------------------------------------------------
+// Ao vivo e uso do sistema (123, seção 5)
+// ------------------------------------------------------------------
+// Só o NOME da área e os tempos: o banco nunca recebe o que está na tela
+// (lib/presenca.ts). Os textos relativos ("há 12 min") saem prontos daqui,
+// com o relógio do servidor: a tabela é client e, calculando lá, o texto
+// do servidor e o do navegador divergiriam na hidratação.
+
+export type AgoraDaConta = {
+  aoVivo: boolean;
+  /** pessoas da conta com sinal recente */
+  pessoas: number;
+  /** a área de quem deu sinal por último */
+  area: string;
+  /** ao vivo: há quanto tempo entrou; offline: há quanto tempo foi visto */
+  quando: string;
+};
+
+export type UsoDaConta = {
+  dias7: number;
+  minutos7: number;
+  dias30: number;
+  /** as áreas mais abertas nos últimos 7 dias */
+  areas: { area: string; aberturas: number }[];
+};
+
+async function lerAgora(db: Servico, agora: number): Promise<Map<string, AgoraDaConta>> {
+  type Linha = { user_id: string; empresa_id: string; area: string; desde: string; visto_em: string };
+  let linhas: Linha[];
+  try {
+    linhas = await lerTudo<Linha>(
+      (de, ate) =>
+        db.from("presenca").select("user_id, empresa_id, area, desde, visto_em").order("user_id").range(de, ate),
+      "a presença"
+    );
+  } catch (e) {
+    // sem a 123 reaplicada, ninguém aparece ao vivo, e a tela segue
+    const msg = e instanceof Error ? e.message : "";
+    if (!/could not find the table|does not exist|schema cache/i.test(msg)) {
+      console.error("[eorganizei:admin] presença:", msg.slice(0, 120));
+    }
+    return new Map();
+  }
+  const porEmpresa = new Map<string, Linha[]>();
+  for (const l of linhas) {
+    const lista = porEmpresa.get(l.empresa_id) ?? [];
+    lista.push(l);
+    porEmpresa.set(l.empresa_id, lista);
+  }
+  const saida = new Map<string, AgoraDaConta>();
+  for (const [empresaId, lista] of porEmpresa) {
+    lista.sort((a, b) => b.visto_em.localeCompare(a.visto_em));
+    const vivos = lista.filter((l) => agora - new Date(l.visto_em).getTime() <= AO_VIVO_ATE_MS);
+    const ultima = vivos[0] ?? lista[0];
+    saida.set(empresaId, {
+      aoVivo: vivos.length > 0,
+      pessoas: vivos.length,
+      area: ultima.area,
+      quando: haQuantoTempo(vivos.length > 0 ? ultima.desde : ultima.visto_em, agora),
+    });
+  }
+  return saida;
+}
+
+/** A presença de todas as contas, para o painel se atualizar sozinho. */
+export async function getAgoraDasContas(): Promise<Record<string, AgoraDaConta>> {
+  await exigirSuperAdmin();
+  return Object.fromEntries(await lerAgora(servico(), Date.now()));
+}
+
+async function lerUso(db: Servico): Promise<Map<string, UsoDaConta>> {
+  type Linha = { empresa_id: string; dia: string; area: string; aberturas: number; minutos: number };
+  const hoje = hojeBR();
+  const desde7 = somarDias(hoje, -6);
+  let linhas: Linha[];
+  try {
+    linhas = await lerTudo<Linha>(
+      (de, ate) =>
+        db
+          .from("uso_diario")
+          .select("empresa_id, dia, area, aberturas, minutos")
+          .gte("dia", somarDias(hoje, -29))
+          .order("user_id")
+          .order("dia")
+          .order("area")
+          .range(de, ate),
+      "o uso do sistema"
+    );
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "";
+    if (!/could not find the table|does not exist|schema cache/i.test(msg)) {
+      console.error("[eorganizei:admin] uso:", msg.slice(0, 120));
+    }
+    return new Map();
+  }
+  type Soma = { dias7: Set<string>; dias30: Set<string>; minutos7: number; areas: Map<string, number> };
+  const somas = new Map<string, Soma>();
+  for (const l of linhas) {
+    const s = somas.get(l.empresa_id) ?? { dias7: new Set(), dias30: new Set(), minutos7: 0, areas: new Map() };
+    s.dias30.add(l.dia);
+    if (l.dia >= desde7) {
+      s.dias7.add(l.dia);
+      s.minutos7 += Number(l.minutos) || 0;
+      if (l.aberturas > 0) s.areas.set(l.area, (s.areas.get(l.area) ?? 0) + Number(l.aberturas));
+    }
+    somas.set(l.empresa_id, s);
+  }
+  const saida = new Map<string, UsoDaConta>();
+  for (const [empresaId, s] of somas) {
+    saida.set(empresaId, {
+      dias7: s.dias7.size,
+      minutos7: s.minutos7,
+      dias30: s.dias30.size,
+      areas: [...s.areas.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([area, aberturas]) => ({ area, aberturas })),
+    });
+  }
+  return saida;
+}
+
+// ------------------------------------------------------------------
 // Contas — a tabela de gestão
 // ------------------------------------------------------------------
 
@@ -204,6 +327,10 @@ export type ContaAdmin = {
   instagram: string | null;
   /** conta do próprio dono: fora dos números, num grupo à parte */
   daCasa: boolean;
+  /** quem da conta está no sistema agora; null = nenhum sinal ainda */
+  agora: AgoraDaConta | null;
+  /** uso nos últimos 7 e 30 dias; null = nenhum registro ainda */
+  uso: UsoDaConta | null;
 };
 
 /** utm_source/utm_medium → como o dono fala. */
@@ -238,7 +365,7 @@ export async function getContas(): Promise<ContaAdmin[]> {
   await exigirSuperAdmin();
   const db = servico();
 
-  const [{ data: empresas }, { data: assinaturas }, origens, donas, casa] = await Promise.all([
+  const [{ data: empresas }, { data: assinaturas }, origens, donas, casa, agoraPor, usoPor] = await Promise.all([
     db.from("empresas").select("id, nome, owner_user_id, created_at"),
     db.from("assinaturas").select("*"),
     // de onde veio o clique — ausência da 152 vira "sem origem", não erro
@@ -246,6 +373,8 @@ export async function getContas(): Promise<ContaAdmin[]> {
     // WhatsApp e guia da DONA de cada conta (a linha dela em membros_equipe)
     db.from("membros_equipe").select("user_id, empresa_id, whatsapp, guia_dispensado_em, guia_concluido_em").eq("is_owner", true),
     idsDaCasa(db),
+    lerAgora(db, Date.now()),
+    lerUso(db),
   ]);
   type Origem = { empresa_id: string; utm_source: string | null; utm_medium: string | null; utm_campaign: string | null; gclid: string | null; user_agent: string | null };
   const origemPor = new Map(((origens.data ?? []) as Origem[]).map((o) => [o.empresa_id, o]));
@@ -356,10 +485,17 @@ export async function getContas(): Promise<ContaAdmin[]> {
       eventos3Meses: textoOuNulo(dona?.user_metadata?.eventos_3_meses),
       instagram: textoOuNulo(dona?.user_metadata?.instagram),
       daCasa: casa.has(e.id),
+      agora: agoraPor.get(e.id) ?? null,
+      uso: usoPor.get(e.id) ?? null,
     });
   }
 
-  contas.sort((x, y) => (y.ultimaAtividade ?? "").localeCompare(x.ultimaAtividade ?? ""));
+  // quem está ao vivo primeiro; depois, a atividade mais recente
+  contas.sort(
+    (x, y) =>
+      Number(Boolean(y.agora?.aoVivo)) - Number(Boolean(x.agora?.aoVivo)) ||
+      (y.ultimaAtividade ?? "").localeCompare(x.ultimaAtividade ?? "")
+  );
   return contas;
 }
 
