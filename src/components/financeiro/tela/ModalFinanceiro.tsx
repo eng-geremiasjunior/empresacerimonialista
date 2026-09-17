@@ -336,6 +336,7 @@ export function ModalFinanceiro({
           primeiroVencimento: data,
           nomeBase: forn.nome,
           jaLancadas: forn.parcelas.length,
+          doCaixa: temCaixa,
         });
         if ("error" in r) return falhar(r.error);
         return pronto(`${quantidade} parcelas geradas`);

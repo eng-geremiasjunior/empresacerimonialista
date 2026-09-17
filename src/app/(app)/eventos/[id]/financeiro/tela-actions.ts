@@ -145,6 +145,8 @@ export async function gerarParcelasDoFornecedor(
     primeiroVencimento: string;
     nomeBase: string;
     jaLancadas: number;
+    /** o evento tem caixa: as parcelas saem dele, como as despesas */
+    doCaixa: boolean;
   }
 ): Promise<Resultado> {
   const n = Math.max(1, Math.min(24, Math.round(input.quantidade)));
@@ -170,7 +172,7 @@ export async function gerarParcelasDoFornecedor(
     supplier_id: input.supplierId,
     objetivo_id: input.objetivoId,
     tipo_lancamento: "parcela",
-    origem_pagamento: "caixa",
+    origem_pagamento: input.doCaixa ? "caixa" : "cliente_direto",
     installment_number: input.jaLancadas + i + 1,
     installment_total: total,
   }));
