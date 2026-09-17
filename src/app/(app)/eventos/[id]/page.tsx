@@ -211,7 +211,10 @@ export default async function ResumoPage({
   ].filter(Boolean) as { icon: typeof Phone; texto: string }[];
 
   return (
-    <div className="grid gap-8 lg:grid-cols-3">
+    // grid-cols-1 (minmax(0, 1fr)): sem ele, no celular a coluna crescia até
+    // o conteúdo mais largo (482 px numa tela de 390) e a página inteira
+    // andava para os lados, cortando os cartões e o painel da IA.
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
       {/* Coluna principal */}
       <div className="space-y-8 lg:col-span-2">
         {/* Cliente */}
