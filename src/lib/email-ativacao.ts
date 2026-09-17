@@ -19,9 +19,10 @@ import "server-only";
 //   cada marco manda UM e-mail; quem chega atrasado recebe só o marco
 //   em que está, nunca a fila inteira.
 //
-// Quem fala é o dono, pelo nome: é quem construiu o sistema, e é ele quem
-// vai responder. O texto segue a regra da casa — fala do trabalho dela,
-// nunca da mecânica, e sem linguagem de jogo.
+// Quem fala é a EMPRESA, e o texto é curto: uma ou duas frases e o
+// botão (regra dele, 17/09/2026 — "nada de lenga lenga, isso não
+// converte"). Sem apresentação pessoal e sem linguagem de jogo. Quem
+// estiver deslogada cai no login e volta ao destino do botão.
 //
 // NUNCA DUAS VEZES, e NO MÁXIMO UM POR DIA. O registro de envio mora em
 // `app_metadata` do login (eorg_ativacao), que só o servidor escreve —
@@ -135,33 +136,6 @@ function linkDeSaida(userId: string): string {
   return `${appUrl()}/api/email/sair?u=${userId}&t=${assinaturaDeSaida(userId)}`;
 }
 
-/**
- * O link que abre a sessão dela e cai na tela certa, sem digitar senha.
- *
- * É o mesmo caminho do "esqueci minha senha": o GoTrue devolve um token
- * de uso único e a rota /auth/confirm troca por sessão. Se o provedor
- * recusar (conta sem e-mail confirmado, limite), o e-mail sai mesmo
- * assim — o botão normal continua levando à tela, pedindo login.
- */
-async function linkSemSenha(
-  db: SupabaseClient,
-  email: string,
-  destino: string
-): Promise<string | null> {
-  try {
-    const { data, error } = await db.auth.admin.generateLink({
-      type: "magiclink",
-      email,
-      options: { redirectTo: `${appUrl()}${destino}` },
-    });
-    const hash = (data?.properties as { hashed_token?: string } | undefined)?.hashed_token;
-    if (error || !hash) return null;
-    return `${appUrl()}/auth/confirm?token_hash=${hash}&type=magiclink&next=${encodeURIComponent(destino)}`;
-  } catch {
-    return null;
-  }
-}
-
 async function mandar(
   db: SupabaseClient,
   u: Pick<User, "id" | "email">,
@@ -186,22 +160,6 @@ async function mandar(
 }
 
 /**
- * Monta o e-mail duas vezes: a primeira para saber o destino do botão, a
- * segunda com o link sem senha já apontando para essa mesma tela.
- */
-async function comLinks(
-  db: SupabaseClient,
-  email: string,
-  userId: string,
-  montar: (d: DadosDoEmail) => EmailPronto
-): Promise<EmailPronto> {
-  const sair = linkDeSaida(userId);
-  const semLinks = montar({ nome: "", sair });
-  const entrar = await linkSemSenha(db, email, semLinks.destino);
-  return montar({ nome: "", entrarSemSenha: entrar, sair });
-}
-
-/**
  * Na hora do cadastro. Nunca lança: e-mail que não saiu não pode
  * desfazer a conta — a rotina diária tenta de novo no dia seguinte.
  */
@@ -216,11 +174,12 @@ export async function enviarBoasVindas(p: {
     if (ehContaDaCasa(p.email)) return;
     const db = servico();
     if (!db) return;
-    const sair = linkDeSaida(p.userId);
-    const base = { nome: p.nome, termina: p.termina, eventos3m: p.eventos3m, sair };
-    const destino = htmlBoasVindas(base).destino;
-    const entrar = await linkSemSenha(db, p.email, destino);
-    const email = htmlBoasVindas({ ...base, entrarSemSenha: entrar });
+    const email = htmlBoasVindas({
+      nome: p.nome,
+      termina: p.termina,
+      eventos3m: p.eventos3m,
+      sair: linkDeSaida(p.userId),
+    });
     await mandar(db, { id: p.userId, email: p.email }, "boas_vindas", email);
   } catch (e) {
     console.error("[eorg:ativacao] boas-vindas", String(e).slice(0, 200));
@@ -393,7 +352,7 @@ export async function rodarAtivacao(agora = new Date()): Promise<ResumoAtivacao>
       }
     };
 
-    const email = await comLinks(db, u.email, u.id, (d) => montar({ ...d, nome }));
+    const email = montar({ nome, sair: linkDeSaida(u.id) });
     const feito = await mandar(db, u, marca, email);
     if (feito) contar(marca);
     else resumo.falharam += 1;
