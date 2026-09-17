@@ -19,7 +19,12 @@ import { clienteAnonimoPublico } from "@/lib/supabase/anon-publico";
 import { createClient } from "@/lib/supabase/server";
 import { appUrl } from "@/lib/app-url";
 import { PaginaCerimonialista } from "@/components/comercial/pagina/PaginaCerimonialista";
-import type { PaginaPublica, ServicoDaPagina } from "@/lib/comercial/pagina-publica";
+import { PaginaCapitulos } from "@/components/comercial/pagina/capitulos/PaginaCapitulos";
+import {
+  modeloDaVitrine,
+  type PaginaPublica,
+  type ServicoDaPagina,
+} from "@/lib/comercial/pagina-publica";
 import type { EventType } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -50,7 +55,7 @@ const carregarPrevia = cache(async (ref: string): Promise<PaginaPublica | null> 
   const [pagRes, empRes, fotosRes, depRes, atualRes] = await Promise.all([
     supabase
       .from("empresa_pagina")
-      .select("titulo, posicionamento, para_quem, cidade, tipos_atendidos, servicos, motivos, whatsapp, instagram, pixel_meta")
+      .select("titulo, posicionamento, para_quem, cidade, tipos_atendidos, servicos, motivos, whatsapp, instagram, pixel_meta, modelo")
       .eq("empresa_id", empresaId)
       .maybeSingle(),
     supabase.from("empresas").select("nome, logo_url").eq("id", empresaId).maybeSingle(),
@@ -93,6 +98,7 @@ const carregarPrevia = cache(async (ref: string): Promise<PaginaPublica | null> 
     whatsapp: string | null;
     instagram: string | null;
     pixel_meta: string | null;
+    modelo: string | null;
   } | null;
   const atual = (atualRes.data as { slug?: string } | null)?.slug;
   if (!pag || !atual) return null;
@@ -112,10 +118,20 @@ const carregarPrevia = cache(async (ref: string): Promise<PaginaPublica | null> 
     whatsapp: pag.whatsapp,
     instagram: pag.instagram,
     pixel_meta: pag.pixel_meta,
+    modelo: pag.modelo,
     fotos: ((fotosRes.data ?? []) as PaginaPublica["fotos"]),
     depoimentos: ((depRes.data ?? []) as PaginaPublica["depoimentos"]),
   };
 });
+
+/** O desenho que ela escolheu; os dados são os mesmos nos dois. */
+function Vitrine(props: { pagina: PaginaPublica; contar: boolean; previa: boolean }) {
+  return modeloDaVitrine(props.pagina.modelo) === "capitulos" ? (
+    <PaginaCapitulos {...props} />
+  ) : (
+    <PaginaCerimonialista {...props} />
+  );
+}
 
 /** Quem abre é da empresa dona do endereço? (a RLS responde) */
 async function ehDaCasa(ref: string): Promise<boolean> {
@@ -167,12 +183,12 @@ export default async function PaginaPublicaPage({ params }: { params: { slug: st
       permanentRedirect(`/cerimonialista/${publica.slug_atual}`);
     }
     const casa = await ehDaCasa(ref);
-    return <PaginaCerimonialista pagina={publica} contar={!casa} previa={false} />;
+    return <Vitrine pagina={publica} contar={!casa} previa={false} />;
   }
 
   const previa = await carregarPrevia(ref);
   if (!previa) notFound();
   // prévia por endereço antigo: leva ao atual, sem marcar como permanente
   if (previa.por_slug_antigo) redirect(`/cerimonialista/${previa.slug_atual}`);
-  return <PaginaCerimonialista pagina={previa} contar={false} previa />;
+  return <Vitrine pagina={previa} contar={false} previa />;
 }

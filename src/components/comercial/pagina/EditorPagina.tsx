@@ -21,6 +21,7 @@ import {
 } from "@/app/(app)/orcamentos/pagina/actions";
 import {
   LIMITES,
+  MODELOS_DA_VITRINE,
   enderecoDaPagina,
   erroDoSlug,
   faltaParaPublicar,
@@ -28,6 +29,7 @@ import {
   normalizarPixelMeta,
   sugerirSlug,
   textoParaBio,
+  type ModeloDaVitrine,
   type ServicoDaPagina,
 } from "@/lib/comercial/pagina-publica";
 import {
@@ -80,6 +82,7 @@ type Props = {
     whatsapp: string;
     instagram: string;
     pixelMeta: string;
+    modelo: ModeloDaVitrine;
   };
   fotos: Foto[];
   depoimentos: Depoimento[];
@@ -127,6 +130,7 @@ export function EditorPagina({
   );
   const [instagram, setInstagram] = useState(inicial.instagram);
   const [pixelMeta, setPixelMeta] = useState(inicial.pixelMeta);
+  const [modelo, setModelo] = useState<ModeloDaVitrine>(inicial.modelo);
   const [fotos, setFotos] = useState(fotosIniciais);
   const [depoimentos, setDepoimentos] = useState(depoimentosIniciais);
 
@@ -142,6 +146,7 @@ export function EditorPagina({
     whatsapp: inicial.whatsapp,
     instagram: inicial.instagram,
     pixelMeta: inicial.pixelMeta,
+    modelo: inicial.modelo,
   });
 
   const [aviso, setAviso] = useState<{ tipo: "ok" | "erro"; texto: string; onde: string } | null>(
@@ -165,6 +170,7 @@ export function EditorPagina({
     whatsapp: normalizarWhatsapp(whatsapp) ?? "",
     instagram: normalizarInstagram(instagram) ?? instagram.trim(),
     pixelMeta: normalizarPixelMeta(pixelMeta) ?? pixelMeta.trim(),
+    modelo,
   };
 
   // O WhatsApp que veio do Catálogo, intocado, não é "mudança": é o valor
@@ -243,6 +249,7 @@ export function EditorPagina({
       whatsapp: conteudoAtual.whatsapp || null,
       instagram: conteudoAtual.instagram || null,
       pixelMeta: conteudoAtual.pixelMeta || null,
+      modelo: conteudoAtual.modelo,
     });
     if ("error" in r) {
       mostrar("salvar", "erro", r.error);
@@ -465,6 +472,43 @@ export function EditorPagina({
           </p>
         )}
         {avisoEm("endereco")}
+      </section>
+
+      {/* ------------------------------------------------ modelo */}
+      <section className={secaoClass}>
+        <h2 className="text-sm font-semibold text-gray-900">Modelo da vitrine</h2>
+        <p className="mt-1 text-sm text-gray-600">
+          Os mesmos textos, fotos e depoimentos; muda só o desenho.
+        </p>
+        <div role="radiogroup" aria-label="Modelo da vitrine" className="mt-4 grid gap-3 sm:grid-cols-2">
+          {MODELOS_DA_VITRINE.map((m) => {
+            const ativo = m.codigo === modelo;
+            return (
+              <label
+                key={m.codigo}
+                className={`flex cursor-pointer gap-3 rounded-lg border p-4 transition-colors ${
+                  ativo ? "border-gray-900 bg-gray-50" : "border-gray-200 hover:bg-gray-50"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="pagina-modelo"
+                  value={m.codigo}
+                  checked={ativo}
+                  onChange={() => setModelo(m.codigo)}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-gray-900"
+                />
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-gray-900">{m.nome}</span>
+                  <span className="mt-0.5 block text-sm text-gray-600">{m.resumo}</span>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+        {slug && modelo !== salvoConteudo.modelo && (
+          <p className="mt-3 text-xs text-gray-500">Salve para ver a vitrine no modelo novo.</p>
+        )}
       </section>
 
       {/* ------------------------------------------------ apresentação */}

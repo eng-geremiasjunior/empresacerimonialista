@@ -13,6 +13,10 @@
 // que revela as duas primeiras) são atributos que a folha conhece,
 // postos aqui depois de montar — nunca antes: sem script, as fotos
 // aparecem normalmente.
+//
+// Serve aos dois modelos da vitrine: `prefixo` escolhe a folha ("vt" no
+// Clássico, "cp" no Capítulos), e `legendas` põe a legenda embaixo de
+// cada foto (o Capítulos mostra; o Clássico só na tela cheia).
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -42,11 +46,15 @@ function FotoDoAlbum({
   nomeEmpresa,
   aoAbrir,
   refBotao,
+  prefixo,
+  legenda,
 }: {
   foto: FotoDaVitrine;
   nomeEmpresa: string;
   aoAbrir: () => void;
   refBotao: (el: HTMLButtonElement | null) => void;
+  prefixo: string;
+  legenda: boolean;
 }) {
   const img = useRef<HTMLImageElement>(null);
   const [proporcao, setProporcao] = useState<string | null>(null);
@@ -61,7 +69,7 @@ function FotoDoAlbum({
   return (
     <button
       type="button"
-      className="vt-foto"
+      className={`${prefixo}-foto`}
       ref={refBotao}
       onClick={aoAbrir}
       aria-label={`Ampliar foto: ${descricao(foto, nomeEmpresa)}`}
@@ -76,6 +84,7 @@ function FotoDoAlbum({
         onLoad={medir}
         style={proporcao ? { aspectRatio: proporcao } : undefined}
       />
+      {legenda && foto.legenda && <span className={`${prefixo}-foto-legenda`}>{foto.legenda}</span>}
     </button>
   );
 }
@@ -83,9 +92,15 @@ function FotoDoAlbum({
 export function GaleriaVitrine({
   fotos,
   nomeEmpresa,
+  prefixo = "vt",
+  legendas = false,
 }: {
   fotos: FotoDaVitrine[];
   nomeEmpresa: string;
+  /** a folha do modelo: "vt" (Clássico) ou "cp" (Capítulos) */
+  prefixo?: "vt" | "cp";
+  /** a legenda embaixo de cada foto */
+  legendas?: boolean;
 }) {
   const [todas, setTodas] = useState(false);
   const [aberta, setAberta] = useState<number | null>(null);
@@ -195,12 +210,14 @@ export function GaleriaVitrine({
 
   return (
     <>
-      <div className="vt-album">
+      <div className={`${prefixo}-album`}>
         {visiveis.map((f, i) => (
           <FotoDoAlbum
             key={`${f.url}-${i}`}
             foto={f}
             nomeEmpresa={nomeEmpresa}
+            prefixo={prefixo}
+            legenda={legendas}
             refBotao={(el) => {
               botoes.current[i] = el;
             }}
@@ -215,7 +232,7 @@ export function GaleriaVitrine({
       {!cabem && (
         <button
           type="button"
-          className="vt-botao-mais"
+          className={`${prefixo}-botao-mais`}
           onClick={() => {
             primeiraNova.current = VISIVEIS_ANTES_DO_BOTAO;
             setTodas(true);
@@ -227,7 +244,7 @@ export function GaleriaVitrine({
 
       {foto && (
         <div
-          className="vt-foto-aberta"
+          className={`${prefixo}-foto-aberta`}
           role="dialog"
           aria-modal="true"
           aria-label={descricao(foto, nomeEmpresa)}
@@ -241,16 +258,16 @@ export function GaleriaVitrine({
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="vt-foto-aberta-img" src={foto.url} alt={descricao(foto, nomeEmpresa)} />
-          <div className="vt-foto-aberta-legenda">
-            {foto.tipo && <p className="vt-foto-aberta-tipo">{foto.tipo}</p>}
-            {foto.legenda && <p className="vt-foto-aberta-texto">{foto.legenda}</p>}
-            <p className="vt-foto-aberta-dica">Toque para fechar</p>
+          <img className={`${prefixo}-foto-aberta-img`} src={foto.url} alt={descricao(foto, nomeEmpresa)} />
+          <div className={`${prefixo}-foto-aberta-legenda`}>
+            {foto.tipo && <p className={`${prefixo}-foto-aberta-tipo`}>{foto.tipo}</p>}
+            {foto.legenda && <p className={`${prefixo}-foto-aberta-texto`}>{foto.legenda}</p>}
+            <p className={`${prefixo}-foto-aberta-dica`}>Toque para fechar</p>
           </div>
           <button
             ref={fechar}
             type="button"
-            className="vt-foto-aberta-fechar"
+            className={`${prefixo}-foto-aberta-fechar`}
             onClick={() => setAberta(null)}
           >
             Fechar

@@ -22,10 +22,13 @@ export function PixelDaVitrine({
   pixelId,
   slug,
   nomeEmpresa,
+  prefixo = "vt",
 }: {
   pixelId: string;
   slug: string;
   nomeEmpresa: string;
+  /** a folha do modelo: "vt" (Clássico) ou "cp" (Capítulos) */
+  prefixo?: "vt" | "cp";
 }) {
   // nada no servidor nem no primeiro desenho: a escolha mora no navegador
   const [decisao, setDecisao] = useState<DecisaoDoPixel | null>(null);
@@ -54,24 +57,24 @@ export function PixelDaVitrine({
   if (!aberta) return null;
 
   return (
-    <div className="vt-consentimento" role="region" aria-label="Permissão para o pixel da Meta">
-      <p className="vt-consentimento-texto">
+    <div className={`${prefixo}-consentimento`} role="region" aria-label="Permissão para o pixel da Meta">
+      <p className={`${prefixo}-consentimento-texto`}>
         {nomeEmpresa} usa o pixel da Meta para medir os próprios anúncios. Ele só é ativado se
         você permitir.{" "}
         {/* página inteira nova: o pixel desta aba nunca acompanha a navegação
             para outra tela do sistema (onde pode morar o pixel do eOrganizei) */}
         <a href="/privacidade#vitrine">Saiba mais</a>
       </p>
-      <div className="vt-consentimento-botoes">
-        <button type="button" className="vt-consentimento-botao" onClick={() => decidir("sim")}>
+      <div className={`${prefixo}-consentimento-botoes`}>
+        <button type="button" className={`${prefixo}-consentimento-botao`} onClick={() => decidir("sim")}>
           Permitir
         </button>
-        <button type="button" className="vt-consentimento-botao" onClick={() => decidir("nao")}>
+        <button type="button" className={`${prefixo}-consentimento-botao`} onClick={() => decidir("nao")}>
           Não permitir
         </button>
       </div>
       {decisao && (
-        <p className="vt-consentimento-agora">
+        <p className={`${prefixo}-consentimento-agora`}>
           Agora: {decisao === "sim" ? "permitido" : "não permitido"}.
         </p>
       )}
@@ -80,11 +83,11 @@ export function PixelDaVitrine({
 }
 
 /** O link do rodapé que reabre a escolha. */
-export function PreferenciasDoPixel() {
+export function PreferenciasDoPixel({ prefixo = "vt" }: { prefixo?: "vt" | "cp" }) {
   return (
     <button
       type="button"
-      className="vt-rodape-preferencias"
+      className={`${prefixo}-rodape-preferencias`}
       onClick={() => window.dispatchEvent(new Event(EVENTO_PREFERENCIAS))}
     >
       Pixel da Meta: permitir ou não

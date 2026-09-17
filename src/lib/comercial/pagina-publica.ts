@@ -17,6 +17,30 @@ import type { EventType } from "@/lib/types";
 
 export type ServicoDaPagina = { nome: string; descricao?: string | null };
 
+/**
+ * O desenho da vitrine (16/09/2026). Os campos são os mesmos nos dois; só a
+ * forma muda. O banco guarda a escolha em empresa_pagina.modelo (165).
+ */
+export type ModeloDaVitrine = "classico" | "capitulos";
+
+export const MODELOS_DA_VITRINE: { codigo: ModeloDaVitrine; nome: string; resumo: string }[] = [
+  {
+    codigo: "classico",
+    nome: "Clássico",
+    resumo: "Foto de abertura com o seu nome e um depoimento em destaque numa faixa escura.",
+  },
+  {
+    codigo: "capitulos",
+    nome: "Capítulos",
+    resumo: "Página em capítulos numerados, com o que a cliente recebe em cada etapa e o formulário em linhas.",
+  },
+];
+
+/** O que vier do banco (ou de antes da 165 reaplicada) vira um modelo válido. */
+export function modeloDaVitrine(valor: unknown): ModeloDaVitrine {
+  return valor === "capitulos" ? "capitulos" : "classico";
+}
+
 /** O que o editor manda para o servidor (o endereço vai por outra porta). */
 export type PaginaEditavel = {
   titulo: string | null;
@@ -30,6 +54,8 @@ export type PaginaEditavel = {
   instagram: string | null;
   /** o pixel da Meta dela: só o número */
   pixelMeta: string | null;
+  /** o desenho escolhido; ausente = não muda o que está salvo */
+  modelo?: ModeloDaVitrine;
 };
 
 /** O que a RPC `pagina_publica` devolve. Lista fechada: nada interno. */
@@ -52,6 +78,8 @@ export type PaginaPublica = {
    * carrega publicada, para quem não é da casa, depois do "Permitir".
    */
   pixel_meta?: string | null;
+  /** o desenho escolhido (165, noite de 16/09/2026); ausente = clássico */
+  modelo?: string | null;
   fotos: { url: string; legenda: string | null; tipo_evento: EventType }[];
   /**
    * `tipo_evento` é o que deixa o depoimento em destaque acompanhar o
@@ -247,6 +275,21 @@ export function comoFunciona(nomeEmpresa: string): string[] {
     `${quem} analisa: cada evento é diferente.`,
     "Você recebe uma proposta, com o que está incluso, valores e condições, por escrito.",
     "A organização começa: fechado o contrato, você acompanha fornecedores, prazos e o roteiro do dia.",
+  ];
+}
+
+/**
+ * O que a cliente recebe em cada passo de `comoFunciona` — a coluna
+ * "Você recebe" do modelo Capítulos. São os mesmos quatro passos ditos
+ * pelo lado da entrega, sem promessa nova: mudou um passo lá, esta lista
+ * muda junto.
+ */
+export function entregasDosPassos(): string[] {
+  return [
+    "A confirmação do pedido e o retorno pelo WhatsApp ou por e-mail.",
+    "Uma conversa para entender o que o seu evento pede.",
+    "A proposta escrita, para ler com calma e comparar.",
+    "O contrato e o roteiro do dia, com fornecedores e prazos.",
   ];
 }
 

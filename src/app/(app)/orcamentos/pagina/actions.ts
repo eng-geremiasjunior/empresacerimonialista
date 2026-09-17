@@ -15,6 +15,7 @@ import {
   LIMITES,
   erroDoSlug,
   faltaParaPublicar,
+  modeloDaVitrine,
   normalizarInstagram,
   normalizarPixelMeta,
   type PaginaEditavel,
@@ -124,6 +125,8 @@ export async function salvarPagina(dados: PaginaEditavel): Promise<Resultado> {
       whatsapp: whatsappCru ? normalizarWhatsapp(whatsappCru) : null,
       instagram,
       pixel_meta: pixelMeta,
+      // o desenho só vai quando o editor manda (a coluna é da 165 reaplicada)
+      ...(dados.modelo ? { modelo: modeloDaVitrine(dados.modelo) } : {}),
       atualizado_por: ctx.userId,
     },
     { onConflict: "empresa_id" }

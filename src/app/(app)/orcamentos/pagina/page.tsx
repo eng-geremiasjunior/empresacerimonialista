@@ -11,7 +11,7 @@ import { VISOES_ORCAMENTOS } from "@/lib/visoes";
 import { createClient } from "@/lib/supabase/server";
 import { appUrl } from "@/lib/app-url";
 import { EditorPagina } from "@/components/comercial/pagina/EditorPagina";
-import type { ServicoDaPagina } from "@/lib/comercial/pagina-publica";
+import { modeloDaVitrine, type ServicoDaPagina } from "@/lib/comercial/pagina-publica";
 import type { EventType } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -44,7 +44,7 @@ export default async function PaginaPublicaEditorPage() {
       supabase
         .from("empresa_pagina")
         .select(
-          "slug, publicada, publicada_em, titulo, posicionamento, para_quem, cidade, tipos_atendidos, servicos, motivos, whatsapp, instagram, pixel_meta"
+          "slug, publicada, publicada_em, titulo, posicionamento, para_quem, cidade, tipos_atendidos, servicos, motivos, whatsapp, instagram, pixel_meta, modelo"
         )
         .eq("empresa_id", empresaId)
         .maybeSingle(),
@@ -103,6 +103,7 @@ export default async function PaginaPublicaEditorPage() {
     whatsapp: string | null;
     instagram: string | null;
     pixel_meta: string | null;
+    modelo: string | null;
   } | null;
 
   const whatsappDoCatalogo =
@@ -168,6 +169,7 @@ export default async function PaginaPublicaEditorPage() {
           whatsapp: pag?.whatsapp ?? "",
           instagram: pag?.instagram ?? "",
           pixelMeta: pag?.pixel_meta ?? "",
+          modelo: modeloDaVitrine(pag?.modelo),
         }}
         fotos={fotos}
         depoimentos={depoimentos}

@@ -27,6 +27,11 @@
 -- página —, e o navegador só carrega o pixel na vitrine publicada, para
 -- quem não é da casa, depois de a pessoa permitir.
 --
+-- 16/09/2026, noite: a vitrine ganha o segundo modelo (Capítulos). A
+-- escolha mora em empresa_pagina.modelo ('classico' ou 'capitulos'); os
+-- dados são os mesmos nos dois, só a forma muda. A leitura pública passa
+-- a entregar o nome do modelo.
+--
 -- O QUE ESTA MIGRAÇÃO ABRE. Hoje a proposta só nasce se a cerimonialista
 -- digitar o contato: quem a procura pelo Instagram cai num WhatsApp que
 -- ela responde à mão, e nada disso entra no sistema. Esta é a porta que
@@ -213,6 +218,17 @@ end $$;
 
 comment on column public.empresa_pagina.pixel_meta is
   'ID do pixel da Meta da cerimonialista, só dígitos. A vitrine publicada só o carrega depois que o visitante permite; nunca na prévia, para a casa ou em página com credencial.';
+
+-- O modelo da vitrine: o desenho que a página usa. A lista é recriada a
+-- cada aplicação, para um modelo novo entrar sem outro ALTER à mão.
+alter table public.empresa_pagina add column if not exists modelo text not null default 'classico';
+alter table public.empresa_pagina drop constraint if exists empresa_pagina_modelo_check;
+alter table public.empresa_pagina
+  add constraint empresa_pagina_modelo_check
+  check (modelo in ('classico', 'capitulos'));
+
+comment on column public.empresa_pagina.modelo is
+  'O desenho da vitrine: classico (foto de abertura, depoimento na faixa escura) ou capitulos (caderno numerado, formulário em ficha). Os mesmos campos nos dois.';
 
 alter table public.empresa_pagina enable row level security;
 
@@ -888,6 +904,8 @@ begin
     'instagram', v_pag.instagram,
     -- o pixel dela: o navegador só o carrega depois de a pessoa permitir
     'pixel_meta', v_pag.pixel_meta,
+    -- o desenho que ela escolheu (só a forma; os dados são os mesmos)
+    'modelo', v_pag.modelo,
     'fotos', coalesce((
       select json_agg(f)
       from (
@@ -1430,6 +1448,18 @@ select 'a leitura pública entrega o número do pixel',
        (select prosrc ilike '%v_pag.pixel_meta%'
           from pg_proc where proname = 'pagina_publica'
            and pronamespace = 'public'::regnamespace and pronargs = 1)
+
+union all
+select 'o modelo da vitrine existe, com a lista fechada, e sai na leitura pública',
+       exists (select 1 from information_schema.columns
+               where table_schema = 'public' and table_name = 'empresa_pagina'
+                 and column_name = 'modelo')
+       and exists (select 1 from pg_constraint
+                   where conname = 'empresa_pagina_modelo_check'
+                     and conrelid = 'public.empresa_pagina'::regclass)
+       and (select prosrc ilike '%v_pag.modelo%'
+              from pg_proc where proname = 'pagina_publica'
+               and pronamespace = 'public'::regnamespace and pronargs = 1)
 
 union all
 select 'as cinco funções da página existem, uma vez cada',
