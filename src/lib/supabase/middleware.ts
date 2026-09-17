@@ -53,6 +53,10 @@ const ROTAS_PUBLICAS: ((p: string) => boolean)[] = [
   (p) => p.startsWith("/aceite/"),
   // as rotas de cron se protegem sozinhas com Bearer CRON_SECRET
   (p) => p.startsWith("/api/cron/"),
+  // "não quero mais receber": o link do rodapé dos e-mails é clicado de
+  // dentro da caixa de entrada, sem sessão nenhuma. A rota se protege com
+  // a assinatura (HMAC) do id que vem na URL.
+  (p) => p === "/api/email/sair",
   // cadastro do convidado pelo link do evento
   (p) => p.startsWith("/api/rsvp/"),
   // as fotos do álbum do convite (token assinado emitido pela rota)
