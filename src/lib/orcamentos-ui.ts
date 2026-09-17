@@ -5,6 +5,8 @@
 // usam os mesmos valores. Escopo é só esta tela: o AppShell e o resto do
 // painel seguem com o visual atual.
 
+import { inicioDoDiaBR } from "@/lib/tempo";
+
 export const CORES = {
   fundo: "#FFFFFF",
   suave: "#F7F7F5",
@@ -72,7 +74,9 @@ export function estiloStatus(status: string): { cor: string; ponto: string; rotu
 // vencido. O ponto colorido só aparece quando há algo a fazer.
 export function infoValidade(
   dataValidade: string | null,
-  hoje = new Date()
+  // hoje em Brasília: a lista roda no servidor (UTC) e no navegador, e
+  // depois das 21h os dois contavam dias diferentes ("Vence em 29/28")
+  hoje = inicioDoDiaBR()
 ): { rotulo: string; cor: string; alerta: boolean } {
   if (!dataValidade) return { rotulo: "—", cor: CORES.terciario, alerta: false };
 

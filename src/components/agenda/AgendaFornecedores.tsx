@@ -11,6 +11,7 @@
 // viola a regra de ouro) e shell próprio do app (sem sidebar do protótipo).
 
 import { useMemo, useState, useTransition } from "react";
+import { hojeBR, inicioDoDiaBR } from "@/lib/tempo";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -60,9 +61,10 @@ const ESTADO_META: Record<
   remarcado: { label: "Remarcar", tone: "wait", barra: "var(--state-wait)" },
 };
 
+// hoje em Brasília: o calendário é desenhado no servidor (UTC) e no
+// navegador, e o dia destacado tem de ser o mesmo nos dois
 function hojeIso(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return hojeBR();
 }
 
 /* ================================================================ */
@@ -174,8 +176,7 @@ export function AgendaFornecedoresTela({
 
 function diasAte(iso: string): number {
   return Math.round(
-    (new Date(`${iso}T00:00:00`).getTime() -
-      new Date(new Date().toDateString()).getTime()) /
+    (new Date(`${iso}T00:00:00`).getTime() - inicioDoDiaBR().getTime()) /
       86_400_000
   );
 }
@@ -520,7 +521,8 @@ function CardReuniao({ r }: { r: ReuniaoFornecedor }) {
 }
 
 function MiniCalendario({ reunioes }: { reunioes: ReuniaoFornecedor[] }) {
-  const hoje = new Date(new Date().toDateString());
+  // o mês que abre é o de hoje em Brasília (servidor e navegador iguais)
+  const hoje = inicioDoDiaBR();
   const [ano, setAno] = useState(hoje.getFullYear());
   const [mes, setMes] = useState(hoje.getMonth());
 

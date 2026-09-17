@@ -1057,6 +1057,7 @@ export function DrawerDecisao({
                   {campo.aguardaConferencia && (
                     <span
                       title="A cliente respondeu pelo portal — confira no bloco acima"
+                      suppressHydrationWarning
                       style={{
                         display: "inline-flex",
                         alignItems: "center",
@@ -1084,6 +1085,8 @@ export function DrawerDecisao({
                         }}
                       />
                       cliente
+                      {/* "há N min" é do relógio: o texto do servidor e o do
+                          navegador podem diferir por segundos */}
                       {tempoAtras(campo.updatedAt ?? null)
                         ? ` · ${tempoAtras(campo.updatedAt ?? null)}`
                         : ""}

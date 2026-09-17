@@ -40,6 +40,7 @@ import {
   type Arquetipos,
 } from "./celebra";
 import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
+import { inicioDoDiaBR } from "@/lib/tempo";
 import { FaixaContexto } from "./FaixaContexto";
 import { ModoFoco } from "./ModoFoco";
 import { ModoAmplo } from "./ModoAmplo";
@@ -398,7 +399,9 @@ export function PlanejamentoEvento({
   }
 
   // ---- meta do cabeçalho ----
-  const hoje = new Date();
+  // o mês de hoje em Brasília: o servidor (UTC) e o navegador têm de
+  // escrever o mesmo texto (ver prazoRelativo)
+  const hoje = inicioDoDiaBR();
   const mesAtualRotulo = (() => {
     const nome = MESES_PT[hoje.getMonth()];
     if (plano.dataEvento) {

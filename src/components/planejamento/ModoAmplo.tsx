@@ -10,6 +10,7 @@
 // Financeiro.
 
 import type { Decisao, Objetivo } from "@/lib/supabase/planejamento";
+import { inicioDoDiaBR } from "@/lib/tempo";
 import {
   brl,
   C,
@@ -82,7 +83,8 @@ export function montarMeses(
   );
   if (comPrazo.length === 0) return { meses: [], diaD: null };
 
-  const hoje = new Date();
+  // mês de hoje em Brasília, igual no servidor e no navegador
+  const hoje = inicioDoDiaBR();
   const chaveHoje = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
   const chaves = comPrazo.map((d) => chaveMes(d.prazoPrevisto!)).sort();
   const primeira = chaves[0] < chaveHoje ? chaves[0] : chaveHoje;

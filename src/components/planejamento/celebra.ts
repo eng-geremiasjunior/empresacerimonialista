@@ -3,6 +3,7 @@
 // só existe no tema neutro, então os hexes vivem aqui, não em tokens.
 
 import type { CSSProperties } from "react";
+import { inicioDoDiaBR } from "@/lib/tempo";
 
 export const C = {
   canvas: "#E4E5E7",
@@ -82,9 +83,14 @@ export function dataBr(iso: string | null): string {
 }
 
 // Tempo sempre RELATIVO (handoff §7.1): nunca marco fixo.
+//
+// "Hoje" é o de Brasília (lib/tempo): esta conta roda no servidor (UTC) e
+// no navegador. Com o fuso de cada um, depois das 21h o servidor escrevia
+// "faltam 201 dias" e o navegador "faltam 200", e o React refazia a página
+// inteira (medido em 16/09/2026).
 export function prazoRelativo(iso: string | null): string | null {
   if (!iso) return null;
-  const hoje = new Date(new Date().toDateString()).getTime();
+  const hoje = inicioDoDiaBR().getTime();
   const alvo = new Date(`${iso}T00:00:00`).getTime();
   const dias = Math.round((alvo - hoje) / 86_400_000);
   if (dias === 0) return "vence hoje";
@@ -108,8 +114,7 @@ export function tempoAtras(iso: string | null): string | null {
 export function prazoVencido(iso: string | null): boolean {
   if (!iso) return false;
   return (
-    new Date(`${iso}T00:00:00`).getTime() <
-    new Date(new Date().toDateString()).getTime()
+    new Date(`${iso}T00:00:00`).getTime() < inicioDoDiaBR().getTime()
   );
 }
 

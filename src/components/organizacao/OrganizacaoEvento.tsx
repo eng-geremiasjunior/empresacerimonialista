@@ -72,6 +72,7 @@ import {
   type BadgeTone,
 } from "@/components/ui/celebra";
 import { plural } from "@/lib/format";
+import { inicioDoDiaBR } from "@/lib/tempo";
 
 type Vista = "lista" | "timeline" | "agenda";
 type Filtro = "todas" | "atrasadas" | "andamento" | "concluidas";
@@ -96,7 +97,8 @@ function diasEntre(a: string, b: string): number {
 function prazo(iso: string | null): string {
   if (!iso) return "sem data";
   const alvo = new Date(`${iso}T00:00:00`).getTime();
-  const hoje = new Date(new Date().toDateString()).getTime();
+  // hoje em Brasília: servidor e navegador escrevem o mesmo prazo
+  const hoje = inicioDoDiaBR().getTime();
   const d = Math.round((alvo - hoje) / 86_400_000);
   if (d === 0) return "hoje";
   if (d === 1) return "amanhã";
