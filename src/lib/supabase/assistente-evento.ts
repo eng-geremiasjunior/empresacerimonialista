@@ -19,8 +19,9 @@
 // digitado em texto livre antes do envio.
 
 import { createClient } from "@/lib/supabase/server";
-import { inicioDoDiaBR } from "@/lib/tempo";
+import { hojeBR, inicioDoDiaBR } from "@/lib/tempo";
 import { categoriaLabel } from "@/lib/fornecedores-shared";
+import { rotuloResponsavel } from "@/lib/papel";
 
 export type ContextoEvento = {
   ok: boolean;
@@ -60,7 +61,7 @@ export async function montarContextoEvento(
     return { ok: false, texto: "" };
   }
 
-  const [decRes, tarRes, compRes, transRes, fornRes] = await Promise.all([
+  const [decRes, tarRes, compRes, transRes, fornRes, confRes] = await Promise.all([
     supabase
       .from("evento_decisao")
       .select("id, titulo, estado, prazo_previsto, responsavel")
@@ -89,7 +90,13 @@ export async function montarContextoEvento(
     // aposentada.
     supabase
       .from("roteiro_links")
-      .select("role, suppliers(name, supplier_categorias(categoria))")
+      .select("supplier_id, role, confirmed, suppliers(name, supplier_categorias(categoria))")
+      .eq("event_id", eventId),
+    // a resposta de cada fornecedor ao pedido de confirmação — "quais
+    // fornecedores já confirmaram?" é uma das perguntas sugeridas na tela
+    supabase
+      .from("supplier_confirmations")
+      .select("supplier_id, status, sent_at")
       .eq("event_id", eventId),
   ]);
 
@@ -98,6 +105,11 @@ export async function montarContextoEvento(
   const compromissos = compRes.data ?? [];
   const transacoes = transRes.data ?? [];
   const fornecedores = fornRes.data ?? [];
+  const confirmacoes = new Map(
+    ((confRes.data ?? []) as { supplier_id: string; status: string; sent_at: string | null }[]).map(
+      (c) => [c.supplier_id, c]
+    )
+  );
 
   const hoje = inicioDoDiaBR();
   const diasAte = ev.date
@@ -119,7 +131,17 @@ export async function montarContextoEvento(
             ? "é hoje"
             : `já aconteceu há ${Math.abs(diasAte)} dias`;
 
+  // Sem a data de hoje, "o que vence esta semana?" era chute do modelo:
+  // a mesma pergunta voltava "até 23/09" e "até 24/09".
+  const hojeIso = hojeBR();
+  const diaDaSemana = new Date(`${hojeIso}T12:00:00Z`).toLocaleDateString("pt-BR", {
+    weekday: "long",
+    timeZone: "UTC",
+  });
+
   const partes: string[] = [];
+
+  partes.push(`HOJE: ${dataBR(hojeIso)} (${diaDaSemana})`);
 
   partes.push(
     `EVENTO: ${ev.type}\n` +
@@ -186,7 +208,7 @@ export async function montarContextoEvento(
         ),
         ...pendentes.map(
           (d) =>
-            `- [pendente] ${d.titulo}${d.prazo_previsto ? ` (decidir até ${dataBR(d.prazo_previsto)})` : ""} — responsável: ${d.responsavel}`
+            `- [pendente] ${d.titulo}${d.prazo_previsto ? ` (decidir até ${dataBR(d.prazo_previsto)})` : ""} — responsável: ${rotuloResponsavel(d.responsavel, ev.type)}`
         ),
       ].join("\n")
   );
@@ -198,7 +220,7 @@ export async function montarContextoEvento(
         .slice(0, 40)
         .map(
           (t) =>
-            `- ${t.title}${t.due_date ? ` (vence ${dataBR(t.due_date)})` : " (sem prazo)"}${t.responsavel ? ` — ${t.responsavel}` : ""}`
+            `- ${t.title}${t.due_date ? ` (vence ${dataBR(t.due_date)})` : " (sem prazo)"}${t.responsavel ? ` — ${rotuloResponsavel(t.responsavel, ev.type)}` : ""}`
         )
         .join("\n")
   );
@@ -253,7 +275,17 @@ export async function montarContextoEvento(
             const cats = (sup.supplier_categorias ?? [])
               .map((c) => categoriaLabel(c.categoria))
               .join(", ");
-            return `- ${sup.name}${f.role ? ` (${f.role})` : ""}${cats ? ` · ${cats}` : ""}`;
+            // confirmado à mão na aba (roteiro_links.confirmed) também vale
+            const c = confirmacoes.get(f.supplier_id as string);
+            const confirmacao =
+              c?.status === "confirmado" || f.confirmed
+                ? "confirmou presença"
+                : c?.status === "recusado"
+                  ? "recusou"
+                  : c?.sent_at
+                    ? "ainda não respondeu à confirmação"
+                    : "pedido de confirmação ainda não enviado";
+            return `- ${sup.name}${f.role ? ` (${f.role})` : ""}${cats ? ` · ${cats}` : ""} · ${confirmacao}`;
           })
           .filter(Boolean)
           .join("\n")

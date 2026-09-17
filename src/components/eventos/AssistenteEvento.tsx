@@ -11,6 +11,16 @@ import { Send, Sparkles } from "lucide-react";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
+// O modelo às vezes responde em markdown mesmo pedido que não, e a tela
+// mostra texto puro: "**Buffet**" apareceria com os asteriscos.
+function semMarkdown(texto: string): string {
+  return texto
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/__(.+?)__/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/^(\s*)\*\s+/gm, "$1- ");
+}
+
 // Perguntas de partida: mostram o que ele sabe responder, sem manual.
 const SUGESTOES = [
   "O que vence esta semana?",
@@ -47,7 +57,10 @@ export function AssistenteEvento({ eventId }: { eventId: string }) {
       if (!res.ok) {
         setErro(data?.error ?? "não consegui responder agora.");
       } else {
-        setMessages([...novas, { role: "assistant", content: data.text }]);
+        setMessages([
+          ...novas,
+          { role: "assistant", content: semMarkdown(String(data.text ?? "")) },
+        ]);
       }
     } catch {
       setErro("não consegui responder agora.");
