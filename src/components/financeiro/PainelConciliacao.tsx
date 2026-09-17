@@ -86,14 +86,14 @@ export function PainelConciliacao({
   }
 
   return (
-    <div className="fin-card">
-      <div className="fin-card-topo">
+    <div className="fe-card fe-card-solto">
+      <div className="fe-card-topo">
         <div>
-          <p className="fin-rotulo">Conciliação</p>
-          <h2 className="fin-h2">Importar extrato do banco</h2>
+          <p className="fe-rotulo">Conciliação</p>
+          <h2 className="fe-h2">Importar extrato do banco</h2>
         </div>
         {!aberto && (
-          <button type="button" className="fin-btn" onClick={() => setAberto(true)}>
+          <button type="button" className="fe-btn" onClick={() => setAberto(true)}>
             Importar
           </button>
         )}
@@ -127,7 +127,7 @@ export function PainelConciliacao({
               {lendo ? "Lendo o arquivo…" : "Arraste o extrato aqui"}
             </span>
             <span
-              className="fin-mono"
+              className="fe-mono"
               style={{
                 display: "block",
                 marginTop: 6,
@@ -161,7 +161,7 @@ export function PainelConciliacao({
 
           {pendentes.length > 0 && (
             <div style={{ marginTop: 18 }}>
-              <p className="fin-rotulo" style={{ marginBottom: 8 }}>
+              <p className="fe-rotulo" style={{ marginBottom: 8 }}>
                 {pendentes.length} saída(s) do extrato sem lançamento
               </p>
               {pendentes.map((l) => (
@@ -180,11 +180,11 @@ export function PainelConciliacao({
                       gap: 10,
                     }}
                   >
-                    <span className="fin-mono" style={{ fontSize: 13, color: "var(--cinza)" }}>
+                    <span className="fe-mono" style={{ fontSize: 13, color: "var(--cinza)" }}>
                       {fmtData(l.data)}
                     </span>
                     <span
-                      className="fin-mono"
+                      className="fe-mono"
                       style={{ fontSize: 15, color: "var(--tinta)" }}
                     >
                       {money(l.valor)}
@@ -194,7 +194,7 @@ export function PainelConciliacao({
                     </span>
                     <button
                       type="button"
-                      className="fin-link"
+                      className="fe-link"
                       onClick={() =>
                         iniciar(async () => {
                           await ignorarLinhaExtrato(eventId, l.id);
@@ -224,7 +224,7 @@ export function PainelConciliacao({
                         <button
                           key={c.id}
                           type="button"
-                          className="fin-btn"
+                          className="fe-btn"
                           disabled={pendente}
                           style={{ fontSize: 13, minHeight: 36 }}
                           onClick={() =>

@@ -58,15 +58,15 @@ export function PainelFechamento({
 
   if (fechamento) {
     return (
-      <div className="fin-card">
-        <div className="fin-card-topo">
+      <div className="fe-card fe-card-solto">
+        <div className="fe-card-topo">
           <div>
-            <p className="fin-rotulo">Encerrado</p>
-            <h2 className="fin-h2">Evento fechado</h2>
+            <p className="fe-rotulo">Encerrado</p>
+            <h2 className="fe-h2">Evento fechado</h2>
           </div>
           <button
             type="button"
-            className="fin-link"
+            className="fe-link"
             onClick={() =>
               iniciar(async () => {
                 await reabrirFechamento(eventId);
@@ -77,22 +77,22 @@ export function PainelFechamento({
             Reabrir
           </button>
         </div>
-        <div className="fin-kpis">
-          <div className="fin-kpi">
-            <span className="fin-rotulo">Verba realizada</span>
-            <p className="fin-kpi-valor">{money(fechamento.verbaRealizada)}</p>
+        <div className="fe-kpis">
+          <div className="fe-kpi">
+            <span className="fe-rotulo">Verba realizada</span>
+            <p className="fe-kpi-valor">{money(fechamento.verbaRealizada)}</p>
           </div>
-          <div className="fin-kpi">
-            <span className="fin-rotulo">Sua receita</span>
-            <p className="fin-kpi-valor">{money(fechamento.receitaAssessoria)}</p>
+          <div className="fe-kpi">
+            <span className="fe-rotulo">Sua receita</span>
+            <p className="fe-kpi-valor">{money(fechamento.receitaAssessoria)}</p>
           </div>
-          <div className="fin-kpi">
-            <span className="fin-rotulo">Seus custos</span>
-            <p className="fin-kpi-valor">{money(fechamento.custosDiretos)}</p>
+          <div className="fe-kpi">
+            <span className="fe-rotulo">Seus custos</span>
+            <p className="fe-kpi-valor">{money(fechamento.custosDiretos)}</p>
           </div>
-          <div className="fin-kpi fin-kpi-destaque">
-            <span className="fin-rotulo">Lucro do evento</span>
-            <p className="fin-kpi-valor">
+          <div className="fe-kpi fe-kpi-destaque">
+            <span className="fe-rotulo">Lucro do evento</span>
+            <p className="fe-kpi-valor">
               {money(fechamento.receitaAssessoria - fechamento.custosDiretos)}
             </p>
           </div>
@@ -108,16 +108,16 @@ export function PainelFechamento({
   }
 
   return (
-    <div className="fin-card">
-      <div className="fin-card-topo">
+    <div className="fe-card fe-card-solto">
+      <div className="fe-card-topo">
         <div>
-          <p className="fin-rotulo">Encerramento</p>
-          <h2 className="fin-h2">Fechar o evento</h2>
+          <p className="fe-rotulo">Encerramento</p>
+          <h2 className="fe-h2">Fechar o evento</h2>
         </div>
         {!aberto && (
           <button
             type="button"
-            className="fin-btn"
+            className="fe-btn"
             onClick={() => setAberto(true)}
           >
             Ver o balanço
@@ -132,22 +132,22 @@ export function PainelFechamento({
         </p>
       ) : (
         <>
-          <div className="fin-kpis">
-            <div className="fin-kpi">
-              <span className="fin-rotulo">Verba prevista</span>
-              <p className="fin-kpi-valor">{money(teto)}</p>
+          <div className="fe-kpis">
+            <div className="fe-kpi">
+              <span className="fe-rotulo">Verba prevista</span>
+              <p className="fe-kpi-valor">{money(teto)}</p>
             </div>
-            <div className="fin-kpi">
-              <span className="fin-rotulo">Pago</span>
-              <p className="fin-kpi-valor">{money(numeros.pago_fornecedores)}</p>
+            <div className="fe-kpi">
+              <span className="fe-rotulo">Pago</span>
+              <p className="fe-kpi-valor">{money(numeros.pago_fornecedores)}</p>
             </div>
-            <div className="fin-kpi">
-              <span className="fin-rotulo">Sobra</span>
-              <p className="fin-kpi-valor">{money(sobra)}</p>
+            <div className="fe-kpi">
+              <span className="fe-rotulo">Sobra</span>
+              <p className="fe-kpi-valor">{money(sobra)}</p>
             </div>
-            <div className="fin-kpi fin-kpi-destaque">
-              <span className="fin-rotulo">Seu lucro</span>
-              <p className="fin-kpi-valor">{money(lucro)}</p>
+            <div className="fe-kpi fe-kpi-destaque">
+              <span className="fe-rotulo">Seu lucro</span>
+              <p className="fe-kpi-valor">{money(lucro)}</p>
             </div>
           </div>
 
@@ -158,15 +158,15 @@ export function PainelFechamento({
 
           {pendencias > 0 && (
             <div
-              className="fin-alerta fin-t-wait"
+              className="fe-alerta fe-t-wait"
               style={{ marginTop: 14 }}
             >
-              <span className="fin-alerta-ponto" aria-hidden />
+              <span className="fe-alerta-ponto" aria-hidden />
               <div>
-                <p className="fin-alerta-titulo">
+                <p className="fe-alerta-titulo">
                   Ainda há {money(pendencias)} em aberto
                 </p>
-                <p className="fin-alerta-meta">
+                <p className="fe-alerta-meta">
                   {numeros.a_pagar_fornecedores > 0 &&
                     `${money(numeros.a_pagar_fornecedores)} a pagar`}
                   {numeros.a_pagar_fornecedores > 0 &&
@@ -182,7 +182,7 @@ export function PainelFechamento({
 
           {sobra > 0 && (
             <div style={{ marginTop: 16 }}>
-              <span className="fin-rotulo">O que houve com a sobra</span>
+              <span className="fe-rotulo">O que houve com a sobra</span>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
                 {(
                   [
@@ -194,7 +194,7 @@ export function PainelFechamento({
                   <button
                     key={v}
                     type="button"
-                    className="fin-btn"
+                    className="fe-btn"
                     style={{
                       fontSize: 13,
                       background: destino === v ? "var(--nevoa)" : "var(--papel)",
@@ -210,7 +210,7 @@ export function PainelFechamento({
           )}
 
           <label style={{ display: "block", marginTop: 14 }}>
-            <span className="fin-rotulo">Observação (opcional)</span>
+            <span className="fe-rotulo">Observação (opcional)</span>
             <textarea
               rows={2}
               value={obs}
@@ -238,7 +238,7 @@ export function PainelFechamento({
           <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
             <button
               type="button"
-              className="fin-btn fin-btn-primario"
+              className="fe-btn fe-btn-primario"
               disabled={pendente}
               onClick={() => {
                 setErro(null);
@@ -259,7 +259,7 @@ export function PainelFechamento({
             </button>
             <button
               type="button"
-              className="fin-btn"
+              className="fe-btn"
               onClick={() => setAberto(false)}
             >
               Agora não

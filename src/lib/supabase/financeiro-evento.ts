@@ -1,12 +1,13 @@
 // Leitura do financeiro do evento. SÓ SERVIDOR (next/headers).
 //
-// Traduz o banco para o modelo que financeiro-core.ts entende. Nenhuma
-// regra mora aqui: esta camada só busca e mapeia. Status, ordem, totais
-// e alertas vêm do core.
+// Traduz o banco para o modelo que financeiro-core.ts e financeiro-tela.ts
+// entendem. Nenhuma regra mora aqui: esta camada só busca e mapeia.
+// Status, ordem, totais e alertas vêm dos módulos puros.
 //
 // A categoria de verba é o OBJETIVO do Planejamento — a mesma que ela já
-// usa para distribuir a verba lá. O vínculo objetivo→fornecedor sai do
-// campo tipo 'fornecedor' da decisão de contratação, que já existe.
+// usa para distribuir a verba lá. O contrato do fornecedor pode dizer a
+// categoria dele direto (167); quando não diz, ela ainda é deduzida do
+// campo tipo 'fornecedor' da decisão de contratação, como antes.
 
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
@@ -16,6 +17,10 @@ import type {
   OrigemPagamento,
   TipoLancamento,
 } from "@/lib/financeiro-core";
+import type {
+  ContratoFornecedor,
+  RegistroFinanceiro,
+} from "@/lib/financeiro-tela";
 import { hojeBR } from "@/lib/tempo";
 
 type Linha = Record<string, unknown>;
@@ -26,12 +31,25 @@ const COLUNAS = `id, event_id, type, value, due_date, paid, paid_at, description
   comprovante_path, comprovante_nome, comprovante_dados,
   suppliers(name, cpf)`;
 
+/** Coluna ou tabela que a migração 167 traz e o banco ainda não tem. */
+const AUSENTE = new Set(["42703", "42P01", "PGRST204", "PGRST205"]);
+const faltaMigracao = (erro: { code?: string } | null) =>
+  Boolean(erro?.code && AUSENTE.has(erro.code));
+
 export type FinanceiroDoEvento = {
   lancamentos: Lancamento[];
   categorias: CategoriaVerba[];
+  /** as categorias de verba do Planejamento, com o previsto de cada uma */
+  objetivos: { id: string; nome: string; previsto: number }[];
+  /** o contrato fechado com cada fornecedor */
+  contratos: ContratoFornecedor[];
   verbaTotal: number | null;
   contrato: { valor: number; parcelas: number; extras: number };
+  /** o contrato de assessoria: o que ela cobra da cliente */
+  assessoria: { contrato: number | null; assinadoEm: string | null };
   saldoCaixa: { emMaos: number; recebidoDaCliente: number; compromissado30d: number };
+  /** o histórico de lançamentos (167) — vazio enquanto a migração não rodou */
+  registros: RegistroFinanceiro[];
   /** hoje calculado no SERVIDOR — o navegador pode estar em outro fuso */
   hoje: string;
 };
@@ -43,6 +61,8 @@ function mapearLancamento(t: Linha, nomeCliente: string): Lancamento {
   return {
     id: t.id as string,
     direcao: entrada ? "entrada" : "saida",
+    // de que dinheiro é: a verba do evento ou a receita dela
+    conta: t.conta === "fornecedor" ? "verba" : "assessoria",
     // a categoria visível: o rótulo do objetivo quando houver, senão o
     // que o lançamento traz
     categoria: (t.categoria_nome as string) ?? rotuloCategoria(t.category as string),
@@ -81,48 +101,116 @@ const ROTULOS: Record<string, string> = {
 const rotuloCategoria = (c: string | null) =>
   (c && ROTULOS[c]) || (c ? c.replace(/_/g, " ") : "Outro");
 
+/**
+ * Os contratos por fornecedor. Tenta com as colunas da 167 e, se elas
+ * ainda não existem, repete sem — a tela continua de pé antes de você
+ * aplicar a migração, só sem data de assinatura e sem categoria própria.
+ */
+async function lerContratos(
+  supabase: ReturnType<typeof createClient>,
+  eventId: string
+): Promise<Linha[]> {
+  const comNovas = await supabase
+    .from("evento_fornecedor_orcamento")
+    .select(
+      "id, supplier_id, valor_alocado, valor_estimado_inicial, assinado_em, objetivo_id, suppliers(name)"
+    )
+    .eq("event_id", eventId);
+  if (!comNovas.error) return (comNovas.data ?? []) as unknown as Linha[];
+  if (!faltaMigracao(comNovas.error)) return [];
+
+  const antigo = await supabase
+    .from("evento_fornecedor_orcamento")
+    .select("id, supplier_id, valor_alocado, valor_estimado_inicial, suppliers(name)")
+    .eq("event_id", eventId);
+  return (antigo.data ?? []) as unknown as Linha[];
+}
+
+async function lerEvento(
+  supabase: ReturnType<typeof createClient>,
+  eventId: string
+): Promise<Linha | null> {
+  const completo = await supabase
+    .from("events")
+    .select("verba_total, contract_value, contrato_assinado_em, clients(name)")
+    .eq("id", eventId)
+    .maybeSingle();
+  if (!completo.error) return completo.data as Linha | null;
+  if (!faltaMigracao(completo.error)) return null;
+
+  const basico = await supabase
+    .from("events")
+    .select("verba_total, contract_value, clients(name)")
+    .eq("id", eventId)
+    .maybeSingle();
+  return basico.data as Linha | null;
+}
+
+async function lerRegistros(
+  supabase: ReturnType<typeof createClient>,
+  eventId: string
+): Promise<RegistroFinanceiro[]> {
+  const { data, error } = await supabase
+    .from("evento_financeiro_registro")
+    .select("id, em, autor, tipo, texto, detalhe, transaction_id")
+    .eq("event_id", eventId)
+    .order("em", { ascending: false })
+    .limit(80);
+  // sem a 167 aplicada, o histórico simplesmente não existe ainda
+  if (error) return [];
+  return ((data ?? []) as Linha[]).map((r) => ({
+    id: r.id as string,
+    em: r.em as string,
+    autor: (r.autor as string) ?? "Equipe",
+    tipo: (r.tipo as string) ?? "lancamento",
+    texto: (r.texto as string) ?? "",
+    detalhe: (r.detalhe as string) ?? null,
+    transactionId: (r.transaction_id as string) ?? null,
+  }));
+}
+
 export const getFinanceiroDoEvento = cache(
   async (eventId: string): Promise<FinanceiroDoEvento> => {
     const supabase = createClient();
     const hoje = hojeBR();
 
-    const [evRes, txRes, verbaRes, saldoRes, vinculoRes, objetivosRes] =
+    const [ev, txRes, contratosBrutos, saldoRes, vinculoRes, objetivosRes, registros] =
       await Promise.all([
-      supabase
-        .from("events")
-        .select("verba_total, clients(name)")
-        .eq("id", eventId)
-        .maybeSingle(),
-      supabase
-        .from("transactions")
-        .select(COLUNAS)
-        .eq("event_id", eventId)
-        .order("due_date", { ascending: true }),
-      supabase
-        .from("evento_fornecedor_orcamento")
-        .select("id, supplier_id, valor_alocado, valor_estimado_inicial, suppliers(name)")
-        .eq("event_id", eventId),
-      supabase.rpc("saldo_do_caixa_evento", { p_event_id: eventId }),
-      // objetivo ↔ fornecedor: o campo tipo fornecedor da decisão de
-      // contratação diz de que categoria aquele fornecedor é
-      supabase
-        .from("evento_campo_valor")
-        .select("valor_supplier_id, evento_decisao(evento_objetivo(id, nome))")
-        .eq("event_id", eventId)
-        .not("valor_supplier_id", "is", null),
-      // as categorias de verba: já vêm preenchidas pelo método
-      supabase
-        .from("evento_objetivo")
-        .select("id, nome, valor_previsto, ordem, ativo")
-        .eq("event_id", eventId)
-        .order("ordem"),
-    ]);
+        lerEvento(supabase, eventId),
+        supabase
+          .from("transactions")
+          .select(COLUNAS)
+          .eq("event_id", eventId)
+          .order("due_date", { ascending: true }),
+        lerContratos(supabase, eventId),
+        supabase.rpc("saldo_do_caixa_evento", { p_event_id: eventId }),
+        // objetivo ↔ fornecedor: o campo tipo fornecedor da decisão de
+        // contratação diz de que categoria aquele fornecedor é
+        supabase
+          .from("evento_campo_valor")
+          .select("valor_supplier_id, evento_decisao(evento_objetivo(id, nome))")
+          .eq("event_id", eventId)
+          .not("valor_supplier_id", "is", null),
+        // as categorias de verba: já vêm preenchidas pelo método
+        supabase
+          .from("evento_objetivo")
+          .select("id, nome, valor_previsto, ordem, ativo")
+          .eq("event_id", eventId)
+          .order("ordem"),
+        lerRegistros(supabase, eventId),
+      ]);
 
-    const ev = evRes.data as Linha | null;
     const nomeCliente =
       (ev?.clients as { name: string } | null)?.name ?? "a cliente";
 
-    // mapa fornecedor → categoria
+    const objetivos = ((objetivosRes.data ?? []) as Linha[]).filter(
+      (o) => o.ativo !== false
+    );
+    const nomeDoObjetivo = new Map<string, string>(
+      objetivos.map((o) => [o.id as string, o.nome as string])
+    );
+
+    // mapa fornecedor → categoria, deduzido do Planejamento
     const categoriaDo = new Map<string, { id: string; nome: string }>();
     for (const v of (vinculoRes.data ?? []) as Linha[]) {
       const obj = (
@@ -130,6 +218,16 @@ export const getFinanceiroDoEvento = cache(
       )?.evento_objetivo;
       if (obj && v.valor_supplier_id) {
         categoriaDo.set(v.valor_supplier_id as string, obj);
+      }
+    }
+    // o que o contrato diz vale mais que a dedução
+    for (const c of contratosBrutos) {
+      const objetivoId = (c.objetivo_id as string) ?? null;
+      if (objetivoId && c.supplier_id && nomeDoObjetivo.has(objetivoId)) {
+        categoriaDo.set(c.supplier_id as string, {
+          id: objetivoId,
+          nome: nomeDoObjetivo.get(objetivoId)!,
+        });
       }
     }
 
@@ -142,6 +240,21 @@ export const getFinanceiroDoEvento = cache(
       );
     });
 
+    const contratos: ContratoFornecedor[] = contratosBrutos.map((c) => {
+      const cat = categoriaDo.get(c.supplier_id as string) ?? null;
+      return {
+        id: c.id as string,
+        supplierId: c.supplier_id as string,
+        fornecedor: (c.suppliers as { name: string } | null)?.name ?? "Fornecedor",
+        categoria: cat?.nome ?? null,
+        objetivoId: cat?.id ?? null,
+        // null = veio do Planejamento sem contrato fechado (083); não
+        // vira 0 para não inventar economia
+        valor: c.valor_alocado === null ? null : Number(c.valor_alocado),
+        assinadoEm: (c.assinado_em as string) ?? null,
+      };
+    });
+
     /*
      * Verba por categoria.
      *
@@ -150,37 +263,23 @@ export const getFinanceiroDoEvento = cache(
      * a verba foi distribuída. Montar a partir do fornecedor mostraria só
      * quem já foi fechado — e o buraco do orçamento é justamente o que
      * ainda não foi.
-     *
-     * Dentro de cada uma entram os fornecedores fechados, e o que sobrar
-     * sem categoria vai para uma linha própria em vez de sumir.
      */
-    const objetivos = ((objetivosRes.data ?? []) as Linha[]).filter(
-      (o) => o.ativo !== false
-    );
-    const verbas = (verbaRes.data ?? []) as unknown as Linha[];
-
     const itensDaCategoria = (objetivoId: string | null) =>
-      verbas
-        .filter((v) => {
-          const cat = categoriaDo.get(v.supplier_id as string);
-          return objetivoId ? cat?.id === objetivoId : !cat;
-        })
-        .map((v) => ({
-          id: v.id as string,
-          nome: (v.suppliers as { name: string } | null)?.name ?? "Fornecedor",
-          fornecedor: (v.suppliers as { name: string } | null)?.name ?? null,
-          contratado: v.valor_alocado === null ? 0 : Number(v.valor_alocado),
-          estimado:
-            v.valor_estimado_inicial === null
-              ? null
-              : Number(v.valor_estimado_inicial),
+      contratos
+        .filter((c) =>
+          objetivoId ? c.objetivoId === objetivoId : c.objetivoId == null
+        )
+        .map((c) => ({
+          id: c.id,
+          nome: c.fornecedor,
+          fornecedor: c.fornecedor,
+          contratado: c.valor ?? 0,
+          estimado: null,
         }));
 
     const lancamentosDaCategoria = (objetivoId: string | null) =>
       lancamentos.filter((l) => {
         if (l.direcao !== "saida") return false;
-        // o lançamento diz a categoria dele, se souber; senão herda a do
-        // fornecedor
         if (l.objetivoId) return l.objetivoId === objetivoId;
         const cat = l.supplierId ? categoriaDo.get(l.supplierId) : null;
         return objetivoId ? cat?.id === objetivoId : !cat;
@@ -207,12 +306,14 @@ export const getFinanceiroDoEvento = cache(
       });
     }
 
-    // Contrato de assessoria: soma do que ela combinou receber.
+    // Contrato de assessoria: o que ela combinou receber.
     const entradas = lancamentos.filter(
-      (l) => l.direcao === "entrada" && l.tipo !== "extra"
+      (l) => l.conta === "assessoria" && l.direcao === "entrada" && l.tipo !== "extra"
     );
     const extras = lancamentos
-      .filter((l) => l.direcao === "entrada" && l.tipo === "extra")
+      .filter(
+        (l) => l.conta === "assessoria" && l.direcao === "entrada" && l.tipo === "extra"
+      )
       .reduce((t, l) => t + l.valor, 0);
 
     const saldo = (saldoRes.data ?? null) as {
@@ -224,11 +325,21 @@ export const getFinanceiroDoEvento = cache(
     return {
       lancamentos,
       categorias,
+      objetivos: objetivos.map((o) => ({
+        id: o.id as string,
+        nome: o.nome as string,
+        previsto: o.valor_previsto === null ? 0 : Number(o.valor_previsto),
+      })),
+      contratos,
       verbaTotal: ev?.verba_total == null ? null : Number(ev.verba_total),
       contrato: {
         valor: entradas.reduce((t, l) => t + l.valor, 0),
         parcelas: entradas.length,
         extras,
+      },
+      assessoria: {
+        contrato: ev?.contract_value == null ? null : Number(ev.contract_value),
+        assinadoEm: (ev?.contrato_assinado_em as string) ?? null,
       },
       saldoCaixa: {
         recebidoDaCliente: Number(saldo?.recebido_da_cliente ?? 0),
@@ -236,6 +347,7 @@ export const getFinanceiroDoEvento = cache(
           Number(saldo?.recebido_da_cliente ?? 0) - Number(saldo?.pago_do_caixa ?? 0),
         compromissado30d: Number(saldo?.compromissado_30d ?? 0),
       },
+      registros,
       hoje,
     };
   }

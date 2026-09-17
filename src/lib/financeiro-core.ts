@@ -54,9 +54,22 @@ export type TipoLancamento = "sinal" | "parcela" | "saldo" | "extra" | "entrada"
 export type OrigemPagamento = "cliente_direto" | "caixa";
 export type Tone = "ok" | "late" | "wait" | "neutral";
 
+/**
+ * De que dinheiro o lançamento é.
+ *
+ * `verba` é o dinheiro do casal que ela administra — inclui o repasse que
+ * a cliente faz para o caixa do evento (uma ENTRADA da verba, não receita
+ * dela). `assessoria` é a receita dela e os custos dela.
+ *
+ * Sem isto, a direção sozinha mentia: repasse da cliente e parcela do
+ * contrato de assessoria são os dois "entrada", e caíam na mesma tela.
+ */
+export type Conta = "verba" | "assessoria";
+
 export type Lancamento = {
   id: string;
   direcao: Direcao;
+  conta: Conta;
   categoria: string;
   /** fornecedor (saída) ou cliente (entrada) */
   fornecedor: string;
@@ -138,7 +151,7 @@ export const lancamentosDaTela = (
   screen: "assessoria" | "fornecedores"
 ): Lancamento[] =>
   lancamentos.filter(
-    (l) => (l.direcao === "entrada") === (screen === "assessoria")
+    (l) => (l.conta === "assessoria") === (screen === "assessoria")
   );
 
 /* ---------------- alertas ---------------- */

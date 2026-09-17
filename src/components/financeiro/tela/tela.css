@@ -1,0 +1,1117 @@
+/* Financeiro do evento — a folha da tela nova (handoff 2a).
+ *
+ * Os tokens já existem no globals.css (fundação Celebra Pro). Aqui só há
+ * composição: nenhuma cor nova, fora o trilho dos menus, que é a única
+ * superfície mais escura que a página.
+ *
+ * Regras rígidas do desenho, e o motivo de cada uma:
+ *   · mono SÓ em número, data e célula de calendário. A tela antiga usava
+ *     mono em tudo e parecia amadora;
+ *   · tabular-nums no bloco inteiro: é o que faz coluna de dinheiro
+ *     alinhar dígito a dígito;
+ *   · todo valor com nowrap: "R$" nunca se separa do número;
+ *   · hierarquia por cinza. Cor só em estado e na única ação primária;
+ *   · card financeiro é papel (#fff); card auxiliar é névoa. Essa
+ *     distinção é o que resolve a confusão da tela antiga.
+ */
+
+.fe {
+  --trilho: #e9e3db;
+  max-width: 1160px;
+  font-family: var(--font-ui), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  color: var(--cinza-3);
+  padding-bottom: 40px;
+}
+
+.fe-mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  white-space: nowrap;
+}
+
+@keyframes fe-sobe {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fe-gira {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------------- cabeçalho ---------------- */
+
+.fe-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.fe-meta-evento {
+  font-size: 12.5px;
+  color: var(--cinza);
+}
+.fe-h1 {
+  margin: 4px 0 0;
+  font-family: var(--font-title), system-ui, sans-serif;
+  font-size: 32px;
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: var(--tinta);
+}
+.fe-topo-dir {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.fe-hoje {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--cinza);
+  text-align: right;
+}
+.fe-hoje b {
+  display: block;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-weight: 400;
+  color: var(--tinta);
+}
+
+/* ---------------- botões ---------------- */
+
+.fe-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--linha);
+  border-radius: var(--r-md);
+  background: var(--papel);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--tinta);
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease, color .15s ease;
+  white-space: nowrap;
+}
+.fe-btn:hover { border-color: var(--cinza-2); }
+.fe-btn:disabled { opacity: .55; cursor: default; }
+
+.fe-btn-primario {
+  border-color: transparent;
+  background: var(--ameixa-600);
+  color: #fff;
+}
+.fe-btn-primario:hover { background: var(--ameixa-800); border-color: transparent; }
+
+.fe-btn-fantasma {
+  border-color: transparent;
+  background: transparent;
+  color: var(--cinza-3);
+}
+.fe-btn-fantasma:hover { background: var(--nevoa); border-color: transparent; }
+
+.fe-btn-sm { min-height: 34px; padding: 0 12px; font-size: 13px; }
+
+.fe-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--ameixa-600);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ---------------- exportar ---------------- */
+
+.fe-dropdown {
+  position: absolute;
+  right: 0;
+  top: 46px;
+  z-index: 20;
+  width: 268px;
+  background: var(--papel);
+  border: 1px solid var(--linha);
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(34, 30, 27, .14);
+  overflow: hidden;
+  animation: fe-sobe .18s ease;
+  text-align: left;
+}
+.fe-dropdown a,
+.fe-dropdown button {
+  display: block;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  text-decoration: none;
+}
+.fe-dropdown > * + * { border-top: 1px solid var(--linha); }
+.fe-dropdown a:hover,
+.fe-dropdown button:hover { background: var(--marfim); }
+.fe-dropdown strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--tinta);
+}
+.fe-dropdown span {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--cinza);
+}
+
+/* ---------------- menu de contas ---------------- */
+
+.fe-contas {
+  display: inline-flex;
+  gap: 4px;
+  margin-top: 20px;
+  padding: 4px;
+  background: var(--trilho);
+  border: 1px solid var(--linha);
+  border-radius: 12px;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.fe-conta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 150px;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  font-family: inherit;
+  color: var(--cinza-3);
+  cursor: pointer;
+  transition: all .15s ease;
+  text-align: left;
+}
+.fe-conta:hover { background: var(--nevoa); }
+.fe-conta[aria-current="true"] {
+  background: var(--papel);
+  color: var(--tinta);
+  box-shadow: 0 1px 2px rgba(34, 30, 27, .08);
+}
+.fe-conta-nome { font-size: 14px; font-weight: 600; }
+.fe-conta-sub {
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: var(--cinza);
+  white-space: nowrap;
+}
+
+/* ---------------- colunas ---------------- */
+
+.fe-colunas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px;
+  margin-top: 16px;
+  animation: fe-sobe .2s ease;
+}
+.fe-financeiro {
+  flex: 1 1 520px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.fe-trilho {
+  flex: 0 1 272px;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.fe-trilho-rotulo {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--cinza-2);
+}
+
+/* ---------------- cards ---------------- */
+
+.fe-card {
+  background: var(--papel);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-lg);
+  box-shadow: 0 1px 2px rgba(34, 30, 27, .04);
+  overflow: hidden;
+}
+.fe-card-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+}
+.fe-h2 {
+  margin: 0;
+  font-family: var(--font-title), system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--tinta);
+}
+.fe-h2-menor { font-size: 16px; }
+.fe-meta {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--cinza);
+}
+.fe-acoes { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* ---------------- faixa de números ---------------- */
+
+.fe-numeros {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+.fe-numero {
+  display: block;
+  width: 100%;
+  padding: 14px 18px;
+  border: 0;
+  border-right: 1px solid var(--linha);
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+.fe-numero:last-child { border-right: 0; }
+.fe-numero:hover { background: var(--marfim); }
+.fe-numero.fe-destaque { background: var(--nevoa); }
+.fe-numero.fe-destaque:hover { background: var(--nevoa-2); }
+.fe-numero[disabled] { cursor: default; }
+.fe-numero[disabled]:hover { background: transparent; }
+.fe-rotulo {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--cinza);
+}
+.fe-numero-valor {
+  margin: 4px 0 0;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 18px;
+  color: var(--tinta);
+  white-space: nowrap;
+}
+.fe-numero-nota {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--cinza);
+}
+.fe-numero-nota.fe-atrasado { color: var(--state-late); }
+.fe-numero-nota.fe-acao { color: var(--ameixa-600); text-decoration: underline; }
+
+/* ---------------- caixa do evento ---------------- */
+
+.fe-caixa-topo { padding: 14px 20px 12px; }
+.fe-caixa-numeros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0 20px 14px;
+}
+.fe-caixa-numero { flex: 1 1 130px; }
+.fe-caixa-valor {
+  margin: 4px 0 0;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 16px;
+  color: var(--tinta);
+  white-space: nowrap;
+}
+.fe-caixa-valor.forte { font-weight: 600; }
+.fe-caixa-valor.negativo { color: var(--state-late); }
+
+.fe-faixa {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 20px;
+  border-top: 1px solid var(--linha);
+}
+.fe-faixa.pedir { background: var(--state-wait-bg); }
+.fe-faixa.ok { background: var(--state-ok-bg); }
+.fe-faixa-ponto {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+}
+.fe-faixa.pedir .fe-faixa-ponto { background: var(--state-wait); }
+.fe-faixa.ok .fe-faixa-ponto { background: var(--state-ok); }
+.fe-faixa-texto { flex: 1; min-width: 0; }
+.fe-faixa-titulo { margin: 0; font-size: 14px; font-weight: 600; }
+.fe-faixa.pedir .fe-faixa-titulo { color: var(--state-wait); }
+.fe-faixa.ok .fe-faixa-titulo { color: var(--state-ok); }
+.fe-faixa-detalhe { margin: 1px 0 0; font-size: 12.5px; color: var(--cinza-3); }
+
+/* ---------------- agenda ---------------- */
+
+.fe-filtro-dia {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 20px;
+  background: var(--ameixa-50);
+  font-size: 13px;
+  color: var(--ameixa-800);
+}
+.fe-grupo {
+  padding: 6px 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.fe-grupo.atrasados { background: var(--state-late-bg); color: var(--state-late); }
+.fe-grupo.semana { background: var(--state-wait-bg); color: var(--state-wait); }
+.fe-grupo.depois,
+.fe-grupo.pagos { background: var(--nevoa); color: var(--cinza-3); }
+.fe-grupo-botao {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0;
+}
+
+.fe-linha {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 20px;
+  border-top: 1px solid var(--linha);
+  transition: background .15s ease;
+}
+.fe-linha:hover { background: var(--marfim); }
+.fe-linha-data {
+  flex: none;
+  width: 48px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 13px;
+  color: var(--cinza-3);
+}
+.fe-linha-data.atrasados { color: var(--state-late); }
+.fe-linha-data.semana { color: var(--state-wait); }
+.fe-linha-data.pagos { color: var(--cinza); }
+.fe-linha-texto { flex: 1; min-width: 0; }
+.fe-linha-titulo {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--tinta);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fe-linha-meta {
+  margin: 1px 0 0;
+  font-size: 12.5px;
+  color: var(--cinza);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fe-linha-valor {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 15px;
+  color: var(--tinta);
+  white-space: nowrap;
+}
+.fe-vazio {
+  padding: 28px 20px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--cinza);
+}
+
+/* ---------------- badge ---------------- */
+
+.fe-badge {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.fe-badge.ok { background: var(--state-ok-bg); color: var(--state-ok); }
+.fe-badge.wait { background: var(--state-wait-bg); color: var(--state-wait); }
+.fe-badge.late { background: var(--state-late-bg); color: var(--state-late); }
+.fe-badge.neutral { background: var(--nevoa); color: var(--cinza-3); }
+
+/* ---------------- fornecedores ---------------- */
+
+.fe-colunas-forn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 20px;
+  background: var(--nevoa);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--cinza);
+}
+.fe-col-nome { flex: 1 1 180px; min-width: 150px; }
+.fe-col-valores { width: 140px; overflow: hidden; text-align: right; }
+.fe-col-prox { width: 110px; }
+.fe-col-chevron { width: 16px; text-align: center; }
+
+.fe-forn-linha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 20px;
+  border: 0;
+  border-top: 1px solid var(--linha);
+  background: var(--papel);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+.fe-forn-linha:hover { background: var(--marfim); }
+.fe-forn-linha[aria-expanded="true"] { background: var(--ameixa-50); }
+.fe-forn-nome {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--tinta);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fe-forn-sub {
+  margin: 1px 0 0;
+  font-size: 12px;
+  color: var(--cinza);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fe-valores-a-pagar {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 15px;
+  color: var(--tinta);
+  white-space: nowrap;
+}
+.fe-valores-pago {
+  display: block;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--cinza);
+  white-space: nowrap;
+}
+.fe-chevron { color: var(--cinza); font-size: 12px; }
+
+.fe-painel {
+  padding: 14px 20px 16px;
+  background: var(--marfim);
+  border-top: 1px solid var(--linha);
+}
+.fe-contrato-linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 28px;
+  margin-bottom: 12px;
+}
+.fe-par-valor {
+  margin: 2px 0 0;
+  font-size: 14px;
+  color: var(--tinta);
+}
+.fe-tabela-parcelas {
+  background: var(--papel);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.fe-tabela-parcelas .fe-linha:first-child { border-top: 0; }
+.fe-parcela-hist {
+  margin: 1px 0 0;
+  font-size: 11.5px;
+  color: var(--cinza);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fe-total {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: var(--nevoa);
+  border-top: 1px solid var(--linha);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+/* ---------------- histórico e avulsos ---------------- */
+
+.fe-recolhivel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 20px;
+  border: 0;
+  background: var(--papel);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+.fe-recolhivel:hover { background: var(--nevoa); }
+.fe-registro {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 20px;
+  border-top: 1px solid var(--linha);
+}
+.fe-registro-quando {
+  flex: none;
+  width: 96px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--cinza);
+  white-space: nowrap;
+}
+.fe-registro-texto { flex: 1; min-width: 0; }
+.fe-registro-titulo { margin: 0; font-size: 14px; color: var(--tinta); }
+.fe-registro-detalhe { margin: 1px 0 0; font-size: 11.5px; color: var(--cinza); }
+.fe-registro-quem {
+  flex: none;
+  font-size: 12px;
+  color: var(--cinza-3);
+  white-space: nowrap;
+}
+
+/* ---------------- trilho auxiliar ---------------- */
+
+.fe-aux {
+  background: var(--nevoa);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-lg);
+  padding: 12px 14px;
+}
+.fe-aux-rotulo {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--cinza);
+  margin: 0 0 8px;
+}
+.fe-acao-card {
+  background: var(--ameixa-50);
+  border: 1px solid var(--ameixa-300);
+}
+.fe-acao-card .fe-aux-rotulo { color: var(--ameixa-600); }
+.fe-acao-item {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--linha);
+  border-radius: var(--r-md);
+  background: var(--papel);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .15s ease;
+}
+.fe-acao-item:first-of-type { margin-top: 0; }
+.fe-acao-item:hover { border-color: var(--ameixa-300); }
+.fe-acao-titulo {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--tinta);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fe-acao-meta {
+  margin: 1px 0 0;
+  font-size: 11px;
+  color: var(--cinza);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fe-tudo-em-dia { font-size: 12.5px; color: var(--state-ok); margin: 0; }
+
+.fe-cal-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.fe-cal-mes { font-size: 12.5px; font-weight: 600; color: var(--tinta); }
+.fe-cal-nav button {
+  border: 0;
+  background: none;
+  padding: 2px 6px;
+  font-size: 14px;
+  color: var(--cinza);
+  cursor: pointer;
+}
+.fe-cal-nav button:hover { color: var(--tinta); }
+.fe-cal-semana,
+.fe-cal-grade {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.fe-cal-semana div {
+  text-align: center;
+  font-size: 10px;
+  color: var(--cinza-2);
+  padding-bottom: 2px;
+}
+.fe-cal-dia {
+  height: 28px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--cinza);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  cursor: default;
+  padding: 0;
+}
+.fe-cal-dia.tem { color: var(--tinta); cursor: pointer; }
+.fe-cal-dia.hoje {
+  background: var(--papel);
+  box-shadow: inset 0 0 0 1.5px var(--ameixa-600);
+  color: var(--ameixa-600);
+}
+.fe-cal-dia.sel { background: var(--ameixa-600); color: #fff; }
+.fe-cal-ponto { width: 4px; height: 4px; border-radius: 50%; }
+.fe-cal-resumo {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--linha);
+  font-size: 11.5px;
+  color: var(--cinza);
+}
+.fe-cal-resumo div { display: flex; justify-content: space-between; gap: 8px; }
+
+.fe-segmented {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--linha);
+  border-radius: 12px;
+}
+.fe-segmented button {
+  flex: 1;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  padding: 6px 4px;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--cinza-3);
+  cursor: pointer;
+  transition: background .15s ease;
+}
+.fe-segmented button[aria-current="true"] {
+  background: var(--papel);
+  color: var(--tinta);
+  font-weight: 500;
+}
+.fe-busca {
+  width: 100%;
+  height: 36px;
+  margin-top: 8px;
+  padding: 0 10px;
+  border: 1px solid var(--linha);
+  border-radius: var(--r-md);
+  background: var(--papel);
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--tinta);
+}
+.fe-busca:focus {
+  outline: none;
+  border-color: var(--ameixa-600);
+  box-shadow: 0 0 0 3px var(--ameixa-50);
+}
+
+/* ---------------- encerramento ---------------- */
+
+.fe-passos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+.fe-passo {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+}
+.fe-passo h3 {
+  margin: 0;
+  font-family: var(--font-title), system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--tinta);
+}
+.fe-passo p { margin: 0; font-size: 13.5px; color: var(--cinza-3); }
+.fe-passo-dados { font-size: 12px; color: var(--cinza); }
+.fe-passo .fe-btn { margin-top: auto; align-self: flex-start; }
+
+/* ---------------- modal ---------------- */
+
+.fe-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(34, 30, 27, .28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow-y: auto;
+}
+.fe-modal {
+  width: 100%;
+  max-width: 520px;
+  background: var(--papel);
+  border-radius: var(--r-xl);
+  box-shadow: 0 20px 50px rgba(34, 30, 27, .18);
+  animation: fe-sobe .18s ease;
+  overflow: hidden;
+}
+.fe-modal-topo { padding: 20px 24px 0; }
+.fe-modal-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--cinza);
+}
+.fe-modal-titulo {
+  margin: 4px 0 0;
+  font-family: var(--font-title), system-ui, sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--tinta);
+}
+.fe-modal-sub { margin: 4px 0 0; font-size: 13px; color: var(--cinza-3); }
+.fe-modal-corpo {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 24px;
+}
+.fe-modal-pe {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 24px;
+  background: var(--marfim);
+  border-top: 1px solid var(--linha);
+}
+
+.fe-campo label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--cinza);
+}
+.fe-campo input,
+.fe-campo select {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--linha);
+  border-radius: var(--r-md);
+  background: var(--papel);
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--tinta);
+}
+.fe-campo input:focus,
+.fe-campo select:focus {
+  outline: none;
+  border-color: var(--ameixa-600);
+  box-shadow: 0 0 0 3px var(--ameixa-50);
+}
+.fe-campo-dinheiro { position: relative; }
+.fe-campo-dinheiro span {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 14px;
+  color: var(--cinza);
+  pointer-events: none;
+}
+.fe-campo-dinheiro input {
+  padding-left: 34px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+}
+.fe-linha-campos { display: flex; gap: 12px; flex-wrap: wrap; }
+.fe-linha-campos > * { flex: 1 1 140px; }
+.fe-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--cinza-3);
+}
+.fe-checkbox input { width: 16px; height: 16px; accent-color: var(--ameixa-600); }
+.fe-previa {
+  font-size: 12.5px;
+  color: var(--cinza-3);
+  background: var(--marfim);
+  border: 1px solid var(--linha);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+}
+.fe-erro { font-size: 13px; color: var(--state-late); margin: 0; }
+
+/* leitor de comprovante: zona de soltar arquivo, não card */
+.fe-leitor {
+  border: 1.5px dashed var(--ameixa-300);
+  border-radius: 12px;
+  background: var(--marfim);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.fe-leitor-titulo { margin: 0; font-size: 14px; font-weight: 500; color: var(--tinta); }
+.fe-leitor-meta { margin: 2px 0 0; font-size: 12px; color: var(--cinza); }
+.fe-leitor-meta.lido { color: var(--state-ok); }
+.fe-leitor-botao {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: var(--r-md);
+  background: var(--ameixa-600);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.fe-leitor-botao input { display: none; }
+.fe-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--linha);
+  border-top-color: var(--ameixa-600);
+  border-radius: 50%;
+  animation: fe-gira .8s linear infinite;
+  flex: none;
+}
+
+/* ---------------- toast ---------------- */
+
+.fe-toast {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 24px;
+  z-index: 60;
+  padding: 10px 16px;
+  border-radius: var(--r-md);
+  background: var(--tinta);
+  color: #fff;
+  font-size: 13px;
+  box-shadow: 0 8px 24px rgba(34, 30, 27, .2);
+  animation: fe-sobe .18s ease;
+}
+
+/* ---------------- celular ---------------- */
+
+@media (max-width: 830px) {
+  .fe-h1 { font-size: 26px; }
+  /* o menu inteiro à vista: três colunas iguais, sem rolar de lado */
+  .fe-contas { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; }
+  .fe-conta { min-width: 0; padding: 8px 10px; }
+  .fe-conta-nome { font-size: 13px; }
+  .fe-conta-sub { font-size: 10.5px; white-space: normal; }
+  .fe-so-pc { display: none; }
+  /* o que ela mais precisa ver primeiro sobe para cima da agenda */
+  .fe-trilho { order: -1; flex: 1 1 100%; }
+  .fe-financeiro { flex: 1 1 100%; }
+  .fe-col-prox { display: none; }
+}
+
+@media (max-width: 520px) {
+  .fe-topo-dir { width: 100%; justify-content: space-between; }
+}
+
+/* desfazer/excluir e "não se aplica": ações de conserto, fora do fluxo */
+.fe-acao-descartar {
+  display: block;
+  text-align: right;
+  padding: 4px 4px 0;
+}
+.fe-acao-descartar .fe-link { font-size: 11px; color: var(--cinza); }
+.fe-linha .fe-link { font-size: 12px; color: var(--cinza); flex: none; }
+
+/* faixa neutra: quando não há caixa ainda, não é alerta nem confirmação */
+.fe-faixa:not(.pedir):not(.ok) { background: var(--nevoa); }
+.fe-faixa:not(.pedir):not(.ok) .fe-faixa-ponto { background: var(--cinza-2); }
+.fe-faixa:not(.pedir):not(.ok) .fe-faixa-titulo { color: var(--cinza-3); }
+
+/* nome e sub-linha do fornecedor são duas linhas, não uma frase colada */
+.fe-forn-nome,
+.fe-forn-sub,
+.fe-conta-nome,
+.fe-conta-sub,
+.fe-valores-a-pagar { display: block; }
+.fe-col-nome { display: block; }
+
+/* A coluna financeira aqui tem ~730px, não os 1160 do desenho: o valor
+   de 18px estourava a célula em "R$ 15.774,25". 16px ainda é o número
+   dominante da faixa e cabe com folga. */
+.fe-numero { padding: 14px 14px; }
+.fe-numero-valor { font-size: 16px; }
+
+/* ---------------- celular: a ordem do que importa ---------------- */
+@media (max-width: 830px) {
+  /* o trilho deixa de ser coluna e seus cards entram na mesma pilha:
+     "Precisa de ação" sobe para cima da agenda (é o que ela precisa ver
+     primeiro), e calendário e filtro descem para o fim */
+  .fe-trilho { display: contents; }
+  .fe-trilho-rotulo { display: none; }
+  .fe-aux { flex: 1 1 100%; order: 10; }
+  .fe-acao-card { order: -1; }
+  .fe-financeiro { order: 0; }
+}
+
+@media (max-width: 520px) {
+  /* a linha vira três andares: data e valor, o texto inteiro, o estado
+     e a ação. Antes o título truncava em "Dj Alok · E..." */
+  .fe-linha { flex-wrap: wrap; row-gap: 6px; column-gap: 10px; }
+  .fe-linha-data { order: 1; }
+  .fe-linha-valor { order: 2; margin-left: auto; }
+  .fe-linha-texto { order: 3; flex: 1 1 100%; }
+  .fe-linha .fe-badge { order: 4; }
+  .fe-linha .fe-btn { order: 5; margin-left: auto; }
+  .fe-linha .fe-link { order: 6; }
+}
+
+/* ---------------- painéis do Encerramento ----------------
+   Conciliação e Fechamento vieram da tela antiga com a própria folha.
+   Em vez de manter duas folhas para a mesma tela, eles passam a usar
+   estas classes — os números do balanço no mesmo desenho da faixa. */
+.fe-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  border-top: 1px solid var(--linha);
+}
+.fe-kpi {
+  padding: 14px 16px;
+  border-right: 1px solid var(--linha);
+}
+.fe-kpi:last-child { border-right: 0; }
+.fe-kpi-destaque { background: var(--nevoa); }
+.fe-kpi-valor {
+  margin: 4px 0 0;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 16px;
+  color: var(--tinta);
+  white-space: nowrap;
+}
+.fe-alerta {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 20px;
+  border-top: 1px solid var(--linha);
+  background: var(--nevoa);
+}
+.fe-alerta-ponto {
+  width: 7px;
+  height: 7px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--cinza-2);
+  flex: none;
+}
+.fe-alerta-titulo { margin: 0; font-size: 14px; font-weight: 600; color: var(--tinta); }
+.fe-alerta-meta { margin: 1px 0 0; font-size: 12.5px; color: var(--cinza-3); }
+.fe-t-wait { background: var(--state-wait-bg); }
+.fe-t-wait .fe-alerta-ponto { background: var(--state-wait); }
+.fe-t-wait .fe-alerta-titulo { color: var(--state-wait); }
+.fe-t-late { background: var(--state-late-bg); }
+.fe-t-late .fe-alerta-ponto { background: var(--state-late); }
+.fe-t-late .fe-alerta-titulo { color: var(--state-late); }
+.fe-t-ok { background: var(--state-ok-bg); }
+.fe-t-ok .fe-alerta-ponto { background: var(--state-ok); }
+.fe-t-ok .fe-alerta-titulo { color: var(--state-ok); }
+
+/* os painéis antigos escreviam direto no card, sem bloco com padding */
+.fe-card-solto { padding-bottom: 16px; }
+.fe-card-solto > *:not(.fe-card-topo):not(.fe-kpis):not(.fe-alerta) {
+  padding-left: 20px;
+  padding-right: 20px;
+}
+.fe-card-solto .fe-kpis + * { margin-top: 12px; }

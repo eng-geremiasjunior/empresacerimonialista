@@ -117,22 +117,6 @@ export async function criarLancamento(
   return { success: true };
 }
 
-export async function excluirLancamento(
-  eventId: string,
-  id: string
-): Promise<Resultado> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from("transactions")
-    .delete()
-    .eq("id", id)
-    .eq("event_id", eventId);
-  if (error) return { error: "Não foi possível excluir." };
-  revalidatePath(`/eventos/${eventId}/financeiro`);
-  return { success: true };
-}
-
-/** O teto da verba combinado com a cliente. */
 export async function salvarVerbaTotal(
   eventId: string,
   valor: number | null
