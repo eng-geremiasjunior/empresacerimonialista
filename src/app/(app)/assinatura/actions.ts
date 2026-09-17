@@ -625,7 +625,10 @@ async function assinarPara(
   // a versão anterior daqui gravava "trial" e a tela dizia "Assinatura
   // ativa. Obrigado!". A pessoa saía achando que assinou.
   const virouAtiva = g.status === "active";
-  const foiCancelada = g.status === "canceled";
+  // Conta em teste que teve o cartão recusado continua no teste: a mesma
+  // regra do webhook (17/09/2026). O fim do teste some quando o status sai
+  // de "trial" (gatilho da 154), e ela perderia o teste por tentar pagar.
+  const foiCancelada = g.status === "canceled" && atual?.status !== "trial";
 
   // Estado anterior: se a cobrança não passou, não é para destruí-lo. Uma
   // conta em cortesia que tentou assinar e teve o cartão recusado perdia a

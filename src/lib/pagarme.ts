@@ -170,7 +170,8 @@ export type AssinaturaGateway = {
   status: string; // active, canceled, future...
   next_billing_at?: string | null;
   customer?: { id?: string; name?: string; email?: string };
-  card?: { last_four_digits?: string; brand?: string };
+  // mês e ano vêm como número (conferido nos avisos guardados, 17/09/2026)
+  card?: { last_four_digits?: string; brand?: string; exp_month?: number; exp_year?: number };
   current_cycle?: { end_at?: string | null };
   // O GET /subscriptions/{id} devolve os itens — é neles que mora o
   // preço (assinatura avulsa, sem plano no painel). Só tem um; o id

@@ -14,6 +14,7 @@ import { createClient as createSupabase } from "@supabase/supabase-js";
 import { createClient as createSessao } from "@/lib/supabase/server";
 import {
   calcularMetricas,
+  eventosEfetivos,
   mesesAte,
   type AssinaturaAdmin,
   type EventoAssinatura,
@@ -614,13 +615,17 @@ export async function getSerieMensal(
     status: r.status,
     testeTerminaEm: r.teste_termina_em ?? null,
   }));
-  const ev: EventoAssinatura[] = eventos.filter((r) => !casa.has(r.empresa_id)).map((r) => ({
-    empresaId: r.empresa_id,
-    tipo: r.tipo,
-    valorAntes: r.valor_antes === null ? null : Number(r.valor_antes),
-    valorDepois: r.valor_depois === null ? null : Number(r.valor_depois),
-    em: r.em,
-  }));
+  // eventosEfetivos tira as repetições (cancelar quem já não pagava) antes
+  // de qualquer conta: métricas e relatório leem a mesma lista limpa.
+  const ev: EventoAssinatura[] = eventosEfetivos(
+    eventos.filter((r) => !casa.has(r.empresa_id)).map((r) => ({
+      empresaId: r.empresa_id,
+      tipo: r.tipo,
+      valorAntes: r.valor_antes === null ? null : Number(r.valor_antes),
+      valorDepois: r.valor_depois === null ? null : Number(r.valor_depois),
+      em: r.em,
+    }))
+  );
 
   const gastoPorMes = new Map<string, number>(
     (gastos ?? []).map((g) => [String(g.mes).slice(0, 7), Number(g.valor)])

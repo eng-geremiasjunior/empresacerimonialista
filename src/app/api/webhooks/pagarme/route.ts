@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
     // proximo_vencimento entra na leitura porque o patch abaixo o usa como
     // valor de queda: é o fim do período pago, e a cortesia da 151 conta
     // a partir dele
-    .select("id, empresa_id, status, falhas_seguidas, proximo_vencimento")
+    .select("id, empresa_id, status, falhas_seguidas, proximo_vencimento, valor_mensal")
     .eq("gateway_subscription_id", assinaturaId)
     .maybeSingle();
 
@@ -159,13 +159,36 @@ export async function POST(request: NextRequest) {
     corpo.type === "charge.payment_failed" || corpo.type === "invoice.payment_failed";
   const cancelou = corpo.type === "subscription.canceled" || g.status === "canceled";
 
+  // O que o aviso pode mudar depende de como a conta está AQUI (17/09/2026).
+  //
+  // Cartão recusado no checkout cria na operadora uma assinatura "failed",
+  // avisa a falha e, minutos depois, cancela essa assinatura que nunca
+  // existiu de verdade (medido no log do gateway, 31/08). Antes, esses dois
+  // avisos viravam "inadimplente" e depois "cancelada" numa conta EM
+  // TESTE: o gatilho da 154 apagava o fim do teste, e ela perdia o teste
+  // por ter tentado pagar. Agora:
+  //   · cancelamento só vale para quem pagava;
+  //   · cobrança recusada só marca atraso em quem estava ativa;
+  //   · pagamento confirmado ativa qualquer conta que não esteja ativa.
+  const pagava = ["ativa", "inadimplente", "pausada"].includes(linha.status);
   const statusNovo = cancelou
-    ? "cancelada"
+    ? pagava
+      ? "cancelada"
+      : linha.status
     : falhou
-      ? "inadimplente"
+      ? linha.status === "ativa"
+        ? "inadimplente"
+        : linha.status
       : pagou || g.status === "active"
         ? "ativa"
         : linha.status;
+
+  // O preço que a operadora está cobrando, em reais. É ele que o histórico
+  // do painel do dono precisa; sem ele, a conta entrava no MRR com R$ 0.
+  const precoCentavos = Number(g.items?.[0]?.pricing_scheme?.price);
+  const precoDaOperadora =
+    Number.isFinite(precoCentavos) && precoCentavos > 0 ? precoCentavos / 100 : null;
+  const valorAqui = Number(linha.valor_mensal) || 0;
 
   const patch: Record<string, unknown> = {
     status: statusNovo,
@@ -187,9 +210,19 @@ export async function POST(request: NextRequest) {
     patch.ultimo_pagamento_em = hojeBR();
     patch.falhas_seguidas = 0;
   }
-  if (falhou) patch.falhas_seguidas = (linha.falhas_seguidas ?? 0) + 1;
-  // Brasília, como a 151 mede a cortesia — ver o comentário em actions.ts
-  if (cancelou) patch.cancelada_em = hojeBR();
+  // A recusa no checkout já foi contada lá; aqui conta a de quem já paga.
+  if (falhou && pagava) patch.falhas_seguidas = (linha.falhas_seguidas ?? 0) + 1;
+  // Brasília, como a 151 mede a cortesia — ver o comentário em actions.ts.
+  // Só no dia em que a conta passa a cancelada: um segundo aviso de
+  // cancelamento empurrava a data para frente, e o congelamento junto.
+  if (statusNovo === "cancelada" && linha.status !== "cancelada") {
+    patch.cancelada_em = hojeBR();
+  }
+  // Conta que sai do teste pelo aviso passa a ter o valor que está sendo
+  // cobrado (o checkout grava o valor só quando a cobrança passa na hora).
+  if (statusNovo === "ativa" && linha.status === "trial" && precoDaOperadora !== null) {
+    patch.valor_mensal = precoDaOperadora;
+  }
 
   const { error: erroUpdate } = await db
     .from("assinaturas")
@@ -205,22 +238,46 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false }, { status: 503 });
   }
 
+  // A validade do cartão, para o painel avisar antes de vencer. Numa
+  // atualização à parte e sem derrubar nada: as colunas vêm da 123
+  // reaplicada, e um banco sem elas não pode fazer o aviso falhar.
+  const mesDoCartao = Number(g.card?.exp_month);
+  const anoDoCartao = Number(g.card?.exp_year);
+  if (mesDoCartao >= 1 && mesDoCartao <= 12 && anoDoCartao >= 2000) {
+    const { error: erroCartao } = await db
+      .from("assinaturas")
+      .update({ cartao_mes: mesDoCartao, cartao_ano: anoDoCartao })
+      .eq("id", linha.id);
+    if (erroCartao && erroCartao.code !== "PGRST204") {
+      console.error("[vela:pagarme] validade do cartão:", erroCartao.code);
+    }
+  }
+
   // O histórico que o painel do dono lê para o MRR (123): só transição
   // de verdade vira linha, senão a métrica conta pagamento como upgrade.
+  //   teste → ativa         início, com o valor cobrado
+  //   cancelada → ativa     reativação, com o valor cobrado
+  //   pausada → ativa       retomada
+  //   pagante → cancelada   cancelamento, com o valor de antes
+  //   ativa ↔ inadimplente  nada: no histórico ela nunca deixou de pagar;
+  //                         cobrança atrasada que foi paga não é "voltou"
   if (statusNovo !== linha.status) {
-    const tipo =
+    const valorCobrado = precoDaOperadora ?? (valorAqui > 0 ? valorAqui : null);
+    const evento =
       statusNovo === "cancelada"
-        ? "cancelamento"
-        : linha.status === "cancelada" || linha.status === "trial"
-          ? "inicio"
-          : statusNovo === "ativa" && linha.status === "inadimplente"
-            ? "reativacao"
-            : null;
-    if (tipo) {
+        ? { tipo: "cancelamento", valor_antes: valorAqui, valor_depois: null }
+        : statusNovo === "ativa" && linha.status === "trial"
+          ? { tipo: "inicio", valor_antes: null, valor_depois: valorCobrado }
+          : statusNovo === "ativa" && linha.status === "cancelada"
+            ? { tipo: "reativacao", valor_antes: null, valor_depois: valorCobrado }
+            : statusNovo === "ativa" && linha.status === "pausada"
+              ? { tipo: "retomada", valor_antes: null, valor_depois: valorCobrado }
+              : null;
+    if (evento) {
       await db.from("assinatura_eventos").insert({
         assinatura_id: linha.id,
         empresa_id: linha.empresa_id,
-        tipo,
+        ...evento,
         nota: `webhook ${corpo.type}`,
       });
     }

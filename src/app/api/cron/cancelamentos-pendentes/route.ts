@@ -93,13 +93,11 @@ export async function GET(request: NextRequest) {
 
     const r = await cancelarAssinatura(id);
     if (r.ok) {
+      // Nada vai para o histórico de assinaturas aqui. O cancelamento já
+      // foi gravado lá no dia em que ela cancelou; gravar de novo contava
+      // a mesma conta duas vezes no churn do painel do dono (17/09/2026).
+      // Esta rotina só termina, na operadora, o que já estava decidido.
       canceladasAgora++;
-      await db.from("assinatura_eventos").insert({
-        assinatura_id: l.id,
-        empresa_id: l.empresa_id,
-        tipo: "cancelamento",
-        nota: "a rotina diária confirmou o cancelamento na operadora",
-      });
       continue;
     }
 

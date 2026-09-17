@@ -218,6 +218,63 @@ export function calcularMetricas(
   };
 }
 
+/**
+ * O histórico sem as repetições (17/09/2026).
+ *
+ * Cancelar quem já não pagava não cancela nada. A rotina que confirma o
+ * cancelamento na operadora chegou a gravar um segundo, e o churn do mês
+ * contava a mesma conta duas vezes. O mesmo vale para pausa de quem não
+ * paga e para início de quem já paga (este vira mudança de valor, se o
+ * valor mudou). A limpeza acontece UMA vez, antes de tudo: as métricas e
+ * o relatório leem esta lista, e por isso nunca discordam.
+ *
+ * calcularMetricas continua intocada; ela só passa a receber o histórico
+ * limpo.
+ */
+export function eventosEfetivos(eventos: EventoAssinatura[]): EventoAssinatura[] {
+  const pagante = new Map<string, boolean>();
+  const valor = new Map<string, number>();
+  const saida: EventoAssinatura[] = [];
+  // sort estável: empate de data mantém a ordem de gravação (ver repassar)
+  const ordenados = [...eventos].sort((a, b) => a.em.localeCompare(b.em));
+  for (const e of ordenados) {
+    const paga = pagante.get(e.empresaId) ?? false;
+    const v = valor.get(e.empresaId) ?? 0;
+    switch (e.tipo) {
+      case "cancelamento":
+      case "pausa":
+        if (!paga) break;
+        pagante.set(e.empresaId, false);
+        saida.push(e);
+        break;
+      case "inicio":
+      case "reativacao":
+      case "retomada":
+        if (paga) {
+          if (e.valorDepois !== null && e.valorDepois !== v) {
+            saida.push({
+              ...e,
+              tipo: e.valorDepois > v ? "upgrade" : "downgrade",
+              valorAntes: v,
+            });
+            valor.set(e.empresaId, e.valorDepois);
+          }
+          break;
+        }
+        pagante.set(e.empresaId, true);
+        if (e.valorDepois !== null) valor.set(e.empresaId, e.valorDepois);
+        saida.push(e);
+        break;
+      case "upgrade":
+      case "downgrade":
+        if (e.valorDepois !== null) valor.set(e.empresaId, e.valorDepois);
+        saida.push(e);
+        break;
+    }
+  }
+  return saida;
+}
+
 /** "R$ 1.234" ou "—" — o painel nunca inventa zero. */
 export function metrica(v: number | null, prefixo = "", sufixo = ""): string {
   if (v === null) return "—";
