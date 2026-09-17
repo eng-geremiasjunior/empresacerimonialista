@@ -51,6 +51,24 @@ export function rotuloResponsavelTitulo(
 // faz sentido para um casal (ou para a debutante), e um fallback neutro.
 // Quem não está no mapa nunca lê "noivos".
 
+const CONVERSA_COM_POR_TIPO: Partial<Record<EventType, string>> = {
+  casamento: "com os noivos",
+  bodas: "com o casal",
+  debutante: "com a família",
+  formatura: "com a comissão",
+  show: "com o produtor",
+  corporativo: "com a empresa",
+};
+
+/**
+ * "com os noivos" / "com a empresa" — o roteiro de conversa da decisão no
+ * Planejamento. O painel escrevia "noivos" até num evento corporativo
+ * (16/09/2026).
+ */
+export function rotuloConversaCom(tipoEvento?: string | null): string {
+  return CONVERSA_COM_POR_TIPO[tipoEvento as EventType] ?? "com a cliente";
+}
+
 const ESCOLHAS_POR_TIPO: Partial<Record<EventType, string>> = {
   casamento: "Escolhas do casal",
   bodas: "Escolhas do casal",

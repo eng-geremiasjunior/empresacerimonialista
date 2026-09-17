@@ -4,7 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { dispensarGuia, concluirGuia } from "@/app/(app)/actions";
-import { EVENTO_LINK_COPIADO, type GuiaNaTela } from "@/lib/guia-vivo";
+import {
+  EVENTO_ABRIR_DECISAO,
+  EVENTO_LINK_COPIADO,
+  type GuiaNaTela,
+} from "@/lib/guia-vivo";
 
 /**
  * O recorte do guia: escurece a tela, abre um buraco em volta do alvo e
@@ -63,6 +67,13 @@ export function GuiaVivo({
   const carimbou = useRef(false);
   /** "Pular por agora": vale até ela fechar a aba (sessionStorage). */
   const [pulouAgora, setPulouAgora] = useState(false);
+  /**
+   * Um painel de trabalho aberto (a decisão, no Planejamento) marca
+   * `data-guia-painel`. Ele fica abaixo do escuro do guia, e ela via a
+   * decisão apagada justamente enquanto a preenchia: com o painel aberto, o
+   * guia tira o escuro e o anel e leva o cartão para o canto esquerdo.
+   */
+  const [painel, setPainel] = useState(false);
   /** Em que passo eu ja rolei a tela ate o alvo. Uma vez por passo. */
   const rolouNoPasso = useRef<string | null>(null);
 
@@ -101,6 +112,12 @@ export function GuiaVivo({
 
   const medir = useCallback(() => {
     if (!guia) return;
+    const comPainel = !!document.querySelector("[data-guia-painel]");
+    setPainel(comPainel);
+    if (comPainel) {
+      setAlvo(null);
+      return;
+    }
     const el = document.querySelector<HTMLElement>(
       `[data-guia="${guia.passo.alvo}"]`
     );
@@ -172,7 +189,10 @@ export function GuiaVivo({
 
   if (!guia || !montado || terminou || pulouAgora) return null;
 
-  const { passo, numero, total, rota, evento, falta } = guia;
+  const { passo, numero, total, rota, evento, falta, sugestoes, decidiuSemTarefa } = guia;
+  const texto =
+    sugestoes.length === 0 && passo.textoSemLista ? passo.textoSemLista : passo.texto;
+  const naTelaDoPasso = rota !== null && pathname.startsWith(rota);
   // o título já começa pelo tipo quando o evento não tem nome próprio
   const ondeAcontece = evento?.titulo
     ? `No evento ${evento.titulo}` +
@@ -188,6 +208,7 @@ export function GuiaVivo({
   // ter um "abaixo" visível é tratado como alvo sem lugar: o cartão vai
   // para o canto, e o anel continua marcando a região.
   const posicao = (() => {
+    if (painel) return { bottom: MARGEM, left: MARGEM } as const;
     const semLugar = { bottom: MARGEM, right: MARGEM } as const;
     if (!alvo) return semLugar;
     if (alvo.height > window.innerHeight * 0.7) return semLugar;
@@ -336,8 +357,64 @@ export function GuiaVivo({
             color: "#6B6259",
           }}
         >
-          {passo.texto}
+          {texto}
         </p>
+        {/* As decisões que criam tarefa: o clique abre a decisão ali mesmo
+            (ou leva até o Planejamento, se ela estiver em outra tela). */}
+        {sugestoes.length > 0 && rota && (
+          <ul
+            style={{
+              listStyle: "none",
+              margin: "10px 0 0",
+              padding: 0,
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
+            }}
+          >
+            {sugestoes.map((s) => (
+              <li key={s.id}>
+                <Link
+                  href={`${rota}?decisao=${s.id}`}
+                  onClick={(e) => {
+                    if (!naTelaDoPasso) return;
+                    e.preventDefault();
+                    window.dispatchEvent(
+                      new CustomEvent(EVENTO_ABRIR_DECISAO, { detail: { id: s.id } })
+                    );
+                  }}
+                  style={{
+                    display: "block",
+                    border: "1px solid #E6E0D8",
+                    borderRadius: 9,
+                    padding: "7px 10px",
+                    fontSize: 13,
+                    fontWeight: 500,
+                    lineHeight: 1.35,
+                    color: "#6E3F5F",
+                    textDecoration: "none",
+                    overflowWrap: "anywhere",
+                  }}
+                >
+                  {s.titulo}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+        {decidiuSemTarefa && (
+          <p
+            style={{
+              margin: "8px 0 0",
+              fontSize: 12,
+              lineHeight: 1.45,
+              color: "#6B6259",
+            }}
+          >
+            A decisão que você marcou não cria tarefa: nela, decidir já era o
+            trabalho.
+          </p>
+        )}
         {/* O passo do contexto só vence com os dois itens: escolhido um, o
             cartão parado parecia travado. Os nomes são os da tela. */}
         {falta.length > 0 && (

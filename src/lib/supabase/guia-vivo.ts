@@ -55,6 +55,8 @@ export async function getEstadoDoGuia(): Promise<EstadoDoGuia | null> {
     let definiuContexto = d.definiu_contexto === true;
     let evento: EstadoDoGuia["evento"] = null;
     let faltaNoContexto: string[] = [];
+    let sugestoes: EstadoDoGuia["sugestoes"] = [];
+    let semDecisaoComTarefa = false;
     if (d.evento_id && !d.dispensado_em && !d.concluido_em) {
       const [obj, conv, tar, ev, forn, resp] = await Promise.all([
         supabase.from("evento_objetivo").select("id", { count: "exact", head: true }).eq("event_id", d.evento_id),
@@ -127,6 +129,51 @@ export async function getEstadoDoGuia(): Promise<EstadoDoGuia | null> {
           faltaNoContexto = r.falta;
         }
       }
+
+      // PASSO DA DECISÃO: as pendentes que criam tarefa (molde com tarefa em
+      // metodo_tarefa), dos objetivos ligados, pelo prazo mais próximo. Só
+      // quando o passo é esse. Leitura com erro = sem lista (o cartão usa o
+      // texto sem lista), nunca o atalho que termina o guia.
+      if (temMetodo && definiuContexto && !d.tarefa_nasceu) {
+        const [objs, decs] = await Promise.all([
+          supabase.from("evento_objetivo").select("id").eq("event_id", d.evento_id).eq("ativo", true),
+          supabase
+            .from("evento_decisao")
+            .select("id, titulo, decisao_template_id, evento_objetivo_id")
+            .eq("event_id", d.evento_id)
+            .eq("estado", "pendente")
+            .not("decisao_template_id", "is", null)
+            .order("prazo_previsto", { ascending: true, nullsFirst: false })
+            .order("ordem", { ascending: true })
+            .limit(300),
+        ]);
+        if (!objs.error && !decs.error) {
+          const ligados = new Set((objs.data ?? []).map((o) => o.id as string));
+          const candidatas = (decs.data ?? []).filter((x) =>
+            ligados.has(x.evento_objetivo_id as string)
+          );
+          const modelos = [...new Set(candidatas.map((x) => x.decisao_template_id as string))];
+          let comTarefa = new Set<string>();
+          let leu = true;
+          if (modelos.length > 0) {
+            const mt = await supabase
+              .from("metodo_tarefa")
+              .select("decisao_id")
+              .in("decisao_id", modelos);
+            if (mt.error) leu = false;
+            else comTarefa = new Set((mt.data ?? []).map((x) => x.decisao_id as string));
+          }
+          if (leu) {
+            const criam = candidatas.filter((x) =>
+              comTarefa.has(x.decisao_template_id as string)
+            );
+            sugestoes = criam
+              .slice(0, 3)
+              .map((x) => ({ id: x.id as string, titulo: x.titulo as string }));
+            semDecisaoComTarefa = criam.length === 0;
+          }
+        }
+      }
     }
 
     return {
@@ -146,6 +193,8 @@ export async function getEstadoDoGuia(): Promise<EstadoDoGuia | null> {
       temResponsavel,
       evento,
       faltaNoContexto,
+      sugestoes,
+      semDecisaoComTarefa,
     };
   } catch {
     return null;

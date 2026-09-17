@@ -2,7 +2,7 @@
 
 // Drawer da decisão (handoff §10). Sempre lateral à direita, 420px — nunca
 // inline: expandir inline empurra a timeline e a usuária perde a posição.
-// Os campos vazios SÃO o roteiro da conversa com os noivos; o rótulo mostra
+// Os campos vazios SÃO o roteiro da conversa com a cliente; o rótulo mostra
 // NOME · TIPO para ela saber que resposta buscar. Contagem é de "campos
 // vazios", nunca "% preenchido". Sem asterisco, sem validação agressiva.
 
@@ -35,7 +35,7 @@ import { BlocoCuradoria, type AcoesCuradoria } from "./BlocoCuradoria";
 import { BlocoGuiaEstilo, type AcoesGuia } from "./BlocoGuiaEstilo";
 import type { Curadoria } from "@/lib/supabase/curadoria";
 import type { GuiaDeEstilo } from "@/lib/guia-shared";
-import { rotuloResponsavel } from "@/lib/papel";
+import { rotuloConversaCom, rotuloResponsavel } from "@/lib/papel";
 
 /**
  * O guia de estilo é o produto DESTA decisão — não é área nova do
@@ -809,7 +809,9 @@ export function DrawerDecisao({
           zIndex: 60,
         }}
       />
+      {/* data-guia-painel: com a decisão aberta, o guia sai da frente */}
       <aside
+        data-guia-painel=""
         style={{
           position: "fixed",
           top: 0,
@@ -894,8 +896,8 @@ export function DrawerDecisao({
               color: C.corpo,
             }}
           >
-            Estes campos são o roteiro da conversa com os noivos. Preencha
-            durante a reunião.
+            Estes campos são o roteiro da conversa {rotuloConversaCom(tipoEvento)}.
+            Preencha durante a reunião.
           </div>
         )}
 

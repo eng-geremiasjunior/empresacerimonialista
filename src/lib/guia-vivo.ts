@@ -1,4 +1,5 @@
-// O GUIA DO PRIMEIRO ACESSO — os cinco passos.
+// O GUIA DO PRIMEIRO ACESSO — os passos (eram cinco; o "veja a tarefa"
+// e o "dê o próximo passo" viraram um só em 16/09/2026, ver PASSOS).
 //
 // O modelo é o tutorial do Tibia, e o que se copia dele NÃO é o
 // escurecido com o círculo em volta do buraco. É a condução: você cava um
@@ -23,7 +24,7 @@
 //
 //     contexto → decisão → consequência → organização → ação
 //
-// E o passo 4 é o motivo de o guia existir. É onde ela vê que uma decisão
+// E o último passo é o motivo de o guia existir. É onde ela vê que uma decisão
 // virou trabalho pronto, com responsável e prazo, sem ela digitar. Todo o
 // resto é caminho até ali.
 
@@ -44,6 +45,8 @@ export type PassoDoGuia = {
   titulo: string;
   /** Fala com ela, sobre o trabalho dela. Nunca sobre a mecânica. */
   texto: string;
+  /** O texto quando o passo tem lista (`sugestoes`) e ela veio vazia. */
+  textoSemLista?: string;
   /**
    * `data-guia` do elemento a destacar. O recorte procura por este
    * atributo; se não achar, o cartão aparece sozinho, sem buraco — um
@@ -79,34 +82,57 @@ export const PASSOS: PassoDoGuia[] = [
     alvo: "contexto-evento",
     rota: "/eventos/:id/planejamento",
   },
+  // A DECISÃO TEM DE CRIAR TAREFA (16/09/2026). O texto dizia "qualquer uma
+  // serve", mas só as decisões de contratação e algumas de ação criam
+  // tarefa (106); nas de definir, decidir já é o trabalho. O dono seguiu o
+  // guia, decidiu uma dessas, e o passo seguinte mostrou uma tarefa que não
+  // existia. Agora o cartão lista as que criam (`sugestoes`) e o passo só
+  // vence quando uma tarefa nasce de uma decisão.
   {
     id: "decisao",
-    fato: "decidiu",
+    fato: "tarefa_nasceu",
     titulo: "Tome uma decisão do evento",
     texto:
-      "Abra um objetivo, preencha o que já está definido e marque como decidida. Qualquer uma serve — escolha a que você realmente já resolveu.",
+      "Abra uma destas, preencha o que já está definido e marque como decidida. Escolha uma que você já resolveu de verdade.",
+    textoSemLista:
+      "Abra um objetivo, preencha o que já está definido e marque como decidida uma decisão de contratação: é ela que cria tarefa.",
     alvo: "mapa-planejamento",
     rota: "/eventos/:id/planejamento",
   },
-  {
-    id: "tarefa",
-    fato: "tarefa_nasceu",
-    titulo: "Veja o que a sua decisão criou",
-    texto:
-      "A tarefa abaixo nasceu daquela decisão — já com responsável e com prazo, sem você digitar. É isto que o eOrganizei faz: não deixa o que foi decidido virar esquecimento.",
-    alvo: "lista-organizacao",
-    rota: "/eventos/:id/organizacao",
-  },
+  // "Veja o que criou" e "dê o próximo passo" num cartão só. Eram dois
+  // passos, mas a tarefa nasce no mesmo clique da decisão: o passo "veja"
+  // já nascia vencido e nunca aparecia, e a frase que explica o produto
+  // sumia justamente no caminho certo.
   {
     id: "andamento",
     fato: "deu_andamento",
-    titulo: "Dê o próximo passo nela",
+    titulo: "Veja o que a sua decisão criou",
     texto:
-      "Mova a tarefa para em andamento, ou marque como concluída se já resolveu. O evento inteiro se mede por isso.",
+      "A tarefa abaixo nasceu daquela decisão, já com responsável e prazo, sem você digitar. Agora dê o próximo passo: mova para em andamento, ou marque como concluída se já resolveu.",
     alvo: "lista-organizacao",
     rota: "/eventos/:id/organizacao",
   },
 ];
+
+// Nenhuma decisão pendente cria tarefa (as de contratação já decididas ou
+// marcadas "não se aplica", e nenhuma tarefa nascida delas): o passo da
+// tarefa não teria saída. O guia termina na decisão.
+export const PASSOS_SEM_TAREFA: PassoDoGuia[] = [
+  PASSOS[0],
+  PASSOS[1],
+  {
+    id: "decisao-livre",
+    fato: "decidiu",
+    titulo: "Tome uma decisão do evento",
+    texto:
+      "Abra um objetivo, preencha o que já está definido e marque como decidida. Escolha uma que você já resolveu de verdade.",
+    alvo: "mapa-planejamento",
+    rota: "/eventos/:id/planejamento",
+  },
+];
+
+/** Disparado no `window` quando ela escolhe uma decisão no cartão do guia. */
+export const EVENTO_ABRIR_DECISAO = "eorg:guia-abrir-decisao";
 
 // O CAMINHO DO EVENTO SEM MÉTODO.
 //
@@ -226,6 +252,10 @@ export type EstadoDoGuia = {
   evento: { titulo: string | null; tipo: string | null } | null;
   /** Passo 2: os itens que ainda faltam, com o rótulo que a tela mostra. */
   faltaNoContexto: string[];
+  /** Passo da decisão: até 3 decisões pendentes que criam tarefa. */
+  sugestoes: { id: string; titulo: string }[];
+  /** Nenhuma decisão pendente cria tarefa e nenhuma tarefa nasceu de uma. */
+  semDecisaoComTarefa: boolean;
 };
 
 /**
@@ -261,7 +291,9 @@ export function passosDoEvento(estado: EstadoDoGuia): PassoDoGuia[] {
   if (!estado.criouEvento) return PASSOS;
   const d = estado.diasAteOEvento;
   if (d !== null && d >= 0 && d <= RETA_FINAL_DIAS) return PASSOS_RETA_FINAL;
-  return estado.temMetodo ? PASSOS : PASSOS_SEM_METODO;
+  if (!estado.temMetodo) return PASSOS_SEM_METODO;
+  if (!estado.tarefaNasceu && estado.semDecisaoComTarefa) return PASSOS_SEM_TAREFA;
+  return PASSOS;
 }
 
 export type GuiaNaTela = {
@@ -277,6 +309,10 @@ export type GuiaNaTela = {
   evento: EstadoDoGuia["evento"];
   /** O que ainda falta neste passo (só o do contexto sabe dizer). */
   falta: string[];
+  /** Passo da decisão: as que criam tarefa, para abrir com um clique. */
+  sugestoes: { id: string; titulo: string }[];
+  /** Ela já decidiu uma que não cria tarefa: o cartão explica por quê. */
+  decidiuSemTarefa: boolean;
 };
 
 function venceu(estado: EstadoDoGuia, fato: PassoDoGuia["fato"]): boolean {
@@ -346,6 +382,9 @@ export function passoAtual(estado: EstadoDoGuia | null): GuiaNaTela | null {
     // o passo 1 é antes de existir evento: nome nenhum a mostrar
     evento: passo.fato === "criou_evento" ? null : estado.evento,
     falta: passo.fato === "definiu_contexto" ? estado.faltaNoContexto : [],
+    sugestoes: passo.fato === "tarefa_nasceu" ? estado.sugestoes : [],
+    decidiuSemTarefa:
+      passo.fato === "tarefa_nasceu" && estado.decidiu && !estado.tarefaNasceu,
   };
 }
 

@@ -41,6 +41,7 @@ import {
 } from "./celebra";
 import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
 import { inicioDoDiaBR } from "@/lib/tempo";
+import { EVENTO_ABRIR_DECISAO } from "@/lib/guia-vivo";
 import { FaixaContexto } from "./FaixaContexto";
 import { ModoFoco } from "./ModoFoco";
 import { ModoAmplo } from "./ModoAmplo";
@@ -397,6 +398,22 @@ export function PlanejamentoEvento({
     setExpandidos((s) => new Set(s).add(d.objetivoId));
     abrirDrawer(d);
   }
+
+  // O cartão do guia lista decisões que criam tarefa; o clique abre a
+  // decisão aqui mesmo, sem recarregar (o ?decisao= só vale na montagem).
+  const irParaDecisaoRef = useRef(irParaDecisao);
+  irParaDecisaoRef.current = irParaDecisao;
+  useEffect(() => {
+    const abrir = (e: Event) => {
+      const id = (e as CustomEvent<{ id?: string }>).detail?.id;
+      const d = plano.objetivos
+        .flatMap((o) => o.decisoes)
+        .find((x) => x.id === id);
+      if (d) irParaDecisaoRef.current(d);
+    };
+    window.addEventListener(EVENTO_ABRIR_DECISAO, abrir);
+    return () => window.removeEventListener(EVENTO_ABRIR_DECISAO, abrir);
+  }, [plano.objetivos]);
 
   // ---- meta do cabeçalho ----
   // o mês de hoje em Brasília: o servidor (UTC) e o navegador têm de
