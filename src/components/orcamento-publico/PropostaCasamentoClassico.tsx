@@ -328,7 +328,10 @@ export function PropostaCasamentoClassico({
     >
       {/* SPEC §5: as regras base vêm ANTES das media queries — é a ordem
           que segura o layout; invertida, tudo empilha numa coluna. */}
-      <style>{`
+      {/* Por dangerouslySetInnerHTML: como filho de <style>, o servidor
+          escapa as aspas do texto e o React refaz a página inteira na
+          hidratação (o mesmo defeito do Maison, 17/09/2026). */}
+      <style dangerouslySetInnerHTML={{ __html: `
         .kd-aside{display:none}
         .kd-mobilebar{display:flex}
         .kd-main{margin-left:0}
@@ -387,7 +390,7 @@ export function PropostaCasamentoClassico({
         @media (prefers-reduced-motion: reduce){
           .kd-foto,.kd-step,.kd-diacard,.kd-inclcard{transition:none}
         }
-      `}</style>
+      ` }} />
 
       {/* barra de progresso */}
       <div
