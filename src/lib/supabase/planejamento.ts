@@ -9,6 +9,7 @@ import { differenceInCalendarDays } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 
 import {
+  rotuloDoCampo,
   valorDoCampo,
   type Campo,
   type TipoCampo,
@@ -211,7 +212,7 @@ export async function getPlanejamento(
     const campo: Campo = {
       id: c.id,
       codigo: c.codigo,
-      label: c.label,
+      label: rotuloDoCampo(c.codigo, c.label),
       tipo: c.tipo,
       opcoes: c.opcoes,
       unidade: c.unidade,

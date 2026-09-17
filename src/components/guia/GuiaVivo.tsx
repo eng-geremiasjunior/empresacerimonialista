@@ -41,7 +41,8 @@ import { EVENTO_LINK_COPIADO, type GuiaNaTela } from "@/lib/guia-vivo";
 const FOLGA = 8;
 const LARGURA_CARTAO = 340;
 /** Altura suposta do cartão, para decidir se ele cabe. Folgada de propósito. */
-const ALTURA_CARTAO = 220;
+// (260 desde que o cartão diz o evento e o que falta: duas linhas a mais)
+const ALTURA_CARTAO = 260;
 const MARGEM = 16;
 const CHAVE_PULOU = "eorg:guia:pulou-agora";
 
@@ -171,7 +172,12 @@ export function GuiaVivo({
 
   if (!guia || !montado || terminou || pulouAgora) return null;
 
-  const { passo, numero, total, rota } = guia;
+  const { passo, numero, total, rota, evento, falta } = guia;
+  // o título já começa pelo tipo quando o evento não tem nome próprio
+  const ondeAcontece = evento?.titulo
+    ? `No evento ${evento.titulo}` +
+      (evento.tipo && !evento.titulo.startsWith(evento.tipo) ? ` · ${evento.tipo}` : "")
+    : null;
   const aquiNao = rota !== null && !pathname.startsWith(rota);
 
   // Onde o cartão fica.
@@ -305,6 +311,22 @@ export function GuiaVivo({
         >
           {passo.titulo}
         </p>
+        {/* EM QUAL EVENTO. O guia conduz o evento mais novo da agenda; quem
+            tem vários (ou religou o guia) precisa ler qual é, senão a lista
+            de um corporativo parece a lista do sistema inteiro. */}
+        {ondeAcontece && (
+          <p
+            style={{
+              margin: "4px 0 0",
+              fontSize: 12,
+              lineHeight: 1.4,
+              color: "#928A81",
+              overflowWrap: "anywhere",
+            }}
+          >
+            {ondeAcontece}
+          </p>
+        )}
 
         <p
           style={{
@@ -316,6 +338,21 @@ export function GuiaVivo({
         >
           {passo.texto}
         </p>
+        {/* O passo do contexto só vence com os dois itens: escolhido um, o
+            cartão parado parecia travado. Os nomes são os da tela. */}
+        {falta.length > 0 && (
+          <p
+            style={{
+              margin: "8px 0 0",
+              fontSize: 13,
+              lineHeight: 1.45,
+              fontWeight: 500,
+              color: "#221E1B",
+            }}
+          >
+            Falta escolher: {falta.join(" e ")}.
+          </p>
+        )}
 
         <div
           style={{

@@ -72,7 +72,10 @@ export const PASSOS: PassoDoGuia[] = [
     fato: "definiu_contexto",
     titulo: "Diga o tamanho e o feitio do evento",
     texto:
-      "Escala e cenário mudam o que o sistema sugere daqui para a frente. Um evento de 80 pessoas e um de 400 não pedem o mesmo trabalho.",
+      // Os dois itens mudam de nome por tipo (Escala e Cenário no casamento,
+      // Porte e Tipo de evento corporativo no corporativo): o texto não
+      // pode citar um par que a tela não mostra.
+      "Os dois itens destacados mudam o que o sistema sugere daqui para a frente. Um evento de 80 pessoas e um de 400 não pedem o mesmo trabalho.",
     alvo: "contexto-evento",
     rota: "/eventos/:id/planejamento",
   },
@@ -213,7 +216,44 @@ export type EstadoDoGuia = {
   temFornecedor: boolean;
   /** algum item do roteiro tem fornecedor responsável? */
   temResponsavel: boolean;
+  /**
+   * O evento que o guia conduz (o mais novo da agenda), com o mesmo
+   * título do cabeçalho do evento. Sem ele no
+   * cartão, quem já tem vários eventos não sabe em qual está: o dono
+   * religou o guia, caiu num corporativo de teste e leu a lista dele como
+   * se fosse a do sistema inteiro (16/09/2026).
+   */
+  evento: { titulo: string | null; tipo: string | null } | null;
+  /** Passo 2: os itens que ainda faltam, com o rótulo que a tela mostra. */
+  faltaNoContexto: string[];
 };
+
+/**
+ * O PASSO 2 PELO QUE A TELA OFERECE.
+ *
+ * A 160 pede escala E cenário em events. A faixa do Planejamento, porém,
+ * só mostra o chip que tem campo no evento e opções no método do tipo — e
+ * o do cenário só aparece ao lado do de escala. Um evento com método e sem
+ * os chips (o show; casamento anterior aos eixos) ficaria parado neste
+ * passo para sempre, com "Pular" como única porta. Então: o passo vence
+ * com o que dá para escolher, e sem nada para escolher ele não existe.
+ */
+export function contextoNaTela(entrada: {
+  /** campos escala/cenario do evento, com o rótulo que a tela mostra */
+  rotulos: Map<string, string>;
+  /** eixos com opções no método deste tipo */
+  eixosComOpcoes: Set<string>;
+  escala: string | null;
+  cenario: string | null;
+}): { definiu: boolean; falta: string[] } {
+  const { rotulos, eixosComOpcoes } = entrada;
+  const chipEscala = rotulos.has("escala") && eixosComOpcoes.has("escala");
+  const chipCenario = chipEscala && rotulos.has("cenario") && eixosComOpcoes.has("cenario");
+  const falta: string[] = [];
+  if (chipEscala && !entrada.escala) falta.push(rotulos.get("escala") ?? "Escala");
+  if (chipCenario && !entrada.cenario) falta.push(rotulos.get("cenario") ?? "Cenário");
+  return { definiu: falta.length === 0, falta };
+}
 
 /** Os passos que valem para ESTE evento. Antes de existir evento, o
  *  caminho completo — o passo 1 é igual nos três. */
@@ -233,6 +273,10 @@ export type GuiaNaTela = {
   rota: string | null;
   /** Todos os passos anteriores já vencidos. */
   vencidos: number;
+  /** O evento do guia, para o cartão dizer onde o passo acontece. */
+  evento: EstadoDoGuia["evento"];
+  /** O que ainda falta neste passo (só o do contexto sabe dizer). */
+  falta: string[];
 };
 
 function venceu(estado: EstadoDoGuia, fato: PassoDoGuia["fato"]): boolean {
@@ -299,6 +343,9 @@ export function passoAtual(estado: EstadoDoGuia | null): GuiaNaTela | null {
     total: passos.length,
     rota,
     vencidos: i,
+    // o passo 1 é antes de existir evento: nome nenhum a mostrar
+    evento: passo.fato === "criou_evento" ? null : estado.evento,
+    falta: passo.fato === "definiu_contexto" ? estado.faltaNoContexto : [],
   };
 }
 

@@ -60,3 +60,20 @@ export function valorDoCampo(c: Campo): string | number | boolean | null {
       return c.valorTexto;
   }
 }
+
+/**
+ * O rótulo que a tela mostra para um campo do método.
+ *
+ * O método corporativo (141) chama o eixo de cenário de "Tipo de evento".
+ * Na faixa do Planejamento isso se lê como o tipo do evento no sistema
+ * (casamento, debutante, show…): o dono abriu a lista, viu só formatos
+ * de empresa e concluiu que os outros tinham sumido (16/09/2026). O
+ * rótulo é copiado em cada evento (evento_campo_valor.label); trocar aqui
+ * vale para os eventos que já existem, sem migração.
+ */
+export function rotuloDoCampo(codigo: string, label: string): string {
+  if (codigo === "cenario" && label === "Tipo de evento") {
+    return "Tipo de evento corporativo";
+  }
+  return label;
+}

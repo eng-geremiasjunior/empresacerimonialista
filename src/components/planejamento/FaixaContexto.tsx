@@ -628,6 +628,7 @@ export function FaixaContexto({
   onManterAviso,
   temVerba,
   temArquetipo,
+  tipoRotulo,
 }: {
   verba: Verba;
   objetivos: Objetivo[];
@@ -655,6 +656,8 @@ export function FaixaContexto({
   temVerba: boolean;
   /** e tem escala/cenário no método, com opções no banco */
   temArquetipo: boolean;
+  /** o tipo do evento, por extenso: as opções dos chips são as DELE */
+  tipoRotulo: string;
 }) {
   const [previstoAberto, setPrevistoAberto] = useState(true);
   const [verTodos, setVerTodos] = useState(false);
@@ -936,7 +939,9 @@ export function FaixaContexto({
         >
           {temArquetipo && (
             <>
-              <span style={monoLabel}>arquétipo do evento</span>
+              {/* o tipo junto do título: sem ele, a lista de um evento
+                  corporativo parecia a lista inteira do sistema */}
+              <span style={monoLabel}>arquétipo do evento · {tipoRotulo}</span>
               <div style={{ display: "flex", gap: 8 }}>{chips}</div>
               <span
                 style={{

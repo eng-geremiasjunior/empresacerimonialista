@@ -9,8 +9,10 @@
 // condução — nunca com uma tela quebrada por causa de um tutorial.
 
 import { createClient } from "@/lib/supabase/server";
-import type { EstadoDoGuia } from "@/lib/guia-vivo";
+import { contextoNaTela, type EstadoDoGuia } from "@/lib/guia-vivo";
 import { hojeBR } from "@/lib/tempo";
+import { rotuloDoCampo } from "@/lib/planejamento-shared";
+import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
 
 type Cru = {
   dispensado_em: string | null;
@@ -50,12 +52,15 @@ export async function getEstadoDoGuia(): Promise<EstadoDoGuia | null> {
     let diasAteOEvento: number | null = null;
     let temFornecedor = false;
     let temResponsavel = false;
+    let definiuContexto = d.definiu_contexto === true;
+    let evento: EstadoDoGuia["evento"] = null;
+    let faltaNoContexto: string[] = [];
     if (d.evento_id && !d.dispensado_em && !d.concluido_em) {
       const [obj, conv, tar, ev, forn, resp] = await Promise.all([
         supabase.from("evento_objetivo").select("id", { count: "exact", head: true }).eq("event_id", d.evento_id),
         supabase.from("evento_convidado").select("id", { count: "exact", head: true }).eq("event_id", d.evento_id),
         supabase.from("tasks").select("id", { count: "exact", head: true }).eq("event_id", d.evento_id),
-        supabase.from("events").select("date").eq("id", d.evento_id).maybeSingle(),
+        supabase.from("events").select("date, name, type, escala, cenario, clients(name)").eq("id", d.evento_id).maybeSingle(),
         supabase.from("roteiro_links").select("supplier_id", { count: "exact", head: true }).eq("event_id", d.evento_id),
         // O roteiro nasce semeado pelo modelo da empresa, sem responsável:
         // item existir não prova nada. O que só ela faz é dizer QUEM faz.
@@ -74,10 +79,54 @@ export async function getEstadoDoGuia(): Promise<EstadoDoGuia | null> {
       temTarefa = (tar.count ?? 0) > 0;
       // As três leituras da reta final falhando só tiram ESTE caminho:
       // sem a data, o guia segue o caminho de antes.
-      const dataDoEvento = (ev.data as { date?: string | null } | null)?.date ?? null;
+      const linha = ev.data as {
+        date?: string | null;
+        name?: string | null;
+        type?: string | null;
+        escala?: string | null;
+        cenario?: string | null;
+        clients?: { name?: string | null } | null;
+      } | null;
+      const dataDoEvento = linha?.date ?? null;
       diasAteOEvento = dataDoEvento ? diasEntre(hojeBR(), dataDoEvento.slice(0, 10)) : null;
       temFornecedor = !forn.error && (forn.count ?? 0) > 0;
       temResponsavel = !resp.error && (resp.count ?? 0) > 0;
+      if (linha) {
+        // o título do cabeçalho do evento (eventos/[id]/layout.tsx)
+        const tipo = linha.type
+          ? (EVENT_TYPE_LABELS[linha.type as EventType] ?? linha.type)
+          : null;
+        const titulo =
+          linha.name?.trim() ||
+          [tipo, linha.clients?.name?.trim()].filter(Boolean).join(" — ") ||
+          null;
+        evento = { titulo, tipo };
+      }
+
+      // PASSO 2 pelo que a tela oferece (contextoNaTela). Leitura com
+      // erro: vale o fato da 160.
+      if (!definiuContexto && temMetodo && linha?.type) {
+        const [campos, opcoes] = await Promise.all([
+          supabase
+            .from("evento_campo_valor")
+            .select("codigo, label")
+            .eq("event_id", d.evento_id)
+            .in("codigo", ["escala", "cenario"]),
+          supabase.from("metodo_arquetipo").select("eixo").eq("tipo_evento", linha.type),
+        ]);
+        if (!campos.error && !opcoes.error) {
+          const r = contextoNaTela({
+            rotulos: new Map(
+              (campos.data ?? []).map((c) => [c.codigo as string, rotuloDoCampo(c.codigo, c.label)])
+            ),
+            eixosComOpcoes: new Set((opcoes.data ?? []).map((o) => o.eixo as string)),
+            escala: linha.escala ?? null,
+            cenario: linha.cenario ?? null,
+          });
+          definiuContexto = r.definiu;
+          faltaNoContexto = r.falta;
+        }
+      }
     }
 
     return {
@@ -85,7 +134,7 @@ export async function getEstadoDoGuia(): Promise<EstadoDoGuia | null> {
       concluidoEm: d.concluido_em ?? null,
       eventoId: d.evento_id ?? null,
       criouEvento: d.criou_evento === true,
-      definiuContexto: d.definiu_contexto === true,
+      definiuContexto,
       decidiu: d.decidiu === true,
       tarefaNasceu: d.tarefa_nasceu === true,
       deuAndamento: d.deu_andamento === true,
@@ -95,6 +144,8 @@ export async function getEstadoDoGuia(): Promise<EstadoDoGuia | null> {
       diasAteOEvento,
       temFornecedor,
       temResponsavel,
+      evento,
+      faltaNoContexto,
     };
   } catch {
     return null;

@@ -39,6 +39,7 @@ import {
   tituloStyle,
   type Arquetipos,
 } from "./celebra";
+import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
 import { FaixaContexto } from "./FaixaContexto";
 import { ModoFoco } from "./ModoFoco";
 import { ModoAmplo } from "./ModoAmplo";
@@ -513,6 +514,9 @@ export function PlanejamentoEvento({
         temVerba={campoPorCodigo("verba_total") !== null}
         temArquetipo={
           campoPorCodigo("escala") !== null && arquetipos.escala.length > 0
+        }
+        tipoRotulo={
+          EVENT_TYPE_LABELS[tipoEvento as EventType] ?? tipoEvento
         }
         onSalvarVerba={(valor) => salvarCampoPorCodigo("verba_total", valor)}
         onSalvarReserva={(pct) => salvarCampoPorCodigo("reserva_pct", pct)}
