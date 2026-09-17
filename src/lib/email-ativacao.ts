@@ -37,7 +37,7 @@ import { appUrl } from "@/lib/app-url";
 import { ehContaDaCasa } from "@/lib/contas-da-casa";
 import { hojeBR } from "@/lib/tempo";
 import {
-  ASSINA,
+  REMETENTE,
   RESPONDER_PARA,
   diaBR,
   diasEntre,
@@ -147,7 +147,7 @@ async function mandar(
     to: u.email,
     subject: email.assunto,
     html: email.html,
-    fromNome: ASSINA(),
+    fromNome: REMETENTE(),
     replyTo: RESPONDER_PARA(),
     tags: [{ name: "tipo", value: `ativacao_${marca}` }],
   });

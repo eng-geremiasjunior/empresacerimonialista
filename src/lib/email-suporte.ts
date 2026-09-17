@@ -9,7 +9,7 @@
 // a cerimonialista: o suporte é a relação entre ela e nós.
 
 import { appUrl, enviarViaResend, type ResultadoEnvio } from "@/lib/email";
-import { ASSINA, RESPONDER_PARA } from "@/lib/email-ativacao-textos";
+import { REMETENTE, RESPONDER_PARA } from "@/lib/email-ativacao-textos";
 import { escaparHtml } from "@/lib/email-base";
 
 function primeiroNome(nome: string | null | undefined): string {
@@ -45,7 +45,7 @@ export function htmlRespostaSuporte(nome: string | null, texto: string): { assun
       <a href="${escaparHtml(linkDaCaixinha())}" style="display:inline-block;background:#6E3F5F;color:#FAF8F5;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600">Abrir o eOrganizei</a>
     </p>
     ${par(continuar)}
-    <p style="margin:18px 0 0;line-height:1.6">${escaparHtml(ASSINA())}<br><span style="color:#928A81">eOrganizei</span></p>
+    <p style="margin:18px 0 0;line-height:1.6;font-weight:600"><span style="color:#6E3F5F">e</span>organizei</p>
     <p style="margin:28px 0 0;color:#928A81;font-size:12px;line-height:1.5">Você recebe este e-mail porque escreveu para o Suporte do eOrganizei.</p>
   </div>`,
   };

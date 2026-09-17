@@ -22,8 +22,11 @@ import { appUrl, respostaPara } from "@/lib/email";
 import { somarDias, hojeBR } from "@/lib/tempo";
 import { RETA_FINAL_DIAS } from "@/lib/guia-vivo";
 
-/** Quem assina. O endereço de envio continua o do domínio verificado. */
-export const ASSINA = () => process.env.EMAIL_ATIVACAO_ASSINA?.trim() || "Geremias";
+/**
+ * O nome que aparece na caixa de entrada. É a EMPRESA: a pessoa aparece
+ * no Instagram, não no e-mail (regra dele, 17/09/2026).
+ */
+export const REMETENTE = () => process.env.EMAIL_ATIVACAO_ASSINA?.trim() || "eOrganizei";
 /** Para onde vai a resposta. Sem isto, o texto aponta o Suporte. */
 export const RESPONDER_PARA = () =>
   process.env.EMAIL_ATIVACAO_RESPONDER_PARA?.trim() || respostaPara();
@@ -130,16 +133,10 @@ function casca(p: {
 
         ${(p.depois ?? []).map(par).join("")}
 
-        <div style="height:1px;background:#EFE9E2;margin:22px 0 18px"></div>
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-          <tr>
-            <td style="width:40px;height:40px;background:#F6F1F4;border-radius:999px;text-align:center;font-size:15px;font-weight:700;color:#6E3F5F;${fonte}">${escapar((ASSINA()[0] ?? "G").toUpperCase())}</td>
-            <td style="padding-left:12px;${fonte}">
-              <div style="font-size:15px;font-weight:600;color:#221E1B">${escapar(ASSINA())}</div>
-              <div style="font-size:13px;color:#928A81">eOrganizei</div>
-            </td>
-          </tr>
-        </table>
+        <div style="height:1px;background:#EFE9E2;margin:22px 0 16px"></div>
+        <p style="margin:0;font-size:14px;font-weight:600;color:#221E1B;${fonte}">
+          <span style="color:#6E3F5F">e</span>organizei
+        </p>
 
       </td>
     </tr>
