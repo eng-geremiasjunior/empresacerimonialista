@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { lerAssinatura } from "@/lib/pagarme";
 import { hojeBR } from "@/lib/tempo";
+import { registrarErroDoServidor } from "@/lib/registro-do-sistema";
 
 export const dynamic = "force-dynamic";
 
@@ -112,6 +113,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, repetido: true });
     }
     console.error("[vela:pagarme] registro:", registro.error.message);
+    await registrarErroDoServidor({ area: "Aviso da operadora", codigo: registro.error.code ?? "registro" });
     return NextResponse.json({ ok: false }, { status: 500 });
   }
 
@@ -149,6 +151,7 @@ export async function POST(request: NextRequest) {
       .from("gateway_evento")
       .update({ empresa_id: linha.empresa_id, erro: atual.erro })
       .eq("id", registro.data.id);
+    await registrarErroDoServidor({ area: "Aviso da operadora: leitura", codigo: "leitura", empresaId: linha.empresa_id });
     // aqui SIM vale o gateway tentar de novo: foi falha de leitura nossa
     return NextResponse.json({ ok: false }, { status: 503 });
   }
@@ -231,6 +234,7 @@ export async function POST(request: NextRequest) {
 
   if (erroUpdate) {
     console.error("[vela:pagarme] update:", erroUpdate.message);
+    await registrarErroDoServidor({ area: "Aviso da operadora", codigo: erroUpdate.code ?? "update", empresaId: linha.empresa_id });
     await db
       .from("gateway_evento")
       .update({ empresa_id: linha.empresa_id, erro: erroUpdate.message })

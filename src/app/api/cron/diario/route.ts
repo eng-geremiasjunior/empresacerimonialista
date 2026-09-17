@@ -15,6 +15,54 @@
 // disparar uma única rotina à mão quando preciso investigar algo.
 
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+
+/**
+ * O que a rotina respondeu, em uma linha curta: só os números e sim/não do
+ * primeiro nível (quantos avisos, quantos apagados). Texto livre não entra
+ * no registro do painel do dono: pode carregar o que não é dele ver.
+ */
+function resumoDaRotina(corpo: unknown): string | null {
+  if (!corpo || typeof corpo !== "object") return null;
+  const partes: string[] = [];
+  for (const [chave, valor] of Object.entries(corpo as Record<string, unknown>)) {
+    if (typeof valor === "number" || typeof valor === "boolean") {
+      partes.push(`${chave}=${valor}`);
+    } else if (Array.isArray(valor)) {
+      partes.push(`${chave}=${valor.length}`);
+    }
+  }
+  const texto = partes.join(" ").slice(0, 300);
+  return texto || null;
+}
+
+/** O registro de cada rotina (123, seção 10). Sem a tabela, só não registra. */
+function registroDasRotinas() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  const db = createClient(url, key, {
+    auth: { persistSession: false },
+    global: { fetch: (i, x) => fetch(i, { ...x, cache: "no-store" }) },
+  });
+  return async (linha: {
+    rotina: string;
+    inicio: string;
+    duracao_ms: number;
+    ok: boolean;
+    resumo: string | null;
+  }) => {
+    // registrar nunca vira falha da rotina
+    try {
+      const { error } = await db.from("rotina_execucao").insert(linha);
+      if (error && !/could not find the table|does not exist|schema cache/i.test(error.message)) {
+        console.error("[vela:cron] registro da rotina:", error.code);
+      }
+    } catch {
+      console.error("[vela:cron] registro da rotina: sem resposta do banco");
+    }
+  };
+}
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -43,8 +91,11 @@ const ROTINAS = [
   // os e-mails do teste grátis: dia 2 e fim do teste (email-ativacao.ts).
   // O cron roda às 12h UTC — 9h em Brasília, hora de caixa de entrada.
   "ativacao",
-  // o uso do sistema (painel do dono) some depois de 13 meses
+  // o uso do sistema (painel do dono) some depois de 13 meses, e os
+  // registros de rotina, e-mail, erro e IA também têm prazo
   "uso-antigo",
+  // o tamanho do banco e dos arquivos, uma foto por dia (painel do dono)
+  "medida-do-banco",
 ] as const;
 
 export async function GET(request: NextRequest) {
@@ -65,7 +116,12 @@ export async function GET(request: NextRequest) {
   const resultado: Record<string, unknown> = {};
   const falharam: string[] = [];
 
+  // Cada rotina fica registrada para a tela Sistema do painel do dono:
+  // quando rodou, quanto demorou, se deu certo e os números que devolveu.
+  const registrar = registroDasRotinas();
+
   for (const rotina of ROTINAS) {
+    const inicio = new Date();
     try {
       const res = await fetch(`${base}/api/cron/${rotina}`, {
         headers: { Authorization: `Bearer ${secret}` },
@@ -77,12 +133,27 @@ export async function GET(request: NextRequest) {
         falharam.push(`${rotina} (${res.status})`);
         console.error(`[vela:cron] ${rotina} devolveu ${res.status}`);
       }
+      await registrar?.({
+        rotina,
+        inicio: inicio.toISOString(),
+        duracao_ms: Date.now() - inicio.getTime(),
+        ok: res.ok,
+        resumo: res.ok ? resumoDaRotina(corpo) : `HTTP ${res.status}`,
+      });
     } catch (e) {
       // uma rotina que explode não pode impedir as outras de rodar
       const msg = e instanceof Error ? e.message : String(e);
       resultado[rotina] = { erro: msg };
       falharam.push(`${rotina} (${msg.slice(0, 40)})`);
       console.error(`[vela:cron] ${rotina} falhou: ${msg}`);
+      await registrar?.({
+        rotina,
+        inicio: inicio.toISOString(),
+        duracao_ms: Date.now() - inicio.getTime(),
+        ok: false,
+        // o tipo do erro, não a mensagem
+        resumo: e instanceof Error ? e.name.slice(0, 60) : "falha",
+      });
     }
   }
 

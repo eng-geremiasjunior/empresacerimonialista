@@ -106,7 +106,7 @@ export async function enviarLembreteConvidado(
     </p>
   </div>`;
 
-  return enviarViaResend({ to: d.para, subject: assunto, html });
+  return enviarViaResend({ tipo: "convidado_confirmacao", to: d.para, subject: assunto, html });
 }
 
 export async function enviarEmailConvidado(
@@ -164,5 +164,5 @@ export async function enviarEmailConvidado(
     </p>
   </div>`;
 
-  return enviarViaResend({ to: d.para, subject: assunto, html });
+  return enviarViaResend({ tipo: "convidado_lembrete", to: d.para, subject: assunto, html });
 }

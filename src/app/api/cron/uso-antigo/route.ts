@@ -1,6 +1,9 @@
 // Rotina diária: o uso do sistema (painel do dono, 123 seção 5) some
 // depois de 13 meses, como diz a política de privacidade. Mesmo padrão das
 // outras rotinas: Authorization: Bearer CRON_SECRET + service role.
+//
+// Desde 17/09/2026 os registros da tela Sistema também têm prazo (123,
+// seção 10): rotinas e erros, 90 dias; e-mails e uso da IA, 13 meses.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -57,5 +60,27 @@ export async function GET(request: NextRequest) {
     }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-  return NextResponse.json({ apagados: count ?? 0 });
+
+  // Os registros da tela Sistema. Tabela ausente (123 ainda não
+  // reaplicada) não é falha: só não há o que apagar.
+  const ha90Dias = new Date(Date.now() - 90 * 86_400_000).toISOString();
+  const ha13Meses = new Date(Date.now() - GUARDAR_DIAS * 86_400_000).toISOString();
+  const limpezas: [string, string, string][] = [
+    ["rotina_execucao", "created_at", ha90Dias],
+    ["erro_do_sistema", "created_at", ha90Dias],
+    ["email_envio", "created_at", ha13Meses],
+    ["ia_uso", "dia", limite],
+  ];
+  const outros: Record<string, number> = {};
+  for (const [tabela, coluna, antesDe] of limpezas) {
+    const r = await supabase.from(tabela).delete({ count: "exact" }).lt(coluna, antesDe);
+    if (r.error) {
+      if (!/could not find the table|does not exist|schema cache/i.test(r.error.message)) {
+        return NextResponse.json({ error: `${tabela}: ${r.error.code}` }, { status: 500 });
+      }
+      continue;
+    }
+    outros[tabela] = r.count ?? 0;
+  }
+  return NextResponse.json({ apagados: count ?? 0, ...outros });
 }

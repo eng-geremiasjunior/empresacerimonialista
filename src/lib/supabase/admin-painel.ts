@@ -49,14 +49,24 @@ export async function emailDoSuperAdmin(): Promise<string | null> {
   return email && lista.includes(email) ? email : null;
 }
 
-/** Lança se quem chama não é o dono do sistema. Toda função passa aqui. */
-async function exigirSuperAdmin(): Promise<void> {
-  if (!(await emailDoSuperAdmin())) {
+/**
+ * Lança se quem chama não é o dono do sistema. Toda função passa aqui.
+ * Devolve o e-mail de quem está no painel: é ele que a auditoria grava.
+ */
+export async function exigirSuperAdmin(): Promise<string> {
+  const email = await emailDoSuperAdmin();
+  if (!email) {
     throw new Error("Acesso restrito ao proprietário do sistema.");
   }
+  return email;
 }
 
-function servico() {
+/**
+ * A chave de serviço. Exportada só para os outros módulos do painel
+ * (admin-contas, admin-sistema, admin-receita), que chamam
+ * exigirSuperAdmin antes de usar, como este.
+ */
+export function servico() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) throw new Error("SUPABASE_SERVICE_ROLE_KEY ausente");
@@ -84,7 +94,7 @@ function servico() {
  * Postgres não garante ordem entre páginas, e a mesma linha pode vir
  * duas vezes ou nenhuma.
  */
-async function lerTudo<T>(
+export async function lerTudo<T>(
   pagina: (
     de: number,
     ate: number
@@ -110,9 +120,9 @@ async function lerTudo<T>(
 // As contas do próprio dono (administrador, testes, vídeo) ficam fora de
 // todos os números do painel e num grupo à parte em Contas.
 
-type Servico = ReturnType<typeof servico>;
+export type Servico = ReturnType<typeof servico>;
 
-function tabelaAusente(error: { code?: string; message?: string } | null): boolean {
+export function tabelaAusente(error: { code?: string; message?: string } | null): boolean {
   if (!error) return false;
   return (
     error.code === "42P01" ||
@@ -125,7 +135,7 @@ function tabelaAusente(error: { code?: string; message?: string } | null): boole
  * As empresas marcadas como da casa. Sem a tabela (123 ainda não
  * reaplicada), nenhuma: o painel segue como antes, sem cair.
  */
-async function idsDaCasa(db: Servico): Promise<Set<string>> {
+export async function idsDaCasa(db: Servico): Promise<Set<string>> {
   const { data, error } = await db.from("contas_da_casa").select("empresa_id");
   if (error) {
     if (!tabelaAusente(error)) {
@@ -136,8 +146,88 @@ async function idsDaCasa(db: Servico): Promise<Set<string>> {
   return new Set((data ?? []).map((r) => r.empresa_id as string));
 }
 
+// ------------------------------------------------------------------
+// Auditoria do painel (123, seção 7)
+// ------------------------------------------------------------------
+// Toda ação do dono no painel vira uma linha que não se altera nem se
+// apaga: quem, quando, o quê, em que conta, antes, depois e por quê.
+// Registrar nunca impede a ação (a ação já aconteceu quando chega aqui).
+
+export type AcaoDoPainel =
+  | "assinatura_alterada"
+  | "teste_prorrogado"
+  | "conta_suspensa"
+  | "conta_reativada"
+  | "conta_da_casa"
+  | "conta_de_cliente"
+  | "portao_do_teste"
+  | "gasto_marketing"
+  | "suporte_respondido"
+  | "suporte_avisado_por_email"
+  | "nota_da_conta"
+  | "ficha_aberta"
+  | "custo_lancado"
+  | "custo_apagado"
+  | "custos_copiados"
+  | "caixa_informado"
+  | "ajuste_alterado";
+
+export async function registrarAcaoAdmin(
+  db: Servico,
+  quem: string,
+  linha: {
+    acao: AcaoDoPainel;
+    empresaId?: string | null;
+    antes?: unknown;
+    depois?: unknown;
+    motivo?: string | null;
+  }
+): Promise<void> {
+  try {
+    let empresaNome: string | null = null;
+    if (linha.empresaId) {
+      const { data } = await db.from("empresas").select("nome").eq("id", linha.empresaId).maybeSingle();
+      empresaNome = (data?.nome as string | undefined) ?? null;
+    }
+    const { error } = await db.from("admin_registro").insert({
+      quem,
+      acao: linha.acao,
+      empresa_id: linha.empresaId ?? null,
+      empresa_nome: empresaNome,
+      antes: linha.antes ?? null,
+      depois: linha.depois ?? null,
+      motivo: linha.motivo ? linha.motivo.slice(0, 500) : null,
+    });
+    if (error && !tabelaAusente(error)) {
+      console.error("[eorganizei:admin] auditoria:", error.code);
+    }
+  } catch {
+    console.error("[eorganizei:admin] auditoria: sem resposta do banco");
+  }
+}
+
+/**
+ * Abrir a ficha de uma conta mostra e-mail e WhatsApp da dona: fica
+ * registrado, uma linha por conta por dia (não uma por clique).
+ */
+export async function registrarFichaAberta(empresaId: string): Promise<void> {
+  const quem = await exigirSuperAdmin();
+  const db = servico();
+  const inicioDoDia = new Date(`${hojeBR()}T00:00:00-03:00`).toISOString();
+  const { data, error } = await db
+    .from("admin_registro")
+    .select("id")
+    .eq("acao", "ficha_aberta")
+    .eq("empresa_id", empresaId)
+    .eq("quem", quem)
+    .gte("em", inicioDoDia)
+    .limit(1);
+  if (error || (data ?? []).length > 0) return;
+  await registrarAcaoAdmin(db, quem, { acao: "ficha_aberta", empresaId });
+}
+
 export async function definirContaDaCasaDb(empresaId: string, daCasa: boolean): Promise<void> {
-  await exigirSuperAdmin();
+  const quem = await exigirSuperAdmin();
   const db = servico();
   const { error } = daCasa
     ? await db.from("contas_da_casa").upsert({ empresa_id: empresaId }, { onConflict: "empresa_id" })
@@ -149,6 +239,10 @@ export async function definirContaDaCasaDb(empresaId: string, daCasa: boolean): 
         : `Não foi possível salvar: ${error.message}`
     );
   }
+  await registrarAcaoAdmin(db, quem, {
+    acao: daCasa ? "conta_da_casa" : "conta_de_cliente",
+    empresaId,
+  });
 }
 
 type LinhaEvento = {
@@ -652,7 +746,7 @@ export async function salvarAssinaturaDb(input: {
   status: "trial" | "ativa" | "pausada" | "cancelada";
   observacao: string | null;
 }): Promise<void> {
-  await exigirSuperAdmin();
+  const quem = await exigirSuperAdmin();
   const db = servico();
 
   const { data: atual } = await db
@@ -754,16 +848,46 @@ export async function salvarAssinaturaDb(input: {
       throw new Error(`Assinatura salva, mas o histórico falhou: ${erroEvento.message}`);
     }
   }
+
+  await registrarAcaoAdmin(db, quem, {
+    acao: "assinatura_alterada",
+    empresaId: input.empresaId,
+    antes: atual
+      ? {
+          plano: atual.plano,
+          valor_mensal: Number(atual.valor_mensal),
+          status: atual.status,
+          observacao: atual.observacao ?? null,
+        }
+      : null,
+    depois: {
+      plano: input.plano,
+      valor_mensal: input.valorMensal,
+      status: input.status,
+      observacao: input.observacao,
+      historico: tipo,
+    },
+  });
 }
 
 export async function salvarGastoDb(mes: string, valor: number): Promise<void> {
-  await exigirSuperAdmin();
+  const quem = await exigirSuperAdmin();
   const db = servico();
+  const { data: antes } = await db
+    .from("gastos_aquisicao")
+    .select("valor")
+    .eq("mes", `${mes}-01`)
+    .maybeSingle();
   const { error } = await db.from("gastos_aquisicao").upsert(
     { mes: `${mes}-01`, valor, updated_at: new Date().toISOString() },
     { onConflict: "mes" }
   );
   if (error) throw new Error(`Não foi possível salvar o gasto: ${error.message}`);
+  await registrarAcaoAdmin(db, quem, {
+    acao: "gasto_marketing",
+    antes: antes ? { mes, valor: Number(antes.valor) } : null,
+    depois: { mes, valor },
+  });
 }
 
 /**
@@ -775,7 +899,7 @@ export async function definirBanimentoDb(
   empresaId: string,
   banir: boolean
 ): Promise<{ afetados: number }> {
-  await exigirSuperAdmin();
+  const quem = await exigirSuperAdmin();
   const db = servico();
 
   const { data: membros } = await db
@@ -804,6 +928,11 @@ export async function definirBanimentoDb(
       if (banir) await db.auth.admin.signOut(id, "global");
     }
   }
+  await registrarAcaoAdmin(db, quem, {
+    acao: banir ? "conta_suspensa" : "conta_reativada",
+    empresaId,
+    depois: { logins_afetados: afetados },
+  });
   return { afetados };
 }
 
@@ -838,7 +967,7 @@ export async function salvarPortaoDoTesteDb(input: {
   aberto: boolean;
   dias: number;
 }): Promise<void> {
-  await exigirSuperAdmin();
+  const quem = await exigirSuperAdmin();
   const db = servico();
   const dias = Math.trunc(input.dias);
   // o CHECK do banco recusaria, mas a mensagem do Postgres não diria ao
@@ -846,6 +975,7 @@ export async function salvarPortaoDoTesteDb(input: {
   if (!Number.isFinite(dias) || dias < 1 || dias > 90) {
     throw new Error("O teste precisa ter entre 1 e 90 dias.");
   }
+  const { data: antes } = await db.from("teste_gratis").select("aberto, dias").maybeSingle();
   const { error } = await db
     .from("teste_gratis")
     .upsert(
@@ -859,6 +989,11 @@ export async function salvarPortaoDoTesteDb(input: {
         : `Não foi possível salvar o portão: ${error.message}`
     );
   }
+  await registrarAcaoAdmin(db, quem, {
+    acao: "portao_do_teste",
+    antes: antes ? { aberto: antes.aberto, dias: antes.dias } : null,
+    depois: { aberto: input.aberto, dias },
+  });
 }
 
 // ------------------------------------------------------------------
@@ -933,13 +1068,20 @@ type LinhaSuporte = {
 
 export async function contarSuporteNaoLidas(): Promise<number> {
   await exigirSuperAdmin();
-  const { count, error } = await servico()
-    .from("suporte_mensagem")
-    .select("id", { count: "exact", head: true })
-    .eq("autor", "cliente")
-    .is("lida_pelo_suporte_em", null);
+  const db = servico();
+  const [{ data, error }, casa] = await Promise.all([
+    db
+      .from("suporte_mensagem")
+      .select("empresa_id")
+      .eq("autor", "cliente")
+      .is("lida_pelo_suporte_em", null)
+      .limit(1000),
+    idsDaCasa(db),
+  ]);
   // 161 ausente: a caixa de entrada só não acende — o painel segue.
-  return error ? 0 : count ?? 0;
+  // As mensagens das contas da casa não acendem o menu (são testes dele).
+  if (error) return 0;
+  return (data ?? []).filter((m) => !casa.has(m.empresa_id as string)).length;
 }
 
 export async function getConversasSuporte(): Promise<ConversaSuporteResumo[]> {
@@ -1143,7 +1285,7 @@ async function avisarPorEmail(
 }
 
 export async function responderSuporteDb(userId: string, texto: string): Promise<ResultadoDoAviso> {
-  await exigirSuperAdmin();
+  const quem = await exigirSuperAdmin();
   const limpo = texto.trim();
   if (!limpo) throw new Error("Escreva a resposta.");
   if (limpo.length > 2000) throw new Error("Resposta longa demais.");
@@ -1169,12 +1311,19 @@ export async function responderSuporteDb(userId: string, texto: string): Promise
     .select("id")
     .single();
   if (error || !nova) throw new Error(`Não foi possível responder: ${error?.message}`);
-  return avisarPorEmail(db, { id: nova.id as string, user_id: userId, texto: limpo });
+  const aviso = await avisarPorEmail(db, { id: nova.id as string, user_id: userId, texto: limpo });
+  // o texto da resposta fica na conversa; a auditoria guarda só o fato
+  await registrarAcaoAdmin(db, quem, {
+    acao: "suporte_respondido",
+    empresaId: ultima.empresa_id as string,
+    depois: { caracteres: limpo.length, aviso_por_email: aviso.aviso },
+  });
+  return aviso;
 }
 
 /** O aviso por e-mail de uma resposta que ainda não teve (ou cujo envio falhou). */
 export async function avisarRespostaPorEmailDb(mensagemId: string): Promise<ResultadoDoAviso> {
-  await exigirSuperAdmin();
+  const quem = await exigirSuperAdmin();
   const db = servico();
   const { data, error } = await db
     .from("suporte_mensagem")
@@ -1188,5 +1337,11 @@ export async function avisarRespostaPorEmailDb(mensagemId: string): Promise<Resu
     throw new Error("Reaplique a migração 161 no Supabase para avisar por e-mail.");
   }
   if (l.aviso_email_em) throw new Error("Esta resposta já foi avisada por e-mail.");
-  return avisarPorEmail(db, { id: l.id, user_id: l.user_id, texto: l.texto });
+  const aviso = await avisarPorEmail(db, { id: l.id, user_id: l.user_id, texto: l.texto });
+  await registrarAcaoAdmin(db, quem, {
+    acao: "suporte_avisado_por_email",
+    empresaId: l.empresa_id,
+    depois: { aviso_por_email: aviso.aviso },
+  });
+  return aviso;
 }

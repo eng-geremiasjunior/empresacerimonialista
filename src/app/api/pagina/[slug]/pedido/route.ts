@@ -30,6 +30,7 @@ import {
   enviarEmailPedidoParaCerimonialista,
 } from "@/lib/email-pedido";
 import { hojeBR } from "@/lib/tempo";
+import { registrarErroDoServidor } from "@/lib/registro-do-sistema";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -186,6 +187,7 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
   if (error) {
     // só o código e a mensagem do banco: nada do que a pessoa digitou
     console.error("[eorg:pedido] rpc:", error.code, (error.message ?? "").slice(0, 120));
+    await registrarErroDoServidor({ area: "Pedido de orçamento", codigo: error.code ?? "rpc" });
     return NextResponse.json(
       { ok: false, erro: "Não foi possível enviar agora. Fale pelo WhatsApp." },
       { status: 500 }

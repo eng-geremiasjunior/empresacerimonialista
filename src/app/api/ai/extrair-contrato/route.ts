@@ -13,6 +13,7 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { registrarUsoDaIa } from "@/lib/registro-do-sistema";
 import {
   normalizarProposta,
   propostaVazia,
@@ -145,6 +146,7 @@ export async function POST(req: Request) {
     });
 
     if (!res.ok) {
+      await registrarUsoDaIa({ userId: user.id, rota: "contrato", ok: false });
       const detalhe = await res.text().catch(() => "");
       console.error(
         `extracao: provedor respondeu ${res.status} — ${detalhe.slice(0, 300)}`
@@ -156,6 +158,14 @@ export async function POST(req: Request) {
     }
 
     const data = await res.json();
+    // só a contagem que o provedor devolve; nada da pergunta nem da resposta
+    await registrarUsoDaIa({
+      userId: user.id,
+      rota: "contrato",
+      ok: true,
+      tokensEntrada: Number(data?.usage?.prompt_tokens) || 0,
+      tokensSaida: Number(data?.usage?.completion_tokens) || 0,
+    });
     const cru = String(data.choices?.[0]?.message?.content ?? "")
       .replace(/^```(?:json)?/m, "")
       .replace(/```\s*$/m, "")

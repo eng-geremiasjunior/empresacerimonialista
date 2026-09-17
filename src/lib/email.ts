@@ -20,6 +20,7 @@
 // continua valendo como padrão global para quem não informa nada.
 
 import { formatDate, formatTime } from "@/lib/format";
+import { registrarEnvioDeEmail } from "@/lib/registro-do-sistema";
 
 // A base dos links mora em lib/app-url.ts: o WhatsApp também precisa
 // dela e não deve importar o módulo do Resend para isso.
@@ -97,6 +98,11 @@ export type EnvioEmail = {
   attachments?: { filename: string; content: string }[];
   /** só letras ASCII, números, "_" e "-" em nome e valor — regra do Resend */
   tags?: { name: string; value: string }[];
+  /**
+   * O que é este e-mail, para o registro do painel do dono ("orcamento",
+   * "confirmacao_fornecedor"). Sem ele, vale a tag "finalidade" ou "tipo".
+   */
+  tipo?: string;
 };
 
 export type ResultadoEnvio =
@@ -112,8 +118,15 @@ export type ResultadoEnvio =
  * entrega (webhook) volta a casar com o envio.
  */
 export async function enviarViaResend(dados: EnvioEmail): Promise<ResultadoEnvio> {
+  // O registro do painel do dono (tela Sistema): só o tipo e o resultado.
+  const tipo =
+    dados.tipo ??
+    dados.tags?.find((t) => t.name === "finalidade" || t.name === "tipo")?.value ??
+    "outro";
+
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
+    await registrarEnvioDeEmail({ tipo, ok: false, provedorId: null, erro: "sem_chave" });
     return {
       ok: false,
       error: "O envio de e-mails ainda não está configurado nesta conta.",
@@ -124,6 +137,7 @@ export async function enviarViaResend(dados: EnvioEmail): Promise<ResultadoEnvio
   // conta; recusar antes da API poupa a chamada e diz o motivo certo.
   if (process.env.VERCEL_ENV === "production" && envioEmModoTeste()) {
     console.error("[eorganizei:email] EMAIL_FROM aponta para resend.dev em produção — envio recusado");
+    await registrarEnvioDeEmail({ tipo, ok: false, provedorId: null, erro: "remetente_de_teste" });
     return {
       ok: false,
       error: "O remetente de e-mail ainda está no domínio de teste — nada foi entregue. Envie o link por WhatsApp enquanto isso.",
@@ -132,28 +146,36 @@ export async function enviarViaResend(dados: EnvioEmail): Promise<ResultadoEnvio
 
   const replyTo = dados.replyTo?.trim() || respostaPara();
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: remetente(dados.fromNome),
-      to: [dados.to],
-      subject: dados.subject,
-      html: dados.html,
-      // as chaves só entram quando existem: mandar reply_to nulo é erro 422
-      ...(replyTo ? { reply_to: replyTo } : {}),
-      ...(dados.attachments?.length ? { attachments: dados.attachments } : {}),
-      ...(dados.tags?.length ? { tags: dados.tags } : {}),
-    }),
-  });
+  let res: Response;
+  try {
+    res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: remetente(dados.fromNome),
+        to: [dados.to],
+        subject: dados.subject,
+        html: dados.html,
+        // as chaves só entram quando existem: mandar reply_to nulo é erro 422
+        ...(replyTo ? { reply_to: replyTo } : {}),
+        ...(dados.attachments?.length ? { attachments: dados.attachments } : {}),
+        ...(dados.tags?.length ? { tags: dados.tags } : {}),
+      }),
+    });
+  } catch (e) {
+    // a rede caiu antes da resposta: registra e devolve o erro como antes
+    await registrarEnvioDeEmail({ tipo, ok: false, provedorId: null, erro: "sem_resposta" });
+    throw e;
+  }
 
   if (!res.ok) {
     const corpo = await res.text();
     // o detalhe técnico fica no log do servidor, não na tela dela
     console.error(`[eorganizei:email] Resend ${res.status}: ${corpo.slice(0, 300)}`);
+    await registrarEnvioDeEmail({ tipo, ok: false, provedorId: null, erro: `http_${res.status}` });
     return { ok: false, error: erroLegivel(res.status, corpo) };
   }
 
@@ -164,6 +186,7 @@ export async function enviarViaResend(dados: EnvioEmail): Promise<ResultadoEnvio
   } catch {
     // o envio saiu; só o id se perdeu — não é motivo para dizer que falhou
   }
+  await registrarEnvioDeEmail({ tipo, ok: true, provedorId: id, erro: null });
   return { ok: true, id };
 }
 
@@ -281,6 +304,7 @@ export async function enviarEmailConfirmacao(
   </div>`;
 
   return enviarViaResend({
+    tipo: "confirmacao_fornecedor",
     to: dados.to,
     subject: `Confirme sua presença — ${dados.eventLabel}`,
     html,
@@ -328,6 +352,7 @@ export async function enviarEmailSolicitacao(
   </div>`;
 
   return enviarViaResend({
+    tipo: "solicitacao_fornecedor",
     to: dados.to,
     subject: `${dados.titulo} — ${dados.eventLabel}`,
     html,
@@ -381,6 +406,7 @@ export async function enviarConviteAgendamentoEmail(
   </div>`;
 
   return enviarViaResend({
+    tipo: "convite_agendamento",
     to: dados.to,
     subject: `Escolha um horário — ${dados.tarefa}`,
     html,
@@ -423,6 +449,7 @@ export async function enviarEmailOrcamento(
   `;
 
   return enviarViaResend({
+    tipo: "proposta",
     to: dados.to,
     subject: `Seu orçamento — ${dados.nomeEmpresa}`,
     html,

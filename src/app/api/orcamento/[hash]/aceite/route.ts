@@ -29,6 +29,7 @@ import { TERMOS_ACEITE_VERSAO, termosAceiteTexto } from "@/lib/aceite-termo";
 // modais recebem em onAceito, e o formato mora com quem consome.
 import type { ResultadoAceite } from "@/components/orcamento-publico/ModalAceiteProposta";
 import { appUrl } from "@/lib/app-url";
+import { registrarErroDoServidor } from "@/lib/registro-do-sistema";
 import { enviarEmailAceiteCerimonialista } from "@/lib/email-aceite";
 import {
   anexarContratoDoAceite,
@@ -354,6 +355,7 @@ export async function POST(
 
   if (error) {
     console.error(`[eorg:aceite] registrar: ${error.code} ${error.message}`);
+    await registrarErroDoServidor({ area: "Aceite da proposta", codigo: error.code ?? "registrar" });
     return NextResponse.json(
       { ok: false, erro: "Não foi possível registrar o aceite agora. Tente de novo em instantes." },
       { status: 500 }
@@ -390,6 +392,7 @@ export async function POST(
     );
   } catch (e) {
     console.error("[eorg:aceite] evento:", e instanceof Error ? e.message : e);
+    await registrarErroDoServidor({ area: "Aceite: evento", codigo: e instanceof Error ? e.name : "falha" });
   }
 
   // (a2) o contrato dela vira documento do aceite — ANTES do termo, que
@@ -409,6 +412,7 @@ export async function POST(
       contratoNome = contrato?.nome ?? null;
     } catch (e) {
       console.error("[eorg:aceite] contrato:", e instanceof Error ? e.message : e);
+      await registrarErroDoServidor({ area: "Aceite: contrato", codigo: e instanceof Error ? e.name : "falha" });
     }
   }
 
@@ -419,6 +423,7 @@ export async function POST(
       termo = await gerarEGuardarTermo(supabase, aceiteId);
     } catch (e) {
       console.error("[eorg:aceite] termo:", e instanceof Error ? e.message : e);
+      await registrarErroDoServidor({ area: "Aceite: termo em PDF", codigo: e instanceof Error ? e.name : "falha" });
     }
   }
 

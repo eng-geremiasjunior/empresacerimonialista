@@ -14,6 +14,8 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { RotateCw } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { areaDaRota } from "@/lib/presenca";
 
 export default function Erro({
   error,
@@ -24,6 +26,15 @@ export default function Erro({
 }) {
   useEffect(() => {
     console.error("[vela] erro na área logada:", error);
+    // O painel do dono conta os erros que chegam à tela (123, seção 10).
+    // Vai só o nome da área (sem endereço nem id) e o código do erro; a
+    // mensagem fica aqui, porque pode repetir o que a pessoa digitou.
+    Promise.resolve(
+      createClient().rpc("registrar_erro_da_tela", {
+        p_area: areaDaRota(window.location.pathname),
+        p_codigo: error.digest ?? error.name ?? "erro",
+      })
+    ).catch(() => undefined);
   }, [error]);
 
   return (

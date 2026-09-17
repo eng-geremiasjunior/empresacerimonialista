@@ -17,6 +17,15 @@ import {
   salvarGastoDb,
   salvarPortaoDoTesteDb,
 } from "@/lib/supabase/admin-painel";
+import { prorrogarTesteDb, salvarNotaDb } from "@/lib/supabase/admin-contas";
+import {
+  apagarCustoDb,
+  copiarRecorrentesDb,
+  marcarCustoPagoDb,
+  salvarAjustesDb,
+  salvarCustoDb,
+  salvarSaldoDb,
+} from "@/lib/supabase/admin-receita";
 import { desmascararDinheiro } from "@/lib/format";
 import { ehCodigoDoPlano } from "@/lib/planos";
 
@@ -61,8 +70,8 @@ export async function salvarAssinatura(
       status: status as "trial" | "ativa" | "pausada" | "cancelada",
       observacao: String(formData.get("observacao") ?? "").trim() || null,
     });
-    revalidatePath("/admin");
-    revalidatePath("/admin/contas");
+    revalidarPainel();
+    revalidatePath(`/admin/contas/${empresaId}`);
     return { ok: true };
   } catch (e) {
     console.error("[vela:admin] salvarAssinatura:", e);
@@ -80,7 +89,7 @@ export async function salvarGasto(
     const valor = desmascararDinheiro(String(formData.get("valor") ?? ""));
     if (valor === null) return { error: "Informe o valor gasto." };
     await salvarGastoDb(mes, valor);
-    revalidatePath("/admin");
+    revalidarPainel();
     return { ok: true };
   } catch (e) {
     console.error("[vela:admin] salvarGasto:", e);
@@ -95,7 +104,8 @@ export async function definirBanimento(
   try {
     if (!empresaId) return { error: "Conta inválida." };
     const { afetados } = await definirBanimentoDb(empresaId, banir);
-    revalidatePath("/admin/contas");
+    revalidarPainel();
+    revalidatePath(`/admin/contas/${empresaId}`);
     return { ok: true, afetados };
   } catch (e) {
     console.error("[vela:admin] definirBanimento:", e);
@@ -113,7 +123,7 @@ export async function salvarPortaoDoTeste(
     const aberto = String(formData.get("aberto") ?? "") === "1";
     const dias = Number(String(formData.get("dias") ?? "7").replace(/\D/g, "")) || 7;
     await salvarPortaoDoTesteDb({ aberto, dias });
-    revalidatePath("/admin");
+    revalidarPainel();
     revalidatePath("/planos");
     return { ok: true };
   } catch (e) {
@@ -164,9 +174,9 @@ export async function definirContaDaCasa(
   try {
     if (!empresaId) return { error: "Conta inválida." };
     await definirContaDaCasaDb(empresaId, daCasa);
-    revalidatePath("/admin");
-    revalidatePath("/admin/contas");
+    revalidarPainel();
     revalidatePath("/admin/suporte");
+    revalidatePath(`/admin/contas/${empresaId}`);
     return { ok: true };
   } catch (e) {
     console.error("[eorganizei:admin] definirContaDaCasa:", e);
@@ -185,5 +195,162 @@ export async function agoraDasContas(): Promise<Record<string, AgoraDaConta> | n
   } catch (e) {
     console.error("[eorganizei:admin] agoraDasContas:", e instanceof Error ? e.message.slice(0, 120) : e);
     return null;
+  }
+}
+
+// ------------------------------------------------------------------
+// O painel repaginado (17/09/2026): ficha da conta, custos, caixa e
+// ajustes. As funções de dados checam o dono e gravam a auditoria.
+// ------------------------------------------------------------------
+
+function revalidarPainel() {
+  for (const p of [
+    "/admin",
+    "/admin/contas",
+    "/admin/ativacao",
+    "/admin/receita",
+    "/admin/sistema",
+    "/admin/auditoria",
+    "/admin/ajustes",
+  ]) {
+    revalidatePath(p);
+  }
+}
+
+export async function prorrogarTeste(
+  _prev: ResultadoAdmin & { novoFim?: string },
+  formData: FormData
+): Promise<ResultadoAdmin & { novoFim?: string }> {
+  try {
+    const empresaId = String(formData.get("empresa_id") ?? "");
+    const dias = Number(String(formData.get("dias") ?? "").replace(/\D/g, ""));
+    const motivo = String(formData.get("motivo") ?? "");
+    if (!empresaId) return { error: "Conta inválida." };
+    const { novoFim } = await prorrogarTesteDb(empresaId, dias, motivo);
+    revalidarPainel();
+    revalidatePath(`/admin/contas/${empresaId}`);
+    return { ok: true, novoFim };
+  } catch (e) {
+    console.error("[eorganizei:admin] prorrogarTeste:", e instanceof Error ? e.message : e);
+    return { error: e instanceof Error ? e.message : "Não foi possível prorrogar." };
+  }
+}
+
+export async function salvarNota(
+  _prev: ResultadoAdmin,
+  formData: FormData
+): Promise<ResultadoAdmin> {
+  try {
+    const empresaId = String(formData.get("empresa_id") ?? "");
+    if (!empresaId) return { error: "Conta inválida." };
+    await salvarNotaDb(empresaId, String(formData.get("texto") ?? ""));
+    revalidatePath(`/admin/contas/${empresaId}`);
+    revalidatePath("/admin/auditoria");
+    return { ok: true };
+  } catch (e) {
+    console.error("[eorganizei:admin] salvarNota:", e instanceof Error ? e.message : e);
+    return { error: e instanceof Error ? e.message : "Não foi possível salvar a nota." };
+  }
+}
+
+export async function salvarCusto(
+  _prev: ResultadoAdmin,
+  formData: FormData
+): Promise<ResultadoAdmin> {
+  try {
+    const valor = desmascararDinheiro(String(formData.get("valor") ?? ""));
+    if (valor === null) return { error: "Informe o valor." };
+    await salvarCustoDb({
+      mes: String(formData.get("mes") ?? ""),
+      servico: String(formData.get("servico") ?? ""),
+      categoria: String(formData.get("categoria") ?? ""),
+      valor,
+      recorrente: formData.get("recorrente") === "1",
+      pago: formData.get("pago") === "1",
+      nota: String(formData.get("nota") ?? "") || null,
+    });
+    revalidarPainel();
+    return { ok: true };
+  } catch (e) {
+    console.error("[eorganizei:admin] salvarCusto:", e instanceof Error ? e.message : e);
+    return { error: e instanceof Error ? e.message : "Não foi possível lançar o custo." };
+  }
+}
+
+export async function apagarCusto(id: string): Promise<ResultadoAdmin> {
+  try {
+    if (!id) return { error: "Custo inválido." };
+    await apagarCustoDb(id);
+    revalidarPainel();
+    return { ok: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Não foi possível apagar." };
+  }
+}
+
+export async function marcarCustoPago(id: string, pago: boolean): Promise<ResultadoAdmin> {
+  try {
+    if (!id) return { error: "Custo inválido." };
+    await marcarCustoPagoDb(id, pago);
+    revalidarPainel();
+    return { ok: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Não foi possível salvar." };
+  }
+}
+
+export async function copiarRecorrentes(mes: string): Promise<ResultadoAdmin & { copiados?: number }> {
+  try {
+    const { copiados } = await copiarRecorrentesDb(mes);
+    revalidarPainel();
+    return { ok: true, copiados };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Não foi possível copiar." };
+  }
+}
+
+export async function salvarSaldo(
+  _prev: ResultadoAdmin,
+  formData: FormData
+): Promise<ResultadoAdmin> {
+  try {
+    const bruto = String(formData.get("valor") ?? "").trim();
+    const negativo = bruto.startsWith("-");
+    const valor = desmascararDinheiro(bruto.replace(/^-/, ""));
+    if (valor === null) return { error: "Informe o saldo." };
+    await salvarSaldoDb(
+      String(formData.get("dia") ?? ""),
+      negativo ? -valor : valor,
+      String(formData.get("nota") ?? "") || null
+    );
+    revalidarPainel();
+    return { ok: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Não foi possível salvar o saldo." };
+  }
+}
+
+export async function salvarAjustes(
+  _prev: ResultadoAdmin,
+  formData: FormData
+): Promise<ResultadoAdmin> {
+  try {
+    const numero = (campo: string): number | null => {
+      const t = String(formData.get(campo) ?? "").trim().replace(",", ".");
+      if (!t) return null;
+      const n = Number(t);
+      if (!Number.isFinite(n)) throw new Error("Use só números nos ajustes.");
+      return n;
+    };
+    await salvarAjustesDb({
+      aliquotaImposto: numero("aliquota_imposto"),
+      supabaseBancoMb: numero("supabase_banco_mb"),
+      supabaseArquivosMb: numero("supabase_arquivos_mb"),
+      resendEmailsMes: numero("resend_emails_mes"),
+    });
+    revalidarPainel();
+    return { ok: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Não foi possível salvar os ajustes." };
   }
 }

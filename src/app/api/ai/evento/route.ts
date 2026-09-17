@@ -12,6 +12,7 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { registrarUsoDaIa } from "@/lib/registro-do-sistema";
 import { montarContextoEvento } from "@/lib/supabase/assistente-evento";
 import { redigirContatos } from "@/lib/assistente-gate";
 
@@ -125,6 +126,7 @@ export async function POST(req: Request) {
     if (!res.ok) {
       // O motivo real (chave inválida, modelo inexistente, limite) fica no
       // log do servidor; a tela mostra algo curto.
+      await registrarUsoDaIa({ userId: user.id, rota: "evento", ok: false });
       const detalhe = await res.text().catch(() => "");
       console.error(
         `assistente: provedor respondeu ${res.status} — ${detalhe.slice(0, 300)}`
@@ -145,6 +147,14 @@ export async function POST(req: Request) {
     }
 
     const data = await res.json();
+    // só a contagem que o provedor devolve; nada da pergunta nem da resposta
+    await registrarUsoDaIa({
+      userId: user.id,
+      rota: "evento",
+      ok: true,
+      tokensEntrada: Number(data?.usage?.prompt_tokens) || 0,
+      tokensSaida: Number(data?.usage?.completion_tokens) || 0,
+    });
     const text = data.choices?.[0]?.message?.content?.trim();
 
     if (!text) {

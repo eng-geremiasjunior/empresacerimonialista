@@ -83,12 +83,16 @@ export default async function AdminSuportePage({
   searchParams?: { u?: string };
 }) {
   const conversas = await getConversasSuporte();
-  const aberta = searchParams?.u ?? conversas[0]?.userId ?? null;
+  // Clientes e contas da casa nunca se misturam na lista (regra dele,
+  // 17/09/2026): as da casa são testes, e vêm depois, à parte.
+  const deClientes = conversas.filter((c) => !c.daCasa);
+  const daCasa = conversas.filter((c) => c.daCasa);
+  const aberta = searchParams?.u ?? deClientes[0]?.userId ?? daCasa[0]?.userId ?? null;
   const [mensagens, pessoa] = aberta
     ? await Promise.all([getConversaSuporte(aberta), getPessoaDoSuporte(aberta)])
     : [[], null];
   const atual = conversas.find((c) => c.userId === aberta) ?? null;
-  const naoLidas = conversas.reduce((s, c) => s + c.naoLidas, 0);
+  const naoLidas = deClientes.reduce((s, c) => s + c.naoLidas, 0);
 
   return (
     <div data-adm-secao="suporte" className="space-y-5">
@@ -97,9 +101,9 @@ export default async function AdminSuportePage({
         <p className="mt-1 text-sm text-stone-500">
           {conversas.length === 0
             ? "Ninguém escreveu ainda. As mensagens da caixinha “Tem dúvidas?” do sistema chegam aqui."
-            : `${conversas.length} ${conversas.length === 1 ? "conversa" : "conversas"}${
+            : `${deClientes.length} ${deClientes.length === 1 ? "conversa de cliente" : "conversas de clientes"}${
                 naoLidas > 0 ? ` · ${naoLidas} ${naoLidas === 1 ? "mensagem nova" : "mensagens novas"}` : ""
-              }. A resposta aparece na caixinha da pessoa e vai também por e-mail.`}
+              }${daCasa.length > 0 ? ` · ${daCasa.length} de contas da casa, à parte` : ""}. A resposta aparece na caixinha da pessoa e vai também por e-mail.`}
         </p>
       </div>
 
@@ -107,10 +111,19 @@ export default async function AdminSuportePage({
         <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
           {/* ---------- quem escreveu ---------- */}
           <ul className="overflow-hidden rounded-xl border border-stone-200 bg-white">
-            {conversas.map((c) => {
+            {deClientes.length === 0 && (
+              <li className="px-4 py-3 text-xs text-stone-500">Nenhuma conversa de cliente.</li>
+            )}
+            {[...deClientes, ...daCasa].map((c, i) => {
+              const primeiraDaCasa = c.daCasa && i === deClientes.length;
               const ativa = c.userId === aberta;
               return (
                 <li key={c.userId} className="border-b border-stone-100 last:border-b-0">
+                  {primeiraDaCasa && (
+                    <p className="border-t border-stone-200 bg-stone-50 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-stone-500">
+                      Contas da casa
+                    </p>
+                  )}
                   <Link
                     href={`/admin/suporte?u=${c.userId}`}
                     className={`block px-4 py-3 transition-colors ${ativa ? "bg-stone-100" : "hover:bg-stone-50"}`}
@@ -129,7 +142,7 @@ export default async function AdminSuportePage({
                         {c.ultimaMensagem}
                       </p>
                       {c.naoLidas > 0 && (
-                        <span className="shrink-0 rounded-full bg-emerald-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                        <span className="shrink-0 rounded-full bg-[#6e3f5f] px-1.5 py-0.5 text-[10px] font-semibold text-white">
                           {c.naoLidas}
                         </span>
                       )}

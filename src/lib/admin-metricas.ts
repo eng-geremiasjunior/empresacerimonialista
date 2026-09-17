@@ -80,29 +80,171 @@ function repassar(
   for (const e of ordenados) {
     if (e.em >= corteExclusivo) continue;
     const atual = estados.get(e.empresaId) ?? { pagante: false, valor: 0 };
+    estados.set(e.empresaId, proximoEstado(atual, e));
+  }
+  return estados;
+}
+
+/** O que um evento faz com o estado de uma conta (a regra de repassar). */
+function proximoEstado(atual: Estado, e: EventoAssinatura): Estado {
+  switch (e.tipo) {
+    case "inicio":
+    case "reativacao":
+    case "retomada":
+      return { pagante: true, valor: e.valorDepois ?? atual.valor };
+    case "upgrade":
+    case "downgrade":
+      return { pagante: atual.pagante, valor: e.valorDepois ?? atual.valor };
+    case "cancelamento":
+    case "pausa":
+      return { pagante: false, valor: atual.valor };
+    default:
+      return atual;
+  }
+}
+
+// ------------------------------------------------------------------
+// O movimento do MRR (17/09/2026): por que o número mudou no mês
+// ------------------------------------------------------------------
+
+export type MovimentoDoMrr = {
+  inicio: number;
+  novas: number;
+  upgrades: number;
+  reativacoes: number;
+  retomadas: number;
+  downgrades: number;
+  pausas: number;
+  cancelamentos: number;
+  fim: number;
+};
+
+function limitesDoMes(mes: string): { inicio: string; seguinte: string } {
+  const [a, m] = mes.split("-").map(Number);
+  const prox = m === 12 ? `${a + 1}-01` : `${a}-${String(m + 1).padStart(2, "0")}`;
+  return { inicio: `${mes}-01`, seguinte: `${prox}-01` };
+}
+
+/**
+ * MRR do começo do mês + o que entrou − o que saiu = MRR do fim. Cada
+ * evento do mês é repassado com a MESMA regra das métricas, e a diferença
+ * que ele causa vai para a linha do tipo dele: a soma sempre fecha.
+ * Recebe o histórico já limpo (eventosEfetivos).
+ */
+export function movimentoDoMrr(eventos: EventoAssinatura[], mes: string): MovimentoDoMrr {
+  const { inicio, seguinte } = limitesDoMes(mes);
+  const estados = repassar(eventos, inicio);
+  const m: MovimentoDoMrr = {
+    inicio: somaPagantes(estados),
+    novas: 0,
+    upgrades: 0,
+    reativacoes: 0,
+    retomadas: 0,
+    downgrades: 0,
+    pausas: 0,
+    cancelamentos: 0,
+    fim: 0,
+  };
+  const doMes = [...eventos]
+    .sort((a, b) => a.em.localeCompare(b.em))
+    .filter((e) => e.em >= inicio && e.em < seguinte);
+  for (const e of doMes) {
+    const atual = estados.get(e.empresaId) ?? { pagante: false, valor: 0 };
+    const novo = proximoEstado(atual, e);
+    estados.set(e.empresaId, novo);
+    const delta = (novo.pagante ? novo.valor : 0) - (atual.pagante ? atual.valor : 0);
     switch (e.tipo) {
       case "inicio":
+        m.novas += delta;
+        break;
       case "reativacao":
+        m.reativacoes += delta;
+        break;
       case "retomada":
-        estados.set(e.empresaId, {
-          pagante: true,
-          valor: e.valorDepois ?? atual.valor,
-        });
+        m.retomadas += delta;
         break;
       case "upgrade":
       case "downgrade":
-        estados.set(e.empresaId, {
-          pagante: atual.pagante,
-          valor: e.valorDepois ?? atual.valor,
-        });
+        if (delta >= 0) m.upgrades += delta;
+        else m.downgrades += -delta;
         break;
       case "cancelamento":
+        m.cancelamentos += -delta;
+        break;
       case "pausa":
-        estados.set(e.empresaId, { pagante: false, valor: atual.valor });
+        m.pausas += -delta;
         break;
     }
   }
-  return estados;
+  m.fim = somaPagantes(estados);
+  return m;
+}
+
+/**
+ * Quanto tempo as contas ficaram pagando, em meses (30 dias), somando os
+ * períodos de cada uma até hoje. Null sem nenhuma conta que pagou.
+ */
+export function tempoMedioComoCliente(eventos: EventoAssinatura[], hoje: string): number | null {
+  const abertos = new Map<string, string>();
+  const dias = new Map<string, number>();
+  const diaNum = (d: string) => Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 86_400_000;
+  const ordenados = [...eventos].sort((a, b) => a.em.localeCompare(b.em));
+  for (const e of ordenados) {
+    if (e.tipo === "inicio" || e.tipo === "reativacao" || e.tipo === "retomada") {
+      if (!abertos.has(e.empresaId)) abertos.set(e.empresaId, e.em);
+      if (!dias.has(e.empresaId)) dias.set(e.empresaId, 0);
+    } else if (e.tipo === "cancelamento" || e.tipo === "pausa") {
+      const desde = abertos.get(e.empresaId);
+      if (desde) {
+        dias.set(e.empresaId, (dias.get(e.empresaId) ?? 0) + (diaNum(e.em) - diaNum(desde)));
+        abertos.delete(e.empresaId);
+      }
+    }
+  }
+  for (const [empresa, desde] of abertos) {
+    dias.set(empresa, (dias.get(empresa) ?? 0) + (diaNum(hoje) - diaNum(desde)));
+  }
+  if (dias.size === 0) return null;
+  const total = [...dias.values()].reduce((s, d) => s + d, 0);
+  return total / dias.size / 30;
+}
+
+export type Coorte = {
+  mes: string;
+  contas: number;
+  /** quantas ainda pagavam 1, 2, 3 meses depois (null = ainda não chegou lá) */
+  depois: (number | null)[];
+};
+
+/** As contas pelo mês em que começaram a pagar, e quantas continuaram. */
+export function coortesMensais(eventos: EventoAssinatura[], hojeMes: string, meses = 3): Coorte[] {
+  const primeiro = new Map<string, string>();
+  for (const e of [...eventos].sort((a, b) => a.em.localeCompare(b.em))) {
+    if (e.tipo === "inicio" && !primeiro.has(e.empresaId)) primeiro.set(e.empresaId, e.em.slice(0, 7));
+  }
+  const porMes = new Map<string, string[]>();
+  for (const [empresa, mes] of primeiro) {
+    porMes.set(mes, [...(porMes.get(mes) ?? []), empresa]);
+  }
+  const somarMes = (mes: string, n: number) => {
+    let [a, m] = mes.split("-").map(Number);
+    m += n;
+    while (m > 12) { m -= 12; a += 1; }
+    return `${a}-${String(m).padStart(2, "0")}`;
+  };
+  return [...porMes.entries()]
+    .sort((x, y) => x[0].localeCompare(y[0]))
+    .map(([mes, contas]) => ({
+      mes,
+      contas: contas.length,
+      depois: Array.from({ length: meses }, (_, i) => {
+        const alvo = somarMes(mes, i + 1);
+        if (alvo > hojeMes) return null;
+        // pagando no FIM do mês alvo
+        const estados = repassar(eventos, `${somarMes(alvo, 1)}-01`);
+        return contas.filter((c) => estados.get(c)?.pagante).length;
+      }),
+    }));
 }
 
 function somaPagantes(estados: Map<string, Estado>): number {
