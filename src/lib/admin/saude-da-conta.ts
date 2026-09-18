@@ -13,6 +13,12 @@ import { hojeBR } from "@/lib/tempo";
 // O que o banco devolve
 // ------------------------------------------------------------------
 
+import {
+  ROTULO_DA_ETAPA,
+  entrouNoCheckout,
+  type CheckoutDaConta,
+} from "@/lib/etapas-da-assinatura";
+
 export type AssinaturaDoResumo = {
   id: string;
   plano: string;
@@ -38,6 +44,12 @@ export type AssinaturaDoResumo = {
 
 export type ResumoDaConta = {
   empresa_id: string;
+  /**
+   * Até onde chegou no caminho da assinatura. Não vem da função do banco:
+   * o servidor do painel monta a partir do sinal de presença
+   * (lib/etapas-da-assinatura.ts). Gravado desde 17/09/2026.
+   */
+  checkout?: CheckoutDaConta | null;
   nome: string;
   criada_em: string;
   da_casa: boolean;
@@ -175,6 +187,8 @@ export const PRAZOS = {
   /** pagante com pouco uso e parando */
   poucoUsoDias: 7,
   parandoDias: 14,
+  /** foi assinar e não concluiu: quanto tempo isso fica na atenção */
+  checkoutRecenteDias: 14,
 } as const;
 
 /** As faixas do filtro "sem uso há". */
@@ -301,6 +315,7 @@ export function esperaEmPalavras(iso: string, agora: Date): string {
 
 export type ChaveDoMotivo =
   | "cobranca"
+  | "checkout"
   | "teste_acabando"
   | "suporte"
   | "pagante_parando"
@@ -321,6 +336,7 @@ export type Motivo = {
 /** Os grupos da lista, na ordem da tela, com o título de cada um. */
 export const GRUPOS_DE_ATENCAO: { chave: ChaveDoMotivo; titulo: string }[] = [
   { chave: "cobranca", titulo: "Cobrança pendente" },
+  { chave: "checkout", titulo: "Foram assinar e não concluíram" },
   { chave: "teste_acabando", titulo: "Teste acabando sem ativar" },
   { chave: "suporte", titulo: "Suporte sem resposta" },
   { chave: "pagante_parando", titulo: "Pagantes parando" },
@@ -356,6 +372,25 @@ export function motivosDeAtencao(c: ResumoDaConta, agora: Date): Motivo[] {
         : "a cobrança está em atraso",
       urgencia: 0,
     });
+  }
+
+  // O carrinho abandonado: escolheu um plano, começou a assinar e não
+  // terminou. Quem só olhou os planos fica na ficha, não aqui.
+  const ck = c.checkout;
+  if (!paga && ck && entrouNoCheckout(ck.etapa)) {
+    const ha = diasDesde(ck.dia, agora) ?? 0;
+    if (ha <= PRAZOS.checkoutRecenteDias) {
+      const quando = ck.sinal && ha === 0 ? esperaEmPalavras(ck.sinal, agora) : null;
+      const dia = quando ? `há ${quando}` : diasEmPalavras(ha);
+      motivos.push({
+        chave: "checkout",
+        texto:
+          ck.etapa === "nao_passou"
+            ? `tentou pagar ${dia} e o pagamento não passou`
+            : `escolheu um plano e parou em ${ROTULO_DA_ETAPA[ck.etapa]}, ${dia}`,
+        urgencia: ck.etapa === "nao_passou" ? 0 : 1,
+      });
+    }
   }
 
   if (testa && faltam !== null && faltam >= 0 && faltam <= PRAZOS.testeAcabandoDias && !ativa) {

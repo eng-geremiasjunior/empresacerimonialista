@@ -48,6 +48,8 @@ import {
   EnderecoDeCobranca,
   type Cobranca,
 } from "@/components/assinatura/DadosDeCobranca";
+import { anunciarArea } from "@/components/Presenca";
+import { AREA_DA_ETAPA } from "@/lib/etapas-da-assinatura";
 
 export type EstadoAssinatura = {
   status: string;
@@ -245,6 +247,22 @@ export function AssinaturaTela({
   // 3 pagamento. Só existe no modo "assinar" — trocar o cartão continua
   // sendo uma tela só, porque é um formulário só.
   const [etapa, setEtapa] = useState<1 | 2 | 3>(1);
+  // o cartão foi enviado e não passou (a operadora, ou o próprio cartão)
+  const [naoPassou, setNaoPassou] = useState(false);
+
+  // Até onde ela chegou, para o painel do dono: a etapa vira o nome da
+  // área no sinal de presença. Só o nome — nada do que foi digitado.
+  useEffect(() => {
+    anunciarArea(
+      modoForm !== "assinar"
+        ? null
+        : etapa === 3 && naoPassou
+          ? AREA_DA_ETAPA.nao_passou
+          : AREA_DA_ETAPA[etapa === 1 ? "dados" : etapa === 2 ? "endereco" : "pagamento"]
+    );
+  }, [modoForm, etapa, naoPassou]);
+  // sair da tela não precisa desanunciar: o anúncio vale só na rota em
+  // que foi feito (components/Presenca.tsx)
 
   // A promoção só aparece onde ela vale: no cartão do plano dela, e no
   // checkout desse mesmo plano. Anunciar em cima de outro cartão seria
@@ -372,6 +390,7 @@ export function AssinaturaTela({
       const t = await tokenizar(form);
       if (t.erro || !t.token) {
         setErro(t.erro ?? "Não foi possível validar o cartão.");
+        if (!troca) setNaoPassou(true);
         return;
       }
       const r =
@@ -380,8 +399,10 @@ export function AssinaturaTela({
           : await assinar(escolhido.codigo, t.token, cobranca, aceitei);
       if (r.error) {
         setErro(r.error);
+        if (!troca) setNaoPassou(true);
         return;
       }
+      setNaoPassou(false);
       setForm({ numero: "", nome: "", mes: "", ano: "", cvv: "" });
       setModoForm(null);
       setPlanoEscolhido(null);
@@ -428,6 +449,7 @@ export function AssinaturaTela({
   /** Volta uma etapa; na primeira, fecha o formulário e devolve a vitrine. */
   function voltar() {
     setErro(null);
+    setNaoPassou(false);
     if (modoForm === "assinar" && etapa > 1) {
       setEtapa(etapa === 3 ? 2 : 1);
       return;

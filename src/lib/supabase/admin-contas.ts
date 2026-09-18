@@ -8,11 +8,13 @@
 import "server-only";
 import {
   exigirSuperAdmin,
+  lerTudo,
   registrarAcaoAdmin,
   servico,
   tabelaAusente,
 } from "@/lib/supabase/admin-painel";
 import type { ResumoDaConta } from "@/lib/admin/saude-da-conta";
+import { checkoutDasLinhas } from "@/lib/etapas-da-assinatura";
 import { hojeBR, somarDias } from "@/lib/tempo";
 
 /** A função do banco ainda não existe (123 não reaplicada). */
@@ -31,6 +33,57 @@ const FALTA_A_123 = "Reaplique a migração 123 no Supabase para ver esta parte 
 // O resumo de cada conta
 // ------------------------------------------------------------------
 
+/**
+ * Até onde cada conta chegou no caminho da assinatura. Sai do sinal de
+ * presença (uso por dia e a última tela), filtrado às áreas da assinatura:
+ * poucas linhas, sem migração. Falhar aqui não derruba o painel — a conta
+ * só fica sem essa informação.
+ */
+async function anexarCheckout(
+  contas: ResumoDaConta[],
+  empresaId?: string
+): Promise<ResumoDaConta[]> {
+  if (contas.length === 0) return contas;
+  try {
+    const db = servico();
+    const [uso, presenca] = await Promise.all([
+      lerTudo<{ empresa_id: string; dia: string; area: string }>((de, ate) => {
+        let q = db.from("uso_diario").select("empresa_id, dia, area").like("area", "Assinatura%");
+        if (empresaId) q = q.eq("empresa_id", empresaId);
+        return q.order("dia").range(de, ate);
+      }, "o uso da assinatura"),
+      lerTudo<{ empresa_id: string; area: string; visto_em: string }>((de, ate) => {
+        let q = db.from("presenca").select("empresa_id, area, visto_em").like("area", "Assinatura%");
+        if (empresaId) q = q.eq("empresa_id", empresaId);
+        return q.order("visto_em", { ascending: false }).range(de, ate);
+      }, "a presença na assinatura"),
+    ]);
+
+    const usoDa = new Map<string, { dia: string; area: string }[]>();
+    for (const u of uso) {
+      const lista = usoDa.get(u.empresa_id) ?? [];
+      lista.push(u);
+      usoDa.set(u.empresa_id, lista);
+    }
+    // vem do mais recente: a primeira de cada empresa é a que vale
+    const presencaDa = new Map<string, { area: string; visto_em: string }>();
+    for (const p of presenca) {
+      if (!presencaDa.has(p.empresa_id)) presencaDa.set(p.empresa_id, p);
+    }
+
+    return contas.map((c) => ({
+      ...c,
+      checkout: checkoutDasLinhas(
+        usoDa.get(c.empresa_id) ?? [],
+        presencaDa.get(c.empresa_id) ?? null
+      ),
+    }));
+  } catch (e) {
+    console.error("[eorganizei:admin] checkout das contas:", (e as Error).message.slice(0, 120));
+    return contas;
+  }
+}
+
 export async function getResumoDasContas(): Promise<LeituraDoPainel<ResumoDaConta[]>> {
   await exigirSuperAdmin();
   const { data, error } = await servico().rpc("admin_resumo_contas", {});
@@ -39,7 +92,8 @@ export async function getResumoDasContas(): Promise<LeituraDoPainel<ResumoDaCont
     console.error("[eorganizei:admin] resumo das contas:", error.code, (error.message ?? "").slice(0, 120));
     return { ok: false, motivo: "erro", mensagem: "Não foi possível ler as contas agora." };
   }
-  return { ok: true, dados: (Array.isArray(data) ? data : []) as ResumoDaConta[] };
+  const contas = (Array.isArray(data) ? data : []) as ResumoDaConta[];
+  return { ok: true, dados: await anexarCheckout(contas) };
 }
 
 export async function getResumoDaConta(empresaId: string): Promise<LeituraDoPainel<ResumoDaConta | null>> {
@@ -53,7 +107,8 @@ export async function getResumoDaConta(empresaId: string): Promise<LeituraDoPain
     return { ok: false, motivo: "erro", mensagem: "Não foi possível ler esta conta agora." };
   }
   const lista = (Array.isArray(data) ? data : []) as ResumoDaConta[];
-  return { ok: true, dados: lista[0] ?? null };
+  const [conta] = await anexarCheckout(lista.slice(0, 1), empresaId);
+  return { ok: true, dados: conta ?? null };
 }
 
 // ------------------------------------------------------------------

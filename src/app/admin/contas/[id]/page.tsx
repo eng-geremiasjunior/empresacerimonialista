@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { getAgoraDasContas, registrarFichaAberta } from "@/lib/supabase/admin-painel";
 import { getLinhaDoTempo, getResumoDaConta, PRORROGACAO_MAXIMA } from "@/lib/supabase/admin-contas";
+import { ROTULO_DA_ETAPA } from "@/lib/etapas-da-assinatura";
 import { getCatalogoDePlanos, reais as reaisDoCatalogo, tetoEmTexto } from "@/lib/planos";
 import {
   aparelhoDoAgente,
@@ -453,6 +454,17 @@ function Resumo({ c: conta, agora }: { c: ResumoDaConta; agora: Date }) {
               )}
               <span className={p.feito ? "text-[#1c1d21]" : "text-[#84858b]"}>{p.rotulo}</span>
               {p.em && <span className="text-[12px] text-[#84858b]">· {dataBR(p.em)}</span>}
+              {/* o carrinho abandonado: até onde ela foi antes de parar */}
+              {p.chave === "assinou" && !p.feito && conta.checkout && (
+                <span className="text-[12px] text-[#6e3f5f]">
+                  ·{" "}
+                  {conta.checkout.etapa === "planos"
+                    ? `viu os planos em ${dataBR(conta.checkout.dia)}`
+                    : conta.checkout.etapa === "nao_passou"
+                      ? `tentou pagar em ${dataBR(conta.checkout.dia)} e não passou`
+                      : `parou em ${ROTULO_DA_ETAPA[conta.checkout.etapa]} em ${dataBR(conta.checkout.dia)}`}
+                </span>
+              )}
             </li>
           ))}
         </ol>
