@@ -422,6 +422,27 @@
   margin-top: 2px;
 }
 
+/* A regra da senha no primeiro acesso, com o mesmo ícone só de viewBox.
+   Sem regra nenhuma para ela, o ✓ ocupava a largura da coluna — no
+   celular, um visto de 300px no meio da tela (visto em 18/09/2026). */
+.acesso-hint {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+.acesso-hint svg {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  margin-top: 2px;
+  color: var(--ok-ink);
+}
+
 /* Filho de flex não encolhe abaixo do próprio conteúdo sem isto
    (min-width: auto é o padrão): o aviso de sessão da equipe carrega um
    e-mail inteiro, o texto vazava para fora da caixa e a página inteira
