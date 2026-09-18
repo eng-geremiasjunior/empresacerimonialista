@@ -2,21 +2,99 @@
 
 // O que o modelo Curadoria faz no navegador: o menu lateral que marca a
 // seção à vista, os serviços em acordeão, o portfólio com filtro por tipo,
-// os depoimentos um por vez, a ilha do pé e a entrada desfocada de cada
-// bloco — como fotografia revelando.
+// os depoimentos um por vez, o vídeo que só baixa no play, a ilha do pé e
+// a entrada desfocada de cada bloco — como fotografia revelando.
 //
 // O estado da vitrine (tipo escolhido, pedido enviado) é o mesmo dos
 // outros modelos (EstadoDaVitrine). Movimento reduzido: nada anima e nada
 // entra desfocado; o conteúdo nunca depende de efeito.
 
-import { useEffect, useMemo, useState } from "react";
-import { MessageCircle } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { MessageCircle, Play } from "lucide-react";
 import type { DepoimentoDaVitrine } from "../DepoimentosVitrine";
 import { LinkMedido } from "../MedirPagina";
 import { useVitrine } from "../VitrineViva";
 
 const movimentoReduzido = () =>
   typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ------------------------------------------------------------ o vídeo */
+
+/**
+ * O vídeo dela. Até o play, só a capa: o arquivo não é baixado por quem não
+ * assiste (preload none). O play chama o vídeo dentro do próprio toque,
+ * senão o iPhone não deixa tocar com som. A moldura toma a proporção da
+ * capa, que é um quadro do próprio vídeo.
+ */
+export function VideoCuradoria({
+  url,
+  capa,
+  nome,
+}: {
+  url: string;
+  capa: string | null;
+  nome: string;
+}) {
+  const [tocando, setTocando] = useState(false);
+  const [proporcao, setProporcao] = useState<number | null>(null);
+  const video = useRef<HTMLVideoElement>(null);
+  const imagem = useRef<HTMLImageElement>(null);
+
+  // a capa pode ter carregado antes de o React ligar o onLoad
+  useEffect(() => {
+    const img = imagem.current;
+    if (img?.complete && img.naturalWidth) setProporcao(img.naturalWidth / img.naturalHeight);
+  }, []);
+
+  const estilo = proporcao
+    ? ({ "--cu-video-proporcao": proporcao.toFixed(4) } as CSSProperties)
+    : undefined;
+
+  return (
+    <div className="cu-video" data-focar="" data-tocando={tocando ? "" : undefined} style={estilo}>
+      <video
+        ref={video}
+        src={url}
+        poster={capa ?? undefined}
+        preload="none"
+        playsInline
+        controls={tocando}
+        onLoadedMetadata={(e) => {
+          const v = e.currentTarget;
+          if (!proporcao && v.videoWidth && v.videoHeight) setProporcao(v.videoWidth / v.videoHeight);
+        }}
+      />
+      {!tocando && (
+        <button
+          type="button"
+          className="cu-video-capa"
+          aria-label={`Assistir ao vídeo de ${nome}`}
+          onClick={() => {
+            setTocando(true);
+            video.current?.play().catch(() => {});
+          }}
+        >
+          {capa && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              ref={imagem}
+              src={capa}
+              alt=""
+              loading="lazy"
+              onLoad={(e) => {
+                const img = e.currentTarget;
+                if (img.naturalWidth) setProporcao(img.naturalWidth / img.naturalHeight);
+              }}
+            />
+          )}
+          <span className="cu-video-play" aria-hidden="true">
+            <Play />
+          </span>
+        </button>
+      )}
+    </div>
+  );
+}
 
 /* ------------------------------------------------------------ o menu */
 

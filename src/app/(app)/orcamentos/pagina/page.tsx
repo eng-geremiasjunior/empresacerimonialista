@@ -39,14 +39,14 @@ export default async function PaginaPublicaEditorPage() {
   }
 
   const empresaId = cargo.empresa_id;
-  // o retrato e a paleta são da 165 reaplicada em 18/09/2026: sem as
+  // retrato, paleta e vídeo são da 165 reaplicada em 18/09/2026: sem as
   // colunas, o editor continua de pé, só sem eles
   const COLUNAS =
     "slug, publicada, publicada_em, titulo, posicionamento, para_quem, cidade, tipos_atendidos, servicos, motivos, whatsapp, instagram, pixel_meta, modelo";
   const lerPagina = async () => {
     const ler = (extras: string) =>
       supabase.from("empresa_pagina").select(`${COLUNAS}${extras}`).eq("empresa_id", empresaId).maybeSingle();
-    const tudo = await ler(", retrato_url, paleta");
+    const tudo = await ler(", retrato_url, paleta, video_url, video_capa_url");
     if (!tudo.error) return tudo;
     const comRetrato = await ler(", retrato_url");
     if (!comRetrato.error) return comRetrato;
@@ -114,6 +114,8 @@ export default async function PaginaPublicaEditorPage() {
     modelo: string | null;
     retrato_url?: string | null;
     paleta?: string | null;
+    video_url?: string | null;
+    video_capa_url?: string | null;
   } | null;
 
   const whatsappDoCatalogo =
@@ -183,6 +185,7 @@ export default async function PaginaPublicaEditorPage() {
           modelo: modeloDaVitrine(pag?.modelo),
           retratoUrl: pag?.retrato_url ?? null,
           paleta: paletaDaVitrine(pag?.paleta),
+          video: pag?.video_url ? { url: pag.video_url, capaUrl: pag.video_capa_url ?? null } : null,
         }}
         fotos={fotos}
         depoimentos={depoimentos}

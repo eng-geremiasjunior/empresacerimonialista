@@ -11,9 +11,10 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Check, Copy, ExternalLink, Plus, X } from "lucide-react";
+import { Check, Copy, ExternalLink, Play, Plus, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { comprimirFoto, validarArquivo } from "@/lib/portfolio";
+import { conferirVideo, enviarVideo } from "@/lib/comercial/video-da-vitrine";
 import {
   definirEndereco,
   despublicarPagina,
@@ -68,6 +69,8 @@ type Depoimento = {
   naPagina: boolean;
 };
 
+type VideoDaVitrine = { url: string; capaUrl: string | null };
+
 type Props = {
   base: string;
   /** a pasta do retrato no balde de fotos */
@@ -97,6 +100,8 @@ type Props = {
     retratoUrl: string | null;
     /** as cores da vitrine */
     paleta: PaletaDaVitrine;
+    /** o vídeo de apresentação (modelo Curadoria) e a capa */
+    video: VideoDaVitrine | null;
   };
   fotos: Foto[];
   depoimentos: Depoimento[];
@@ -148,6 +153,9 @@ export function EditorPagina({
   const [modelo, setModelo] = useState<ModeloDaVitrine>(inicial.modelo);
   const [retratoUrl, setRetratoUrl] = useState<string | null>(inicial.retratoUrl);
   const [paleta, setPaleta] = useState<PaletaDaVitrine>(inicial.paleta);
+  const [video, setVideo] = useState<VideoDaVitrine | null>(inicial.video);
+  // "conferindo" antes de subir; depois, o quanto já subiu
+  const [enviandoVideo, setEnviandoVideo] = useState<"conferindo" | number | null>(null);
   const [enviandoRetrato, setEnviandoRetrato] = useState(false);
   const [modeloAmpliado, setModeloAmpliado] = useState<ModeloDaVitrine | null>(null);
   const [fotos, setFotos] = useState(fotosIniciais);
@@ -168,6 +176,7 @@ export function EditorPagina({
     modelo: inicial.modelo,
     retratoUrl: inicial.retratoUrl,
     paleta: inicial.paleta,
+    video: inicial.video,
   });
 
   const [aviso, setAviso] = useState<{ tipo: "ok" | "erro"; texto: string; onde: string } | null>(
@@ -194,6 +203,7 @@ export function EditorPagina({
     modelo,
     retratoUrl,
     paleta,
+    video,
   };
 
   // O WhatsApp que veio do Catálogo, intocado, não é "mudança": é o valor
@@ -277,6 +287,9 @@ export function EditorPagina({
         ? { retratoUrl: conteudoAtual.retratoUrl }
         : {}),
       ...(conteudoAtual.paleta !== salvoConteudo.paleta ? { paleta: conteudoAtual.paleta } : {}),
+      ...(JSON.stringify(conteudoAtual.video) !== JSON.stringify(salvoConteudo.video)
+        ? { video: conteudoAtual.video }
+        : {}),
     });
     if ("error" in r) {
       mostrar("salvar", "erro", r.error);
@@ -322,6 +335,38 @@ export function EditorPagina({
       mostrar("retrato", "ok", "Foto pronta. Salve para ela entrar na vitrine.");
     } finally {
       setEnviandoRetrato(false);
+    }
+  }
+
+  /**
+   * O vídeo: confere tamanho, formato e duração, tira a capa e sobe os dois
+   * mostrando o andamento. Como o retrato, só vale quando ela salva.
+   */
+  async function enviarVideoDaVitrine(arquivo: File) {
+    setAviso(null);
+    setEnviandoVideo("conferindo");
+    try {
+      const conferido = await conferirVideo(arquivo);
+      if (!conferido.ok) {
+        mostrar("video", "erro", conferido.erro);
+        return;
+      }
+      setEnviandoVideo(0);
+      const enviado = await enviarVideo(
+        createClient(),
+        empresaId,
+        arquivo,
+        conferido.video.capa,
+        setEnviandoVideo
+      );
+      if (!enviado) {
+        mostrar("video", "erro", "Não foi possível enviar o vídeo. Tente de novo.");
+        return;
+      }
+      setVideo({ url: enviado.videoUrl, capaUrl: enviado.capaUrl });
+      mostrar("video", "ok", "Vídeo pronto. Salve para ele entrar na vitrine.");
+    } finally {
+      setEnviandoVideo(null);
     }
   }
 
@@ -727,6 +772,60 @@ export function EditorPagina({
               </div>
             </div>
             {avisoEm("retrato")}
+          </div>
+        )}
+
+        {modelo === "curadoria" && (
+          <div>
+            <span className={labelClass}>Vídeo</span>
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex h-24 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md border border-gray-200 bg-gray-50 text-gray-400">
+                {video?.capaUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={video.capaUrl} alt="Capa do seu vídeo" className="h-full w-full object-cover" />
+                ) : video ? (
+                  <Play size={20} aria-hidden="true" />
+                ) : null}
+              </div>
+              <div className="min-w-0 flex-1 space-y-2">
+                <p className="text-sm text-gray-600">
+                  Até 1 minuto e meio e 30 MB. O Reels baixado do seu Instagram serve.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <label className={`${botaoSecundario} cursor-pointer`}>
+                    {enviandoVideo === "conferindo"
+                      ? "Conferindo…"
+                      : enviandoVideo !== null
+                        ? `Enviando… ${enviandoVideo}%`
+                        : video
+                          ? "Trocar o vídeo"
+                          : "Enviar um vídeo"}
+                    <input
+                      type="file"
+                      accept="video/mp4,video/quicktime,.mp4,.mov,.m4v"
+                      className="sr-only"
+                      disabled={enviandoVideo !== null}
+                      onChange={(e) => {
+                        const arquivo = e.target.files?.[0];
+                        e.target.value = "";
+                        if (arquivo) enviarVideoDaVitrine(arquivo);
+                      }}
+                    />
+                  </label>
+                  {video && (
+                    <button
+                      type="button"
+                      className={botaoSecundario}
+                      onClick={() => setVideo(null)}
+                      disabled={enviandoVideo !== null}
+                    >
+                      Tirar
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+            {avisoEm("video")}
           </div>
         )}
 

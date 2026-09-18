@@ -8,6 +8,7 @@
 // O endereço vai por função própria porque tem história e reservados; o
 // gatilho descarta qualquer endereço gravado por outro caminho.
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -124,6 +125,29 @@ export async function salvarPagina(dados: PaginaEditavel): Promise<Resultado> {
     retrato = { retrato_url: url ? url.slice(0, 400) : null };
   }
 
+  // O vídeo só entra se for do balde da vitrine e a capa do balde de fotos,
+  // os dois na pasta desta empresa (o banco confere de novo).
+  let video: { video_url: string | null; video_capa_url: string | null } | Record<string, never> = {};
+  if (dados.video !== undefined) {
+    if (dados.video === null) {
+      video = { video_url: null, video_capa_url: null };
+    } else {
+      const url = dados.video.url?.trim() ?? "";
+      const capa = dados.video.capaUrl?.trim() || null;
+      if (
+        !url.includes(`/storage/v1/object/public/vitrine-videos/${ctx.empresaId}/`) ||
+        (capa && !capa.includes(`/storage/v1/object/public/portfolio-fotos/${ctx.empresaId}/`))
+      ) {
+        return { error: "Envie o vídeo por aqui, pelo botão da vitrine." };
+      }
+      video = { video_url: url.slice(0, 400), video_capa_url: capa ? capa.slice(0, 400) : null };
+    }
+  }
+
+  // retrato ou vídeo trocados: guarda o que estava, para apagar depois
+  const trocaArquivo = dados.retratoUrl !== undefined || dados.video !== undefined;
+  const antes = trocaArquivo ? await arquivosDaPagina(ctx.supabase, ctx.empresaId) : [];
+
   const { error } = await ctx.supabase.from("empresa_pagina").upsert(
     {
       empresa_id: ctx.empresaId,
@@ -142,13 +166,21 @@ export async function salvarPagina(dados: PaginaEditavel): Promise<Resultado> {
       ...retrato,
       // a paleta só vai quando muda (a coluna é da 165 reaplicada em 18/09)
       ...(dados.paleta ? { paleta: paletaDaVitrine(dados.paleta) } : {}),
+      ...video,
       atualizado_por: ctx.userId,
     },
     { onConflict: "empresa_id" }
   );
 
   if (error) {
-    // o retrato é da 165 reaplicada em 18/09/2026
+    // retrato, paleta e vídeo são da 165 reaplicada em 18/09/2026
+    if (error.message?.includes("video")) {
+      return {
+        error: error.message.includes("check")
+          ? "Envie o vídeo por aqui, pelo botão da vitrine."
+          : "O vídeo ainda não está disponível. Tente de novo mais tarde.",
+      };
+    }
     if (error.message?.includes("paleta")) {
       return { error: "As cores ainda não estão disponíveis. Tente de novo mais tarde." };
     }
@@ -172,8 +204,66 @@ export async function salvarPagina(dados: PaginaEditavel): Promise<Resultado> {
     return { error: fraseDoBanco(error.message, "Não foi possível salvar a vitrine.") };
   }
 
+  if (trocaArquivo) await limparArquivosSoltos(ctx.supabase, ctx.empresaId, antes);
+
   revalidatePath("/orcamentos/pagina");
   return { ok: true };
+}
+
+/* ------------------------------------------------------------------ */
+/* Os arquivos que a vitrine deixa para trás                           */
+/* ------------------------------------------------------------------ */
+
+/** Retrato, vídeo e capa que a página usa agora (endereços públicos). */
+async function arquivosDaPagina(supabase: SupabaseClient, empresaId: string): Promise<string[]> {
+  const { data } = await supabase
+    .from("empresa_pagina")
+    .select("retrato_url, video_url, video_capa_url")
+    .eq("empresa_id", empresaId)
+    .maybeSingle();
+  const p = data as { retrato_url?: string | null; video_url?: string | null; video_capa_url?: string | null } | null;
+  return [p?.retrato_url, p?.video_url, p?.video_capa_url].filter((u): u is string => Boolean(u));
+}
+
+/**
+ * Trocar o retrato ou o vídeo deixa o arquivo anterior no balde, e enviar
+ * sem salvar deixa um solto. Depois de salvar: o que a página deixou de
+ * usar sai na hora; o solto sai depois de uma hora (folga para o envio de
+ * outra aba ainda aberta). Só toca os nomes que o editor dá (retrato-,
+ * video-capa-, video-): foto do portfólio nunca. Falhar aqui não desfaz o
+ * salvar — o próximo salvar tenta de novo.
+ */
+async function limparArquivosSoltos(
+  supabase: SupabaseClient,
+  empresaId: string,
+  antes: string[]
+): Promise<void> {
+  try {
+    const agora = await arquivosDaPagina(supabase, empresaId);
+    const emUso = (balde: string, nome: string) =>
+      agora.some((u) => u.endsWith(`/${balde}/${empresaId}/${nome}`));
+    const trocado = (balde: string, nome: string) =>
+      antes.some((u) => u.endsWith(`/${balde}/${empresaId}/${nome}`));
+    const umaHora = Date.now() - 60 * 60 * 1000;
+
+    const apagar = async (balde: string, busca: string[], prefixos: string[]) => {
+      const nomes = new Set<string>();
+      for (const termo of busca) {
+        const { data } = await supabase.storage.from(balde).list(empresaId, { limit: 200, search: termo });
+        for (const o of data ?? []) {
+          if (!prefixos.some((p) => o.name.startsWith(p)) || emUso(balde, o.name)) continue;
+          const velho = !o.created_at || new Date(o.created_at).getTime() < umaHora;
+          if (trocado(balde, o.name) || velho) nomes.add(`${empresaId}/${o.name}`);
+        }
+      }
+      if (nomes.size) await supabase.storage.from(balde).remove(Array.from(nomes));
+    };
+
+    await apagar("vitrine-videos", ["video-"], ["video-"]);
+    await apagar("portfolio-fotos", ["retrato-", "video-capa-"], ["retrato-", "video-capa-"]);
+  } catch (e) {
+    console.error("[eorg:pagina] limpeza:", e instanceof Error ? e.message.slice(0, 120) : "falhou");
+  }
 }
 
 /** Define ou troca o endereço. O anterior continua levando ao novo. */

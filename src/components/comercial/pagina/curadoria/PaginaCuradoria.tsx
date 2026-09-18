@@ -38,6 +38,7 @@ import {
   EventosCuradoria,
   MenuCuradoria,
   ServicosCuradoria,
+  VideoCuradoria,
   type ItemDoMenu,
 } from "./VivaCuradoria";
 
@@ -62,6 +63,7 @@ export function PaginaCuradoria({
   const pixel = medir ? normalizarPixelMeta(pagina.pixel_meta) : null;
   const cidade = pagina.cidade?.trim() || null;
   const retrato = pagina.retrato_url || null;
+  const video = pagina.video_url || null;
 
   const abertura = pagina.fotos.slice(0, 3);
   const temServicos = pagina.servicos.length > 0;
@@ -82,6 +84,7 @@ export function PaginaCuradoria({
     n += 1;
   };
   bloco("quem", "Quem assina", temQuem);
+  bloco("video", "Um minuto", Boolean(video));
   bloco("selecao", "A seleção", temServicos);
   bloco("eventos", "Eventos realizados", temFotos);
   bloco("como", "Como funciona", true);
@@ -213,6 +216,21 @@ export function PaginaCuradoria({
                     )}
                     {pagina.para_quem && <p className="cu-quem-para">{pagina.para_quem}</p>}
                   </div>
+                </div>
+              </section>
+            )}
+
+            {video && (
+              <section
+                id="video"
+                className="cu-bloco"
+                data-alt={alterna.video ? "" : undefined}
+                aria-label="Um minuto com a gente"
+              >
+                <div className="cu-video-dentro">
+                  <p className="cu-rotulo">Um minuto com a gente</p>
+                  <h2 className="cu-h2">Antes de escrever, veja como a gente trabalha</h2>
+                  <VideoCuradoria url={video} capa={pagina.video_capa_url || null} nome={nome} />
                 </div>
               </section>
             )}

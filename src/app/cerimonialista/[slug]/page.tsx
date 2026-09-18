@@ -53,14 +53,14 @@ const carregarPrevia = cache(async (ref: string): Promise<PaginaPublica | null> 
   const empresaId = (endereco as { empresa_id?: string } | null)?.empresa_id;
   if (!empresaId) return null;
 
-  // o retrato e a paleta são da 165 reaplicada em 18/09/2026: sem as
+  // retrato, paleta e vídeo são da 165 reaplicada em 18/09/2026: sem as
   // colunas, a prévia continua de pé, só sem eles
   const COLUNAS =
     "titulo, posicionamento, para_quem, cidade, tipos_atendidos, servicos, motivos, whatsapp, instagram, pixel_meta, modelo";
   const lerPagina = async () => {
     const ler = (extras: string) =>
       supabase.from("empresa_pagina").select(`${COLUNAS}${extras}`).eq("empresa_id", empresaId).maybeSingle();
-    const tudo = await ler(", retrato_url, paleta");
+    const tudo = await ler(", retrato_url, paleta, video_url, video_capa_url");
     if (!tudo.error) return tudo;
     const comRetrato = await ler(", retrato_url");
     if (!comRetrato.error) return comRetrato;
@@ -112,6 +112,8 @@ const carregarPrevia = cache(async (ref: string): Promise<PaginaPublica | null> 
     modelo: string | null;
     retrato_url?: string | null;
     paleta?: string | null;
+    video_url?: string | null;
+    video_capa_url?: string | null;
   } | null;
   const atual = (atualRes.data as { slug?: string } | null)?.slug;
   if (!pag || !atual) return null;
@@ -134,6 +136,8 @@ const carregarPrevia = cache(async (ref: string): Promise<PaginaPublica | null> 
     modelo: pag.modelo,
     retrato_url: pag.retrato_url ?? null,
     paleta: pag.paleta ?? null,
+    video_url: pag.video_url ?? null,
+    video_capa_url: pag.video_capa_url ?? null,
     fotos: ((fotosRes.data ?? []) as PaginaPublica["fotos"]),
     depoimentos: ((depRes.data ?? []) as PaginaPublica["depoimentos"]),
   };

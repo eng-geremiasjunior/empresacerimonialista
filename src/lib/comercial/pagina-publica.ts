@@ -74,6 +74,11 @@ export type PaginaEditavel = {
   retratoUrl?: string | null;
   /** a cor da vitrine (lib/comercial/paletas.ts); ausente = não muda */
   paleta?: PaletaDaVitrine;
+  /**
+   * O vídeo de apresentação (modelo Curadoria) e a capa tirada dele.
+   * undefined = não muda; null = tirar o vídeo.
+   */
+  video?: { url: string; capaUrl: string | null } | null;
 };
 
 /** O que a RPC `pagina_publica` devolve. Lista fechada: nada interno. */
@@ -102,6 +107,9 @@ export type PaginaPublica = {
   retrato_url?: string | null;
   /** a paleta (165, fim da tarde de 18/09/2026); ausente = a do modelo */
   paleta?: string | null;
+  /** o vídeo de apresentação e a capa (165, noite de 18/09/2026) */
+  video_url?: string | null;
+  video_capa_url?: string | null;
   fotos: { url: string; legenda: string | null; tipo_evento: EventType }[];
   /**
    * `tipo_evento` é o que deixa o depoimento em destaque acompanhar o

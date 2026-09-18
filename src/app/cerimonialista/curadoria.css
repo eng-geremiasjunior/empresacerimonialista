@@ -490,6 +490,94 @@ html:has(.cu) {
   max-width: 50ch;
 }
 
+/* ------------------------------------------------ um minuto (o vídeo) */
+.cu .cu-video-dentro {
+  width: 100%;
+  max-width: 980px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.cu .cu-video-dentro .cu-h2 {
+  margin: 0 0 clamp(24px, 4vw, 36px);
+  max-width: 26ch;
+}
+/* A moldura segue a proporção do vídeo (o Reels é vertical): nada de
+   faixa preta dos lados. Até a capa carregar, 16:9, como no desenho. */
+.cu .cu-video {
+  --cu-video-proporcao: 1.7778;
+  position: relative;
+  width: min(100%, calc(min(78vh, 720px) * var(--cu-video-proporcao)));
+  aspect-ratio: var(--cu-video-proporcao);
+  border-radius: clamp(18px, 3vw, 28px);
+  overflow: hidden;
+  background: repeating-linear-gradient(45deg, #d9d6c5 0 10px, #e4e1d5 10px 20px);
+  border: 1px solid var(--cu-borda-campo);
+  box-shadow: 0 22px 50px rgba(42, 43, 36, 0.12);
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+@media (hover: hover) {
+  .cu .cu-video:not([data-tocando]):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 28px 58px rgba(42, 43, 36, 0.16);
+  }
+}
+/* o anel fica na moldura: dentro dela, o overflow cortaria */
+.cu .cu-video:has(.cu-video-capa:focus-visible) {
+  outline: 2px solid var(--cu-destaque);
+  outline-offset: 4px;
+}
+.cu .cu-video video,
+.cu .cu-video-capa {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.cu .cu-video video {
+  display: block;
+  object-fit: contain;
+  background: #000;
+}
+.cu .cu-video-capa {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.cu .cu-video-capa:focus-visible {
+  outline: none;
+}
+.cu .cu-video-capa img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cu .cu-video-play {
+  position: relative;
+  width: clamp(62px, 9vw, 84px);
+  height: clamp(62px, 9vw, 84px);
+  border-radius: 50%;
+  background: rgba(247, 245, 239, 0.94);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cu-destaque);
+  animation: cu-respirar 3.4s ease-in-out infinite;
+}
+.cu .cu-video-play svg {
+  width: clamp(20px, 3vw, 26px);
+  height: clamp(20px, 3vw, 26px);
+  margin-left: 4px;
+  fill: currentColor;
+}
+
 /* ----------------------------------------------------------- a seleção */
 .cu .cu-selecao-dentro {
   width: 100%;
@@ -1297,6 +1385,17 @@ html:has(.cu) {
   filter: blur(14px);
 }
 
+@keyframes cu-respirar {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(var(--cu-destaque-rgb), 0.28);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow: 0 0 0 14px rgba(var(--cu-destaque-rgb), 0);
+  }
+}
 @keyframes cu-girar {
   to {
     transform: rotate(360deg);

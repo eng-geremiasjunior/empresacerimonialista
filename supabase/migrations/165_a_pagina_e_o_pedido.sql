@@ -44,6 +44,13 @@
 -- escolher cor livre). O banco guarda só o nome; as cores moram no
 -- código. A leitura pública passa a entregá-la.
 --
+-- 18/09/2026, noite: o VÍDEO da vitrine (empresa_pagina.video_url e
+-- video_capa_url), a seção "Um minuto" da Curadoria. O arquivo mora num
+-- balde próprio (vitrine-videos): até 30 MB, só MP4 (decisão do dono), e
+-- só a proprietária escreve na pasta da empresa. A capa é uma foto tirada
+-- do próprio vídeo no navegador e vai para o balde de fotos, como o
+-- retrato. Nenhum endereço de fora entra. A leitura pública entrega os dois.
+--
 -- O QUE ESTA MIGRAÇÃO ABRE. Hoje a proposta só nasce se a cerimonialista
 -- digitar o contato: quem a procura pelo Instagram cai num WhatsApp que
 -- ela responde à mão, e nada disso entra no sistema. Esta é a porta que
@@ -269,6 +276,35 @@ alter table public.empresa_pagina
 
 comment on column public.empresa_pagina.paleta is
   'A cor de destaque da vitrine: original (a do modelo), rose, dourado, azul ou grafite. As cores moram no código (lib/comercial/paletas.ts).';
+
+-- O vídeo de apresentação e a capa dele. O vídeo só do balde
+-- vitrine-videos, a capa só do balde de fotos, os dois na pasta da própria
+-- empresa: a página pública não toca arquivo de endereço de fora.
+alter table public.empresa_pagina add column if not exists video_url text;
+alter table public.empresa_pagina add column if not exists video_capa_url text;
+alter table public.empresa_pagina drop constraint if exists empresa_pagina_video_check;
+alter table public.empresa_pagina
+  add constraint empresa_pagina_video_check
+  check (
+    video_url is null
+    or (char_length(video_url) <= 400
+        and video_url ~ '^https://[a-z0-9.-]+/storage/v1/object/public/vitrine-videos/'
+        and position(('/vitrine-videos/' || empresa_id::text || '/') in video_url) > 0)
+  );
+alter table public.empresa_pagina drop constraint if exists empresa_pagina_video_capa_check;
+alter table public.empresa_pagina
+  add constraint empresa_pagina_video_capa_check
+  check (
+    video_capa_url is null
+    or (char_length(video_capa_url) <= 400
+        and video_capa_url ~ '^https://[a-z0-9.-]+/storage/v1/object/public/portfolio-fotos/'
+        and position(('/portfolio-fotos/' || empresa_id::text || '/') in video_capa_url) > 0)
+  );
+
+comment on column public.empresa_pagina.video_url is
+  'O vídeo de apresentação (modelo Curadoria). Só arquivo do balde vitrine-videos, na pasta da empresa.';
+comment on column public.empresa_pagina.video_capa_url is
+  'A capa do vídeo, tirada do próprio vídeo no navegador. Só arquivo do balde portfolio-fotos, na pasta da empresa.';
 
 alter table public.empresa_pagina enable row level security;
 
@@ -559,6 +595,71 @@ update storage.buckets
                                   'image/heic', 'image/heif', 'image/gif',
                                   'image/avif']
  where id = 'portfolio-fotos';
+
+-- O balde do vídeo da vitrine: público (a página toca o vídeo sem
+-- sessão), até 30 MB e só MP4 (decisão do dono, 18/09/2026). O teto é do
+-- balde, não da tela: quem tem a chave publicável pode chamar a API do
+-- storage direto. Recriado a cada aplicação.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('vitrine-videos', 'vitrine-videos', true, 31457280, array['video/mp4'])
+on conflict (id) do update
+  set public = true,
+      file_size_limit = 31457280,
+      allowed_mime_types = array['video/mp4'];
+
+-- Quem escreve no balde: a proprietária, na pasta da empresa dela (a
+-- mesma que edita a página). SECURITY DEFINER pela lição da 030: consulta
+-- a tabela com RLS dentro de policy de storage não avalia direito.
+create or replace function public.pode_editar_vitrine(p_folder text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.meu_cargo() mc
+    where mc.empresa_id::text = p_folder
+      and mc.cargo = 'proprietaria'
+  );
+$$;
+
+revoke all on function public.pode_editar_vitrine(text) from public, anon;
+grant execute on function public.pode_editar_vitrine(text) to authenticated;
+
+drop policy if exists "Video da vitrine e publico" on storage.objects;
+create policy "Video da vitrine e publico"
+  on storage.objects for select
+  using (bucket_id = 'vitrine-videos');
+
+drop policy if exists "Dona sobe o video da vitrine" on storage.objects;
+create policy "Dona sobe o video da vitrine"
+  on storage.objects for insert to authenticated
+  with check (
+    bucket_id = 'vitrine-videos'
+    and public.pode_editar_vitrine((storage.foldername(name))[1])
+  );
+
+drop policy if exists "Dona troca o video da vitrine" on storage.objects;
+create policy "Dona troca o video da vitrine"
+  on storage.objects for update to authenticated
+  using (
+    bucket_id = 'vitrine-videos'
+    and public.pode_editar_vitrine((storage.foldername(name))[1])
+  )
+  with check (
+    bucket_id = 'vitrine-videos'
+    and public.pode_editar_vitrine((storage.foldername(name))[1])
+  );
+
+drop policy if exists "Dona apaga o video da vitrine" on storage.objects;
+create policy "Dona apaga o video da vitrine"
+  on storage.objects for delete to authenticated
+  using (
+    bucket_id = 'vitrine-videos'
+    and public.pode_editar_vitrine((storage.foldername(name))[1])
+  );
 
 -- ============================================================
 -- 8) GATILHOS DE INTEGRIDADE
@@ -950,6 +1051,9 @@ begin
     'retrato_url', v_pag.retrato_url,
     -- a paleta: só o nome; as cores moram no código
     'paleta', v_pag.paleta,
+    -- o vídeo dela e a capa (os dois só dos baldes da própria empresa)
+    'video_url', v_pag.video_url,
+    'video_capa_url', v_pag.video_capa_url,
     'fotos', coalesce((
       select json_agg(f)
       from (
@@ -1536,6 +1640,32 @@ select 'a paleta existe, com a lista fechada, e sai na leitura pública',
        and (select prosrc ilike '%v_pag.paleta%'
               from pg_proc where proname = 'pagina_publica'
                and pronamespace = 'public'::regnamespace and pronargs = 1)
+
+union all
+select 'o vídeo e a capa existem, só dos baldes da empresa, e saem na leitura pública',
+       (select count(*) = 2 from information_schema.columns
+         where table_schema = 'public' and table_name = 'empresa_pagina'
+           and column_name in ('video_url', 'video_capa_url'))
+       and (select count(*) = 2 from pg_constraint
+             where conrelid = 'public.empresa_pagina'::regclass
+               and conname in ('empresa_pagina_video_check', 'empresa_pagina_video_capa_check'))
+       and (select prosrc ilike '%v_pag.video_url%' and prosrc ilike '%v_pag.video_capa_url%'
+              from pg_proc where proname = 'pagina_publica'
+               and pronamespace = 'public'::regnamespace and pronargs = 1)
+
+union all
+select 'o balde do vídeo é público, até 30 MB e só MP4',
+       coalesce((select b.public and b.file_size_limit = 31457280
+                        and b.allowed_mime_types = array['video/mp4']
+                   from storage.buckets b where b.id = 'vitrine-videos'), false)
+
+union all
+select 'só a proprietária escreve no balde do vídeo (quatro policies, anônimo sem a função)',
+       (select count(*) = 4 from pg_policies
+         where schemaname = 'storage' and tablename = 'objects'
+           and policyname in ('Video da vitrine e publico', 'Dona sobe o video da vitrine',
+                              'Dona troca o video da vitrine', 'Dona apaga o video da vitrine'))
+       and not has_function_privilege('anon', 'public.pode_editar_vitrine(text)', 'execute')
 
 union all
 select 'as cinco funções da página existem, uma vez cada',
