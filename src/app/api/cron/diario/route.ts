@@ -113,9 +113,20 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "não autorizado" }, { status: 401 });
   }
 
-  // Mesma origem da requisição: funciona em produção, em preview e local,
-  // sem depender de variável de endereço.
-  const base = new URL(request.url).origin;
+  // O endereço de PRODUÇÃO, e não a origem da requisição.
+  //
+  // Em 18/09/2026 as treze rotinas "deram certo" em 0,6 s cada e nenhuma
+  // fez nada: nenhum e-mail do teste saiu. A Vercel chama o cron pelo
+  // endereço próprio do deploy (*.vercel.app com hash), que a proteção de
+  // deploy manda para a página de login da Vercel — e o fetch, seguindo o
+  // redirecionamento, recebia essa página com status 200. Pelo domínio de
+  // produção a proteção não se aplica. Local e preview continuam usando a
+  // própria origem.
+  const producao = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  const base =
+    process.env.VERCEL_ENV === "production" && producao
+      ? `https://${producao}`
+      : new URL(request.url).origin;
   const resultado: Record<string, unknown> = {};
   const falharam: string[] = [];
 
@@ -126,22 +137,32 @@ export async function GET(request: NextRequest) {
   for (const rotina of ROTINAS) {
     const inicio = new Date();
     try {
+      // redirect "manual": um redirecionamento aqui nunca é a rotina
+      // respondendo — é alguém no caminho (proteção de deploy, login)
       const res = await fetch(`${base}/api/cron/${rotina}`, {
         headers: { Authorization: `Bearer ${secret}` },
         cache: "no-store",
+        redirect: "manual",
       });
-      const corpo = await res.json().catch(() => ({}));
-      resultado[rotina] = res.ok ? corpo : { status: res.status, ...corpo };
-      if (!res.ok) {
-        falharam.push(`${rotina} (${res.status})`);
-        console.error(`[vela:cron] ${rotina} devolveu ${res.status}`);
+      const ehJson = (res.headers.get("content-type") ?? "").includes("application/json");
+      const corpo = ehJson ? await res.json().catch(() => null) : null;
+      // Toda rotina devolve JSON. 200 sem JSON é página de outra coisa, e
+      // contar isso como sucesso foi o que escondeu um dia inteiro parado.
+      const deuCerto = res.ok && corpo !== null;
+      const motivo = !res.ok
+        ? `HTTP ${res.status}${res.headers.get("location") ? " → redirecionado" : ""}`
+        : "resposta sem JSON";
+      resultado[rotina] = deuCerto ? corpo : { status: res.status, motivo, ...(corpo ?? {}) };
+      if (!deuCerto) {
+        falharam.push(`${rotina} (${motivo})`);
+        console.error(`[vela:cron] ${rotina}: ${motivo}`);
       }
       await registrar?.({
         rotina,
         inicio: inicio.toISOString(),
         duracao_ms: Date.now() - inicio.getTime(),
-        ok: res.ok,
-        resumo: res.ok ? resumoDaRotina(corpo) : `HTTP ${res.status}`,
+        ok: deuCerto,
+        resumo: deuCerto ? resumoDaRotina(corpo) : motivo,
       });
     } catch (e) {
       // uma rotina que explode não pode impedir as outras de rodar
