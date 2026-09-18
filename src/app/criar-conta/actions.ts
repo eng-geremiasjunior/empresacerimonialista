@@ -82,6 +82,8 @@ export type ResultadoCriarConta = {
   ok?: boolean;
   error?: string;
   jaTemConta?: boolean;
+  /** o id do CompleteRegistration do servidor, para o pixel do navegador usar o mesmo */
+  idDoEvento?: string;
 };
 
 export async function criarContaDeTeste(dados: {
@@ -273,5 +275,5 @@ export async function criarContaDeTeste(dados: {
   // cadastro; se não sair agora, a rotina diária tenta de novo.
   await enviarBoasVindas({ userId, email, nome, termina, eventos3m });
 
-  return { ok: true };
+  return { ok: true, idDoEvento: `conta:${empresaId}` };
 }

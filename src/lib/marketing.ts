@@ -29,8 +29,14 @@
 // nunca entram — não por serem menos importantes para a venda, mas
 // porque o hash na URL É a chave de acesso.
 
+// /criar-conta entrou em 18/09/2026: é onde o anúncio do teste termina, e
+// sem o pixel ali a Meta não via nem a visita nem o cadastro — o
+// CompleteRegistration saía só pelo servidor, e as campanhas de
+// conversão rodaram duas semanas com "Resultados" zerado. Passa no mesmo
+// teste: o endereço não carrega credencial.
+
 /** As telas onde a medição pode rodar. Comparação exata, sem prefixo. */
-const TELAS_DE_MARKETING = new Set(["/login", "/planos", "/precos"]);
+const TELAS_DE_MARKETING = new Set(["/login", "/planos", "/precos", "/criar-conta"]);
 
 /**
  * A tela é a da oferta? Só ela dispara "viu o conteúdo" — o evento que
@@ -187,11 +193,15 @@ export function guardarOrigemDoClique(): void {
  * cadastro, e nunca leva e-mail, nome ou qualquer dado de pessoa: só o
  * fato. O que a plataforma precisa saber é que aconteceu, não com quem.
  */
-export function contaCriada(): void {
+export function contaCriada(idDoEvento?: string): void {
   if (typeof window === "undefined") return;
   try {
     window.gtag?.("event", "sign_up", { method: "email" });
-    window.fbq?.("track", "CompleteRegistration");
+    // Com o id, o evento do navegador e o do servidor (conversoes.ts,
+    // mesmo `conta:<empresa>`) viram UM só na Meta: um casa o clique pelo
+    // cookie do pixel, o outro chega mesmo com bloqueador de anúncio.
+    if (idDoEvento) window.fbq?.("track", "CompleteRegistration", {}, { eventID: idDoEvento });
+    else window.fbq?.("track", "CompleteRegistration");
   } catch {
     // medição nunca derruba cadastro: se o bloqueador de anúncio comeu o
     // script, a conta continua sendo criada e ninguém fica sabendo disso

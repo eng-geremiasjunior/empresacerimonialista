@@ -11,6 +11,7 @@ import {
 } from "@/lib/planos";
 import { portaoDoTeste } from "@/lib/supabase/teste-gratis";
 import { CriarContaGratis } from "@/components/auth/CriarContaGratis";
+import { Medicao } from "@/components/marketing/Medicao";
 import { Simbolo } from "@/components/marca/Marca";
 import { CSS_PLANOS } from "@/components/planos/estilo";
 
@@ -166,6 +167,8 @@ export default async function CriarContaPage() {
 
         <CriarContaGratis dias={portao.dias} precoDeEntrada={preco !== null ? reais(preco) : null} />
       </main>
+      {/* o pixel e a tag do Google: é aqui que o anúncio do teste termina */}
+      <Medicao />
     </div>
   );
 }

@@ -17,7 +17,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { criarContaDeTeste } from "@/app/criar-conta/actions";
-import { guardarOrigemDoClique } from "@/lib/marketing";
+import { contaCriada, guardarOrigemDoClique } from "@/lib/marketing";
 import { useEffect } from "react";
 import { normalizarDDI } from "@/lib/whatsapp-link";
 import { EVENTOS_3_MESES, type Eventos3Meses } from "@/lib/cadastro-qualificacao";
@@ -99,7 +99,11 @@ export function CriarContaGratis({
       return;
     }
 
-    // A conta existe. A sessão nasce aqui, com a senha que ela acabou de
+    // A conta existe: o pixel do navegador conta o cadastro com o MESMO id
+    // do evento que o servidor já mandou — a Meta junta os dois em um.
+    contaCriada(r.idDoEvento);
+
+    // A sessão nasce aqui, com a senha que ela acabou de
     // escolher — é o que a leva ao painel sem passar por tela de login.
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({
