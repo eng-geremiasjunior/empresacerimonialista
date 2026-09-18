@@ -53,18 +53,18 @@ const carregarPrevia = cache(async (ref: string): Promise<PaginaPublica | null> 
   const empresaId = (endereco as { empresa_id?: string } | null)?.empresa_id;
   if (!empresaId) return null;
 
-  // o retrato é da 165 reaplicada em 18/09/2026: sem a coluna, a prévia
-  // continua de pé, só sem ele
+  // o retrato e a paleta são da 165 reaplicada em 18/09/2026: sem as
+  // colunas, a prévia continua de pé, só sem eles
   const COLUNAS =
     "titulo, posicionamento, para_quem, cidade, tipos_atendidos, servicos, motivos, whatsapp, instagram, pixel_meta, modelo";
   const lerPagina = async () => {
-    const comRetrato = await supabase
-      .from("empresa_pagina")
-      .select(`${COLUNAS}, retrato_url`)
-      .eq("empresa_id", empresaId)
-      .maybeSingle();
+    const ler = (extras: string) =>
+      supabase.from("empresa_pagina").select(`${COLUNAS}${extras}`).eq("empresa_id", empresaId).maybeSingle();
+    const tudo = await ler(", retrato_url, paleta");
+    if (!tudo.error) return tudo;
+    const comRetrato = await ler(", retrato_url");
     if (!comRetrato.error) return comRetrato;
-    return supabase.from("empresa_pagina").select(COLUNAS).eq("empresa_id", empresaId).maybeSingle();
+    return ler("");
   };
 
   const [pagRes, empRes, fotosRes, depRes, atualRes] = await Promise.all([
@@ -111,6 +111,7 @@ const carregarPrevia = cache(async (ref: string): Promise<PaginaPublica | null> 
     pixel_meta: string | null;
     modelo: string | null;
     retrato_url?: string | null;
+    paleta?: string | null;
   } | null;
   const atual = (atualRes.data as { slug?: string } | null)?.slug;
   if (!pag || !atual) return null;
@@ -132,6 +133,7 @@ const carregarPrevia = cache(async (ref: string): Promise<PaginaPublica | null> 
     pixel_meta: pag.pixel_meta,
     modelo: pag.modelo,
     retrato_url: pag.retrato_url ?? null,
+    paleta: pag.paleta ?? null,
     fotos: ((fotosRes.data ?? []) as PaginaPublica["fotos"]),
     depoimentos: ((depRes.data ?? []) as PaginaPublica["depoimentos"]),
   };

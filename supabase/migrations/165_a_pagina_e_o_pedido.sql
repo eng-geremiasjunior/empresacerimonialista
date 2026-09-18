@@ -39,6 +39,11 @@
 -- endereço de fora entra na página pública. A leitura pública passa a
 -- entregá-lo.
 --
+-- 18/09/2026, fim da tarde: a PALETA (empresa_pagina.paleta). Poucas
+-- cores prontas, a mesma lista nos três modelos (decisão do dono: nada de
+-- escolher cor livre). O banco guarda só o nome; as cores moram no
+-- código. A leitura pública passa a entregá-la.
+--
 -- O QUE ESTA MIGRAÇÃO ABRE. Hoje a proposta só nasce se a cerimonialista
 -- digitar o contato: quem a procura pelo Instagram cai num WhatsApp que
 -- ela responde à mão, e nada disso entra no sistema. Esta é a porta que
@@ -253,6 +258,17 @@ alter table public.empresa_pagina
 
 comment on column public.empresa_pagina.retrato_url is
   'O retrato dela ou da equipe (modelo Curadoria). Só arquivo do balde portfolio-fotos, na pasta da empresa.';
+
+-- A paleta: poucas cores prontas, as mesmas nos três modelos. A lista é
+-- recriada a cada aplicação, como a do modelo.
+alter table public.empresa_pagina add column if not exists paleta text not null default 'original';
+alter table public.empresa_pagina drop constraint if exists empresa_pagina_paleta_check;
+alter table public.empresa_pagina
+  add constraint empresa_pagina_paleta_check
+  check (paleta in ('original', 'rose', 'dourado', 'azul', 'grafite'));
+
+comment on column public.empresa_pagina.paleta is
+  'A cor de destaque da vitrine: original (a do modelo), rose, dourado, azul ou grafite. As cores moram no código (lib/comercial/paletas.ts).';
 
 alter table public.empresa_pagina enable row level security;
 
@@ -932,6 +948,8 @@ begin
     'modelo', v_pag.modelo,
     -- o retrato dela, que ela mesma pôs na página
     'retrato_url', v_pag.retrato_url,
+    -- a paleta: só o nome; as cores moram no código
+    'paleta', v_pag.paleta,
     'fotos', coalesce((
       select json_agg(f)
       from (
@@ -1503,6 +1521,19 @@ select 'o retrato existe, só do balde da empresa, e sai na leitura pública',
                    where conname = 'empresa_pagina_retrato_check'
                      and conrelid = 'public.empresa_pagina'::regclass)
        and (select prosrc ilike '%v_pag.retrato_url%'
+              from pg_proc where proname = 'pagina_publica'
+               and pronamespace = 'public'::regnamespace and pronargs = 1)
+
+union all
+select 'a paleta existe, com a lista fechada, e sai na leitura pública',
+       exists (select 1 from information_schema.columns
+               where table_schema = 'public' and table_name = 'empresa_pagina'
+                 and column_name = 'paleta')
+       and (select pg_get_constraintdef(oid) ilike '%grafite%'
+              from pg_constraint
+             where conname = 'empresa_pagina_paleta_check'
+               and conrelid = 'public.empresa_pagina'::regclass)
+       and (select prosrc ilike '%v_pag.paleta%'
               from pg_proc where proname = 'pagina_publica'
                and pronamespace = 'public'::regnamespace and pronargs = 1)
 

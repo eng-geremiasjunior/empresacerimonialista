@@ -10,6 +10,7 @@
 // o banco garante depois. Quem chamar a API direto esbarra no segundo.
 
 import type { EventType } from "@/lib/types";
+import type { PaletaDaVitrine } from "./paletas";
 
 /* ------------------------------------------------------------------ */
 /* O que a página guarda                                               */
@@ -28,26 +29,21 @@ export const MODELOS_DA_VITRINE: {
   codigo: ModeloDaVitrine;
   nome: string;
   resumo: string;
-  /** a miniatura do modelo no editor (public/vitrine/modelos) */
-  miniatura: string;
 }[] = [
   {
     codigo: "classico",
     nome: "Clássico",
     resumo: "Foto de abertura com o seu nome e um depoimento em destaque numa faixa escura.",
-    miniatura: "/vitrine/modelos/classico.jpg",
   },
   {
     codigo: "capitulos",
     nome: "Capítulos",
     resumo: "Página em capítulos numerados, com o que a cliente recebe em cada etapa e o formulário em linhas.",
-    miniatura: "/vitrine/modelos/capitulos.jpg",
   },
   {
     codigo: "curadoria",
     nome: "Curadoria",
     resumo: "Menu lateral, o seu retrato e o portfólio com filtro por tipo de evento.",
-    miniatura: "/vitrine/modelos/curadoria.jpg",
   },
 ];
 
@@ -76,6 +72,8 @@ export type PaginaEditavel = {
    * salvo; null = tirar o retrato.
    */
   retratoUrl?: string | null;
+  /** a cor da vitrine (lib/comercial/paletas.ts); ausente = não muda */
+  paleta?: PaletaDaVitrine;
 };
 
 /** O que a RPC `pagina_publica` devolve. Lista fechada: nada interno. */
@@ -102,6 +100,8 @@ export type PaginaPublica = {
   modelo?: string | null;
   /** o retrato dela ou da equipe (165, 18/09/2026); ausente = sem retrato */
   retrato_url?: string | null;
+  /** a paleta (165, fim da tarde de 18/09/2026); ausente = a do modelo */
+  paleta?: string | null;
   fotos: { url: string; legenda: string | null; tipo_evento: EventType }[];
   /**
    * `tipo_evento` é o que deixa o depoimento em destaque acompanhar o

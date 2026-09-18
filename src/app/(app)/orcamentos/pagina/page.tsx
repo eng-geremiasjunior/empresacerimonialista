@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/server";
 import { appUrl } from "@/lib/app-url";
 import { EditorPagina } from "@/components/comercial/pagina/EditorPagina";
 import { modeloDaVitrine, type ServicoDaPagina } from "@/lib/comercial/pagina-publica";
+import { paletaDaVitrine } from "@/lib/comercial/paletas";
 import type { EventType } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -38,18 +39,18 @@ export default async function PaginaPublicaEditorPage() {
   }
 
   const empresaId = cargo.empresa_id;
-  // o retrato é da 165 reaplicada em 18/09/2026: sem a coluna, o editor
-  // continua de pé, só sem ele
+  // o retrato e a paleta são da 165 reaplicada em 18/09/2026: sem as
+  // colunas, o editor continua de pé, só sem eles
   const COLUNAS =
     "slug, publicada, publicada_em, titulo, posicionamento, para_quem, cidade, tipos_atendidos, servicos, motivos, whatsapp, instagram, pixel_meta, modelo";
   const lerPagina = async () => {
-    const comRetrato = await supabase
-      .from("empresa_pagina")
-      .select(`${COLUNAS}, retrato_url`)
-      .eq("empresa_id", empresaId)
-      .maybeSingle();
+    const ler = (extras: string) =>
+      supabase.from("empresa_pagina").select(`${COLUNAS}${extras}`).eq("empresa_id", empresaId).maybeSingle();
+    const tudo = await ler(", retrato_url, paleta");
+    if (!tudo.error) return tudo;
+    const comRetrato = await ler(", retrato_url");
     if (!comRetrato.error) return comRetrato;
-    return supabase.from("empresa_pagina").select(COLUNAS).eq("empresa_id", empresaId).maybeSingle();
+    return ler("");
   };
   const [empresaRes, paginaRes, fotosRes, depoimentosRes, catalogoRes, slugsRes] =
     await Promise.all([
@@ -112,6 +113,7 @@ export default async function PaginaPublicaEditorPage() {
     pixel_meta: string | null;
     modelo: string | null;
     retrato_url?: string | null;
+    paleta?: string | null;
   } | null;
 
   const whatsappDoCatalogo =
@@ -180,6 +182,7 @@ export default async function PaginaPublicaEditorPage() {
           pixelMeta: pag?.pixel_meta ?? "",
           modelo: modeloDaVitrine(pag?.modelo),
           retratoUrl: pag?.retrato_url ?? null,
+          paleta: paletaDaVitrine(pag?.paleta),
         }}
         fotos={fotos}
         depoimentos={depoimentos}

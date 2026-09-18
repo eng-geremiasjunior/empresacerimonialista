@@ -20,6 +20,7 @@ import {
   normalizarPixelMeta,
   type PaginaEditavel,
 } from "@/lib/comercial/pagina-publica";
+import { paletaDaVitrine } from "@/lib/comercial/paletas";
 import { normalizarWhatsapp, whatsappValido } from "@/lib/comercial/pedidos";
 import { EVENT_TYPE_LABELS } from "@/lib/types";
 
@@ -139,6 +140,8 @@ export async function salvarPagina(dados: PaginaEditavel): Promise<Resultado> {
       // o desenho só vai quando o editor manda (a coluna é da 165 reaplicada)
       ...(dados.modelo ? { modelo: modeloDaVitrine(dados.modelo) } : {}),
       ...retrato,
+      // a paleta só vai quando muda (a coluna é da 165 reaplicada em 18/09)
+      ...(dados.paleta ? { paleta: paletaDaVitrine(dados.paleta) } : {}),
       atualizado_por: ctx.userId,
     },
     { onConflict: "empresa_id" }
@@ -146,6 +149,9 @@ export async function salvarPagina(dados: PaginaEditavel): Promise<Resultado> {
 
   if (error) {
     // o retrato é da 165 reaplicada em 18/09/2026
+    if (error.message?.includes("paleta")) {
+      return { error: "As cores ainda não estão disponíveis. Tente de novo mais tarde." };
+    }
     if (error.message?.includes("retrato")) {
       return {
         error: error.message.includes("check")

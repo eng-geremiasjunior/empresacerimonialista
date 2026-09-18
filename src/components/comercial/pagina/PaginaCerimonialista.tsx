@@ -19,6 +19,7 @@
 // A página vende o serviço DELA. O eOrganizei aparece uma vez, no rodapé,
 // em tamanho de rodapé.
 
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import {
   comoFunciona,
@@ -30,6 +31,7 @@ import {
   type PaginaPublica,
 } from "@/lib/comercial/pagina-publica";
 import { linkWhatsapp } from "@/lib/whatsapp-link";
+import { paletaDaVitrine, variaveisDaPaleta } from "@/lib/comercial/paletas";
 import { EVENT_TYPE_LABELS } from "@/lib/types";
 import { DepoimentosVitrine } from "./DepoimentosVitrine";
 import { FormularioPedido } from "./FormularioPedido";
@@ -109,7 +111,7 @@ export function PaginaCerimonialista({
     <EstadoDaVitrine
       tipoInicial={pagina.tipos_atendidos.length === 1 ? pagina.tipos_atendidos[0] : ""}
     >
-      <div className="vt">
+      <div className="vt" style={variaveisDaPaleta("classico", paletaDaVitrine(pagina.paleta)) as CSSProperties}>
         <MedirPagina slug={slug} contar={medir} />
 
         <TopoVitrine nome={nome} marca={<Marca nome={nome} logo={pagina.logo_url} />} />

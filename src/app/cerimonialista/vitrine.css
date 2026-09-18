@@ -12,19 +12,29 @@
  * rota) e não pode vazar para o resto do sistema.
  *
  * Cor: o desenho pedia o ameixa do painel; a vitrine usa verde-oliva
- * escuro (decisão do dono, 16/09/2026), trocado no fim da geração.
+ * escuro (decisão do dono, 16/09/2026), trocado no fim da geração por
+ * variáveis (--vt-destaque*), que a paleta dela substitui na raiz.
  *
  * Fontes: o desenho pede "EB Garamond" e "Jost" pelo nome; o next/font
  * gera nomes com hash, então cada font-family começa pela variável do
  * layout (13 trocas) e mantém o nome como reserva.
  */
 
+/* a cor de destaque: verde-oliva escuro (decisão do dono, 16/09/2026).
+   A paleta dela põe outras na raiz, em estilo em linha, que vence esta
+   regra (src/lib/comercial/paletas.ts). */
+.vt {
+  --vt-destaque: #4e5c2e;
+  --vt-destaque-hover: #3a4422;
+  --vt-destaque-rgb: 78, 92, 46;
+}
+
 /* do <style> do desenho, presos à raiz */
 .vt {
   -webkit-font-smoothing: antialiased;
 }
 .vt :where(a) {
-  color: #4e5c2e;
+  color: var(--vt-destaque);
   text-decoration: underline;
 }
 /* O desenho foi feito sem reset: o que ele não declara vem do padrão do
@@ -52,13 +62,13 @@
 /* o desenho escurecia o link para uma cor que sobrou do estudo 5b;
    aqui vai o mesmo tom escuro do botão sob o mouse */
 .vt :where(a:hover) {
-  color: #3a4422;
+  color: var(--vt-destaque-hover);
 }
 .vt :where(input, select, textarea, button) {
   font-family: inherit;
 }
 .vt :where(a, button, [tabindex]):focus-visible {
-  outline: 2px solid #4e5c2e;
+  outline: 2px solid var(--vt-destaque);
   outline-offset: 2px;
 }
 .vt :where(img) {
@@ -130,7 +140,7 @@
   justify-content: center;
   min-height: 44px;
   padding: 0 18px;
-  background: #4e5c2e;
+  background: var(--vt-destaque);
   color: #fff;
   font-size: 14px;
   font-weight: 600;
@@ -145,7 +155,7 @@
 
 @media (hover: hover) {
   .vt .vt-topo-botao:hover {
-    background: #3a4422;
+    background: var(--vt-destaque-hover);
   }
 }
 
@@ -302,7 +312,7 @@
   justify-content: center;
   min-height: 50px;
   padding: 0 24px;
-  background: #4e5c2e;
+  background: var(--vt-destaque);
   color: #fff;
   font-size: 15px;
   font-weight: 600;
@@ -319,7 +329,7 @@
 
 @media (hover: hover) {
   .vt .vt-chamada-principal:hover {
-    background: #3a4422;
+    background: var(--vt-destaque-hover);
   }
 }
 
@@ -456,7 +466,7 @@
 }
 
 .vt .vt-foto:focus-visible {
-  outline: 2px solid #4e5c2e;
+  outline: 2px solid var(--vt-destaque);
   outline-offset: 2px;
 }
 
@@ -604,7 +614,7 @@
   top: 6px;
   width: 1px;
   height: 0;
-  background: #4e5c2e;
+  background: var(--vt-destaque);
 }
 
 /* #54 <div> */
@@ -754,7 +764,7 @@
 
 .vt .vt-entrada:focus-visible {
   border-color: #221e1b;
-  box-shadow: 0 0 0 3px rgba(78,92,46,.22);
+  box-shadow: 0 0 0 3px rgba(var(--vt-destaque-rgb),.22);
   outline: none;
 }
 
@@ -772,7 +782,7 @@
 
 .vt .vt-selecao:focus-visible {
   border-color: #221e1b;
-  box-shadow: 0 0 0 3px rgba(78,92,46,.22);
+  box-shadow: 0 0 0 3px rgba(var(--vt-destaque-rgb),.22);
   outline: none;
 }
 
@@ -814,7 +824,7 @@
 
 .vt .vt-entrada-data:focus-visible {
   border-color: #221e1b;
-  box-shadow: 0 0 0 3px rgba(78,92,46,.22);
+  box-shadow: 0 0 0 3px rgba(var(--vt-destaque-rgb),.22);
   outline: none;
 }
 
@@ -833,7 +843,7 @@
 .vt .vt-caixa {
   width: 18px;
   height: 18px;
-  accent-color: #4e5c2e;
+  accent-color: var(--vt-destaque);
   flex: none;
 }
 
@@ -885,7 +895,7 @@
 
 .vt .vt-area:focus-visible {
   border-color: #221e1b;
-  box-shadow: 0 0 0 3px rgba(78,92,46,.22);
+  box-shadow: 0 0 0 3px rgba(var(--vt-destaque-rgb),.22);
   outline: none;
 }
 
@@ -1024,7 +1034,7 @@
 
 @media (hover: hover) {
   .vt .vt-barra-principal:hover {
-    background: #3a4422;
+    background: var(--vt-destaque-hover);
   }
 }
 
@@ -1163,7 +1173,7 @@
 
 /* botão de enviar: livre e travado (fundoBotao/corBotao/bordaBotao/cursorBotao/hoverBotao) */
 .vt .vt-botao-enviar {
-  background: #4e5c2e;
+  background: var(--vt-destaque);
   color: #ffffff;
   border: 1px solid transparent;
   cursor: pointer;
@@ -1176,7 +1186,7 @@
 }
 @media (hover: hover) {
   .vt .vt-botao-enviar:hover {
-    background: #3a4422;
+    background: var(--vt-destaque-hover);
   }
   .vt .vt-botao-enviar:disabled:hover {
     background: #f2eee9;
@@ -1188,7 +1198,7 @@
   transform: translateY(112%);
 }
 .vt .vt-barra-principal {
-  background: #4e5c2e;
+  background: var(--vt-destaque);
 }
 .vt .vt-barra-principal[data-previa] {
   background: #c3bcb2;
@@ -1483,13 +1493,13 @@
   border: 0;
   background: none;
   font: inherit;
-  color: #4e5c2e;
+  color: var(--vt-destaque);
   text-decoration: underline;
   cursor: pointer;
 }
 @media (hover: hover) {
   .vt .vt-rodape-preferencias:hover {
-    color: #3a4422;
+    color: var(--vt-destaque-hover);
   }
 }
 

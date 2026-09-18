@@ -12,6 +12,7 @@
 // inteira quando não tem conteúdo, e a numeração segue o que ficou: um
 // capítulo que some não deixa buraco na contagem.
 
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import {
   comoFunciona,
@@ -21,6 +22,7 @@ import {
   type PaginaPublica,
 } from "@/lib/comercial/pagina-publica";
 import { linkWhatsapp } from "@/lib/whatsapp-link";
+import { paletaDaVitrine, variaveisDaPaleta } from "@/lib/comercial/paletas";
 import { EVENT_TYPE_LABELS } from "@/lib/types";
 import { GaleriaVitrine } from "../GaleriaVitrine";
 import { LinkMedido, MedirPagina } from "../MedirPagina";
@@ -97,7 +99,7 @@ export function PaginaCapitulos({
     <EstadoDaVitrine
       tipoInicial={pagina.tipos_atendidos.length === 1 ? pagina.tipos_atendidos[0] : ""}
     >
-      <div className="cp">
+      <div className="cp" style={variaveisDaPaleta("capitulos", paletaDaVitrine(pagina.paleta)) as CSSProperties}>
         <MedirPagina slug={slug} contar={medir} />
 
         <TopoCapitulos nome={nome} />

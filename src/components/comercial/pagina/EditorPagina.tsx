@@ -35,6 +35,12 @@ import {
   type ServicoDaPagina,
 } from "@/lib/comercial/pagina-publica";
 import {
+  PALETAS_DA_VITRINE,
+  amostraDaPaleta,
+  miniaturaDoModelo,
+  type PaletaDaVitrine,
+} from "@/lib/comercial/paletas";
+import {
   normalizarWhatsapp,
   whatsappFormatado,
   whatsappValido,
@@ -89,6 +95,8 @@ type Props = {
     modelo: ModeloDaVitrine;
     /** o retrato dela (modelo Curadoria) */
     retratoUrl: string | null;
+    /** as cores da vitrine */
+    paleta: PaletaDaVitrine;
   };
   fotos: Foto[];
   depoimentos: Depoimento[];
@@ -139,6 +147,7 @@ export function EditorPagina({
   const [pixelMeta, setPixelMeta] = useState(inicial.pixelMeta);
   const [modelo, setModelo] = useState<ModeloDaVitrine>(inicial.modelo);
   const [retratoUrl, setRetratoUrl] = useState<string | null>(inicial.retratoUrl);
+  const [paleta, setPaleta] = useState<PaletaDaVitrine>(inicial.paleta);
   const [enviandoRetrato, setEnviandoRetrato] = useState(false);
   const [modeloAmpliado, setModeloAmpliado] = useState<ModeloDaVitrine | null>(null);
   const [fotos, setFotos] = useState(fotosIniciais);
@@ -158,6 +167,7 @@ export function EditorPagina({
     pixelMeta: inicial.pixelMeta,
     modelo: inicial.modelo,
     retratoUrl: inicial.retratoUrl,
+    paleta: inicial.paleta,
   });
 
   const [aviso, setAviso] = useState<{ tipo: "ok" | "erro"; texto: string; onde: string } | null>(
@@ -183,6 +193,7 @@ export function EditorPagina({
     pixelMeta: normalizarPixelMeta(pixelMeta) ?? pixelMeta.trim(),
     modelo,
     retratoUrl,
+    paleta,
   };
 
   // O WhatsApp que veio do Catálogo, intocado, não é "mudança": é o valor
@@ -265,6 +276,7 @@ export function EditorPagina({
       ...(conteudoAtual.retratoUrl !== salvoConteudo.retratoUrl
         ? { retratoUrl: conteudoAtual.retratoUrl }
         : {}),
+      ...(conteudoAtual.paleta !== salvoConteudo.paleta ? { paleta: conteudoAtual.paleta } : {}),
     });
     if ("error" in r) {
       mostrar("salvar", "erro", r.error);
@@ -552,7 +564,7 @@ export function EditorPagina({
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={m.miniatura}
+                    src={miniaturaDoModelo(m.codigo, paleta)}
                     alt=""
                     loading="lazy"
                     className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-[1.02]"
@@ -579,9 +591,45 @@ export function EditorPagina({
             );
           })}
         </div>
+        {/* Poucas cores prontas (decisão do dono): muda o destaque, e as
+            miniaturas acima trocam junto. */}
+        <div className="mt-5">
+          <span className={labelClass}>Cores</span>
+          <div role="radiogroup" aria-label="Cores da vitrine" className="flex flex-wrap gap-2">
+            {PALETAS_DA_VITRINE.map((p) => {
+              const ativa = p.codigo === paleta;
+              return (
+                <label
+                  key={p.codigo}
+                  className={`flex cursor-pointer items-center gap-2 rounded-full border py-1.5 pl-1.5 pr-3.5 text-sm transition-colors focus-within:ring-2 focus-within:ring-gray-300 ${
+                    ativa
+                      ? "border-gray-900 font-medium text-gray-900 ring-1 ring-gray-900"
+                      : "border-gray-200 text-gray-700 hover:border-gray-400"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="pagina-paleta"
+                    value={p.codigo}
+                    checked={ativa}
+                    onChange={() => setPaleta(p.codigo)}
+                    className="sr-only"
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="h-6 w-6 shrink-0 rounded-full"
+                    style={{ backgroundColor: amostraDaPaleta(modelo, p.codigo) }}
+                  />
+                  {p.nome}
+                </label>
+              );
+            })}
+          </div>
+        </div>
         {modeloAmpliado && (
           <ModeloAmpliado
             codigo={modeloAmpliado}
+            paleta={paleta}
             escolhido={modeloAmpliado === modelo}
             onEscolher={() => {
               setModelo(modeloAmpliado);
@@ -590,8 +638,12 @@ export function EditorPagina({
             onFechar={() => setModeloAmpliado(null)}
           />
         )}
-        {slug && modelo !== salvoConteudo.modelo && (
-          <p className="mt-3 text-xs text-gray-500">Salve para ver a vitrine no modelo novo.</p>
+        {slug && (modelo !== salvoConteudo.modelo || paleta !== salvoConteudo.paleta) && (
+          <p className="mt-3 text-xs text-gray-500">
+            {modelo !== salvoConteudo.modelo
+              ? "Salve para ver a vitrine no modelo novo."
+              : "Salve para ver a vitrine nas cores novas."}
+          </p>
         )}
       </section>
 
@@ -1031,11 +1083,13 @@ export function EditorPagina({
  */
 function ModeloAmpliado({
   codigo,
+  paleta,
   escolhido,
   onEscolher,
   onFechar,
 }: {
   codigo: ModeloDaVitrine;
+  paleta: PaletaDaVitrine;
   escolhido: boolean;
   onEscolher: () => void;
   onFechar: () => void;
@@ -1076,7 +1130,11 @@ function ModeloAmpliado({
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto bg-gray-50">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={m.miniatura.replace(/\.jpg$/, "-pagina.jpg")} alt={`Exemplo do modelo ${m.nome}`} className="block w-full" />
+          <img
+            src={miniaturaDoModelo(codigo, paleta, "pagina")}
+            alt={`Exemplo do modelo ${m.nome}`}
+            className="block w-full"
+          />
         </div>
         <div className="flex items-center justify-end gap-2 border-t border-gray-100 px-5 py-3">
           <p className="mr-auto text-xs text-gray-500">Exemplo com uma vitrine de demonstração.</p>

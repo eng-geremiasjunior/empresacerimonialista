@@ -25,6 +25,8 @@
   --cu-nota: #63655a;
   --cu-destaque: #66703c;
   --cu-destaque-hover: #4e5629;
+  /* o destaque em trinca, para as sombras e o anel de foco (a paleta troca) */
+  --cu-destaque-rgb: 102, 112, 60;
   --cu-divisoria: #e2dfd2;
   --cu-borda-campo: #dcd9c8;
   --cu-borda-botao: #cfcdb9;
@@ -329,12 +331,12 @@ html:has(.cu) {
   text-decoration: none;
   border-radius: 999px;
   box-sizing: border-box;
-  box-shadow: 0 10px 26px rgba(102, 112, 60, 0.2);
+  box-shadow: 0 10px 26px rgba(var(--cu-destaque-rgb), 0.2);
   transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.12s ease;
 }
 .cu .cu-botao:hover {
   background: var(--cu-destaque-hover);
-  box-shadow: 0 14px 32px rgba(102, 112, 60, 0.26);
+  box-shadow: 0 14px 32px rgba(var(--cu-destaque-rgb), 0.26);
   color: #fff;
 }
 .cu .cu-botao:active {
@@ -933,7 +935,7 @@ html:has(.cu) {
 .cu .cu-entrada:focus,
 .cu .cu-area:focus {
   border-color: var(--cu-destaque);
-  box-shadow: 0 0 0 4px rgba(102, 112, 60, 0.14);
+  box-shadow: 0 0 0 4px rgba(var(--cu-destaque-rgb), 0.14);
   outline: none;
 }
 .cu .cu-entrada[aria-invalid="true"] {
@@ -1037,7 +1039,7 @@ html:has(.cu) {
   box-sizing: border-box;
   cursor: pointer;
   flex: 1 1 200px;
-  box-shadow: 0 10px 26px rgba(102, 112, 60, 0.2);
+  box-shadow: 0 10px 26px rgba(var(--cu-destaque-rgb), 0.2);
   transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.12s ease;
 }
 .cu .cu-botao-enviar:hover {

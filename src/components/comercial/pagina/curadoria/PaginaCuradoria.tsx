@@ -16,6 +16,7 @@
 // O que o desenho propôs e ainda não existe: o vídeo de apresentação ("Um
 // minuto"). Sem ele a seção não aparece, como o próprio desenho manda.
 
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import {
   comoFunciona,
@@ -24,6 +25,7 @@ import {
   type PaginaPublica,
 } from "@/lib/comercial/pagina-publica";
 import { linkWhatsapp } from "@/lib/whatsapp-link";
+import { paletaDaVitrine, variaveisDaPaleta } from "@/lib/comercial/paletas";
 import { EVENT_TYPE_LABELS } from "@/lib/types";
 import { LinkMedido, MedirPagina } from "../MedirPagina";
 import { PixelDaVitrine, PreferenciasDoPixel } from "../PixelDaVitrine";
@@ -95,7 +97,7 @@ export function PaginaCuradoria({
     <EstadoDaVitrine
       tipoInicial={pagina.tipos_atendidos.length === 1 ? pagina.tipos_atendidos[0] : ""}
     >
-      <div className="cu">
+      <div className="cu" style={variaveisDaPaleta("curadoria", paletaDaVitrine(pagina.paleta)) as CSSProperties}>
         <MedirPagina slug={slug} contar={medir} />
 
         {previa && (
