@@ -36,7 +36,7 @@ export function validarArquivo(file: File): string | null {
 // Redimensiona para no máximo MAX_LADO no maior lado e reencoda em JPEG.
 // Se qualquer etapa falhar (formato exótico, canvas indisponível), devolve
 // o arquivo original — upload funcionando importa mais que compressão.
-async function comprimir(file: File): Promise<Blob> {
+export async function comprimirFoto(file: File): Promise<Blob> {
   try {
     const bitmap = await createImageBitmap(file);
     const escala = Math.min(1, MAX_LADO / Math.max(bitmap.width, bitmap.height));
@@ -98,7 +98,7 @@ export async function uploadFotos(
       continue;
     }
 
-    const blob = await comprimir(file);
+    const blob = await comprimirFoto(file);
     if (blob.size > MAX_FINAL_BYTES) {
       erros.push(`${file.name}: ainda maior que 5 MB depois de comprimir`);
       onProgresso?.(i + 1, arquivos.length);

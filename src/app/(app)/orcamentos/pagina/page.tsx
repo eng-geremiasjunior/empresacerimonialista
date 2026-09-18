@@ -38,16 +38,23 @@ export default async function PaginaPublicaEditorPage() {
   }
 
   const empresaId = cargo.empresa_id;
+  // o retrato é da 165 reaplicada em 18/09/2026: sem a coluna, o editor
+  // continua de pé, só sem ele
+  const COLUNAS =
+    "slug, publicada, publicada_em, titulo, posicionamento, para_quem, cidade, tipos_atendidos, servicos, motivos, whatsapp, instagram, pixel_meta, modelo";
+  const lerPagina = async () => {
+    const comRetrato = await supabase
+      .from("empresa_pagina")
+      .select(`${COLUNAS}, retrato_url`)
+      .eq("empresa_id", empresaId)
+      .maybeSingle();
+    if (!comRetrato.error) return comRetrato;
+    return supabase.from("empresa_pagina").select(COLUNAS).eq("empresa_id", empresaId).maybeSingle();
+  };
   const [empresaRes, paginaRes, fotosRes, depoimentosRes, catalogoRes, slugsRes] =
     await Promise.all([
       supabase.from("empresas").select("nome, logo_url").eq("id", empresaId).maybeSingle(),
-      supabase
-        .from("empresa_pagina")
-        .select(
-          "slug, publicada, publicada_em, titulo, posicionamento, para_quem, cidade, tipos_atendidos, servicos, motivos, whatsapp, instagram, pixel_meta, modelo"
-        )
-        .eq("empresa_id", empresaId)
-        .maybeSingle(),
+      lerPagina(),
       supabase
         .from("portfolio_fotos")
         .select("id, url, legenda, tipo_evento, na_pagina")
@@ -104,6 +111,7 @@ export default async function PaginaPublicaEditorPage() {
     instagram: string | null;
     pixel_meta: string | null;
     modelo: string | null;
+    retrato_url?: string | null;
   } | null;
 
   const whatsappDoCatalogo =
@@ -150,6 +158,7 @@ export default async function PaginaPublicaEditorPage() {
 
       <EditorPagina
         base={appUrl()}
+        empresaId={empresaId}
         nomeEmpresa={empresaRes.data?.nome ?? ""}
         logoUrl={(empresaRes.data?.logo_url as string | null) ?? null}
         emailAviso={user?.email ?? null}
@@ -170,6 +179,7 @@ export default async function PaginaPublicaEditorPage() {
           instagram: pag?.instagram ?? "",
           pixelMeta: pag?.pixel_meta ?? "",
           modelo: modeloDaVitrine(pag?.modelo),
+          retratoUrl: pag?.retrato_url ?? null,
         }}
         fotos={fotos}
         depoimentos={depoimentos}

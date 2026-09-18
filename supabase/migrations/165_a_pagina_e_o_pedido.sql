@@ -32,6 +32,13 @@
 -- dados são os mesmos nos dois, só a forma muda. A leitura pública passa
 -- a entregar o nome do modelo.
 --
+-- 18/09/2026: o terceiro modelo (Curadoria), com menu lateral, e o
+-- RETRATO dela (empresa_pagina.retrato_url): a foto dela ou da equipe,
+-- separada da logo, que dá rosto ao bloco "Quem assina". O retrato só
+-- aceita arquivo do balde de fotos, na pasta da própria empresa — nenhum
+-- endereço de fora entra na página pública. A leitura pública passa a
+-- entregá-lo.
+--
 -- O QUE ESTA MIGRAÇÃO ABRE. Hoje a proposta só nasce se a cerimonialista
 -- digitar o contato: quem a procura pelo Instagram cai num WhatsApp que
 -- ela responde à mão, e nada disso entra no sistema. Esta é a porta que
@@ -225,10 +232,27 @@ alter table public.empresa_pagina add column if not exists modelo text not null 
 alter table public.empresa_pagina drop constraint if exists empresa_pagina_modelo_check;
 alter table public.empresa_pagina
   add constraint empresa_pagina_modelo_check
-  check (modelo in ('classico', 'capitulos'));
+  check (modelo in ('classico', 'capitulos', 'curadoria'));
 
 comment on column public.empresa_pagina.modelo is
-  'O desenho da vitrine: classico (foto de abertura, depoimento na faixa escura) ou capitulos (caderno numerado, formulário em ficha). Os mesmos campos nos dois.';
+  'O desenho da vitrine: classico (foto de abertura, depoimento na faixa escura), capitulos (caderno numerado, formulário em ficha) ou curadoria (menu lateral, retrato, portfólio com filtro). Os mesmos campos nos três.';
+
+-- O retrato: foto dela ou da equipe, separada da logo. Só do balde de
+-- fotos e só da pasta da própria empresa — a página pública não carrega
+-- imagem de endereço de fora (rastreador, conteúdo de terceiro).
+alter table public.empresa_pagina add column if not exists retrato_url text;
+alter table public.empresa_pagina drop constraint if exists empresa_pagina_retrato_check;
+alter table public.empresa_pagina
+  add constraint empresa_pagina_retrato_check
+  check (
+    retrato_url is null
+    or (char_length(retrato_url) <= 400
+        and retrato_url ~ '^https://[a-z0-9.-]+/storage/v1/object/public/portfolio-fotos/'
+        and position(('/portfolio-fotos/' || empresa_id::text || '/') in retrato_url) > 0)
+  );
+
+comment on column public.empresa_pagina.retrato_url is
+  'O retrato dela ou da equipe (modelo Curadoria). Só arquivo do balde portfolio-fotos, na pasta da empresa.';
 
 alter table public.empresa_pagina enable row level security;
 
@@ -906,6 +930,8 @@ begin
     'pixel_meta', v_pag.pixel_meta,
     -- o desenho que ela escolheu (só a forma; os dados são os mesmos)
     'modelo', v_pag.modelo,
+    -- o retrato dela, que ela mesma pôs na página
+    'retrato_url', v_pag.retrato_url,
     'fotos', coalesce((
       select json_agg(f)
       from (
@@ -1458,6 +1484,25 @@ select 'o modelo da vitrine existe, com a lista fechada, e sai na leitura públi
                    where conname = 'empresa_pagina_modelo_check'
                      and conrelid = 'public.empresa_pagina'::regclass)
        and (select prosrc ilike '%v_pag.modelo%'
+              from pg_proc where proname = 'pagina_publica'
+               and pronamespace = 'public'::regnamespace and pronargs = 1)
+
+union all
+select 'o terceiro modelo (curadoria) é aceito',
+       (select pg_get_constraintdef(oid) ilike '%curadoria%'
+          from pg_constraint
+         where conname = 'empresa_pagina_modelo_check'
+           and conrelid = 'public.empresa_pagina'::regclass)
+
+union all
+select 'o retrato existe, só do balde da empresa, e sai na leitura pública',
+       exists (select 1 from information_schema.columns
+               where table_schema = 'public' and table_name = 'empresa_pagina'
+                 and column_name = 'retrato_url')
+       and exists (select 1 from pg_constraint
+                   where conname = 'empresa_pagina_retrato_check'
+                     and conrelid = 'public.empresa_pagina'::regclass)
+       and (select prosrc ilike '%v_pag.retrato_url%'
               from pg_proc where proname = 'pagina_publica'
                and pronamespace = 'public'::regnamespace and pronargs = 1)
 

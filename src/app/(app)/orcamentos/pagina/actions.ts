@@ -112,6 +112,17 @@ export async function salvarPagina(dados: PaginaEditavel): Promise<Resultado> {
     .filter(Boolean)
     .slice(0, LIMITES.motivos);
 
+  // O retrato só entra se for do balde de fotos, na pasta desta empresa
+  // (o banco confere de novo: nenhum endereço de fora vai para a página).
+  let retrato: { retrato_url: string | null } | Record<string, never> = {};
+  if (dados.retratoUrl !== undefined) {
+    const url = dados.retratoUrl?.trim() || null;
+    if (url && !url.includes(`/storage/v1/object/public/portfolio-fotos/${ctx.empresaId}/`)) {
+      return { error: "Envie o retrato por aqui, pelo botão da vitrine." };
+    }
+    retrato = { retrato_url: url ? url.slice(0, 400) : null };
+  }
+
   const { error } = await ctx.supabase.from("empresa_pagina").upsert(
     {
       empresa_id: ctx.empresaId,
@@ -127,12 +138,21 @@ export async function salvarPagina(dados: PaginaEditavel): Promise<Resultado> {
       pixel_meta: pixelMeta,
       // o desenho só vai quando o editor manda (a coluna é da 165 reaplicada)
       ...(dados.modelo ? { modelo: modeloDaVitrine(dados.modelo) } : {}),
+      ...retrato,
       atualizado_por: ctx.userId,
     },
     { onConflict: "empresa_id" }
   );
 
   if (error) {
+    // o retrato é da 165 reaplicada em 18/09/2026
+    if (error.message?.includes("retrato")) {
+      return {
+        error: error.message.includes("check")
+          ? "Envie o retrato por aqui, pelo botão da vitrine."
+          : "O retrato ainda não está disponível. Tente de novo mais tarde.",
+      };
+    }
     // Com a página no ar, o gate do banco recusa tirar o que ela precisa
     // para funcionar. A frase dele fala em "publicar"; aqui a página já
     // está publicada, então a frase muda.

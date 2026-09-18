@@ -1,13 +1,17 @@
 import type { Metadata } from "next";
-import { Archivo, Bodoni_Moda, EB_Garamond, Jost } from "next/font/google";
+import { Archivo, Bodoni_Moda, EB_Garamond, Gilda_Display, Jost, Manrope } from "next/font/google";
 import "./vitrine.css";
 import "./capitulos.css";
+import "./curadoria.css";
 
 // A vitrine profissional tem dois modelos, cada um com a sua voz:
 //   * Clássico: EB Garamond nos títulos e citações, Jost no texto (a voz do
 //     portal da cliente; desenho do Claude Design, 16/09/2026);
 //   * Capítulos: Bodoni Moda nos títulos e numerais, Archivo no texto
-//     (Claude Design, "Modelo 3 — Capítulos", 16/09/2026).
+//     (Claude Design, "Modelo 3 — Capítulos", 16/09/2026);
+//   * Curadoria: Gilda Display no nome, títulos, citações e numerais,
+//     Manrope na interface (Claude Design, "Modelo 5 — Curadoria",
+//     18/09/2026).
 // Não é o painel do eOrganizei: a área profissional (Inter / Instrument
 // Sans) não entra aqui.
 //
@@ -16,7 +20,7 @@ import "./capitulos.css";
 // quebra o build de produção (lição do /confirmar). Variáveis próprias,
 // porque o desenho usa o peso 600 da Jost, que o portal não carrega.
 //
-// As do Capítulos não são pré-carregadas: a rota é a mesma para os dois
+// As do Capítulos e da Curadoria não são pré-carregadas: a rota é a mesma para os dois
 // modelos, e a vitrine clássica não deve baixar fonte que não usa (sem o
 // aviso antecipado, o navegador só busca a fonte quando a folha a pede).
 
@@ -59,6 +63,23 @@ const capCorpo = Archivo({
   preload: false,
 });
 
+const cuTitulo = Gilda_Display({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--fonte-cu-titulo",
+  display: "swap",
+  preload: false,
+  fallback: ["Georgia", "Times New Roman", "serif"],
+});
+
+const cuCorpo = Manrope({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--fonte-cu-corpo",
+  display: "swap",
+  preload: false,
+});
+
 export const metadata: Metadata = {
   // o título e a indexação de verdade vêm da página, com os dados dela;
   // isto é o fallback de quem cair num endereço que não existe
@@ -69,7 +90,7 @@ export const metadata: Metadata = {
 export default function PaginaCerimonialistaLayout({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className={`${titulo.variable} ${corpo.variable} ${capTitulo.variable} ${capCorpo.variable}`}
+      className={`${titulo.variable} ${corpo.variable} ${capTitulo.variable} ${capCorpo.variable} ${cuTitulo.variable} ${cuCorpo.variable}`}
     >
       {children}
     </div>

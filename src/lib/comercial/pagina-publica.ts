@@ -18,27 +18,42 @@ import type { EventType } from "@/lib/types";
 export type ServicoDaPagina = { nome: string; descricao?: string | null };
 
 /**
- * O desenho da vitrine (16/09/2026). Os campos são os mesmos nos dois; só a
- * forma muda. O banco guarda a escolha em empresa_pagina.modelo (165).
+ * O desenho da vitrine (16/09/2026; o terceiro em 18/09/2026). Os campos
+ * são os mesmos em todos; só a forma muda. O banco guarda a escolha em
+ * empresa_pagina.modelo (165).
  */
-export type ModeloDaVitrine = "classico" | "capitulos";
+export type ModeloDaVitrine = "classico" | "capitulos" | "curadoria";
 
-export const MODELOS_DA_VITRINE: { codigo: ModeloDaVitrine; nome: string; resumo: string }[] = [
+export const MODELOS_DA_VITRINE: {
+  codigo: ModeloDaVitrine;
+  nome: string;
+  resumo: string;
+  /** a miniatura do modelo no editor (public/vitrine/modelos) */
+  miniatura: string;
+}[] = [
   {
     codigo: "classico",
     nome: "Clássico",
     resumo: "Foto de abertura com o seu nome e um depoimento em destaque numa faixa escura.",
+    miniatura: "/vitrine/modelos/classico.jpg",
   },
   {
     codigo: "capitulos",
     nome: "Capítulos",
     resumo: "Página em capítulos numerados, com o que a cliente recebe em cada etapa e o formulário em linhas.",
+    miniatura: "/vitrine/modelos/capitulos.jpg",
+  },
+  {
+    codigo: "curadoria",
+    nome: "Curadoria",
+    resumo: "Menu lateral, o seu retrato e o portfólio com filtro por tipo de evento.",
+    miniatura: "/vitrine/modelos/curadoria.jpg",
   },
 ];
 
 /** O que vier do banco (ou de antes da 165 reaplicada) vira um modelo válido. */
 export function modeloDaVitrine(valor: unknown): ModeloDaVitrine {
-  return valor === "capitulos" ? "capitulos" : "classico";
+  return valor === "capitulos" || valor === "curadoria" ? valor : "classico";
 }
 
 /** O que o editor manda para o servidor (o endereço vai por outra porta). */
@@ -56,6 +71,11 @@ export type PaginaEditavel = {
   pixelMeta: string | null;
   /** o desenho escolhido; ausente = não muda o que está salvo */
   modelo?: ModeloDaVitrine;
+  /**
+   * O retrato dela (modelo Curadoria). undefined = não muda o que está
+   * salvo; null = tirar o retrato.
+   */
+  retratoUrl?: string | null;
 };
 
 /** O que a RPC `pagina_publica` devolve. Lista fechada: nada interno. */
@@ -80,6 +100,8 @@ export type PaginaPublica = {
   pixel_meta?: string | null;
   /** o desenho escolhido (165, noite de 16/09/2026); ausente = clássico */
   modelo?: string | null;
+  /** o retrato dela ou da equipe (165, 18/09/2026); ausente = sem retrato */
+  retrato_url?: string | null;
   fotos: { url: string; legenda: string | null; tipo_evento: EventType }[];
   /**
    * `tipo_evento` é o que deixa o depoimento em destaque acompanhar o

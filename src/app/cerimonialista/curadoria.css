@@ -1,0 +1,1336 @@
+/*
+ * A vitrine profissional, modelo Curadoria (Claude Design, "Modelo 5 —
+ * Curadoria", 18/09/2026). Escrita a partir do protótipo: medidas e cores
+ * são as do estilo em linha de cada elemento de lá; os nomes seguem o
+ * componente (components/comercial/pagina/curadoria).
+ *
+ * Tudo preso a .cu: esta folha é global (o App Router não isola CSS por
+ * rota) e não pode vazar para o sistema nem para os outros modelos (.vt,
+ * .cp).
+ *
+ * O que separa este modelo dos outros é o ARCO (foto de abertura, retrato,
+ * uma das fotos do portfólio) e o menu lateral fixo que acompanha a página
+ * inteira. Um destaque só, o oliva: chamada principal, item ativo e links.
+ */
+
+.cu {
+  --cu-serif: var(--fonte-cu-titulo), "Gilda Display", Georgia, serif;
+  --cu-fundo: #f7f5ef;
+  --cu-fundo-alt: #edebe0;
+  --cu-lateral: #eeecdf;
+  --cu-ativo: #e6e4d4;
+  --cu-tinta: #2a2b24;
+  --cu-corpo: #52544a;
+  --cu-rotulo: #6c6e60;
+  --cu-nota: #63655a;
+  --cu-destaque: #66703c;
+  --cu-destaque-hover: #4e5629;
+  --cu-divisoria: #e2dfd2;
+  --cu-borda-campo: #dcd9c8;
+  --cu-borda-botao: #cfcdb9;
+  --cu-icone-borda: #c3c0ac;
+  --cu-numeral-servico: #8f9670;
+  --cu-numeral-passo: #e8e6d6;
+  --cu-aspas: #c8cdae;
+  --cu-erro-borda: #a34b3c;
+  --cu-erro-texto: #8a3d30;
+  --cu-off-fundo: #e3e1d4;
+  --cu-off-texto: #767869;
+  --cu-barra-previa: #a9ae96;
+  --cu-faixa-previa: #e9e7da;
+  --cu-listras: repeating-linear-gradient(45deg, #e6e3d6 0 9px, #f0eee4 9px 18px);
+
+  font-family: var(--fonte-cu-corpo), Manrope, Helvetica, Arial, sans-serif;
+  color: var(--cu-corpo);
+  background: var(--cu-fundo);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  /* clip, e não hidden: hidden faria da raiz um contêiner de rolagem, e a
+     lateral e a ilha do pé deixariam de grudar na tela (foi o que travou o
+     protótipo) */
+  overflow-x: clip;
+  line-height: normal;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* rolagem suave só nesta página: as âncoras do menu e dos botões */
+html:has(.cu) {
+  scroll-behavior: smooth;
+}
+
+/* O desenho foi feito sem reset: o que ele não declara vem do padrão do
+   navegador (a mesma volta que os outros modelos fazem). */
+.cu *,
+.cu *::before,
+.cu *::after {
+  box-sizing: content-box;
+}
+.cu :where(a) {
+  color: var(--cu-destaque);
+  text-decoration: underline;
+}
+.cu :where(a:hover) {
+  color: var(--cu-destaque-hover);
+}
+.cu :where(input, select, textarea, button) {
+  font-family: inherit;
+}
+
+/* ------------------------------------------------------------ prévia */
+.cu .cu-previa {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  align-items: baseline;
+  padding: 13px 20px;
+  background: var(--cu-faixa-previa);
+  border-bottom: 1px solid var(--cu-divisoria);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--cu-corpo);
+}
+.cu .cu-previa-link {
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------- as duas colunas */
+.cu .cu-corpo {
+  flex: 1 1 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+/* ------------------------------------------------------------ lateral */
+.cu .cu-lateral {
+  flex: 1 1 228px;
+  max-width: 100%;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  min-height: 100vh;
+  overflow-y: auto;
+  z-index: 20;
+  align-self: flex-start;
+  background: var(--cu-lateral);
+  border-right: 1px solid var(--cu-divisoria);
+  padding: 22px 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cu .cu-marca {
+  padding: 0 4px 18px;
+  min-width: 0;
+}
+.cu .cu-marca-nome {
+  font-family: var(--cu-serif);
+  font-size: 19px;
+  line-height: 1.25;
+  color: var(--cu-tinta);
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cu .cu-marca-cidade {
+  font-size: 12.5px;
+  color: var(--cu-rotulo);
+}
+.cu .cu-menu {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+}
+.cu .cu-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 9px 12px;
+  border-radius: 6px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--cu-rotulo);
+  font-size: 13.5px;
+  font-weight: 500;
+  text-decoration: none;
+  box-sizing: border-box;
+  min-width: 0;
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+.cu .cu-menu-item:hover {
+  background: var(--cu-ativo);
+  color: var(--cu-tinta);
+}
+.cu .cu-menu-item[aria-current="true"] {
+  background: var(--cu-ativo);
+  box-shadow: inset 3px 0 0 var(--cu-destaque);
+  color: var(--cu-tinta);
+  font-weight: 600;
+}
+.cu .cu-menu-icone {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid var(--cu-icone-borda);
+  background: transparent;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+.cu .cu-menu-item[aria-current="true"] .cu-menu-icone {
+  background: var(--cu-destaque);
+  border-color: var(--cu-destaque);
+}
+.cu .cu-menu-rotulo {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cu .cu-lateral-pe {
+  margin-top: auto;
+  padding-top: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cu .cu-lateral-whatsapp {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 14px;
+  background: var(--cu-destaque);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  box-sizing: border-box;
+  transition: background 0.18s ease;
+}
+.cu .cu-lateral-whatsapp:hover {
+  background: var(--cu-destaque-hover);
+  color: #fff;
+}
+.cu .cu-lateral-instagram {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
+  font-size: 12.5px;
+  color: var(--cu-rotulo);
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+/* celular: a lateral vira um cabeçalho de duas colunas no topo, com tudo
+   à vista — não cobre a tela e não tem botão de abrir e fechar */
+@media (max-width: 899px) {
+  .cu .cu-lateral {
+    position: static;
+    height: auto;
+    min-height: 0;
+    overflow-y: visible;
+    border-right: 0;
+    border-bottom: 1px solid var(--cu-divisoria);
+  }
+  .cu .cu-menu {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ---------------------------------------------------------- principal */
+.cu .cu-principal {
+  flex: 999 1 560px;
+  min-width: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ------------------------------------------------------------ abertura */
+.cu .cu-abertura {
+  padding: clamp(34px, 7vw, 74px) clamp(20px, 5vw, 64px) clamp(30px, 5vw, 52px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.cu .cu-abertura-grade {
+  width: 100%;
+  max-width: 1160px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: clamp(30px, 5vw, 60px);
+  align-items: center;
+}
+.cu .cu-abertura-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.cu .cu-sobre {
+  margin: 0 0 clamp(16px, 3vw, 24px);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--cu-rotulo);
+}
+.cu .cu-h1 {
+  margin: 0;
+  font-family: var(--cu-serif);
+  font-size: clamp(38px, 9vw, 66px);
+  font-weight: 400;
+  line-height: 1.04;
+  letter-spacing: -0.01em;
+  color: var(--cu-tinta);
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+}
+.cu .cu-frase {
+  margin: clamp(16px, 3vw, 22px) 0 0;
+  font-family: var(--cu-serif);
+  font-size: clamp(19px, 2.6vw, 25px);
+  line-height: 1.46;
+  color: var(--cu-corpo);
+  text-wrap: pretty;
+  max-width: 28ch;
+}
+/* sem retrato, a apresentação sobe para a abertura */
+.cu .cu-abertura-apresentacao {
+  margin: 18px 0 0;
+  font-size: 15.5px;
+  line-height: 1.78;
+  color: var(--cu-corpo);
+  text-wrap: pretty;
+  max-width: 54ch;
+}
+.cu .cu-chamadas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: clamp(24px, 4vw, 34px);
+}
+.cu .cu-botao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0 30px;
+  background: var(--cu-destaque);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 999px;
+  box-sizing: border-box;
+  box-shadow: 0 10px 26px rgba(102, 112, 60, 0.2);
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.12s ease;
+}
+.cu .cu-botao:hover {
+  background: var(--cu-destaque-hover);
+  box-shadow: 0 14px 32px rgba(102, 112, 60, 0.26);
+  color: #fff;
+}
+.cu .cu-botao:active {
+  transform: translateY(1px);
+}
+.cu .cu-botao-contorno {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0 30px;
+  border: 1px solid var(--cu-borda-botao);
+  color: var(--cu-tinta);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 999px;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.cu .cu-botao-contorno:hover {
+  border-color: var(--cu-destaque);
+  background: var(--cu-lateral);
+  color: var(--cu-tinta);
+}
+
+/* as três fotos da abertura, em formatos diferentes */
+.cu .cu-abertura-fotos {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  grid-template-rows: auto auto;
+  gap: clamp(10px, 2vw, 16px);
+  min-width: 0;
+}
+.cu .cu-abertura-fotos[data-n="1"] {
+  grid-template-columns: minmax(0, 360px);
+  grid-template-rows: auto;
+  justify-content: center;
+}
+.cu .cu-abertura-fotos[data-n="2"] {
+  grid-template-rows: auto;
+  align-items: center;
+}
+.cu .cu-abertura-fotos[data-n="2"] .cu-foto-a {
+  grid-row: auto;
+}
+.cu .cu-foto-a,
+.cu .cu-foto-b,
+.cu .cu-foto-c {
+  overflow: hidden;
+  background: var(--cu-listras);
+  border: 1px solid var(--cu-divisoria);
+  min-width: 0;
+}
+.cu .cu-foto-a {
+  grid-row: 1 / span 2;
+  border-radius: 200px 200px 20px 20px;
+  aspect-ratio: 3 / 5;
+  box-shadow: 0 18px 40px rgba(42, 43, 36, 0.08);
+}
+.cu .cu-foto-b {
+  border-radius: 20px;
+  aspect-ratio: 1 / 1;
+}
+.cu .cu-foto-c {
+  border-radius: 20px 20px 20px 90px;
+  aspect-ratio: 4 / 5;
+}
+.cu .cu-foto-a img,
+.cu .cu-foto-b img,
+.cu .cu-foto-c img,
+.cu .cu-retrato-foto img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* -------------------------------------------------------------- blocos */
+.cu .cu-bloco {
+  padding: clamp(40px, 7vw, 80px) clamp(20px, 5vw, 64px);
+  display: flex;
+  justify-content: center;
+}
+.cu .cu-bloco[data-alt] {
+  background: var(--cu-fundo-alt);
+}
+.cu .cu-rotulo {
+  margin: 0 0 14px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--cu-rotulo);
+}
+.cu .cu-h2 {
+  margin: 0;
+  font-family: var(--cu-serif);
+  font-size: clamp(22px, 3.4vw, 31px);
+  font-weight: 400;
+  line-height: 1.32;
+  color: var(--cu-tinta);
+  text-wrap: pretty;
+}
+
+/* --------------------------------------------------------- quem assina */
+.cu .cu-quem-grade {
+  width: 100%;
+  max-width: 1060px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: clamp(28px, 5vw, 56px);
+  align-items: center;
+}
+.cu .cu-retrato {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cu .cu-retrato-foto {
+  border-radius: clamp(130px, 40vw, 230px) clamp(130px, 40vw, 230px) 18px 18px;
+  overflow: hidden;
+  background: repeating-linear-gradient(45deg, #e0ddcd 0 9px, #eae7dc 9px 18px);
+  border: 1px solid var(--cu-borda-campo);
+  aspect-ratio: 4 / 5;
+  box-shadow: 0 20px 44px rgba(42, 43, 36, 0.1);
+}
+.cu .cu-quem-texto {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.cu .cu-quem-texto .cu-rotulo {
+  margin-bottom: 16px;
+}
+.cu .cu-quem-apresentacao {
+  margin: 0;
+  font-size: 15.5px;
+  line-height: 1.78;
+  color: var(--cu-corpo);
+  text-wrap: pretty;
+  max-width: 54ch;
+}
+.cu .cu-quem-para {
+  margin: 16px 0 0;
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--cu-rotulo);
+  text-wrap: pretty;
+  max-width: 50ch;
+}
+
+/* ----------------------------------------------------------- a seleção */
+.cu .cu-selecao-dentro {
+  width: 100%;
+  max-width: 880px;
+  display: flex;
+  flex-direction: column;
+}
+.cu .cu-selecao-dentro .cu-h2 {
+  margin: 0 0 clamp(22px, 4vw, 34px);
+  max-width: 28ch;
+}
+.cu .cu-servico {
+  background: var(--cu-fundo);
+  border: 1px solid var(--cu-divisoria);
+  border-radius: clamp(16px, 2.5vw, 22px);
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.cu .cu-servico:hover {
+  border-color: var(--cu-borda-botao);
+  box-shadow: 0 14px 30px rgba(42, 43, 36, 0.07);
+}
+.cu .cu-servico-cabeca {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: clamp(18px, 3vw, 24px);
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  min-height: 44px;
+  box-sizing: border-box;
+  font: inherit;
+  color: inherit;
+}
+.cu .cu-servico-cabeca[data-fixo] {
+  cursor: default;
+}
+.cu .cu-servico-cabeca:focus-visible {
+  outline: 2px solid var(--cu-destaque);
+  outline-offset: -4px;
+}
+.cu .cu-servico-n {
+  font-family: var(--cu-serif);
+  font-size: 15px;
+  color: var(--cu-numeral-servico);
+  flex: none;
+}
+.cu .cu-servico-nome {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--cu-serif);
+  font-size: clamp(18px, 2.4vw, 21px);
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--cu-tinta);
+  text-wrap: pretty;
+}
+.cu .cu-servico-mais {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--cu-borda-botao);
+  background: transparent;
+  color: var(--cu-destaque);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  transform: rotate(0deg);
+  transition: transform 0.3s cubic-bezier(0.22, 0.7, 0.3, 1), background 0.25s ease,
+    border-color 0.25s ease, color 0.25s ease;
+}
+.cu .cu-servico[data-aberto] .cu-servico-mais {
+  background: var(--cu-destaque);
+  border-color: var(--cu-destaque);
+  color: #fff;
+  transform: rotate(135deg);
+}
+.cu .cu-servico-caixa {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.34s cubic-bezier(0.3, 0.8, 0.2, 1), opacity 0.28s ease;
+}
+.cu .cu-servico[data-aberto] .cu-servico-caixa {
+  max-height: 260px;
+  opacity: 1;
+}
+.cu .cu-servico-desc {
+  margin: 0;
+  padding: 0 clamp(18px, 3vw, 24px) clamp(20px, 3vw, 26px) clamp(48px, 7vw, 56px);
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--cu-corpo);
+  text-wrap: pretty;
+  max-width: 56ch;
+}
+
+/* ------------------------------------------------------------- eventos */
+.cu .cu-eventos-dentro {
+  width: 100%;
+  max-width: 1160px;
+  display: flex;
+  flex-direction: column;
+}
+.cu .cu-eventos-dentro .cu-h2 {
+  margin: 0 0 clamp(20px, 3vw, 28px);
+  max-width: 26ch;
+}
+.cu .cu-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-bottom: clamp(20px, 3vw, 26px);
+}
+.cu .cu-filtro {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--cu-borda-botao);
+  background: transparent;
+  color: var(--cu-corpo);
+  font-size: 13.5px;
+  font-weight: 600;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.cu .cu-filtro:hover {
+  border-color: var(--cu-destaque);
+}
+.cu .cu-filtro[aria-pressed="true"] {
+  background: var(--cu-destaque);
+  border-color: var(--cu-destaque);
+  color: #fff;
+}
+.cu .cu-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(140px, 22vw, 210px), 1fr));
+  gap: clamp(10px, 1.6vw, 16px);
+  align-items: start;
+}
+.cu .cu-foto {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  animation: cu-entrar 0.45s ease both;
+}
+.cu .cu-foto:focus-visible {
+  outline: 2px solid var(--cu-destaque);
+  outline-offset: 4px;
+}
+.cu .cu-foto[data-aberta] {
+  grid-column: 1 / -1;
+}
+.cu .cu-foto-moldura {
+  overflow: hidden;
+  background: var(--cu-listras);
+  border: 1px solid var(--cu-divisoria);
+  min-width: 0;
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+.cu .cu-foto:hover .cu-foto-moldura {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 34px rgba(42, 43, 36, 0.1);
+}
+.cu .cu-foto-moldura img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.cu .cu-foto[data-aberta] .cu-foto-moldura {
+  border-radius: clamp(18px, 3vw, 26px) !important;
+  background: var(--cu-fundo-alt);
+}
+/* aberta ocupa a largura inteira, sem passar da altura da tela: foto em
+   pé não vira um corredor */
+.cu .cu-foto[data-aberta] .cu-foto-moldura img {
+  max-height: 85vh;
+  object-fit: contain;
+}
+.cu .cu-foto-legenda {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--cu-rotulo);
+  text-wrap: pretty;
+}
+.cu .cu-foto[data-aberta] .cu-foto-legenda {
+  color: var(--cu-tinta);
+}
+.cu .cu-vazio-filtro {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--cu-rotulo);
+}
+
+/* ------------------------------------------------------- como funciona */
+.cu .cu-como-dentro {
+  width: 100%;
+  max-width: 1000px;
+  display: flex;
+  flex-direction: column;
+}
+.cu .cu-como-dentro .cu-h2 {
+  margin: 0 0 clamp(24px, 4vw, 38px);
+  max-width: 26ch;
+}
+.cu .cu-passos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(252px, 1fr));
+  gap: clamp(16px, 2.5vw, 24px);
+}
+.cu .cu-passo {
+  position: relative;
+  overflow: hidden;
+  background: var(--cu-fundo);
+  border: 1px solid var(--cu-divisoria);
+  border-radius: clamp(16px, 2.5vw, 22px);
+  padding: clamp(22px, 3vw, 30px);
+  min-width: 0;
+}
+.cu .cu-passo-n {
+  position: absolute;
+  right: 14px;
+  top: 2px;
+  font-family: var(--cu-serif);
+  font-size: 74px;
+  line-height: 1;
+  color: var(--cu-numeral-passo);
+}
+.cu .cu-passo-texto {
+  position: relative;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--cu-corpo);
+  text-wrap: pretty;
+}
+
+/* --------------------------------------------------------- depoimentos */
+.cu .cu-depoimentos {
+  padding: clamp(44px, 7vw, 84px) clamp(20px, 5vw, 64px);
+}
+.cu .cu-dep-dentro {
+  width: 100%;
+  max-width: 820px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.cu .cu-dep-dentro .cu-rotulo {
+  margin: 0 0 clamp(22px, 4vw, 32px);
+}
+.cu .cu-dep-atual {
+  margin: 0;
+  animation: cu-entrar 0.45s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.cu .cu-aspas {
+  font-family: var(--cu-serif);
+  font-size: 46px;
+  line-height: 0.6;
+  color: var(--cu-aspas);
+}
+.cu .cu-dep-texto {
+  margin: 18px 0 0;
+  font-family: var(--cu-serif);
+  font-size: clamp(20px, 3.2vw, 28px);
+  line-height: 1.5;
+  color: var(--cu-tinta);
+  text-wrap: pretty;
+  max-width: 32ch;
+}
+.cu .cu-dep-quem {
+  margin: 22px 0 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cu-destaque);
+}
+.cu .cu-dep-nav {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: clamp(26px, 4vw, 34px);
+}
+.cu .cu-dep-seta {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--cu-borda-botao);
+  background: transparent;
+  color: var(--cu-tinta);
+  font-size: 16px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.cu .cu-dep-seta:hover {
+  border-color: var(--cu-destaque);
+  background: var(--cu-lateral);
+}
+.cu .cu-dep-pontos {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+}
+.cu .cu-dep-ponto {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cu-aspas);
+  transition: background 0.25s ease, width 0.25s ease, height 0.25s ease;
+}
+.cu .cu-dep-ponto[data-atual] {
+  width: 9px;
+  height: 9px;
+  background: var(--cu-destaque);
+}
+
+/* ------------------------------------------------------------ motivos */
+.cu .cu-motivos-bloco {
+  padding: 0 clamp(20px, 5vw, 64px) clamp(40px, 7vw, 72px);
+  display: flex;
+  justify-content: center;
+}
+/* sem depoimentos acima, o bloco não tem a quem se encostar */
+.cu .cu-motivos-bloco[data-solto] {
+  padding-top: clamp(40px, 7vw, 80px);
+}
+.cu .cu-motivos-bloco[data-alt] {
+  background: var(--cu-fundo-alt);
+}
+.cu .cu-motivos {
+  width: 100%;
+  max-width: 1000px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(244px, 1fr));
+  gap: clamp(14px, 2vw, 20px);
+}
+.cu .cu-motivo {
+  background: var(--cu-lateral);
+  border-radius: clamp(14px, 2vw, 20px);
+  padding: clamp(20px, 3vw, 26px);
+  min-width: 0;
+}
+.cu .cu-motivos-bloco[data-alt] .cu-motivo {
+  background: var(--cu-fundo);
+}
+.cu .cu-motivo p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--cu-tinta);
+  text-wrap: pretty;
+}
+
+/* ---------------------------------------------------------- orçamento */
+.cu .cu-orcamento {
+  padding: clamp(40px, 7vw, 80px) clamp(20px, 5vw, 64px) clamp(46px, 7vw, 86px);
+  background: var(--cu-fundo-alt);
+  display: flex;
+  justify-content: center;
+}
+.cu .cu-cartao {
+  width: 100%;
+  max-width: 820px;
+  background: var(--cu-fundo);
+  border: 1px solid var(--cu-divisoria);
+  border-radius: clamp(20px, 3vw, 30px);
+  padding: clamp(24px, 4vw, 44px);
+  box-sizing: border-box;
+  box-shadow: 0 24px 54px rgba(42, 43, 36, 0.08);
+}
+.cu .cu-h2-ficha {
+  margin: 0 0 12px;
+  font-family: var(--cu-serif);
+  font-size: clamp(25px, 4vw, 33px);
+  font-weight: 400;
+  line-height: 1.24;
+  color: var(--cu-tinta);
+  text-wrap: pretty;
+}
+.cu .cu-intro-ficha {
+  margin: 0 0 clamp(24px, 4vw, 32px);
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--cu-corpo);
+  text-wrap: pretty;
+  max-width: 50ch;
+}
+.cu .cu-campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(232px, 1fr));
+  gap: 16px 20px;
+}
+.cu .cu-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+.cu .cu-campo-largo {
+  grid-column: 1 / -1;
+}
+.cu .cu-campo-rotulo {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--cu-tinta);
+}
+.cu .cu-entrada {
+  min-height: 50px;
+  border: 1px solid var(--cu-borda-campo);
+  background: #fff;
+  border-radius: 14px;
+  padding: 0 16px;
+  font-size: 15px;
+  color: var(--cu-tinta);
+  box-sizing: border-box;
+  width: 100%;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.cu .cu-selecao {
+  appearance: none;
+}
+.cu .cu-entrada:focus,
+.cu .cu-area:focus {
+  border-color: var(--cu-destaque);
+  box-shadow: 0 0 0 4px rgba(102, 112, 60, 0.14);
+  outline: none;
+}
+.cu .cu-entrada[aria-invalid="true"] {
+  border-color: var(--cu-erro-borda);
+}
+.cu .cu-entrada:disabled,
+.cu .cu-area:disabled {
+  background: var(--cu-lateral);
+}
+.cu .cu-erro {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--cu-erro-texto);
+  animation: cu-entrar 0.22s ease;
+}
+.cu .cu-data-recolhe {
+  overflow: hidden;
+  max-height: 92px;
+  opacity: 1;
+  transition: max-height 0.26s cubic-bezier(0.3, 0.8, 0.2, 1), opacity 0.2s ease;
+}
+.cu .cu-data-recolhe[data-recolhida] {
+  max-height: 0;
+  opacity: 0;
+}
+.cu .cu-data-dentro {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-bottom: 4px;
+}
+.cu .cu-sem-data {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-height: 44px;
+  font-size: 14px;
+  color: var(--cu-corpo);
+  cursor: pointer;
+}
+.cu .cu-caixa {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--cu-destaque);
+  flex: none;
+  margin: 0;
+}
+.cu .cu-campo-cabeca {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.cu .cu-campo-cabeca .cu-campo-rotulo {
+  flex: 1;
+}
+.cu .cu-contagem {
+  font-size: 11.5px;
+  color: var(--cu-rotulo);
+  opacity: 0;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+.cu .cu-contagem[data-visivel] {
+  opacity: 1;
+}
+.cu .cu-contagem[data-alta] {
+  color: var(--cu-erro-texto);
+}
+.cu .cu-area {
+  border: 1px solid var(--cu-borda-campo);
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--cu-tinta);
+  box-sizing: border-box;
+  width: 100%;
+  resize: vertical;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.cu .cu-ficha-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: clamp(22px, 3vw, 28px);
+}
+.cu .cu-botao-enviar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 0 32px;
+  background: var(--cu-destaque);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  border: 0;
+  border-radius: 999px;
+  box-sizing: border-box;
+  cursor: pointer;
+  flex: 1 1 200px;
+  box-shadow: 0 10px 26px rgba(102, 112, 60, 0.2);
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.12s ease;
+}
+.cu .cu-botao-enviar:hover {
+  background: var(--cu-destaque-hover);
+}
+.cu .cu-botao-enviar:active {
+  transform: translateY(1px);
+}
+.cu .cu-botao-enviar:disabled {
+  background: var(--cu-off-fundo);
+  color: var(--cu-off-texto);
+  border: 1px solid var(--cu-borda-campo);
+  box-shadow: none;
+  cursor: default;
+}
+.cu .cu-botao-enviar:disabled:hover {
+  background: var(--cu-off-fundo);
+}
+.cu .cu-ficha-whatsapp {
+  min-height: 54px;
+  padding: 0 32px;
+  flex: 1 1 200px;
+}
+.cu .cu-giro {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: cu-girar 0.8s linear infinite;
+}
+.cu .cu-aviso-dados {
+  margin: 18px 0 0;
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--cu-rotulo);
+  max-width: 60ch;
+}
+.cu .cu-aviso-previa {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  color: var(--cu-rotulo);
+}
+.cu .cu-enviado {
+  animation: cu-entrar 0.42s ease;
+  display: flex;
+  flex-direction: column;
+}
+.cu .cu-enviado .cu-h2-ficha {
+  margin: 0 0 14px;
+}
+.cu .cu-enviado-texto {
+  margin: 0;
+  font-size: 15.5px;
+  line-height: 1.78;
+  color: var(--cu-corpo);
+  text-wrap: pretty;
+  max-width: 52ch;
+}
+.cu .cu-enviado-botao {
+  display: inline-flex;
+  min-height: 52px;
+  margin-top: 28px;
+  padding: 0 28px;
+  align-self: flex-start;
+}
+
+/* ------------------------------------------------------------- rodapé */
+.cu .cu-rodape {
+  padding: clamp(30px, 5vw, 44px) clamp(20px, 5vw, 64px);
+  display: flex;
+  justify-content: center;
+  margin-top: auto;
+}
+.cu .cu-rodape-dentro {
+  width: 100%;
+  max-width: 1160px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 28px;
+  align-items: baseline;
+}
+.cu .cu-rodape-nome {
+  font-family: var(--cu-serif);
+  font-size: 20px;
+  color: var(--cu-tinta);
+  flex: 1 1 200px;
+}
+.cu .cu-rodape-instagram {
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.cu .cu-rodape-miudo {
+  font-size: 12.5px;
+  color: var(--cu-rotulo);
+}
+.cu .cu-rodape-marca {
+  font-size: 12.5px;
+  color: var(--cu-nota);
+  text-decoration: none;
+}
+.cu .cu-rodape-marca:hover {
+  color: var(--cu-corpo);
+  text-decoration: underline;
+}
+.cu .cu-rodape-preferencias {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--cu-destaque);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.cu .cu-rodape-preferencias:hover {
+  color: var(--cu-destaque-hover);
+}
+
+/* -------------------------------------------------- ilha do pé da página */
+.cu .cu-barra {
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  padding: 0 clamp(12px, 3vw, 20px) clamp(12px, 3vw, 18px);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+.cu .cu-barra-ilha {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  background: rgba(247, 245, 239, 0.92);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--cu-divisoria);
+  border-radius: 999px;
+  box-shadow: 0 14px 36px rgba(42, 43, 36, 0.14);
+  pointer-events: auto;
+  box-sizing: border-box;
+}
+.cu .cu-barra-principal {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  padding: 0 20px;
+  background: var(--cu-destaque);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 999px;
+  box-sizing: border-box;
+  transition: background 0.2s ease;
+}
+.cu .cu-barra-principal:hover {
+  background: var(--cu-destaque-hover);
+  color: #fff;
+}
+.cu .cu-barra-principal[data-previa] {
+  background: var(--cu-barra-previa);
+}
+.cu .cu-barra-whatsapp {
+  flex: none;
+  width: 54px;
+  min-height: 50px;
+  border: 1px solid var(--cu-borda-botao);
+  color: var(--cu-tinta);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  border-radius: 999px;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.cu .cu-barra-whatsapp:hover {
+  border-color: var(--cu-destaque);
+  background: var(--cu-lateral);
+  color: var(--cu-tinta);
+}
+
+/* --------------------------------- a permissão para o pixel da Meta */
+.cu .cu-consentimento {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 50;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--cu-fundo);
+  border: 1px solid var(--cu-divisoria);
+  border-radius: 18px;
+  box-shadow: 0 14px 36px rgba(42, 43, 36, 0.14);
+  box-sizing: border-box;
+  animation: cu-entrar 0.4s ease;
+}
+.cu .cu-consentimento-texto {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--cu-corpo);
+}
+.cu .cu-consentimento-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.cu .cu-consentimento-botao {
+  flex: 1 1 140px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--cu-borda-botao);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--cu-tinta);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.cu .cu-consentimento-botao:hover {
+  border-color: var(--cu-destaque);
+  background: var(--cu-lateral);
+}
+.cu .cu-consentimento-agora {
+  margin: 0;
+  font-size: 12px;
+  color: var(--cu-rotulo);
+}
+
+/* ------------------------------------------------------------ movimento */
+/* A entrada desfocada, o efeito que dá o tom: cada bloco entra desfocado e
+   ganha foco uma vez, como fotografia revelando. Só quando o JS está vivo
+   (data-animada) — sem ele, nada fica escondido. */
+.cu[data-animada] [data-focar] {
+  transition: opacity 0.8s ease, filter 0.8s ease, box-shadow 0.25s ease,
+    border-color 0.25s ease, transform 0.25s ease;
+}
+.cu[data-animada] [data-focar][data-antes] {
+  opacity: 0;
+  filter: blur(14px);
+}
+
+@keyframes cu-girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes cu-entrar {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* movimento reduzido: nada anima e nada entra desfocado; o giro do
+   "Enviando" continua, porque é o aviso de que algo está acontecendo */
+@media (prefers-reduced-motion: reduce) {
+  html:has(.cu) {
+    scroll-behavior: auto;
+  }
+  .cu *,
+  .cu *::before,
+  .cu *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .cu .cu-giro {
+    animation-duration: 0.8s !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
+/* o link de privacidade do rodapé: a cor de link do desenho, só menor */
+.cu .cu-rodape-link {
+  font-size: 12.5px;
+}

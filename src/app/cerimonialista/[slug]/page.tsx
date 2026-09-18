@@ -20,6 +20,7 @@ import { createClient } from "@/lib/supabase/server";
 import { appUrl } from "@/lib/app-url";
 import { PaginaCerimonialista } from "@/components/comercial/pagina/PaginaCerimonialista";
 import { PaginaCapitulos } from "@/components/comercial/pagina/capitulos/PaginaCapitulos";
+import { PaginaCuradoria } from "@/components/comercial/pagina/curadoria/PaginaCuradoria";
 import {
   modeloDaVitrine,
   type PaginaPublica,
@@ -52,12 +53,22 @@ const carregarPrevia = cache(async (ref: string): Promise<PaginaPublica | null> 
   const empresaId = (endereco as { empresa_id?: string } | null)?.empresa_id;
   if (!empresaId) return null;
 
-  const [pagRes, empRes, fotosRes, depRes, atualRes] = await Promise.all([
-    supabase
+  // o retrato é da 165 reaplicada em 18/09/2026: sem a coluna, a prévia
+  // continua de pé, só sem ele
+  const COLUNAS =
+    "titulo, posicionamento, para_quem, cidade, tipos_atendidos, servicos, motivos, whatsapp, instagram, pixel_meta, modelo";
+  const lerPagina = async () => {
+    const comRetrato = await supabase
       .from("empresa_pagina")
-      .select("titulo, posicionamento, para_quem, cidade, tipos_atendidos, servicos, motivos, whatsapp, instagram, pixel_meta, modelo")
+      .select(`${COLUNAS}, retrato_url`)
       .eq("empresa_id", empresaId)
-      .maybeSingle(),
+      .maybeSingle();
+    if (!comRetrato.error) return comRetrato;
+    return supabase.from("empresa_pagina").select(COLUNAS).eq("empresa_id", empresaId).maybeSingle();
+  };
+
+  const [pagRes, empRes, fotosRes, depRes, atualRes] = await Promise.all([
+    lerPagina(),
     supabase.from("empresas").select("nome, logo_url").eq("id", empresaId).maybeSingle(),
     supabase
       .from("portfolio_fotos")
@@ -99,6 +110,7 @@ const carregarPrevia = cache(async (ref: string): Promise<PaginaPublica | null> 
     instagram: string | null;
     pixel_meta: string | null;
     modelo: string | null;
+    retrato_url?: string | null;
   } | null;
   const atual = (atualRes.data as { slug?: string } | null)?.slug;
   if (!pag || !atual) return null;
@@ -119,18 +131,18 @@ const carregarPrevia = cache(async (ref: string): Promise<PaginaPublica | null> 
     instagram: pag.instagram,
     pixel_meta: pag.pixel_meta,
     modelo: pag.modelo,
+    retrato_url: pag.retrato_url ?? null,
     fotos: ((fotosRes.data ?? []) as PaginaPublica["fotos"]),
     depoimentos: ((depRes.data ?? []) as PaginaPublica["depoimentos"]),
   };
 });
 
-/** O desenho que ela escolheu; os dados são os mesmos nos dois. */
+/** O desenho que ela escolheu; os dados são os mesmos em todos. */
 function Vitrine(props: { pagina: PaginaPublica; contar: boolean; previa: boolean }) {
-  return modeloDaVitrine(props.pagina.modelo) === "capitulos" ? (
-    <PaginaCapitulos {...props} />
-  ) : (
-    <PaginaCerimonialista {...props} />
-  );
+  const modelo = modeloDaVitrine(props.pagina.modelo);
+  if (modelo === "curadoria") return <PaginaCuradoria {...props} />;
+  if (modelo === "capitulos") return <PaginaCapitulos {...props} />;
+  return <PaginaCerimonialista {...props} />;
 }
 
 /** Quem abre é da empresa dona do endereço? (a RLS responde) */

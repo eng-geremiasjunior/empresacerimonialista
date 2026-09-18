@@ -28,7 +28,7 @@ export function PixelDaVitrine({
   slug: string;
   nomeEmpresa: string;
   /** a folha do modelo: "vt" (Clássico) ou "cp" (Capítulos) */
-  prefixo?: "vt" | "cp";
+  prefixo?: "vt" | "cp" | "cu";
 }) {
   // nada no servidor nem no primeiro desenho: a escolha mora no navegador
   const [decisao, setDecisao] = useState<DecisaoDoPixel | null>(null);
@@ -83,7 +83,7 @@ export function PixelDaVitrine({
 }
 
 /** O link do rodapé que reabre a escolha. */
-export function PreferenciasDoPixel({ prefixo = "vt" }: { prefixo?: "vt" | "cp" }) {
+export function PreferenciasDoPixel({ prefixo = "vt" }: { prefixo?: "vt" | "cp" | "cu" }) {
   return (
     <button
       type="button"

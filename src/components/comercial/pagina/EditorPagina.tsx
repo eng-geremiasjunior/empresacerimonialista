@@ -12,6 +12,8 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Check, Copy, ExternalLink, Plus, X } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { comprimirFoto, validarArquivo } from "@/lib/portfolio";
 import {
   definirEndereco,
   despublicarPagina,
@@ -62,6 +64,8 @@ type Depoimento = {
 
 type Props = {
   base: string;
+  /** a pasta do retrato no balde de fotos */
+  empresaId: string;
   nomeEmpresa: string;
   logoUrl: string | null;
   emailAviso: string | null;
@@ -83,6 +87,8 @@ type Props = {
     instagram: string;
     pixelMeta: string;
     modelo: ModeloDaVitrine;
+    /** o retrato dela (modelo Curadoria) */
+    retratoUrl: string | null;
   };
   fotos: Foto[];
   depoimentos: Depoimento[];
@@ -97,6 +103,7 @@ function dataCurta(iso: string | null): string {
 
 export function EditorPagina({
   base,
+  empresaId,
   nomeEmpresa,
   logoUrl,
   emailAviso,
@@ -131,6 +138,9 @@ export function EditorPagina({
   const [instagram, setInstagram] = useState(inicial.instagram);
   const [pixelMeta, setPixelMeta] = useState(inicial.pixelMeta);
   const [modelo, setModelo] = useState<ModeloDaVitrine>(inicial.modelo);
+  const [retratoUrl, setRetratoUrl] = useState<string | null>(inicial.retratoUrl);
+  const [enviandoRetrato, setEnviandoRetrato] = useState(false);
+  const [modeloAmpliado, setModeloAmpliado] = useState<ModeloDaVitrine | null>(null);
   const [fotos, setFotos] = useState(fotosIniciais);
   const [depoimentos, setDepoimentos] = useState(depoimentosIniciais);
 
@@ -147,6 +157,7 @@ export function EditorPagina({
     instagram: inicial.instagram,
     pixelMeta: inicial.pixelMeta,
     modelo: inicial.modelo,
+    retratoUrl: inicial.retratoUrl,
   });
 
   const [aviso, setAviso] = useState<{ tipo: "ok" | "erro"; texto: string; onde: string } | null>(
@@ -171,6 +182,7 @@ export function EditorPagina({
     instagram: normalizarInstagram(instagram) ?? instagram.trim(),
     pixelMeta: normalizarPixelMeta(pixelMeta) ?? pixelMeta.trim(),
     modelo,
+    retratoUrl,
   };
 
   // O WhatsApp que veio do Catálogo, intocado, não é "mudança": é o valor
@@ -250,6 +262,9 @@ export function EditorPagina({
       instagram: conteudoAtual.instagram || null,
       pixelMeta: conteudoAtual.pixelMeta || null,
       modelo: conteudoAtual.modelo,
+      ...(conteudoAtual.retratoUrl !== salvoConteudo.retratoUrl
+        ? { retratoUrl: conteudoAtual.retratoUrl }
+        : {}),
     });
     if ("error" in r) {
       mostrar("salvar", "erro", r.error);
@@ -259,6 +274,43 @@ export function EditorPagina({
     // colou o código inteiro da Meta: o campo passa a mostrar só o número
     setPixelMeta(conteudoAtual.pixelMeta);
     return true;
+  }
+
+  /**
+   * O retrato vai para o balde de fotos, na pasta da empresa (a mesma
+   * credencial do portfólio), comprimido no navegador. Fica valendo quando
+   * ela salva — até lá é só a prévia do campo.
+   */
+  async function enviarRetrato(arquivo: File) {
+    const invalido = validarArquivo(arquivo);
+    if (invalido) {
+      mostrar("retrato", "erro", `Esta foto não serve: ${invalido}.`);
+      return;
+    }
+    setAviso(null);
+    setEnviandoRetrato(true);
+    try {
+      const blob = await comprimirFoto(arquivo);
+      if (blob.size > 5 * 1024 * 1024) {
+        mostrar("retrato", "erro", "A foto ainda passa de 5 MB depois de comprimida. Tente outra.");
+        return;
+      }
+      const supabase = createClient();
+      const ext = blob.type === "image/jpeg" ? "jpg" : arquivo.name.split(".").pop() || "jpg";
+      const caminho = `${empresaId}/retrato-${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("portfolio-fotos")
+        .upload(caminho, blob, { contentType: blob.type, upsert: false });
+      if (error) {
+        mostrar("retrato", "erro", "Não foi possível enviar a foto. Tente de novo.");
+        return;
+      }
+      const { data } = supabase.storage.from("portfolio-fotos").getPublicUrl(caminho);
+      setRetratoUrl(data.publicUrl);
+      mostrar("retrato", "ok", "Foto pronta. Salve para ela entrar na vitrine.");
+    } finally {
+      setEnviandoRetrato(false);
+    }
   }
 
   function salvar() {
@@ -480,32 +532,64 @@ export function EditorPagina({
         <p className="mt-1 text-sm text-gray-600">
           Os mesmos textos, fotos e depoimentos; muda só o desenho.
         </p>
-        <div role="radiogroup" aria-label="Modelo da vitrine" className="mt-4 grid gap-3 sm:grid-cols-2">
+        {/* A miniatura é a página de verdade, fotografada com uma vitrine de
+            exemplo: ela vê o desenho ali mesmo, sem sair do editor. */}
+        <div role="radiogroup" aria-label="Modelo da vitrine" className="mt-4 grid gap-3 sm:grid-cols-3">
           {MODELOS_DA_VITRINE.map((m) => {
             const ativo = m.codigo === modelo;
             return (
-              <label
+              <div
                 key={m.codigo}
-                className={`flex cursor-pointer gap-3 rounded-lg border p-4 transition-colors ${
-                  ativo ? "border-gray-900 bg-gray-50" : "border-gray-200 hover:bg-gray-50"
+                className={`flex flex-col overflow-hidden rounded-lg border transition-colors ${
+                  ativo ? "border-gray-900 ring-1 ring-gray-900" : "border-gray-200 hover:border-gray-400"
                 }`}
               >
-                <input
-                  type="radio"
-                  name="pagina-modelo"
-                  value={m.codigo}
-                  checked={ativo}
-                  onChange={() => setModelo(m.codigo)}
-                  className="mt-0.5 h-4 w-4 shrink-0 accent-gray-900"
-                />
-                <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-gray-900">{m.nome}</span>
-                  <span className="mt-0.5 block text-sm text-gray-600">{m.resumo}</span>
-                </span>
-              </label>
+                <button
+                  type="button"
+                  onClick={() => setModeloAmpliado(m.codigo)}
+                  className="group relative block aspect-[16/10] w-full overflow-hidden bg-gray-100"
+                  aria-label={`Ver o modelo ${m.nome} maior`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={m.miniatura}
+                    alt=""
+                    loading="lazy"
+                    className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-[1.02]"
+                  />
+                  <span className="absolute bottom-2 right-2 rounded-md bg-white/90 px-2 py-1 text-[11px] font-medium text-gray-700 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+                    Ver maior
+                  </span>
+                </button>
+                <label className="flex flex-1 cursor-pointer gap-3 p-3.5">
+                  <input
+                    type="radio"
+                    name="pagina-modelo"
+                    value={m.codigo}
+                    checked={ativo}
+                    onChange={() => setModelo(m.codigo)}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-gray-900"
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-gray-900">{m.nome}</span>
+                    <span className="mt-0.5 block text-xs leading-relaxed text-gray-600">{m.resumo}</span>
+                  </span>
+                </label>
+              </div>
             );
           })}
         </div>
+        {modeloAmpliado && (
+          <ModeloAmpliado
+            codigo={modeloAmpliado}
+            escolhido={modeloAmpliado === modelo}
+            onEscolher={() => {
+              setModelo(modeloAmpliado);
+              setModeloAmpliado(null);
+            }}
+            onFechar={() => setModeloAmpliado(null)}
+          />
+        )}
         {slug && modelo !== salvoConteudo.modelo && (
           <p className="mt-3 text-xs text-gray-500">Salve para ver a vitrine no modelo novo.</p>
         )}
@@ -546,6 +630,53 @@ export function EditorPagina({
             {posicionamento.length}/{LIMITES.posicionamento}
           </p>
         </div>
+
+        {modelo === "curadoria" && (
+          <div>
+            <span className={labelClass}>Retrato</span>
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="h-24 w-20 shrink-0 overflow-hidden rounded-t-full rounded-b-md border border-gray-200 bg-gray-50">
+                {retratoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={retratoUrl} alt="Seu retrato" className="h-full w-full object-cover" />
+                ) : null}
+              </div>
+              <div className="min-w-0 flex-1 space-y-2">
+                <p className="text-sm text-gray-600">
+                  Uma foto sua ou da equipe. Com ela, a vitrine ganha o bloco &ldquo;Quem assina&rdquo;;
+                  sem ela, a apresentação fica na abertura.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <label className={`${botaoSecundario} cursor-pointer`}>
+                    {enviandoRetrato ? "Enviando…" : retratoUrl ? "Trocar a foto" : "Enviar uma foto"}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="sr-only"
+                      disabled={enviandoRetrato}
+                      onChange={(e) => {
+                        const arquivo = e.target.files?.[0];
+                        e.target.value = "";
+                        if (arquivo) enviarRetrato(arquivo);
+                      }}
+                    />
+                  </label>
+                  {retratoUrl && (
+                    <button
+                      type="button"
+                      className={botaoSecundario}
+                      onClick={() => setRetratoUrl(null)}
+                      disabled={enviandoRetrato}
+                    >
+                      Tirar
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+            {avisoEm("retrato")}
+          </div>
+        )}
 
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
@@ -889,6 +1020,74 @@ export function EditorPagina({
             {pendente ? "Salvando…" : "Salvar"}
           </button>
         )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * O modelo maior, sem sair do editor: a página de exemplo rolando dentro de
+ * um quadro, e o botão para escolher dali mesmo.
+ */
+function ModeloAmpliado({
+  codigo,
+  escolhido,
+  onEscolher,
+  onFechar,
+}: {
+  codigo: ModeloDaVitrine;
+  escolhido: boolean;
+  onEscolher: () => void;
+  onFechar: () => void;
+}) {
+  const m = MODELOS_DA_VITRINE.find((x) => x.codigo === codigo);
+  if (!m) return null;
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      role="presentation"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onFechar();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") onFechar();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Modelo ${m.nome}`}
+        className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-xl"
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-3">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-gray-900">{m.nome}</p>
+            <p className="truncate text-xs text-gray-500">{m.resumo}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onFechar}
+            className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+            aria-label="Fechar"
+            autoFocus
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto bg-gray-50">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={m.miniatura.replace(/\.jpg$/, "-pagina.jpg")} alt={`Exemplo do modelo ${m.nome}`} className="block w-full" />
+        </div>
+        <div className="flex items-center justify-end gap-2 border-t border-gray-100 px-5 py-3">
+          <p className="mr-auto text-xs text-gray-500">Exemplo com uma vitrine de demonstração.</p>
+          {escolhido ? (
+            <span className="text-sm font-medium text-gray-700">Este é o seu modelo</span>
+          ) : (
+            <button type="button" onClick={onEscolher} className={botaoPrincipal}>
+              Usar este modelo
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
