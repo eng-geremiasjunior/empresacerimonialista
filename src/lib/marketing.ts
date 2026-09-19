@@ -30,10 +30,9 @@
 // porque o hash na URL É a chave de acesso.
 
 // /criar-conta entrou em 18/09/2026: é onde o anúncio do teste termina, e
-// sem o pixel ali a Meta não via nem a visita nem o cadastro — o
-// CompleteRegistration saía só pelo servidor, e as campanhas de
-// conversão rodaram duas semanas com "Resultados" zerado. Passa no mesmo
-// teste: o endereço não carrega credencial.
+// sem o pixel ali a Meta não via a visita, e o CompleteRegistration saía
+// só pelo servidor. Passa no mesmo teste: o endereço não carrega
+// credencial.
 
 /** As telas onde a medição pode rodar. Comparação exata, sem prefixo. */
 const TELAS_DE_MARKETING = new Set(["/login", "/planos", "/precos", "/criar-conta"]);
@@ -200,8 +199,10 @@ export function contaCriada(idDoEvento?: string): void {
     // Com o id, o evento do navegador e o do servidor (conversoes.ts,
     // mesmo `conta:<empresa>`) viram UM só na Meta: um casa o clique pelo
     // cookie do pixel, o outro chega mesmo com bloqueador de anúncio.
-    if (idDoEvento) window.fbq?.("track", "CompleteRegistration", {}, { eventID: idDoEvento });
-    else window.fbq?.("track", "CompleteRegistration");
+    // moeda com valor zero: sem ela a Meta acusa "dados de moeda com problema"
+    const dados = { currency: "BRL", value: 0 };
+    if (idDoEvento) window.fbq?.("track", "CompleteRegistration", dados, { eventID: idDoEvento });
+    else window.fbq?.("track", "CompleteRegistration", dados);
   } catch {
     // medição nunca derruba cadastro: se o bloqueador de anúncio comeu o
     // script, a conta continua sendo criada e ninguém fica sabendo disso

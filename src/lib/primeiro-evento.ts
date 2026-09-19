@@ -86,6 +86,9 @@ async function avisar(eventoId: string): Promise<void> {
   await registrarConversao({
     tipo: "primeiro_evento",
     email,
+    telefone: (usuario?.user?.user_metadata?.whatsapp as string | undefined) ?? null,
+    nome: (usuario?.user?.user_metadata?.name as string | undefined) ?? null,
+    idExterno: empresaId,
     idDoEvento: `primeiro-evento:${empresaId}`,
     origem: {
       fbp: (origem?.fbp as string | null) ?? null,

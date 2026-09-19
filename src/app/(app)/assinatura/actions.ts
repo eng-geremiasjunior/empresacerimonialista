@@ -347,6 +347,8 @@ export async function assinarCriandoConta(
     await registrarConversao({
       tipo: "conta_criada",
       email,
+      nome,
+      idExterno: empresaId,
       idDoEvento: `conta:${empresaId}`,
       origem: {
         fbp: o?.fbp ?? null,
@@ -592,6 +594,7 @@ async function assinarPara(
     await registrarConversao({
       tipo: "checkout_iniciado",
       email: ctx.email,
+      idExterno: ctx.empresaId,
       valor: valorCobrado,
       idDoEvento: `checkout:${ctx.empresaId}:${plano.codigo}:${hojeBR()}`,
       origem: {
@@ -754,6 +757,7 @@ async function assinarPara(
     await registrarConversao({
       tipo: "assinatura",
       email: ctx.email,
+      idExterno: ctx.empresaId,
       // o valor da conversão é o que foi COBRADO, não o do catálogo: é
       // dinheiro que entrou, e é por ele que a Meta e o Google otimizam
       valor: valorCobrado,

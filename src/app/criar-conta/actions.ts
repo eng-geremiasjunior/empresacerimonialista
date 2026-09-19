@@ -257,6 +257,9 @@ export async function criarContaDeTeste(dados: {
     await registrarConversao({
       tipo: "conta_criada",
       email,
+      telefone: whatsapp,
+      nome,
+      idExterno: empresaId,
       idDoEvento: `conta:${empresaId}`,
       origem: {
         fbp: o?.fbp ?? null,

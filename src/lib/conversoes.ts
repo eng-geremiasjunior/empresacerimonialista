@@ -65,7 +65,35 @@ export type Conversao = {
   /** para a plataforma não contar duas vezes o mesmo fato */
   idDoEvento: string;
   origem?: OrigemDoClique;
+  /**
+   * O que ela já deu no cadastro e que faz a Meta achar a pessoa certa
+   * (qualidade da correspondência: 7,7/10 só com e-mail e cookie, em
+   * 18/09/2026). Tudo sai em SHA-256, como o e-mail — nada legível.
+   */
+  telefone?: string | null;
+  nome?: string | null;
+  /** a empresa: o mesmo cliente em todos os eventos dele (external_id) */
+  idExterno?: string | null;
 };
+
+/** Telefone no formato da Meta: só dígitos, com o 55 na frente. */
+function telefoneParaMeta(valor: string | null | undefined): string | null {
+  const d = (valor ?? "").replace(/\D/g, "");
+  if (d.length === 10 || d.length === 11) return `55${d}`;
+  if ((d.length === 12 || d.length === 13) && d.startsWith("55")) return d;
+  return null;
+}
+
+/** Nome no formato da Meta: minúsculo, sem acento, sem pontuação. */
+function nomeParaMeta(valor: string | null | undefined): string | null {
+  const limpo = (valor ?? "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, "")
+    .trim();
+  return limpo || null;
+}
 
 // A venda sai como `Purchase`, não como `Subscribe` (07/09/2026).
 //
@@ -112,6 +140,15 @@ async function paraMeta(c: Conversao): Promise<void> {
   if (o.fbc) usuario.fbc = o.fbc;
   if (o.ip) usuario.client_ip_address = o.ip;
   if (o.userAgent) usuario.client_user_agent = o.userAgent;
+  const telefone = embaralhar(telefoneParaMeta(c.telefone));
+  if (telefone) usuario.ph = [telefone];
+  const partes = nomeParaMeta(c.nome)?.split(/\s+/) ?? [];
+  const primeiro = embaralhar(partes[0]);
+  if (primeiro) usuario.fn = [primeiro];
+  const ultimo = partes.length > 1 ? embaralhar(partes[partes.length - 1]) : null;
+  if (ultimo) usuario.ln = [ultimo];
+  const externo = embaralhar(c.idExterno);
+  if (externo) usuario.external_id = [externo];
   if (Object.keys(usuario).length === 0) return; // sem nada para casar, não adianta enviar
 
   const evento: Record<string, unknown> = {
@@ -123,9 +160,10 @@ async function paraMeta(c: Conversao): Promise<void> {
     action_source: "website",
     user_data: usuario,
   };
-  if (typeof c.valor === "number") {
-    evento.custom_data = { currency: "BRL", value: c.valor };
-  }
+  // A moeda vai sempre, com valor zero quando o fato não é dinheiro: sem
+  // ela a Meta marcava o CompleteRegistration como "dados de moeda com
+  // problema" (diagnóstico do conjunto de dados, 18/09/2026).
+  evento.custom_data = { currency: "BRL", value: typeof c.valor === "number" ? c.valor : 0 };
 
   const r = await fetch(`${META_API}/${pixel}/events`, {
     method: "POST",
