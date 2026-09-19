@@ -9,6 +9,7 @@
 import { enviarViaResend } from "@/lib/email";
 import { linkPublico } from "@/lib/app-url";
 import { inicioDoDiaBR } from "@/lib/tempo";
+import { conviteCom, temNome } from "@/lib/rsvp-convite";
 
 const MESES = [
   "janeiro", "fevereiro", "março", "abril", "maio", "junho",
@@ -54,6 +55,13 @@ function faltam(dataIso: string): string {
  * "falta pouco" com os detalhes na mão; quem não respondeu recebe um
  * empurrão gentil. Nenhuma das duas cobra.
  */
+/** "no casamento de <strong>Camila e Rodrigo</strong>"; sem nome, "no casamento". */
+function paraQuem(d: EmailConvidado): string {
+  return temNome(d.anfitrioes)
+    ? `${d.convitePara} <strong>${d.anfitrioes}</strong>`
+    : conviteCom(d.convitePara, null);
+}
+
 export async function enviarLembreteConvidado(
   d: EmailConvidado
 ): Promise<{ ok: boolean; error?: string }> {
@@ -64,8 +72,8 @@ export async function enviarLembreteConvidado(
   const quanto = faltam(d.data);
 
   const assunto = d.confirmado
-    ? `${quanto.charAt(0).toUpperCase() + quanto.slice(1)} — ${d.convitePara} ${d.anfitrioes}`
-    : `Ainda dá tempo de confirmar — ${d.convitePara} ${d.anfitrioes}`;
+    ? `${quanto.charAt(0).toUpperCase() + quanto.slice(1)} — ${conviteCom(d.convitePara, d.anfitrioes)}`
+    : `Ainda dá tempo de confirmar — ${conviteCom(d.convitePara, d.anfitrioes)}`;
 
   const miolo = d.confirmado
     ? `<p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#463E36">
@@ -74,8 +82,7 @@ export async function enviarLembreteConvidado(
          Será uma alegria ter você lá.
        </p>`
     : `<p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#463E36">
-         ${quanto.charAt(0).toUpperCase() + quanto.slice(1)} para ${d.convitePara}
-         <strong>${d.anfitrioes}</strong>, e ainda não recebemos sua resposta.
+         ${quanto.charAt(0).toUpperCase() + quanto.slice(1)} para ${paraQuem(d)}, e ainda não recebemos sua resposta.
          Se puder avisar, ajuda muito na organização — e adoraríamos ter você lá.
        </p>`;
 
@@ -118,8 +125,8 @@ export async function enviarEmailConvidado(
   const onde = [d.local, d.cidade].filter(Boolean).join(" · ");
 
   const assunto = d.confirmado
-    ? `Presença confirmada — ${d.convitePara} ${d.anfitrioes}`
-    : `Recebemos sua resposta — ${d.convitePara} ${d.anfitrioes}`;
+    ? `Presença confirmada — ${conviteCom(d.convitePara, d.anfitrioes)}`
+    : `Recebemos sua resposta — ${conviteCom(d.convitePara, d.anfitrioes)}`;
 
   // Tom do portal, sem virar peça de marketing: quem recebe já foi
   // convidado, então isto é um comprovante, não um convite.
@@ -134,8 +141,8 @@ export async function enviarEmailConvidado(
     <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#463E36">
       ${
         d.confirmado
-          ? `Sua presença está confirmada${d.pessoas > 1 ? ` para ${d.pessoas} pessoas` : ""} ${d.convitePara} <strong>${d.anfitrioes}</strong>.`
-          : `Recebemos seu aviso de que não poderá comparecer ${d.convitePara} <strong>${d.anfitrioes}</strong>. Obrigado por responder.`
+          ? `Sua presença está confirmada${d.pessoas > 1 ? ` para ${d.pessoas} pessoas` : ""} ${paraQuem(d)}.`
+          : `Recebemos seu aviso de que não poderá comparecer ${paraQuem(d)}. Obrigado por responder.`
       }
     </p>
 

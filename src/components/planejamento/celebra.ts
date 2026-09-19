@@ -4,6 +4,7 @@
 
 import type { CSSProperties } from "react";
 import { inicioDoDiaBR } from "@/lib/tempo";
+import { rotuloDaOpcao } from "@/lib/rotulo-da-opcao";
 
 export const C = {
   canvas: "#E4E5E7",
@@ -161,9 +162,8 @@ export function rotuloArquetipo(
   const achado = opcoes.find((a) => a.valor === valor)?.rotulo;
   if (achado) return achado;
   // token sem opção no método (valor antigo, seed ainda não rodou):
-  // humaniza em vez de mostrar o cru
-  const texto = valor.replace(/_/g, " ");
-  return texto.charAt(0).toUpperCase() + texto.slice(1);
+  // o mesmo nome que o portal usa, nunca o cru
+  return rotuloDaOpcao(valor);
 }
 
 // Id curto exibível (#a1b2) — os ids reais são uuid.

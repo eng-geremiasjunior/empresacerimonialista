@@ -11,6 +11,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { enviarEmailConvidado } from "@/lib/email-convidado";
+import { anfitrioesDoConvite } from "@/lib/anfitrioes-do-convite";
 import { qrSvg } from "@/lib/qr";
 import { publicBase } from "@/lib/app-url";
 import { linkDaCredencial } from "@/lib/recepcao";
@@ -188,7 +189,7 @@ export async function POST(
     const envio = await enviarEmailConvidado({
       para: corpo.email,
       nome: corpo.nome ?? "",
-      anfitrioes: evento.anfitrioes ?? "os noivos",
+      anfitrioes: await anfitrioesDoConvite(evento.anfitrioes, { rsvpHash: params.hash }),
       convitePara: CONVITE_PARA[evento.evento_tipo ?? ""] ?? "no evento de",
       data: evento.evento_data ?? "",
       hora: evento.evento_hora ?? null,

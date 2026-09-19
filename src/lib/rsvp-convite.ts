@@ -30,6 +30,33 @@ export function convitePara(tipo: string): string {
   return CONVITE_PARA[tipo] ?? "o evento de";
 }
 
+// O que as consultas públicas (092, 094, 095, 128, 129) põem no lugar do
+// nome quando o evento não tem nome. Não é nome de ninguém.
+const SEM_NOME = new Set(["os noivos", "os anfitriões"]);
+
+/** O evento tem nome de verdade (e não o "sem nome" das consultas)? */
+export function temNome(anfitrioes: string | null | undefined): boolean {
+  const n = anfitrioes?.trim().toLowerCase();
+  return Boolean(n) && !SEM_NOME.has(n!);
+}
+
+/**
+ * A frase do convite com o nome: "o casamento de Camila e Rodrigo". Sem
+ * nome, a frase para antes do "de" ("o casamento") — nunca "o casamento
+ * de os noivos". Serve às duas vozes: "o casamento de" das páginas e "no
+ * casamento de" dos e-mails.
+ */
+export function conviteCom(convite: string, anfitrioes: string | null | undefined): string {
+  return temNome(anfitrioes) ? `${convite} ${anfitrioes!.trim()}` : convite.replace(/ de$/, "");
+}
+
+/** Para título e assunto: o nome, ou a frase sem nome com maiúscula. */
+export function nomeOuConvite(convite: string, anfitrioes: string | null | undefined): string {
+  if (temNome(anfitrioes)) return anfitrioes!.trim();
+  const frase = conviteCom(convite, null);
+  return frase.charAt(0).toUpperCase() + frase.slice(1);
+}
+
 /** Data e hora numa linha só, do jeito que se lê num convite. */
 export function quandoLegivel(data: string, hora: string | null): string {
   return dataLonga(data) + (hora ? ` · ${hora.slice(0, 5)}` : "");

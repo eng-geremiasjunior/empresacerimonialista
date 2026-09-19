@@ -36,6 +36,7 @@ import { BlocoGuiaEstilo, type AcoesGuia } from "./BlocoGuiaEstilo";
 import type { Curadoria } from "@/lib/supabase/curadoria";
 import type { GuiaDeEstilo } from "@/lib/guia-shared";
 import { rotuloConversaCom, rotuloResponsavel } from "@/lib/papel";
+import { rotuloDaOpcao } from "@/lib/rotulo-da-opcao";
 
 /**
  * O guia de estilo é o produto DESTA decisão — não é área nova do
@@ -259,7 +260,7 @@ function CampoEscolha({
         <option value="">selecionar</option>
         {(campo.opcoes ?? []).map((o) => (
           <option key={o} value={o}>
-            {rotulos?.[o] ?? o.replace(/_/g, " ")}
+            {rotulos?.[o] ?? rotuloDaOpcao(o)}
           </option>
         ))}
       </select>
@@ -1404,7 +1405,7 @@ export function resumoCampos(
     else if (c.tipo === "fornecedor") {
       const s = suppliers.find((s) => s.id === v);
       if (s) partes.push(s.name);
-    } else if (c.tipo === "escolha") partes.push(String(v).replace(/_/g, " "));
+    } else if (c.tipo === "escolha") partes.push(rotuloDaOpcao(String(v)));
     else if (c.tipo === "anexo") partes.push(String(v).split("/").pop() ?? "anexo");
     else partes.push(String(v));
     if (partes.length >= 2) break;

@@ -22,6 +22,7 @@ import { createClient } from "@/lib/supabase/server";
 import { hojeBR, inicioDoDiaBR, somarDias } from "@/lib/tempo";
 import { categoriaLabel } from "@/lib/fornecedores-shared";
 import { rotuloResponsavel } from "@/lib/papel";
+import { rotuloDaOpcao } from "@/lib/rotulo-da-opcao";
 
 export type ContextoEvento = {
   ok: boolean;
@@ -195,7 +196,7 @@ export async function montarContextoEvento(
     else if (c.tipo === "moeda") v = c.valor_numero !== null ? moeda(Number(c.valor_numero)) : null;
     else if (c.tipo === "sim_nao") v = c.valor_bool === null ? null : c.valor_bool ? "sim" : "não";
     else if (c.tipo === "data") v = c.valor_data ? dataBR(c.valor_data) : null;
-    else if (c.tipo === "escolha") v = c.valor_opcao ? c.valor_opcao.replaceAll("_", " ") : null;
+    else if (c.tipo === "escolha") v = c.valor_opcao ? rotuloDaOpcao(c.valor_opcao) : null;
     else v = c.valor_texto;
     if (v === null) continue;
     const arr = respostasPorDec.get(c.evento_decisao_id) ?? [];

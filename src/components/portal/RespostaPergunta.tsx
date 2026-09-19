@@ -14,6 +14,7 @@ import { mascararDinheiro } from "@/lib/format";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { rotuloDaOpcao } from "@/lib/rotulo-da-opcao";
 import type { PerguntaDoPortal } from "@/lib/supabase/portal";
 import { Rotulo } from "./Nucleo";
 import { prazoPortal } from "./datas";
@@ -180,7 +181,7 @@ export function RespostaPergunta({
           <option value="">— escolher —</option>
           {(pergunta.opcoes ?? []).map((o) => (
             <option key={o} value={o}>
-              {o.replaceAll("_", " ")}
+              {rotuloDaOpcao(o)}
             </option>
           ))}
         </select>

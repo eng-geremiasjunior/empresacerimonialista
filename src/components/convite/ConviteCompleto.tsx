@@ -14,7 +14,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ComoChegar } from "@/components/ComoChegar";
-import { convitePara, dataLonga, quandoLegivel } from "@/lib/rsvp-convite";
+import {
+  conviteCom,
+  convitePara,
+  dataLonga,
+  nomeOuConvite,
+  quandoLegivel,
+  temNome,
+} from "@/lib/rsvp-convite";
 import type { SitePublico } from "@/lib/site-publico-tipos";
 import { RsvpConvite } from "@/components/convite/RsvpConvite";
 import {
@@ -65,7 +72,7 @@ export function ConviteCompleto({
   const onde = [evento.local, evento.cidade].filter(Boolean).join(" · ");
   const enderecoMapa = [evento.local, evento.cidade].filter(Boolean).join(", ");
   const hospedagens = espaco?.hospedagens ?? [];
-  const tituloAgenda = `${convitePara(evento.tipo)} ${evento.anfitrioes}`
+  const tituloAgenda = conviteCom(convitePara(evento.tipo), evento.anfitrioes)
     .replace(/^o /, "")
     .replace(/^a /, "");
 
@@ -98,7 +105,9 @@ export function ConviteCompleto({
           <div className="cv-envelope-moldura" />
           <div className="cv-envelope-conteudo">
             <div className="cv-envelope-eyebrow">Convite</div>
-            <div className="cv-envelope-nomes">{evento.anfitrioes}</div>
+            <div className="cv-envelope-nomes">
+              {nomeOuConvite(convitePara(evento.tipo), evento.anfitrioes)}
+            </div>
             <div className="cv-envelope-filete" />
             <div className="cv-envelope-quando">
               {dataLonga(evento.data)}
@@ -124,8 +133,15 @@ export function ConviteCompleto({
         <div className="cv-capa-veu" />
         <div className="cv-capa-conteudo">
           <div className="cv-capa-eyebrow">Você está convidado para</div>
-          <div className="cv-capa-para">{convitePara(evento.tipo)}</div>
-          <h1 className="cv-capa-nomes">{evento.anfitrioes}</h1>
+          {/* sem nome, a frase inteira vira o título: "o casamento" */}
+          {temNome(evento.anfitrioes) ? (
+            <>
+              <div className="cv-capa-para">{convitePara(evento.tipo)}</div>
+              <h1 className="cv-capa-nomes">{evento.anfitrioes}</h1>
+            </>
+          ) : (
+            <h1 className="cv-capa-nomes">{conviteCom(convitePara(evento.tipo), null)}</h1>
+          )}
         </div>
         <div className="cv-cartao">
           <div>
@@ -165,7 +181,9 @@ export function ConviteCompleto({
       {site?.mensagem && (
         <section className="cv-mensagem">
           <p className="cv-mensagem-texto">“{site.mensagem}”</p>
-          <div className="cv-mensagem-assinatura">{evento.anfitrioes}</div>
+          {temNome(evento.anfitrioes) && (
+            <div className="cv-mensagem-assinatura">{evento.anfitrioes}</div>
+          )}
         </section>
       )}
 

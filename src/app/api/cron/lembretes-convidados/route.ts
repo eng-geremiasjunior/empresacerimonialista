@@ -15,6 +15,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { enviarLembreteConvidado } from "@/lib/email-convidado";
+import { anfitrioesDoConvite } from "@/lib/anfitrioes-do-convite";
 
 export const dynamic = "force-dynamic";
 // Sem isto cai no padrão do plano (10s no Hobby) e um 504 mata a rotina
@@ -101,7 +102,7 @@ export async function GET(request: NextRequest) {
     const r = await enviarLembreteConvidado({
       para: c.email,
       nome: c.nome,
-      anfitrioes: c.anfitrioes,
+      anfitrioes: await anfitrioesDoConvite(c.anfitrioes, { eventoId: c.event_id }),
       convitePara: CONVITE_PARA[c.evento_tipo] ?? "o evento de",
       data: c.evento_data,
       hora: c.evento_hora,

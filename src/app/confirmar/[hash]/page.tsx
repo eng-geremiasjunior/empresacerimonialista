@@ -3,6 +3,7 @@ import { clienteAnonimoPublico } from "@/lib/supabase/anon-publico";
 import { qrSvg } from "@/lib/qr";
 import { publicBase } from "@/lib/app-url";
 import { linkDaCredencial } from "@/lib/recepcao";
+import { anfitrioesDoConvite } from "@/lib/anfitrioes-do-convite";
 import { convitePara, quandoLegivel } from "@/lib/rsvp-convite";
 
 export const dynamic = "force-dynamic";
@@ -91,7 +92,7 @@ export default async function ConfirmarPage({
         hash={params.hash}
         credencial={credencial}
         nome={convite.nome}
-        anfitrioes={convite.anfitrioes}
+        anfitrioes={await anfitrioesDoConvite(convite.anfitrioes, { conviteHash: params.hash })}
         convitePara={convitePara(convite.evento_tipo)}
         quando={quandoLegivel(convite.evento_data, convite.evento_hora)}
         onde={onde || null}

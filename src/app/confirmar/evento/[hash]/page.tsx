@@ -4,7 +4,8 @@ import { AutocadastroConvidado } from "@/components/rsvp/AutocadastroConvidado";
 import { ConviteCompleto } from "@/components/convite/ConviteCompleto";
 import { assinarMidiaDoConvite } from "@/lib/supabase/assinar-midia-convite";
 import { clienteAnonimoPublico } from "@/lib/supabase/anon-publico";
-import { convitePara, quandoLegivel } from "@/lib/rsvp-convite";
+import { anfitrioesDoConvite } from "@/lib/anfitrioes-do-convite";
+import { conviteCom, convitePara, nomeOuConvite, quandoLegivel } from "@/lib/rsvp-convite";
 import type { SitePublico } from "@/lib/site-publico-tipos";
 
 export const dynamic = "force-dynamic";
@@ -34,7 +35,11 @@ const carregarSite = cache(async (hash: string): Promise<SitePublico | null> => 
   const { data } = await clienteAnonimoPublico().rpc("site_publico", {
     p_ref: hash,
   });
-  return (data as SitePublico | null) ?? null;
+  const site = (data as SitePublico | null) ?? null;
+  if (!site) return null;
+  // sem nome no evento, o da cliente (ou nenhum): nunca "de os anfitriões"
+  const anfitrioes = await anfitrioesDoConvite(site.evento.anfitrioes, { siteRef: hash });
+  return { ...site, evento: { ...site.evento, anfitrioes } };
 });
 
 export async function generateMetadata({
@@ -44,11 +49,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const site = await carregarSite(params.hash);
   if (!site) return { title: "Confirmar presença" };
-  const titulo = `${site.evento.anfitrioes} — ${quandoLegivel(site.evento.data, site.evento.hora)}`;
+  const titulo = `${nomeOuConvite(convitePara(site.evento.tipo), site.evento.anfitrioes)} — ${quandoLegivel(site.evento.data, site.evento.hora)}`;
   return {
     title: titulo,
     description: [
-      `Você está convidado para ${convitePara(site.evento.tipo)} ${site.evento.anfitrioes}.`,
+      `Você está convidado para ${conviteCom(convitePara(site.evento.tipo), site.evento.anfitrioes)}.`,
       [site.evento.local, site.evento.cidade].filter(Boolean).join(" · "),
     ]
       .filter(Boolean)
@@ -122,7 +127,7 @@ export default async function ConfirmarEventoPage({
     <main className="rsvp-fora">
       <AutocadastroConvidado
         hash={params.hash}
-        anfitrioes={evento.anfitrioes}
+        anfitrioes={await anfitrioesDoConvite(evento.anfitrioes, { rsvpHash: params.hash })}
         convitePara={convitePara(evento.evento_tipo)}
         quando={quandoLegivel(evento.evento_data, evento.evento_hora)}
         onde={onde || null}

@@ -10,6 +10,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import { conviteCom } from "@/lib/rsvp-convite";
 
 type Confirmacao = "aguardando" | "confirmado" | "nao_vai";
 
@@ -232,7 +233,7 @@ export function ConfirmacaoConvidado({
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <span className="rsvp-nome">{nome},</span>
         <h1 className="rsvp-titulo">
-          um convite para {convitePara} {anfitrioes}
+          um convite para {conviteCom(convitePara, anfitrioes)}
         </h1>
       </div>
 

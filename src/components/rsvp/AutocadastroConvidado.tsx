@@ -10,6 +10,7 @@
 // que a pessoa muda de ideia depois.
 
 import { useState } from "react";
+import { conviteCom } from "@/lib/rsvp-convite";
 import { CredencialEntrada, type Credencial } from "./ConfirmacaoConvidado";
 
 type Passo = "escolha" | "dados" | "pronto";
@@ -146,7 +147,7 @@ export function AutocadastroConvidado({
             são convidadas. "Um convite para" diz o mesmo sem escolher. */}
         <span className="rsvp-nome">Um convite para</span>
         <h1 className="rsvp-titulo">
-          {convitePara} {anfitrioes}
+          {conviteCom(convitePara, anfitrioes)}
         </h1>
       </div>
 
