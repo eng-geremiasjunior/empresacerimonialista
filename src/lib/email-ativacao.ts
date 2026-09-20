@@ -12,7 +12,8 @@ import "server-only";
 //   dia_2       — o próximo passo DO EVENTO dela;
 //   dia_3       — a Vitrine profissional, o link que traz pedido;
 //   dia_5       — faltam 2 dias, e o preço aparece pela primeira vez;
-//   fim_teste   — último dia: assinar, com o preço e o convite.
+//   fim_teste   — véspera: amanhã acaba, com o preço e o convite;
+//   ultimo_dia  — o DIA do vencimento: assinar e continuar os eventos.
 //
 // DEPOIS DO TESTE (quem não assinou)
 //   pos_2, pos_7, pos_14, pos_21, pos_30, pos_45, pos_60, pos_90 —
@@ -47,6 +48,7 @@ import {
   htmlDia3,
   htmlDia5,
   htmlFimTeste,
+  htmlUltimoDia,
   htmlPos14,
   htmlPos2,
   htmlPos21,
@@ -67,6 +69,7 @@ export const MARCAS = [
   "dia_3",
   "dia_5",
   "fim_teste",
+  "ultimo_dia",
   "pos_2",
   "pos_7",
   "pos_14",
@@ -292,7 +295,11 @@ export async function rodarAtivacao(agora = new Date()): Promise<ResumoAtivacao>
     // quem recebe o quê, hoje
     let marca: Marca | null = null;
     if (emTeste) {
-      if (paraFim !== null && paraFim <= 1 && desdeCadastro >= 2 && !marcas.fim_teste) marca = "fim_teste";
+      // O dia do vencimento vem primeiro: quem já levou o `fim_teste` na
+      // véspera ainda precisa ouvir alguma coisa hoje, que é quando a
+      // conta fecha.
+      if (paraFim === 0 && !marcas.ultimo_dia) marca = "ultimo_dia";
+      else if (paraFim !== null && paraFim <= 1 && desdeCadastro >= 2 && !marcas.fim_teste) marca = "fim_teste";
       else if (paraFim !== null && paraFim <= 2 && desdeCadastro >= 3 && !marcas.dia_5) marca = "dia_5";
       else if (desdeCadastro >= 3 && desdeCadastro <= 5 && !marcas.dia_3) marca = "dia_3";
       else if (desdeCadastro >= 2 && desdeCadastro <= 4 && !marcas.dia_2) marca = "dia_2";
@@ -310,7 +317,7 @@ export async function rodarAtivacao(agora = new Date()): Promise<ResumoAtivacao>
     // os dados que o texto do dia precisa
     const precisaEvento = marca === "dia_1" || marca === "dia_2" || marca === "dia_5";
     const { evento, total } =
-      precisaEvento || marca === "pos_2" || marca === "pos_14" || marca === "fim_teste"
+      precisaEvento || marca === "pos_2" || marca === "pos_14" || marca === "fim_teste" || marca === "ultimo_dia"
         ? await eventoDaVez(db, e.id, hoje)
         : { evento: null, total: 0 };
     if (marca === "dia_1" && total > 0) continue; // já cadastrou: o dia 1 não faz sentido
@@ -333,6 +340,8 @@ export async function rodarAtivacao(agora = new Date()): Promise<ResumoAtivacao>
           return htmlDia5({ ...base, termina: t.teste_termina_em!, hoje, evento });
         case "fim_teste":
           return htmlFimTeste({ ...base, termina: t.teste_termina_em!, hoje, eventos: total });
+        case "ultimo_dia":
+          return htmlUltimoDia({ ...base, eventos: total, evento });
         case "pos_2":
           return htmlPos2({ ...base, eventos: total });
         case "pos_7":

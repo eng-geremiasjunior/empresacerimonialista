@@ -366,7 +366,7 @@ export function htmlDia5(d: DadosDoEmail & { termina: string; hoje: string; even
   };
 }
 
-/** O último dia do teste: o convite para assinar. */
+/** A véspera: amanhã o teste acaba. */
 export function htmlFimTeste(d: DadosDoEmail & { termina: string; hoje: string; eventos: number }): EmailPronto {
   const faltam = diasEntre(d.hoje, d.termina);
   const quando = faltam <= 0 ? "hoje" : faltam === 1 ? "amanhã" : `em ${faltam} dias`;
@@ -386,6 +386,49 @@ export function htmlFimTeste(d: DadosDoEmail & { termina: string; hoje: string; 
       destaque: { rotulo: "Para continuar", valor: PRECO },
       botao: { texto: "Assinar e continuar", caminho: destino },
       depois: RESPONDER_PARA() ? ["Precisa de mais tempo? Responda este e-mail."] : [],
+      sair: d.sair,
+    }),
+  };
+}
+
+/**
+ * O DIA do vencimento (20/09/2026).
+ *
+ * O `fim_teste` acima cai sempre na véspera — a rotina roda de manhã e a
+ * condição "falta 1 dia ou menos" já é verdadeira lá. Quem não assinou
+ * ficava dois dias sem notícia justamente no dia em que a conta fecha e
+ * no seguinte. Este é o e-mail do dia, e ele fala do trabalho que já
+ * está lá dentro: é isso que a faz voltar, não o preço.
+ */
+export function htmlUltimoDia(
+  d: DadosDoEmail & { eventos: number; evento: EventoDela | null }
+): EmailPronto {
+  const destino = "/assinatura";
+  const oQue = d.evento ? NOME_DO_EVENTO[d.evento.type] ?? "o evento" : null;
+  const primeiro =
+    d.eventos > 0
+      ? oQue && d.eventos === 1
+        ? `${maiuscula(oQue)} que você está organizando continua aqui: o roteiro do dia, os fornecedores, as tarefas e o financeiro, do jeito que você deixou.`
+        : `Os seus ${d.eventos} eventos continuam aqui: o roteiro do dia, os fornecedores, as tarefas e o financeiro, do jeito que você deixou.`
+      : "A sua conta continua aqui do jeito que você deixou.";
+  return {
+    destino,
+    assunto: "Seu teste termina hoje",
+    html: casca({
+      titulo: "Hoje é o último dia do seu teste",
+      saudacao: oi(d.nome),
+      paragrafos: [
+        primeiro,
+        d.eventos > 0
+          ? "Assinando hoje, você não recomeça nada: amanhã abre no mesmo lugar em que parou, com tudo aberto."
+          : "Assinando hoje, você segue com a conta aberta e cadastra o seu primeiro evento com calma.",
+      ],
+      destaque: { rotulo: "Para continuar", valor: PRECO },
+      botao: { texto: d.eventos > 0 ? "Assinar e continuar os meus eventos" : "Assinar e continuar", caminho: destino },
+      depois: [
+        "Sem fidelidade — cancela quando quiser, num clique.",
+        ...(RESPONDER_PARA() ? ["Precisa de mais alguns dias? Responda este e-mail."] : []),
+      ],
       sair: d.sair,
     }),
   };
@@ -555,6 +598,9 @@ export function previaDosEmails(hoje = hojeBR()) {
     dia_3: htmlDia3({ ...base, termina }),
     dia_5: htmlDia5({ ...base, termina, hoje, evento }),
     fim_teste: htmlFimTeste({ ...base, termina: somarDias(hoje, 1), hoje, eventos: 2 }),
+    ultimo_dia: htmlUltimoDia({ ...base, eventos: 1, evento }),
+    ultimo_dia_varios: htmlUltimoDia({ ...base, eventos: 3, evento }),
+    ultimo_dia_vazio: htmlUltimoDia({ ...base, eventos: 0, evento: null }),
     pos_2: htmlPos2({ ...base, eventos: 2 }),
     pos_7: htmlPos7(base),
     pos_14: htmlPos14({ ...base, eventos: 1 }),
