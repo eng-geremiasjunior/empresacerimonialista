@@ -14,6 +14,7 @@ import {
   tetoEmTexto,
 } from "@/lib/planos";
 import { ComecarAgora, type OfertaDoCheckout } from "@/components/assinatura/ComecarAgora";
+import { Medicao } from "@/components/marketing/Medicao";
 
 export const dynamic = "force-dynamic";
 
@@ -74,11 +75,18 @@ export default async function ComecarPage({
     planoCodigo: plano.codigo,
     planoNome: plano.nome,
     precoTexto: reais(precoAgora),
+    precoAgora,
     precoCheioTexto: desconta ? reais(plano.valorMensal) : null,
     fraseDaEscada: desconta && faixas ? fraseDasFaixas(faixas) : null,
     eventosTexto: tetoEmTexto(plano.eventosEmAndamento),
     loginsTexto: tetoEmTexto(plano.logins),
   };
 
-  return <ComecarAgora oferta={oferta} />;
+  return (
+    <>
+      <ComecarAgora oferta={oferta} />
+      {/* o pixel e a tag do Google no checkout (decisão do dono, 21/09/2026) */}
+      <Medicao />
+    </>
+  );
 }

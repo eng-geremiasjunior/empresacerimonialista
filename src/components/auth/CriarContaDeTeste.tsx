@@ -11,10 +11,12 @@
 // teste; cancelou antes, não pagou.
 //
 // O cartão vai do formulário DIRETO para a operadora (chave pública), que
-// devolve um token de uso único; só o token chega ao nosso servidor. Por
-// isso esta página não carrega pixel nem tag: script de terceiro não
-// entra em formulário de pagamento. A conversão do cadastro sai pelo
-// servidor.
+// devolve um token de uso único; só o token chega ao nosso servidor. O
+// pixel da Meta roda nesta página (decisão do dono, 21/09/2026: "no
+// WooCommerce tem pixel na tela de checkout") e não vê o cartão: o que
+// ele manda é o fato — chegou ao cartão (InitiateCheckout), a conta
+// nasceu (CompleteRegistration), o teste começou (StartTrial) —, com o
+// mesmo id que o servidor usa, para a Meta contar cada fato uma vez.
 //
 // Do clique até a primeira tela do sistema não há confirmação de e-mail
 // no meio: a conta nasce confirmada, a sessão abre aqui e ela cai no
@@ -24,7 +26,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { criarContaDeTeste, type CobrancaDoCadastro } from "@/app/criar-conta/actions";
-import { contaCriada, guardarOrigemDoClique } from "@/lib/marketing";
+import { assinaturaIniciada, contaCriada, guardarOrigemDoClique, testeIniciado } from "@/lib/marketing";
 import { normalizarDDI } from "@/lib/whatsapp-link";
 import { EVENTOS_3_MESES, type Eventos3Meses } from "@/lib/cadastro-qualificacao";
 import { faltaNoCartao, faltaNoEndereco, tokenizar } from "@/lib/assinatura/cartao";
@@ -56,7 +58,10 @@ export type OfertaNaTela = {
   preco: string;
   /** "R$ 27,90" */
   primeiraCobranca: string;
+  /** o mesmo valor, em número, para o pixel */
+  valorPrimeiro: number;
   planoNome: string;
+  planoCodigo: string;
 };
 
 const campo = {
@@ -220,6 +225,8 @@ export function CriarContaDeTeste({
     setErro(null);
     if (!contaCompleta) return;
     setPasso(2);
+    // chegou ao cartão: o meio do funil que a Meta otimiza
+    assinaturaIniciada(oferta.planoCodigo, oferta.valorPrimeiro);
   }
 
   async function enviar(e: React.FormEvent) {
@@ -266,9 +273,11 @@ export function CriarContaDeTeste({
       return;
     }
 
-    // A conta existe: a Meta já recebeu o cadastro pelo servidor; o
-    // navegador só repete com o MESMO id, se houver pixel (aqui não há).
+    // A conta existe, com o teste começado: o pixel conta os dois fatos
+    // com os MESMOS ids que o servidor acabou de mandar — na Meta viram
+    // um cadastro e um início de teste, não dois de cada.
     contaCriada(r.idDoEvento);
+    testeIniciado(r.idDoTeste, r.valorDoTeste ?? oferta.valorPrimeiro);
 
     // A sessão nasce aqui, com a senha que ela acabou de escolher — é o
     // que a leva ao painel sem passar por tela de login.

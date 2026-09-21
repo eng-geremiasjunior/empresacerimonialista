@@ -36,7 +36,13 @@ import { COOKIE_ORIGEM } from "@/lib/marketing";
 import { hojeBR } from "@/lib/tempo";
 import { TERMOS_VERSAO } from "@/lib/termos";
 
-export type ResultadoAssinatura = { ok?: boolean; error?: string };
+export type ResultadoAssinatura = {
+  ok?: boolean;
+  error?: string;
+  /** a venda aprovada: o id (`assinatura:<id na operadora>`) e o valor, para o pixel do checkout repetir com o mesmo id */
+  idDoEvento?: string;
+  valor?: number;
+};
 
 /**
  * Escrita em `assinaturas` é do sistema, não da usuária: a tabela nasceu
@@ -795,7 +801,7 @@ async function assinarPara(
     });
   }
 
-  return { ok: true };
+  return { ok: true, idDoEvento: `assinatura:${g.id}`, valor: valorCobrado };
 }
 
 /**

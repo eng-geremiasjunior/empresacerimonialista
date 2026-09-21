@@ -33,9 +33,16 @@
 // sem o pixel ali a Meta não via a visita, e o CompleteRegistration saía
 // só pelo servidor. Passa no mesmo teste: o endereço não carrega
 // credencial.
+//
+// /comecar (o checkout) entrou em 21/09/2026, junto com o cartão no
+// cadastro — decisão do dono: "no WooCommerce tem pixel na tela de
+// checkout". O pixel não vê o cartão: o número vai do formulário direto
+// para a operadora, por token, e o que o pixel manda é o FATO (chegou ao
+// pagamento, começou o teste, comprou) com o mesmo id que o servidor usa,
+// para a Meta contar cada fato uma vez só.
 
 /** As telas onde a medição pode rodar. Comparação exata, sem prefixo. */
-const TELAS_DE_MARKETING = new Set(["/login", "/planos", "/precos", "/criar-conta"]);
+const TELAS_DE_MARKETING = new Set(["/login", "/planos", "/precos", "/criar-conta", "/comecar"]);
 
 /**
  * A tela é a da oferta? Só ela dispara "viu o conteúdo" — o evento que
@@ -210,7 +217,11 @@ export function contaCriada(idDoEvento?: string): void {
   }
 }
 
-/** Ela abriu o formulário de assinatura, com um plano escolhido. */
+/**
+ * Ela chegou à etapa do cartão, com um plano na tela. É o meio do funil
+ * que a Meta consegue otimizar enquanto as vendas ainda são poucas.
+ * Sem id de deduplicação: só o navegador vê este momento.
+ */
 export function assinaturaIniciada(plano: string, valor: number): void {
   if (typeof window === "undefined") return;
   try {
@@ -225,17 +236,42 @@ export function assinaturaIniciada(plano: string, valor: number): void {
   }
 }
 
-/** A assinatura foi aprovada pela operadora. */
-export function assinaturaFeita(plano: string, valor: number): void {
+/**
+ * O teste com cartão começou (21/09/2026): a conta nasceu com o cartão
+ * conferido e a cobrança agendada. É o `StartTrial` da Meta, com o valor
+ * que vai ser cobrado — e o mesmo id do servidor (`teste:<empresa>`),
+ * para os dois virarem um só.
+ */
+export function testeIniciado(idDoEvento: string | undefined, valor: number): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.gtag?.("event", "teste_iniciado", { currency: "BRL", value: valor });
+    const dados = { currency: "BRL", value: valor, predicted_ltv: valor };
+    if (idDoEvento) window.fbq?.("track", "StartTrial", dados, { eventID: idDoEvento });
+    else window.fbq?.("track", "StartTrial", dados);
+  } catch {
+    /* idem */
+  }
+}
+
+/**
+ * A assinatura foi aprovada pela operadora, com a pessoa na tela. É o
+ * `Purchase` — o mesmo evento de dinheiro que o servidor manda (nunca
+ * `Subscribe` junto, que dobraria a receita no relatório) — com o id da
+ * assinatura na operadora, para a Meta contar a venda uma vez.
+ */
+export function assinaturaFeita(plano: string, valor: number, idDoEvento?: string): void {
   if (typeof window === "undefined") return;
   try {
     window.gtag?.("event", "purchase", {
       currency: "BRL",
       value: valor,
-      transaction_id: plano + ":" + Date.now(),
+      transaction_id: idDoEvento ?? plano + ":" + Date.now(),
       items: [{ item_id: plano }],
     });
-    window.fbq?.("track", "Subscribe", { currency: "BRL", value: valor });
+    const dados = { currency: "BRL", value: valor };
+    if (idDoEvento) window.fbq?.("track", "Purchase", dados, { eventID: idDoEvento });
+    else window.fbq?.("track", "Purchase", dados);
   } catch {
     /* idem */
   }

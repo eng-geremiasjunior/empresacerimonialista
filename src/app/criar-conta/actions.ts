@@ -101,6 +101,10 @@ export type ResultadoCriarConta = {
   jaTemConta?: boolean;
   /** o id do CompleteRegistration do servidor, para o pixel do navegador usar o mesmo */
   idDoEvento?: string;
+  /** o id do StartTrial do servidor, idem */
+  idDoTeste?: string;
+  /** o que vai ser cobrado no oitavo dia: o valor do StartTrial no navegador */
+  valorDoTeste?: number;
 };
 
 /** O que a operadora exige de quem vai pagar, além do que a conta já tem. */
@@ -375,10 +379,12 @@ export async function criarContaDeTeste(
     return { error: "Não foi possível abrir seu teste agora. Tente de novo em alguns instantes." };
   }
 
-  // A CONTA NASCEU — e este é o evento que o anúncio precisa receber.
-  // Sai pelo SERVIDOR: esta tela tem campos de cartão e não carrega
-  // pixel. O mesmo id de deduplicação do checkout, para a mesma conta não
-  // ser contada duas vezes quando a cobrança passar no oitavo dia.
+  // A CONTA NASCEU — e estes são os eventos que o anúncio precisa
+  // receber: o cadastro (CompleteRegistration) e o teste com cartão
+  // (StartTrial, com o valor que vai ser cobrado). Saem pelo SERVIDOR com
+  // o mesmo id que o pixel usa no navegador, para a Meta contar cada um
+  // uma vez; a compra (Purchase) sai no oitavo dia, quando a operadora
+  // cobrar (webhook).
   //
   // A origem do clique vai junto, gravada como o checkout já grava (152):
   // é ela que dirá, quando esta conta virar assinante, de qual anúncio
@@ -396,6 +402,13 @@ export async function criarContaDeTeste(
         { onConflict: "empresa_id", ignoreDuplicates: true }
       );
     }
+    const origem = {
+      fbp: o?.fbp ?? null,
+      fbc: o?.fbc ?? null,
+      gaClientId: o?.ga_client_id ?? null,
+      ip: h0.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+      userAgent: h0.get("user-agent")?.slice(0, 300) ?? null,
+    };
     await registrarConversao({
       tipo: "conta_criada",
       email,
@@ -403,13 +416,17 @@ export async function criarContaDeTeste(
       nome,
       idExterno: empresaId,
       idDoEvento: `conta:${empresaId}`,
-      origem: {
-        fbp: o?.fbp ?? null,
-        fbc: o?.fbc ?? null,
-        gaClientId: o?.ga_client_id ?? null,
-        ip: h0.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
-        userAgent: h0.get("user-agent")?.slice(0, 300) ?? null,
-      },
+      origem,
+    });
+    await registrarConversao({
+      tipo: "teste_iniciado",
+      email,
+      telefone: whatsapp,
+      nome,
+      idExterno: empresaId,
+      valor: oferta.valorPrimeiro,
+      idDoEvento: `teste:${empresaId}`,
+      origem,
     });
   } catch (e) {
     // medição não derruba cadastro
@@ -428,5 +445,10 @@ export async function criarContaDeTeste(
     cobranca: { dia: primeiraCobranca, valor: oferta.valorPrimeiro },
   });
 
-  return { ok: true, idDoEvento: `conta:${empresaId}` };
+  return {
+    ok: true,
+    idDoEvento: `conta:${empresaId}`,
+    idDoTeste: `teste:${empresaId}`,
+    valorDoTeste: oferta.valorPrimeiro,
+  };
 }

@@ -15,15 +15,17 @@
 // mesma `tokenizar` da tela de dentro do app — código de dinheiro mora
 // num lugar só.
 //
-// SEM PIXEL NESTA TELA, de propósito: aqui há campos de cartão, e script
-// de terceiro não entra em formulário de pagamento. Os eventos de
-// InitiateCheckout e Purchase saem pelo servidor, com o valor real.
+// O PIXEL RODA NESTA TELA (decisão do dono, 21/09/2026: "no WooCommerce
+// tem pixel na tela de checkout"). Ele não vê o cartão — o número vai por
+// token direto para a operadora. O InitiateCheckout sai quando ela chega
+// ao pagamento; o Purchase sai do servidor com o valor real e o navegador
+// o repete com o MESMO id, para a Meta contar a venda uma vez só.
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { assinarCriandoConta } from "@/app/(app)/assinatura/actions";
 import { createClient } from "@/lib/supabase/client";
-import { guardarOrigemDoClique } from "@/lib/marketing";
+import { assinaturaFeita, assinaturaIniciada, guardarOrigemDoClique } from "@/lib/marketing";
 import { TERMOS_CAMINHO } from "@/lib/termos";
 import {
   faltaNoCartao,
@@ -45,6 +47,8 @@ export type OfertaDoCheckout = {
   planoNome: string;
   /** o que vai ser cobrado AGORA, já com o degrau da promoção */
   precoTexto: string;
+  /** o mesmo valor, em número, para o pixel */
+  precoAgora: number;
   /** o preço de tabela, quando a promoção está valendo */
   precoCheioTexto: string | null;
   /** a escada inteira numa frase, quando há promoção */
@@ -104,6 +108,8 @@ export function ComecarAgora({ oferta }: { oferta: OfertaDoCheckout }) {
       return;
     }
     setPasso(passo === 1 ? 2 : 3);
+    // chegou ao cartão: o meio do funil que a Meta otimiza
+    if (passo === 2) assinaturaIniciada(oferta.planoCodigo, oferta.precoAgora);
   }
 
   async function enviar() {
@@ -159,7 +165,13 @@ export function ComecarAgora({ oferta }: { oferta: OfertaDoCheckout }) {
       return;
     }
 
-    // Pagou. A sessão nasce aqui, com a senha que ela acabou de escolher —
+    // Pagou. O pixel repete a venda com o MESMO id que o servidor acabou
+    // de mandar — na Meta é uma venda, não duas.
+    if (r && "ok" in r && r.ok) {
+      assinaturaFeita(oferta.planoCodigo, r.valor ?? oferta.precoAgora, r.idDoEvento);
+    }
+
+    // A sessão nasce aqui, com a senha que ela acabou de escolher —
     // é o que a leva ao painel sem passar por tela de login.
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({

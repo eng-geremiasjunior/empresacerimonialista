@@ -5,6 +5,7 @@ import { reais } from "@/lib/planos";
 import { portaoDoTeste } from "@/lib/supabase/teste-gratis";
 import { ofertaDoTeste } from "@/lib/teste-com-cartao";
 import { CriarContaDeTeste } from "@/components/auth/CriarContaDeTeste";
+import { Medicao } from "@/components/marketing/Medicao";
 import { Simbolo } from "@/components/marca/Marca";
 import { CSS_PLANOS } from "@/components/planos/estilo";
 
@@ -23,9 +24,10 @@ export const metadata: Metadata = {
 // aqui, pela mesma função que a action usa para agendar
 // (lib/teste-com-cartao.ts).
 //
-// SEM PIXEL NESTA PÁGINA, de propósito: há campos de cartão nela, e
-// script de terceiro não entra em formulário de pagamento (a mesma regra
-// do checkout). A conversão do cadastro sai pelo servidor.
+// O PIXEL RODA AQUI (decisão do dono, 21/09/2026: "no WooCommerce tem
+// pixel na tela de checkout"). Ele não vê o cartão — o número vai por
+// token direto para a operadora — e manda os fatos com o mesmo id do
+// servidor: chegou ao cartão, a conta nasceu, o teste começou.
 //
 // O PORTÃO MANDA. Fechado, esta página não existe — manda para o
 // checkout. Quem liga e desliga é o dono, no /admin, sem publicar nada.
@@ -154,11 +156,15 @@ export default async function CriarContaPage() {
             termina: oferta.texto.termina,
             preco: oferta.texto.preco,
             primeiraCobranca: oferta.texto.primeiraCobranca,
+            valorPrimeiro: oferta.valorPrimeiro,
             planoNome: oferta.plano.nome,
+            planoCodigo: oferta.plano.codigo,
           }}
           precoDeEntrada={reais(oferta.valorPrimeiro)}
         />
       </main>
+      {/* o pixel e a tag do Google: é aqui que o anúncio do teste termina */}
+      <Medicao />
     </div>
   );
 }

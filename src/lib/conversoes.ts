@@ -58,7 +58,7 @@ export type OrigemDoClique = {
 
 export type Conversao = {
   /** o nome de cada lado é traduzido abaixo */
-  tipo: "conta_criada" | "primeiro_evento" | "checkout_iniciado" | "assinatura";
+  tipo: "conta_criada" | "primeiro_evento" | "checkout_iniciado" | "teste_iniciado" | "assinatura";
   /** e-mail de quem converteu; vira SHA-256 antes de sair */
   email?: string | null;
   valor?: number;
@@ -112,12 +112,16 @@ const NOME_META = {
   // a campanha escolhe como qualquer outro (ver primeiro-evento.ts).
   primeiro_evento: "PrimeiroEvento",
   checkout_iniciado: "InitiateCheckout",
+  // o teste com cartão (21/09/2026): a conta nasceu com a cobrança
+  // agendada. Evento padrão da Meta, com o valor que vai ser cobrado.
+  teste_iniciado: "StartTrial",
   assinatura: "Purchase",
 } as const;
 const NOME_GA = {
   conta_criada: "sign_up",
   primeiro_evento: "primeiro_evento",
   checkout_iniciado: "begin_checkout",
+  teste_iniciado: "teste_iniciado",
   assinatura: "purchase",
 } as const;
 
