@@ -228,7 +228,7 @@ export default async function PlanosPage() {
   const portao = await portaoDoTeste();
   const testeAberto = portao.aberto && visitante;
   const entradaPrincipal = testeAberto
-    ? { href: "/criar-conta", rotulo: `Criar conta grátis — ${portao.dias} dias, sem cartão` }
+    ? { href: "/criar-conta", rotulo: `Comece seu teste de ${portao.dias} dias` }
     : {
         href: destinoDaAssinatura,
         rotulo: visitante && precoCurto ? `Começar por ${precoCurto}` : rotuloDeAssinar,
@@ -236,10 +236,10 @@ export default async function PlanosPage() {
   const entradaSecundaria = testeAberto
     ? { href: "/comecar", rotulo: precoCurto ? `Já quero assinar por ${precoCurto}` : "Já quero assinar" }
     : null;
-  // o rótulo curto, para as chamadas que se repetem no percurso: o longo
-  // ("Criar conta grátis — 7 dias, sem cartão") só no hero e no fecho
+  // a mesma frase em todas as chamadas do percurso: "grátis" atraía
+  // curioso, e o dono trocou pela oferta dita como teste (21/09/2026)
   const entradaCurta = testeAberto
-    ? { href: "/criar-conta", rotulo: "Criar conta grátis" }
+    ? { href: "/criar-conta", rotulo: `Comece seu teste de ${portao.dias} dias` }
     : assineAgora;
   const entradaCurtaComPreco = testeAberto ? entradaCurta : assinePeloPreco;
 
@@ -405,7 +405,9 @@ export default async function PlanosPage() {
         ondeEstou="vendas"
         acao={
           podeAssinar
-            ? { href: entradaCurta.href, rotulo: testeAberto ? "Criar conta grátis" : "Assinar" }
+            ? testeAberto
+              ? { href: entradaCurta.href, rotulo: `Comece seu teste de ${portao.dias} dias`, rotuloCurto: "Começar teste" }
+              : { href: entradaCurta.href, rotulo: "Assinar" }
             : equipe
               ? { href: "/eventos/dashboard", rotulo: "Voltar ao painel" }
               : { href: "/assinatura", rotulo: "Minha assinatura" }
@@ -596,7 +598,7 @@ export default async function PlanosPage() {
             mais que três capítulos. */}
         <DemoNascer
           precoDeEntrada={precoDeEntrada !== null ? reais(precoDeEntrada) : null}
-          saida={testeAberto ? { href: "/criar-conta", rotulo: "Criar a minha de verdade, grátis" } : null}
+          saida={testeAberto ? { href: "/criar-conta", rotulo: `Comece seu teste de ${portao.dias} dias` } : null}
         />
         <Demonstracao />
         {podeAssinar && (
@@ -1347,7 +1349,7 @@ export default async function PlanosPage() {
                     color: "#221E1B",
                   }}
                 >
-                  {portao.dias + " dias grátis"}
+                  {`Teste de ${portao.dias} dias`}
                 </b>
                 <em
                   style={{
@@ -1358,7 +1360,7 @@ export default async function PlanosPage() {
                     color: "#6B6259",
                   }}
                 >
-                  sem cartão de crédito
+                  com o sistema completo
                 </em>
               </>
             )}
@@ -1414,7 +1416,7 @@ export default async function PlanosPage() {
               }}
               className="pl-h-ameixa pl-cta"
             >
-              {testeAberto ? "Criar conta grátis" : "Começar agora"}
+              {testeAberto ? `Comece seu teste de ${portao.dias} dias` : "Começar agora"}
             </a>
           )}
           {dona && planoDeEntrada && (

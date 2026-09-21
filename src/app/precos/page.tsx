@@ -113,7 +113,7 @@ export default async function PrecosPage() {
   const acaoDoTopo = !podeAssinar
     ? null
     : testeAberto
-      ? { href: "/criar-conta", rotulo: "Criar conta grátis" }
+      ? { href: "/criar-conta", rotulo: `Comece seu teste de ${portao.dias} dias`, rotuloCurto: "Começar teste" }
       : { href: visitante ? "/comecar" : "/assinatura", rotulo: "Assinar" };
 
   function botaoDoPlano(p: PlanoDoCatalogo, destaque: boolean) {
@@ -144,7 +144,7 @@ export default async function PrecosPage() {
       : `/assinatura?plano=${p.codigo}`;
     const rotulo = visitante
       ? testeAberto
-        ? "Começar grátis"
+        ? `Comece seu teste de ${portao.dias} dias`
         : `Assinar o ${p.nome}`
       : `Assinar o ${p.nome}`;
     return (
@@ -418,7 +418,7 @@ export default async function PrecosPage() {
                 color: "#6B6259",
               }}
             >
-              {`Todos começam com ${portao.dias} dias grátis, sem cartão de crédito. `}
+              {`Todos começam com um teste de ${portao.dias} dias. `}
               <a href="/comecar" style={{ color: "#6E3F5F", fontWeight: 600 }}>
                 Prefere assinar agora
               </a>
@@ -631,7 +631,7 @@ export default async function PrecosPage() {
                     fontSize: "17px",
                   }}
                 >
-                  {testeAberto ? `Criar conta grátis — ${portao.dias} dias, sem cartão` : acaoDoTopo.rotulo}
+                  {testeAberto ? `Comece seu teste de ${portao.dias} dias` : acaoDoTopo.rotulo}
                 </a>
               )}
             </div>

@@ -137,7 +137,7 @@ export default async function CriarContaPage() {
             textTransform: "uppercase",
           }}
         >
-          {portao.dias} dias grátis
+          Teste de {portao.dias} dias
         </span>
         <h1
           style={{

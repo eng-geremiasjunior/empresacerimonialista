@@ -21,7 +21,9 @@ import { Simbolo } from "@/components/marca/Marca";
 
 const TITULO = "var(--font-title, Inter, sans-serif)";
 
-export type AcaoDoCabecalho = { href: string; rotulo: string } | null;
+/** `rotuloCurto`: o que cabe no celular, onde a barra divide 390 px com a
+    marca, "Preços" e "Entrar". No computador vale o rótulo inteiro. */
+export type AcaoDoCabecalho = { href: string; rotulo: string; rotuloCurto?: string } | null;
 
 export function Cabecalho({
   ondeEstou,
@@ -229,7 +231,16 @@ export function Cabecalho({
                 transition: "background 120ms cubic-bezier(.2,.8,.3,1)",
               }}
             >
-              {acao.rotulo}
+              {acao.rotuloCurto ? (
+                <>
+                  <span data-hide-sm="1">{acao.rotulo}</span>
+                  <span data-so-no-celular="1" style={{ display: "none" }}>
+                    {acao.rotuloCurto}
+                  </span>
+                </>
+              ) : (
+                acao.rotulo
+              )}
             </a>
           )}
         </span>

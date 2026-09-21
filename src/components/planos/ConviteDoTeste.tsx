@@ -77,7 +77,7 @@ export function ConviteDoTeste({
               textTransform: "uppercase",
             }}
           >
-            Avaliação gratuita
+            Teste de {dias} dias
           </span>
           <h2
             style={{
@@ -92,7 +92,7 @@ export function ConviteDoTeste({
               textWrap: "balance",
             }}
           >
-            Crie sua conta e use o sistema por {dias} dias, sem custo.
+            Use o sistema completo por {dias} dias, com os seus eventos.
           </h2>
           <p
             style={{
@@ -104,7 +104,7 @@ export function ConviteDoTeste({
               textWrap: "pretty",
             }}
           >
-            A criação da conta é gratuita e não exige dados de cartão de crédito. Você
+            A criação da conta não exige dados de cartão de crédito. Você
             cadastra um evento que já está organizando, monta o roteiro do dia e envia o
             link para os fornecedores — com o sistema completo, no plano Essencial.
           </p>
@@ -183,7 +183,7 @@ export function ConviteDoTeste({
               textAlign: "center",
             }}
           >
-            Criar conta gratuita
+            Comece seu teste de {dias} dias
           </a>
           <a
             href="/comecar"
