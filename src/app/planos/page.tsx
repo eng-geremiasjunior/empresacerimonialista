@@ -540,9 +540,9 @@ export default async function PlanosPage() {
                   color: "#6B6259",
                 }}
               >
-                <li>Sem cartão de crédito</li>
-                <li>{`Acaba sozinho no dia ${portao.dias}`}</li>
-                <li>O que você cadastrar continua salvo se assinar</li>
+                <li>Nada é cobrado hoje</li>
+                <li>{`Primeira cobrança só no dia ${portao.dias + 1}`}</li>
+                <li>Cancele antes e não paga nada</li>
               </ul>
             )}
             {dona && planoDeEntrada && (

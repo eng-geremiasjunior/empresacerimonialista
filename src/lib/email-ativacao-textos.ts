@@ -65,6 +65,27 @@ export type DadosDoEmail = {
 
 export type EmailPronto = { assunto: string; html: string; destino: string };
 
+/**
+ * O teste com cartão (21/09/2026): a cobrança já está agendada na
+ * operadora. Com isto, o e-mail diz o dia e o valor em vez de pedir para
+ * assinar — e diz onde cancelar, para quem não quiser continuar.
+ */
+export type CobrancaAgendada = {
+  /** o dia da primeira cobrança, YYYY-MM-DD */
+  dia: string;
+  valor: number;
+  /** os quatro últimos dígitos do cartão, quando a operadora devolveu */
+  cartao?: string | null;
+};
+
+function reaisTexto(v: number): string {
+  return `R$ ${v.toFixed(2).replace(".", ",")}`;
+}
+
+function noCartao(c: CobrancaAgendada): string {
+  return c.cartao ? ` no cartão final ${escapar(c.cartao)}` : " no cartão cadastrado";
+}
+
 const PRECO = "R$ 27,90/mês nos 3 primeiros meses, R$ 59,90 depois";
 
 /**
@@ -101,7 +122,7 @@ function casca(p: {
             <td style="font-size:17px;font-weight:700;letter-spacing:-0.02em;color:#221E1B;${fonte}">
               <span style="color:#6E3F5F">e</span>organizei
             </td>
-            <td align="right" style="font-size:12px;color:#928A81;${fonte}">teste grátis</td>
+            <td align="right" style="font-size:12px;color:#928A81;${fonte}">seu teste</td>
           </tr>
         </table>
         <div style="height:1px;background:#EFE9E2;margin:18px 0 22px"></div>
@@ -142,7 +163,7 @@ function casca(p: {
     </tr>
     <tr>
       <td style="padding:18px 8px 0;text-align:center;font-size:12px;line-height:1.6;color:#9A928A;${fonte}">
-        Você recebe este e-mail porque abriu um teste grátis no eOrganizei.${
+        Você recebe este e-mail porque abriu um teste no eOrganizei.${
           p.sair ? `<br><a href="${p.sair}" style="color:#9A928A">Não quero mais receber</a>` : ""
         }
       </td>
@@ -192,7 +213,7 @@ const oi = (nome: string) => {
 /* ------------------------------------------------------------------ */
 
 export function htmlBoasVindas(
-  d: DadosDoEmail & { termina: string | null; eventos3m: string | null }
+  d: DadosDoEmail & { termina: string | null; eventos3m: string | null; cobranca?: CobrancaAgendada | null }
 ): EmailPronto {
   const n = primeiroNome(d.nome);
   const destino = "/eventos/novo";
@@ -205,7 +226,14 @@ export function htmlBoasVindas(
       paragrafos: [
         "Comece por um evento que você já está organizando: tipo, data e o nome da cliente. Roteiro, fornecedores e financeiro nascem dentro dele.",
       ],
-      destaque: d.termina ? { rotulo: "Seu teste vai até", valor: `${diaMes(d.termina)}, sem cartão` } : null,
+      destaque: d.termina
+        ? d.cobranca
+          ? {
+              rotulo: "Seu teste vai até",
+              valor: `${diaMes(d.termina)} · primeira cobrança ${diaMes(d.cobranca.dia)}, ${reaisTexto(d.cobranca.valor)}`,
+            }
+          : { rotulo: "Seu teste vai até", valor: `${diaMes(d.termina)}, sem cartão` }
+        : null,
       botao: { texto: "Cadastrar meu primeiro evento", caminho: destino },
       sair: d.sair,
     }),
@@ -349,7 +377,9 @@ export function htmlDia3(d: DadosDoEmail & { termina: string | null }): EmailPro
 }
 
 /** Dia 5 — faltam 2 dias, e o preço aparece pela primeira vez. */
-export function htmlDia5(d: DadosDoEmail & { termina: string; hoje: string; evento: EventoDela | null }): EmailPronto {
+export function htmlDia5(
+  d: DadosDoEmail & { termina: string; hoje: string; evento: EventoDela | null; cobranca?: CobrancaAgendada | null }
+): EmailPronto {
   const faltam = diasEntre(d.hoje, d.termina);
   const destino = d.evento ? `/eventos/${d.evento.id}` : "/eventos/novo";
   return {
@@ -358,8 +388,15 @@ export function htmlDia5(d: DadosDoEmail & { termina: string; hoje: string; even
     html: casca({
       titulo: `Faltam ${prazo(faltam)} de teste`,
       saudacao: oi(d.nome),
-      paragrafos: [`Seu teste vai até <strong>${diaMes(d.termina)}</strong>. Depois dele, continuar custa:`],
-      destaque: { rotulo: "Depois do teste", valor: PRECO },
+      paragrafos: d.cobranca
+        ? [
+            `Seu teste vai até <strong>${diaMes(d.termina)}</strong>. Em ${diaMes(d.cobranca.dia)} sai a primeira cobrança${noCartao(d.cobranca)}, e a conta segue aberta sem você fazer nada.`,
+            "Não quer continuar? Cancele em Assinatura antes disso e nada é cobrado.",
+          ]
+        : [`Seu teste vai até <strong>${diaMes(d.termina)}</strong>. Depois dele, continuar custa:`],
+      destaque: d.cobranca
+        ? { rotulo: `A partir de ${diaMes(d.cobranca.dia)}`, valor: `${reaisTexto(d.cobranca.valor)}/mês` }
+        : { rotulo: "Depois do teste", valor: PRECO },
       botao: { texto: d.evento ? "Abrir o meu evento" : "Cadastrar meu evento", caminho: destino },
       sair: d.sair,
     }),
@@ -367,10 +404,35 @@ export function htmlDia5(d: DadosDoEmail & { termina: string; hoje: string; even
 }
 
 /** A véspera: amanhã o teste acaba. */
-export function htmlFimTeste(d: DadosDoEmail & { termina: string; hoje: string; eventos: number }): EmailPronto {
+export function htmlFimTeste(
+  d: DadosDoEmail & { termina: string; hoje: string; eventos: number; cobranca?: CobrancaAgendada | null }
+): EmailPronto {
   const faltam = diasEntre(d.hoje, d.termina);
   const quando = faltam <= 0 ? "hoje" : faltam === 1 ? "amanhã" : `em ${faltam} dias`;
   const destino = "/assinatura";
+  if (d.cobranca) {
+    // o teste com cartão: não há decisão a tomar, a menos que ela queira
+    // sair — e aí o e-mail diz onde
+    return {
+      destino,
+      assunto: `Seu teste termina ${quando}`,
+      html: casca({
+        titulo: `Seu teste termina ${quando}`,
+        saudacao: oi(d.nome),
+        paragrafos: [
+          `Em ${diaMes(d.cobranca.dia)} sai a primeira cobrança${noCartao(d.cobranca)}, e a conta segue aberta sem você fazer nada${
+            d.eventos > 0
+              ? `: ${d.eventos === 1 ? "seu evento continua" : `seus ${d.eventos} eventos continuam`} de onde você parou.`
+              : "."
+          }`,
+          `Não quer continuar? Cancele em Assinatura até ${diaMes(d.termina)} e nada é cobrado. Sem fidelidade.`,
+        ],
+        destaque: { rotulo: `Primeira cobrança em ${diaMes(d.cobranca.dia)}`, valor: `${reaisTexto(d.cobranca.valor)}/mês` },
+        botao: { texto: "Ver minha assinatura", caminho: destino },
+        sair: d.sair,
+      }),
+    };
+  }
   return {
     destino,
     assunto: `Seu teste termina ${quando}`,
@@ -401,9 +463,28 @@ export function htmlFimTeste(d: DadosDoEmail & { termina: string; hoje: string; 
  * está lá dentro: é isso que a faz voltar, não o preço.
  */
 export function htmlUltimoDia(
-  d: DadosDoEmail & { eventos: number; evento: EventoDela | null }
+  d: DadosDoEmail & { eventos: number; evento: EventoDela | null; cobranca?: CobrancaAgendada | null }
 ): EmailPronto {
   const destino = "/assinatura";
+  if (d.cobranca) {
+    return {
+      destino,
+      assunto: "Seu teste termina hoje",
+      html: casca({
+        titulo: "Hoje é o último dia do seu teste",
+        saudacao: oi(d.nome),
+        paragrafos: [
+          `Amanhã, ${diaMes(d.cobranca.dia)}, sai a primeira cobrança${noCartao(d.cobranca)}. A conta continua aberta, do jeito que você deixou${
+            d.eventos > 0 ? ` — com ${d.eventos === 1 ? "o seu evento" : `os seus ${d.eventos} eventos`}.` : "."
+          }`,
+          "Para não continuar, cancele hoje em Assinatura. Nada é cobrado.",
+        ],
+        destaque: { rotulo: `Primeira cobrança em ${diaMes(d.cobranca.dia)}`, valor: `${reaisTexto(d.cobranca.valor)}/mês` },
+        botao: { texto: "Ver minha assinatura", caminho: destino },
+        sair: d.sair,
+      }),
+    };
+  }
   const oQue = d.evento ? NOME_DO_EVENTO[d.evento.type] ?? "o evento" : null;
   const primeiro =
     d.eventos > 0
@@ -439,8 +520,29 @@ export function htmlUltimoDia(
 /* ------------------------------------------------------------------ */
 
 /** +2 dias: o teste acabou e os dados continuam lá. */
-export function htmlPos2(d: DadosDoEmail & { eventos: number }): EmailPronto {
+export function htmlPos2(d: DadosDoEmail & { eventos: number; cobranca?: CobrancaAgendada | null }): EmailPronto {
   const destino = "/assinatura";
+  // teste com cartão que continua em teste depois do fim: a cobrança não
+  // passou. O que resolve é outro cartão, não "assine".
+  if (d.cobranca) {
+    return {
+      destino,
+      assunto: "A cobrança não passou — nada foi apagado",
+      html: casca({
+        titulo: "A cobrança não passou",
+        saudacao: oi(d.nome),
+        paragrafos: [
+          `A cobrança de ${reaisTexto(d.cobranca.valor)}${noCartao(d.cobranca)} não foi aprovada. ${
+            d.eventos > 0
+              ? `${d.eventos === 1 ? "O evento" : `Os ${d.eventos} eventos`} que você cadastrou ${d.eventos === 1 ? "está" : "estão"} do jeito que você deixou.`
+              : "Sua conta continua como você deixou."
+          } Troque o cartão em Assinatura e a conta reabre na hora.`,
+        ],
+        botao: { texto: "Trocar o cartão", caminho: destino },
+        sair: d.sair,
+      }),
+    };
+  }
   return {
     destino,
     assunto: "Seu teste terminou — nada foi apagado",

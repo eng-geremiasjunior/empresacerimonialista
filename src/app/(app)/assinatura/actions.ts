@@ -983,6 +983,53 @@ export async function cancelar(motivo: string): Promise<ResultadoAssinatura> {
     .maybeSingle();
   if (!atual) return { error: "Esta conta não tem assinatura para cancelar." };
 
+  // O TESTE COM CARTÃO (21/09/2026): cancelar aqui é desagendar a
+  // primeira cobrança, não fechar a conta. O teste continua até o último
+  // dia pela régua da data, sem cobrança nenhuma, e a linha volta a ser um
+  // teste sem cartão — ela pode assinar depois pela tela, com a promoção
+  // de pé (nada de `cancelada_em`: ninguém pagou nem cancelou pagamento).
+  // Se a operadora não confirmar, cai no caminho de baixo: a conta fica
+  // 'cancelada' aqui, a rotina diária insiste na operadora, e ela não
+  // corre o risco de ser cobrada no oitavo dia por uma falha nossa.
+  if (atual.status === "trial") {
+    if (!atual.gateway_subscription_id) {
+      return { error: "Sua conta está em teste e não tem cobrança agendada." };
+    }
+    const r = await cancelarAssinatura(atual.gateway_subscription_id);
+    if (r.ok) {
+      const { error: erroLimpar } = await db
+        .from("assinaturas")
+        .update({
+          gateway_subscription_id: null,
+          cartao_final: null,
+          cartao_bandeira: null,
+          proximo_vencimento: null,
+          promocao_codigo: null,
+          promocao_inicio: null,
+          valor_mensal: 0,
+          motivo_cancelamento: motivo.trim().slice(0, 400) || null,
+          observacao: `cobrança do teste cancelada pela cliente em ${hojeBR()}`,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", atual.id);
+      if (erroLimpar) {
+        console.error("[vela:assinatura] limpar cobrança do teste:", erroLimpar.message);
+        return {
+          error:
+            "A cobrança foi cancelada na operadora, mas não conseguimos registrar aqui. Fale com o suporte.",
+        };
+      }
+      revalidatePath("/assinatura");
+      revalidatePath("/", "layout");
+      return { ok: true };
+    }
+    console.error(
+      "[vela:assinatura] cobrança do teste sem confirmação do gateway:",
+      atual.gateway_subscription_id,
+      r.erro
+    );
+  }
+
   // Sem assinatura na operadora não há o que cancelar lá — mas a linha
   // aqui pode estar 'ativa' (cortesia, conta herdada, assinatura lançada
   // à mão). Cancelar continua significando alguma coisa: parar de contar

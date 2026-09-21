@@ -44,7 +44,7 @@ export function FormPortaoDoTeste({
       <input type="hidden" name="aberto" value={abertoAgora ? "1" : "0"} />
 
       <label className="flex items-center gap-2 text-[12px] text-[#57534e]">
-        Cadastro grátis
+        Teste com cartão
         <select
           value={abertoAgora ? "1" : "0"}
           onChange={(e) => setAbertoAgora(e.target.value === "1")}
@@ -70,7 +70,7 @@ export function FormPortaoDoTeste({
 
       <span className="text-[11px] text-[#a8a29e]">
         {abertoAgora
-          ? "A página de vendas oferece criar conta sem cartão."
+          ? "A página de vendas oferece o teste: cartão no cadastro, cobrança só depois dos dias."
           : "Os botões da página de vendas voltam ao checkout."}{" "}
         Fechar não corta quem já está em teste.
       </span>

@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { lerAssinatura } from "@/lib/pagarme";
 import { hojeBR } from "@/lib/tempo";
 import { registrarErroDoServidor } from "@/lib/registro-do-sistema";
+import { conversaoDaAssinatura } from "@/lib/conversao-da-assinatura";
 
 export const dynamic = "force-dynamic";
 
@@ -284,6 +285,13 @@ export async function POST(request: NextRequest) {
         ...evento,
         nota: `webhook ${corpo.type}`,
       });
+    }
+    // O teste com cartão (21/09/2026) vira venda AQUI, sem ninguém na
+    // tela: a primeira cobrança saiu pela operadora. O anúncio recebe o
+    // Purchase pelo servidor, com o id da assinatura para não contar duas
+    // vezes se o aviso se repetir.
+    if (statusNovo === "ativa" && linha.status === "trial") {
+      await conversaoDaAssinatura(db, linha.empresa_id, assinaturaId, valorCobrado);
     }
   }
 

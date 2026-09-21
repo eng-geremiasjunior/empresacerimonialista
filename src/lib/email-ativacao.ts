@@ -36,7 +36,7 @@ import { createClient, type SupabaseClient, type User } from "@supabase/supabase
 import { enviarViaResend } from "@/lib/email";
 import { appUrl } from "@/lib/app-url";
 import { ehContaDaCasa } from "@/lib/contas-da-casa";
-import { hojeBR } from "@/lib/tempo";
+import { hojeBR, somarDias } from "@/lib/tempo";
 import {
   REMETENTE,
   RESPONDER_PARA,
@@ -57,6 +57,7 @@ import {
   htmlPos60,
   htmlPos7,
   htmlPos90,
+  type CobrancaAgendada,
   type DadosDoEmail,
   type EmailPronto,
   type EventoDela,
@@ -172,6 +173,8 @@ export async function enviarBoasVindas(p: {
   nome: string;
   termina: string | null;
   eventos3m: string | null;
+  /** o teste com cartão: o dia e o valor da primeira cobrança */
+  cobranca?: { dia: string; valor: number } | null;
 }): Promise<void> {
   try {
     if (ehContaDaCasa(p.email)) return;
@@ -181,6 +184,7 @@ export async function enviarBoasVindas(p: {
       nome: p.nome,
       termina: p.termina,
       eventos3m: p.eventos3m,
+      cobranca: p.cobranca ?? null,
       sair: linkDeSaida(p.userId),
     });
     await mandar(db, { id: p.userId, email: p.email }, "boas_vindas", email);
@@ -252,10 +256,19 @@ export async function rodarAtivacao(agora = new Date()): Promise<ResumoAtivacao>
   // deixou o teste vencer sem assinar (assinar muda o status).
   const { data: testes, error } = await db
     .from("assinaturas")
-    .select("empresa_id, teste_termina_em")
+    // as quatro colunas da cobrança agendada (teste com cartão, 21/09/2026):
+    // com elas o e-mail fala do dia e do valor, e não de "assine"
+    .select("empresa_id, teste_termina_em, gateway_subscription_id, cartao_final, valor_mensal, proximo_vencimento")
     .eq("status", "trial");
   if (error) throw new Error(`assinaturas: ${error.message}`);
-  const lista = (testes ?? []) as { empresa_id: string; teste_termina_em: string | null }[];
+  const lista = (testes ?? []) as {
+    empresa_id: string;
+    teste_termina_em: string | null;
+    gateway_subscription_id: string | null;
+    cartao_final: string | null;
+    valor_mensal: number | string | null;
+    proximo_vencimento: string | null;
+  }[];
   if (!lista.length) return resumo;
 
   const { data: empresas } = await db
@@ -325,11 +338,21 @@ export async function rodarAtivacao(agora = new Date()): Promise<ResumoAtivacao>
     const eventos3m =
       String((u.user_metadata as Record<string, unknown> | undefined)?.eventos_3_meses ?? "") || null;
 
+    // o teste com cartão: a cobrança já está agendada, e o e-mail diz o
+    // dia e o valor em vez de pedir para assinar
+    const cobranca: CobrancaAgendada | null = t.gateway_subscription_id
+      ? {
+          dia: t.proximo_vencimento ?? (t.teste_termina_em ? somarDias(t.teste_termina_em, 1) : hoje),
+          valor: Number(t.valor_mensal) || 0,
+          cartao: t.cartao_final,
+        }
+      : null;
+
     const montar = (d: DadosDoEmail): EmailPronto => {
       const base = { ...d, nome };
       switch (marca) {
         case "boas_vindas":
-          return htmlBoasVindas({ ...base, termina: t.teste_termina_em, eventos3m });
+          return htmlBoasVindas({ ...base, termina: t.teste_termina_em, eventos3m, cobranca });
         case "dia_1":
           return htmlDia1(base);
         case "dia_2":
@@ -337,13 +360,13 @@ export async function rodarAtivacao(agora = new Date()): Promise<ResumoAtivacao>
         case "dia_3":
           return htmlDia3({ ...base, termina: t.teste_termina_em });
         case "dia_5":
-          return htmlDia5({ ...base, termina: t.teste_termina_em!, hoje, evento });
+          return htmlDia5({ ...base, termina: t.teste_termina_em!, hoje, evento, cobranca });
         case "fim_teste":
-          return htmlFimTeste({ ...base, termina: t.teste_termina_em!, hoje, eventos: total });
+          return htmlFimTeste({ ...base, termina: t.teste_termina_em!, hoje, eventos: total, cobranca });
         case "ultimo_dia":
-          return htmlUltimoDia({ ...base, eventos: total, evento });
+          return htmlUltimoDia({ ...base, eventos: total, evento, cobranca });
         case "pos_2":
-          return htmlPos2({ ...base, eventos: total });
+          return htmlPos2({ ...base, eventos: total, cobranca });
         case "pos_7":
           return htmlPos7(base);
         case "pos_14":

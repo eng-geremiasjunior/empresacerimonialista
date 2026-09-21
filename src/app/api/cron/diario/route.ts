@@ -69,7 +69,11 @@ export const fetchCache = "force-no-store";
 export const maxDuration = 60;
 
 const ROTINAS = [
-  // PRIMEIRA de propósito (17/09/2026): a régua de e-mails do teste
+  // ANTES da régua de e-mails: o teste com cartão que a operadora cobrou
+  // ontem e cujo aviso não chegou vira assinante aqui — e a régua, logo
+  // abaixo, já não fala com ela como se o teste tivesse acabado
+  "cobranca-do-teste",
+  // A régua de e-mails do teste vem logo depois (17/09/2026): ela
   // ficava em 11º e não chegava a rodar — a função tem 60 segundos para
   // a lista inteira, e em 17/09 nenhuma conta de teste tinha recebido
   // "dia 2" nem "fim do teste". Quem fala com quem está decidindo

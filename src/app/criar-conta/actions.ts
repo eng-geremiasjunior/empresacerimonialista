@@ -1,35 +1,52 @@
 "use server";
 
-// A porta do teste de sete dias (154).
+// A porta do teste de sete dias (154) — COM CARTÃO desde 21/09/2026.
 //
-// Endereço PÚBLICO e sem cartão — é uma fábrica de contas por desenho, e
-// é isso que o dono está comprando: hoje "primeira conta criada" e
-// "primeira assinante" são o mesmo evento, e ele só conhece a primeira
-// usuária depois de ela ter comprado um sistema que nunca viu.
+// A decisão do dono: o cartão entra no cadastro, e a cobrança só depois
+// dos sete dias. Quinze contas em uma semana de anúncio, sete que nunca
+// criaram um evento e duas que voltaram: o cadastro sem cartão trazia
+// quem só queria olhar. O cartão é o filtro; a cobrança adiada é a
+// garantia de que ela pode olhar antes de pagar.
 //
-// O que impede a fábrica de virar problema:
-//  · o PORTÃO. Sem `teste_gratis.aberto`, esta ação recusa tudo. Ligar e
-//    desligar é do dono, no /admin, sem publicar código;
-//  · o RELÓGIO. Cada conta nasce com `teste_termina_em`, e a porta do
-//    sistema compara a data em toda leitura. Nada aqui renova prazo;
-//  · o TETO. A linha nasce no plano Essencial. Sem plano do catálogo os
-//    tetos voltariam nulos e o teste seria sistema ilimitado de graça
-//    (a 154 explica a armadilha).
+// A ORDEM É CARTÃO PRIMEIRO, CONTA DEPOIS:
+//  · o cliente e o cartão nascem na operadora ANTES da conta existir, e o
+//    cartão é CONFERIDO sem cobrar (zero dollar auth). Cartão inventado
+//    ou recusado pelo emissor para aqui, e nenhuma conta fica de pé;
+//  · só então a conta nasce, já confirmada (a mesma decisão da 154: um
+//    clique em caixa de entrada no meio do caminho é onde a maioria
+//    some), e a assinatura é AGENDADA na operadora para o dia seguinte ao
+//    fim do teste — até lá ela é "future", e não cobra;
+//  · se a operadora recusar o agendamento depois de a conta existir, a
+//    conta é desfeita: não sobra login sem cobrança combinada.
 //
-// A conta entra JÁ CONFIRMADA, de propósito. O objetivo declarado é a
-// primeira conta criada por alguém que chegou do anúncio; um clique em
-// caixa de entrada no meio do caminho é onde a maioria some — e, com o
-// Site URL do Supabase apontando para outro lugar, some TODA ela, em
-// silêncio. O preço disso está escrito abaixo, no comentário do e-mail.
+// O que impede a porta de virar problema continua o mesmo: o PORTÃO
+// (`teste_gratis.aberto`, no /admin), o RELÓGIO (`teste_termina_em`,
+// escrita uma vez e nunca renovada) e o TETO (a linha nasce no plano do
+// catálogo, com os tetos dele).
+//
+// Quem já estava no teste sem cartão antes desta mudança NÃO é tocado
+// (decisão do dono): a régua dela continua a data, e ela assina pela tela
+// de assinatura quando quiser.
 
 import { cookies, headers } from "next/headers";
 import { createClient as createServico } from "@supabase/supabase-js";
 import { registrarConversao } from "@/lib/conversoes";
 import { COOKIE_ORIGEM } from "@/lib/marketing";
-import { portaoDoTeste, fimDoTeste } from "@/lib/supabase/teste-gratis";
+import { portaoDoTeste } from "@/lib/supabase/teste-gratis";
 import { normalizarDDI } from "@/lib/whatsapp-link";
 import { ehEventos3Meses, normalizarInstagram } from "@/lib/cadastro-qualificacao";
 import { enviarBoasVindas } from "@/lib/email-ativacao";
+import { documentoValido } from "@/lib/documento";
+import { cepValido, ufValida } from "@/lib/contato";
+import {
+  cancelarAssinatura,
+  criarAssinaturaAgendada,
+  criarCartaoVerificado,
+  criarCliente,
+} from "@/lib/pagarme";
+import { centavos, PROMOCAO_LANCAMENTO } from "@/lib/planos";
+import { ofertaDoTeste } from "@/lib/teste-com-cartao";
+import { TERMOS_VERSAO } from "@/lib/termos";
 
 /** Mesmo cliente de serviço do checkout: `assinaturas` não tem policy de escrita. */
 function servico() {
@@ -86,20 +103,65 @@ export type ResultadoCriarConta = {
   idDoEvento?: string;
 };
 
-export async function criarContaDeTeste(dados: {
-  nome: string;
-  negocio: string;
-  email: string;
-  senha: string;
-  whatsapp: string;
-  eventos3m: string;
-  instagram?: string;
-}): Promise<ResultadoCriarConta> {
+/** O que a operadora exige de quem vai pagar, além do que a conta já tem. */
+export type CobrancaDoCadastro = {
+  documento: string;
+  cep: string;
+  rua: string;
+  numero: string;
+  complemento: string;
+  bairro: string;
+  cidade: string;
+  estado: string;
+};
+
+function conferirCobranca(c: CobrancaDoCadastro): string | null {
+  if (!documentoValido(c.documento)) return "Informe um CPF ou CNPJ válido.";
+  if (!cepValido(c.cep)) return "Informe um CEP válido.";
+  if (!c.rua.trim()) return "Informe a rua.";
+  if (!c.numero.trim()) return "Informe o número do endereço.";
+  if (!c.bairro.trim()) return "Informe o bairro.";
+  if (!c.cidade.trim()) return "Informe a cidade.";
+  if (!ufValida(c.estado)) return "Escolha o estado.";
+  return null;
+}
+
+/**
+ * Desfaz o que ESTE cadastro criou: vínculo, empresa e login. Só o caminho
+ * que criou a conta agora chama isto — nunca uma conta que já existia.
+ */
+async function desfazerConta(db: ReturnType<typeof servico>, userId: string, empresaId: string | null) {
+  if (empresaId) {
+    await db.from("assinaturas").delete().eq("empresa_id", empresaId);
+    await db.from("membros_equipe").delete().eq("user_id", userId);
+    await db.from("empresas").delete().eq("id", empresaId);
+  }
+  const { error } = await db.auth.admin.deleteUser(userId);
+  if (error) console.error("[vela:teste] conta órfã não apagada:", userId);
+}
+
+export async function criarContaDeTeste(
+  dados: {
+    nome: string;
+    negocio: string;
+    email: string;
+    senha: string;
+    whatsapp: string;
+    eventos3m: string;
+    instagram?: string;
+  },
+  pagamento: {
+    /** o token que o navegador pegou direto com a operadora; o número nunca chega aqui */
+    cardToken: string;
+    cobranca: CobrancaDoCadastro;
+    aceitouTermos: boolean;
+  }
+): Promise<ResultadoCriarConta> {
   const portao = await portaoDoTeste();
   if (!portao.aberto) {
     // A página só mostra este formulário com o portão aberto; chegar aqui
     // é endereço digitado à mão ou portão fechado no meio do caminho.
-    return { error: "O teste grátis não está aberto no momento. Você pode assinar agora mesmo." };
+    return { error: "O teste não está aberto no momento. Você pode assinar agora mesmo." };
   }
 
   const nome = dados.nome?.trim() ?? "";
@@ -120,13 +182,52 @@ export async function criarContaDeTeste(dados: {
   // opcional: um @ que não parece @ não recusa o cadastro, só não é guardado
   const instagram = normalizarInstagram(dados.instagram);
 
+  // TUDO CONFERIDO ANTES DE QUALQUER COISA NASCER — na operadora ou aqui.
+  if (pagamento?.aceitouTermos !== true) {
+    return { error: "Para começar, é preciso aceitar os Termos e Condições." };
+  }
+  if (!pagamento.cardToken) return { error: "Não recebemos os dados do cartão." };
+  const cobrancaInvalida = conferirCobranca(pagamento.cobranca);
+  if (cobrancaInvalida) return { error: cobrancaInvalida };
+
+  // O que vai ser agendado: o mesmo número que a tela acabou de mostrar,
+  // calculado pela mesma função (teste-com-cartao.ts).
+  const oferta = await ofertaDoTeste(portao.dias);
+  if (!oferta) {
+    return { error: "A assinatura ainda não está configurada. Fale com o suporte." };
+  }
+
+  const c = pagamento.cobranca;
+  const pagador = {
+    nome,
+    email,
+    documento: c.documento,
+    // o WhatsApp já vem com o 55; a operadora quer DDD + número
+    telefone: whatsapp.slice(2),
+    endereco: {
+      cep: c.cep,
+      rua: c.rua.trim(),
+      numero: c.numero.trim(),
+      complemento: c.complemento.trim(),
+      bairro: c.bairro.trim(),
+      cidade: c.cidade.trim(),
+      estado: c.estado,
+    },
+  };
+
+  // 1) O CARTÃO, CONFERIDO SEM COBRAR — antes de a conta existir. Recusa
+  //    aqui é resposta para ela ("confira os dados ou use outro cartão"),
+  //    e nenhuma conta fica de pé.
+  const cliente = await criarCliente(pagador);
+  if (!cliente.ok) return { error: cliente.erro };
+  const cartao = await criarCartaoVerificado(cliente.dados.id, pagamento.cardToken, pagador.endereco);
+  if (!cartao.ok) return { error: cartao.erro };
+
   const db = servico();
 
-  // `email_confirm: true` entrega a sessão na hora. O preço é conhecido:
-  // alguém pode cadastrar o e-mail de outra pessoa e aquele endereço fica
-  // presente nesta conta. Para trinta dias de anúncio com um punhado de
-  // contas por dia, o custo de perder toda cerimonialista na caixa de
-  // entrada é maior — e o portão fecha em um clique se aparecer abuso.
+  // 2) A CONTA. `email_confirm: true` entrega a sessão na hora: quem pôs
+  //    um cartão que o emissor aceitou está mais verificada do que quem
+  //    clica num link de e-mail (a mesma régua do checkout).
   const { data: criada, error: erroCriar } = await db.auth.admin.createUser({
     email,
     password: senha,
@@ -143,8 +244,7 @@ export async function criarContaDeTeste(dados: {
     },
   });
 
-  let userId = criada?.user?.id ?? null;
-  const contaNova = userId !== null;
+  const userId = criada?.user?.id ?? null;
 
   if (erroCriar || !userId) {
     const jaExiste =
@@ -180,10 +280,7 @@ export async function criarContaDeTeste(dados: {
   }
   if (!empresaId) {
     console.error("[vela:teste] empresa não provisionada para", userId);
-    if (contaNova) {
-      const { error: erroApagar } = await db.auth.admin.deleteUser(userId);
-      if (erroApagar) console.error("[vela:teste] login órfão não apagado:", userId);
-    }
+    await desfazerConta(db, userId, null);
     return { error: "Não foi possível abrir sua conta agora. Tente de novo em alguns instantes." };
   }
 
@@ -199,49 +296,94 @@ export async function criarContaDeTeste(dados: {
     if (erroZap) console.error("[vela:teste] whatsapp da dona:", erroZap.code ?? "sem código");
   }
 
-  // O TESTE. `plano: "essencial"` não é enfeite — é o que segura o teto
-  // (154). `valor_mensal: 0` porque não há cobrança: o valor de verdade
-  // entra quando ela assinar. Nada de `ultimo_pagamento_em` nem de
-  // `inicio`: as duas colunas dizem "já pagou" para o resto do sistema, e
-  // `ultimo_pagamento_em` ainda tiraria dela o direito aos R$ 27,90 na
-  // hora de assinar (podeEntrarNaPromocao), que é o contrário do plano.
-  const termina = fimDoTeste(portao.dias);
+  // 3) O ACEITE — antes de agendar a cobrança, como no checkout: sem o
+  //    aceite gravado não há o que cobrar no oitavo dia. A tabela (149)
+  //    não tem policy: só o service role escreve.
+  const h0 = headers();
+  const { error: erroAceite } = await db.from("termos_aceite").insert({
+    empresa_id: empresaId,
+    user_id: userId,
+    email,
+    versao: TERMOS_VERSAO,
+    contexto: "assinatura",
+    plano: oferta.plano.codigo,
+    ip: h0.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+    user_agent: h0.get("user-agent")?.slice(0, 300) ?? null,
+  });
+  if (erroAceite) {
+    console.error("[vela:teste] aceite:", erroAceite.code ?? "sem código");
+    await desfazerConta(db, userId, empresaId);
+    return { error: "Não conseguimos registrar o aceite dos termos. Tente de novo em instantes." };
+  }
+
+  // 4) A COBRANÇA, AGENDADA. A operadora guarda a assinatura como "future"
+  //    e só gera a primeira fatura no dia marcado. Se ela recusar o
+  //    agendamento, a conta não fica de pé sem cobrança combinada.
+  const agendada = await criarAssinaturaAgendada({
+    clienteId: cliente.dados.id,
+    cardId: cartao.dados.id,
+    valorCentavos: centavos(oferta.valorPrimeiro),
+    descricao: `Plano ${oferta.plano.nome}`,
+    comecaEm: oferta.comecaEm,
+    codigo: empresaId,
+  });
+  if (!agendada.ok) {
+    console.error("[vela:teste] agendamento recusado pela operadora:", agendada.erro.slice(0, 160));
+    await desfazerConta(db, userId, empresaId);
+    return { error: agendada.erro };
+  }
+  const g = agendada.dados;
+  const primeiraCobranca =
+    g.next_billing_at?.slice(0, 10) ?? g.current_cycle?.end_at?.slice(0, 10) ?? oferta.comecaEm;
+
+  // 5) O TESTE. `plano` do catálogo segura o teto (154). `valor_mensal` é
+  //    o que sai na primeira cobrança: a tela de assinatura mostra "a
+  //    partir de X, R$ Y" a partir daqui. Nada de `ultimo_pagamento_em`
+  //    nem de `inicio`: as duas dizem "já pagou" para o resto do sistema,
+  //    e quem diz isso é a operadora, no oitavo dia (webhook).
+  //    A promoção é gravada AQUI, com a escada contando do dia da primeira
+  //    cobrança: são 3 meses de R$ 27,90 a partir de quando o dinheiro
+  //    começa a entrar, não do cadastro.
   const { error: erroTeste } = await db.from("assinaturas").upsert(
     {
       empresa_id: empresaId,
-      plano: "essencial",
-      valor_mensal: 0,
+      plano: oferta.plano.codigo,
+      valor_mensal: oferta.valorPrimeiro,
       status: "trial",
-      teste_termina_em: termina,
-      observacao: `teste de ${portao.dias} dias`,
+      teste_termina_em: oferta.termina,
+      gateway: "pagarme",
+      gateway_customer_id: cliente.dados.id,
+      gateway_subscription_id: g.id,
+      proximo_vencimento: primeiraCobranca,
+      cartao_final: g.card?.last_four_digits ?? cartao.dados.last_four_digits ?? null,
+      cartao_bandeira: g.card?.brand ?? cartao.dados.brand ?? null,
+      falhas_seguidas: 0,
+      promocao_codigo: oferta.naPromocao ? PROMOCAO_LANCAMENTO : null,
+      promocao_inicio: oferta.naPromocao ? primeiraCobranca : null,
+      observacao: `teste de ${portao.dias} dias · cobrança agendada para ${primeiraCobranca}`,
+      updated_at: new Date().toISOString(),
     },
     { onConflict: "empresa_id" }
   );
   if (erroTeste) {
-    // Sem a linha do teste ela cairia no checkout no primeiro clique —
-    // exatamente a tela de que a estamos poupando. Melhor desfazer e
-    // pedir para tentar de novo do que entregar uma conta trancada.
+    // A cobrança JÁ está agendada na operadora: desagendar antes de
+    // desfazer a conta, senão sobra uma cobrança sem dono no oitavo dia.
     console.error("[vela:teste] linha do teste:", erroTeste.code ?? "sem código");
-    if (contaNova) {
-      await db.from("membros_equipe").delete().eq("user_id", userId);
-      await db.from("empresas").delete().eq("id", empresaId);
-      const { error: erroApagar } = await db.auth.admin.deleteUser(userId);
-      if (erroApagar) console.error("[vela:teste] conta órfã não apagada:", userId);
-    }
+    const morta = await cancelarAssinatura(g.id);
+    if (!morta.ok) console.error("[vela:teste] assinatura agendada sem dono:", g.id);
+    await desfazerConta(db, userId, empresaId);
     return { error: "Não foi possível abrir seu teste agora. Tente de novo em alguns instantes." };
   }
 
   // A CONTA NASCEU — e este é o evento que o anúncio precisa receber.
-  // Sem ele a Meta otimiza por clique, que foi exatamente o que produziu
-  // trinta e sete cliques e nenhuma conta na campanha do Instagram.
-  // Sai pelo SERVIDOR, com o mesmo id de deduplicação do checkout, para
-  // a mesma conta não ser contada duas vezes se ela assinar depois.
+  // Sai pelo SERVIDOR: esta tela tem campos de cartão e não carrega
+  // pixel. O mesmo id de deduplicação do checkout, para a mesma conta não
+  // ser contada duas vezes quando a cobrança passar no oitavo dia.
   //
   // A origem do clique vai junto, gravada como o checkout já grava (152):
-  // é ela que dirá, quando esta conta assinar daqui a cinco dias, de qual
-  // anúncio ela veio. Nada aqui pode derrubar o cadastro.
+  // é ela que dirá, quando esta conta virar assinante, de qual anúncio
+  // ela veio. Nada aqui pode derrubar o cadastro.
   try {
-    const h0 = headers();
     const o = lerOrigemDoCookie();
     if (o) {
       await db.from("origem_do_clique").upsert(
@@ -274,9 +416,17 @@ export async function criarContaDeTeste(dados: {
     console.error("[vela:conversao] conta de teste:", String(e).slice(0, 200));
   }
 
-  // O primeiro e-mail do teste (email-ativacao.ts). Nunca derruba o
-  // cadastro; se não sair agora, a rotina diária tenta de novo.
-  await enviarBoasVindas({ userId, email, nome, termina, eventos3m });
+  // O primeiro e-mail do teste (email-ativacao.ts), já dizendo o dia e o
+  // valor da primeira cobrança. Nunca derruba o cadastro; se não sair
+  // agora, a rotina diária tenta de novo.
+  await enviarBoasVindas({
+    userId,
+    email,
+    nome,
+    termina: oferta.termina,
+    eventos3m,
+    cobranca: { dia: primeiraCobranca, valor: oferta.valorPrimeiro },
+  });
 
   return { ok: true, idDoEvento: `conta:${empresaId}` };
 }

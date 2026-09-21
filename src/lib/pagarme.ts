@@ -157,6 +157,12 @@ function mensagemDoErro(status: number, corpo: unknown): string {
       ? `O cartão não foi aceito. Confira os dados ou tente outro.${detalhe}`
       : `Não foi possível concluir. Confira os dados e tente de novo.${detalhe}`;
   }
+  // 412 é a resposta da VERIFICAÇÃO do cartão (zero dollar auth): o banco
+  // emissor não aceitou o cartão. Nada foi cobrado, e é isso que ela
+  // precisa ler.
+  if (status === 412) {
+    return "O cartão não foi aceito pela operadora. Nada foi cobrado. Confira os dados ou use outro cartão.";
+  }
   if (status >= 500) return "A operadora está instável agora. Tente em alguns minutos.";
   return `Não foi possível concluir o pagamento.${detalhe}`;
 }
@@ -180,6 +186,23 @@ export type AssinaturaGateway = {
 };
 
 export type ClienteGateway = { id: string; name?: string; email?: string };
+
+export type CartaoGateway = {
+  id: string;
+  status?: string;
+  last_four_digits?: string;
+  brand?: string;
+  exp_month?: number;
+  exp_year?: number;
+};
+
+export type FaturaGateway = {
+  id: string;
+  status?: string;
+  paid_at?: string | null;
+  amount?: number;
+  created_at?: string;
+};
 
 // ------------------------------------------------------------------
 // Operações
@@ -319,6 +342,100 @@ export async function criarAssinatura(dados: {
       ],
     }),
   });
+}
+
+/**
+ * O cartão salvo no cliente da operadora, CONFERIDO sem cobrar (o "zero
+ * dollar auth" da documentação): a operadora pergunta ao banco emissor se
+ * o cartão existe e aceita, sem lançar valor nenhum. É o que o cadastro
+ * com teste precisa — hoje não se cobra nada, mas um cartão inventado não
+ * pode abrir conta. Cartão que o emissor recusa volta como 412.
+ *
+ * O token é de uso único: depois daqui o que identifica o cartão é o
+ * `id` devolvido, e é ele que a assinatura agendada usa.
+ */
+export async function criarCartaoVerificado(
+  clienteId: string,
+  cardToken: string,
+  endereco: DadosDoPagador["endereco"]
+) {
+  const e = endereco;
+  return chamar<CartaoGateway>(`/customers/${clienteId}/cards`, {
+    method: "POST",
+    body: JSON.stringify({
+      token: cardToken,
+      billing_address: {
+        line_1: [e.numero, e.rua, e.bairro].filter(Boolean).join(", "),
+        line_2: e.complemento || "",
+        zip_code: e.cep.replace(/\D/g, ""),
+        city: e.cidade,
+        state: e.estado.toUpperCase(),
+        country: "BR",
+      },
+      options: { verify_card: true },
+    }),
+  });
+}
+
+/**
+ * A assinatura que COMEÇA NO FUTURO: a mesma assinatura avulsa de
+ * `criarAssinatura`, com `start_at` no dia da primeira cobrança. Até lá a
+ * operadora a devolve como "future" e não cobra; no dia, gera a primeira
+ * fatura no cartão salvo. É o teste de sete dias com cartão (decisão do
+ * dono, 21/09/2026): o cartão entra no cadastro, o dinheiro só no 8º dia.
+ *
+ * Usa o `card_id` do cartão já verificado, não o token — o token morreu
+ * na verificação.
+ */
+export async function criarAssinaturaAgendada(dados: {
+  clienteId: string;
+  cardId: string;
+  valorCentavos: number;
+  descricao: string;
+  /** o dia da primeira cobrança, YYYY-MM-DD */
+  comecaEm: string;
+  /** a nossa referência (a empresa), para achar a assinatura no painel da operadora */
+  codigo?: string;
+}) {
+  return chamar<AssinaturaGateway>("/subscriptions", {
+    method: "POST",
+    body: JSON.stringify({
+      customer_id: dados.clienteId,
+      card_id: dados.cardId,
+      ...(dados.codigo ? { code: dados.codigo } : {}),
+      payment_method: "credit_card",
+      billing_type: "prepaid",
+      interval: "month",
+      interval_count: 1,
+      installments: 1,
+      start_at: dados.comecaEm,
+      items: [
+        {
+          description: dados.descricao,
+          quantity: 1,
+          pricing_scheme: { price: dados.valorCentavos, scheme_type: "unit" },
+        },
+      ],
+    }),
+  });
+}
+
+/**
+ * As faturas PAGAS de uma assinatura. É a rede de segurança do teste com
+ * cartão: se o aviso da operadora não chegar no dia da primeira cobrança,
+ * a rotina diária pergunta aqui se a fatura foi paga antes de abrir a
+ * conta como assinante. Nunca ativa por "status active" — assinatura
+ * ativa com cobrança recusada continua ativa lá.
+ */
+export async function faturasPagas(
+  assinaturaId: string
+): Promise<{ ok: true; faturas: FaturaGateway[] } | { ok: false; erro: string }> {
+  const r = await chamar<{ data?: FaturaGateway[] }>(
+    `/invoices?subscription_id=${encodeURIComponent(assinaturaId)}&status=paid&page=1&size=5`
+  );
+  if (!r.ok) return { ok: false, erro: r.erro };
+  const lista = Array.isArray(r.dados?.data) ? r.dados.data : [];
+  return { ok: true, faturas: lista.filter((f) => f && f.id) };
 }
 
 /** A verdade sobre uma assinatura — é o que o webhook manda reler. */

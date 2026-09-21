@@ -82,7 +82,9 @@ export default async function AssinaturaPage({
   // divergir: é disso que nasce contestação de cartão.
   const { data: assinatura } = await supabase
     .from("assinaturas")
-    .select("cancelada_em, promocao_codigo, promocao_inicio")
+    // teste_termina_em (154): o teste com cartão mostra até quando ela
+    // testa ao lado do dia da primeira cobrança
+    .select("cancelada_em, promocao_codigo, promocao_inicio, teste_termina_em")
     .maybeSingle();
 
   const escada = await getEscadaDaPromocao(PROMOCAO_LANCAMENTO);
@@ -155,6 +157,7 @@ export default async function AssinaturaPage({
       emailDaConta={user?.email ?? ""}
       nomeDaConta={membro?.nome ?? ""}
       planoDaUrl={searchParams?.plano ?? null}
+      testeTerminaEm={(assinatura as { teste_termina_em?: string | null } | null)?.teste_termina_em ?? null}
     />
   );
 }

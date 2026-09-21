@@ -1,17 +1,10 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import {
-  faixasDaEscada,
-  getCatalogoDePlanos,
-  getEscadaDaPromocao,
-  PLANO_DA_PROMOCAO,
-  PROMOCAO_LANCAMENTO,
-  reais,
-} from "@/lib/planos";
+import { reais } from "@/lib/planos";
 import { portaoDoTeste } from "@/lib/supabase/teste-gratis";
-import { CriarContaGratis } from "@/components/auth/CriarContaGratis";
-import { Medicao } from "@/components/marketing/Medicao";
+import { ofertaDoTeste } from "@/lib/teste-com-cartao";
+import { CriarContaDeTeste } from "@/components/auth/CriarContaDeTeste";
 import { Simbolo } from "@/components/marca/Marca";
 import { CSS_PLANOS } from "@/components/planos/estilo";
 
@@ -23,16 +16,19 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-// A porta do teste de sete dias (154).
+// A porta do teste de sete dias (154), com o cartão no cadastro (21/09/2026).
 //
-// Existe porque, sem ela, "primeira conta criada" e "primeira assinante"
-// eram o MESMO evento: a única entrada pedia cartão e dezesseis campos
-// antes da primeira tela do produto. Aqui são quatro campos e nenhum
-// cartão.
+// O cartão é conferido sem cobrar; a assinatura fica agendada para o dia
+// seguinte ao fim do teste. O que a tela promete (dia e valor) é calculado
+// aqui, pela mesma função que a action usa para agendar
+// (lib/teste-com-cartao.ts).
+//
+// SEM PIXEL NESTA PÁGINA, de propósito: há campos de cartão nela, e
+// script de terceiro não entra em formulário de pagamento (a mesma regra
+// do checkout). A conversão do cadastro sai pelo servidor.
 //
 // O PORTÃO MANDA. Fechado, esta página não existe — manda para o
-// checkout, que é o comportamento anterior à 154. Quem liga e desliga é
-// o dono, no /admin, sem publicar nada.
+// checkout. Quem liga e desliga é o dono, no /admin, sem publicar nada.
 export default async function CriarContaPage() {
   const supabase = createClient();
   const {
@@ -43,24 +39,9 @@ export default async function CriarContaPage() {
   const portao = await portaoDoTeste();
   if (!portao.aberto) redirect("/comecar");
 
-  // O preço do botão secundário sai do mesmo lugar da vitrine: primeiro
-  // degrau da escada, se ela desconta; senão, o plano de entrada. Sem
-  // catálogo, o botão fica sem preço — mas fica.
-  const planos = await getCatalogoDePlanos();
-  const escada = await getEscadaDaPromocao(PROMOCAO_LANCAMENTO);
-  const planoPromovido = planos.find((p) => p.codigo === PLANO_DA_PROMOCAO) ?? null;
-  const faixas =
-    escada && escada.degraus.length > 0 && planoPromovido
-      ? faixasDaEscada(escada, planoPromovido.valorMensal)
-      : null;
-  const desconta =
-    faixas !== null &&
-    planoPromovido !== null &&
-    faixas[0].valorMensal > 0 &&
-    faixas[0].valorMensal < planoPromovido.valorMensal;
-  const planoDeEntrada =
-    planoPromovido ?? [...planos].sort((a, b) => a.valorMensal - b.valorMensal)[0] ?? null;
-  const preco = desconta && faixas ? faixas[0].valorMensal : (planoDeEntrada?.valorMensal ?? null);
+  // Sem catálogo não há o que agendar: a página de vendas explica.
+  const oferta = await ofertaDoTeste(portao.dias);
+  if (!oferta) redirect("/planos");
 
   return (
     <div
@@ -162,13 +143,22 @@ export default async function CriarContaPage() {
           }}
         >
           Cadastre um evento de verdade, monte o roteiro do dia e mande o link para o
-          fornecedor. Dá para fazer isso nos primeiros dez minutos.
+          fornecedor. O cartão fica guardado e nada é cobrado hoje: a primeira cobrança é em{" "}
+          {oferta.texto.comecaEm}.
         </p>
 
-        <CriarContaGratis dias={portao.dias} precoDeEntrada={preco !== null ? reais(preco) : null} />
+        <CriarContaDeTeste
+          oferta={{
+            dias: portao.dias,
+            comecaEm: oferta.texto.comecaEm,
+            termina: oferta.texto.termina,
+            preco: oferta.texto.preco,
+            primeiraCobranca: oferta.texto.primeiraCobranca,
+            planoNome: oferta.plano.nome,
+          }}
+          precoDeEntrada={reais(oferta.valorPrimeiro)}
+        />
       </main>
-      {/* o pixel e a tag do Google: é aqui que o anúncio do teste termina */}
-      <Medicao />
     </div>
   );
 }

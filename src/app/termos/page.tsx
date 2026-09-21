@@ -83,8 +83,8 @@ export default function TermosPage() {
           e de <i>qual</i> texto foi aceito.
         </p>
         <p style={p}>
-          Se você usa o sistema no período gratuito, sem assinatura, estes
-          termos também valem para esse uso.
+          Se você usa o sistema no período de teste, antes da primeira
+          cobrança, estes termos também valem para esse uso.
         </p>
       </Secao>
 

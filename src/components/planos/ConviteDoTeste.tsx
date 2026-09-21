@@ -25,14 +25,15 @@ export function ConviteDoTeste({
 }) {
   const garantias = [
     {
-      titulo: "Não pedimos dados de cartão",
-      texto:
-        "Nenhum número de cartão é solicitado para criar a conta ou para usar o sistema durante o período de avaliação.",
+      titulo: "Nada é cobrado hoje",
+      texto: `O cartão fica cadastrado e a primeira cobrança sai só no ${dias + 1}º dia${
+        precoDeEntrada ? `, de ${precoDeEntrada}` : ""
+      }. O valor está escrito antes de você confirmar.`,
     },
     {
-      titulo: `Encerra automaticamente em ${dias} dias`,
+      titulo: `Cancele até o ${dias}º dia e não paga nada`,
       texto:
-        "Não há renovação automática e não há cobrança ao final. Se você não decidir assinar, nada acontece.",
+        "Cancelar é um clique na tela de assinatura, hoje ou depois. Sem fidelidade e sem multa.",
     },
     {
       titulo: "O que você cadastrar permanece salvo",
@@ -104,9 +105,9 @@ export function ConviteDoTeste({
               textWrap: "pretty",
             }}
           >
-            A criação da conta não exige dados de cartão de crédito. Você
-            cadastra um evento que já está organizando, monta o roteiro do dia e envia o
-            link para os fornecedores — com o sistema completo, no plano Essencial.
+            O cartão fica cadastrado e nada é cobrado hoje. Você cadastra um evento que já
+            está organizando, monta o roteiro do dia e envia o link para os fornecedores —
+            com o sistema completo, no plano Essencial.
           </p>
         </div>
 

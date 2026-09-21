@@ -230,7 +230,9 @@ export function planoOuTeste(c: ResumoDaConta, agora: Date): string {
   if (!a) return "sem assinatura";
   if (a.status === "trial") {
     const faltam = diasAte(a.teste_termina_em, agora);
-    return faltam === null ? "teste sem prazo" : `teste · ${prazoEmPalavras(faltam)}`;
+    // "· cartão": o teste com cartão (21/09/2026), que vira assinante sozinho
+    const cartao = a.tem_gateway ? " · cartão" : "";
+    return faltam === null ? `teste sem prazo${cartao}` : `teste · ${prazoEmPalavras(faltam)}${cartao}`;
   }
   if (a.status === "cancelada") {
     return a.cancelada_em ? `cancelada em ${dataBR(a.cancelada_em)}` : "cancelada";
