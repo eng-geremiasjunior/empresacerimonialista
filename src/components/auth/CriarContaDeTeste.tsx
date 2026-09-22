@@ -76,7 +76,8 @@ const campo = {
   fontSize: "16px",
   outline: "none",
 } as const;
-const campoMono = { ...campo, fontFamily: F_MONO, fontSize: "15px" } as const;
+// 16px como os outros campos: abaixo disso o iPhone dá zoom ao focar
+const campoMono = { ...campo, fontFamily: F_MONO, fontSize: "16px" } as const;
 const rotulo = {
   display: "block",
   marginBottom: "6px",
@@ -174,13 +175,19 @@ export function CriarContaDeTeste({
     guardarOrigemDoClique();
   }, []);
 
-  const contaCompleta =
-    nome.trim().length >= 2 &&
-    negocio.trim().length >= 2 &&
-    /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim()) &&
-    senha.length >= 6 &&
-    normalizarDDI(whatsapp) !== null &&
-    eventos3m !== null;
+  // O que falta na conta, dito pelo nome. O botão fica sempre ativo e o
+  // clique aponta o campo — botão apagado sem explicação era onde ela
+  // parava sem saber por quê (revisão de 21/09/2026). As mesmas frases
+  // que o servidor devolve, para não haver duas verdades.
+  function faltaNaConta(): string | null {
+    if (nome.trim().length < 2) return "Escreva seu nome.";
+    if (negocio.trim().length < 2) return "Escreva o nome do seu negócio.";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) return "Confira o e-mail digitado.";
+    if (senha.length < 6) return "A senha precisa de pelo menos 6 caracteres.";
+    if (normalizarDDI(whatsapp) === null) return "Confira o WhatsApp — com DDD, só números.";
+    if (eventos3m === null) return "Diga quantos eventos você tem nos próximos 3 meses.";
+    return null;
+  }
 
   const set = (p: Partial<CobrancaDoCadastro>) => setCobranca((c) => ({ ...c, ...p }));
 
@@ -222,8 +229,9 @@ export function CriarContaDeTeste({
   }
 
   function continuar() {
-    setErro(null);
-    if (!contaCompleta) return;
+    const falta = faltaNaConta();
+    setErro(falta);
+    if (falta) return;
     setPasso(2);
     // chegou ao cartão: o meio do funil que a Meta otimiza
     assinaturaIniciada(oferta.planoCodigo, oferta.valorPrimeiro);
@@ -499,7 +507,24 @@ export function CriarContaDeTeste({
             />
           </div>
 
-          <Botao disabled={!contaCompleta} onClick={continuar}>
+          {erro && (
+            <p
+              role="alert"
+              style={{
+                margin: 0,
+                padding: "10px 12px",
+                borderRadius: "8px",
+                background: C.ameixaClaro,
+                color: "#4A2A40",
+                fontSize: "13.5px",
+                lineHeight: 1.45,
+              }}
+            >
+              {erro}
+            </p>
+          )}
+
+          <Botao disabled={false} onClick={continuar}>
             Continuar
           </Botao>
           <p style={{ margin: 0, fontSize: "13.5px", lineHeight: 1.5, color: C.meta, textAlign: "center" }}>
@@ -535,7 +560,7 @@ export function CriarContaDeTeste({
               <strong>{oferta.comecaEm}</strong>: {oferta.preco}.
             </p>
             <p style={{ margin: 0 }}>
-              Cancele até {oferta.termina}, em um clique, e nada é cobrado.
+              Cancele até {oferta.termina}, na tela de assinatura, e nada é cobrado.
             </p>
           </div>
 
@@ -789,7 +814,7 @@ export function CriarContaDeTeste({
             </p>
           )}
 
-          <Botao type="submit" disabled={travado || !aceitei}>
+          <Botao type="submit" disabled={travado}>
             {enviando === "conferindo"
               ? "Conferindo o cartão…"
               : enviando === "abrindo"

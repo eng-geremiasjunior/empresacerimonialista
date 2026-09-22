@@ -4,6 +4,7 @@ import { lerAssinatura } from "@/lib/pagarme";
 import { hojeBR } from "@/lib/tempo";
 import { registrarErroDoServidor } from "@/lib/registro-do-sistema";
 import { conversaoDaAssinatura } from "@/lib/conversao-da-assinatura";
+import { COBRANCA_RECUSADA } from "@/lib/assinatura/marcadores";
 
 export const dynamic = "force-dynamic";
 
@@ -174,6 +175,16 @@ export async function POST(request: NextRequest) {
   //   · cancelamento só vale para quem pagava;
   //   · cobrança recusada só marca atraso em quem estava ativa;
   //   · pagamento confirmado ativa qualquer conta que não esteja ativa.
+  //
+  // O TESTE COM CARTÃO (21/09/2026) acrescenta a quarta regra, e ela é de
+  // dinheiro: numa assinatura agendada, "active" na operadora NÃO quer
+  // dizer "pagou" — no 8º dia ela vira active e gera a fatura ANTES de o
+  // cartão responder, e continua active com a cobrança recusada. Para a
+  // conta em teste, só a fatura PAGA (charge.paid / invoice.paid) abre a
+  // conta; qualquer outro aviso a deixa em teste. Sem isto, um
+  // invoice.created abria a conta sem um centavo, mandava Purchase à Meta
+  // e apagava o fim do teste.
+  const emTeste = linha.status === "trial";
   const pagava = ["ativa", "inadimplente", "pausada"].includes(linha.status);
   const statusNovo = cancelou
     ? pagava
@@ -183,9 +194,43 @@ export async function POST(request: NextRequest) {
       ? linha.status === "ativa"
         ? "inadimplente"
         : linha.status
-      : pagou || g.status === "active"
+      : pagou || (g.status === "active" && !emTeste)
         ? "ativa"
         : linha.status;
+
+  // Cobrança do teste cancelada na operadora (pelo dono no painel dela,
+  // ou por ela mesma): a linha volta a ser um teste sem cartão na hora —
+  // a tela e os e-mails param de anunciar uma cobrança que não vai sair.
+  if (emTeste && cancelou) {
+    const { error: erroLimpar } = await db
+      .from("assinaturas")
+      .update({
+        gateway_subscription_id: null,
+        cartao_final: null,
+        cartao_bandeira: null,
+        proximo_vencimento: null,
+        promocao_codigo: null,
+        promocao_inicio: null,
+        valor_mensal: 0,
+        observacao: `cobrança do teste cancelada na operadora (aviso ${corpo.type})`,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", linha.id)
+      .eq("status", "trial");
+    if (erroLimpar) {
+      console.error("[vela:pagarme] limpar cobrança do teste:", erroLimpar.message);
+      await db
+        .from("gateway_evento")
+        .update({ empresa_id: linha.empresa_id, erro: erroLimpar.message })
+        .eq("id", registro.data.id);
+      return NextResponse.json({ ok: false }, { status: 503 });
+    }
+    await db
+      .from("gateway_evento")
+      .update({ empresa_id: linha.empresa_id, processado_em: new Date().toISOString() })
+      .eq("id", registro.data.id);
+    return NextResponse.json({ ok: true, testeSemCartao: true });
+  }
 
   // O preço que a operadora está cobrando, em reais. É ele que o histórico
   // do painel do dono precisa; sem ele, a conta entrava no MRR com R$ 0.
@@ -216,6 +261,9 @@ export async function POST(request: NextRequest) {
   }
   // A recusa no checkout já foi contada lá; aqui conta a de quem já paga.
   if (falhou && pagava) patch.falhas_seguidas = (linha.falhas_seguidas ?? 0) + 1;
+  // A primeira cobrança do teste recusada fica anotada: é o que deixa a
+  // tela e o e-mail dizerem "não passou" só quando o sistema sabe.
+  if (falhou && emTeste) patch.observacao = `${COBRANCA_RECUSADA} ${hojeBR()}`;
   // Brasília, como a 151 mede a cortesia — ver o comentário em actions.ts.
   // Só no dia em que a conta passa a cancelada: um segundo aviso de
   // cancelamento empurrava a data para frente, e o congelamento junto.
@@ -224,7 +272,7 @@ export async function POST(request: NextRequest) {
   }
   // Conta que sai do teste pelo aviso passa a ter o valor que está sendo
   // cobrado (o checkout grava o valor só quando a cobrança passa na hora).
-  if (statusNovo === "ativa" && linha.status === "trial" && precoDaOperadora !== null) {
+  if (statusNovo === "ativa" && emTeste && precoDaOperadora !== null) {
     patch.valor_mensal = precoDaOperadora;
   }
 
@@ -289,7 +337,8 @@ export async function POST(request: NextRequest) {
     // O teste com cartão (21/09/2026) vira venda AQUI, sem ninguém na
     // tela: a primeira cobrança saiu pela operadora. O anúncio recebe o
     // Purchase pelo servidor, com o id da assinatura para não contar duas
-    // vezes se o aviso se repetir.
+    // vezes se o aviso se repetir. Só com a fatura PAGA (é a única
+    // transição trial → ativa que existe acima).
     if (statusNovo === "ativa" && linha.status === "trial") {
       await conversaoDaAssinatura(db, linha.empresa_id, assinaturaId, valorCobrado);
     }

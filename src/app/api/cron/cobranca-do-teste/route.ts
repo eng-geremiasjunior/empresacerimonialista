@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { faturasPagas, lerAssinatura } from "@/lib/pagarme";
+import {
+  assinaturasFuturas,
+  cancelarAssinatura,
+  diaDoPagamento,
+  faturasPagas,
+  lerAssinatura,
+} from "@/lib/pagarme";
 import { conversaoDaAssinatura } from "@/lib/conversao-da-assinatura";
 import { hojeBR } from "@/lib/tempo";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+export const maxDuration = 60;
 
 // A rede de segurança do teste com cartão.
 //
@@ -18,6 +26,11 @@ export const dynamic = "force-dynamic";
 //
 // Cancelada na operadora por fora, a linha volta a ser um teste sem
 // cartão: a régua da data continua valendo, sem cobrança nenhuma.
+//
+// E a reconciliação: uma assinatura AGENDADA na operadora que não tem
+// conta aqui (resposta perdida no cadastro, conta desfeita sem conseguir
+// cancelar) cobraria no 8º dia sem dono. A rotina lista as futuras na
+// operadora e cancela as que nenhuma linha conhece.
 
 function servico() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
@@ -32,6 +45,16 @@ type Linha = {
   gateway_subscription_id: string;
   valor_mensal: number | string | null;
   proximo_vencimento: string | null;
+};
+
+const LIMPEZA = {
+  gateway_subscription_id: null,
+  cartao_final: null,
+  cartao_bandeira: null,
+  proximo_vencimento: null,
+  promocao_codigo: null,
+  promocao_inicio: null,
+  valor_mensal: 0,
 };
 
 export async function GET(request: NextRequest) {
@@ -61,7 +84,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const resumo = { conferidas: 0, ativadas: 0, aguardando: 0, canceladasNaOperadora: 0, semResposta: 0, falhas: 0 };
+  const resumo = {
+    conferidas: 0,
+    ativadas: 0,
+    aguardando: 0,
+    canceladasNaOperadora: 0,
+    semResposta: 0,
+    falhas: 0,
+    orfasCanceladas: 0,
+    orfasSemResposta: 0,
+  };
 
   for (const l of (data ?? []) as Linha[]) {
     resumo.conferidas++;
@@ -74,23 +106,18 @@ export async function GET(request: NextRequest) {
     const g = lida.dados;
 
     if (g.status === "canceled") {
-      const { error: e1 } = await db
+      const { data: limpas, error: e1 } = await db
         .from("assinaturas")
         .update({
-          gateway_subscription_id: null,
-          cartao_final: null,
-          cartao_bandeira: null,
-          proximo_vencimento: null,
-          promocao_codigo: null,
-          promocao_inicio: null,
-          valor_mensal: 0,
+          ...LIMPEZA,
           observacao: "cobrança do teste cancelada na operadora",
           updated_at: new Date().toISOString(),
         })
         .eq("id", l.id)
-        .eq("status", "trial");
+        .eq("status", "trial")
+        .select("id");
       if (e1) resumo.falhas++;
-      else resumo.canceladasNaOperadora++;
+      else if (limpas?.length) resumo.canceladasNaOperadora++;
       continue;
     }
 
@@ -101,7 +128,7 @@ export async function GET(request: NextRequest) {
     }
     if (pagas.faturas.length === 0) {
       // cobrança ainda não passou (ou a operadora ainda vai tentar): a
-      // porta fica fechada pela data, e a tela de assinatura diz o que fazer
+      // porta fecha pela data, e a tela de assinatura diz o que fazer
       resumo.aguardando++;
       continue;
     }
@@ -111,9 +138,9 @@ export async function GET(request: NextRequest) {
       Number.isFinite(precoCentavos) && precoCentavos > 0
         ? precoCentavos / 100
         : Number(l.valor_mensal) || 0;
-    const pagaEm = (pagas.faturas[0].paid_at ?? "").slice(0, 10) || hoje;
+    const pagaEm = diaDoPagamento(pagas.faturas[0]) ?? hoje;
 
-    const { error: e2 } = await db
+    const { data: ativadas, error: e2 } = await db
       .from("assinaturas")
       .update({
         status: "ativa",
@@ -127,12 +154,15 @@ export async function GET(request: NextRequest) {
         updated_at: new Date().toISOString(),
       })
       .eq("id", l.id)
-      // só vale se o webhook não passou na frente
-      .eq("status", "trial");
+      // só vale se o webhook não passou na frente — e se passou, o
+      // histórico e a conversão já são dele
+      .eq("status", "trial")
+      .select("id");
     if (e2) {
       resumo.falhas++;
       continue;
     }
+    if (!ativadas?.length) continue;
     await db.from("assinatura_eventos").insert({
       assinatura_id: l.id,
       empresa_id: l.empresa_id,
@@ -143,6 +173,27 @@ export async function GET(request: NextRequest) {
     });
     await conversaoDaAssinatura(db, l.empresa_id, id, preco);
     resumo.ativadas++;
+  }
+
+  // As agendadas sem dono. Só o que está "future" (ainda não cobrou) e
+  // que nenhuma linha daqui conhece.
+  const futuras = await assinaturasFuturas();
+  if (futuras.ok && futuras.lista.length > 0) {
+    const ids = futuras.lista.map((s) => s.id);
+    const { data: conhecidas } = await db
+      .from("assinaturas")
+      .select("gateway_subscription_id")
+      .in("gateway_subscription_id", ids);
+    const nossas = new Set((conhecidas ?? []).map((c) => c.gateway_subscription_id as string));
+    for (const s of futuras.lista) {
+      if (nossas.has(s.id)) continue;
+      const r = await cancelarAssinatura(s.id);
+      if (r.ok) resumo.orfasCanceladas++;
+      else {
+        resumo.orfasSemResposta++;
+        console.error("[vela:teste] assinatura agendada sem dono não cancelada:", s.id);
+      }
+    }
   }
 
   return NextResponse.json({ ok: true, ...resumo });

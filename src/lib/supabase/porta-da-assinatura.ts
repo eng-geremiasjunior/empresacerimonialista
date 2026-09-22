@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { somarDias } from "@/lib/tempo";
 
 /**
  * A porta do sistema: esta conta já pagou para entrar?
@@ -71,12 +72,33 @@ export async function precisaAssinar(): Promise<boolean> {
     // ausente enquanto a 154 não tiver sido aplicada — e ausente é o
     // mesmo que "sem teste", que é o comportamento anterior a ela
     teste_termina_em?: string | null;
+    gateway_subscription_id?: string | null;
+    proximo_vencimento?: string | null;
   };
   if (linha.status === "ativa" || linha.status === "pausada") return false;
   if (linha.ultimo_pagamento_em) return false;
   if (linha.status === "trial" && testeVivo(linha.teste_termina_em ?? null)) return false;
+  // O TESTE COM CARTÃO (21/09/2026): no dia da primeira cobrança é a
+  // operadora quem decide, e ela decide ao longo do dia — o aviso chega
+  // quando chega, e a rotina diária confere de manhã. Fechar a porta à
+  // meia-noite do 8º dia deixaria do lado de fora, com o cartão cobrado,
+  // quem tem evento naquele dia. Com a cobrança agendada, a porta fica
+  // aberta por até três dias depois da data marcada; se a cobrança não
+  // passar, fecha sozinha depois disso, e a tela de assinatura diz o que
+  // fazer.
+  if (
+    linha.status === "trial" &&
+    linha.gateway_subscription_id &&
+    linha.proximo_vencimento &&
+    testeVivo(somarDias(linha.proximo_vencimento, DIAS_DE_FOLGA_DA_COBRANCA))
+  ) {
+    return false;
+  }
   return true;
 }
+
+/** Quantos dias depois da primeira cobrança agendada a porta ainda espera a operadora. */
+export const DIAS_DE_FOLGA_DA_COBRANCA = 3;
 
 /**
  * O último dia conta inteiro. Comparação de texto ISO, não de `Date`, e

@@ -61,6 +61,25 @@ export type OfertaDoTeste = {
 };
 
 /**
+ * "R$ 27,90/mês nos 3 primeiros meses, depois R$ 59,90" — ou só
+ * "R$ 59,90/mês" quando o degrau não desconta. A mesma frase do cadastro,
+ * dos e-mails do teste e da tela: o preço futuro dito inteiro, sempre.
+ */
+export function fraseDoPrecoDoTeste(
+  primeiroDegrau: { valorMensal: number; meses: number } | null,
+  valorCheio: number
+): string {
+  const valorDoDegrau = primeiroDegrau ? comTetoDoPlano(primeiroDegrau.valorMensal, valorCheio) : null;
+  // a mesma régua do checkout: degrau que não desconta (ou que zera) não é promoção
+  const naPromocao = valorDoDegrau !== null && valorDoDegrau > 0 && valorDoDegrau < valorCheio;
+  if (!naPromocao || !primeiroDegrau) return `${reais(valorCheio)}/mês`;
+  const meses = primeiroDegrau.meses;
+  return `${reais(valorDoDegrau as number)}/mês ${
+    meses === 1 ? "no primeiro mês" : `nos ${meses} primeiros meses`
+  }, depois ${reais(valorCheio)}`;
+}
+
+/**
  * A oferta de quem se cadastra AGORA: em que dia a cobrança começa e por
  * quanto. `null` só quando o catálogo está vazio — aí não há o que agendar.
  */
@@ -84,10 +103,7 @@ export async function ofertaDoTeste(dias: number, agora = new Date()): Promise<O
   const termina = fimDoTeste(dias, agora);
   const comecaEm = somarDias(termina, 1);
 
-  const meses = primeiro?.meses ?? 0;
-  const preco = naPromocao
-    ? `${reais(valorPrimeiro)}/mês ${meses === 1 ? "no primeiro mês" : `nos ${meses} primeiros meses`}, depois ${reais(plano.valorMensal)}`
-    : `${reais(plano.valorMensal)}/mês`;
+  const preco = fraseDoPrecoDoTeste(primeiro, plano.valorMensal);
 
   return {
     dias,

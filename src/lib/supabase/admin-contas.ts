@@ -16,6 +16,7 @@ import {
 import type { ResumoDaConta } from "@/lib/admin/saude-da-conta";
 import { checkoutDasLinhas } from "@/lib/etapas-da-assinatura";
 import { hojeBR, somarDias } from "@/lib/tempo";
+import { moverInicioDaAssinatura } from "@/lib/pagarme";
 
 /** A função do banco ainda não existe (123 não reaplicada). */
 function funcaoAusente(error: { code?: string; message?: string } | null): boolean {
@@ -264,7 +265,7 @@ export async function prorrogarTesteDb(
   const db = servico();
   const { data: a, error: erroLeitura } = await db
     .from("assinaturas")
-    .select("id, status, teste_termina_em")
+    .select("id, status, teste_termina_em, gateway_subscription_id, promocao_codigo")
     .eq("empresa_id", empresaId)
     .maybeSingle();
   if (erroLeitura) throw new Error(`Não foi possível ler a assinatura: ${erroLeitura.message}`);
@@ -277,9 +278,32 @@ export async function prorrogarTesteDb(
   const base = fimAntes && fimAntes >= hoje ? fimAntes : hoje;
   const novoFim = somarDias(base, dias);
 
+  // O teste com cartão (21/09/2026): a cobrança está agendada na operadora
+  // para o dia seguinte ao fim de ANTES. Prorrogar aqui sem mover lá
+  // cobraria no meio do teste prorrogado — então a operadora vai
+  // primeiro, e se ela recusar, nada muda.
+  const agendada = (a.gateway_subscription_id as string | null) ?? null;
+  const novaCobranca = somarDias(novoFim, 1);
+  if (agendada) {
+    const r = await moverInicioDaAssinatura(agendada, novaCobranca);
+    if (!r.ok) {
+      throw new Error(`A operadora não aceitou mover a cobrança agendada (${r.erro}). Nada mudou.`);
+    }
+  }
+
   const { data: gravada, error } = await db
     .from("assinaturas")
-    .update({ teste_termina_em: novoFim, updated_at: new Date().toISOString() })
+    .update({
+      teste_termina_em: novoFim,
+      ...(agendada
+        ? {
+            proximo_vencimento: novaCobranca,
+            ...(a.promocao_codigo ? { promocao_inicio: novaCobranca } : {}),
+            observacao: `teste prorrogado · cobrança agendada para ${novaCobranca}`,
+          }
+        : {}),
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", a.id)
     // se ela assinou entre a leitura e aqui, nada muda
     .eq("status", "trial")

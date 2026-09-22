@@ -83,8 +83,10 @@ export default function TermosPage() {
           e de <i>qual</i> texto foi aceito.
         </p>
         <p style={p}>
-          Se você usa o sistema no período de teste, antes da primeira
-          cobrança, estes termos também valem para esse uso.
+          Quando a conta começa por um período de teste, o aceite acontece no
+          cadastro, junto do cartão, e vale para o teste e para a assinatura
+          que começa depois dele. Se você usa o sistema no período de teste,
+          antes da primeira cobrança, estes termos também valem para esse uso.
         </p>
       </Secao>
 
@@ -213,8 +215,19 @@ export default function TermosPage() {
           barrada por causa do teto.
         </p>
         <p style={p}>
-          Sem assinatura, a conta pode criar um evento para conhecer o sistema.
-          Consultar o que já existe continua livre.
+          <b>Período de teste.</b> A conta pode começar por um período de
+          teste, com a duração informada no cadastro. O cartão é cadastrado e
+          conferido na operadora sem cobrança, e durante o teste nada é
+          cobrado. A primeira cobrança sai no dia seguinte ao último dia do
+          teste, no valor mostrado antes de você confirmar o cadastro, e a
+          assinatura segue mensal a partir daí. Cancelando pela tela de
+          assinatura até o último dia do teste, essa cobrança não acontece.
+          Terminado o teste sem assinatura, a conta pede assinatura para
+          continuar; o que você criou continua guardado pelo prazo da{" "}
+          <a href="#dados" style={link}>
+            seção 5
+          </a>
+          .
         </p>
         <p style={p}>
           Você pode <b>mudar de plano quando quiser</b>, pela própria tela de
@@ -299,6 +312,11 @@ export default function TermosPage() {
           a criação de novos eventos e de novos acessos até que ela seja — e,
           em caso de inadimplência prolongada, encerrar a assinatura, sempre com
           aviso antes.
+        </p>
+        <p style={p}>
+          Se a primeira cobrança depois do período de teste não passar, nada é
+          cobrado e a conta pede assinatura para continuar: você pode assinar
+          com outro cartão a qualquer momento, e o que criou continua guardado.
         </p>
       </Secao>
 

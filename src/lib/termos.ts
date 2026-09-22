@@ -18,10 +18,15 @@
 // um parágrafo prometia acesso para sempre e o outro autorizava excluir
 // os dados. Mesma data de publicação, mesma versão: ninguém aceitou o
 // texto do meio do caminho.
-export const TERMOS_VERSAO = "2026-09-06";
+//
+// 2026-09-21: o teste de sete dias passou a pedir o cartão no cadastro,
+// com a primeira cobrança no dia seguinte ao fim do teste. Entraram o
+// aceite no cadastro (seção 2), o parágrafo do período de teste (seção 6)
+// e o que acontece quando essa primeira cobrança não passa (seção 8).
+export const TERMOS_VERSAO = "2026-09-21";
 
 /** A mesma data, por extenso, para o rodapé da página. */
-export const TERMOS_ATUALIZADO_EM = "6 de setembro de 2026";
+export const TERMOS_ATUALIZADO_EM = "21 de setembro de 2026";
 
 /** Onde os termos moram. Rota pública (liberada no middleware). */
 export const TERMOS_CAMINHO = "/termos";

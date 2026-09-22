@@ -62,6 +62,9 @@ import {
   type EmailPronto,
   type EventoDela,
 } from "@/lib/email-ativacao-textos";
+import { cobrancaRecusada } from "@/lib/assinatura/marcadores";
+import { getEscadaContratada, getPlano, reais } from "@/lib/planos";
+import { fraseDoPrecoDoTeste } from "@/lib/teste-com-cartao";
 
 export const MARCAS = [
   "boas_vindas",
@@ -258,7 +261,9 @@ export async function rodarAtivacao(agora = new Date()): Promise<ResumoAtivacao>
     .from("assinaturas")
     // as quatro colunas da cobrança agendada (teste com cartão, 21/09/2026):
     // com elas o e-mail fala do dia e do valor, e não de "assine"
-    .select("empresa_id, teste_termina_em, gateway_subscription_id, cartao_final, valor_mensal, proximo_vencimento")
+    .select(
+      "empresa_id, teste_termina_em, gateway_subscription_id, cartao_final, valor_mensal, proximo_vencimento, plano, promocao_codigo, observacao"
+    )
     .eq("status", "trial");
   if (error) throw new Error(`assinaturas: ${error.message}`);
   const lista = (testes ?? []) as {
@@ -268,8 +273,39 @@ export async function rodarAtivacao(agora = new Date()): Promise<ResumoAtivacao>
     cartao_final: string | null;
     valor_mensal: number | string | null;
     proximo_vencimento: string | null;
+    plano: string | null;
+    promocao_codigo: string | null;
+    observacao: string | null;
   }[];
   if (!lista.length) return resumo;
+
+  // O preço por extenso para os e-mails do teste com cartão: a escada
+  // inteira quando a linha está na promoção ("R$ 27,90/mês nos 3
+  // primeiros meses, depois R$ 59,90"), lida uma vez por código. Sem
+  // escada (ou sem resposta do banco), fica só o valor da linha.
+  const escadas = new Map<string, Promise<string | null>>();
+  const precoDaLinha = (t: (typeof lista)[number]): Promise<string> => {
+    const soValor = `${reais(Number(t.valor_mensal) || 0)}/mês`;
+    if (!t.promocao_codigo || !t.plano) return Promise.resolve(soValor);
+    const chave = `${t.promocao_codigo}:${t.plano}`;
+    if (!escadas.has(chave)) {
+      const codigo = t.promocao_codigo;
+      const plano = t.plano;
+      escadas.set(
+        chave,
+        (async () => {
+          try {
+            const [escada, p] = await Promise.all([getEscadaContratada(codigo), getPlano(plano)]);
+            const primeiro = escada?.degraus[0] ?? null;
+            return primeiro && p ? fraseDoPrecoDoTeste(primeiro, p.valorMensal) : null;
+          } catch {
+            return null;
+          }
+        })()
+      );
+    }
+    return escadas.get(chave)!.then((frase) => frase ?? soValor);
+  };
 
   const { data: empresas } = await db
     .from("empresas")
@@ -345,6 +381,8 @@ export async function rodarAtivacao(agora = new Date()): Promise<ResumoAtivacao>
           dia: t.proximo_vencimento ?? (t.teste_termina_em ? somarDias(t.teste_termina_em, 1) : hoje),
           valor: Number(t.valor_mensal) || 0,
           cartao: t.cartao_final,
+          preco: await precoDaLinha(t),
+          recusada: cobrancaRecusada(t.observacao),
         }
       : null;
 

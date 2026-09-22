@@ -16,6 +16,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { assinaturaViva, cancelarAssinatura } from "@/lib/pagarme";
+import { CANCELAMENTO_PENDENTE } from "@/lib/assinatura/marcadores";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -124,6 +125,45 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // O TESTE COM CARTÃO (21/09/2026): ela pediu para desagendar a primeira
+  // cobrança e a operadora não confirmou na hora. A linha continua em
+  // teste (não perde os dias nem a promoção), com a anotação; aqui se
+  // insiste até a operadora cancelar, e então a linha volta a ser um
+  // teste sem cartão.
+  let testesDesagendados = 0;
+  let testesSemResposta = 0;
+  const { data: pendentes } = await db
+    .from("assinaturas")
+    .select("id, gateway_subscription_id")
+    .eq("status", "trial")
+    .not("gateway_subscription_id", "is", null)
+    .ilike("observacao", `${CANCELAMENTO_PENDENTE}%`);
+  for (const t of pendentes ?? []) {
+    const id = t.gateway_subscription_id as string;
+    const r = await cancelarAssinatura(id);
+    if (!r.ok) {
+      testesSemResposta++;
+      continue;
+    }
+    const { error: erroLimpar } = await db
+      .from("assinaturas")
+      .update({
+        gateway_subscription_id: null,
+        cartao_final: null,
+        cartao_bandeira: null,
+        proximo_vencimento: null,
+        promocao_codigo: null,
+        promocao_inicio: null,
+        valor_mensal: 0,
+        observacao: "cobrança do teste cancelada pela cliente (confirmada pela rotina diária)",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", t.id)
+      .eq("status", "trial");
+    if (erroLimpar) console.error("[vela:assinatura] limpar cobrança do teste:", erroLimpar.message);
+    else testesDesagendados++;
+  }
+
   return NextResponse.json({
     ok: true,
     conferidas,
@@ -131,5 +171,7 @@ export async function GET(request: NextRequest) {
     canceladasAgora,
     semResposta,
     teimosas,
+    testesDesagendados,
+    testesSemResposta,
   });
 }

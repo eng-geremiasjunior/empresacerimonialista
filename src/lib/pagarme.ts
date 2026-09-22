@@ -112,12 +112,12 @@ async function chamar<T>(
       caminho,
       status: r.status,
       ok: r.ok,
-      resposta: corpo,
+      resposta: semDadosPessoais(corpo),
       excecao: null,
       duracaoMs: Date.now() - inicio,
     });
     if (!r.ok) {
-      console.error("[vela:pagarme]", caminho, r.status, JSON.stringify(corpo)?.slice(0, 500));
+      console.error("[vela:pagarme]", caminho, r.status, JSON.stringify(semDadosPessoais(corpo))?.slice(0, 500));
       return { ok: false, erro: mensagemDoErro(r.status, corpo), cru: corpo, status: r.status };
     }
     return { ok: true, dados: corpo as T };
@@ -202,7 +202,36 @@ export type FaturaGateway = {
   paid_at?: string | null;
   amount?: number;
   created_at?: string;
+  /** o `paid_at` de verdade mora na cobrança aninhada (documentação da fatura) */
+  charge?: { id?: string; status?: string; paid_at?: string | null } | null;
 };
+
+/** Quando a fatura foi paga, YYYY-MM-DD, ou null se a operadora não disse. */
+export function diaDoPagamento(f: FaturaGateway): string | null {
+  const iso = f.charge?.paid_at ?? f.paid_at ?? null;
+  return iso ? iso.slice(0, 10) : null;
+}
+
+/**
+ * O que pode ir para o log de uma resposta da operadora. A verificação do
+ * cartão (412) e os erros de cliente devolvem o objeto inteiro — nome de
+ * quem paga, endereço, telefone, dígitos do cartão —, e quem teve o
+ * cartão recusado no cadastro nem conta tem. Log não é lugar disso.
+ */
+function semDadosPessoais(corpo: unknown): unknown {
+  if (!corpo || typeof corpo !== "object") return corpo;
+  if (Array.isArray(corpo)) return corpo.map(semDadosPessoais);
+  const proibidas = new Set([
+    "holder_name", "billing_address", "address", "phones", "customer", "card",
+    "first_six_digits", "last_four_digits", "name", "email", "document",
+  ]);
+  const limpo: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(corpo as Record<string, unknown>)) {
+    if (proibidas.has(k)) continue;
+    limpo[k] = v && typeof v === "object" ? semDadosPessoais(v) : v;
+  }
+  return limpo;
+}
 
 // ------------------------------------------------------------------
 // Operações
@@ -375,6 +404,49 @@ export async function criarCartaoVerificado(
       options: { verify_card: true },
     }),
   });
+}
+
+/**
+ * Apaga um cartão salvo no cliente da operadora. É o que fecha o rastro
+ * quando o cadastro não vira conta: cartão verificado de quem não tem
+ * conta não pode ficar guardado lá. Nunca lança; falhar aqui só deixa o
+ * cartão órfão, que é o estado de antes.
+ */
+export async function apagarCartao(clienteId: string, cardId: string): Promise<boolean> {
+  const r = await chamar<CartaoGateway>(`/customers/${clienteId}/cards/${cardId}`, { method: "DELETE" });
+  return r.ok;
+}
+
+/**
+ * Move o dia da primeira cobrança de uma assinatura que ainda não
+ * começou ("Editar data de início da assinatura"). É o que a prorrogação
+ * do teste no /admin precisa: teste que ganha dias tem a cobrança
+ * empurrada junto, senão a operadora cobra no meio do teste prorrogado.
+ * A operadora só aceita datas de amanhã em diante e só em assinatura que
+ * não começou.
+ */
+export async function moverInicioDaAssinatura(assinaturaId: string, comecaEm: string) {
+  return chamar<AssinaturaGateway>(`/subscriptions/${assinaturaId}/start-at`, {
+    method: "PATCH",
+    body: JSON.stringify({ start_at: comecaEm }),
+  });
+}
+
+/**
+ * As assinaturas FUTURAS que a operadora tem. É a reconciliação da rotina
+ * diária: uma assinatura agendada cuja conta não existe aqui (resposta
+ * perdida no cadastro, conta desfeita sem conseguir cancelar) cobraria no
+ * 8º dia sem dono.
+ */
+export async function assinaturasFuturas(): Promise<
+  { ok: true; lista: { id: string; code?: string | null }[] } | { ok: false; erro: string }
+> {
+  const r = await chamar<{ data?: { id: string; code?: string | null; status?: string }[] }>(
+    "/subscriptions?status=future&page=1&size=100"
+  );
+  if (!r.ok) return { ok: false, erro: r.erro };
+  const lista = Array.isArray(r.dados?.data) ? r.dados.data : [];
+  return { ok: true, lista: lista.filter((s) => s?.id && s.status === "future") };
 }
 
 /**

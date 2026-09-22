@@ -19,6 +19,9 @@ import {
   cancelarAssinatura,
   criarAssinatura,
   criarCliente,
+  diaDoPagamento,
+  faturasPagas,
+  lerAssinatura,
   trocarCartao,
 } from "@/lib/pagarme";
 import {
@@ -35,6 +38,7 @@ import { registrarConversao } from "@/lib/conversoes";
 import { COOKIE_ORIGEM } from "@/lib/marketing";
 import { hojeBR } from "@/lib/tempo";
 import { TERMOS_VERSAO } from "@/lib/termos";
+import { CANCELAMENTO_PENDENTE } from "@/lib/assinatura/marcadores";
 
 export type ResultadoAssinatura = {
   ok?: boolean;
@@ -42,7 +46,37 @@ export type ResultadoAssinatura = {
   /** a venda aprovada: o id (`assinatura:<id na operadora>`) e o valor, para o pixel do checkout repetir com o mesmo id */
   idDoEvento?: string;
   valor?: number;
+  /** o pedido foi registrado, mas a operadora ainda não confirmou (a rotina diária insiste) */
+  pendente?: boolean;
 };
+
+/** Um aviso no sino da dona da conta. Nunca lança. */
+async function avisarDono(
+  db: ReturnType<typeof servico>,
+  empresaId: string,
+  aviso: { title: string; message: string }
+): Promise<void> {
+  try {
+    const { data: dono } = await db
+      .from("membros_equipe")
+      .select("user_id")
+      .eq("empresa_id", empresaId)
+      .eq("is_owner", true)
+      .eq("status", "ativo")
+      .maybeSingle();
+    if (dono?.user_id) {
+      await db.from("notifications").insert({
+        cerimonialista_id: dono.user_id,
+        // 'pagamento' é um dos tipos que o CHECK aceita (101)
+        type: "pagamento",
+        ...aviso,
+        link: "/assinatura",
+      });
+    }
+  } catch (e) {
+    console.error("[vela:assinatura] aviso ao dono:", String(e).slice(0, 120));
+  }
+}
 
 /**
  * Escrita em `assinaturas` é do sistema, não da usuária: a tabela nasceu
@@ -1001,7 +1035,49 @@ export async function cancelar(motivo: string): Promise<ResultadoAssinatura> {
     if (!atual.gateway_subscription_id) {
       return { error: "Sua conta está em teste e não tem cobrança agendada." };
     }
-    const r = await cancelarAssinatura(atual.gateway_subscription_id);
+
+    // Antes de desagendar, saber se a operadora JÁ COBROU (o 8º dia
+    // chegou e o aviso ainda não): cancelar como "agendada" apagaria o
+    // rastro de uma fatura paga, e ela ficaria trancada tendo pago. Com
+    // fatura paga, a linha vira assinante primeiro e o cancelamento segue
+    // pelo caminho de quem pagou, com o mês pago preservado.
+    const pagas = await faturasPagas(atual.gateway_subscription_id);
+    if (pagas.ok && pagas.faturas.length > 0) {
+      const lida = await lerAssinatura(atual.gateway_subscription_id);
+      const g = lida.ok ? lida.dados : null;
+      const precoCentavos = Number(g?.items?.[0]?.pricing_scheme?.price);
+      const preco = Number.isFinite(precoCentavos) && precoCentavos > 0 ? precoCentavos / 100 : null;
+      const { error: erroAtiva } = await db
+        .from("assinaturas")
+        .update({
+          status: "ativa",
+          ultimo_pagamento_em: diaDoPagamento(pagas.faturas[0]) ?? hojeBR(),
+          ...(preco !== null ? { valor_mensal: preco } : {}),
+          proximo_vencimento:
+            g?.next_billing_at?.slice(0, 10) ?? g?.current_cycle?.end_at?.slice(0, 10) ?? null,
+          falhas_seguidas: 0,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", atual.id)
+        .eq("status", "trial");
+      if (erroAtiva) {
+        console.error("[vela:assinatura] ativar antes de cancelar:", erroAtiva.message);
+        return { error: "Não conseguimos conferir a cobrança com a operadora. Tente de novo em instantes." };
+      }
+      await db.from("assinatura_eventos").insert({
+        assinatura_id: atual.id,
+        empresa_id: ctx.empresaId,
+        tipo: "inicio",
+        valor_antes: null,
+        valor_depois: preco,
+        nota: "primeira cobrança do teste confirmada ao cancelar",
+      });
+      atual.status = "ativa";
+    }
+  }
+
+  if (atual.status === "trial") {
+    const r = await cancelarAssinatura(atual.gateway_subscription_id as string);
     if (r.ok) {
       const { error: erroLimpar } = await db
         .from("assinaturas")
@@ -1029,11 +1105,38 @@ export async function cancelar(motivo: string): Promise<ResultadoAssinatura> {
       revalidatePath("/", "layout");
       return { ok: true };
     }
+    // A operadora não confirmou. O teste NÃO vira 'cancelada' (isso
+    // apagaria o fim do teste, fecharia a porta e enterraria a promoção
+    // por uma indisponibilidade nossa): fica em teste, com o pedido
+    // anotado, e a rotina diária insiste na operadora até desagendar.
     console.error(
       "[vela:assinatura] cobrança do teste sem confirmação do gateway:",
       atual.gateway_subscription_id,
       r.erro
     );
+    const { error: erroMarcar } = await db
+      .from("assinaturas")
+      .update({
+        motivo_cancelamento: motivo.trim().slice(0, 400) || null,
+        observacao: `${CANCELAMENTO_PENDENTE} desde ${hojeBR()}`,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", atual.id)
+      .eq("status", "trial");
+    if (erroMarcar) {
+      console.error("[vela:assinatura] marcar cancelamento pendente:", erroMarcar.message);
+      return {
+        error:
+          "Não conseguimos falar com a operadora agora. Tente de novo em alguns minutos — seu teste continua normalmente.",
+      };
+    }
+    await avisarDono(db, ctx.empresaId, {
+      title: "Cobrança do teste ainda agendada na operadora",
+      message:
+        "Você pediu para cancelar a cobrança e a operadora não respondeu. O sistema tenta de novo todo dia; seu teste continua até o último dia.",
+    });
+    revalidatePath("/assinatura");
+    return { ok: true, pendente: true };
   }
 
   // Sem assinatura na operadora não há o que cancelar lá — mas a linha

@@ -16,6 +16,10 @@ import {
 } from "@/lib/planos";
 import { hojeBR } from "@/lib/tempo";
 import {
+  cancelamentoPendente as pediuCancelar,
+  cobrancaRecusada as operadoraRecusou,
+} from "@/lib/assinatura/marcadores";
+import {
   AssinaturaTela,
   type EstadoAssinatura,
   type PlanoDaVitrine,
@@ -84,8 +88,22 @@ export default async function AssinaturaPage({
     .from("assinaturas")
     // teste_termina_em (154): o teste com cartão mostra até quando ela
     // testa ao lado do dia da primeira cobrança
-    .select("cancelada_em, promocao_codigo, promocao_inicio, teste_termina_em")
+    // observacao: as anotações do teste com cartão (cobrança recusada,
+    // cancelamento pendente na operadora), lidas por marcadores.ts
+    .select("cancelada_em, promocao_codigo, promocao_inicio, teste_termina_em, observacao")
     .maybeSingle();
+
+  // O que a tela precisa decidir sobre o teste, decidido AQUI (em
+  // Brasília, no servidor) e passado como booleano: "hoje" calculado no
+  // navegador quebra a hidratação das 21h à meia-noite.
+  const linha = assinatura as { teste_termina_em?: string | null; observacao?: string | null } | null;
+  const hoje = hojeBR();
+  const testeTerminaEm = linha?.teste_termina_em ?? null;
+  const testeVencido = !!testeTerminaEm && testeTerminaEm < hoje;
+  const cobrancaAtrasada =
+    estado.status === "trial" &&
+    !!estado.proximo_vencimento &&
+    estado.proximo_vencimento.slice(0, 10) < hoje;
 
   const escada = await getEscadaDaPromocao(PROMOCAO_LANCAMENTO);
   const planoDaPromocao = catalogo.find((p) => p.codigo === PLANO_DA_PROMOCAO) ?? null;
@@ -157,7 +175,11 @@ export default async function AssinaturaPage({
       emailDaConta={user?.email ?? ""}
       nomeDaConta={membro?.nome ?? ""}
       planoDaUrl={searchParams?.plano ?? null}
-      testeTerminaEm={(assinatura as { teste_termina_em?: string | null } | null)?.teste_termina_em ?? null}
+      testeTerminaEm={testeTerminaEm}
+      testeVencido={testeVencido}
+      cobrancaAtrasada={cobrancaAtrasada}
+      cobrancaRecusada={operadoraRecusou(linha?.observacao)}
+      cancelamentoPendente={pediuCancelar(linha?.observacao)}
     />
   );
 }

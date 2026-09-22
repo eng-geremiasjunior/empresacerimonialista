@@ -76,6 +76,10 @@ export type CobrancaAgendada = {
   valor: number;
   /** os quatro últimos dígitos do cartão, quando a operadora devolveu */
   cartao?: string | null;
+  /** a escada inteira ("R$ 27,90/mês nos 3 primeiros meses, depois R$ 59,90"); sem ela, só o valor */
+  preco?: string | null;
+  /** a operadora recusou a primeira cobrança (o webhook anotou) */
+  recusada?: boolean;
 };
 
 function reaisTexto(v: number): string {
@@ -84,6 +88,11 @@ function reaisTexto(v: number): string {
 
 function noCartao(c: CobrancaAgendada): string {
   return c.cartao ? ` no cartão final ${escapar(c.cartao)}` : " no cartão cadastrado";
+}
+
+/** O preço inteiro: a escada quando há promoção, não só o degrau de entrada. */
+function precoDaCobranca(c: CobrancaAgendada): string {
+  return c.preco ?? `${reaisTexto(c.valor)}/mês`;
 }
 
 const PRECO = "R$ 27,90/mês nos 3 primeiros meses, R$ 59,90 depois";
@@ -395,7 +404,7 @@ export function htmlDia5(
           ]
         : [`Seu teste vai até <strong>${diaMes(d.termina)}</strong>. Depois dele, continuar custa:`],
       destaque: d.cobranca
-        ? { rotulo: `A partir de ${diaMes(d.cobranca.dia)}`, valor: `${reaisTexto(d.cobranca.valor)}/mês` }
+        ? { rotulo: `A partir de ${diaMes(d.cobranca.dia)}`, valor: precoDaCobranca(d.cobranca) }
         : { rotulo: "Depois do teste", valor: PRECO },
       botao: { texto: d.evento ? "Abrir o meu evento" : "Cadastrar meu evento", caminho: destino },
       sair: d.sair,
@@ -427,7 +436,7 @@ export function htmlFimTeste(
           }`,
           `Não quer continuar? Cancele em Assinatura até ${diaMes(d.termina)} e nada é cobrado. Sem fidelidade.`,
         ],
-        destaque: { rotulo: `Primeira cobrança em ${diaMes(d.cobranca.dia)}`, valor: `${reaisTexto(d.cobranca.valor)}/mês` },
+        destaque: { rotulo: `Primeira cobrança em ${diaMes(d.cobranca.dia)}`, valor: precoDaCobranca(d.cobranca) },
         botao: { texto: "Ver minha assinatura", caminho: destino },
         sair: d.sair,
       }),
@@ -479,7 +488,7 @@ export function htmlUltimoDia(
           }`,
           "Para não continuar, cancele hoje em Assinatura. Nada é cobrado.",
         ],
-        destaque: { rotulo: `Primeira cobrança em ${diaMes(d.cobranca.dia)}`, valor: `${reaisTexto(d.cobranca.valor)}/mês` },
+        destaque: { rotulo: `Primeira cobrança em ${diaMes(d.cobranca.dia)}`, valor: precoDaCobranca(d.cobranca) },
         botao: { texto: "Ver minha assinatura", caminho: destino },
         sair: d.sair,
       }),
@@ -507,7 +516,7 @@ export function htmlUltimoDia(
       destaque: { rotulo: "Para continuar", valor: PRECO },
       botao: { texto: d.eventos > 0 ? "Assinar e continuar os meus eventos" : "Assinar e continuar", caminho: destino },
       depois: [
-        "Sem fidelidade — cancela quando quiser, num clique.",
+        "Sem fidelidade — cancela quando quiser, pela tela de assinatura.",
         ...(RESPONDER_PARA() ? ["Precisa de mais alguns dias? Responda este e-mail."] : []),
       ],
       sair: d.sair,
@@ -522,23 +531,30 @@ export function htmlUltimoDia(
 /** +2 dias: o teste acabou e os dados continuam lá. */
 export function htmlPos2(d: DadosDoEmail & { eventos: number; cobranca?: CobrancaAgendada | null }): EmailPronto {
   const destino = "/assinatura";
-  // teste com cartão que continua em teste depois do fim: a cobrança não
-  // passou. O que resolve é outro cartão, não "assine".
+  // teste com cartão que continua em teste depois do fim: ou a operadora
+  // recusou a cobrança (o webhook anotou), ou ainda não confirmou. Só se
+  // afirma "não passou" quando a operadora disse isso; os dois se
+  // resolvem na tela de assinatura, e não com "assine".
   if (d.cobranca) {
+    const recusada = d.cobranca.recusada === true;
+    const guardado =
+      d.eventos > 0
+        ? `${d.eventos === 1 ? "O evento" : `Os ${d.eventos} eventos`} que você cadastrou ${d.eventos === 1 ? "está" : "estão"} do jeito que você deixou.`
+        : "Sua conta continua como você deixou.";
     return {
       destino,
-      assunto: "A cobrança não passou — nada foi apagado",
+      assunto: recusada
+        ? "A cobrança não passou — nada foi apagado"
+        : "Sua primeira cobrança ainda não foi confirmada",
       html: casca({
-        titulo: "A cobrança não passou",
+        titulo: recusada ? "A cobrança não passou" : "Ainda não confirmamos a sua primeira cobrança",
         saudacao: oi(d.nome),
         paragrafos: [
-          `A cobrança de ${reaisTexto(d.cobranca.valor)}${noCartao(d.cobranca)} não foi aprovada. ${
-            d.eventos > 0
-              ? `${d.eventos === 1 ? "O evento" : `Os ${d.eventos} eventos`} que você cadastrou ${d.eventos === 1 ? "está" : "estão"} do jeito que você deixou.`
-              : "Sua conta continua como você deixou."
-          } Troque o cartão em Assinatura e a conta reabre na hora.`,
+          recusada
+            ? `A cobrança de ${reaisTexto(d.cobranca.valor)}${noCartao(d.cobranca)} não foi aprovada. ${guardado} Assine com outro cartão em Assinatura e a conta reabre na hora.`
+            : `A operadora ainda não confirmou a cobrança de ${reaisTexto(d.cobranca.valor)}${noCartao(d.cobranca)}. ${guardado} Se o cartão mudou, assine de novo em Assinatura e a conta reabre na hora.`,
         ],
-        botao: { texto: "Trocar o cartão", caminho: destino },
+        botao: { texto: recusada ? "Assinar com outro cartão" : "Ver minha assinatura", caminho: destino },
         sair: d.sair,
       }),
     };
@@ -704,6 +720,24 @@ export function previaDosEmails(hoje = hojeBR()) {
     ultimo_dia_varios: htmlUltimoDia({ ...base, eventos: 3, evento }),
     ultimo_dia_vazio: htmlUltimoDia({ ...base, eventos: 0, evento: null }),
     pos_2: htmlPos2({ ...base, eventos: 2 }),
+    // o teste com cartão, nos dois desfechos de quem ficou em teste
+    dia_5_com_cartao: htmlDia5({
+      ...base,
+      termina,
+      hoje,
+      evento,
+      cobranca: { dia: somarDias(termina, 1), valor: 27.9, cartao: "1234", preco: "R$ 27,90/mês nos 3 primeiros meses, depois R$ 59,90" },
+    }),
+    pos_2_cobranca_recusada: htmlPos2({
+      ...base,
+      eventos: 2,
+      cobranca: { dia: somarDias(hoje, -2), valor: 27.9, cartao: "1234", recusada: true },
+    }),
+    pos_2_cobranca_sem_confirmacao: htmlPos2({
+      ...base,
+      eventos: 2,
+      cobranca: { dia: somarDias(hoje, -2), valor: 27.9, cartao: "1234" },
+    }),
     pos_7: htmlPos7(base),
     pos_14: htmlPos14({ ...base, eventos: 1 }),
     pos_21: htmlPos21(base),

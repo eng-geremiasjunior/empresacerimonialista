@@ -33,7 +33,7 @@ export function ConviteDoTeste({
     {
       titulo: `Cancele até o ${dias}º dia e não paga nada`,
       texto:
-        "Cancelar é um clique na tela de assinatura, hoje ou depois. Sem fidelidade e sem multa.",
+        "Cancelar é pela própria tela de assinatura, hoje ou depois. Sem fidelidade e sem multa.",
     },
     {
       titulo: "O que você cadastrar permanece salvo",

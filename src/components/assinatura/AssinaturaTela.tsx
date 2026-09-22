@@ -165,6 +165,10 @@ export function AssinaturaTela({
   nomeDaConta,
   planoDaUrl: codigoDaUrl,
   testeTerminaEm = null,
+  testeVencido = false,
+  cobrancaAtrasada = false,
+  cobrancaRecusada = false,
+  cancelamentoPendente = false,
 }: {
   estado: EstadoAssinatura;
   /** os planos à venda, na ordem da vitrine; vazio = assinatura ainda fechada */
@@ -178,6 +182,14 @@ export function AssinaturaTela({
   planoDaUrl?: string | null;
   /** o último dia do teste (154), para o teste com cartão dizer até quando ela testa */
   testeTerminaEm?: string | null;
+  /** o último dia do teste já passou (decidido no servidor, em Brasília) */
+  testeVencido?: boolean;
+  /** a primeira cobrança agendada já devia ter saído e a operadora não confirmou */
+  cobrancaAtrasada?: boolean;
+  /** a operadora recusou a primeira cobrança do teste (o webhook anotou) */
+  cobrancaRecusada?: boolean;
+  /** ela pediu para desagendar a cobrança e a operadora ainda não confirmou */
+  cancelamentoPendente?: boolean;
 }) {
   const router = useRouter();
 
@@ -190,15 +202,24 @@ export function AssinaturaTela({
   // cobrando por fora, sem botão de saída na tela.
   const temAssinaturaLa = estado.tem_gateway;
   const jaCancelada = estado.status === "cancelada";
-  // Assinatura encerrada não pode virar um segundo beco: quem cancelou
-  // precisa poder voltar. E não faz sentido oferecer "cancelar" de novo.
-  const podeAssinar = !ativa && !inadimplente && (!temAssinaturaLa || jaCancelada);
-  const podeCancelar = temAssinaturaLa && !jaCancelada;
+  const emTeste = estado.status === "trial";
   // O teste com cartão (21/09/2026): a assinatura existe na operadora,
   // agendada para o dia seguinte ao fim do teste, e ainda não cobrou. A
   // tela diz o dia e o valor, e cancelar aqui desagenda a cobrança sem
   // encerrar o teste.
-  const agendada = estado.status === "trial" && temAssinaturaLa && !jaCancelada;
+  const agendada = emTeste && temAssinaturaLa && !jaCancelada;
+  // A cobrança do teste que não se resolveu: a operadora recusou, ou o dia
+  // passou sem confirmação. A saída é assinar de novo — a action encerra a
+  // agendada antes de criar a nova, então não há cobrança dupla — e a
+  // porta fecha três dias depois da data, então ela precisa desse caminho.
+  const cobrancaPendente = agendada && (cobrancaRecusada || cobrancaAtrasada);
+  // Assinatura encerrada não pode virar um segundo beco: quem cancelou
+  // precisa poder voltar. E não faz sentido oferecer "cancelar" de novo.
+  const podeAssinar =
+    !ativa && !inadimplente && (!temAssinaturaLa || jaCancelada || cobrancaPendente);
+  // Cancelamento pedido e ainda sem confirmação da operadora: a rotina
+  // diária insiste; pedir de novo aqui só repetiria a mesma chamada.
+  const podeCancelar = temAssinaturaLa && !jaCancelada && !cancelamentoPendente;
 
   // O plano gravado na conta, se é um dos vendidos. 'cortesia' e 'piloto'
   // (contas herdadas) não estão na vitrine e seguem sem limite.
@@ -242,6 +263,8 @@ export function AssinaturaTela({
   );
   const [erro, setErro] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
+  // a venda que acabou de passar: o valor cobrado, para o destaque do topo
+  const [confirmacao, setConfirmacao] = useState<{ valor: number } | null>(null);
   const [cancelando, setCancelando] = useState(false);
   const [motivo, setMotivo] = useState("");
   // o cartão da vitrine que ela escolheu: o formulário abre para ele
@@ -376,6 +399,7 @@ export function AssinaturaTela({
   function enviarCartao(troca: boolean) {
     setErro(null);
     setOk(null);
+    setConfirmacao(null);
     const falta = faltaNoFormulario(form, troca ? null : cobranca);
     if (falta) {
       setErro(falta);
@@ -416,7 +440,10 @@ export function AssinaturaTela({
       setPlanoEscolhido(null);
       setAceitei(false);
       setEtapa(1);
-      setOk(troca ? "Cartão atualizado." : "Assinatura ativa. Obrigado!");
+      if (troca) setOk("Cartão atualizado.");
+      // a venda, em destaque: "Assinatura ativa" numa linha miúda passava
+      // batido — ele pagou e não soube se tinha dado certo (21/09/2026)
+      else setConfirmacao({ valor: r.valor ?? escolhido?.valorMensal ?? 0 });
       router.refresh();
     });
   }
@@ -427,6 +454,7 @@ export function AssinaturaTela({
       // na tela e o cancelamento que deu certo parece ter falhado
       setErro(null);
       setOk(null);
+      setConfirmacao(null);
       const r = await cancelar(motivo);
       if (r.error) {
         setErro(r.error);
@@ -435,9 +463,13 @@ export function AssinaturaTela({
       setCancelando(false);
       setMotivo("");
       setOk(
-        agendada
-          ? "Cobrança cancelada. Seu teste continua até o último dia, sem cobrança."
-          : "Assinatura cancelada. Você pode voltar quando quiser."
+        r.pendente
+          ? "Recebemos seu pedido. A operadora ainda não confirmou o cancelamento; tentamos de novo todos os dias, e você vê aqui quando confirmar."
+          : agendada
+            ? testeVencido
+              ? "Cobrança cancelada. Nada será cobrado; sua conta fica guardada e você pode assinar quando quiser."
+              : "Cobrança cancelada. Seu teste continua até o último dia, sem cobrança."
+            : "Assinatura cancelada. Você pode voltar quando quiser."
       );
       router.refresh();
     });
@@ -476,6 +508,7 @@ export function AssinaturaTela({
     iniciar(async () => {
       setErro(null);
       setOk(null);
+      setConfirmacao(null);
       const r = await trocarPlano(plano.codigo);
       if (r.error) {
         setErro(r.error);
@@ -493,9 +526,15 @@ export function AssinaturaTela({
       ? "cortesia"
       : inadimplente
         ? "cobrança falhou"
-        : agendada
-          ? "em teste"
-          : null;
+        : cobrancaPendente
+          ? "cobrança pendente"
+          : agendada
+            ? "em teste"
+            : emTeste && testeTerminaEm
+              ? testeVencido
+                ? "teste encerrado"
+                : "em teste"
+              : null;
 
   const subtitulo = ativa
     ? planoForaDaVitrine
@@ -508,10 +547,22 @@ export function AssinaturaTela({
         : cortesia
           ? "Sua conta está liberada como cortesia."
           : agendada
-            ? `Você está no teste. A assinatura começa em ${dataLonga(estado.proximo_vencimento) || "breve"}, no cartão cadastrado — até lá, nada é cobrado.`
-            : estado.pode_criar_evento
-              ? "Seu primeiro evento é por nossa conta."
-              : "Você já usou o evento gratuito. Escolha um plano para criar os próximos.";
+            ? cancelamentoPendente
+              ? "Recebemos seu pedido para cancelar a cobrança. A operadora ainda não confirmou; tentamos de novo todos os dias, e você não precisa fazer nada."
+              : cobrancaRecusada
+                ? `A cobrança de ${dataLonga(estado.proximo_vencimento) || "depois do teste"} não passou. Nada foi apagado: assine com outro cartão para continuar.`
+                : cobrancaAtrasada
+                  ? `A operadora ainda não confirmou a cobrança de ${dataLonga(estado.proximo_vencimento)}. Nada foi apagado: se o cartão mudou, assine de novo com o cartão atual.`
+                  : testeVencido
+                    ? `Seu teste terminou. A primeira cobrança sai em ${dataLonga(estado.proximo_vencimento) || "breve"}, no cartão cadastrado; assim que a operadora confirmar, a próxima data aparece aqui.`
+                    : `Você está no teste. A assinatura começa em ${dataLonga(estado.proximo_vencimento) || "breve"}, no cartão cadastrado — até lá, nada é cobrado.`
+            : emTeste && testeTerminaEm
+              ? testeVencido
+                ? `Seu teste terminou em ${dataLonga(testeTerminaEm)}. Nada foi apagado: assine para continuar de onde parou.`
+                : `Seu teste vai até ${dataLonga(testeTerminaEm)}, sem cobrança. Assine quando quiser.`
+              : estado.pode_criar_evento
+                ? "Seu primeiro evento é por nossa conta."
+                : "Você já usou o evento gratuito. Escolha um plano para criar os próximos.";
 
   // A vitrine: os três cartões. Quem nunca assinou escolhe um e o
   // formulário abre para ele; quem já paga vê o seu marcado e muda para
@@ -820,6 +871,22 @@ export function AssinaturaTela({
             {erro}
           </div>
         )}
+        {/* A VENDA, em destaque: o que foi cobrado, em que cartão e quando
+            vem a próxima. Ele pagou de verdade e a linha miúda "Assinatura
+            ativa. Obrigado!" passou batida (21/09/2026). */}
+        {confirmacao && !erro && (
+          <div style={{ ...cardChumbo, marginTop: 18, padding: "20px 24px" }}>
+            <div style={{ font: `600 17px ${F_UI}` }}>Pagamento aprovado</div>
+            <p style={{ margin: "6px 0 0", font: `400 14px/1.55 ${F_UI}`, color: C.sobChumbo }}>
+              Cobramos {`R$ ${confirmacao.valor.toFixed(2).replace(".", ",")}`} agora
+              {estado.cartao_final ? ` no cartão final ${estado.cartao_final}` : ""}.
+              {estado.proximo_vencimento
+                ? ` A próxima cobrança é em ${dataLonga(estado.proximo_vencimento)}.`
+                : ""}{" "}
+              Sua conta está liberada.
+            </p>
+          </div>
+        )}
 
         {/* ---------------- ATIVA / INADIMPLENTE ---------------- */}
         {(ativa || inadimplente) && !modoForm && (
@@ -926,7 +993,7 @@ export function AssinaturaTela({
           <>
             {/* o teste com cartão: o painel do plano em chumbo, como o de
                 quem já paga, dizendo o que vai acontecer e quando */}
-            {agendada && (
+            {agendada && !cobrancaPendente && (
               <div className="subx-grid" style={{ marginTop: 24 }}>
                 <div style={{ background: C.chumbo, borderRadius: 14, padding: 24, color: "#fff" }}>
                   <div style={{ ...rotuloSecao, color: C.rotuloChumbo }}>Sua assinatura</div>
@@ -1005,7 +1072,7 @@ export function AssinaturaTela({
             )}
 
             {/* cortesia com assinatura viva no gateway: cartão e saída continuam à mão */}
-            {temAssinaturaLa && !jaCancelada && (
+            {temAssinaturaLa && !jaCancelada && !cobrancaPendente && (
               <div className="subx-row" style={{ ...cardBranco, marginTop: 16, padding: "18px 24px" }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ font: `600 14px ${F_UI}`, color: C.forte }}>Forma de pagamento</div>
@@ -1041,7 +1108,11 @@ export function AssinaturaTela({
           >
             <div style={{ flex: 1 }}>
               <div style={{ font: `600 14px ${F_UI}`, color: C.forte }}>
-                {agendada ? "Cancelar a cobrança agendada" : "Cancelar assinatura"}
+                {agendada
+                  ? cobrancaPendente
+                    ? "Cancelar a cobrança"
+                    : "Cancelar a cobrança agendada"
+                  : "Cancelar assinatura"}
               </div>
               {/* Os dois lados, ditos aqui — onde ela decide. Prometer só o
                   que continua (era o que esta frase fazia) é a promessa que
@@ -1057,11 +1128,18 @@ export function AssinaturaTela({
                 }}
               >
                 {agendada ? (
-                  <>
-                    A cobrança de {dataLonga(estado.proximo_vencimento) || "depois do teste"} não será feita
-                    e seu teste continua até {dataLonga(testeTerminaEm) || "o último dia"}. Depois disso, a
-                    conta fica só para leitura até você assinar.
-                  </>
+                  cobrancaPendente || testeVencido ? (
+                    <>
+                      Nenhuma cobrança será feita. Sua conta fica guardada, e você pode assinar
+                      depois quando quiser.
+                    </>
+                  ) : (
+                    <>
+                      A cobrança de {dataLonga(estado.proximo_vencimento) || "depois do teste"} não será
+                      feita e seu teste continua até {dataLonga(testeTerminaEm) || "o último dia"}. Depois
+                      disso, para continuar usando é só assinar — nada é apagado.
+                    </>
+                  )
                 ) : (
                   <>
                     Seus eventos continuam seus: você segue vendo, imprimindo e exportando.{" "}
@@ -1100,11 +1178,18 @@ export function AssinaturaTela({
                   que o banco faz — inclusive o dia em que ele para de
                   aceitar alterações (151). */}
               {agendada ? (
-                <>
-                  Confirmar? A cobrança de {dataLonga(estado.proximo_vencimento) || "depois do teste"} não
-                  será feita. Seu teste continua até {dataLonga(testeTerminaEm) || "o último dia"}, e você
-                  pode assinar depois quando quiser.
-                </>
+                cobrancaPendente || testeVencido ? (
+                  <>
+                    Confirmar? Nenhuma cobrança será feita, e sua conta fica guardada para quando você
+                    quiser assinar.
+                  </>
+                ) : (
+                  <>
+                    Confirmar? A cobrança de {dataLonga(estado.proximo_vencimento) || "depois do teste"}{" "}
+                    não será feita. Seu teste continua até {dataLonga(testeTerminaEm) || "o último dia"},
+                    e você pode assinar depois quando quiser.
+                  </>
+                )
               ) : (
                 <>
                   Confirmar o cancelamento? Nenhuma cobrança nova será feita e seus eventos continuam
