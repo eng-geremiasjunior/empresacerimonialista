@@ -128,7 +128,7 @@ export default async function AdminAjustesPage({
               <FormPlano key={p.codigo} plano={p} />
             ))}
             <p className="mt-2 text-[11.5px] text-[#84858b]">
-              Deixe eventos ou logins em branco para "sem limite". Desmarcar "à venda" tira o plano da
+              Deixe eventos ou logins em branco para “sem limite”. Desmarcar “à venda” tira o plano da
               página de vendas sem apagar nada.
             </p>
           </div>
