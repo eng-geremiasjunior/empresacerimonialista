@@ -39,10 +39,13 @@ const botao =
 export function GoogleAgendaSection({
   conexao,
   aviso,
+  motivo = null,
 }: {
   conexao: ConexaoGoogleNaTela | null;
   /** o que a volta do Google disse (?google=) */
   aviso: string | null;
+  /** o código curto de onde a volta falhou (?motivo=), para o suporte */
+  motivo?: string | null;
 }) {
   const router = useRouter();
   const [pendente, iniciar] = useTransition();
@@ -74,6 +77,7 @@ export function GoogleAgendaSection({
       {aviso && AVISOS[aviso] && (
         <p className="mt-2 rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-700" role="status">
           {AVISOS[aviso]}
+          {aviso === "erro" && motivo ? ` (código: ${motivo})` : ""}
         </p>
       )}
       {erro && (

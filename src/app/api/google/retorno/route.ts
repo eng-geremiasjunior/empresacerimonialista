@@ -22,6 +22,7 @@ import {
 } from "@/lib/google/oauth";
 import { agendaExiste, criarAgenda } from "@/lib/google/agenda";
 import { servicoGoogle } from "@/lib/google/servico";
+import { registrarErroDoServidor } from "@/lib/registro-do-sistema";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -33,21 +34,35 @@ function iguais(a: string, b: string): boolean {
 }
 
 export async function GET(request: NextRequest) {
-  const voltar = (aviso: string) => {
-    const r = NextResponse.redirect(new URL(`/configuracoes?google=${aviso}`, appUrl()));
+  const voltar = (aviso: string, motivo?: string) => {
+    const p = new URLSearchParams({ google: aviso });
+    if (motivo) p.set("motivo", motivo.slice(0, 60));
+    const r = NextResponse.redirect(new URL(`/configuracoes?${p.toString()}`, appUrl()));
     r.cookies.set(COOKIE_ESTADO, "", { path: "/api/google", maxAge: 0 });
     return r;
   };
-  if (!googleConfigurado()) return voltar("erro");
+  // Toda falha diz ONDE falhou: um código curto na tela (para quem está
+  // testando) e no registro de erros do painel do dono. Sem isto, a
+  // primeira conexão de verdade voltou "erro" e ninguém sabia de quê
+  // (22/09/2026). Nunca o e-mail, nunca a chave.
+  const falhar = async (motivo: string, empresaId?: string | null) => {
+    console.error("[vela:google] conectar:", motivo);
+    await registrarErroDoServidor({ area: "Google Agenda: conectar", codigo: motivo, empresaId: empresaId ?? null });
+    return voltar("erro", motivo);
+  };
+  if (!googleConfigurado()) return falhar("config");
 
   const url = new URL(request.url);
   const erroDoGoogle = url.searchParams.get("error");
-  if (erroDoGoogle) return voltar(erroDoGoogle === "access_denied" ? "recusado" : "erro");
+  if (erroDoGoogle) {
+    return erroDoGoogle === "access_denied" ? voltar("recusado") : falhar(`google:${erroDoGoogle}`);
+  }
 
   const code = url.searchParams.get("code") ?? "";
   const state = url.searchParams.get("state") ?? "";
   const nonce = request.cookies.get(COOKIE_ESTADO)?.value ?? "";
-  if (!code || !state || !nonce || !iguais(state, nonce)) return voltar("erro");
+  if (!code) return falhar("sem_codigo");
+  if (!state || !nonce || !iguais(state, nonce)) return falhar(nonce ? "estado" : "sem_cookie");
 
   const supabase = createClient();
   const {
@@ -56,13 +71,10 @@ export async function GET(request: NextRequest) {
   if (!user) return NextResponse.redirect(new URL("/login?next=/configuracoes", appUrl()));
   const { data: cargo } = await supabase.rpc("meu_cargo");
   const c = (cargo as { empresa_id: string }[] | null)?.[0];
-  if (!c) return voltar("erro");
+  if (!c) return falhar("sem_cargo");
 
   const troca = await trocarCodigo(code);
-  if (!troca.ok) {
-    console.error("[vela:google] troca do código:", troca.erro);
-    return voltar("erro");
-  }
+  if (!troca.ok) return falhar(`troca:${troca.erro}`, c.empresa_id);
   const { chaves } = troca;
 
   // sem a permissão de criar a agenda não há conexão — e a chave que o
@@ -109,9 +121,8 @@ export async function GET(request: NextRequest) {
     { onConflict: "user_id" }
   );
   if (error) {
-    console.error("[vela:google] gravar conexão:", error.code ?? error.message);
     await revogar(chaves.refreshToken);
-    return voltar("erro");
+    return falhar(`gravar:${error.code ?? error.message.slice(0, 40)}`, c.empresa_id);
   }
 
   // tudo o que ela vê, de hoje em diante, vai para a agenda dela agora

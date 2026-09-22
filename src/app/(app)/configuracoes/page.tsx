@@ -28,7 +28,7 @@ export const dynamic = "force-dynamic";
 export default async function ConfiguracoesPage({
   searchParams,
 }: {
-  searchParams?: { google?: string };
+  searchParams?: { google?: string; motivo?: string };
 }) {
   const supabase = createClient();
   const {
@@ -213,7 +213,11 @@ export default async function ConfiguracoesPage({
       </section>
 
       {googleDisponivel && (
-        <GoogleAgendaSection conexao={google} aviso={searchParams?.google ?? null} />
+        <GoogleAgendaSection
+          conexao={google}
+          aviso={searchParams?.google ?? null}
+          motivo={searchParams?.motivo ?? null}
+        />
       )}
 
       {proprietaria && (
