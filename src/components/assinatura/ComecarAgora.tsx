@@ -25,7 +25,12 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { assinarCriandoConta } from "@/app/(app)/assinatura/actions";
 import { createClient } from "@/lib/supabase/client";
-import { assinaturaFeita, assinaturaIniciada, guardarOrigemDoClique } from "@/lib/marketing";
+import {
+  assinaturaFeita,
+  assinaturaIniciada,
+  completarOrigemAntesDeEnviar,
+  guardarOrigemDoClique,
+} from "@/lib/marketing";
 import { TERMOS_CAMINHO } from "@/lib/termos";
 import {
   faltaNoCartao,
@@ -136,6 +141,9 @@ export function ComecarAgora({ oferta }: { oferta: OfertaDoCheckout }) {
     // Sem este try, uma exceção na action (rede caindo no meio, o servidor
     // reiniciando) deixava o botão preso em "Confirmando…" para sempre, e
     // a pessoa sem saber se pagou ou não.
+    // a origem de novo, com o id do Google que a tag já criou (ver
+    // completarOrigemAntesDeEnviar): sem ele a venda não volta ao anúncio
+    await completarOrigemAntesDeEnviar();
     let r: Awaited<ReturnType<typeof assinarCriandoConta>>;
     try {
       r = await assinarCriandoConta(

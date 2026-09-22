@@ -26,7 +26,13 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { criarContaDeTeste, type CobrancaDoCadastro } from "@/app/criar-conta/actions";
-import { assinaturaIniciada, contaCriada, guardarOrigemDoClique, testeIniciado } from "@/lib/marketing";
+import {
+  assinaturaIniciada,
+  completarOrigemAntesDeEnviar,
+  contaCriada,
+  guardarOrigemDoClique,
+  testeIniciado,
+} from "@/lib/marketing";
 import { normalizarDDI } from "@/lib/whatsapp-link";
 import { EVENTOS_3_MESES, type Eventos3Meses } from "@/lib/cadastro-qualificacao";
 import { faltaNoCartao, faltaNoEndereco, tokenizar } from "@/lib/assinatura/cartao";
@@ -262,6 +268,9 @@ export function CriarContaDeTeste({
     }
 
     setEnviando("abrindo");
+    // a origem de novo, agora com o id do Google que a tag já criou: é ele
+    // que leva a venda do oitavo dia de volta ao anúncio certo
+    await completarOrigemAntesDeEnviar();
     let r;
     try {
       r = await criarContaDeTeste(

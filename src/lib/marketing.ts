@@ -127,7 +127,7 @@ function cookie(nome: string): string | null {
  * segundo anúncio conta para o segundo anúncio, quem só navegou pelo
  * site continua contando para o primeiro.
  */
-export function guardarOrigemDoClique(): void {
+export function guardarOrigemDoClique(gaClientIdDaTag?: string | null): void {
   if (typeof document === "undefined") return;
   try {
     const url = new URLSearchParams(window.location.search);
@@ -138,8 +138,9 @@ export function guardarOrigemDoClique(): void {
       fbc:
         cookie("_fbc") ??
         (url.get("fbclid") ? `fb.1.${Date.now()}.${url.get("fbclid")}` : null),
-      // o cookie _ga é "GA1.1.<client_id>" — o client_id é o par final
-      gaClientId: cookie("_ga")?.split(".").slice(-2).join(".") ?? null,
+      // o cookie _ga é "GA1.1.<client_id>" — o client_id é o par final;
+      // sem o cookie, vale o que a própria tag respondeu
+      gaClientId: cookie("_ga")?.split(".").slice(-2).join(".") ?? gaClientIdDaTag ?? null,
       gclid: url.get("gclid"),
       utm_source: url.get("utm_source"),
       utm_medium: url.get("utm_medium"),
@@ -188,6 +189,53 @@ export function guardarOrigemDoClique(): void {
       `path=/;max-age=${noventaDias};SameSite=Lax`;
   } catch {
     // sem cookie a conta continua sendo criada; só a atribuição se perde
+  }
+}
+
+/**
+ * O client_id do GA4, pedido à própria tag quando o cookie ainda não
+ * existe. Espera no máximo `limiteMs`: medir nunca segura o cadastro.
+ */
+function idDoClienteGoogle(limiteMs = 800): Promise<string | null> {
+  const doCookie = cookie("_ga")?.split(".").slice(-2).join(".") ?? null;
+  if (doCookie) return Promise.resolve(doCookie);
+  const ga = idDoGoogle();
+  if (typeof window === "undefined" || !ga || !window.gtag) return Promise.resolve(null);
+  return new Promise((resolver) => {
+    const desiste = setTimeout(() => resolver(null), limiteMs);
+    try {
+      window.gtag?.("get", ga, "client_id", (id: unknown) => {
+        clearTimeout(desiste);
+        resolver(typeof id === "string" && id ? id : null);
+      });
+    } catch {
+      clearTimeout(desiste);
+      resolver(null);
+    }
+  });
+}
+
+/**
+ * A origem de novo, NA HORA DE ENVIAR (22/09/2026).
+ *
+ * `guardarOrigemDoClique` roda quando a tela abre — e nesse instante a
+ * tag do Google, que carrega depois da página, muitas vezes ainda não
+ * criou o cookie `_ga`. A origem ficava sem o client_id (4 das 16 contas
+ * de fora até aqui, inclusive a mais recente), e sem ele o servidor não
+ * consegue mandar ao Google a venda do oitavo dia: a assinatura acontecia
+ * e o Google Ads nunca sabia de qual clique ela veio.
+ *
+ * No clique de enviar a tag já teve tempo. Se mesmo assim o cookie
+ * faltar, o id é pedido à própria tag. O resto da origem (UTM, gclid,
+ * fbclid) continua como a regra de `guardarOrigemDoClique` manda.
+ */
+export async function completarOrigemAntesDeEnviar(): Promise<void> {
+  if (typeof document === "undefined") return;
+  try {
+    const id = await idDoClienteGoogle();
+    guardarOrigemDoClique(id);
+  } catch {
+    // sem o id a conta nasce igual; só a atribuição do Google fica menor
   }
 }
 

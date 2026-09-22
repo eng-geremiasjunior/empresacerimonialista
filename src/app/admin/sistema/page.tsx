@@ -32,6 +32,7 @@ import {
   getUsoDaIa,
 } from "@/lib/supabase/admin-sistema";
 import { getAjustes } from "@/lib/supabase/admin-receita";
+import { getMedicaoDeAnuncio } from "@/lib/supabase/admin-medicao";
 import { bytesEmTexto, diaEHoraBR, diaMesBR, plural, porcento } from "@/lib/admin/formatos";
 import { hojeBR, somarDias } from "@/lib/tempo";
 import { Abas, Aviso, Barra, Cabecalho, Fatos, Numero, Secao, Vazio } from "@/components/admin/pecas";
@@ -64,7 +65,7 @@ export default async function AdminSistemaPage({
   const aba: AbaDoSistema = ABAS.includes(pedida as AbaDoSistema) ? (pedida as AbaDoSistema) : "resumo";
 
   const desde30 = new Date(agora.getTime() - 30 * 86_400_000).toISOString();
-  const [rotinas, envios, erros, banco, medidas, ia, provedores, ajustes, nomes, operadora] = await Promise.all([
+  const [rotinas, envios, erros, banco, medidas, ia, provedores, ajustes, nomes, operadora, medicao] = await Promise.all([
     getExecucoes(300),
     getEnvios(desde30),
     getErros(desde30),
@@ -75,6 +76,7 @@ export default async function AdminSistemaPage({
     getAjustes(),
     getNomesDasContas(),
     aba === "operadora" || aba === "resumo" ? getLogDaOperadora() : Promise.resolve([]),
+    aba === "resumo" ? getMedicaoDeAnuncio() : Promise.resolve(null),
   ]);
 
   const rotinasPorNome = new Map<string, typeof rotinas.execucoes>();
@@ -193,6 +195,34 @@ export default async function AdminSistemaPage({
               A Meta não publica uma situação que se possa consultar automaticamente; o link abre a página dela.
             </p>
           </Secao>
+
+          {medicao && (
+            <Secao
+              titulo="Medição de anúncio"
+              nota="Sem uma destas chaves o sistema segue funcionando, mas a plataforma deixa de ver aquele fato. Os valores secretos nunca aparecem aqui."
+            >
+              <ul className="flex flex-col gap-2">
+                {medicao.itens.map((m) => (
+                  <li
+                    key={m.nome}
+                    className="flex flex-wrap items-baseline justify-between gap-x-3 border-b border-[#f0f0ec] pb-1.5 text-[13px] last:border-0"
+                  >
+                    <span className="font-medium text-[#1c1d21]">{m.nome}</span>
+                    <span className="text-[#5c5d63]">{m.para}</span>
+                    <span className={m.ok ? "text-[#84858b]" : "font-medium text-red-700"}>
+                      {m.ok ? (m.valor ? `configurada · ${m.valor}` : "configurada") : "falta configurar"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {medicao.comOrigem > 0 && (
+                <p className="mt-2 text-[11.5px] leading-snug text-[#84858b]">
+                  Das {medicao.comOrigem} contas mais recentes, {medicao.comIdDoGoogle} guardaram o id do Google — sem ele, a
+                  venda daquela conta não volta ao anúncio do Google.
+                </p>
+              )}
+            </Secao>
+          )}
         </>
       )}
 
