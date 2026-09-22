@@ -105,7 +105,7 @@ const PRECO = "R$ 27,90/mês nos 3 primeiros meses, R$ 59,90 depois";
  * marfim, título, texto curto, caixa de destaque quando há um número que
  * ela precisa ver, UM botão e o rodapé com a saída da lista.
  */
-function casca(p: {
+export function casca(p: {
   titulo: string;
   saudacao: string;
   paragrafos: string[];

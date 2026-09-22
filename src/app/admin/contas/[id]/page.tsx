@@ -58,6 +58,7 @@ import { linkWhatsapp } from "@/lib/whatsapp-link";
 import { Abas, Aviso, Fatos, Secao, Vazio } from "@/components/admin/pecas";
 import type { OpcaoDePlano } from "../EditorAssinatura";
 import { AcoesDaConta } from "./AcoesDaConta";
+import { EnviarEmail } from "./EnviarEmail";
 import { NotaDaConta } from "./NotaDaConta";
 
 export const dynamic = "force-dynamic";
@@ -161,9 +162,13 @@ export default async function FichaDaConta({
             <span className="px-1 py-1.5 text-[12px] text-[#84858b]">sem WhatsApp completo</span>
           )}
           {c.dona.email && (
-            <a href={`mailto:${c.dona.email}`} className={BOTAO_LINK}>
-              E-mail
-            </a>
+            <EnviarEmail
+              empresaId={c.empresa_id}
+              email={c.dona.email}
+              nome={c.dona.nome ?? ""}
+              testeAte={c.assinatura?.teste_termina_em ?? null}
+              eventos={c.eventos.total}
+            />
           )}
           {c.dona.instagram && (
             <a

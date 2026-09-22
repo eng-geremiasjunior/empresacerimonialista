@@ -19,6 +19,11 @@ import {
 } from "@/lib/supabase/admin-painel";
 import { prorrogarTesteDb, salvarNotaDb } from "@/lib/supabase/admin-contas";
 import {
+  type EmailDoPainel,
+  enviarEmailDaContaDb,
+  previaEmailDaContaDb,
+} from "@/lib/supabase/admin-email";
+import {
   apagarCustoDb,
   copiarRecorrentesDb,
   marcarCustoPagoDb,
@@ -352,5 +357,54 @@ export async function salvarAjustes(
     return { ok: true };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Não foi possível salvar os ajustes." };
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* O e-mail escrito à mão, da ficha da conta (22/09/2026)              */
+/* ------------------------------------------------------------------ */
+
+function emailDoFormulario(formData: FormData): EmailDoPainel {
+  return {
+    assunto: String(formData.get("assunto") ?? ""),
+    titulo: String(formData.get("titulo") ?? ""),
+    texto: String(formData.get("texto") ?? ""),
+    destaqueRotulo: String(formData.get("destaque_rotulo") ?? ""),
+    destaqueValor: String(formData.get("destaque_valor") ?? ""),
+    botaoTexto: String(formData.get("botao_texto") ?? ""),
+    botaoCaminho: String(formData.get("botao_caminho") ?? ""),
+  };
+}
+
+/** A prévia: o mesmo HTML que sairia, sem mandar nada. */
+export async function preverEmailDaConta(
+  _prev: ResultadoAdmin & { html?: string; para?: string; assunto?: string },
+  formData: FormData
+): Promise<ResultadoAdmin & { html?: string; para?: string; assunto?: string }> {
+  try {
+    const empresaId = String(formData.get("empresa_id") ?? "");
+    if (!empresaId) return { error: "Conta inválida." };
+    const previa = await previaEmailDaContaDb(empresaId, emailDoFormulario(formData));
+    return { ok: true, ...previa };
+  } catch (e) {
+    console.error("[eorganizei:admin] preverEmailDaConta:", e instanceof Error ? e.message : e);
+    return { error: e instanceof Error ? e.message : "Não foi possível montar a prévia." };
+  }
+}
+
+export async function enviarEmailDaConta(
+  _prev: ResultadoAdmin & { para?: string },
+  formData: FormData
+): Promise<ResultadoAdmin & { para?: string }> {
+  try {
+    const empresaId = String(formData.get("empresa_id") ?? "");
+    if (!empresaId) return { error: "Conta inválida." };
+    const { para } = await enviarEmailDaContaDb(empresaId, emailDoFormulario(formData));
+    revalidatePath(`/admin/contas/${empresaId}`);
+    revalidatePath("/admin/auditoria");
+    return { ok: true, para };
+  } catch (e) {
+    console.error("[eorganizei:admin] enviarEmailDaConta:", e instanceof Error ? e.message : e);
+    return { error: e instanceof Error ? e.message : "Não foi possível enviar." };
   }
 }
