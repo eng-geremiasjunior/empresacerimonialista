@@ -63,7 +63,15 @@ import {
   type EventoDela,
 } from "@/lib/email-ativacao-textos";
 import { cobrancaRecusada } from "@/lib/assinatura/marcadores";
-import { getEscadaContratada, getPlano, reais } from "@/lib/planos";
+import {
+  getCatalogoDePlanos,
+  getEscadaContratada,
+  getEscadaDaPromocao,
+  getPlano,
+  PLANO_DA_PROMOCAO,
+  PROMOCAO_LANCAMENTO,
+  reais,
+} from "@/lib/planos";
 import { fraseDoPrecoDoTeste } from "@/lib/teste-com-cartao";
 
 export const MARCAS = [
@@ -200,6 +208,27 @@ export async function enviarBoasVindas(p: {
 /* A rotina diária                                                     */
 /* ------------------------------------------------------------------ */
 
+/**
+ * O preço de quem assinaria hoje, em palavras. Lê o catálogo e a escada
+ * À VENDA (a mesma régua da vitrine). Null quando o catálogo está vazio
+ * ou o banco não respondeu: aí o e-mail sai sem a caixa de preço, o que é
+ * melhor do que sair com um valor que o dono já mudou.
+ */
+async function precoAnunciado(): Promise<string | null> {
+  try {
+    const planos = await getCatalogoDePlanos();
+    const plano =
+      planos.find((p) => p.codigo === PLANO_DA_PROMOCAO) ??
+      [...planos].sort((a, b) => a.valorMensal - b.valorMensal)[0] ??
+      null;
+    if (!plano || plano.valorMensal <= 0) return null;
+    const escada = await getEscadaDaPromocao(PROMOCAO_LANCAMENTO);
+    return fraseDoPrecoDoTeste(escada?.degraus[0] ?? null, plano.valorMensal);
+  } catch {
+    return null;
+  }
+}
+
 export type ResumoAtivacao = {
   contasEmTeste: number;
   contasDepoisDoTeste: number;
@@ -283,6 +312,11 @@ export async function rodarAtivacao(agora = new Date()): Promise<ResumoAtivacao>
   // inteira quando a linha está na promoção ("R$ 27,90/mês nos 3
   // primeiros meses, depois R$ 59,90"), lida uma vez por código. Sem
   // escada (ou sem resposta do banco), fica só o valor da linha.
+  // O preço ANUNCIADO hoje, do catálogo: é o que a vitrine mostra e o
+  // que a cobrança usaria se ela assinasse agora. Mudou o preço no
+  // painel, muda aqui — nenhum e-mail volta a prometer o valor velho.
+  const precoDeHoje = await precoAnunciado();
+
   const escadas = new Map<string, Promise<string | null>>();
   const precoDaLinha = (t: (typeof lista)[number]): Promise<string> => {
     const soValor = `${reais(Number(t.valor_mensal) || 0)}/mês`;
@@ -387,7 +421,7 @@ export async function rodarAtivacao(agora = new Date()): Promise<ResumoAtivacao>
       : null;
 
     const montar = (d: DadosDoEmail): EmailPronto => {
-      const base = { ...d, nome };
+      const base = { ...d, nome, preco: precoDeHoje };
       switch (marca) {
         case "boas_vindas":
           return htmlBoasVindas({ ...base, termina: t.teste_termina_em, eventos3m, cobranca });

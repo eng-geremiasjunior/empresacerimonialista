@@ -59,6 +59,13 @@ export function diaBR(iso: string): string {
 /** O que cada e-mail precisa saber para montar o botão e o texto. */
 export type DadosDoEmail = {
   nome: string;
+  /**
+   * O preço em palavras, LIDO DO CATÁLOGO por quem monta o e-mail
+   * ("R$ 27,90/mês nos 3 primeiros meses, depois R$ 59,90"). Sem ele, a
+   * caixa do preço some: melhor faltar do que anunciar um valor que o
+   * dono já mudou no painel.
+   */
+  preco?: string | null;
   /** link para sair da régua */
   sair?: string | null;
 };
@@ -95,7 +102,10 @@ function precoDaCobranca(c: CobrancaAgendada): string {
   return c.preco ?? `${reaisTexto(c.valor)}/mês`;
 }
 
-const PRECO = "R$ 27,90/mês nos 3 primeiros meses, R$ 59,90 depois";
+/** A caixa do preço, ou nada quando a régua não soube o preço. */
+function caixaDoPreco(rotulo: string, preco?: string | null) {
+  return preco ? { rotulo, valor: preco } : null;
+}
 
 /**
  * A casca dos e-mails.
@@ -405,7 +415,7 @@ export function htmlDia5(
         : [`Seu teste vai até <strong>${diaMes(d.termina)}</strong>. Depois dele, continuar custa:`],
       destaque: d.cobranca
         ? { rotulo: `A partir de ${diaMes(d.cobranca.dia)}`, valor: precoDaCobranca(d.cobranca) }
-        : { rotulo: "Depois do teste", valor: PRECO },
+        : caixaDoPreco("Depois do teste", d.preco),
       botao: { texto: d.evento ? "Abrir o meu evento" : "Cadastrar meu evento", caminho: destino },
       sair: d.sair,
     }),
@@ -454,7 +464,7 @@ export function htmlFimTeste(
           : "Assinando, tudo o que você cadastrar continua com você.",
         "Sem fidelidade, cancela quando quiser.",
       ],
-      destaque: { rotulo: "Para continuar", valor: PRECO },
+      destaque: caixaDoPreco("Para continuar", d.preco),
       botao: { texto: "Assinar e continuar", caminho: destino },
       depois: RESPONDER_PARA() ? ["Precisa de mais tempo? Responda este e-mail."] : [],
       sair: d.sair,
@@ -513,7 +523,7 @@ export function htmlUltimoDia(
           ? "Assinando hoje, você não recomeça nada: amanhã abre no mesmo lugar em que parou, com tudo aberto."
           : "Assinando hoje, você segue com a conta aberta e cadastra o seu primeiro evento com calma.",
       ],
-      destaque: { rotulo: "Para continuar", valor: PRECO },
+      destaque: caixaDoPreco("Para continuar", d.preco),
       botao: { texto: d.eventos > 0 ? "Assinar e continuar os meus eventos" : "Assinar e continuar", caminho: destino },
       depois: [
         "Sem fidelidade — cancela quando quiser, pela tela de assinatura.",
@@ -570,7 +580,7 @@ export function htmlPos2(d: DadosDoEmail & { eventos: number; cobranca?: Cobranc
           ? `${d.eventos === 1 ? "O evento" : `Os ${d.eventos} eventos`} que você cadastrou ${d.eventos === 1 ? "está" : "estão"} do jeito que você deixou. Assinando, a conta reabre na hora.`
           : "Sua conta continua como você deixou. Assinando, ela reabre na hora.",
       ],
-      destaque: { rotulo: "Para reabrir", valor: PRECO },
+      destaque: caixaDoPreco("Para reabrir", d.preco),
       botao: { texto: "Reabrir a minha conta", caminho: destino },
       sair: d.sair,
     }),
@@ -642,8 +652,8 @@ export function htmlPos30(d: DadosDoEmail): EmailPronto {
       titulo: "A condição de lançamento continua de pé",
       saudacao: oi(d.nome),
       paragrafos: ["Sua conta continua guardada, com tudo o que você cadastrou."],
-      destaque: { rotulo: "Condição de lançamento", valor: PRECO },
-      botao: { texto: "Assinar por R$ 27,90", caminho: destino },
+      destaque: caixaDoPreco("Condição de lançamento", d.preco),
+      botao: { texto: "Assinar e continuar", caminho: destino },
       sair: d.sair,
     }),
   };
@@ -695,7 +705,7 @@ export function htmlPos90(d: DadosDoEmail): EmailPronto {
       titulo: "Última mensagem sobre o seu teste",
       saudacao: oi(d.nome),
       paragrafos: ["Sua conta continua guardada. Quando quiser, ela reabre no mesmo lugar."],
-      destaque: { rotulo: "Quando voltar", valor: PRECO },
+      destaque: caixaDoPreco("Quando voltar", d.preco),
       botao: { texto: "Reabrir a minha conta", caminho: destino },
       sair: d.sair,
     }),
@@ -705,7 +715,13 @@ export function htmlPos90(d: DadosDoEmail): EmailPronto {
 /** Só para quem quiser ver os textos sem mandar nada (rota de prévia). */
 export function previaDosEmails(hoje = hojeBR()) {
   const termina = somarDias(hoje, 4);
-  const base: DadosDoEmail = { nome: "Marina Alves", sair: "#" };
+  // a prévia mostra um preço de exemplo; quem manda de verdade passa o
+  // preço lido do catálogo
+  const base: DadosDoEmail = {
+    nome: "Marina Alves",
+    sair: "#",
+    preco: "R$ 27,90/mês nos 3 primeiros meses, depois R$ 59,90",
+  };
   const evento: EventoDela = { id: "EVENTO", type: "casamento", date: somarDias(hoje, 10) };
   return {
     boas_vindas: htmlBoasVindas({ ...base, termina, eventos3m: "3-5" }),
