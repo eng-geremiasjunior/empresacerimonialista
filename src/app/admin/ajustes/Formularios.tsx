@@ -13,6 +13,8 @@ import {
   marcarCustoPago,
   salvarAjustes,
   salvarCusto,
+  salvarDegrau,
+  salvarPlano,
   salvarSaldo,
   type ResultadoAdmin,
 } from "../actions";
@@ -250,6 +252,131 @@ export function FormAjustes({
       <Enviar rotulo="Salvar ajustes" />
       {estado.error && <p className="w-full text-[12px] text-red-700">{estado.error}</p>}
       {estado.ok && <p className="w-full text-[12px] text-[#5c5d63]">Salvo.</p>}
+    </form>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Os preços (22/09/2026)                                              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Uma linha por plano. Salvar vale para quem assinar DAQUI PARA FRENTE —
+ * quem já assina continua no valor da assinatura dela, e é isso que a
+ * nota da seção diz. Por isso o botão só acende quando algo muda: é para
+ * ele não salvar sem querer e ficar achando que mexeu no preço de todo
+ * mundo.
+ */
+export function FormPlano({
+  plano,
+}: {
+  plano: { codigo: string; nome: string; valorMensal: number; eventosEmAndamento: number | null; logins: number | null; ativo: boolean };
+}) {
+  const [estado, agir] = useFormState<ResultadoAdmin, FormData>(salvarPlano, {});
+  const router = useRouter();
+  const [mexeu, setMexeu] = useState(false);
+  useEffect(() => {
+    if (estado.ok) {
+      setMexeu(false);
+      router.refresh();
+    }
+  }, [estado.ok, router]);
+
+  return (
+    <form action={agir} onChange={() => setMexeu(true)} className="flex flex-wrap items-end gap-3 border-t border-[#ededea] py-3 first:border-t-0">
+      <input type="hidden" name="codigo" value={plano.codigo} />
+      <label className={`${ROTULO} w-[150px]`}>
+        Nome
+        <input name="nome" defaultValue={plano.nome} maxLength={40} className={`${CAMPO} w-full`} />
+      </label>
+      <label className={`${ROTULO} w-[110px]`}>
+        R$ por mês
+        <input
+          name="valor_mensal"
+          defaultValue={plano.valorMensal.toFixed(2).replace(".", ",")}
+          inputMode="decimal"
+          className={`${CAMPO} w-full`}
+        />
+      </label>
+      <label className={`${ROTULO} w-[130px]`}>
+        Eventos de pé
+        <input
+          name="eventos"
+          defaultValue={plano.eventosEmAndamento ?? ""}
+          placeholder="sem limite"
+          inputMode="numeric"
+          className={`${CAMPO} w-full`}
+        />
+      </label>
+      <label className={`${ROTULO} w-[110px]`}>
+        Logins
+        <input
+          name="logins"
+          defaultValue={plano.logins ?? ""}
+          placeholder="sem limite"
+          inputMode="numeric"
+          className={`${CAMPO} w-full`}
+        />
+      </label>
+      <label className="flex items-center gap-1.5 pb-1.5 text-[12.5px] text-[#3d3e44]">
+        <input type="checkbox" name="ativo" defaultChecked={plano.ativo} className="h-3.5 w-3.5" />
+        à venda
+      </label>
+      <button
+        type="submit"
+        disabled={!mexeu}
+        className={`${BOTAO} ${mexeu ? "" : "opacity-40"}`}
+      >
+        Salvar
+      </button>
+      {estado.error && <p className="w-full text-[12px] text-[#8a3b3b]">{estado.error}</p>}
+      {estado.ok && !mexeu && <p className="w-full text-[12px] text-[#2f5d3a]">Preço salvo — já vale na página de vendas.</p>}
+    </form>
+  );
+}
+
+/** Um degrau da escada de lançamento: por quanto e por quantos meses. */
+export function FormDegrau({
+  degrau,
+}: {
+  degrau: { codigo: string; ordem: number; valorMensal: number; meses: number; ativo: boolean };
+}) {
+  const [estado, agir] = useFormState<ResultadoAdmin, FormData>(salvarDegrau, {});
+  const router = useRouter();
+  const [mexeu, setMexeu] = useState(false);
+  useEffect(() => {
+    if (estado.ok) {
+      setMexeu(false);
+      router.refresh();
+    }
+  }, [estado.ok, router]);
+
+  return (
+    <form action={agir} onChange={() => setMexeu(true)} className="flex flex-wrap items-end gap-3 border-t border-[#ededea] py-3 first:border-t-0">
+      <input type="hidden" name="codigo" value={degrau.codigo} />
+      <input type="hidden" name="ordem" value={degrau.ordem} />
+      <label className={`${ROTULO} w-[110px]`}>
+        R$ por mês
+        <input
+          name="valor_mensal"
+          defaultValue={degrau.valorMensal.toFixed(2).replace(".", ",")}
+          inputMode="decimal"
+          className={`${CAMPO} w-full`}
+        />
+      </label>
+      <label className={`${ROTULO} w-[110px]`}>
+        Por quantos meses
+        <input name="meses" defaultValue={degrau.meses} inputMode="numeric" className={`${CAMPO} w-full`} />
+      </label>
+      <label className="flex items-center gap-1.5 pb-1.5 text-[12.5px] text-[#3d3e44]">
+        <input type="checkbox" name="ativo" defaultChecked={degrau.ativo} className="h-3.5 w-3.5" />
+        oferecendo
+      </label>
+      <button type="submit" disabled={!mexeu} className={`${BOTAO} ${mexeu ? "" : "opacity-40"}`}>
+        Salvar
+      </button>
+      {estado.error && <p className="w-full text-[12px] text-[#8a3b3b]">{estado.error}</p>}
+      {estado.ok && !mexeu && <p className="w-full text-[12px] text-[#2f5d3a]">Degrau salvo.</p>}
     </form>
   );
 }

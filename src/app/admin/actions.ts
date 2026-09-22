@@ -23,6 +23,7 @@ import {
   enviarEmailDaContaDb,
   previaEmailDaContaDb,
 } from "@/lib/supabase/admin-email";
+import { salvarDegrauDb, salvarPlanoDb } from "@/lib/supabase/admin-planos";
 import {
   apagarCustoDb,
   copiarRecorrentesDb,
@@ -407,4 +408,64 @@ export async function enviarEmailDaConta(
     console.error("[eorganizei:admin] enviarEmailDaConta:", e instanceof Error ? e.message : e);
     return { error: e instanceof Error ? e.message : "Não foi possível enviar." };
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* Os preços (22/09/2026)                                              */
+/* ------------------------------------------------------------------ */
+
+/** "49,90" ou "49.90" viram 49.9; vazio vira null (sem limite). */
+function numeroOuNulo(v: FormDataEntryValue | null): number | null {
+  const t = String(v ?? "").trim();
+  if (!t) return null;
+  const n = Number(t.replace(/\./g, "").replace(",", "."));
+  return Number.isFinite(n) ? n : null;
+}
+
+export async function salvarPlano(_prev: ResultadoAdmin, formData: FormData): Promise<ResultadoAdmin> {
+  try {
+    const codigo = String(formData.get("codigo") ?? "");
+    const valor = numeroOuNulo(formData.get("valor_mensal"));
+    if (valor === null) return { error: "Escreva o preço do plano." };
+    await salvarPlanoDb(codigo, {
+      nome: String(formData.get("nome") ?? ""),
+      valorMensal: valor,
+      eventosEmAndamento: numeroOuNulo(formData.get("eventos")),
+      logins: numeroOuNulo(formData.get("logins")),
+      ativo: formData.get("ativo") === "on",
+    });
+    revalidarPrecos();
+    return { ok: true };
+  } catch (e) {
+    console.error("[eorganizei:admin] salvarPlano:", e instanceof Error ? e.message : e);
+    return { error: e instanceof Error ? e.message : "Não foi possível salvar o plano." };
+  }
+}
+
+export async function salvarDegrau(_prev: ResultadoAdmin, formData: FormData): Promise<ResultadoAdmin> {
+  try {
+    const valor = numeroOuNulo(formData.get("valor_mensal"));
+    const meses = numeroOuNulo(formData.get("meses"));
+    if (valor === null) return { error: "Escreva o valor do degrau." };
+    if (meses === null) return { error: "Escreva por quantos meses o degrau vale." };
+    await salvarDegrauDb(String(formData.get("codigo") ?? ""), Number(formData.get("ordem") ?? 0), {
+      valorMensal: valor,
+      meses,
+      ativo: formData.get("ativo") === "on",
+    });
+    revalidarPrecos();
+    return { ok: true };
+  } catch (e) {
+    console.error("[eorganizei:admin] salvarDegrau:", e instanceof Error ? e.message : e);
+    return { error: e instanceof Error ? e.message : "Não foi possível salvar o degrau." };
+  }
+}
+
+/** Onde o preço aparece: a vitrine, a tela de assinatura e o painel. */
+function revalidarPrecos() {
+  revalidatePath("/planos");
+  revalidatePath("/assinatura");
+  revalidatePath("/criar-conta");
+  revalidatePath("/admin/ajustes");
+  revalidarPainel();
 }

@@ -14,9 +14,22 @@ import {
 import { dataBR, mesPorExtenso, plural, reais } from "@/lib/admin/formatos";
 import { hojeBR } from "@/lib/tempo";
 import { Aviso, Cabecalho, Secao, Vazio } from "@/components/admin/pecas";
+import {
+  getDegrausParaEditar,
+  getPlanosParaEditar,
+  getQuantasAssinam,
+} from "@/lib/supabase/admin-planos";
 import { FormGastoMarketing } from "../FormGastoMarketing";
 import { FormPortaoDoTeste } from "../FormPortaoDoTeste";
-import { AcoesDoCusto, BotaoCopiarRecorrentes, FormAjustes, FormCusto, FormSaldo } from "./Formularios";
+import {
+  AcoesDoCusto,
+  BotaoCopiarRecorrentes,
+  FormAjustes,
+  FormCusto,
+  FormDegrau,
+  FormPlano,
+  FormSaldo,
+} from "./Formularios";
 
 export const dynamic = "force-dynamic";
 
@@ -45,12 +58,15 @@ export default async function AdminAjustesPage({
   const mesAtual = hoje.slice(0, 7);
   const mes = /^\d{4}-\d{2}$/.test(searchParams?.mes ?? "") ? searchParams!.mes! : mesAtual;
 
-  const [portao, serie, custos, caixa, ajustes] = await Promise.all([
+  const [portao, serie, custos, caixa, ajustes, planos, degraus, assinam] = await Promise.all([
     getPortaoDoTeste(),
     getSerieMensal(mes, 1),
     getCustos(mes, mes),
     getSaldosDeCaixa(),
     getAjustes(),
+    getPlanosParaEditar(),
+    getDegrausParaEditar(),
+    getQuantasAssinam(),
   ]);
 
   const doMes = custos.custos;
@@ -93,6 +109,44 @@ export default async function AdminAjustesPage({
           <Aviso>O portão do teste grátis ainda não existe neste banco: aplique a migração 154.</Aviso>
         )}
       </Secao>
+
+      <Secao
+        titulo="Planos e preços"
+        nota={
+          assinam > 0
+            ? `Vale para quem assinar daqui para frente. ${assinam} ${
+                assinam === 1 ? "conta que já assina continua" : "contas que já assinam continuam"
+              } no valor combinado — mudar aqui não mexe nisso.`
+            : "Vale para quem assinar daqui para frente. Quem já assina continua no valor combinado — mudar aqui não mexe nisso."
+        }
+      >
+        {planos.length === 0 ? (
+          <Aviso>O catálogo de planos ainda não existe neste banco: aplique a migração 147.</Aviso>
+        ) : (
+          <div className="-mt-1">
+            {planos.map((p) => (
+              <FormPlano key={p.codigo} plano={p} />
+            ))}
+            <p className="mt-2 text-[11.5px] text-[#84858b]">
+              Deixe eventos ou logins em branco para "sem limite". Desmarcar "à venda" tira o plano da
+              página de vendas sem apagar nada.
+            </p>
+          </div>
+        )}
+      </Secao>
+
+      {degraus.length > 0 && (
+        <Secao
+          titulo="Promoção de lançamento"
+          nota="Os primeiros meses por um preço menor. Desligar a promoção não sobe o preço de quem já está no meio dela."
+        >
+          <div className="-mt-1">
+            {degraus.map((d) => (
+              <FormDegrau key={`${d.codigo}-${d.ordem}`} degrau={d} />
+            ))}
+          </div>
+        </Secao>
+      )}
 
       <Secao
         titulo={`Gasto de marketing — ${mesPorExtenso(mes)}`}
