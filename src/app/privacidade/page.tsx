@@ -91,6 +91,29 @@ export default function PrivacidadePage() {
         mesmo tipo de mensagem pode ser enviado, alternativamente, por e-mail.
       </Secao>
 
+      <Secao titulo="Como usamos a API do Google Agenda">
+        Se a cerimonialista conectar a conta Google dela em Configurações, o
+        eOrganizei cria nessa conta uma agenda chamada “eOrganizei” e passa a
+        gravar ali, e só ali, o dia de cada evento e os compromissos com hora
+        marcada — título, data, hora, local e o link de volta ao sistema. Com a
+        permissão de disponibilidade, lemos apenas os horários ocupados da
+        agenda principal dela, sem título nem conteúdo, para não oferecer a um
+        fornecedor um horário já tomado. A chave de acesso fica guardada
+        cifrada e é usada exclusivamente para isso. A conexão pode ser desfeita
+        a qualquer momento em Configurações: desfazê-la apaga a agenda
+        “eOrganizei” e revoga o acesso. O uso que fazemos das informações
+        recebidas das APIs do Google segue a{" "}
+        <a
+          href="https://developers.google.com/terms/api-services-user-data-policy"
+          target="_blank"
+          rel="noreferrer"
+          style={{ color: "inherit", textDecoration: "underline" }}
+        >
+          Política de Dados do Usuário dos Serviços de API do Google
+        </a>
+        , incluindo os requisitos de Uso Limitado.
+      </Secao>
+
       <Secao titulo="Compartilhamento de dados">
         Não vendemos nem compartilhamos dados pessoais com terceiros para fins
         de marketing. Os dados trafegam apenas pelos provedores necessários à

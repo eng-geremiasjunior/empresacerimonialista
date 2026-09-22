@@ -13,6 +13,11 @@ import { getExplicacoesLigadas } from "@/lib/supabase/explicacoes";
 import { nomeTemplateLembrete, whatsappConfigurado } from "@/lib/whatsapp";
 import { CalendarClock, FileSignature, Globe } from "lucide-react";
 import { ContratoModeloForm } from "@/components/configuracoes/ContratoModeloForm";
+import {
+  GoogleAgendaSection,
+  type ConexaoGoogleNaTela,
+} from "@/components/configuracoes/GoogleAgendaSection";
+import { googleConfigurado } from "@/lib/google/oauth";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +25,11 @@ export const dynamic = "force-dynamic";
 // imagens) saiu daqui na 057: agora vive em /catalogo, separado por tipo
 // de evento, porque um mesmo conjunto não servia para casamento e
 // batizado ao mesmo tempo.
-export default async function ConfiguracoesPage() {
+export default async function ConfiguracoesPage({
+  searchParams,
+}: {
+  searchParams?: { google?: string };
+}) {
   const supabase = createClient();
   const {
     data: { user },
@@ -54,6 +63,13 @@ export default async function ConfiguracoesPage() {
   const explicacoesLigadas = await getExplicacoesLigadas();
   // O guia do primeiro acesso (160). Null = sem guia; a secao nao aparece.
   const guia = await getEstadoDoGuia();
+
+  // A conexão com o Google Agenda (168), pela função que devolve só o que
+  // a tela mostra — a chave cifrada nunca sai do banco. Sem a 168 aplicada
+  // (ou sem as chaves do Google no ambiente) a seção não aparece.
+  const conexaoGoogle = await supabase.rpc("minha_conexao_google");
+  const googleDisponivel = googleConfigurado() && !conexaoGoogle.error;
+  const google = ((conexaoGoogle.data as ConexaoGoogleNaTela[] | null) ?? [])[0] ?? null;
 
   let empresa: {
     id: string;
@@ -195,6 +211,10 @@ export default async function ConfiguracoesPage() {
           Abrir minha grade →
         </Link>
       </section>
+
+      {googleDisponivel && (
+        <GoogleAgendaSection conexao={google} aviso={searchParams?.google ?? null} />
+      )}
 
       {proprietaria && (
         <section className="rounded-xl border border-gray-200 bg-white px-6 py-5">

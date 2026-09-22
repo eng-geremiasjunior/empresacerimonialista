@@ -11,6 +11,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { enviarConviteAgendamentoWhatsapp } from "@/lib/whatsapp";
 import { enviarConviteAgendamentoEmail } from "@/lib/email";
 import { inicioDoDiaBR } from "@/lib/tempo";
+import { blocosOcupadosNoGoogle } from "@/lib/google/ocupado";
 
 export type CanalConvite = "whatsapp" | "email";
 
@@ -97,6 +98,16 @@ export async function gerarSlotsLivres(
     const arr = ocupadosPorDia.get(c.data) ?? [];
     arr.push({ ini, fim: ini + (c.duracao_min ?? 60) });
     ocupadosPorDia.set(c.data, arr);
+  }
+
+  // O Google dela (168): os blocos ocupados da agenda principal entram
+  // como se fossem compromissos — o médico e a escola do filho não viram
+  // horário oferecido ao fornecedor. Sem conexão, ou com o Google fora, a
+  // lista vem vazia e a oferta segue como sempre foi.
+  for (const b of await blocosOcupadosNoGoogle(params.userId, iso(inicio), iso(fim))) {
+    const arr = ocupadosPorDia.get(b.data) ?? [];
+    arr.push({ ini: b.ini, fim: b.fim });
+    ocupadosPorDia.set(b.data, arr);
   }
 
   const slots: SlotLivre[] = [];

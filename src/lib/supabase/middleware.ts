@@ -53,6 +53,9 @@ const ROTAS_PUBLICAS: ((p: string) => boolean)[] = [
   (p) => p.startsWith("/aceite/"),
   // as rotas de cron se protegem sozinhas com Bearer CRON_SECRET
   (p) => p.startsWith("/api/cron/"),
+  // o banco avisa que a fila do Google Agenda tem coisa (pg_net, 168);
+  // a rota se protege com o segredo que só o banco conhece
+  (p) => p === "/api/google/fila",
   // "não quero mais receber": o link do rodapé dos e-mails é clicado de
   // dentro da caixa de entrada, sem sessão nenhuma. A rota se protege com
   // a assinatura (HMAC) do id que vem na URL.
