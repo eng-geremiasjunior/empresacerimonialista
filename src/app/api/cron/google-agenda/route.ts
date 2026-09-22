@@ -4,7 +4,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { googleConfigurado } from "@/lib/google/oauth";
-import { processarFila } from "@/lib/google/fila";
+import { chamarDeNovoSeSobrou, processarFila } from "@/lib/google/fila";
 import { servicoGoogle } from "@/lib/google/servico";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +29,9 @@ export async function GET(request: NextRequest) {
 
   try {
     const resumo = await processarFila(db, { max: 150, tempoMaxMs: 50_000 });
-    return NextResponse.json({ ok: true, ...resumo });
+    // o que sobrar segue pelo caminho rápido, sem esperar amanhã
+    const continua = await chamarDeNovoSeSobrou(db);
+    return NextResponse.json({ ok: true, ...resumo, continua });
   } catch (e) {
     const msg = (e instanceof Error ? e.message : String(e)).slice(0, 200);
     return NextResponse.json({ error: msg }, { status: 500 });

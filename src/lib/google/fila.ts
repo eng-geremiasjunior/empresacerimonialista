@@ -138,6 +138,38 @@ export async function processarFila(
   return resumo;
 }
 
+/**
+ * Sobrou fila (o tempo desta chamada acabou, ou o lote estava cheio):
+ * chama a rota de novo pelo mesmo caminho que o banco usa — a URL e o
+ * segredo do ajuste — sem esperar a resposta. Visto ao vivo em
+ * 22/09/2026: 24 eventos numa conexão nova encostaram nos 45 s, e uma
+ * conta maior deixaria sobras para a rotina do dia seguinte. A rotina
+ * continua sendo a rede; isto é o que evita depender dela.
+ */
+export async function chamarDeNovoSeSobrou(db: ServicoGoogle): Promise<boolean> {
+  const { count } = await db
+    .from("google_agenda_fila")
+    .select("id", { count: "exact", head: true })
+    .lte("proxima_em", new Date().toISOString())
+    .is("pegado_em", null);
+  if (!count) return false;
+  const { data } = await db.from("google_agenda_ajuste").select("url_fila, segredo").eq("id", 1).maybeSingle();
+  const a = data as { url_fila: string | null; segredo: string | null } | null;
+  if (!a?.url_fila || !a.segredo) return false;
+  // só o disparo: a resposta é da próxima chamada, e 1,5 s bastam para o
+  // pedido sair antes de esta função encerrar
+  await Promise.race([
+    fetch(a.url_fila, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-eorg-fila": a.segredo },
+      body: "{}",
+      cache: "no-store",
+    }).catch(() => undefined),
+    new Promise((r) => setTimeout(r, 1500)),
+  ]);
+  return true;
+}
+
 async function marcarFalha(db: ServicoGoogle, c: Conexao, falha: "token" | "agenda", resumo: ResumoDaFila) {
   resumo.conexoesComFalha++;
   const agora = new Date().toISOString();

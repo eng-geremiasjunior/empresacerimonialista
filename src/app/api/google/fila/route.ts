@@ -8,7 +8,7 @@
 import { timingSafeEqual } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { googleConfigurado } from "@/lib/google/oauth";
-import { processarFila } from "@/lib/google/fila";
+import { chamarDeNovoSeSobrou, processarFila } from "@/lib/google/fila";
 import { servicoGoogle } from "@/lib/google/servico";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +33,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const resumo = await processarFila(db, { max: 40, tempoMaxMs: 45_000 });
-    return NextResponse.json({ ok: true, ...resumo });
+    // sobrou? a próxima chamada já está a caminho
+    const continua = await chamarDeNovoSeSobrou(db);
+    return NextResponse.json({ ok: true, ...resumo, continua });
   } catch (e) {
     const msg = (e instanceof Error ? e.message : String(e)).slice(0, 200);
     console.error("[vela:google] fila:", msg);
