@@ -114,7 +114,9 @@ export default async function PrecosPage() {
     ? null
     : testeAberto
       ? { href: "/criar-conta", rotulo: `Comece seu teste de ${portao.dias} dias`, rotuloCurto: "Começar teste" }
-      : { href: visitante ? "/comecar" : "/assinatura", rotulo: "Assinar" };
+      : visitante
+        ? { href: "/criar-conta", rotulo: "Criar conta" }
+        : { href: "/assinatura", rotulo: "Assinar" };
 
   function botaoDoPlano(p: PlanoDoCatalogo, destaque: boolean) {
     if (!podeAssinar) {

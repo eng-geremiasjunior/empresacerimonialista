@@ -438,17 +438,28 @@ export function LoginForm({
             <span className="h-px flex-1 bg-gray-200" />
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              setMode(isLogin ? "signup" : "login");
-              setError(null);
-              setInfo(null);
-            }}
-            className="w-full rounded-lg border border-indigo-200 bg-white px-4 py-2.5 text-sm font-semibold text-indigo-600 transition-colors hover:bg-indigo-50"
-          >
-            {isLogin ? "Criar conta e assinar" : "Já tenho conta — entrar"}
-          </button>
+          {/* criar conta é o cadastro de /criar-conta (23/09/2026): dados →
+              plano (Gratuito ou pago) → cartão só no pago */}
+          {isLogin ? (
+            <a
+              href="/criar-conta"
+              className="block w-full rounded-lg border border-indigo-200 bg-white px-4 py-2.5 text-center text-sm font-semibold text-indigo-600 transition-colors hover:bg-indigo-50"
+            >
+              Criar conta
+            </a>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setMode("login");
+                setError(null);
+                setInfo(null);
+              }}
+              className="w-full rounded-lg border border-indigo-200 bg-white px-4 py-2.5 text-sm font-semibold text-indigo-600 transition-colors hover:bg-indigo-50"
+            >
+              Já tenho conta — entrar
+            </button>
+          )}
         </>
       )}
       </div>

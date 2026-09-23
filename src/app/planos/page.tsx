@@ -203,8 +203,10 @@ export default async function PlanosPage() {
   // assinatura dela, como nos botões que já existiam. Quem já paga e a
   // equipe não veem nada disso.
   const precoCurto = precoDeEntrada !== null ? reais(precoDeEntrada) : null;
+  // o visitante entra sempre pelo cadastro (23/09/2026): lá ele escolhe
+  // entre o Gratuito e um plano pago, e o pago segue para o cartão
   const destinoDaAssinatura = visitante
-    ? "/comecar"
+    ? "/criar-conta"
     : planoDeEntrada
       ? `/assinatura?plano=${planoDeEntrada.codigo}`
       : "/assinatura";
@@ -799,7 +801,7 @@ export default async function PlanosPage() {
                   >
                     {visitante && (
                       <a
-                        href="/comecar"
+                        href="/criar-conta"
                         style={{
                           display: "inline-flex",
                           alignItems: "center",

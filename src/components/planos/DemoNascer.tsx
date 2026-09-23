@@ -571,7 +571,7 @@ export function DemoNascer({
                       </span>
                       <span data-saida-cel="1" style={{ display: "flex", gap: 10, alignItems: "center", flex: "none" }}>
                         <button type="button" onClick={refazer} style={{ height: 40, padding: "0 14px", borderRadius: 8, border: `1.5px solid ${C.bordaForte}`, background: "#fff", color: C.tinta, fontFamily: F_TITLE, fontWeight: 500, fontSize: 13, cursor: "pointer" }}>Refazer</button>
-                        <a href={saida?.href ?? "/comecar"} className="pl-h-ameixa" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 40, padding: "0 16px", borderRadius: 8, background: C.ameixa, color: "#fff", textDecoration: "none", fontFamily: F_TITLE, fontWeight: 600, fontSize: 13.5 }}>
+                        <a href={saida?.href ?? "/criar-conta"} className="pl-h-ameixa" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 40, padding: "0 16px", borderRadius: 8, background: C.ameixa, color: "#fff", textDecoration: "none", fontFamily: F_TITLE, fontWeight: 600, fontSize: 13.5 }}>
                           {saida?.rotulo ?? (precoDeEntrada ? `Criar de verdade por ${precoDeEntrada}` : "Criar de verdade")}
                         </a>
                       </span>
