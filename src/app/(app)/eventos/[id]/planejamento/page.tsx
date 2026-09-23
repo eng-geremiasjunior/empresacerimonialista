@@ -3,6 +3,7 @@ import { getPlanejamento } from "@/lib/supabase/planejamento";
 import { PlanejamentoEvento } from "@/components/planejamento/PlanejamentoEvento";
 import { TemaNeutro } from "@/components/planejamento/TemaNeutro";
 import type { Arquetipos } from "@/components/planejamento/celebra";
+import type { NotaDoCaderno, ReuniaoDoCaderno } from "./caderno-actions";
 
 export default async function EventoPlanejamentoPage({
   params,
@@ -48,6 +49,51 @@ export default async function EventoPlanejamentoPage({
       arquetipos[a.eixo].push({ valor: a.codigo, rotulo: a.nome });
   }
 
+  // o Caderno (172): as anotações dela e as reuniões do evento. Sem a
+  // 172 aplicada, a nota ainda não sabe mês/decisão/reunião — cai no
+  // mês em que foi escrita.
+  const colunasNota = "id, content, created_at, mes, evento_decisao_id, compromisso_id";
+  let notasRes = await supabase
+    .from("event_notes")
+    .select(colunasNota)
+    .eq("event_id", eventId)
+    .order("created_at");
+  if (notasRes.error) {
+    notasRes = (await supabase
+      .from("event_notes")
+      .select("id, content, created_at")
+      .eq("event_id", eventId)
+      .order("created_at")) as unknown as typeof notasRes;
+  }
+  const notas: NotaDoCaderno[] = ((notasRes.data ?? []) as {
+    id: string;
+    content: string;
+    created_at: string;
+    mes?: string | null;
+    evento_decisao_id?: string | null;
+    compromisso_id?: string | null;
+  }[]).map((n) => ({
+    id: n.id,
+    texto: n.content,
+    criadaEm: n.created_at,
+    mes: n.mes ?? null,
+    decisaoId: n.evento_decisao_id ?? null,
+    reuniaoId: n.compromisso_id ?? null,
+  }));
+  const { data: comp } = await supabase
+    .from("compromisso")
+    .select("id, titulo, data, hora, local, estado")
+    .eq("event_id", eventId)
+    .neq("estado", "cancelado")
+    .order("data");
+  const reunioes: ReuniaoDoCaderno[] = ((comp ?? []) as {
+    id: string;
+    titulo: string;
+    data: string;
+    hora: string | null;
+    local: string | null;
+  }[]).map((r) => ({ id: r.id, titulo: r.titulo, data: r.data, hora: r.hora, local: r.local }));
+
   const cliente = (
     ev as unknown as { clients: { name: string } | null } | null
   )?.clients;
@@ -66,6 +112,7 @@ export default async function EventoPlanejamentoPage({
         clienteNome={cliente?.name ?? null}
         tipoEvento={tipoEvento}
         localEvento={ev?.location ?? ev?.city ?? null}
+        caderno={{ notas, reunioes }}
         podeSalvarModelo={(cargo as { cargo?: string } | null)?.cargo === "proprietaria"}
       />
     </>

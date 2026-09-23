@@ -21,9 +21,13 @@ export type ItemChecklistAjuste = {
   ativo: boolean;
   templateId: string | null;
   responsavelMembroId: string | null;
+  /** alguém da Equipe do dia (172) — sem login */
+  equipeId?: string | null;
 };
 
 export type MembroDaEquipe = { id: string; nome: string };
+/** Equipe do dia (171/172): quem trabalha no evento, com ou sem login */
+export type PessoaDoDia = { id: string; nome: string };
 
 const BLOCOS: { key: ItemChecklistAjuste["bloco"]; label: string }[] = [
   { key: "montagem", label: "Montagem" },
@@ -37,10 +41,12 @@ export function ChecklistDoDiaAjuste({
   eventId,
   itens,
   membros,
+  equipe = [],
 }: {
   eventId: string;
   itens: ItemChecklistAjuste[];
   membros: MembroDaEquipe[];
+  equipe?: PessoaDoDia[];
 }) {
   const router = useRouter();
   const [pendente, iniciar] = useTransition();
@@ -108,6 +114,7 @@ export function ChecklistDoDiaAjuste({
               label={b.label}
               itens={lista}
               membros={membros}
+              equipe={equipe}
               pendente={pendente}
               rodar={rodar}
             />
@@ -126,6 +133,7 @@ function BlocoAjuste({
   label,
   itens,
   membros,
+  equipe,
   pendente,
   rodar,
 }: {
@@ -134,6 +142,7 @@ function BlocoAjuste({
   label: string;
   itens: ItemChecklistAjuste[];
   membros: MembroDaEquipe[];
+  equipe: PessoaDoDia[];
   pendente: boolean;
   rodar: (fn: () => Promise<{ error: string } | { success: true }>) => void;
 }) {
@@ -162,6 +171,7 @@ function BlocoAjuste({
             eventId={eventId}
             item={i}
             membros={membros}
+            equipe={equipe}
             pendente={pendente}
             rodar={rodar}
           />
@@ -206,12 +216,14 @@ function LinhaAjuste({
   eventId,
   item,
   membros,
+  equipe,
   pendente,
   rodar,
 }: {
   eventId: string;
   item: ItemChecklistAjuste;
   membros: MembroDaEquipe[];
+  equipe: PessoaDoDia[];
   pendente: boolean;
   rodar: (fn: () => Promise<{ error: string } | { success: true }>) => void;
 }) {
@@ -258,28 +270,51 @@ function LinhaAjuste({
         </button>
       )}
 
-      {item.ativo && membros.length > 0 && (
+      {item.ativo && (membros.length > 0 || equipe.length > 0) && (
         <select
-          value={item.responsavelMembroId ?? ""}
+          value={
+            item.equipeId
+              ? `e:${item.equipeId}`
+              : item.responsavelMembroId
+                ? `m:${item.responsavelMembroId}`
+                : ""
+          }
           disabled={pendente}
-          onChange={(e) =>
+          onChange={(e) => {
+            // "e:" = alguém da equipe do dia; "m:" = quem tem login.
+            // Um dono só: escolher um tira o outro.
+            const v = e.target.value;
             rodar(() =>
               editarItemChecklist(eventId, item.id, {
-                responsavelMembroId: e.target.value || null,
+                equipeId: v.startsWith("e:") ? v.slice(2) : null,
+                responsavelMembroId: v.startsWith("m:") ? v.slice(2) : null,
               })
-            )
-          }
+            );
+          }}
           aria-label="Responsável"
           className={`max-w-[110px] shrink-0 truncate rounded border-0 bg-transparent py-0.5 pr-1 text-xs focus:outline-none ${
-            item.responsavelMembroId ? "text-stone-600" : "text-stone-300"
+            item.equipeId || item.responsavelMembroId ? "text-stone-600" : "text-stone-300"
           }`}
         >
           <option value="">— quem?</option>
-          {membros.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.nome.split(" ")[0]}
-            </option>
-          ))}
+          {equipe.length > 0 && (
+            <optgroup label="Equipe do dia">
+              {equipe.map((p) => (
+                <option key={p.id} value={`e:${p.id}`}>
+                  {p.nome.split(" ")[0]}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {membros.length > 0 && (
+            <optgroup label="Com login">
+              {membros.map((m) => (
+                <option key={m.id} value={`m:${m.id}`}>
+                  {m.nome.split(" ")[0]}
+                </option>
+              ))}
+            </optgroup>
+          )}
         </select>
       )}
 

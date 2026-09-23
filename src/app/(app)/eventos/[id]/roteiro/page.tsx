@@ -73,7 +73,7 @@ export default async function RoteiroPage({
       supabase
         .from("evento_checklist_dia")
         .select(
-          "id, bloco, titulo, ordem, horario, ativo, template_id, responsavel_membro_id"
+          "id, bloco, titulo, ordem, horario, ativo, template_id, responsavel_membro_id, equipe_do_dia_id"
         )
         .eq("event_id", params.id)
         .order("bloco")
@@ -105,6 +105,7 @@ export default async function RoteiroPage({
       ativo: boolean;
       template_id: string | null;
       responsavel_membro_id: string | null;
+      equipe_do_dia_id: string | null;
     }[]
   ).map((i) => ({
     id: i.id,
@@ -115,12 +116,19 @@ export default async function RoteiroPage({
     ativo: i.ativo,
     templateId: i.template_id,
     responsavelMembroId: i.responsavel_membro_id,
+    equipeId: i.equipe_do_dia_id,
   }));
   const items = (cronogramaResult.data ?? []) as unknown as CronogramaItem[];
 
   const equipe: PessoaDaEquipe[] = (
     (equipeResult.data ?? []) as Omit<PessoaDaEquipe, "itens">[]
-  ).map((p) => ({ ...p, itens: items.filter((i) => i.equipe_do_dia_id === p.id).length }));
+  ).map((p) => ({
+    ...p,
+    // o que é dela: horários do roteiro + itens do checklist do dia
+    itens:
+      items.filter((i) => i.equipe_do_dia_id === p.id).length +
+      checklist.filter((c) => c.ativo && c.equipeId === p.id).length,
+  }));
   const nomeDoEvento = (() => {
     const e = eventData as unknown as {
       name: string | null;
@@ -204,6 +212,7 @@ export default async function RoteiroPage({
         eventId={event.id}
         itens={checklist}
         membros={membrosResult.membros.map((m) => ({ id: m.id, nome: m.nome }))}
+        equipe={equipe.map((p) => ({ id: p.id, nome: p.nome }))}
       />
 
       <EquipeDoDia

@@ -36,6 +36,23 @@ type Item = {
   meu: boolean;
 };
 
+type ItemDoChecklist = {
+  id: string;
+  bloco: string;
+  titulo: string;
+  horario: string | null;
+  feito: boolean;
+  meu: boolean;
+};
+
+const BLOCO: Record<string, string> = {
+  montagem: "Montagem",
+  colacao: "Colação",
+  cerimonia: "Cerimônia",
+  recepcao: "Recepção",
+  desmontagem: "Desmontagem",
+};
+
 export type DadosDaEscala = {
   evento: {
     nome: string | null;
@@ -47,6 +64,8 @@ export type DadosDaEscala = {
   };
   pessoa: { id: string; nome: string; posto: string | null };
   itens: Item[];
+  /** o checklist do dia (172); ausente antes da 172 */
+  checklist?: ItemDoChecklist[];
   equipe: { nome: string; posto: string | null; telefone: string | null; eu: boolean }[];
 };
 
@@ -189,6 +208,26 @@ export function EscalaDoDia({ hash, inicial }: { hash: string; inicial: DadosDaE
   }
 
   const lista = aba === "minhas" ? minhas : dados.itens;
+  const conferir = (dados.checklist ?? []).filter((c) => c.meu);
+
+  async function conferirItem(c: ItemDoChecklist) {
+    setErro(null);
+    setEnviando(c.id);
+    try {
+      const { data, error } = await createClient().rpc("equipe_conferir_item", {
+        p_hash: hash,
+        p_item_id: c.id,
+        p_feito: !c.feito,
+      });
+      const r = data as { error?: string } | null;
+      if (error || r?.error) setErro(r?.error ?? "Não foi possível marcar agora.");
+      else await atualizar();
+    } catch {
+      setErro("Sem sinal. Tente de novo em instantes.");
+    } finally {
+      setEnviando(null);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-stone-50 pb-16">
@@ -300,7 +339,7 @@ export function EscalaDoDia({ hash, inicial }: { hash: string; inicial: DadosDaE
         <div className="mt-6 flex gap-1 rounded-xl bg-stone-200 p-1">
           {(
             [
-              ["minhas", `Suas deixas (${minhas.length})`],
+              ["minhas", `Suas deixas (${minhas.length + conferir.length})`],
               ["dia", "Dia inteiro"],
             ] as const
           ).map(([k, rotulo]) => (
@@ -317,6 +356,37 @@ export function EscalaDoDia({ hash, inicial }: { hash: string; inicial: DadosDaE
           ))}
         </div>
 
+        {aba === "minhas" && conferir.length > 0 && (
+          <>
+            <h2 className="mt-4 text-sm font-semibold text-stone-900">Para conferir</h2>
+            <ul className="mt-2 divide-y divide-stone-200 rounded-2xl border border-stone-200 bg-white">
+              {conferir.map((c) => (
+                <li key={c.id} className="flex items-center gap-3 p-3">
+                  <button
+                    type="button"
+                    disabled={enviando === c.id}
+                    onClick={() => conferirItem(c)}
+                    aria-label={c.feito ? "Desmarcar" : "Marcar como feito"}
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border text-base font-bold disabled:opacity-50 ${
+                      c.feito ? "border-stone-900 bg-stone-900 text-white" : "border-stone-300 bg-white text-transparent"
+                    }`}
+                  >
+                    ✓
+                  </button>
+                  <span className={`min-w-0 flex-1 text-[15px] ${c.feito ? "text-stone-400 line-through" : "text-stone-900"}`}>
+                    {c.titulo}
+                  </span>
+                  <span className="shrink-0 text-xs text-stone-500">
+                    {c.horario ? hhmm(c.horario) : BLOCO[c.bloco] ?? ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {minhas.length > 0 && <h2 className="mt-4 text-sm font-semibold text-stone-900">No roteiro</h2>}
+          </>
+        )}
+
+        {(aba === "dia" || minhas.length > 0 || conferir.length === 0) && (
         <ul className="mt-3 divide-y divide-stone-200 rounded-2xl border border-stone-200 bg-white">
           {lista.length === 0 ? (
             <li className="p-4 text-sm text-stone-500">
@@ -361,6 +431,7 @@ export function EscalaDoDia({ hash, inicial }: { hash: string; inicial: DadosDaE
             })
           )}
         </ul>
+        )}
 
         {/* a equipe, para ligar */}
         {dados.equipe.length > 1 && (

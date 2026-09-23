@@ -724,6 +724,7 @@ export function DrawerDecisao({
   acoesCuradoria,
   guia,
   acoesGuia,
+  anotacoes,
 }: {
   tipoEvento: string;
   /** opções dos eixos escala/cenário, com o nome do banco (o chip usa o mesmo) */
@@ -752,6 +753,8 @@ export function DrawerDecisao({
   /** guia de estilo do evento (096); só aparece na decisão de briefing */
   guia: GuiaDeEstilo | null;
   acoesGuia: AcoesGuia;
+  /** Caderno (172): as anotações presas a esta decisão */
+  anotacoes?: React.ReactNode;
 }) {
   const na = decisao.estado === "nao_se_aplica";
   const decidida = decisao.estado === "decidida";
@@ -1270,6 +1273,8 @@ export function DrawerDecisao({
               acoes={acoesGuia}
             />
           )}
+
+          {anotacoes}
         </div>
 
         {/* Aviso NOMEADO antes de decidir (decisão do dono: aviso genérico

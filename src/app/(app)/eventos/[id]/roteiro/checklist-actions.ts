@@ -54,7 +54,13 @@ export async function criarItemChecklist(
 export async function editarItemChecklist(
   eventId: string,
   itemId: string,
-  patch: { titulo?: string; horario?: string | null; responsavelMembroId?: string | null }
+  patch: {
+    titulo?: string;
+    horario?: string | null;
+    responsavelMembroId?: string | null;
+    /** Equipe do dia (172) */
+    equipeId?: string | null;
+  }
 ): Promise<Resultado> {
   const supabase = createClient();
 
@@ -72,6 +78,9 @@ export async function editarItemChecklist(
   }
   if (patch.responsavelMembroId !== undefined) {
     dados.responsavel_membro_id = patch.responsavelMembroId || null;
+  }
+  if (patch.equipeId !== undefined) {
+    dados.equipe_do_dia_id = patch.equipeId || null;
   }
 
   const { error } = await supabase

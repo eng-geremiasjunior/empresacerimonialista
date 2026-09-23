@@ -47,6 +47,8 @@ import { ModoFoco } from "./ModoFoco";
 import { ModoAmplo } from "./ModoAmplo";
 import { MapaMental } from "./MapaMental";
 import { SalvarModelo } from "./SalvarModelo";
+import { AnotacoesDaDecisao, ModoCaderno } from "./ModoCaderno";
+import type { NotaDoCaderno, ReuniaoDoCaderno } from "@/app/(app)/eventos/[id]/planejamento/caderno-actions";
 import {
   DrawerDecisao,
   CODIGO_DECISAO_GUIA,
@@ -107,6 +109,7 @@ export function PlanejamentoEvento({
   tipoEvento,
   localEvento,
   podeSalvarModelo = false,
+  caderno = { notas: [], reunioes: [] },
 }: {
   eventId: string;
   inicial: Planejamento;
@@ -121,6 +124,8 @@ export function PlanejamentoEvento({
   localEvento: string | null;
   /** só a proprietária muda o modelo da empresa (170) */
   podeSalvarModelo?: boolean;
+  /** Caderno do evento (172): as anotações dela e as reuniões */
+  caderno?: { notas: NotaDoCaderno[]; reunioes: ReuniaoDoCaderno[] };
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -128,7 +133,7 @@ export function PlanejamentoEvento({
   const plano = inicial;
 
   // ---- estado de visualização (handoff §12) ----
-  const [modo, setModo] = useState<"foco" | "amplo">("foco");
+  const [modo, setModo] = useState<"foco" | "amplo" | "caderno">("foco");
   const [mapaAberto, setMapaAberto] = useState(false);
   const [modeloAberto, setModeloAberto] = useState(false);
   const [drawerId, setDrawerId] = useState<string | null>(decisaoInicial);
@@ -142,9 +147,9 @@ export function PlanejamentoEvento({
   // modo persiste por evento
   useEffect(() => {
     const salvo = window.localStorage.getItem(`plano-modo-${eventId}`);
-    if (salvo === "amplo") setModo("amplo");
+    if (salvo === "amplo" || salvo === "caderno") setModo(salvo);
   }, [eventId]);
-  const trocarModo = (m: "foco" | "amplo") => {
+  const trocarModo = (m: "foco" | "amplo" | "caderno") => {
     setModo(m);
     window.localStorage.setItem(`plano-modo-${eventId}`, m);
   };
@@ -590,7 +595,7 @@ export function PlanejamentoEvento({
               gap: 3,
             }}
           >
-            {(["foco", "amplo"] as const).map((m) => (
+            {(["foco", "amplo", "caderno"] as const).map((m) => (
               <button
                 key={m}
                 type="button"
@@ -611,12 +616,12 @@ export function PlanejamentoEvento({
                   transition: "background 150ms ease, color 150ms ease",
                 }}
               >
-                {m === "foco" ? "Foco" : "Amplo"}
+                {m === "foco" ? "Foco" : m === "amplo" ? "Amplo" : "Caderno"}
               </button>
             ))}
           </div>
           <span style={{ fontFamily: F_MONO, fontSize: 11, color: C.meta }}>
-            {modo === "foco" ? "mesmo eixo · zoom" : legendaAmplo}
+            {modo === "amplo" ? legendaAmplo : null}
           </span>
         </div>
 
@@ -748,6 +753,15 @@ export function PlanejamentoEvento({
             })
           }
         />
+      ) : modo === "caderno" ? (
+        <ModoCaderno
+          eventId={eventId}
+          objetivos={plano.objetivos}
+          dataEvento={plano.dataEvento}
+          notas={caderno.notas}
+          reunioes={caderno.reunioes}
+          onAbrirDecisao={abrirDrawer}
+        />
       ) : (
         <ModoAmplo
           objetivos={plano.objetivos}
@@ -817,6 +831,13 @@ export function PlanejamentoEvento({
           curadoria={curadoria}
           acoesCuradoria={acoesCuradoria}
           guia={guia}
+          anotacoes={
+            <AnotacoesDaDecisao
+              eventId={eventId}
+              decisaoId={drawer.decisao.id}
+              notas={caderno.notas}
+            />
+          }
           acoesGuia={acoesGuia}
         />
       )}
