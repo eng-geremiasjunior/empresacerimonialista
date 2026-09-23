@@ -409,7 +409,7 @@ export function CriarContaDeTeste({
         display: "flex",
         flexDirection: "column",
         gap: "16px",
-        maxWidth: passo === 2 ? "980px" : "460px",
+        maxWidth: passo === 2 ? "700px" : "460px",
         margin: "0 auto",
       }}
     >

@@ -4,11 +4,12 @@
 //   * cadastro — a segunda etapa, depois dos dados (sem X: é uma etapa);
 //   * login    — a cada entrada de quem não paga, com um X à vista;
 //   * limite   — quando o plano chega ao teto de eventos, para subir.
-// Desenho do anexo do dono: marfim, "Escolha seu plano", a faixa da
-// promoção, os cartões, um botão só. Preço e limite vêm do painel
-// (lib/planos-banner.ts); aqui só se desenha.
+// Compacta e no meio da tela, como janela de sistema (pedido do dono,
+// 23/09): título pequeno, a promoção numa linha, cartões baixos. Preço e
+// limite vêm do painel (lib/planos-banner.ts); aqui só se desenha.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Marca } from "@/components/marca/Marca";
 import type { DadosDoBanner, PlanoNoBanner } from "@/lib/planos-banner";
 
@@ -16,22 +17,22 @@ type Codigo = PlanoNoBanner["codigo"];
 export type ModoDoBanner = "cadastro" | "login" | "limite";
 
 const K = {
-  marfim: "#FAF8F5",
+  fundo: "#FFFFFF",
   tinta: "#221E1B",
   corpo: "#4A443F",
   suave: "#7A726B",
   ameixa: "#6E3F5F",
   ameixaEscura: "#4A2A40",
-  faixa: "#EFE8EA",
+  faixa: "#F4EEF1",
   linha: "#E6DFDA",
 };
 
 const CSS = `
-.pb-grade{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
-@media (max-width:860px){.pb-grade{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:520px){.pb-grade{grid-template-columns:1fr}}
-.pb-cartao{transition:border-color .15s ease, box-shadow .15s ease, transform .15s ease}
-.pb-cartao:hover:not(:disabled){transform:translateY(-2px)}
+.pb-grade{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:720px){.pb-grade{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:340px){.pb-grade{grid-template-columns:1fr}}
+.pb-cartao{transition:border-color .15s ease, box-shadow .15s ease}
+.pb-cartao:hover:not(:disabled){border-color:#C9AFBE}
 `;
 
 function rotuloDoBotao(p: PlanoNoBanner | undefined, modo: ModoDoBanner, planoAtual: string | null, testeAberto: boolean) {
@@ -79,19 +80,24 @@ export function PlanosBanner({
   const [escolhido, setEscolhido] = useState<Codigo>(partida);
   const plano = dados.planos.find((p) => p.codigo === escolhido);
   const indiceAtual = dados.planos.findIndex((p) => p.codigo === planoAtual);
+  const janela = modo !== "cadastro";
+  // a janela vai direto no <body>: dentro do layout ela ficava abaixo do
+  // guia do primeiro acesso, que tem o próprio empilhamento
+  const [montado, setMontado] = useState(false);
+  useEffect(() => setMontado(true), []);
 
   const miolo = (
     <div
       style={{
         position: "relative",
         width: "100%",
-        maxWidth: 980,
-        margin: "0 auto",
-        background: K.marfim,
-        borderRadius: modo === "cadastro" ? 0 : 20,
-        padding: modo === "cadastro" ? "8px 0 0" : "34px 28px 30px",
+        maxWidth: 700,
+        margin: janela ? "auto" : "0 auto",
+        background: janela ? K.fundo : "transparent",
+        borderRadius: janela ? 14 : 0,
+        padding: janela ? "22px 22px 20px" : "4px 0 0",
         color: K.tinta,
-        boxShadow: modo === "cadastro" ? "none" : "0 30px 80px rgba(34,30,27,.28)",
+        boxShadow: janela ? "0 20px 50px rgba(34,30,27,.22)" : "none",
       }}
     >
       <style>{CSS}</style>
@@ -102,16 +108,16 @@ export function PlanosBanner({
           aria-label="Fechar"
           style={{
             position: "absolute",
-            top: 14,
-            right: 14,
-            width: 40,
-            height: 40,
-            borderRadius: 999,
+            top: 12,
+            right: 12,
+            width: 32,
+            height: 32,
+            borderRadius: 8,
             border: `1px solid ${K.linha}`,
             background: "#fff",
             color: K.corpo,
-            fontSize: 20,
-            lineHeight: "38px",
+            fontSize: 18,
+            lineHeight: "30px",
             cursor: "pointer",
           }}
         >
@@ -119,47 +125,44 @@ export function PlanosBanner({
         </button>
       )}
 
-      <div style={{ textAlign: "center" }}>
-        {modo !== "cadastro" && (
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-            <Marca tamanho={22} />
+      <div style={{ textAlign: janela ? "left" : "center", paddingRight: janela ? 40 : 0 }}>
+        {janela && (
+          <div style={{ marginBottom: 10 }}>
+            <Marca tamanho={16} />
           </div>
         )}
         {mensagem && (
-          <p style={{ margin: "0 0 6px", fontSize: 14.5, fontWeight: 600, color: K.ameixa }}>{mensagem}</p>
+          <p style={{ margin: "0 0 2px", fontSize: 13, fontWeight: 600, color: K.ameixa }}>{mensagem}</p>
         )}
-        <h2 style={{ margin: 0, fontSize: "clamp(30px, 5vw, 44px)", fontWeight: 300, letterSpacing: "-0.02em", lineHeight: 1.1 }}>
-          Escolha <strong style={{ fontWeight: 800, color: K.ameixaEscura }}>seu plano</strong>
+        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, letterSpacing: "-0.01em", lineHeight: 1.25 }}>
+          Escolha seu plano
         </h2>
-        <div style={{ width: 56, height: 2, background: "#D9B7C6", margin: "16px auto 0", borderRadius: 2 }} />
+        <p style={{ margin: "3px 0 0", fontSize: 13, color: K.suave }}>
+          Todos os planos incluem os recursos do eOrganizei.
+        </p>
       </div>
 
       {dados.promocao && (
         <div
           style={{
-            margin: "22px auto 0",
-            maxWidth: 560,
+            marginTop: 14,
             background: K.faixa,
-            borderRadius: 18,
-            padding: "16px 20px 14px",
-            textAlign: "center",
+            borderRadius: 8,
+            padding: "8px 12px",
+            fontSize: 13,
+            color: K.corpo,
+            textAlign: janela ? "left" : "center",
           }}
         >
-          <div style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: ".22em", color: K.ameixa, textTransform: "uppercase" }}>
-            {dados.promocao.meses === 1 ? "Primeiro mês" : `${dados.promocao.meses} primeiros meses`}
-          </div>
-          <div style={{ marginTop: 2, fontWeight: 800, color: K.ameixaEscura, letterSpacing: "-0.03em" }}>
-            <span style={{ fontSize: 26 }}>R$ </span>
-            <span style={{ fontSize: 52 }}>{dados.promocao.valor.replace(/^R\$\s?/, "")}</span>
-            <span style={{ fontSize: 17, fontWeight: 600 }}>/mês</span>
-          </div>
-          <div style={{ fontSize: 14, color: K.corpo }}>
-            no Essencial · depois, a partir de {dados.promocao.aPartirDe}/mês
-          </div>
+          <strong style={{ color: K.ameixaEscura }}>
+            {dados.promocao.meses === 1 ? "Primeiro mês" : `${dados.promocao.meses} primeiros meses`} por{" "}
+            {dados.promocao.valor}/mês
+          </strong>{" "}
+          no Essencial · depois, {dados.promocao.aPartirDe}/mês
         </div>
       )}
 
-      <div className="pb-grade" style={{ marginTop: 26 }}>
+      <div className="pb-grade" style={{ marginTop: 16 }}>
         {dados.planos.map((p, i) => {
           const ativo = p.codigo === escolhido;
           const seu = planoAtual === p.codigo;
@@ -176,88 +179,99 @@ export function PlanosBanner({
               style={{
                 position: "relative",
                 textAlign: "left",
-                background: "#fff",
-                border: `${ativo ? 2 : 1}px solid ${ativo ? K.ameixa : K.linha}`,
-                borderRadius: 16,
-                padding: ativo ? "21px 19px 17px" : "22px 20px 18px",
-                boxShadow: ativo ? "0 14px 34px rgba(110,63,95,.16)" : "0 4px 14px rgba(34,30,27,.05)",
+                background: ativo ? "#FCFAFB" : "#fff",
+                border: `1px solid ${ativo ? K.ameixa : K.linha}`,
+                boxShadow: ativo ? `0 0 0 1px ${K.ameixa}` : "none",
+                borderRadius: 10,
+                padding: "12px 12px 11px",
                 cursor: semSaida ? "default" : "pointer",
                 opacity: semSaida && !seu ? 0.45 : 1,
                 fontFamily: "inherit",
                 color: K.tinta,
               }}
             >
-              {(p.maisEscolhido || seu) && (
-                <span
-                  style={{
-                    position: "absolute",
-                    top: -11,
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    whiteSpace: "nowrap",
-                    background: seu ? K.corpo : K.ameixa,
-                    color: "#fff",
-                    fontSize: 10.5,
-                    fontWeight: 700,
-                    letterSpacing: ".14em",
-                    textTransform: "uppercase",
-                    borderRadius: 999,
-                    padding: "4px 12px",
-                  }}
-                >
-                  {seu ? "Seu plano" : "Mais escolhido"}
-                </span>
-              )}
-              <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.01em" }}>{p.nome}</div>
-              <div style={{ width: 26, height: 2, background: "#D9B7C6", margin: "10px 0 12px", borderRadius: 2 }} />
-              <div style={{ fontSize: 15, color: K.corpo }}>{p.eventos}</div>
-              <div style={{ height: 1, background: K.linha, margin: "16px 0 14px" }} />
-              <div style={{ display: "flex", alignItems: "baseline", gap: 3 }}>
-                <span style={{ fontSize: 15, fontWeight: 600 }}>R$</span>
-                <span style={{ fontSize: 38, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1 }}>{p.inteiro}</span>
-                <span style={{ fontSize: 17, fontWeight: 700 }}>{p.centavos}</span>
-                <span style={{ fontSize: 13.5, color: K.suave, marginLeft: 2 }}>/mês</span>
+              <div style={{ height: 17, marginBottom: 4 }}>
+                {(p.maisEscolhido || seu) && (
+                  <span
+                    style={{
+                      whiteSpace: "nowrap",
+                      background: seu ? "#EEEAE7" : K.faixa,
+                      color: seu ? K.corpo : K.ameixa,
+                      fontSize: 10,
+                      fontWeight: 600,
+                      borderRadius: 4,
+                      padding: "2px 6px",
+                      display: "inline-block",
+                    }}
+                  >
+                    {seu ? "Seu plano" : "Mais escolhido"}
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 700 }}>{p.nome}</div>
+              <div style={{ marginTop: 2, fontSize: 12.5, color: K.suave }}>{p.eventos}</div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 2, marginTop: 10 }}>
+                <span style={{ fontSize: 12, fontWeight: 600 }}>R$</span>
+                <span style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1 }}>{p.inteiro}</span>
+                <span style={{ fontSize: 12.5, fontWeight: 600 }}>{p.centavos}</span>
+                <span style={{ fontSize: 12, color: K.suave, marginLeft: 2 }}>/mês</span>
               </div>
             </button>
           );
         })}
       </div>
 
-      <p style={{ textAlign: "center", margin: "22px 0 0", fontSize: 14, color: K.corpo }}>
-        Todos os planos incluem os recursos do eOrganizei.
-      </p>
-
-      <div style={{ display: "flex", justifyContent: "center", marginTop: 18 }}>
+      <div style={{ display: "flex", justifyContent: janela ? "flex-end" : "center", gap: 8, marginTop: 18 }}>
+        {janela && onFechar && (
+          <button
+            type="button"
+            onClick={onFechar}
+            style={{
+              height: 38,
+              padding: "0 16px",
+              borderRadius: 8,
+              border: `1px solid ${K.linha}`,
+              background: "#fff",
+              color: K.corpo,
+              fontSize: 13.5,
+              fontWeight: 500,
+              fontFamily: "inherit",
+              cursor: "pointer",
+            }}
+          >
+            Agora não
+          </button>
+        )}
         <button
           type="button"
           disabled={enviando || !plano || (modo !== "cadastro" && planoAtual === plano.codigo && plano.codigo !== "gratuito")}
           onClick={() => plano && onEscolher(plano.codigo)}
           style={{
-            minWidth: 300,
-            height: 56,
-            padding: "0 30px",
+            minWidth: janela ? 0 : 260,
+            height: janela ? 38 : 44,
+            padding: "0 18px",
             border: "none",
-            borderRadius: 999,
+            borderRadius: 8,
             background: K.ameixa,
             color: "#fff",
-            fontSize: 17,
+            fontSize: janela ? 13.5 : 15,
             fontWeight: 600,
             fontFamily: "inherit",
             cursor: enviando ? "default" : "pointer",
             opacity: enviando ? 0.7 : 1,
-            boxShadow: "0 12px 28px rgba(110,63,95,.3)",
           }}
         >
-          {enviando ? "Um instante…" : `${rotuloDoBotao(plano, modo, planoAtual, testeAberto)} →`}
+          {enviando ? "Um instante…" : rotuloDoBotao(plano, modo, planoAtual, testeAberto)}
         </button>
       </div>
-      {erro && <p style={{ textAlign: "center", marginTop: 12, fontSize: 14, color: "#A34A2E" }}>{erro}</p>}
+      {erro && <p style={{ textAlign: "center", marginTop: 10, fontSize: 13, color: "#A34A2E" }}>{erro}</p>}
     </div>
   );
 
-  if (modo === "cadastro") return miolo;
+  if (!janela) return miolo;
+  if (!montado) return null;
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
@@ -265,16 +279,15 @@ export function PlanosBanner({
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 80,
+        zIndex: 90,
         background: "rgba(34,30,27,.45)",
         overflowY: "auto",
-        padding: "28px 14px",
+        padding: "24px 14px",
         display: "flex",
-        alignItems: "flex-start",
-        justifyContent: "center",
       }}
     >
       {miolo}
-    </div>
+    </div>,
+    document.body
   );
 }
