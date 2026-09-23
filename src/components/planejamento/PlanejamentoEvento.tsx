@@ -758,6 +758,17 @@ export function PlanejamentoEvento({
           eventId={eventId}
           objetivos={plano.objetivos}
           dataEvento={plano.dataEvento}
+          meta={[
+            clienteNome,
+            plano.dataEvento
+              ? `${(EVENT_TYPE_LABELS[tipoEvento as EventType] ?? tipoEvento).toLowerCase()} ${plano.dataEvento.slice(8, 10)}/${plano.dataEvento.slice(5, 7)}/${plano.dataEvento.slice(0, 4)}`
+              : null,
+            plano.diasAteEvento !== null && plano.diasAteEvento >= 0
+              ? `faltam ${plano.diasAteEvento} ${plano.diasAteEvento === 1 ? "dia" : "dias"}`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
           notas={caderno.notas}
           reunioes={caderno.reunioes}
           onAbrirDecisao={abrirDrawer}
