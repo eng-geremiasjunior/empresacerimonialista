@@ -291,6 +291,11 @@ export function ItemTimelineExpandido({
                 </span>
               </a>
             )}
+            {item.deixa && (
+              <div className="mt-1 text-[12.5px]" style={{ color: "#3F3D52" }}>
+                Deixa: {item.deixa}
+              </div>
+            )}
           </div>
 
           {/* 150px — status */}

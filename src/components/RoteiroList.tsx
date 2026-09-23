@@ -36,6 +36,8 @@ type Props = {
   items: CronogramaItem[];
   suppliers: { id: string; name: string; category: string | null; phone: string | null }[];
   liberacaoEspaco?: string | null;
+  /** Equipe do dia (171), para o "quem cuida" do item */
+  equipe?: { id: string; nome: string; posto: string | null }[];
 };
 
 export function RoteiroList({
@@ -44,6 +46,7 @@ export function RoteiroList({
   items: initialItems,
   suppliers,
   liberacaoEspaco = null,
+  equipe = [],
 }: Props) {
   const [items, setItems] = useState(initialItems);
   const [adding, setAdding] = useState(false);
@@ -192,6 +195,7 @@ export function RoteiroList({
               action={createRoteiroItem.bind(null, eventId)}
               eventId={eventId}
               suppliers={suppliers}
+              equipe={equipe}
               itensDoDia={ordered}
               onClose={() => {
                 setAdding(false);
@@ -227,6 +231,7 @@ export function RoteiroList({
                       action={updateRoteiroItem.bind(null, eventId, item.id)}
                       eventId={eventId}
                       suppliers={suppliers}
+                      equipe={equipe}
                       itensDoDia={ordered}
                       itemAtualId={item.id}
                       initial={{
@@ -240,6 +245,8 @@ export function RoteiroList({
                         duracaoMinutos: item.duracao_minutos,
                         dependeDe: item.depende_de ?? "",
                         tipoDependencia: item.tipo_dependencia ?? undefined,
+                        equipeId: item.equipe_do_dia_id ?? "",
+                        deixa: item.deixa ?? "",
                       }}
                       onClose={() => {
                         setEditingId(null);

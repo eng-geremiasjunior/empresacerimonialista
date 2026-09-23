@@ -36,6 +36,9 @@ function readForm(formData: FormData) {
       formData.get("responsavel_telefone") ?? ""
     ).trim(),
     etapaObrigatoria: formData.get("etapa_obrigatoria") === "on",
+    // Equipe do dia (171): quem cuida do item e o aviso que ela puxa.
+    equipeId: String(formData.get("equipe_do_dia_id") ?? "") || null,
+    deixa: String(formData.get("deixa") ?? "").trim(),
     duracaoMinutos: duracaoRaw ? Number(duracaoRaw) : null,
     // Item que precisa terminar antes deste. Só faz sentido com o tipo:
     // sem dependência escolhida, os dois vão nulos.
@@ -57,6 +60,39 @@ function validate(form: ReturnType<typeof readForm>): string | null {
     return "Duração inválida.";
   }
   return null;
+}
+
+/**
+ * Quem cuida do item. Escolhida alguém da equipe do dia, o nome e o
+ * telefone dela vão também para responsavel_nome/telefone — é o que o
+ * Modo Evento, a folha impressa e o link do fornecedor já mostram. Sem
+ * equipe, vale o texto livre de antes.
+ */
+async function quemCuida(
+  supabase: ReturnType<typeof createClient>,
+  eventId: string,
+  form: ReturnType<typeof readForm>
+) {
+  if (form.equipeId) {
+    const { data } = await supabase
+      .from("equipe_do_dia")
+      .select("id, nome, telefone")
+      .eq("id", form.equipeId)
+      .eq("event_id", eventId)
+      .maybeSingle();
+    if (data) {
+      return {
+        equipe_do_dia_id: data.id as string,
+        responsavel_nome: data.nome as string,
+        responsavel_telefone: (data.telefone as string | null) ?? null,
+      };
+    }
+  }
+  return {
+    equipe_do_dia_id: null,
+    responsavel_nome: form.responsavelNome || null,
+    responsavel_telefone: form.responsavelTelefone || null,
+  };
 }
 
 // "16:00" -> "16:00:00" (formato da coluna time do Postgres)
@@ -86,6 +122,7 @@ export async function createRoteiroItem(
   if (!user) redirect("/login");
 
   const time = normalizeTime(form.time);
+  const quem = await quemCuida(supabase, eventId, form);
 
   const { error } = await supabase.from("roteiro_items").insert({
     event_id: eventId,
@@ -97,8 +134,8 @@ export async function createRoteiroItem(
     supplier_id: form.supplierId,
     status: "pendente",
     status_novo: "planejado",
-    responsavel_nome: form.responsavelNome || null,
-    responsavel_telefone: form.responsavelTelefone || null,
+    ...quem,
+    deixa: form.deixa || null,
     etapa_obrigatoria: form.etapaObrigatoria,
     duracao_minutos: form.duracaoMinutos,
     depende_de: form.dependeDe,
@@ -143,6 +180,7 @@ export async function updateRoteiroItem(
   const horaAtual = atual?.time ? String(atual.time).slice(0, 5) : null;
   const horaNova = time ? String(time).slice(0, 5) : null;
   const horaMudou = horaAtual !== horaNova;
+  const quem = await quemCuida(supabase, eventId, form);
 
   // Edição NÃO altera status (isso é feito pelas ações de status, que
   // carimbam horários e registram no log). Só os campos do formulário.
@@ -154,8 +192,8 @@ export async function updateRoteiroItem(
       title: form.title,
       description: form.description || null,
       supplier_id: form.supplierId,
-      responsavel_nome: form.responsavelNome || null,
-      responsavel_telefone: form.responsavelTelefone || null,
+      ...quem,
+      deixa: form.deixa || null,
       etapa_obrigatoria: form.etapaObrigatoria,
       duracao_minutos: form.duracaoMinutos,
       // Um item não pode depender de si mesmo (o banco também barra).

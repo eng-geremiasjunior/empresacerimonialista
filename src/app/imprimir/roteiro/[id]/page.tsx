@@ -34,12 +34,16 @@ function hora(t: string | null): string {
 
 export default async function ImprimirRoteiroPage({
   params,
+  searchParams,
 }: {
   params: { id: string };
+  /** ?pessoa=<id da equipe do dia>: o roteiro de bolso dela (171) */
+  searchParams?: { pessoa?: string };
 }) {
   const supabase = createClient();
 
-  const [{ data: eventData }, cronogramaResult, { data: checklistData }] =
+  const pessoaId = searchParams?.pessoa ?? null;
+  const [{ data: eventData }, cronogramaResult, { data: checklistData }, { data: pessoa }] =
     await Promise.all([
       supabase
         .from("events")
@@ -54,6 +58,14 @@ export default async function ImprimirRoteiroPage({
         .eq("ativo", true)
         .order("bloco")
         .order("ordem"),
+      pessoaId
+        ? supabase
+            .from("equipe_do_dia")
+            .select("id, nome, posto")
+            .eq("id", pessoaId)
+            .eq("event_id", params.id)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
     ]);
 
   if (!eventData) notFound();
@@ -68,7 +80,10 @@ export default async function ImprimirRoteiroPage({
     clients: { name: string } | null;
   };
 
-  const itens = (cronogramaResult.data ?? []) as unknown as CronogramaItem[];
+  const todos = (cronogramaResult.data ?? []) as unknown as CronogramaItem[];
+  const dela = pessoa as { id: string; nome: string; posto: string | null } | null;
+  // roteiro de bolso: só os itens dela; o checklist do dia fica de fora
+  const itens = dela ? todos.filter((i) => i.equipe_do_dia_id === dela.id) : todos;
   const checklist = (checklistData ?? []) as {
     id: string;
     bloco: string;
@@ -98,6 +113,12 @@ export default async function ImprimirRoteiroPage({
           {formatDate(ev.date)}
           {local ? ` · ${local}` : ""}
         </div>
+        {dela && (
+          <div className="imp-sub" style={{ marginTop: 4, color: "#1c1917", fontWeight: 600 }}>
+            Roteiro de {dela.nome}
+            {dela.posto ? ` · ${dela.posto}` : ""}
+          </div>
+        )}
       </div>
 
       {itens.length === 0 ? (
@@ -122,6 +143,9 @@ export default async function ImprimirRoteiroPage({
                 <td className="imp-mesa-num">{hora(i.time)}</td>
                 <td>
                   <strong>{i.title}</strong>
+                  {i.deixa ? (
+                    <div style={{ fontSize: 12, marginTop: 2 }}>Deixa: {i.deixa}</div>
+                  ) : null}
                   {i.description ? (
                     <div style={{ fontSize: 11.5, color: "#57534e", marginTop: 2 }}>
                       {i.description}
@@ -144,7 +168,7 @@ export default async function ImprimirRoteiroPage({
         </table>
       )}
 
-      {checklist.length > 0 && (
+      {!dela && checklist.length > 0 && (
         <>
           <div
             className="imp-cabecalho"

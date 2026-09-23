@@ -22,6 +22,8 @@ export type RoteiroInitial = {
   duracaoMinutos: number | null;
   dependeDe?: string;
   tipoDependencia?: "dura" | "suave";
+  equipeId?: string;
+  deixa?: string;
 };
 
 type Props = {
@@ -31,6 +33,8 @@ type Props = {
   ) => Promise<RoteiroFormState>;
   eventId: string;
   suppliers: Supplier[]; // fornecedores VINCULADOS ao evento
+  /** Equipe do dia (171): quem da equipe cuida do item */
+  equipe?: { id: string; nome: string; posto: string | null }[];
   initial?: RoteiroInitial;
   /** Outros itens do dia, para escolher de qual este depende. */
   itensDoDia?: { id: string; title: string; time: string | null }[];
@@ -56,6 +60,7 @@ export function RoteiroForm({
   action,
   eventId,
   suppliers,
+  equipe = [],
   initial,
   itensDoDia = [],
   itemAtualId,
@@ -66,6 +71,7 @@ export function RoteiroForm({
     initial?.supplierId ?? ""
   );
   const [dependeDe, setDependeDe] = useState(initial?.dependeDe ?? "");
+  const [equipeId, setEquipeId] = useState(initial?.equipeId ?? "");
 
   useEffect(() => {
     if (state && "success" in state) {
@@ -225,6 +231,48 @@ export function RoteiroForm({
         </div>
       )}
 
+      {equipe.length > 0 && (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <div>
+            <label htmlFor="equipe_do_dia_id" className={labelClass}>
+              Quem da equipe cuida
+            </label>
+            <select
+              id="equipe_do_dia_id"
+              name="equipe_do_dia_id"
+              value={equipeId}
+              onChange={(e) => setEquipeId(e.target.value)}
+              className={inputClass}
+            >
+              <option value="">Ninguém da equipe</option>
+              {equipe.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nome}
+                  {p.posto ? ` · ${p.posto}` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="deixa" className={labelClass}>
+              Deixa{" "}
+              <span className="font-normal text-stone-400">(opcional)</span>
+            </label>
+            <input
+              id="deixa"
+              name="deixa"
+              type="text"
+              defaultValue={initial?.deixa}
+              placeholder="Ex.: avisar o DJ quando a noiva sair do carro"
+              className={inputClass}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* quem é da equipe já leva nome e telefone; o texto livre fica
+          para quem não está nela (o gerente do espaço, o motorista) */}
+      {!equipeId && (
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div>
           <label htmlFor="responsavel_nome" className={labelClass}>
@@ -255,6 +303,7 @@ export function RoteiroForm({
           />
         </div>
       </div>
+      )}
 
       <label className="flex items-center gap-2.5 text-sm text-stone-700">
         <input

@@ -11,6 +11,8 @@ import {
   type ItemChecklistAjuste,
 } from "@/components/cronograma/ChecklistDoDiaAjuste";
 import { getMembrosSelecionaveis } from "@/lib/supabase/equipe";
+import { EquipeDoDia, type PessoaDaEquipe } from "@/components/cronograma/EquipeDoDia";
+import { publicBase } from "@/lib/app-url";
 import { alergiaCompartilhavel } from "./alergia-actions";
 import type { CronogramaItem } from "@/lib/cronograma";
 import type { Supplier } from "@/lib/types";
@@ -36,13 +38,14 @@ export default async function RoteiroPage({
     liberacaoResult,
     checklistResult,
     membrosResult,
+    equipeResult,
   ] = await Promise.all([
     // espacos(liberacao_montagem): a borda do dia agora mora no LUGAR
     // (129, preenchida pela extração do contrato do espaço) — o campo do
     // Planejamento continua valendo como fallback
     supabase
       .from("events")
-      .select("id, date, espacos(liberacao_montagem)")
+      .select("id, date, name, clients(name), espacos(liberacao_montagem)")
       .eq("id", params.id)
       .single(),
     // Leitura rica dos itens (status_novo, horários reais, responsável,
@@ -76,6 +79,14 @@ export default async function RoteiroPage({
         .order("bloco")
         .order("ordem"),
       getMembrosSelecionaveis(),
+      // Equipe do dia (171)
+      supabase
+        .from("equipe_do_dia")
+        .select("id, nome, telefone, posto, hash")
+        .eq("event_id", params.id)
+        .eq("ativo", true)
+        .order("ordem")
+        .order("created_at"),
     ]);
 
   if (!eventData) {
@@ -106,6 +117,18 @@ export default async function RoteiroPage({
     responsavelMembroId: i.responsavel_membro_id,
   }));
   const items = (cronogramaResult.data ?? []) as unknown as CronogramaItem[];
+
+  const equipe: PessoaDaEquipe[] = (
+    (equipeResult.data ?? []) as Omit<PessoaDaEquipe, "itens">[]
+  ).map((p) => ({ ...p, itens: items.filter((i) => i.equipe_do_dia_id === p.id).length }));
+  const nomeDoEvento = (() => {
+    const e = eventData as unknown as {
+      name: string | null;
+      clients: { name: string } | { name: string }[] | null;
+    };
+    const cliente = Array.isArray(e.clients) ? e.clients[0]?.name : e.clients?.name;
+    return e.name?.trim() || cliente || "evento";
+  })();
 
   const alergiaComSupplier = new Set(
     ((alergiaCompartilhadaResult.data ?? []) as { supplier_id: string }[]).map(
@@ -155,6 +178,7 @@ export default async function RoteiroPage({
         eventDate={event.date}
         items={items}
         suppliers={suppliers}
+        equipe={equipe.map((p) => ({ id: p.id, nome: p.nome, posto: p.posto }))}
         liberacaoEspaco={
           (() => {
             const esp = (eventData as unknown as {
@@ -180,6 +204,13 @@ export default async function RoteiroPage({
         eventId={event.id}
         itens={checklist}
         membros={membrosResult.membros.map((m) => ({ id: m.id, nome: m.nome }))}
+      />
+
+      <EquipeDoDia
+        eventId={event.id}
+        pessoas={equipe}
+        base={publicBase()}
+        eventoNome={nomeDoEvento}
       />
 
       {suppliers.length > 0 && (

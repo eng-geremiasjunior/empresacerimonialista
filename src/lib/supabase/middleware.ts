@@ -90,6 +90,8 @@ const ROTAS_PUBLICAS: ((p: string) => boolean)[] = [
   // o posto da recepção (check-in por QR) e a rota que ele chama; o hash
   // do posto é a credencial e o banco decide se ele ainda vale
   (p) => p.startsWith("/recepcao/"),
+  // a escala de cada pessoa da equipe do dia (171): o hash é a credencial
+  (p) => p.startsWith("/escala/"),
   (p) => p.startsWith("/api/recepcao/"),
 ];
 

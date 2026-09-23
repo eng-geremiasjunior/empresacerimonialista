@@ -29,6 +29,9 @@ export type CronogramaItem = {
   time_original: string | null;
   offset_min?: number | null;
   origem_horario?: string | null;
+  /** Equipe do dia (171): quem cuida do item e o aviso que ela puxa */
+  equipe_do_dia_id?: string | null;
+  deixa?: string | null;
 };
 
 // ---- UI tokens por status (paleta dessaturada) ----
