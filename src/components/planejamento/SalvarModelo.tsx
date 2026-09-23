@@ -129,6 +129,12 @@ export function SalvarModelo({
           <h2 style={{ fontFamily: F_TITLE, fontWeight: 600, fontSize: 18, color: C.tinta }}>
             Salvar como meu modelo de {tipo}
           </h2>
+          <a
+            href={`/configuracoes/modelo?tipo=${previa?.tipo ?? ""}`}
+            style={{ display: "inline-block", marginTop: 4, fontFamily: F_UI, fontSize: 12.5, color: C.secundario, textDecoration: "underline", textUnderlineOffset: 2 }}
+          >
+            ver meu modelo
+          </a>
           {previa?.ultimo && (
             <p style={{ marginTop: 4, fontFamily: F_MONO, fontSize: 11, color: C.meta }}>
               última vez {dataCurta(previa.ultimo.salvo_em)}

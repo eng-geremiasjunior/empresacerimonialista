@@ -191,6 +191,21 @@ export default async function ConfiguracoesPage({
         </section>
       )}
 
+      {proprietaria && (
+        <section className="rounded-xl border border-gray-200 bg-white px-6 py-5">
+          <h2 className="text-sm font-semibold text-gray-900">Meu modelo de planejamento</h2>
+          <p className="mt-0.5 text-xs text-gray-500">
+            O planejamento com que cada evento nasce. Importe o checklist que você já usa.
+          </p>
+          <Link
+            href="/configuracoes/modelo"
+            className="mt-3 inline-block rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Abrir meu modelo →
+          </Link>
+        </section>
+      )}
+
       {proprietaria && <RoteiroPadraoSection itens={roteiroPadrao} />}
 
       {/* A grade completa (dias, slots, buffer, exceções) foi promovida
