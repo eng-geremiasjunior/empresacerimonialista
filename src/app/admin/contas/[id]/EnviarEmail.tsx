@@ -42,7 +42,7 @@ function data(iso?: string | null): string {
  * Os modelos são rascunhos: ele troca qualquer palavra antes de mandar.
  * Existem porque 90% dos e-mails são os mesmos três.
  */
-function modelos(p: { nome: string; testeAte?: string | null; eventos: number }): Modelo[] {
+function modelos(p: { nome: string; testeAte?: string | null; eventos: number; preco?: string | null }): Modelo[] {
   const primeiro = p.nome.trim().split(/\s+/)[0] ?? "";
   const oQueEla = p.eventos === 1 ? "o seu evento" : p.eventos > 1 ? `os seus ${p.eventos} eventos` : "a sua conta";
   // "os seus 7 eventos continua" — o verbo tem de acompanhar o sujeito
@@ -69,8 +69,9 @@ function modelos(p: { nome: string; testeAte?: string | null; eventos: number })
       texto:
         `${oQueEla.charAt(0).toUpperCase() + oQueEla.slice(1)} ${continua} aqui: roteiro, fornecedores, tarefas e financeiro, do jeito que você deixou.\n` +
         `Assinando, nada para — você segue de onde parou.`,
-      destaqueRotulo: "Para continuar",
-      destaqueValor: "R$ 27,90/mês nos 3 primeiros meses, R$ 59,90 depois",
+      // o preço vem do catálogo (Ajustes); sem ele, o destaque fica de fora
+      destaqueRotulo: p.preco ? "Para continuar" : undefined,
+      destaqueValor: p.preco ?? undefined,
       botaoTexto: "Assinar e continuar",
       botaoCaminho: "/assinatura",
     },
@@ -108,8 +109,10 @@ export function EnviarEmail(p: {
   nome: string;
   testeAte?: string | null;
   eventos: number;
+  /** a frase do preço de hoje, lida do catálogo pela ficha */
+  preco?: string | null;
 }) {
-  const lista = modelos({ nome: p.nome, testeAte: p.testeAte, eventos: p.eventos });
+  const lista = modelos({ nome: p.nome, testeAte: p.testeAte, eventos: p.eventos, preco: p.preco });
   const [aberto, setAberto] = useState(false);
   const [modelo, setModelo] = useState(0);
   const [campos, setCampos] = useState<Modelo>(lista[0]);

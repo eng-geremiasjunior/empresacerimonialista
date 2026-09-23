@@ -59,6 +59,7 @@ import { Abas, Aviso, Fatos, Secao, Vazio } from "@/components/admin/pecas";
 import type { OpcaoDePlano } from "../EditorAssinatura";
 import { AcoesDaConta } from "./AcoesDaConta";
 import { EnviarEmail } from "./EnviarEmail";
+import { precoAnunciado } from "@/lib/email-ativacao";
 import { NotaDaConta } from "./NotaDaConta";
 
 export const dynamic = "force-dynamic";
@@ -102,10 +103,12 @@ export default async function FichaDaConta({
   if (!c) notFound();
 
   await registrarFichaAberta(c.empresa_id);
-  const [lt, agoraPor, catalogo] = await Promise.all([
+  const [lt, agoraPor, catalogo, precoDeHoje] = await Promise.all([
     getLinhaDoTempo(c.empresa_id, dias),
     getAgoraDasContas(),
     aba === "assinatura" ? getCatalogoDePlanos() : Promise.resolve([]),
+    // o preço do modelo "Convite para assinar", lido do catálogo
+    precoAnunciado(),
   ]);
 
   const sit = situacaoDaConta(c, agora);
@@ -168,6 +171,7 @@ export default async function FichaDaConta({
               nome={c.dona.nome ?? ""}
               testeAte={c.assinatura?.teste_termina_em ?? null}
               eventos={c.eventos.total}
+              preco={precoDeHoje}
             />
           )}
           {c.dona.instagram && (

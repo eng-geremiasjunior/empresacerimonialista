@@ -214,7 +214,7 @@ export async function enviarBoasVindas(p: {
  * ou o banco não respondeu: aí o e-mail sai sem a caixa de preço, o que é
  * melhor do que sair com um valor que o dono já mudou.
  */
-async function precoAnunciado(): Promise<string | null> {
+export async function precoAnunciado(): Promise<string | null> {
   try {
     const planos = await getCatalogoDePlanos();
     const plano =
