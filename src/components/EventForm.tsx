@@ -26,6 +26,8 @@ type Initial = {
   status: string;
   responsavelId?: string | null;
   coverUrl?: string | null;
+  /** 173: o pacote vendido; undefined = a coluna ainda não existe */
+  modalidade?: "completa" | "parcial" | "so_o_dia" | null;
 };
 
 type Props = {
@@ -239,6 +241,24 @@ export function EventForm({ action, initial, membros }: Props) {
                 {label}
               </option>
             ))}
+          </select>
+        </div>
+      )}
+
+      {initial && initial.modalidade !== undefined && (
+        <div>
+          <label htmlFor="modalidade_assessoria" className="mb-1 block text-sm font-medium">
+            Tipo de assessoria
+          </label>
+          <select
+            id="modalidade_assessoria"
+            name="modalidade_assessoria"
+            defaultValue={initial.modalidade ?? "completa"}
+            className={inputClass}
+          >
+            <option value="completa">Completa — eu conduzo, a cliente decide o final</option>
+            <option value="parcial">Parcial — a cliente executa, eu oriento</option>
+            <option value="so_o_dia">Só o dia do evento</option>
           </select>
         </div>
       )}

@@ -58,6 +58,18 @@ export default async function EditarEventoPage({
 
   const event = data as unknown as Event;
 
+  // 173: consulta própria — sem a migração, a coluna não existe e o
+  // campo não aparece
+  const mod = await supabase
+    .from("events")
+    .select("modalidade_assessoria")
+    .eq("id", params.id)
+    .maybeSingle();
+  const modalidade = mod.error
+    ? undefined
+    : ((mod.data as { modalidade_assessoria: "completa" | "parcial" | "so_o_dia" | null } | null)
+        ?.modalidade_assessoria ?? null);
+
   // Acessos ao portal deste evento. A tabela pode não existir ainda
   // (migração 086 pendente): nesse caso o painel some, sem quebrar a tela.
   const { data: acessosData } = await supabase
@@ -95,6 +107,7 @@ export default async function EditarEventoPage({
           guestsMax: extras.guests_max ?? null,
           status: event.status,
           responsavelId,
+          modalidade,
           coverUrl:
             (data as { cover_image_url?: string | null }).cover_image_url ??
             null,

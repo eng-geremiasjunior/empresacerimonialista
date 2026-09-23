@@ -22,6 +22,7 @@
 // runtime nodejs porque o @react-pdf não roda no edge; force-dynamic e
 // force-no-store porque uma rota pública nova sem isso é cacheada.
 
+import { convidarClienteDoEvento } from "@/lib/portal-convite";
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { TERMOS_ACEITE_VERSAO, termosAceiteTexto } from "@/lib/aceite-termo";
@@ -384,12 +385,22 @@ export async function POST(
   // (a) o evento — sem data a RPC devolve sem_data e a cerimonialista
   // gera pelo painel; qualquer outro erro só vai para o log
   try {
-    await criarEventoDoOrcamento(
+    const evento = await criarEventoDoOrcamento(
       supabase,
       params.hash,
       tipoEvento,
       orcamento?.data_evento ?? d.dataEvento
     );
+    // (a1) o convite para o portal (173): sai sozinho no primeiro aceite,
+    // se a empresa não desligou. Falhar aqui não derruba nada.
+    if (evento.ok && evento.eventoId && !evento.jaExistia) {
+      try {
+        const c = await convidarClienteDoEvento(evento.eventoId, { automatico: true });
+        if (!c.ok) console.warn("[eorg:aceite] convite do portal:", c.motivo);
+      } catch (e) {
+        console.error("[eorg:aceite] convite do portal:", e instanceof Error ? e.message : e);
+      }
+    }
   } catch (e) {
     console.error("[eorg:aceite] evento:", e instanceof Error ? e.message : e);
     await registrarErroDoServidor({ area: "Aceite: evento", codigo: e instanceof Error ? e.name : "falha" });

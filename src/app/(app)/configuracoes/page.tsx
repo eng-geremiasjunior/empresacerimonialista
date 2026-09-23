@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ConviteAutomatico } from "@/components/configuracoes/ConviteAutomatico";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileSection } from "@/components/configuracoes/ProfileSection";
 import { EmpresaSection } from "@/components/configuracoes/EmpresaSection";
@@ -81,6 +82,9 @@ export default async function ConfiguracoesPage({
   // existe derruba a consulta inteira no PostgREST, e a de cima é a que
   // traz o nome e a logo.
   let contratoModelo: { nome: string; em: string | null } | null = null;
+  // 173: o convite automático para o portal (consulta própria — sem a
+  // migração, a coluna não existe e a seção some)
+  let conviteAutomatico: boolean | null = null;
   let contratoDisponivel = false;
 
   if (proprietaria && cargo) {
@@ -98,6 +102,14 @@ export default async function ConfiguracoesPage({
     ]);
     empresa = data;
     contratoDisponivel = !modelo.error;
+    const conv = await supabase
+      .from("empresas")
+      .select("convidar_portal_no_aceite")
+      .eq("id", cargo.empresa_id)
+      .maybeSingle();
+    if (!conv.error) {
+      conviteAutomatico = (conv.data as { convidar_portal_no_aceite: boolean } | null)?.convidar_portal_no_aceite ?? true;
+    }
     const m = modelo.data as { contrato_modelo_nome: string | null; contrato_modelo_em: string | null } | null;
     contratoModelo = m?.contrato_modelo_nome
       ? { nome: m.contrato_modelo_nome, em: m.contrato_modelo_em }
@@ -190,6 +202,8 @@ export default async function ConfiguracoesPage({
           <ContratoModeloForm tipo={null} inicial={contratoModelo} />
         </section>
       )}
+
+      {proprietaria && conviteAutomatico !== null && <ConviteAutomatico ligado={conviteAutomatico} />}
 
       {proprietaria && (
         <section className="rounded-xl border border-gray-200 bg-white px-6 py-5">

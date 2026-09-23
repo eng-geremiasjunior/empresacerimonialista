@@ -331,3 +331,25 @@ export async function limparSenhaProvisoria(
   if (error) return { error: error.message };
   return {};
 }
+
+/**
+ * O link do convite (173): entra por /auth/confirm e cai em
+ * /portal/primeiro-acesso, onde ELA escolhe a senha (a marca
+ * senha_provisoria mantém o middleware ali até isso). Ninguém dita senha
+ * nenhuma, e nada entra sem senha. O link é de uso único e vale pelo
+ * tempo que o Supabase dá à recuperação de senha.
+ */
+export async function linkParaCriarSenha(email: string, base: string): Promise<string | null> {
+  const admin = adminClient();
+  if (!admin) return null;
+  const { data, error } = await admin.auth.admin.generateLink({
+    type: "recovery",
+    email: email.trim().toLowerCase(),
+  });
+  const hash = data?.properties?.hashed_token;
+  if (error || !hash) {
+    console.error("[eorg:portal] link do convite:", error?.message ?? "sem hash");
+    return null;
+  }
+  return `${base}/auth/confirm?token_hash=${hash}&type=recovery&next=${encodeURIComponent("/portal/primeiro-acesso")}`;
+}

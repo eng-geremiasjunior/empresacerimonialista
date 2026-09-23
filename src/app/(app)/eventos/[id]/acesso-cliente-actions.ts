@@ -1,5 +1,6 @@
 "use server";
 
+import { convidarClienteDoEvento } from "@/lib/portal-convite";
 // Gestão do acesso da cliente ao portal.
 //
 // A autorização acontece AQUI, em TypeScript, e não só na RLS: a criação
@@ -168,4 +169,29 @@ export async function novaSenhaProvisoria(
     senhaProvisoria: r.senhaProvisoria,
     mensagem: "Nova senha provisória gerada.",
   };
+}
+
+/**
+ * Convite por e-mail (173): o acesso nasce e a cliente recebe o link para
+ * CRIAR a própria senha — ninguém dita senha provisória. Mesma guarda do
+ * criarAcessoDaCliente.
+ */
+export async function convidarParaOPortal(
+  eventId: string,
+  form: { nome: string; email: string; papel: string }
+): Promise<{ error: string } | { success: true; mensagem: string; textoWhatsapp: string }> {
+  const guarda = await podeEditar(eventId);
+  if (guarda.error) return { error: guarda.error };
+  const papel = (PAPEIS as string[]).includes(form.papel) ? (form.papel as PapelPortal) : "outro";
+  const r = await convidarClienteDoEvento(eventId, {
+    automatico: false,
+    email: form.email,
+    nome: form.nome,
+    papel,
+    criadoPor: guarda.membroId ?? null,
+  });
+  if (!r.ok) return { error: r.motivo };
+  revalidatePath(`/eventos/${eventId}/editar`);
+  revalidatePath(`/eventos/${eventId}/area-do-cliente`);
+  return { success: true, mensagem: `Convite enviado para ${r.para}.`, textoWhatsapp: r.textoWhatsapp };
 }

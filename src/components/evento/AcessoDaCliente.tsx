@@ -10,7 +10,9 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { PAPEL_PORTAL_LABELS, type PapelPortal } from "@/lib/portal-admin";
 import { papeisPortalDoTipo } from "@/lib/papel";
+import { linkCompartilharWhatsapp } from "@/lib/whatsapp-link";
 import {
+  convidarParaOPortal,
   criarAcessoDaCliente,
   novaSenhaProvisoria,
   reativarAcessoDaCliente,
@@ -50,6 +52,8 @@ export function AcessoDaCliente({
   const [senha, setSenha] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [copiado, setCopiado] = useState(false);
+  // depois do convite: o texto pronto para ela avisar pelo WhatsApp
+  const [whatsapp, setWhatsapp] = useState<string | null>(null);
 
   function tratar(r: Awaited<ReturnType<typeof criarAcessoDaCliente>>) {
     if ("error" in r) {
@@ -119,7 +123,22 @@ export function AcessoDaCliente({
 
       {erro && <p className="mt-3 text-sm text-rose-600">{erro}</p>}
       {aviso && !senha && (
-        <p className="mt-3 text-sm text-gray-600">{aviso}</p>
+        <p className="mt-3 text-sm text-gray-600">
+          {aviso}
+          {whatsapp && (
+            <>
+              {" "}
+              <a
+                href={linkCompartilharWhatsapp(whatsapp)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-gray-900 underline underline-offset-2"
+              >
+                Avisar no WhatsApp
+              </a>
+            </>
+          )}
+        </p>
       )}
 
       {abrindo && (
@@ -161,7 +180,29 @@ export function AcessoDaCliente({
               </select>
             </label>
           )}
-          <div className="flex gap-2 pt-1">
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <button
+              type="button"
+              disabled={pendente}
+              onClick={() =>
+                startTransition(async () => {
+                  const r = await convidarParaOPortal(eventId, { nome, email: email ?? "", papel });
+                  if ("error" in r) {
+                    setErro(r.error);
+                    return;
+                  }
+                  setErro(null);
+                  setSenha(null);
+                  setAviso(r.mensagem);
+                  setWhatsapp(r.textoWhatsapp);
+                  setAbrindo(false);
+                  router.refresh();
+                })
+              }
+              className="rounded-lg bg-gray-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {pendente ? "Enviando…" : "Enviar convite por e-mail"}
+            </button>
             <button
               type="button"
               disabled={pendente}
@@ -176,9 +217,9 @@ export function AcessoDaCliente({
                   tratar(r);
                 })
               }
-              className="rounded-lg bg-gray-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 disabled:opacity-50"
             >
-              {pendente ? "Criando…" : "Criar acesso"}
+              Criar com senha provisória
             </button>
             <button
               type="button"

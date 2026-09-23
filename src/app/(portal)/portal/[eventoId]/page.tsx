@@ -30,6 +30,12 @@ import { aberturaDaAssinatura, fraseDeCuidado } from "@/lib/papel";
 
 export const dynamic = "force-dynamic";
 
+/** "fechado hoje" / "fechado há 3 dias" */
+function fechadoHa(iso: string): string {
+  const dias = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000));
+  return dias === 0 ? "fechado hoje" : dias === 1 ? "fechado ontem" : `fechado há ${dias} dias`;
+}
+
 // Visão geral (handoff "luxo silencioso"): cabeçalho + contagem,
 // Próximas decisões, faixa de assinatura, e a coluna direita com
 // Perguntas e Investimento. O bloco de percentuais do protótipo NÃO
@@ -86,15 +92,13 @@ export default async function PortalEventoPage({
       <div className="portal-grade-conteudo">
         {/* coluna principal */}
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--esp-7)" }}>
+          {home.quadro?.modalidade !== "so_o_dia" && (
           <Cartao
             style={{ position: "relative", overflow: "hidden" }}
             padding="var(--esp-8) var(--esp-8) var(--esp-6)"
           >
             <Fio tempo="decisoes" />
-            <TituloSecao
-              titulo="Próximas decisões"
-              apoio="Itens que precisam da sua atenção"
-            />
+            <TituloSecao titulo="Com vocês agora" />
             <div style={{ display: "flex", flexDirection: "column" }}>
               {home.faltaDecidir.length === 0 ? (
                 <p
@@ -141,6 +145,37 @@ export default async function PortalEventoPage({
               </div>
             )}
           </Cartao>
+          )}
+
+          {/* 173: o trabalho dela à vista — o que a Aline vende como
+              "tranquilidade" é ver que alguém está cuidando */}
+          {home.quadro && (home.quadro.cuidando.length > 0 || home.quadro.fechado.length > 0) && (
+            <Cartao padding="var(--esp-8) var(--esp-8) var(--esp-6)">
+              <TituloSecao
+                titulo={`${contato.nome ? contato.nome.split(" ")[0] : "Sua cerimonialista"} está cuidando`}
+              />
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                {home.quadro.cuidando.map((d, i) => (
+                  <LinhaDecisao
+                    key={`c${i}`}
+                    href={null}
+                    assunto={null}
+                    titulo={d.titulo}
+                    prazo={prazoPortal(d.prazo)}
+                  />
+                ))}
+                {home.quadro.fechado.map((d, i) => (
+                  <LinhaDecisao
+                    key={`f${i}`}
+                    href={null}
+                    assunto={null}
+                    titulo={d.titulo}
+                    prazo={fechadoHa(d.quando)}
+                  />
+                ))}
+              </div>
+            </Cartao>
+          )}
 
           {/* faixa de assinatura */}
           <CartaoOuro

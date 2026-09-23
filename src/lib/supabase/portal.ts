@@ -151,8 +151,16 @@ export type PerguntaDoPortal = {
  */
 export type DecisaoDaHome = DecisaoDoPortal & { temPergunta: boolean };
 
+/** 173: o pacote e o trabalho dela, para a home. Nulo sem a migração. */
+export type QuadroDoPortal = {
+  modalidade: "completa" | "parcial" | "so_o_dia";
+  cuidando: { titulo: string; prazo: string | null }[];
+  fechado: { titulo: string; quando: string }[];
+} | null;
+
 export type HomeDoPortal = {
   faltaDecidir: DecisaoDaHome[];
+  quadro: QuadroDoPortal;
   contratados: FornecedorContratado[];
   investimento: InvestimentoDoPortal | null;
   /** Quantas perguntas a tela de Perguntas mostra AGORA (3–5), nunca o
@@ -608,12 +616,23 @@ export async function getHomePortal(
   eventId: string,
   dataEvento: string
 ): Promise<HomeDoPortal> {
-  const [pendentes, perguntas, contratados, investimento] = await Promise.all([
+  const supabase = createClient();
+  const [pendentes, perguntas, contratados, investimento, quadroRes] = await Promise.all([
     getDecisoesPendentes(eventId),
     getPerguntasDaCliente(eventId, dataEvento),
     getContratados(eventId),
     getInvestimento(eventId),
+    supabase.rpc("portal_quadro_do_evento", { p_event_id: eventId }),
   ]);
+  const cru = (quadroRes.error ? null : quadroRes.data) as {
+    modalidade: "completa" | "parcial" | "so_o_dia";
+    com_voces: { id: string }[];
+    cuidando: { titulo: string; prazo: string | null }[];
+    fechado: { titulo: string; quando: string }[];
+  } | null;
+  // o que é DELA fazer, pelo pacote: na assessoria completa o "juntos" é
+  // conduzido pela cerimonialista e sai daqui (vai para "está cuidando")
+  const daCliente = cru ? new Set(cru.com_voces.map((d) => d.id)) : null;
 
   // A home listava decisões e mandava TODAS para /perguntas — e os dois
   // lados sempre partiram de filtros diferentes: a decisão vem da RPC
@@ -640,7 +659,15 @@ export async function getHomePortal(
   const comPergunta = new Set(perguntas.abertas.map((p) => p.decisaoId));
 
   return {
-    faltaDecidir: pendentes.slice(0, 3).map((d) => ({
+    quadro: cru
+      ? { modalidade: cru.modalidade, cuidando: cru.cuidando, fechado: cru.fechado }
+      : null,
+    faltaDecidir: (cru?.modalidade === "so_o_dia"
+      ? []
+      : daCliente
+        ? pendentes.filter((d) => daCliente.has(d.id))
+        : pendentes
+    ).slice(0, 3).map((d) => ({
       ...d,
       temPergunta: comPergunta.has(d.id),
     })),

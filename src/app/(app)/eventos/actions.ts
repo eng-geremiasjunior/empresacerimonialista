@@ -133,6 +133,11 @@ export async function updateEvent(
       : null,
     status: form.status,
   };
+  // 173: o pacote vendido decide o que o portal mostra à cliente
+  const modalidade = String(formData.get("modalidade_assessoria") ?? "");
+  if (["completa", "parcial", "so_o_dia"].includes(modalidade)) {
+    patch.modalidade_assessoria = modalidade;
+  }
   // Só troca o responsável se o campo veio no formulário (a coluna pode
   // não existir ainda se a migração 022 estiver pendente).
   if (form.responsavelId) {
