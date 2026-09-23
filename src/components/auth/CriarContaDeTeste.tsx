@@ -25,7 +25,11 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { criarContaDeTeste, type CobrancaDoCadastro } from "@/app/criar-conta/actions";
+import {
+  criarContaDeTeste,
+  guardarCadastroInterrompido,
+  type CobrancaDoCadastro,
+} from "@/app/criar-conta/actions";
 import {
   assinaturaIniciada,
   completarOrigemAntesDeEnviar,
@@ -241,6 +245,16 @@ export function CriarContaDeTeste({
     setPasso(2);
     // chegou ao cartão: o meio do funil que a Meta otimiza
     assinaturaIniciada(oferta.planoCodigo, oferta.valorPrimeiro);
+    // se ela parar no cartão, o dono ainda sabe quem era (169). Sem
+    // esperar: a tela do cartão não depende disto, e a senha não vai.
+    void guardarCadastroInterrompido({
+      nome,
+      negocio,
+      email,
+      whatsapp,
+      eventos3m: eventos3m ?? "",
+      instagram,
+    }).catch(() => {});
   }
 
   async function enviar(e: React.FormEvent) {
@@ -424,7 +438,7 @@ export function CriarContaDeTeste({
               placeholder="(11) 99999-0000"
               style={campo}
             />
-            <p style={dica}>Com DDD. É por ele que a gente te ajuda durante o teste.</p>
+            <p style={dica}>Com DDD. É por ele que a gente fala com você sobre a sua conta.</p>
           </div>
           <div>
             <label htmlFor="cc-senha" style={rotulo}>

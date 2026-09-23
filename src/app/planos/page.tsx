@@ -525,6 +525,12 @@ export default async function PlanosPage() {
             {testeAberto && (
               // As três objeções, na ordem em que ela as tem. A terceira é
               // a de verdade: "vou perder o que eu montar?".
+              //
+              // A primeira diz o CARTÃO (22/09/2026): "nada é cobrado hoje",
+              // sozinha, era lida como "não pede cartão" — e a pessoa só
+              // descobria o cartão na segunda etapa do cadastro, onde soava
+              // como armadilha. Quem não quer dar cartão sai aqui, e quem
+              // clica já chega sabendo.
               <ul
                 data-tres-linhas="1"
                 style={{
@@ -540,7 +546,7 @@ export default async function PlanosPage() {
                   color: "#6B6259",
                 }}
               >
-                <li>Nada é cobrado hoje</li>
+                <li>Pede o cartão, mas não cobra nada hoje</li>
                 <li>{`Primeira cobrança só no dia ${portao.dias + 1}`}</li>
                 <li>Cancele antes e não paga nada</li>
               </ul>

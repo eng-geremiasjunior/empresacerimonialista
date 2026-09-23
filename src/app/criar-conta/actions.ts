@@ -501,10 +501,73 @@ export async function criarContaDeTeste(
     cobranca: { dia: primeiraCobranca, valor: oferta.valorPrimeiro },
   });
 
+  // Se ela tinha parado no cartão antes (169), sai da lista do dono: a
+  // conta nasceu. Nunca derruba o cadastro — sem a 169, só não marca.
+  try {
+    await db
+      .from("cadastro_interrompido")
+      .update({ convertido_em: new Date().toISOString() })
+      .eq("email", email)
+      .is("convertido_em", null);
+  } catch {
+    /* a lista do painel fica com ela como pendente; nada além disso */
+  }
+
   return {
     ok: true,
     idDoEvento: `conta:${empresaId}`,
     idDoTeste: `teste:${empresaId}`,
     valorDoTeste: oferta.valorPrimeiro,
   };
+}
+
+/**
+ * A etapa 1, guardada quando ela passa para o cartão (169, 22/09/2026).
+ *
+ * Se ela desistir no cartão, a conta não nasce — e sem isto o dono
+ * perdia o nome e o WhatsApp de quem chegou a um passo de começar. Com
+ * isto, o painel lista quem parou ali, para ele chamar pessoalmente.
+ *
+ * Só o que ela digitou na etapa 1, FORA A SENHA. Nunca derruba nada: se
+ * a 169 não estiver aplicada ou o banco não responder, a tela segue para
+ * o cartão como sempre.
+ */
+export async function guardarCadastroInterrompido(dados: {
+  nome: string;
+  negocio: string;
+  email: string;
+  whatsapp: string;
+  eventos3m: string;
+  instagram?: string;
+}): Promise<void> {
+  try {
+    const email = dados.email?.trim().toLowerCase() ?? "";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return;
+
+    const h = headers();
+    const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip") ?? "desconhecido";
+    // o mesmo amortecedor do cadastro: rajada de um IP não enche a tabela
+    if (demaisTentativas(`etapa1:${ip}`)) return;
+
+    const o = lerOrigemDoCookie();
+    const origem = o
+      ? Object.fromEntries(
+          ["utm_source", "utm_medium", "utm_campaign", "utm_content", "gclid"]
+            .filter((k) => o[k])
+            .map((k) => [k, o[k]])
+        )
+      : null;
+
+    await servico().rpc("registrar_cadastro_interrompido", {
+      p_email: email,
+      p_nome: dados.nome?.trim().slice(0, 120) || null,
+      p_negocio: dados.negocio?.trim().slice(0, 120) || null,
+      p_whatsapp: normalizarDDI(dados.whatsapp) ?? (dados.whatsapp?.trim().slice(0, 30) || null),
+      p_instagram: normalizarInstagram(dados.instagram) ?? null,
+      p_eventos_3_meses: ehEventos3Meses(dados.eventos3m) ? dados.eventos3m : null,
+      p_origem: origem && Object.keys(origem).length ? origem : null,
+    });
+  } catch (e) {
+    console.error("[eorg:cadastro] etapa 1:", String(e).slice(0, 200));
+  }
 }

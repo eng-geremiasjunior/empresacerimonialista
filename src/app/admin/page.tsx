@@ -26,7 +26,11 @@ import { hrefDaLista, lerFiltros } from "@/lib/admin/lista-de-contas";
 import { diaPorExtenso, mesPorExtenso, plural, porcento, reais } from "@/lib/admin/formatos";
 import { contarDatasNoMes, metrica, rotuloMesAno, variacaoEmTexto, variacaoPct } from "@/lib/admin-metricas";
 import { hojeBR } from "@/lib/tempo";
-import { linkWhatsapp } from "@/lib/whatsapp-link";
+import { linkWhatsapp, primeiroNome } from "@/lib/whatsapp-link";
+import { getCadastrosInterrompidos, type CadastroInterrompido } from "@/lib/supabase/admin-cadastro-interrompido";
+import { descreverEventos3Meses } from "@/lib/cadastro-qualificacao";
+import { haQuantoTempo } from "@/lib/presenca";
+import { JaFalei } from "./JaFalei";
 import { Aviso, Barra, Cabecalho, Numero, Secao, Vazio } from "@/components/admin/pecas";
 
 export const dynamic = "force-dynamic";
@@ -37,11 +41,13 @@ export default async function AdminVisaoGeralPage() {
   const agora = new Date();
   const hoje = hojeBR(agora);
   const mes = hoje.slice(0, 7);
-  const [leitura, serie, portao, agoraPor] = await Promise.all([
+  const [leitura, serie, portao, agoraPor, interrompidos] = await Promise.all([
     getResumoDasContas(),
     getSerieMensal(mes, 2),
     getPortaoDoTeste(),
     getAgoraDasContas(),
+    // sem a 169 aplicada, a seção some; a Visão geral nunca cai por ela
+    getCadastrosInterrompidos().catch(() => ({ ok: false as const, mensagem: "" })),
   ]);
 
   if (!leitura.ok) {
@@ -227,6 +233,24 @@ export default async function AdminVisaoGeralPage() {
         )}
       </Secao>
 
+      {interrompidos.ok && (interrompidos.pendentes.length > 0 || interrompidos.falados.length > 0) && (
+        <Secao
+          titulo="Pararam no cartão"
+          nota="Preencheram a primeira etapa do cadastro e não criaram a conta. Últimos 30 dias."
+          lado={
+            interrompidos.pendentes.length > 0
+              ? `${interrompidos.pendentes.length} para chamar`
+              : undefined
+          }
+        >
+          <ul className="flex flex-col gap-1.5">
+            {[...interrompidos.pendentes, ...interrompidos.falados].slice(0, 15).map((c) => (
+              <LinhaInterrompida key={c.id} c={c} agora={agora.getTime()} />
+            ))}
+          </ul>
+        </Secao>
+      )}
+
       <section className="grid gap-2.5 xl:grid-cols-2">
         <Secao
           titulo="Ativação"
@@ -304,5 +328,47 @@ export default async function AdminVisaoGeralPage() {
         </Secao>
       </section>
     </div>
+  );
+}
+
+/** Uma pessoa que parou no cartão: quem é, quando, de onde veio, e o WhatsApp. */
+function LinhaInterrompida({ c, agora }: { c: CadastroInterrompido; agora: number }) {
+  const nome = primeiroNome(c.nome);
+  const wa = linkWhatsapp(
+    c.whatsapp,
+    `Oi${nome ? `, ${nome}` : ""}! Aqui é do eOrganizei. Vi que você começou o cadastro e parou na parte do cartão. Ficou alguma dúvida?`
+  );
+  const anuncio = c.origem?.utm_campaign || c.origem?.utm_source || (c.origem?.gclid ? "Google Ads" : null);
+  const detalhes = [
+    c.negocio,
+    descreverEventos3Meses(c.eventos_3_meses),
+    anuncio ? `veio de ${anuncio}` : null,
+    c.tentativas > 1 ? `chegou ao cartão ${c.tentativas} vezes` : null,
+  ].filter(Boolean);
+  return (
+    <li
+      className={`flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-b border-[#f0f0ec] pb-1.5 last:border-0 ${
+        c.contatado_em ? "opacity-60" : ""
+      }`}
+    >
+      <span className="min-w-0 text-[13px]">
+        <span className="font-semibold text-[#1c1d21]">{c.nome || c.email}</span>
+        <span className="text-[#5c5d63]">
+          {" "}
+          — {haQuantoTempo(c.atualizado_em, agora)}
+          {detalhes.length > 0 && ` · ${detalhes.join(" · ")}`}
+          {c.contatado_em && ` · você falou ${haQuantoTempo(c.contatado_em, agora)}`}
+        </span>
+        <span className="block text-[12px] text-[#84858b]">{c.email}</span>
+      </span>
+      <span className="flex shrink-0 gap-2 text-[12px]">
+        {wa && (
+          <a href={wa} target="_blank" rel="noopener noreferrer" className="text-[#6e3f5f] underline underline-offset-2">
+            WhatsApp
+          </a>
+        )}
+        <JaFalei id={c.id} falou={Boolean(c.contatado_em)} />
+      </span>
+    </li>
   );
 }

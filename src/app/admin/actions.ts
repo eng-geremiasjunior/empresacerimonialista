@@ -24,6 +24,7 @@ import {
   previaEmailDaContaDb,
 } from "@/lib/supabase/admin-email";
 import { salvarDegrauDb, salvarPlanoDb } from "@/lib/supabase/admin-planos";
+import { marcarContatadoDb } from "@/lib/supabase/admin-cadastro-interrompido";
 import {
   apagarCustoDb,
   copiarRecorrentesDb,
@@ -468,4 +469,17 @@ function revalidarPrecos() {
   revalidatePath("/criar-conta");
   revalidatePath("/admin/ajustes");
   revalidarPainel();
+}
+
+/** Quem parou no cartão (169): ele marca que já chamou a pessoa, ou desfaz. */
+export async function marcarContatado(id: string, falou: boolean): Promise<ResultadoAdmin> {
+  try {
+    if (!id) return { error: "Cadastro inválido." };
+    await marcarContatadoDb(id, falou);
+    revalidatePath("/admin");
+    return { ok: true };
+  } catch (e) {
+    console.error("[eorganizei:admin] marcarContatado:", e instanceof Error ? e.message : e);
+    return { error: e instanceof Error ? e.message : "Não foi possível marcar." };
+  }
 }
