@@ -132,7 +132,7 @@ export default async function CriarContaPage() {
 
       <main
         style={{
-          maxWidth: "1020px",
+          maxWidth: "1100px",
           margin: "0 auto",
           padding: "clamp(28px,5vw,48px) clamp(16px,4vw,28px) 64px",
         }}

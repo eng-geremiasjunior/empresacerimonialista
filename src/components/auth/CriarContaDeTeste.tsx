@@ -46,7 +46,7 @@ import { COBRANCA_VAZIA } from "@/components/assinatura/DadosDeCobranca";
 import { documentoValido, mascararDocumento } from "@/lib/documento";
 import { mascararCep, UFS } from "@/lib/contato";
 import { TERMOS_CAMINHO } from "@/lib/termos";
-import { PlanosBanner } from "@/components/planos/PlanosBanner";
+import { EtapaDoPlano } from "@/components/planos/EtapaDoPlano";
 import type { DadosDoBanner } from "@/lib/planos-banner";
 
 const C = {
@@ -409,11 +409,13 @@ export function CriarContaDeTeste({
         display: "flex",
         flexDirection: "column",
         gap: "16px",
-        maxWidth: passo === 2 ? "700px" : "460px",
+        maxWidth: passo === 2 ? "1040px" : "460px",
         margin: "0 auto",
       }}
     >
-      {/* onde ela está: 1 conta · 2 cartão */}
+      {/* onde ela está: 1 conta · 2 plano · 3 cartão (a etapa 2 desenha
+          as próprias etapas, no topo da janela) */}
+      {passo !== 2 && (
       <ol
         aria-label="Etapas"
         style={{
@@ -462,6 +464,7 @@ export function CriarContaDeTeste({
           );
         })}
       </ol>
+      )}
 
       {passo === 1 && (
         <>
@@ -646,33 +649,19 @@ export function CriarContaDeTeste({
 
       {passo === 2 && (
         <>
-          <PlanosBanner
+          <EtapaDoPlano
             dados={banner}
-            modo="cadastro"
             testeAberto={testeAberto}
-            inicial={planoEscolhido as "essencial"}
+            inicial={planoEscolhido}
             enviando={enviando !== null}
             erro={erro}
+            jaTemConta={jaTemConta}
             onEscolher={escolherPlano}
-          />
-          {jaTemConta && (
-            <p style={{ margin: 0, textAlign: "center", fontSize: "14px" }}>
-              <a href="/login" style={{ color: C.ameixa, fontWeight: 600 }}>
-                Entrar com minha senha
-              </a>
-            </p>
-          )}
-          <button
-            type="button"
-            onClick={() => {
+            onVoltar={() => {
               setErro(null);
               setPasso(1);
             }}
-            disabled={enviando !== null}
-            style={{ border: "none", background: "transparent", color: C.meta, fontFamily: "inherit", fontSize: "13.5px", textDecoration: "underline", cursor: "pointer", padding: 0 }}
-          >
-            Voltar e corrigir meus dados
-          </button>
+          />
         </>
       )}
 
