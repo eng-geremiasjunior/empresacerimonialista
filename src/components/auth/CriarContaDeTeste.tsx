@@ -2,8 +2,9 @@
 
 // A tela do teste de sete dias — com o cartão no cadastro (21/09/2026).
 //
-// Duas etapas, na ordem em que ela pensa: quem é você → o cartão. A
-// primeira é a mesma de antes (nome, negócio, e-mail, WhatsApp, senha,
+// Três etapas desde 23/09/2026: quem é você → o plano → o cartão. O
+// Gratuito (1 evento) abre a conta na segunda, sem cartão; plano pago
+// segue para a terceira. A primeira é a mesma de antes (nome, negócio, e-mail, WhatsApp, senha,
 // quantos eventos, Instagram). A segunda pede o que a operadora exige de
 // quem paga (CPF ou CNPJ e o endereço do cartão, que o CEP preenche) e o
 // cartão — e diz, em destaque, o que o dono fez questão de deixar claro:
@@ -27,6 +28,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   criarContaDeTeste,
+  criarContaGratuita,
   guardarCadastroInterrompido,
   type CobrancaDoCadastro,
 } from "@/app/criar-conta/actions";
@@ -44,6 +46,8 @@ import { COBRANCA_VAZIA } from "@/components/assinatura/DadosDeCobranca";
 import { documentoValido, mascararDocumento } from "@/lib/documento";
 import { mascararCep, UFS } from "@/lib/contato";
 import { TERMOS_CAMINHO } from "@/lib/termos";
+import { PlanosBanner } from "@/components/planos/PlanosBanner";
+import type { DadosDoBanner } from "@/lib/planos-banner";
 
 const C = {
   fundo: "#FAF8F5",
@@ -138,15 +142,25 @@ function Botao({
 }
 
 export function CriarContaDeTeste({
-  oferta,
+  ofertas,
+  banner,
+  testeAberto = true,
   precoDeEntrada,
 }: {
-  oferta: OfertaNaTela;
+  /** o portão do teste (/admin): fechado, plano pago vai para o checkout */
+  testeAberto?: boolean;
+  /** a oferta do teste de cada plano pago, pelo código (a página calcula) */
+  ofertas: Record<string, OfertaNaTela>;
+  /** a tela de planos (23/09/2026): preços e limites do painel */
+  banner: DadosDoBanner;
   /** o preço do botão "assinar agora", sem teste */
   precoDeEntrada: string | null;
 }) {
   const router = useRouter();
-  const [passo, setPasso] = useState<1 | 2>(1);
+  // 1 seus dados · 2 plano · 3 cartão (só no plano pago)
+  const [passo, setPasso] = useState<1 | 2 | 3>(1);
+  const [planoEscolhido, setPlanoEscolhido] = useState<string>("essencial");
+  const oferta = ofertas[planoEscolhido] ?? Object.values(ofertas)[0];
 
   // etapa 1 — a conta
   const [nome, setNome] = useState("");
@@ -243,8 +257,6 @@ export function CriarContaDeTeste({
     setErro(falta);
     if (falta) return;
     setPasso(2);
-    // chegou ao cartão: o meio do funil que a Meta otimiza
-    assinaturaIniciada(oferta.planoCodigo, oferta.valorPrimeiro);
     // se ela parar no cartão, o dono ainda sabe quem era (169). Sem
     // esperar: a tela do cartão não depende disto, e a senha não vai.
     void guardarCadastroInterrompido({
@@ -257,9 +269,68 @@ export function CriarContaDeTeste({
     }).catch(() => {});
   }
 
+  /** Etapa 2: o Gratuito abre a conta sem cartão; plano pago vai para o cartão. */
+  function escolherPlano(codigo: string) {
+    setErro(null);
+    setJaTemConta(false);
+    if (codigo === "gratuito") {
+      void abrirGratuita();
+      return;
+    }
+    if (!testeAberto) {
+      // sem teste aberto, o plano pago é assinado na hora, no checkout
+      window.location.href = `/comecar?plano=${codigo}`;
+      return;
+    }
+    setPlanoEscolhido(codigo);
+    setPasso(3);
+    // chegou ao cartão: o meio do funil que a Meta otimiza
+    const o = ofertas[codigo];
+    if (o) assinaturaIniciada(o.planoCodigo, o.valorPrimeiro);
+    window.scrollTo({ top: 0 });
+  }
+
+  /** O plano Gratuito: a conta nasce sem cartão e com 1 evento. */
+  async function abrirGratuita() {
+    if (enviando) return;
+    setEnviando("abrindo");
+    await completarOrigemAntesDeEnviar();
+    let r;
+    try {
+      r = await criarContaGratuita({ nome, negocio, email, senha, whatsapp, eventos3m: eventos3m ?? "", instagram });
+    } catch {
+      setErro("Não foi possível criar a conta agora. Tente de novo em alguns instantes.");
+      setEnviando(null);
+      return;
+    }
+    if (!r?.ok) {
+      setErro(r?.error ?? "Não foi possível criar a conta agora.");
+      setJaTemConta(Boolean(r?.jaTemConta));
+      setEnviando(null);
+      return;
+    }
+    // o cadastro conta para o anúncio; teste não houve
+    contaCriada(r.idDoEvento);
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password: senha,
+    });
+    if (error) {
+      setErro("Sua conta está criada! Entre com seu e-mail e senha para começar.");
+      setEnviando(null);
+      startTransition(() => router.push("/login"));
+      return;
+    }
+    startTransition(() => {
+      router.push("/eventos/novo");
+      router.refresh();
+    });
+  }
+
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
-    if (passo !== 2 || enviando) return;
+    if (passo !== 3 || enviando) return;
     setErro(null);
     setJaTemConta(false);
     const falta = faltaNoPagamento();
@@ -289,7 +360,7 @@ export function CriarContaDeTeste({
     try {
       r = await criarContaDeTeste(
         { nome, negocio, email, senha, whatsapp, eventos3m: eventos3m ?? "", instagram },
-        { cardToken: t.token, cobranca, aceitouTermos: aceitei }
+        { cardToken: t.token, cobranca, aceitouTermos: aceitei, plano: planoEscolhido }
       );
     } catch {
       setErro("Não foi possível criar a conta agora. Tente de novo em alguns instantes.");
@@ -332,7 +403,16 @@ export function CriarContaDeTeste({
   const travado = enviando !== null;
 
   return (
-    <form onSubmit={enviar} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+    <form
+      onSubmit={enviar}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "16px",
+        maxWidth: passo === 2 ? "980px" : "460px",
+        margin: "0 auto",
+      }}
+    >
       {/* onde ela está: 1 conta · 2 cartão */}
       <ol
         aria-label="Etapas"
@@ -346,7 +426,7 @@ export function CriarContaDeTeste({
           color: C.meta,
         }}
       >
-        {["Sua conta", "Cartão"].map((nomeDaEtapa, i) => {
+        {["Seus dados", "Plano", "Cartão"].map((nomeDaEtapa, i) => {
           const atual = passo === i + 1;
           return (
             <li
@@ -385,6 +465,14 @@ export function CriarContaDeTeste({
 
       {passo === 1 && (
         <>
+          <div>
+            <h1 style={{ margin: "4px 0 6px", fontFamily: F_TITLE, fontWeight: 600, fontSize: "clamp(26px,4vw,32px)", lineHeight: 1.15, letterSpacing: "-0.03em" }}>
+              Crie sua conta
+            </h1>
+            <p style={{ margin: 0, fontSize: "15.5px", lineHeight: 1.55, color: C.meta }}>
+              Leva um minuto. Em seguida, você escolhe o seu plano.
+            </p>
+          </div>
           <div>
             <label htmlFor="cc-nome" style={rotulo}>
               Seu nome
@@ -551,14 +639,48 @@ export function CriarContaDeTeste({
             Continuar
           </Botao>
           <p style={{ margin: 0, fontSize: "13.5px", lineHeight: 1.5, color: C.meta, textAlign: "center" }}>
-            No próximo passo, o cartão. Nada é cobrado hoje: a primeira cobrança é em{" "}
-            <strong style={{ color: C.corpo }}>{oferta.comecaEm}</strong>.
+            No próximo passo, você escolhe o plano. Para conhecer com 1 evento, não pede cartão.
           </p>
         </>
       )}
 
       {passo === 2 && (
         <>
+          <PlanosBanner
+            dados={banner}
+            modo="cadastro"
+            testeAberto={testeAberto}
+            inicial={planoEscolhido as "essencial"}
+            enviando={enviando !== null}
+            erro={erro}
+            onEscolher={escolherPlano}
+          />
+          {jaTemConta && (
+            <p style={{ margin: 0, textAlign: "center", fontSize: "14px" }}>
+              <a href="/login" style={{ color: C.ameixa, fontWeight: 600 }}>
+                Entrar com minha senha
+              </a>
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setErro(null);
+              setPasso(1);
+            }}
+            disabled={enviando !== null}
+            style={{ border: "none", background: "transparent", color: C.meta, fontFamily: "inherit", fontSize: "13.5px", textDecoration: "underline", cursor: "pointer", padding: 0 }}
+          >
+            Voltar e corrigir meus dados
+          </button>
+        </>
+      )}
+
+      {passo === 3 && (
+        <>
+          <h1 style={{ margin: "4px 0 0", fontFamily: F_TITLE, fontWeight: 600, fontSize: "clamp(24px,4vw,30px)", lineHeight: 1.15, letterSpacing: "-0.03em" }}>
+            Plano {oferta.planoNome}
+          </h1>
           {/* O DESTAQUE (pedido do dono): o que acontece com o cartão, em
               três linhas, antes de qualquer campo. */}
           <div
@@ -849,7 +971,7 @@ export function CriarContaDeTeste({
             type="button"
             onClick={() => {
               setErro(null);
-              setPasso(1);
+              setPasso(2);
             }}
             disabled={travado}
             style={{
@@ -863,11 +985,12 @@ export function CriarContaDeTeste({
               padding: 0,
             }}
           >
-            Voltar e corrigir os dados da conta
+            Voltar e trocar de plano
           </button>
         </>
       )}
 
+      {passo === 3 && (
       <ul
         style={{
           listStyle: "none",
@@ -888,7 +1011,9 @@ export function CriarContaDeTeste({
         </li>
         <li>O que você cadastrar continua salvo.</li>
       </ul>
+      )}
 
+      {passo !== 2 && (
       <p style={{ margin: "4px 0 0", fontSize: "13.5px", color: C.meta, textAlign: "center" }}>
         Prefere assinar agora, sem teste?{" "}
         <a href="/comecar" style={{ color: C.ameixa, fontWeight: 600 }}>
@@ -899,6 +1024,7 @@ export function CriarContaDeTeste({
           Já tenho conta
         </a>
       </p>
+      )}
 
       <span style={{ display: "none", fontFamily: F_TITLE }} aria-hidden="true" />
     </form>

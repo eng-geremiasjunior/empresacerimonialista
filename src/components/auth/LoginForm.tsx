@@ -104,6 +104,13 @@ export function LoginForm({
         setLoading(false);
         return;
       }
+      // a tela de planos abre uma vez depois de cada login (23/09/2026);
+      // quem paga não a vê — o layout confere
+      try {
+        sessionStorage.setItem("eorg-planos-ao-entrar", "1");
+      } catch {
+        /* sem armazenamento: só não abre */
+      }
       const paraOnde =
         destino && destino.startsWith("/") && !destino.startsWith("//")
           ? destino

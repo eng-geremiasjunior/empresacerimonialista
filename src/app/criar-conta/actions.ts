@@ -169,36 +169,28 @@ async function desfazerConta(db: ReturnType<typeof servico>, userId: string, emp
   if (error) console.error("[vela:teste] conta órfã não apagada:", userId);
 }
 
-export async function criarContaDeTeste(
-  dados: {
-    nome: string;
-    negocio: string;
-    email: string;
-    senha: string;
-    whatsapp: string;
-    eventos3m: string;
-    instagram?: string;
-  },
-  pagamento: {
-    /** o token que o navegador pegou direto com a operadora; o número nunca chega aqui */
-    cardToken: string;
-    cobranca: CobrancaDoCadastro;
-    aceitouTermos: boolean;
-  }
-): Promise<ResultadoCriarConta> {
-  const portao = await portaoDoTeste();
-  if (!portao.aberto) {
-    // A página só mostra este formulário com o portão aberto; chegar aqui
-    // é endereço digitado à mão ou portão fechado no meio do caminho.
-    return { error: "O teste não está aberto no momento. Você pode assinar agora mesmo." };
-  }
+type DadosDoCadastro = {
+  nome: string;
+  negocio: string;
+  email: string;
+  senha: string;
+  whatsapp: string;
+  eventos3m: string;
+  instagram?: string;
+};
 
-  const h0 = headers();
-  const ip = h0.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h0.get("x-real-ip") ?? "desconhecido";
-  if (demaisTentativas(ip)) {
-    return { error: "Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente de novo." };
-  }
+type Conferidos = {
+  nome: string;
+  negocio: string;
+  email: string;
+  senha: string;
+  whatsapp: string;
+  eventos3m: string;
+  instagram: string | null;
+};
 
+/** A etapa 1, conferida no servidor — as duas portas (gratuita e com cartão) passam por aqui. */
+function conferirDados(dados: DadosDoCadastro): { error: string } | Conferidos {
   const nome = dados.nome?.trim() ?? "";
   const negocio = dados.negocio?.trim() ?? "";
   const email = dados.email?.trim().toLowerCase() ?? "";
@@ -216,38 +208,31 @@ export async function criarContaDeTeste(
   }
   // opcional: um @ que não parece @ não recusa o cadastro, só não é guardado
   const instagram = normalizarInstagram(dados.instagram);
+  return { nome, negocio, email, senha, whatsapp, eventos3m, instagram };
+}
 
-  // TUDO CONFERIDO ANTES DE QUALQUER COISA NASCER — na operadora ou aqui.
-  if (pagamento?.aceitouTermos !== true) {
-    return { error: "Para começar, é preciso aceitar os Termos e Condições." };
-  }
-  if (!pagamento.cardToken) return { error: "Não recebemos os dados do cartão." };
-  const cobrancaInvalida = conferirCobranca(pagamento.cobranca);
-  if (cobrancaInvalida) return { error: cobrancaInvalida };
-
-  // O que vai ser agendado: o mesmo número que a tela acabou de mostrar,
-  // calculado pela mesma função (teste-com-cartao.ts).
-  const oferta = await ofertaDoTeste(portao.dias);
-  if (!oferta) {
-    return { error: "A assinatura ainda não está configurada. Fale com o suporte." };
-  }
-
-  const db = servico();
-
-  // 1) A CONTA. `email_confirm: true` entrega a sessão na hora.
+/**
+ * A CONTA: login já confirmado (`email_confirm: true` entrega a sessão na
+ * hora), empresa pelo gatilho de signup, WhatsApp na ficha da dona. Nada
+ * de assinatura aqui — isso é de quem chama.
+ */
+async function abrirConta(
+  db: ReturnType<typeof servico>,
+  d: Conferidos
+): Promise<{ error: string; jaTemConta?: boolean } | { userId: string; empresaId: string }> {
   const { data: criada, error: erroCriar } = await db.auth.admin.createUser({
-    email,
-    password: senha,
+    email: d.email,
+    password: d.senha,
     email_confirm: true,
     // `empresa` e `name` são as chaves que o gatilho de signup lê; as
     // outras três são a qualificação do cadastro (cadastro-qualificacao.ts),
     // que o painel do dono mostra
     user_metadata: {
-      empresa: negocio,
-      name: nome,
-      whatsapp,
-      eventos_3_meses: eventos3m,
-      ...(instagram ? { instagram } : {}),
+      empresa: d.negocio,
+      name: d.nome,
+      whatsapp: d.whatsapp,
+      eventos_3_meses: d.eventos3m,
+      ...(d.instagram ? { instagram: d.instagram } : {}),
     },
   });
 
@@ -267,14 +252,11 @@ export async function criarContaDeTeste(
     // dentro da conta existente", como o checkout faz: lá havia uma
     // compra em curso a proteger; aqui, conferir senha num endereço
     // público seria um provador de senhas. Ela entra pelo login.
-    return {
-      error: "Já existe uma conta com este e-mail. Entre com sua senha.",
-      jaTemConta: true,
-    };
+    return { error: "Já existe uma conta com este e-mail. Entre com sua senha.", jaTemConta: true };
   }
 
   // O gatilho de signup cria empresa e vínculo; aqui só se espera a linha
-  // aparecer, porque o teste precisa do empresa_id.
+  // aparecer, porque o resto precisa do empresa_id.
   let empresaId: string | null = null;
   for (let tentativa = 0; tentativa < 8 && !empresaId; tentativa++) {
     const { data: vinculo } = await db
@@ -297,11 +279,177 @@ export async function criarContaDeTeste(
   {
     const { error: erroZap } = await db
       .from("membros_equipe")
-      .update({ whatsapp })
+      .update({ whatsapp: d.whatsapp })
       .eq("user_id", userId)
       .eq("empresa_id", empresaId);
     if (erroZap) console.error("[vela:teste] whatsapp da dona:", erroZap.code ?? "sem código");
   }
+
+  return { userId, empresaId };
+}
+
+/**
+ * Depois que a conta nasceu, nas duas portas: a origem do clique (152), os
+ * eventos do anúncio (o cadastro sempre; o teste só com cartão), o e-mail
+ * de boas-vindas e a baixa na lista de quem parou (169). Nada aqui derruba
+ * o cadastro.
+ */
+async function depoisDeNascer(
+  db: ReturnType<typeof servico>,
+  c: { userId: string; empresaId: string; d: Conferidos; ip: string; userAgent: string | null },
+  teste: { valor: number; termina: string; primeiraCobranca: string } | null
+) {
+  try {
+    const o = lerOrigemDoCookie();
+    if (o) {
+      await db.from("origem_do_clique").upsert(
+        {
+          empresa_id: c.empresaId,
+          ...o,
+          ip: c.ip === "desconhecido" ? null : c.ip,
+          user_agent: c.userAgent,
+        },
+        { onConflict: "empresa_id", ignoreDuplicates: true }
+      );
+    }
+    const origem = {
+      fbp: o?.fbp ?? null,
+      fbc: o?.fbc ?? null,
+      gaClientId: o?.ga_client_id ?? null,
+      ip: c.ip === "desconhecido" ? null : c.ip,
+      userAgent: c.userAgent,
+    };
+    // Saem pelo SERVIDOR com o mesmo id que o pixel usa no navegador, para
+    // a Meta contar cada um uma vez; a compra sai quando a operadora cobrar.
+    await registrarConversao({
+      tipo: "conta_criada",
+      email: c.d.email,
+      telefone: c.d.whatsapp,
+      nome: c.d.nome,
+      idExterno: c.empresaId,
+      idDoEvento: `conta:${c.empresaId}`,
+      origem,
+    });
+    if (teste) {
+      await registrarConversao({
+        tipo: "teste_iniciado",
+        email: c.d.email,
+        telefone: c.d.whatsapp,
+        nome: c.d.nome,
+        idExterno: c.empresaId,
+        valor: teste.valor,
+        idDoEvento: `teste:${c.empresaId}`,
+        origem,
+      });
+    }
+  } catch (e) {
+    // medição não derruba cadastro
+    console.error("[vela:conversao] conta nova:", String(e).slice(0, 200));
+  }
+
+  // O primeiro e-mail. Com cartão, já diz o dia e o valor da primeira
+  // cobrança; no Gratuito, sem caixa de teste nenhuma.
+  await enviarBoasVindas({
+    userId: c.userId,
+    email: c.d.email,
+    nome: c.d.nome,
+    termina: teste?.termina ?? null,
+    eventos3m: c.d.eventos3m,
+    cobranca: teste ? { dia: teste.primeiraCobranca, valor: teste.valor } : null,
+  });
+
+  // Se ela tinha parado no cartão antes (169), sai da lista do dono: a
+  // conta nasceu. Sem a 169, só não marca.
+  try {
+    await db
+      .from("cadastro_interrompido")
+      .update({ convertido_em: new Date().toISOString() })
+      .eq("email", c.d.email)
+      .is("convertido_em", null);
+  } catch {
+    /* a lista do painel fica com ela como pendente; nada além disso */
+  }
+}
+
+/**
+ * O plano Gratuito (23/09/2026): a conta nasce SEM cartão e SEM linha em
+ * `assinaturas` — e a regra que já existe no banco (154: nem pagante nem
+ * em teste = 1 evento, 1 login) é o plano. Decisão do dono e da esposa:
+ * quem quer conhecer entra sem cartão (e o curioso não precisa pôr
+ * cartão para ver); quem já quer mais de um evento escolhe um plano, põe
+ * o cartão e só paga no oitavo dia.
+ */
+export async function criarContaGratuita(dados: DadosDoCadastro): Promise<ResultadoCriarConta> {
+  const h0 = headers();
+  const ip = h0.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h0.get("x-real-ip") ?? "desconhecido";
+  if (demaisTentativas(ip)) {
+    return { error: "Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente de novo." };
+  }
+  const d = conferirDados(dados);
+  if ("error" in d) return d;
+
+  const db = servico();
+  const conta = await abrirConta(db, d);
+  if ("error" in conta) return conta;
+
+  await depoisDeNascer(
+    db,
+    { ...conta, d, ip, userAgent: h0.get("user-agent")?.slice(0, 300) ?? null },
+    null
+  );
+  return { ok: true, idDoEvento: `conta:${conta.empresaId}` };
+}
+
+export async function criarContaDeTeste(
+  dados: DadosDoCadastro,
+  pagamento: {
+    /** o token que o navegador pegou direto com a operadora; o número nunca chega aqui */
+    cardToken: string;
+    cobranca: CobrancaDoCadastro;
+    aceitouTermos: boolean;
+    /** o plano escolhido na etapa 2; o servidor recalcula a oferta */
+    plano?: string;
+  }
+): Promise<ResultadoCriarConta> {
+  const portao = await portaoDoTeste();
+  if (!portao.aberto) {
+    // A página só mostra este formulário com o portão aberto; chegar aqui
+    // é endereço digitado à mão ou portão fechado no meio do caminho.
+    return { error: "O teste não está aberto no momento. Você pode assinar agora mesmo." };
+  }
+
+  const h0 = headers();
+  const ip = h0.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h0.get("x-real-ip") ?? "desconhecido";
+  if (demaisTentativas(ip)) {
+    return { error: "Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente de novo." };
+  }
+
+  const d = conferirDados(dados);
+  if ("error" in d) return d;
+  const { nome, email, whatsapp } = d;
+
+  // TUDO CONFERIDO ANTES DE QUALQUER COISA NASCER — na operadora ou aqui.
+  if (pagamento?.aceitouTermos !== true) {
+    return { error: "Para começar, é preciso aceitar os Termos e Condições." };
+  }
+  if (!pagamento.cardToken) return { error: "Não recebemos os dados do cartão." };
+  const cobrancaInvalida = conferirCobranca(pagamento.cobranca);
+  if (cobrancaInvalida) return { error: cobrancaInvalida };
+
+  // O que vai ser agendado: o mesmo número que a tela acabou de mostrar,
+  // calculado pela mesma função (teste-com-cartao.ts), para o plano que
+  // ela escolheu — nunca o preço que veio do navegador.
+  const oferta = await ofertaDoTeste(portao.dias, undefined, pagamento.plano);
+  if (!oferta) {
+    return { error: "A assinatura ainda não está configurada. Fale com o suporte." };
+  }
+
+  const db = servico();
+
+  // 1) A CONTA.
+  const conta = await abrirConta(db, d);
+  if ("error" in conta) return conta;
+  const { userId, empresaId } = conta;
 
   // 2) O CARTÃO, CONFERIDO SEM COBRAR. Recusa aqui é resposta para ela
   //    ("confira os dados ou use outro cartão"), e a conta que acabou de
@@ -435,83 +583,13 @@ export async function criarContaDeTeste(
     return { error: "Não foi possível abrir seu teste agora. Tente de novo em alguns instantes." };
   }
 
-  // A CONTA NASCEU — e estes são os eventos que o anúncio precisa
-  // receber: o cadastro (CompleteRegistration) e o teste com cartão
-  // (StartTrial, com o valor que vai ser cobrado). Saem pelo SERVIDOR com
-  // o mesmo id que o pixel usa no navegador, para a Meta contar cada um
-  // uma vez; a compra (Purchase) sai no oitavo dia, quando a operadora
-  // cobrar (webhook).
-  //
-  // A origem do clique vai junto, gravada como o checkout já grava (152):
-  // é ela que dirá, quando esta conta virar assinante, de qual anúncio
-  // ela veio. Nada aqui pode derrubar o cadastro.
-  try {
-    const o = lerOrigemDoCookie();
-    if (o) {
-      await db.from("origem_do_clique").upsert(
-        {
-          empresa_id: empresaId,
-          ...o,
-          ip: ip === "desconhecido" ? null : ip,
-          user_agent: h0.get("user-agent")?.slice(0, 300) ?? null,
-        },
-        { onConflict: "empresa_id", ignoreDuplicates: true }
-      );
-    }
-    const origem = {
-      fbp: o?.fbp ?? null,
-      fbc: o?.fbc ?? null,
-      gaClientId: o?.ga_client_id ?? null,
-      ip: ip === "desconhecido" ? null : ip,
-      userAgent: h0.get("user-agent")?.slice(0, 300) ?? null,
-    };
-    await registrarConversao({
-      tipo: "conta_criada",
-      email,
-      telefone: whatsapp,
-      nome,
-      idExterno: empresaId,
-      idDoEvento: `conta:${empresaId}`,
-      origem,
-    });
-    await registrarConversao({
-      tipo: "teste_iniciado",
-      email,
-      telefone: whatsapp,
-      nome,
-      idExterno: empresaId,
-      valor: oferta.valorPrimeiro,
-      idDoEvento: `teste:${empresaId}`,
-      origem,
-    });
-  } catch (e) {
-    // medição não derruba cadastro
-    console.error("[vela:conversao] conta de teste:", String(e).slice(0, 200));
-  }
-
-  // O primeiro e-mail do teste (email-ativacao.ts), já dizendo o dia e o
-  // valor da primeira cobrança. Nunca derruba o cadastro; se não sair
-  // agora, a rotina diária tenta de novo.
-  await enviarBoasVindas({
-    userId,
-    email,
-    nome,
-    termina: oferta.termina,
-    eventos3m,
-    cobranca: { dia: primeiraCobranca, valor: oferta.valorPrimeiro },
-  });
-
-  // Se ela tinha parado no cartão antes (169), sai da lista do dono: a
-  // conta nasceu. Nunca derruba o cadastro — sem a 169, só não marca.
-  try {
-    await db
-      .from("cadastro_interrompido")
-      .update({ convertido_em: new Date().toISOString() })
-      .eq("email", email)
-      .is("convertido_em", null);
-  } catch {
-    /* a lista do painel fica com ela como pendente; nada além disso */
-  }
+  // A CONTA NASCEU — o cadastro e o teste com cartão (StartTrial, com o
+  // valor que vai ser cobrado) vão para o anúncio, e o primeiro e-mail sai.
+  await depoisDeNascer(
+    db,
+    { userId, empresaId, d, ip, userAgent: h0.get("user-agent")?.slice(0, 300) ?? null },
+    { valor: oferta.valorPrimeiro, termina: oferta.termina, primeiraCobranca }
+  );
 
   return {
     ok: true,

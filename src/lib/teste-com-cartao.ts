@@ -82,10 +82,19 @@ export function fraseDoPrecoDoTeste(
 /**
  * A oferta de quem se cadastra AGORA: em que dia a cobrança começa e por
  * quanto. `null` só quando o catálogo está vazio — aí não há o que agendar.
+ *
+ * `planoCodigo` é o plano que ela escolheu na tela de planos (23/09/2026);
+ * sem ele (ou com um código que o catálogo não vende), vale o plano da
+ * promoção, como sempre. A promoção continua só no plano dela.
  */
-export async function ofertaDoTeste(dias: number, agora = new Date()): Promise<OfertaDoTeste | null> {
+export async function ofertaDoTeste(
+  dias: number,
+  agora = new Date(),
+  planoCodigo?: string | null
+): Promise<OfertaDoTeste | null> {
   const planos = await getCatalogoDePlanos();
   const plano =
+    (planoCodigo ? planos.find((p) => p.codigo === planoCodigo) : undefined) ??
     planos.find((p) => p.codigo === PLANO_DA_PROMOCAO) ??
     [...planos].sort((a, b) => a.valorMensal - b.valorMensal)[0] ??
     null;

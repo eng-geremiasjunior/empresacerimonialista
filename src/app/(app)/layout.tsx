@@ -14,6 +14,7 @@ import { AppShell, type Congelamento } from "@/components/AppShell";
 import { TaskNotifications } from "@/components/TaskNotifications";
 import { Presenca } from "@/components/Presenca";
 import { GuiaVivo } from "@/components/guia/GuiaVivo";
+import { BannerAoEntrar } from "@/components/planos/BannerAoEntrar";
 import { signOut } from "./actions";
 
 /**
@@ -150,6 +151,8 @@ export default async function AppLayout({
           inclusive, e o passo 1 aponta justamente para um botao de fora
           do conteudo. */}
       <GuiaVivo guia={passoAtual(estadoDoGuia)} terminou={terminou(estadoDoGuia)} />
+      {/* a tela de planos, a cada login de quem não paga (23/09/2026) */}
+      {cargo === "proprietaria" && <BannerAoEntrar />}
       <TaskNotifications />
       {/* o "ao vivo" do painel do dono: só o nome da área, nada da tela */}
       <Presenca />

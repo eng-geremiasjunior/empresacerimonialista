@@ -4,6 +4,16 @@ import { somarDias } from "@/lib/tempo";
 /**
  * A porta do sistema: esta conta já pagou para entrar?
  *
+ * O PLANO GRATUITO (23/09/2026, decisão do dono e da esposa) reabre a
+ * porta para quem não paga: a conta sem assinatura — e a do teste que
+ * venceu sem virar pagamento — entra, e o banco dá a ela a regra que
+ * sempre existiu para quem não é pagante nem testa (154: 1 evento, 1
+ * login). O "nada gratuito" de 07/09 (abaixo) deixou de valer; o que a
+ * porta ainda barra é o buraco que ela veio fechar: a linha que
+ * `teto_do_plano` trataria como PAGANTE sem um centavo ter entrado
+ * (`inadimplente` de cartão recusado; `cancelada` com vencimento pela
+ * frente) — essas dariam o teto cheio de graça.
+ *
  * Decisão do dono (07/09/2026): não existe nada gratuito. O preço de
  * lançamento de R$ 27,90 é a entrada barata que substitui o teste grátis
  * — "27 reais hoje em dia é troco de pão, e dou garantias pra isso, a
@@ -64,7 +74,8 @@ export async function precisaAssinar(): Promise<boolean> {
   const { data, error } = await supabase.from("assinaturas").select("*").maybeSingle();
 
   if (error) return false;
-  if (!data) return true;
+  // sem linha = o plano Gratuito (23/09/2026)
+  if (!data) return false;
 
   const linha = data as {
     status?: string | null;
@@ -94,7 +105,17 @@ export async function precisaAssinar(): Promise<boolean> {
   ) {
     return false;
   }
-  return true;
+  // O teste que venceu sem pagamento vira o Gratuito: o banco já não o
+  // conta como pagante nem como teste, e dá 1 evento (23/09/2026).
+  if (linha.status === "trial") return false;
+  // Trancado só o que o teto trataria como pagante sem pagamento: o
+  // inadimplente que nunca pagou, e a cancelada que ainda tem vencimento
+  // pela frente. Cancelada vencida cai no Gratuito como as outras.
+  if (linha.status === "inadimplente") return true;
+  if (linha.status === "cancelada" && linha.proximo_vencimento && testeVivo(linha.proximo_vencimento)) {
+    return true;
+  }
+  return false;
 }
 
 /** Quantos dias depois da primeira cobrança agendada a porta ainda espera a operadora. */

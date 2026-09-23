@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { reais } from "@/lib/planos";
+import { getCatalogoDePlanos, reais } from "@/lib/planos";
+import { dadosDoBanner } from "@/lib/planos-banner";
 import { portaoDoTeste } from "@/lib/supabase/teste-gratis";
 import { ofertaDoTeste } from "@/lib/teste-com-cartao";
 import { CriarContaDeTeste } from "@/components/auth/CriarContaDeTeste";
@@ -38,12 +39,43 @@ export default async function CriarContaPage() {
   } = await supabase.auth.getUser();
   if (user) redirect("/eventos/dashboard");
 
+  // O PORTÃO decide só o TESTE de 7 dias (23/09/2026): o cadastro existe
+  // sempre, porque o plano Gratuito existe sempre. Fechado, o plano pago
+  // vai para o checkout e paga na hora.
   const portao = await portaoDoTeste();
-  if (!portao.aberto) redirect("/comecar");
 
   // Sem catálogo não há o que agendar: a página de vendas explica.
   const oferta = await ofertaDoTeste(portao.dias);
   if (!oferta) redirect("/planos");
+
+  // A tela de planos (23/09/2026): a oferta do teste de CADA plano pago —
+  // o que a etapa do cartão mostra depende do que ela escolheu —, e o
+  // banner com os preços do painel.
+  const [catalogo, banner] = await Promise.all([getCatalogoDePlanos(), dadosDoBanner()]);
+  const ofertas: Record<string, {
+    dias: number;
+    comecaEm: string;
+    termina: string;
+    preco: string;
+    primeiraCobranca: string;
+    valorPrimeiro: number;
+    planoNome: string;
+    planoCodigo: string;
+  }> = {};
+  for (const p of catalogo) {
+    const o = await ofertaDoTeste(portao.dias, undefined, p.codigo);
+    if (!o) continue;
+    ofertas[p.codigo] = {
+      dias: portao.dias,
+      comecaEm: o.texto.comecaEm,
+      termina: o.texto.termina,
+      preco: o.texto.preco,
+      primeiraCobranca: o.texto.primeiraCobranca,
+      valorPrimeiro: o.valorPrimeiro,
+      planoNome: o.plano.nome,
+      planoCodigo: o.plano.codigo,
+    };
+  }
 
   return (
     <div
@@ -100,66 +132,15 @@ export default async function CriarContaPage() {
 
       <main
         style={{
-          maxWidth: "460px",
+          maxWidth: "1020px",
           margin: "0 auto",
-          padding: "clamp(36px,6vw,64px) clamp(20px,5vw,28px) 64px",
+          padding: "clamp(28px,5vw,48px) clamp(16px,4vw,28px) 64px",
         }}
       >
-        <span
-          style={{
-            display: "inline-block",
-            marginBottom: "12px",
-            padding: "5px 12px",
-            borderRadius: "999px",
-            background: "#F3EBF0",
-            color: "#6E3F5F",
-            fontFamily: "var(--font-mono, 'IBM Plex Mono', monospace)",
-            fontSize: "11px",
-            fontWeight: "500",
-            letterSpacing: ".06em",
-            textTransform: "uppercase",
-          }}
-        >
-          Teste de {portao.dias} dias
-        </span>
-        <h1
-          style={{
-            margin: "0 0 10px",
-            fontFamily: "var(--font-title, Inter, sans-serif)",
-            fontWeight: "600",
-            fontSize: "clamp(26px,4vw,34px)",
-            lineHeight: "1.13",
-            letterSpacing: "-0.03em",
-            textWrap: "balance",
-          }}
-        >
-          Comece pelo evento que você já está organizando.
-        </h1>
-        <p
-          style={{
-            margin: "0 0 28px",
-            fontSize: "16px",
-            lineHeight: "1.55",
-            color: "#6B6259",
-            textWrap: "pretty",
-          }}
-        >
-          Cadastre um evento de verdade, monte o roteiro do dia e mande o link para o
-          fornecedor. O cartão fica guardado e nada é cobrado hoje: a primeira cobrança é em{" "}
-          {oferta.texto.comecaEm}.
-        </p>
-
         <CriarContaDeTeste
-          oferta={{
-            dias: portao.dias,
-            comecaEm: oferta.texto.comecaEm,
-            termina: oferta.texto.termina,
-            preco: oferta.texto.preco,
-            primeiraCobranca: oferta.texto.primeiraCobranca,
-            valorPrimeiro: oferta.valorPrimeiro,
-            planoNome: oferta.plano.nome,
-            planoCodigo: oferta.plano.codigo,
-          }}
+          ofertas={ofertas}
+          banner={banner}
+          testeAberto={portao.aberto}
           precoDeEntrada={reais(oferta.valorPrimeiro)}
         />
       </main>
