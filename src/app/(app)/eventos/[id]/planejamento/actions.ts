@@ -473,3 +473,54 @@ export async function criarCampoProprio(
   revalidatePath(`/eventos/${eventId}/planejamento`);
   return { success: true, id: data.id };
 }
+
+// ------------------------------------------------------------------
+// Meu modelo (170): o que ela criou e tirou neste evento passa a valer
+// para os próximos do mesmo tipo. A trava (só a proprietária) mora na
+// função do banco; aqui só traduzimos.
+// ------------------------------------------------------------------
+
+export type PreviaDoModelo = {
+  tipo: string;
+  pode_salvar: boolean;
+  objetivos: string[];
+  decisoes: { titulo: string; objetivo: string }[];
+  campos: { label: string; decisao: string }[];
+  podem_sair: { id: string; titulo: string; objetivo: string }[];
+  voltam: { titulo: string; objetivo: string }[];
+  ultimo: { salvo_em: string; evento: string | null } | null;
+};
+
+export type ResumoDoModelo = {
+  objetivos: number;
+  decisoes: number;
+  campos: number;
+  sairam: number;
+  voltaram: number;
+};
+
+export async function previaDoModelo(
+  eventId: string
+): Promise<{ error: string } | { previa: PreviaDoModelo }> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("previa_do_modelo", { p_event_id: eventId });
+  if (error || !data) return { error: "Não foi possível ler o modelo agora." };
+  return { previa: data as PreviaDoModelo };
+}
+
+export async function salvarComoModelo(
+  eventId: string,
+  tirar: string[]
+): Promise<{ error: string } | { resumo: ResumoDoModelo }> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("salvar_planejamento_como_modelo", {
+    p_event_id: eventId,
+    p_tirar: tirar,
+  });
+  if (error) {
+    // as mensagens da função (P0001) já são frases para ela ler
+    return { error: error.code === "P0001" ? error.message : "Não foi possível salvar o modelo." };
+  }
+  revalidatePath(`/eventos/${eventId}/planejamento`);
+  return { resumo: data as ResumoDoModelo };
+}

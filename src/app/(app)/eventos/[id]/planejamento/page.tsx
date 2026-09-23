@@ -28,7 +28,7 @@ export default async function EventoPlanejamentoPage({
 
   const tipoEvento = (ev?.type as string) ?? "casamento";
 
-  const [planejamento, { data: arqs }] = await Promise.all([
+  const [planejamento, { data: arqs }, { data: cargo }] = await Promise.all([
     getPlanejamento(eventId, ev?.date ?? null),
     // opções dos chips escala/cenário: as do método deste tipo, na ordem
     // do seed — a debutante deixa de ver "Mini wedding"
@@ -37,6 +37,9 @@ export default async function EventoPlanejamentoPage({
       .select("eixo, codigo, nome, ordem")
       .eq("tipo_evento", tipoEvento)
       .order("ordem"),
+    // só a proprietária vê "Salvar como meu modelo" (a função do banco
+    // confere de novo)
+    supabase.rpc("meu_cargo").maybeSingle(),
   ]);
 
   const arquetipos: Arquetipos = { escala: [], cenario: [] };
@@ -63,6 +66,7 @@ export default async function EventoPlanejamentoPage({
         clienteNome={cliente?.name ?? null}
         tipoEvento={tipoEvento}
         localEvento={ev?.location ?? ev?.city ?? null}
+        podeSalvarModelo={(cargo as { cargo?: string } | null)?.cargo === "proprietaria"}
       />
     </>
   );

@@ -46,6 +46,7 @@ import { FaixaContexto } from "./FaixaContexto";
 import { ModoFoco } from "./ModoFoco";
 import { ModoAmplo } from "./ModoAmplo";
 import { MapaMental } from "./MapaMental";
+import { SalvarModelo } from "./SalvarModelo";
 import {
   DrawerDecisao,
   CODIGO_DECISAO_GUIA,
@@ -105,6 +106,7 @@ export function PlanejamentoEvento({
   clienteNome,
   tipoEvento,
   localEvento,
+  podeSalvarModelo = false,
 }: {
   eventId: string;
   inicial: Planejamento;
@@ -117,6 +119,8 @@ export function PlanejamentoEvento({
   clienteNome: string | null;
   tipoEvento: string;
   localEvento: string | null;
+  /** só a proprietária muda o modelo da empresa (170) */
+  podeSalvarModelo?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -126,6 +130,7 @@ export function PlanejamentoEvento({
   // ---- estado de visualização (handoff §12) ----
   const [modo, setModo] = useState<"foco" | "amplo">("foco");
   const [mapaAberto, setMapaAberto] = useState(false);
+  const [modeloAberto, setModeloAberto] = useState(false);
   const [drawerId, setDrawerId] = useState<string | null>(decisaoInicial);
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set());
   const [mesExpandido, setMesExpandido] = useState<string | null>(null);
@@ -615,6 +620,27 @@ export function PlanejamentoEvento({
           </span>
         </div>
 
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        {podeSalvarModelo && (
+          <button
+            type="button"
+            onClick={() => setModeloAberto(true)}
+            style={{
+              height: 40,
+              padding: "0 14px",
+              border: `1.5px solid ${C.bordaForte}`,
+              borderRadius: 8,
+              background: "#fff",
+              fontFamily: F_TITLE,
+              fontWeight: 600,
+              fontSize: 13,
+              color: C.tinta,
+              cursor: "pointer",
+            }}
+          >
+            Salvar como meu modelo
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setMapaAberto((a) => !a)}
@@ -649,7 +675,15 @@ export function PlanejamentoEvento({
           </svg>
           Mapa mental
         </button>
+        </div>
       </div>
+      {modeloAberto && (
+        <SalvarModelo
+          eventId={eventId}
+          tipoRotulo={EVENT_TYPE_LABELS[tipoEvento as EventType] ?? tipoEvento}
+          onFechar={() => setModeloAberto(false)}
+        />
+      )}
 
       {/* alvo do passo 3 do guia (160): e aqui que se decide */}
       {/* miolo — só ele troca */}
