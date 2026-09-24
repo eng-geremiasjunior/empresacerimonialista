@@ -40,7 +40,15 @@ const CSS = `
 @media (max-width:760px){.s2 .s2-nav{display:none!important}}
 @media (max-width:620px){
   .s2 .s2-g{padding-left:20px!important;padding-right:20px!important}
-  .s2 .s2-visual{min-height:650px!important}
+  /* no celular o herói empilha: a foto inteira em cima (ela à direita,
+     a foto vem espelhada), o celular do fornecedor sobre a parte de baixo
+     e a notificação embaixo — lado a lado, o celular tampava a foto */
+  .s2 .s2-visual{min-height:0!important;display:flex;flex-direction:column}
+  .s2 .s2-visual > div:nth-of-type(1){position:relative!important;inset:auto!important;width:100%;aspect-ratio:4/5}
+  .s2 .s2-visual img{object-position:72% 40%!important}
+  .s2 .s2-visual > p{left:0!important;padding-left:10px!important}
+  .s2 .s2-visual > div:nth-of-type(2){position:relative!important;left:auto!important;top:auto!important;margin:-150px 0 0 12px}
+  .s2 .s2-visual > div:nth-of-type(3){position:relative!important;right:auto!important;bottom:auto!important;width:auto!important;margin-top:16px}
   .s2 .s2-painel{padding:20px 14px!important}
   .s2 .s2-contas{grid-template-columns:1fr 1fr!important}
   .s2 .s2-app{grid-template-columns:1fr!important}
