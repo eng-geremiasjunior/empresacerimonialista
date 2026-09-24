@@ -560,18 +560,9 @@ export function MapaMental({
         >
           somente leitura
         </span>
-        <span
-          style={{
-            flex: 1,
-            minWidth: 180,
-            fontFamily: F_UI,
-            fontSize: 13,
-            color: C.meta,
-          }}
-        >
-          Arquitetura do casamento de uma olhada. Clicar num nó leva à decisão
-          no modo Foco.
-        </span>
+        {/* espaçador: a frase que explicava o mapa saiu (regra de ouro —
+            nada de texto que explica o sistema) */}
+        <span style={{ flex: 1, minWidth: 180 }} />
         <span
           style={{
             display: "flex",
@@ -771,7 +762,7 @@ export function MapaMental({
                     }}
                     title={
                       sel === no.pri
-                        ? "Clique de novo para abrir no modo Foco"
+                        ? "Clique de novo para abrir as decisões"
                         : no.nome
                     }
                     style={estiloNo(no)}
@@ -1036,20 +1027,8 @@ export function MapaMental({
                         marginBottom: 8,
                       }}
                     >
-                      Abrir no modo Foco →
+                      Abrir as decisões →
                     </button>
-                    <p
-                      style={{
-                        margin: "0 0 10px",
-                        fontFamily: F_UI,
-                        fontSize: 11,
-                        lineHeight: "16px",
-                        color: C.fantasma,
-                      }}
-                    >
-                      Você será levada para o modo Foco, com este objetivo
-                      aberto. Clicar de novo no cartão faz o mesmo.
-                    </p>
                   </>
                 )}
                 <button

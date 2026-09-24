@@ -17,7 +17,7 @@
 
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import type { Saude } from "@/lib/saude-evento";
 import type { FaseId, FasesEvento } from "@/lib/supabase/resumo-evento";
 
@@ -82,6 +82,11 @@ export function ResumoDaFase({
   eventId: string;
 }) {
   const params = useSearchParams();
+  // O botão do alerta não aponta para a tela em que ela já está: dentro do
+  // Planejamento, "Abrir o Planejamento" era um clique que não levava a
+  // lugar nenhum (24/09/2026). O alerta fica; só o botão some.
+  const pathname = usePathname() ?? "";
+  const estaEm = (destino: string) => pathname.endsWith(`/${destino}`);
   const ativa = (params.get("fase") as FaseId | null) ?? fases.sugerida;
   const fase = fases.lista.find((f) => f.id === ativa) ?? fases.lista[0];
   const atalho = ATALHO_DA_FASE[fase.id];
@@ -147,13 +152,15 @@ export function ResumoDaFase({
                   )}
                 </div>
               </div>
-              <Link
-                href={`/eventos/${eventId}/${alerta.destino}`}
-                className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[color:var(--ev-card-border)] px-2.5 py-1 text-[12px] font-semibold text-[color:var(--ev-text-body)] transition-colors hover:border-[color:var(--ev-text-faint)] hover:text-[color:var(--ev-text-strong)]"
-              >
-                {alerta.acao}
-                <ArrowRight size={12} />
-              </Link>
+              {!estaEm(alerta.destino) && (
+                <Link
+                  href={`/eventos/${eventId}/${alerta.destino}`}
+                  className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[color:var(--ev-card-border)] px-2.5 py-1 text-[12px] font-semibold text-[color:var(--ev-text-body)] transition-colors hover:border-[color:var(--ev-text-faint)] hover:text-[color:var(--ev-text-strong)]"
+                >
+                  {alerta.acao}
+                  <ArrowRight size={12} />
+                </Link>
+              )}
             </li>
           ))}
         </ul>

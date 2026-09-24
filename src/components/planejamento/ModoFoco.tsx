@@ -3,6 +3,7 @@
 // Modo Foco (handoff §7): "o que eu faço agora" — a fila das decisões
 // críticas + a jornada por janelas (AGORA / PRÓXIMAS / DEPOIS / NÃO SE
 // APLICA). A jornada NUNCA some. Tempo sempre relativo; sem Kanban.
+// Na tela ele se chama "Agora" (24/09/2026): é a pergunta que ele responde.
 //
 // Sem linha "Destrava X" e sem estado "bloqueada": dependência entre
 // decisões não existe no banco — nada de copy que promete fluxo que não
@@ -47,9 +48,11 @@ function CardCritica({
 }) {
   const vazios = decisao.campos.length - decisao.camposPreenchidos;
   const prazo = prazoRelativo(decisao.prazoPrevisto);
+  // o prazo primeiro, em tempo; o que falta, só quando falta alguma coisa
+  // ("0 campos vazios · venceu há 13 dias" não dizia o que fazer)
   const meta = [
-    `${vazios} ${vazios === 1 ? "campo vazio" : "campos vazios"}`,
     ...(prazo ? [prazo] : []),
+    ...(vazios > 0 ? [`falta preencher ${vazios}`] : []),
   ].join(" · ");
 
   return (
@@ -157,8 +160,8 @@ function LinhaDecisao({
       : resumo ??
         (decisao.campos.length > 0
           ? vazios > 0
-            ? `${vazios} de ${decisao.campos.length} campos vazios`
-            : `${decisao.campos.length} campos preenchidos`
+            ? `falta preencher ${vazios} de ${decisao.campos.length}`
+            : "tudo preenchido"
           : respLabel(decisao.responsavel, tipoEvento));
   const prazo = na || ev === "decidida" ? null : prazoRelativo(decisao.prazoPrevisto);
 
@@ -355,7 +358,6 @@ function LinhaObjetivo({
               color: C.meta,
             }}
           >
-            objetivo + categoria de verba ·{" "}
             {respLabel(objetivo.responsavelDominante, tipoEvento)} · previsto{" "}
             {brl(objetivo.valorPrevisto)}
           </span>
@@ -605,7 +607,6 @@ export function ModoFoco({
     {
       chave: "agora",
       rotulo: "agora",
-      extra: "vence nesta janela",
       lista: ativos.filter((o) => o.bucket === "agora"),
     },
     {
@@ -626,7 +627,6 @@ export function ModoFoco({
     {
       chave: "concluido",
       rotulo: "resolvidas",
-      extra: "nada mais a decidir aqui",
       lista: ativos.filter((o) => o.bucket === "concluido"),
       compactar: "depois",
     },
@@ -639,12 +639,6 @@ export function ModoFoco({
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
             <span style={tituloStyle(16, 22)}>Decidir agora</span>
-            <span style={{ fontFamily: F_MONO, fontSize: 11, color: C.meta }}>
-              {criticas.length}{" "}
-              {criticas.length === 1
-                ? "decisão no topo da fila"
-                : "decisões no topo da fila"}
-            </span>
           </div>
           <div
             style={{

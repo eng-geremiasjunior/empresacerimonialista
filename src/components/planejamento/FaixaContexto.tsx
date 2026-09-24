@@ -1,8 +1,11 @@
 "use client";
 
 // Faixa de contexto (handoff §4): verba + arquétipo + previsto por objetivo
-// + aviso de distribuição desatualizada. No Modo Amplo encolhe para uma
-// linha — a tela pertence à linha do tempo.
+// + aviso de distribuição desatualizada. Desde 24/09/2026 ela abre SEMPRE
+// numa linha só ("detalhar ▾" abre o resto): a verba com R$ 0 e 0% ocupava
+// a primeira tela do Planejamento, e a decisão que ela tinha de tomar
+// ficava abaixo da dobra. A escala e o cenário continuam na linha — são o
+// passo 2 do guia do primeiro acesso.
 //
 // A lista "previsto por objetivo" É a lista de objetivos (objetivo =
 // categoria de verba, mesma entidade): clicar rola até o objetivo na
@@ -484,12 +487,16 @@ function LinhaPrevisto({
         borderBottom: ultima ? "none" : `1px solid ${C.divisoria}`,
       }}
     >
+      {/* No celular a linha tem ~316 px: barra de 150 + percentual de 44 +
+          valor de 86 + os espaços não cabiam, e o NOME ficava com largura
+          zero — só a barra aparecia (24/09/2026). O nome agora tem piso e
+          é a barra que encolhe. */}
       <button
         type="button"
         onClick={onIr}
         style={{
-          flex: 1,
-          minWidth: 0,
+          flex: "1 1 120px",
+          minWidth: 90,
           textAlign: "left",
           border: "none",
           background: "none",
@@ -508,12 +515,12 @@ function LinhaPrevisto({
       </button>
       <div
         style={{
-          width: 150,
+          flex: "0 1 150px",
+          minWidth: 32,
           height: 6,
           background: C.zona,
           borderRadius: 3,
           overflow: "hidden",
-          flexShrink: 0,
         }}
       >
         <div
@@ -638,7 +645,7 @@ export function FaixaContexto({
   arquetipos: Arquetipos;
   /** rótulo do campo do método: o chip vazio mostra ele */
   placeholders: { escala: string; cenario: string };
-  /** Modo Amplo: a faixa encolhe para uma linha (§4.4). */
+  /** a faixa abre numa linha só; "detalhar" mostra o resto (24/09/2026) */
   compacta: boolean;
   avisoVisivel: boolean;
   onArquetipo: (eixo: "escala" | "cenario", valor: string) => void;
@@ -776,7 +783,7 @@ export function FaixaContexto({
     </div>
   );
 
-  // ---- versão compacta (Modo Amplo) ----
+  // ---- versão de uma linha (o padrão desde 24/09/2026) ----
   if (compacta && !detalhar) {
     return (
       <div
@@ -805,12 +812,13 @@ export function FaixaContexto({
                 compacta
               />
               <BarraVerba verba={verba} altura={10} largura={190} />
+              {/* quebra no celular: numa linha só, passava da tela */}
               <span
                 style={{
                   fontFamily: F_MONO,
                   fontSize: 12,
                   color: C.corpo,
-                  whiteSpace: "nowrap",
+                  minWidth: 0,
                 }}
               >
                 {brl(previstoSemReserva)} previsto · {brl(verba.reservaValor)}{" "}
@@ -852,7 +860,7 @@ export function FaixaContexto({
     );
   }
 
-  // ---- versão completa (Modo Foco, ou Amplo com "detalhar") ----
+  // ---- versão completa (quando ela pede "detalhar") ----
   return (
     <div
       style={{
@@ -943,18 +951,6 @@ export function FaixaContexto({
                   corporativo parecia a lista inteira do sistema */}
               <span style={monoLabel}>arquétipo do evento · {tipoRotulo}</span>
               <div style={{ display: "flex", gap: 8 }}>{chips}</div>
-              <span
-                style={{
-                  fontFamily: F_UI,
-                  fontSize: 11,
-                  lineHeight: "16px",
-                  color: C.meta,
-                }}
-              >
-                {placeholders.escala} e {placeholders.cenario.toLowerCase()}{" "}
-                definem quais objetivos existem, os prazos e os % de
-                referência.
-              </span>
             </>
           )}
           {temVerba && (
@@ -1092,7 +1088,7 @@ export function FaixaContexto({
               cursor: "pointer",
             }}
           >
-            ▴ recolher
+            ▴ fechar
           </button>
         </div>
       )}

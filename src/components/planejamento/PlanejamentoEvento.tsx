@@ -2,10 +2,19 @@
 
 // Tela de Planejamento (handoff Celebra Pro — wireframe 1a-1e).
 //
-// Foco, Amplo e Mapa mental NÃO são três telas: são modos da MESMA tela.
-// O cabeçalho, a faixa de contexto e o controle ficam fixos; só o miolo
-// troca. Foco/Amplo é um toggle (mesmo eixo, zoom); Mapa mental é botão
-// separado, somente leitura.
+// Agora e Caderno NÃO são duas telas: são modos da MESMA tela. O
+// cabeçalho, a faixa de contexto e o controle ficam fixos; só o miolo
+// troca.
+//
+// 24/09/2026 — de cinco jeitos de ver as mesmas decisões para dois. Eram
+// Foco, Amplo, Caderno (Panorama e Mês a mês) e Mapa mental, e três deles
+// eram "por mês": quem tem pouca paciência para aprender o sistema tinha
+// de escolher uma visão antes de fazer qualquer coisa. Ficaram:
+//   · Agora   — o antigo Foco: o que decidir agora e a jornada;
+//   · Caderno — o mês a mês com as anotações dela; o Amplo entrou nele.
+// O Mapa mental abre de dentro do Caderno, e "Salvar como meu modelo"
+// (coisa de vez em quando) desceu para o rodapé. A faixa da verba abre
+// numa linha só, para a decisão da vez aparecer na primeira tela.
 //
 // Consome o modelo real (5A/5B/5C): campos tipados, valor_previsto por
 // objetivo, arquétipo escala×cenário, termômetro e distribuição sugerida.
@@ -44,7 +53,6 @@ import { inicioDoDiaBR } from "@/lib/tempo";
 import { EVENTO_ABRIR_DECISAO } from "@/lib/guia-vivo";
 import { FaixaContexto } from "./FaixaContexto";
 import { ModoFoco } from "./ModoFoco";
-import { ModoAmplo } from "./ModoAmplo";
 import { MapaMental } from "./MapaMental";
 import { SalvarModelo } from "./SalvarModelo";
 import { AnotacoesDaDecisao, ModoCaderno } from "./ModoCaderno";
@@ -133,25 +141,33 @@ export function PlanejamentoEvento({
   const plano = inicial;
 
   // ---- estado de visualização (handoff §12) ----
-  const [modo, setModo] = useState<"foco" | "amplo" | "caderno">("foco");
+  const [modo, setModo] = useState<"foco" | "caderno">("foco");
   const [mapaAberto, setMapaAberto] = useState(false);
   const [modeloAberto, setModeloAberto] = useState(false);
   const [drawerId, setDrawerId] = useState<string | null>(decisaoInicial);
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set());
-  const [mesExpandido, setMesExpandido] = useState<string | null>(null);
   const [avisoFechado, setAvisoFechado] = useState(false);
   const [sugerindo, setSugerindo] = useState(false);
   const [erroSugerir, setErroSugerir] = useState<string | null>(null);
   const expandidoInicial = useRef(false);
 
-  // modo persiste por evento
+  // modo persiste por evento. Quem deixou o evento no Amplo (que entrou no
+  // Caderno em 24/09/2026) volta no Caderno, que é a mesma visão por mês.
   useEffect(() => {
-    const salvo = window.localStorage.getItem(`plano-modo-${eventId}`);
-    if (salvo === "amplo" || salvo === "caderno") setModo(salvo);
+    try {
+      const salvo = window.localStorage.getItem(`plano-modo-${eventId}`);
+      if (salvo === "amplo" || salvo === "caderno") setModo("caderno");
+    } catch {
+      /* sem armazenamento: começa no Agora */
+    }
   }, [eventId]);
-  const trocarModo = (m: "foco" | "amplo" | "caderno") => {
+  const trocarModo = (m: "foco" | "caderno") => {
     setModo(m);
-    window.localStorage.setItem(`plano-modo-${eventId}`, m);
+    try {
+      window.localStorage.setItem(`plano-modo-${eventId}`, m);
+    } catch {
+      /* nada */
+    }
   };
 
   // o objetivo da janela atual já vem aberto
@@ -439,88 +455,74 @@ export function PlanejamentoEvento({
     return nome;
   })();
 
-  const legendaAmplo = (() => {
-    if (!plano.dataEvento) return "defina a data do casamento";
-    const prazos = plano.objetivos
-      .flatMap((o) => o.decisoes)
-      .map((d) => d.prazoPrevisto)
-      .filter((p): p is string => p !== null)
-      .sort();
-    const inicio = prazos[0] ?? plano.dataEvento;
-    const [ia, im] = inicio.split("-").map(Number);
-    const [ea, em, ed] = plano.dataEvento.split("-").map(Number);
-    const meses = (ea - ia) * 12 + (em - im);
-    return `${MESES_PT[im - 1].slice(0, 3)}/${ia} → ${String(ed).padStart(2, "0")}/${String(em).padStart(2, "0")}/${ea} · ${meses} meses`;
-  })();
-
   const avisoVisivel = plano.verba.distribuicaoDesatualizada && !avisoFechado;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {/* cabeçalho da tela + progresso ponderado (§5) */}
+      {/* cabeçalho da tela: título, progresso e os dois modos (§5, §6) */}
       <div
         style={{
           display: "flex",
-          alignItems: "flex-end",
+          alignItems: "center",
           justifyContent: "space-between",
-          gap: 20,
+          gap: 16,
           flexWrap: "wrap",
         }}
       >
-        <div>
+        {/* o título, o progresso em texto e os dois modos na MESMA linha
+            (24/09/2026): a barra de progresso e a linha própria dos modos
+            empurravam a decisão da vez para baixo da dobra */}
+        <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
           <h1 style={tituloStyle(22, 28)}>Planejamento</h1>
-          <p
-            style={{
-              marginTop: 4,
-              fontFamily: F_UI,
-              fontSize: 13,
-              lineHeight: "18px",
-              color: C.secundario,
-            }}
-          >
-            Construindo o projeto — nada existe fisicamente ainda.
-          </p>
-        </div>
-        <div
-          style={{
-            width: 240,
-            display: "flex",
-            flexDirection: "column",
-            gap: 5,
-            alignItems: "flex-end",
-          }}
-        >
-          <span style={{ ...monoLabel, color: C.secundario }}>
+          <span style={{ fontFamily: F_MONO, fontSize: 11, color: C.meta }}>
             progresso {plano.progressoPct}%
-          </span>
-          <div
-            style={{
-              width: 240,
-              height: 7,
-              background: "#E4E6E8",
-              border: `1px solid ${C.bordaMedia}`,
-              borderRadius: 4,
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                width: `${plano.progressoPct}%`,
-                height: "100%",
-                background: C.ameixa,
-              }}
-            />
-          </div>
-          <span style={{ fontFamily: F_MONO, fontSize: 10, color: C.meta }}>
-            ponderado por importância
-            {plano.diasAteEvento !== null
-              ? ` · faltam ${plano.diasAteEvento} dias`
+            {plano.diasAteEvento !== null && plano.diasAteEvento >= 0
+              ? ` · faltam ${plano.diasAteEvento} ${plano.diasAteEvento === 1 ? "dia" : "dias"}`
               : ""}
           </span>
         </div>
+        <div
+          style={{
+            display: "flex",
+            padding: 3,
+            border: `1.5px solid ${C.bordaForte}`,
+            borderRadius: 9,
+            background: C.zona,
+            gap: 3,
+          }}
+        >
+          {(["foco", "caderno"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              aria-pressed={modo === m && !mapaAberto}
+              onClick={() => {
+                setMapaAberto(false);
+                trocarModo(m);
+              }}
+              style={{
+                height: 34,
+                padding: "0 16px",
+                display: "flex",
+                alignItems: "center",
+                borderRadius: 6,
+                border: "none",
+                background: modo === m ? C.tinta : "transparent",
+                color: modo === m ? "#fff" : C.secundario,
+                fontFamily: F_TITLE,
+                fontWeight: 600,
+                fontSize: 13,
+                cursor: "pointer",
+                transition: "background 150ms ease, color 150ms ease",
+              }}
+            >
+              {m === "foco" ? "Agora" : "Caderno"}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* faixa de contexto (fixa nos dois modos; encolhe no Amplo) */}
+      {/* faixa de contexto: numa linha só nos dois modos ("detalhar" abre) */}
       {/* alvo do passo 2 do guia (160): escala e cenario vivem aqui */}
       <div data-guia="contexto-evento">
       <FaixaContexto
@@ -533,7 +535,7 @@ export function PlanejamentoEvento({
           escala: campoPorCodigo("escala")?.label ?? "Escala",
           cenario: campoPorCodigo("cenario")?.label ?? "Cenário",
         }}
-        compacta={modo === "amplo"}
+        compacta
         avisoVisivel={avisoVisivel}
         onArquetipo={(eixo, valor) => {
           // grava pelo campo tipado da decisão de estrutura — o action
@@ -574,114 +576,6 @@ export function PlanejamentoEvento({
       />
       </div>
 
-      {/* controle de visualização (§6) */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 16,
-          flexWrap: "wrap",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div
-            style={{
-              display: "flex",
-              padding: 3,
-              border: `1.5px solid ${C.bordaForte}`,
-              borderRadius: 9,
-              background: C.zona,
-              gap: 3,
-            }}
-          >
-            {(["foco", "amplo", "caderno"] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => trocarModo(m)}
-                style={{
-                  height: 34,
-                  padding: "0 16px",
-                  display: "flex",
-                  alignItems: "center",
-                  borderRadius: 6,
-                  border: "none",
-                  background: modo === m ? C.tinta : "transparent",
-                  color: modo === m ? "#fff" : C.secundario,
-                  fontFamily: F_TITLE,
-                  fontWeight: 600,
-                  fontSize: 13,
-                  cursor: "pointer",
-                  transition: "background 150ms ease, color 150ms ease",
-                }}
-              >
-                {m === "foco" ? "Foco" : m === "amplo" ? "Amplo" : "Caderno"}
-              </button>
-            ))}
-          </div>
-          <span style={{ fontFamily: F_MONO, fontSize: 11, color: C.meta }}>
-            {modo === "amplo" ? legendaAmplo : null}
-          </span>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        {podeSalvarModelo && (
-          <button
-            type="button"
-            onClick={() => setModeloAberto(true)}
-            style={{
-              height: 40,
-              padding: "0 14px",
-              border: `1.5px solid ${C.bordaForte}`,
-              borderRadius: 8,
-              background: "#fff",
-              fontFamily: F_TITLE,
-              fontWeight: 600,
-              fontSize: 13,
-              color: C.tinta,
-              cursor: "pointer",
-            }}
-          >
-            Salvar como meu modelo
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() => setMapaAberto((a) => !a)}
-          style={{
-            height: 40,
-            padding: "0 14px",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            border: `1.5px solid ${mapaAberto ? C.ameixa : C.bordaForte}`,
-            borderRadius: 8,
-            background: "#fff",
-            fontFamily: F_TITLE,
-            fontWeight: 600,
-            fontSize: 13,
-            color: C.tinta,
-            cursor: "pointer",
-          }}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 15 15"
-            fill="none"
-            style={{ stroke: C.secundario }}
-            strokeWidth="1.2"
-          >
-            <circle cx="7.5" cy="3" r="2" />
-            <circle cx="2.6" cy="12" r="2" />
-            <circle cx="12.4" cy="12" r="2" />
-            <path d="M6.4 4.8 3.7 10.2M8.6 4.8l2.7 5.4M4.6 12h5.8" />
-          </svg>
-          Mapa mental
-        </button>
-        </div>
-      </div>
       {modeloAberto && (
         <SalvarModelo
           eventId={eventId}
@@ -772,18 +666,35 @@ export function PlanejamentoEvento({
           notas={caderno.notas}
           reunioes={caderno.reunioes}
           onAbrirDecisao={abrirDrawer}
+          onAbrirMapa={() => setMapaAberto(true)}
         />
-      ) : (
-        <ModoAmplo
-          objetivos={plano.objetivos}
-          dataEvento={plano.dataEvento}
-          diasAteEvento={plano.diasAteEvento}
-          mesExpandido={mesExpandido}
-          onToggleMes={(chave) => setMesExpandido(chave || null)}
-          onAbrirDecisao={abrirDrawer}
-        />
-      )}
+      ) : null}
       </div>
+
+      {/* Salvar como meu modelo (170): coisa de vez em quando, e só da
+          proprietária — por isso no rodapé, e não na barra dos modos,
+          disputando atenção com a decisão da vez (24/09/2026). */}
+      {podeSalvarModelo && !mapaAberto && (
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <button
+            type="button"
+            onClick={() => setModeloAberto(true)}
+            style={{
+              border: "none",
+              background: "none",
+              padding: "4px 0",
+              fontFamily: F_UI,
+              fontSize: 13,
+              color: C.secundario,
+              textDecoration: "underline",
+              textUnderlineOffset: 3,
+              cursor: "pointer",
+            }}
+          >
+            Salvar este planejamento como meu modelo
+          </button>
+        </div>
+      )}
 
       {/* drawer da decisão (§10) — a timeline atrás não se move */}
       {drawer && (

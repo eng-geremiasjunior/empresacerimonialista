@@ -6,8 +6,17 @@
 //   * Mês a mês — o índice à esquerda e o mês aberto à direita, pautado.
 // O que está no mês são as decisões do método (a decidida riscada, a
 // vencida em vermelho), as reuniões e as anotações DELA, que não viram
-// tarefa. Os meses são os mesmos do Amplo (montarMeses): o Caderno não
-// inventa um segundo cálculo de prazo.
+// tarefa. Os meses vêm de montarMeses (meses.ts): o Caderno não inventa
+// um segundo cálculo de prazo.
+//
+// 24/09/2026: o Modo Amplo entrou aqui. Eram cinco jeitos de ver as
+// mesmas decisões (Foco, Amplo, Panorama, Mês a mês, Mapa mental), três
+// deles por mês. O que só o Amplo mostrava — o valor a fechar no mês —
+// passou para o cabeçalho do mês, e o Mapa mental abre daqui.
+//
+// Tudo o que está no Caderno é DECISÃO: tarefa é o que nasce de uma
+// decisão, na Organização. Chamar as duas coisas pelo mesmo nome era a
+// contradição que a tela tinha com o "Requer atenção" do evento.
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
@@ -21,8 +30,8 @@ import {
   type NotaDoCaderno,
   type ReuniaoDoCaderno,
 } from "@/app/(app)/eventos/[id]/planejamento/caderno-actions";
-import { montarMeses } from "./ModoAmplo";
-import { C, F_MONO, F_UI, estadoVisual, prazoRelativo } from "./celebra";
+import { montarMeses } from "./meses";
+import { brl, C, F_MONO, F_UI, estadoVisual, prazoRelativo } from "./celebra";
 import { inicioDoDiaBR } from "@/lib/tempo";
 
 const MESES = [
@@ -122,6 +131,8 @@ type Mes = {
   atual: boolean;
   diaD: boolean;
   decisoes: Decisao[];
+  /** o que ainda falta contratar com prazo neste mês (era do Amplo) */
+  previsto: number;
 };
 type Estado = "venc" | "ok" | "";
 
@@ -169,15 +180,18 @@ export function ModoCaderno({
   notas,
   reunioes,
   onAbrirDecisao,
+  onAbrirMapa,
 }: {
   eventId: string;
   objetivos: Objetivo[];
   dataEvento: string | null;
-  /** "Ana & Pedro · casamento 08/08/2027 · faltam 319 dias" — o "x/y feitas" vem daqui */
+  /** "Ana & Pedro · casamento 08/08/2027 · faltam 319 dias" — o "x de y decididas" vem daqui */
   meta: string;
   notas: NotaDoCaderno[];
   reunioes: ReuniaoDoCaderno[];
   onAbrirDecisao: (d: Decisao) => void;
+  /** o Mapa mental abre daqui, do Panorama (saiu da barra principal) */
+  onAbrirMapa?: () => void;
 }) {
   const router = useRouter();
   const [pendente, iniciar] = useTransition();
@@ -231,6 +245,7 @@ export function ModoCaderno({
         atual: m.atual,
         diaD: m.diaD,
         decisoes: ordenar(m.decisoes),
+        previsto: m.previsto,
       };
     }
   );
@@ -252,6 +267,7 @@ export function ModoCaderno({
       atual: true,
       diaD: false,
       decisoes: [],
+      previsto: 0,
     });
   }
   const primeira = meses[0].chave;
@@ -303,16 +319,22 @@ export function ModoCaderno({
     <div className="cd-cab">
       <span className="cd-meta">
         {meta}
-        {todasDecisoes.length > 0 ? ` · ${feitas}/${todasDecisoes.length} feitas` : ""}
+        {todasDecisoes.length > 0 ? ` · ${feitas} de ${todasDecisoes.length} decididas` : ""}
       </span>
       <div className="cd-ferr">
+        {vista === "pano" && onAbrirMapa && (
+          <button type="button" className="cd-btn sec" onClick={onAbrirMapa}>
+            Mapa mental
+          </button>
+        )}
         <div className="cd-leg" aria-hidden>
           <span style={{ color: "#A5544B" }}>
             <i className="cd-ponto venc" />
             vencida
           </span>
           <span>
-            <i className="cd-ponto" />a fazer
+            <i className="cd-ponto" />
+            aberta
           </span>
           <span style={{ color: "#5E7355", textDecoration: "line-through" }}>decidida</span>
         </div>
@@ -375,7 +397,7 @@ export function ModoCaderno({
                   })}
                 </div>
                 <div className="cd-mpe">
-                  <span className="cd-mais">{m.decisoes.length > 4 ? `+ ${m.decisoes.length - 4} tarefas` : ""}</span>
+                  <span className="cd-mais">{m.decisoes.length > 4 ? `+ ${m.decisoes.length - 4} decisões` : ""}</span>
                   <span className="cd-feitas">{decididas ? `✓ ${plural(decididas, "decidida", "decididas")}` : ""}</span>
                 </div>
               </button>
@@ -433,6 +455,7 @@ export function ModoCaderno({
           </div>
           <span className="cd-meta">
             {plural(abertasDoMes, "aberta", "abertas")} · {plural(m.decisoes.length - abertasDoMes, "decidida", "decididas")}
+            {m.previsto > 0 ? ` · ${brl(m.previsto)} a fechar` : ""}
           </span>
         </div>
 
