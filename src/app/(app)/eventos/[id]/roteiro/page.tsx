@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PrimeiroFornecedor } from "@/components/cronograma/PrimeiroFornecedor";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CopyLinkButton } from "@/components/CopyLinkButton";
@@ -172,6 +173,16 @@ export default async function RoteiroPage({
           alguns instantes.
         </div>
       )}
+
+      {/* o primeiro fornecedor (24/09/2026): evento sem fornecedor ganha um
+          passo só, com o link pronto para o WhatsApp */}
+      <PrimeiroFornecedor
+        eventId={event.id}
+        semFornecedor={suppliers.length === 0}
+        itens={items.map((i) => ({ id: i.id, title: i.title, time: i.time ?? null }))}
+        base={publicBase()}
+        eventoNome={nomeDoEvento}
+      />
 
       <FilaSugestoes
         eventId={event.id}

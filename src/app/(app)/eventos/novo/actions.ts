@@ -323,5 +323,14 @@ export async function criarEventoCompleto(
 
   revalidatePath("/eventos");
   revalidatePath("/eventos/dashboard");
+
+  // O primeiro evento de verdade da conta vai direto para o Roteiro do dia
+  // (24/09/2026): é onde o sistema passa a valer no primeiro dia — mandar
+  // o roteiro para o primeiro fornecedor. O de exemplo não conta.
+  const { count: deVerdade } = await supabase
+    .from("events")
+    .select("id", { count: "exact", head: true })
+    .eq("exemplo", false);
+  if (deVerdade === 1) redirect(`/eventos/${eventId}/roteiro`);
   redirect(`/eventos/${eventId}`);
 }

@@ -236,7 +236,15 @@ export function MesasDoEvento({
   /* ---------- sem salão ainda: o primeiro passo ---------- */
 
   if (!salao) {
-    return <FormSalao eventId={eventId} aviso={aviso} rodar={rodar} pendente={pendente} />;
+    return (
+      <InicioDasMesas
+        eventId={eventId}
+        convidados={convidados.length}
+        aviso={aviso}
+        rodar={rodar}
+        pendente={pendente}
+      />
+    );
   }
 
   const mesaAtiva = mesas.find((m) => m.id === selecionada) ?? null;
@@ -451,6 +459,65 @@ function FormSalao({
           </button>
         )}
       </div>
+      {aviso && <p className="mt-2 text-sm text-red-600">{aviso}</p>}
+    </section>
+  );
+}
+
+/* ================================================================
+ * O começo, sem salão (24/09/2026): quem clica em "Mesas" quer montar
+ * mesas e sentar convidados — não ser recebida por um formulário de
+ * metros. O salão padrão entra num clique e as medidas se ajustam depois,
+ * em "Medidas do espaço".
+ * ================================================================ */
+
+function InicioDasMesas({
+  eventId,
+  convidados,
+  aviso,
+  rodar,
+  pendente,
+}: {
+  eventId: string;
+  convidados: number;
+  aviso: string | null;
+  rodar: (a: () => Promise<{ error?: string } | { success: true }>) => void;
+  pendente: boolean;
+}) {
+  const [medidas, setMedidas] = useState(false);
+  if (medidas) {
+    return (
+      <FormSalao eventId={eventId} aviso={aviso} rodar={rodar} pendente={pendente} aoFechar={() => setMedidas(false)} />
+    );
+  }
+  return (
+    <section className="rounded-xl border border-gray-200 bg-white p-5">
+      <h3 className="text-base font-semibold text-gray-900">Mapa de mesas</h3>
+      <p className="mt-1 text-sm text-gray-500">
+        Monte as mesas e sente os convidados.{" "}
+        {convidados > 0
+          ? `${convidados} ${convidados === 1 ? "convidado está" : "convidados estão"} na lista.`
+          : "A lista de convidados ainda está vazia."}
+      </p>
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          className={botaoForte}
+          disabled={pendente}
+          onClick={() => rodar(() => salvarSalao(eventId, { nome: "", larguraM: 20, alturaM: 15 }))}
+        >
+          {pendente ? "Um instante…" : "Começar a montar as mesas"}
+        </button>
+        <button type="button" className={botao} onClick={() => setMedidas(true)}>
+          Informar as medidas do salão
+        </button>
+        {convidados === 0 && (
+          <Link href={`/eventos/${eventId}/rsvp`} className="text-sm font-medium text-gray-700 underline underline-offset-4 hover:text-gray-900">
+            Adicionar convidados
+          </Link>
+        )}
+      </div>
+      <p className="mt-3 text-xs text-gray-400">O salão começa com 20 × 15 m; dá para ajustar as medidas a qualquer momento.</p>
       {aviso && <p className="mt-2 text-sm text-red-600">{aviso}</p>}
     </section>
   );

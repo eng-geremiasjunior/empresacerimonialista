@@ -14,6 +14,11 @@ import { X } from "lucide-react";
 import { enviarMensagemDeSuporte, lerConversaDeSuporte } from "@/app/(app)/suporte-actions";
 
 const MARCA = "eorg-pesquisa-rapida-1";
+// a caixinha espera 3 minutos de uso na sessão e nunca cobre o passo do
+// primeiro fornecedor (24/09/2026): perguntar antes de ela ver algo valer é
+// atrapalhar o momento que decide se ela fica
+const INICIO = "eorg-sessao-inicio";
+const ESPERA_MS = 3 * 60 * 1000;
 const TITULO_NA_CONVERSA = "Pesquisa rápida";
 
 const AJUDA = ["Sim", "Mais ou menos", "Ainda não"] as const;
@@ -56,12 +61,27 @@ export function PesquisaRapida() {
       /* sem armazenamento: confere pela conversa */
     }
     if (ja) return;
+    let inicio = Date.now();
+    try {
+      const salvo = Number(sessionStorage.getItem(INICIO));
+      if (salvo > 0) inicio = salvo;
+      else sessionStorage.setItem(INICIO, String(inicio));
+    } catch {
+      /* sem armazenamento: conta desta tela */
+    }
     let vivo = true;
-    const t = setTimeout(async () => {
+    let t: ReturnType<typeof setTimeout>;
+    const tentar = async () => {
+      if (!vivo) return;
+      if (document.querySelector("[data-primeiro-fornecedor]")) {
+        t = setTimeout(tentar, 60_000);
+        return;
+      }
       const c = await lerConversaDeSuporte(false).catch(() => null);
       const respondeu = c?.mensagens.some((m) => m.autor === "cliente" && m.texto.startsWith(TITULO_NA_CONVERSA));
       if (vivo && !respondeu) setAberta(true);
-    }, 5000);
+    };
+    t = setTimeout(tentar, Math.max(5000, ESPERA_MS - (Date.now() - inicio)));
     return () => {
       vivo = false;
       clearTimeout(t);

@@ -8,6 +8,8 @@ import { ArrowRight, Clock, Sparkles } from "lucide-react";
 // ("Nada vencendo hoje.") e frasePrazos() já dizia outra coisa — o zero
 // nunca casava, e "Ver o que vence" ficava aceso sem ter o que ver.
 import { PRAZOS_EM_DIA } from "@/lib/copiloto-prazos";
+import { createClient } from "@/lib/supabase/client";
+import { hojeBR } from "@/lib/tempo";
 
 // Card do Copiloto na sidebar.
 // - Dentro de um evento específico (/eventos/{uuid}/...): contexto do
@@ -32,6 +34,27 @@ export function CopilotoSidebarCard({
     /^\/eventos\/([0-9a-fA-F-]{36})(?:\/|$)/
   );
   const eventId = match?.[1] ?? null;
+  // "ao vivo" só no DIA do evento (24/09/2026): num casamento daqui a oito
+  // meses a frase confundia quem acabou de chegar. Nos outros dias, o
+  // Copiloto diz o que vence, como fora do evento.
+  const [diaDoEvento, setDiaDoEvento] = useState<string | null>(null);
+  useEffect(() => {
+    setDiaDoEvento(null);
+    if (!eventId) return;
+    let vivo = true;
+    createClient()
+      .from("events")
+      .select("date")
+      .eq("id", eventId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (vivo) setDiaDoEvento((data?.date as string | undefined)?.slice(0, 10) ?? null);
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [eventId]);
+  const eventoHoje = Boolean(eventId && diaDoEvento && diaDoEvento === hojeBR());
 
   return (
     <div className="rounded-xl border border-stone-700 bg-stone-800/60 p-3">
@@ -64,7 +87,7 @@ export function CopilotoSidebarCard({
         </p>
       )}
 
-      {eventId ? (
+      {eventId && eventoHoje ? (
         <ContextoEvento eventId={eventId} />
       ) : prazosFrase === null ? (
         <p className="mt-1.5 text-xs leading-snug text-stone-400">Não deu para checar os prazos agora.</p>
