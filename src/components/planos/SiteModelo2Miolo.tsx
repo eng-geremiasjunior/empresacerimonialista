@@ -87,7 +87,7 @@ export function SiteModelo2Miolo(v: any) {
 </nav>
 <div style={{ "display": "flex", "gap": "20px", "alignItems": "center", "fontSize": "14px" }}>
 <a href="/login">Entrar</a>
-<a href={hrefConta} style={{ "background": "#6E2E34", "color": "#FAF8F5", "padding": "11px 20px", "borderRadius": "2px", "fontWeight": "400", "letterSpacing": ".03em" }}>Começar grátis</a>
+<a href={hrefConta} style={{ "background": "#6E2E34", "color": "#FAF8F5", "padding": "11px 20px", "borderRadius": "2px", "fontWeight": "400", "letterSpacing": ".03em" }}>Começar com 1 evento</a>
 </div>
 </div>
 </header>
@@ -101,7 +101,7 @@ export function SiteModelo2Miolo(v: any) {
 <a href={hrefConta} style={{ "background": "#6E2E34", "color": "#FAF8F5", "padding": "16px 28px", "borderRadius": "2px", "fontSize": "15px", "fontWeight": "400", "letterSpacing": ".03em" }}>Criar meu primeiro evento</a>
 <a href="#a-como" style={{ "whiteSpace": "nowrap", "padding": "16px 4px", "fontSize": "15px", "borderBottom": "1px solid #221E1B" }}>Ver como funciona</a>
 </div>
-<p style={{ "fontSize": "13px", "color": "#928A81" }}>Grátis para 1 evento. Sem cartão de crédito.</p>
+<p style={{ "fontSize": "13px", "color": "#928A81" }}>Para 1 evento, sem cartão de crédito.</p>
 </div>
 
 <div className="s2-visual" style={{ "position": "relative", "minHeight": "560px" }}>
@@ -313,7 +313,7 @@ export function SiteModelo2Miolo(v: any) {
 </div>
 <div style={{ "display": "flex", "justifyContent": "space-between", "alignItems": "center", "gap": "16px", "flexWrap": "wrap", "background": "#F3E9E6", "padding": "18px 22px" }}>
 <p style={{ "fontSize": "14px" }}>Na conta gratuita, você faz isso com um evento real, até o fim.</p>
-<a href={hrefConta} style={{ "background": "#6E2E34", "color": "#FAF8F5", "padding": "12px 20px", "borderRadius": "2px", "fontSize": "14px", "fontWeight": "400" }}>Criar minha conta grátis</a>
+<a href={hrefConta} style={{ "background": "#6E2E34", "color": "#FAF8F5", "padding": "12px 20px", "borderRadius": "2px", "fontSize": "14px", "fontWeight": "400" }}>Criar minha conta</a>
 </div>
 </div>
 </>)}
@@ -333,7 +333,7 @@ export function SiteModelo2Miolo(v: any) {
 <p style={{ "font": "500 24px/1 var(--eo-serif)" }}>Gratuito</p>
 <div style={{ "display": "flex", "flexDirection": "column", "gap": "6px" }}><p style={{ "font": "400 clamp(26px,2.4vw,34px)/1.1 var(--eo-serif)", "display": "flex", "flexWrap": "wrap", "alignItems": "baseline", "columnGap": "4px" }}>R$ 0</p></div>
 <p style={{ "fontSize": "15px", "color": "#6B6259", "flex": "1" }}>1 evento</p>
-<a href={hrefConta} style={{ "textAlign": "center", "padding": "13px", "border": "1px solid #221E1B", "fontSize": "14px" }}>Começar grátis</a></div>
+<a href={hrefConta} style={{ "textAlign": "center", "padding": "13px", "border": "1px solid #221E1B", "fontSize": "14px" }}>Começar com 1 evento</a></div>
 <div style={{ "background": "#fff", "border": "1px solid rgba(34,30,27,.08)", "padding": "30px 22px", "display": "flex", "flexDirection": "column", "gap": "14px", "minWidth": "200px" }}>
 <p style={{ "font": "500 24px/1 var(--eo-serif)" }}>Essencial</p>
 <div style={{ "display": "flex", "flexDirection": "column", "gap": "6px" }}><p style={{ "font": "400 clamp(26px,2.4vw,34px)/1.1 var(--eo-serif)", "display": "flex", "flexWrap": "wrap", "alignItems": "baseline", "columnGap": "4px" }}>{precoEssencial}<span style={{ "font": "300 14px var(--eo-sans)", "color": "#928A81" }}> /mês</span></p>{notaPromo && (<><p style={{ "fontSize": "12px", "color": "#6E2E34" }}>{notaPromo}</p></>)}</div>
@@ -360,7 +360,7 @@ export function SiteModelo2Miolo(v: any) {
 <div className="s2-g" style={{ "maxWidth": "900px", "margin": "0 auto", "padding": "100px 32px", "textAlign": "center", "display": "flex", "flexDirection": "column", "gap": "26px", "alignItems": "center" }}>
 <h2 style={{ "font": "400 clamp(40px,5vw,60px)/1.05 var(--eo-serif)" }}>Comece pelo seu próximo evento.</h2>
 <a href={hrefConta} style={{ "background": "#6E2E34", "color": "#FAF8F5", "padding": "17px 32px", "borderRadius": "2px", "fontSize": "15px", "fontWeight": "400", "letterSpacing": ".03em" }}>Criar meu primeiro evento</a>
-<p style={{ "fontSize": "13px", "color": "#928A81" }}>Grátis para 1 evento · sem cartão</p>
+<p style={{ "fontSize": "13px", "color": "#928A81" }}>Para 1 evento · sem cartão</p>
 </div>
 </section>
 <footer style={{ "background": "#221E1B", "color": "#CFC6BE" }}>
