@@ -238,6 +238,8 @@ async function processarLinha(
         .from("events")
         .select("id, type, date, location, status, name, empresa_id, clients(name)")
         .eq("id", linha.origem_id)
+        // o evento de exemplo (174) nunca vai para a agenda dela
+        .eq("exemplo", false)
         .maybeSingle();
       const e = data as EventoLido | null;
       if (e && e.date && e.status !== "cancelado") {

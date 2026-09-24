@@ -507,7 +507,7 @@ export async function getContas(): Promise<ContaAdmin[]> {
           .eq("empresa_id", e.id)
           .eq("status", "ativo"),
         // a CIDADE vem junto: é o que responde "de onde ela é"
-        db.from("events").select("city, guests").eq("empresa_id", e.id),
+        db.from("events").select("city, guests").eq("empresa_id", e.id).eq("exemplo", false),
         db
           .from("activities")
           .select("created_at")

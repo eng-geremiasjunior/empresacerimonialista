@@ -56,6 +56,7 @@ import {
 import { centavos, PROMOCAO_LANCAMENTO } from "@/lib/planos";
 import { ofertaDoTeste } from "@/lib/teste-com-cartao";
 import { TERMOS_VERSAO } from "@/lib/termos";
+import { criarEventoDeExemplo } from "@/lib/evento-exemplo";
 
 /** Mesmo cliente de serviço do checkout: `assinaturas` não tem policy de escrita. */
 function servico() {
@@ -346,6 +347,10 @@ async function depoisDeNascer(
     // medição não derruba cadastro
     console.error("[vela:conversao] conta nova:", String(e).slice(0, 200));
   }
+
+  // O evento de exemplo (174): a conta não nasce vazia. Nunca derruba o
+  // cadastro — sem ele, ela só entra num painel vazio, como antes.
+  await criarEventoDeExemplo(c.empresaId, c.userId);
 
   // O primeiro e-mail. Com cartão, já diz o dia e o valor da primeira
   // cobrança; no Gratuito, sem caixa de teste nenhuma.

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { limparExemploVisto } from "@/app/(app)/eventos/exemplo-actions";
 import { SubNav } from "@/components/SubNav";
 import { VISOES_EVENTOS } from "@/lib/visoes";
 import { addDays, format } from "date-fns";
@@ -44,6 +45,8 @@ export default async function EventosPage({
 }: {
   searchParams: Record<string, string | string[] | undefined>;
 }) {
+  // o exemplo que ela já viu inteiro sai de cena aqui (174)
+  await limparExemploVisto();
   const current = parseEventosParams(searchParams);
   const [{ rows, total, migrationPendente }, indicadores, filtroDados, saude, resumo] =
     await Promise.all([

@@ -17,6 +17,8 @@ import {
   type EventType,
 } from "@/lib/types";
 import { inicioDoDiaBR } from "@/lib/tempo";
+import { FaixaDoExemplo } from "@/components/evento/FaixaDoExemplo";
+import { AREAS_DO_EXEMPLO } from "@/lib/evento-exemplo";
 
 // Pílula de status: bolinha + rótulo, fundo bem sutil. As cores vêm dos
 // tokens --ev-st-* (default = as de hoje; no tema neutro do Planejamento
@@ -39,7 +41,7 @@ export default async function EventoLayout({
 
   const { data } = await supabase
     .from("events")
-    .select("id, type, name, date, time, location, city, status, guests, clients(name)")
+    .select("id, type, name, date, time, location, city, status, guests, exemplo, exemplo_visto, clients(name)")
     .eq("id", params.id)
     .single();
 
@@ -55,6 +57,8 @@ export default async function EventoLayout({
     city: string | null;
     status: EventStatus;
     guests: number | null;
+    exemplo: boolean | null;
+    exemplo_visto: string[] | null;
     clients: { name: string } | null;
   };
 
@@ -97,6 +101,14 @@ export default async function EventoLayout({
 
   return (
     <EventoContainer>
+      {/* o evento de exemplo da conta nova (174): bem à vista, em toda tela dele */}
+      {event.exemplo && (
+        <FaixaDoExemplo
+          eventId={event.id}
+          areas={AREAS_DO_EXEMPLO.map((a) => ({ ...a }))}
+          visto={event.exemplo_visto ?? []}
+        />
+      )}
       {/* Cabeçalho compacto e rico (item 1) */}
       <div>
         <Link

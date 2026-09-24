@@ -226,6 +226,10 @@ async function paraGoogle(c: Conversao): Promise<void> {
  * que mude o que ela deve fazer — a assinatura já foi aprovada.
  */
 export async function registrarConversao(c: Conversao): Promise<void> {
+  // Só a produção conta para os anúncios (24/09/2026): o .env.local tem a
+  // mesma chave da API de Conversões, e cada cadastro de teste no servidor
+  // local entrava na Meta como conta criada de verdade.
+  if (process.env.VERCEL_ENV !== "production") return;
   try {
     await Promise.allSettled([paraMeta(c), paraGoogle(c)]);
   } catch (e) {

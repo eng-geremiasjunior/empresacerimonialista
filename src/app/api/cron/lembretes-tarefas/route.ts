@@ -85,8 +85,10 @@ export async function GET(request: NextRequest) {
   const { data: linhas, error: erroLeitura } = await supabase
     .from("tasks")
     .select(
-      "id, title, due_date, status, priority, event_id, events(name, status, empresa_id, cerimonialista_id, cerimonialista_responsavel_id, clients(name))"
+      "id, title, due_date, status, priority, event_id, events!inner(name, status, empresa_id, cerimonialista_id, cerimonialista_responsavel_id, clients(name))"
     )
+    // o evento de exemplo (174) não lembra ninguém de nada
+    .eq("events.exemplo", false)
     .in("due_date", [janela.hoje, janela.amanha])
     .eq("notified", false)
     .neq("status", "concluido");

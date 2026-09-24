@@ -86,6 +86,8 @@ export async function GET(request: NextRequest) {
       "id, type, date, time, location, confirmation_days_before, whatsapp_auto, clients(name)"
     )
     .eq("status", "confirmado")
+    // o evento de exemplo (174) não pede confirmação a fornecedor nenhum
+    .eq("exemplo", false)
     .gte("date", hojeIso)
     .lte("date", limiteIso);
 

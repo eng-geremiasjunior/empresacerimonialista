@@ -59,6 +59,8 @@ async function avisar(eventoId: string): Promise<void> {
     .from("events")
     .select("id, created_at")
     .eq("empresa_id", empresaId)
+    // o evento de exemplo do cadastro (174) não é o primeiro dela
+    .eq("exemplo", false)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();

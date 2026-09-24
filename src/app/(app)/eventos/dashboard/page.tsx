@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { limparExemploVisto } from "@/app/(app)/eventos/exemplo-actions";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -102,6 +103,8 @@ const TYPE_COLORS: Record<EventType, string> = {
 };
 
 export default async function DashboardPage() {
+  // o exemplo que ela já viu inteiro sai de cena aqui (174)
+  await limparExemploVisto();
   const supabase = createClient();
   // "agora" em Brasília, não no fuso do processo. Na Vercel o runtime é
   // UTC: sem isto a saudação diz "Boa noite" às 15h e "hoje" vira amanhã
