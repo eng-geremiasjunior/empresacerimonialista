@@ -15,6 +15,7 @@ import { TaskNotifications } from "@/components/TaskNotifications";
 import { Presenca } from "@/components/Presenca";
 import { GuiaVivo } from "@/components/guia/GuiaVivo";
 import { BannerAoEntrar } from "@/components/planos/BannerAoEntrar";
+import { PesquisaRapida } from "@/components/suporte/PesquisaRapida";
 import { signOut } from "./actions";
 
 /**
@@ -153,6 +154,8 @@ export default async function AppLayout({
       <GuiaVivo guia={passoAtual(estadoDoGuia)} terminou={terminou(estadoDoGuia)} />
       {/* a tela de planos, a cada login de quem não paga (23/09/2026) */}
       {cargo === "proprietaria" && <BannerAoEntrar />}
+      {/* a pesquisa rápida, uma vez por conta (24/09/2026) */}
+      {cargo === "proprietaria" && <PesquisaRapida />}
       <TaskNotifications />
       {/* o "ao vivo" do painel do dono: só o nome da área, nada da tela */}
       <Presenca />
