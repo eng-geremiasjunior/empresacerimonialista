@@ -10,6 +10,7 @@
 
 import { createElement, useEffect, useRef, useState } from "react";
 import { SiteModelo2Miolo } from "./SiteModelo2Miolo";
+import { SistemaPorDentro } from "./SistemaPorDentro";
 import { hojeBR } from "@/lib/tempo";
 
 export type PlanosDoSite = {
@@ -211,6 +212,7 @@ export function SiteModelo2({
     evRoteiro: (deb ? ROT_DEB : ROT_CAS).map(([h, t]) => ({ h, t })),
     hrefConta,
     hrefPlano,
+    sistemaPorDentro: <SistemaPorDentro />,
     ...planos,
   };
 

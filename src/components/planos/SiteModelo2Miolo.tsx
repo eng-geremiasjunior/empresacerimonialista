@@ -74,7 +74,8 @@ export function SiteModelo2Miolo(v: any) {
     precoProfissional,
     eventosProfissional,
     precoMaster,
-    eventosMaster
+    eventosMaster,
+    sistemaPorDentro
   } = v;
   return (
 <div style={{ "fontVariantNumeric": "lining-nums", "background": "#FAF8F5", "color": "#221E1B", "fontFamily": "var(--eo-sans)", "fontWeight": "300" }}>
@@ -356,6 +357,7 @@ export function SiteModelo2Miolo(v: any) {
 <div style={{ "padding": "22px 0", "borderTop": "1px solid rgba(34,30,27,.15)", "display": "grid", "gridTemplateColumns": "repeat(auto-fit,minmax(min(100%,300px),1fr))", "gap": "8px 40px" }}><h3 style={{ "font": "500 22px/1.25 var(--eo-serif)" }}>Preciso largar a planilha?</h3><p style={{ "fontSize": "15px", "lineHeight": "1.6", "color": "#6B6259" }}>Não. Comece por um evento.</p></div>
 <div style={{ "padding": "22px 0", "borderTop": "1px solid rgba(34,30,27,.15)", "display": "grid", "gridTemplateColumns": "repeat(auto-fit,minmax(min(100%,300px),1fr))", "gap": "8px 40px" }}><h3 style={{ "font": "500 22px/1.25 var(--eo-serif)" }}>E se eu não gostar?</h3><p style={{ "fontSize": "15px", "lineHeight": "1.6", "color": "#6B6259" }}>Cancele sem multa.</p></div>
 </section>
+{sistemaPorDentro}
 <section style={{ "background": "#F2EEE9" }}>
 <div className="s2-g" style={{ "maxWidth": "900px", "margin": "0 auto", "padding": "100px 32px", "textAlign": "center", "display": "flex", "flexDirection": "column", "gap": "26px", "alignItems": "center" }}>
 <h2 style={{ "font": "400 clamp(40px,5vw,60px)/1.05 var(--eo-serif)" }}>Comece pelo seu próximo evento.</h2>
