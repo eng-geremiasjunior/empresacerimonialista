@@ -32,6 +32,7 @@ export type PassoDoGuia = {
   id: string;
   /** O fato, em `meu_guia()`, que dá este passo por vencido. */
   fato:
+    | "viu_exemplo"
     | "criou_evento"
     | "definiu_contexto"
     | "decidiu"
@@ -60,13 +61,35 @@ export type PassoDoGuia = {
   rota: string | null;
 };
 
+// O EVENTO PRONTO VEM ANTES (24/09/2026).
+//
+// Desde a 174 a conta nasce com um evento de exemplo, todo montado — e o
+// passo 1 mandava criar evento dizendo "nada de evento de teste". A conta
+// criada às 18:55 de 24/09 obedeceu: nunca abriu o exemplo, passou 4
+// minutos no formulário e caiu num evento vazio. O valor estava no
+// exemplo, e o guia a tirou de lá antes de ela ver.
+//
+// Então, quando existe exemplo e ela ainda não criou o dela, o caminho
+// começa nele: o Roteiro do dia pronto e o link do fornecedor, que é o
+// que o sistema faz no dia do evento. Continua sendo "fazer", não slide:
+// ela abre o link de verdade. Só depois vem o evento dela.
+export const PASSO_EXEMPLO: PassoDoGuia = {
+  id: "exemplo",
+  fato: "viu_exemplo",
+  titulo: "Veja um evento pronto",
+  texto:
+    "Um casamento de exemplo, todo montado. No Roteiro do dia, abra o link de um fornecedor: é o que ele recebe no celular, sem baixar nada.",
+  alvo: "links-fornecedores",
+  rota: "/eventos/:exemplo/roteiro",
+};
+
 export const PASSOS: PassoDoGuia[] = [
   {
     id: "evento",
     fato: "criou_evento",
-    titulo: "Comece por um evento de verdade",
+    titulo: "Monte o seu próximo evento",
     texto:
-      "Pode ser o próximo casamento, 15 anos, formatura ou evento corporativo que você já está organizando. Nada de evento de teste — o que você montar aqui fica.",
+      "O casamento, 15 anos, formatura ou evento corporativo que você já está organizando. Tipo, cliente e data bastam para começar.",
     alvo: "novo-evento",
     rota: "/eventos",
   },
@@ -256,6 +279,12 @@ export type EstadoDoGuia = {
   sugestoes: { id: string; titulo: string }[];
   /** Nenhuma decisão pendente cria tarefa e nenhuma tarefa nasceu de uma. */
   semDecisaoComTarefa: boolean;
+  /**
+   * O evento de exemplo da conta (174), enquanto ele existe. `viuRoteiro`
+   * = ela já abriu o Roteiro do dia dele. Sem exemplo, `null`: o guia
+   * começa em "Monte o seu próximo evento", como antes.
+   */
+  exemplo?: { id: string; viuRoteiro: boolean } | null;
 };
 
 /**
@@ -288,7 +317,8 @@ export function contextoNaTela(entrada: {
 /** Os passos que valem para ESTE evento. Antes de existir evento, o
  *  caminho completo — o passo 1 é igual nos três. */
 export function passosDoEvento(estado: EstadoDoGuia): PassoDoGuia[] {
-  if (!estado.criouEvento) return PASSOS;
+  // antes do evento dela, o exemplo abre o caminho (quando existe)
+  if (!estado.criouEvento) return estado.exemplo ? [PASSO_EXEMPLO, ...PASSOS] : PASSOS;
   const d = estado.diasAteOEvento;
   if (d !== null && d >= 0 && d <= RETA_FINAL_DIAS) return PASSOS_RETA_FINAL;
   if (!estado.temMetodo) return PASSOS_SEM_METODO;
@@ -317,6 +347,9 @@ export type GuiaNaTela = {
 
 function venceu(estado: EstadoDoGuia, fato: PassoDoGuia["fato"]): boolean {
   switch (fato) {
+    // quem já criou o dela não volta para o exemplo
+    case "viu_exemplo":
+      return !estado.exemplo || estado.exemplo.viuRoteiro || estado.criouEvento;
     case "criou_evento":
       return estado.criouEvento;
     case "definiu_contexto":
@@ -364,14 +397,19 @@ export function passoAtual(estado: EstadoDoGuia | null): GuiaNaTela | null {
   // passar, e o cartão ofereceria um "Ir para esta tela" que leva a uma
   // rota inexistente — a prova das 32 combinações pegou isto.
   const precisaDeEvento = passo.rota?.includes(":id") ?? false;
+  const precisaDoExemplo = passo.rota?.includes(":exemplo") ?? false;
   const rota =
     passo.rota === null
       ? null
-      : precisaDeEvento
-        ? estado.eventoId
-          ? passo.rota.replace(":id", estado.eventoId)
+      : precisaDoExemplo
+        ? estado.exemplo
+          ? passo.rota.replace(":exemplo", estado.exemplo.id)
           : null
-        : passo.rota;
+        : precisaDeEvento
+          ? estado.eventoId
+            ? passo.rota.replace(":id", estado.eventoId)
+            : null
+          : passo.rota;
 
   return {
     passo,
@@ -379,8 +417,9 @@ export function passoAtual(estado: EstadoDoGuia | null): GuiaNaTela | null {
     total: passos.length,
     rota,
     vencidos: i,
-    // o passo 1 é antes de existir evento: nome nenhum a mostrar
-    evento: passo.fato === "criou_evento" ? null : estado.evento,
+    // antes de existir o evento dela não há nome a mostrar (o exemplo se
+    // anuncia sozinho, na faixa dele)
+    evento: passo.fato === "criou_evento" || passo.fato === "viu_exemplo" ? null : estado.evento,
     falta: passo.fato === "definiu_contexto" ? estado.faltaNoContexto : [],
     sugestoes: passo.fato === "tarefa_nasceu" ? estado.sugestoes : [],
     decidiuSemTarefa:

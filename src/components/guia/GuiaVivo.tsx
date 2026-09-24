@@ -192,13 +192,21 @@ export function GuiaVivo({
   const { passo, numero, total, rota, evento, falta, sugestoes, decidiuSemTarefa } = guia;
   const texto =
     sugestoes.length === 0 && passo.textoSemLista ? passo.textoSemLista : passo.texto;
-  const naTelaDoPasso = rota !== null && pathname.startsWith(rota);
+  // "Está na tela do passo" é a rota exata, ou uma tela DENTRO dela quando
+  // a rota já é de um evento (/eventos/<id>/planejamento). O prefixo solto
+  // fazia "/eventos" casar com o painel e com qualquer evento: o passo
+  // "Monte o seu próximo evento" dizia "Continue por aqui" no Roteiro do
+  // exemplo e no painel, onde o botão Novo evento não existe (24/09/2026).
+  const estaNaRota = (r: string) =>
+    pathname === r ||
+    (pathname.startsWith(r + "/") && (r.split("/").length > 2 || pathname === r + "/novo"));
+  const naTelaDoPasso = rota !== null && estaNaRota(rota);
   // o título já começa pelo tipo quando o evento não tem nome próprio
   const ondeAcontece = evento?.titulo
     ? `No evento ${evento.titulo}` +
       (evento.tipo && !evento.titulo.startsWith(evento.tipo) ? ` · ${evento.tipo}` : "")
     : null;
-  const aquiNao = rota !== null && !pathname.startsWith(rota);
+  const aquiNao = rota !== null && !estaNaRota(rota);
 
   // Onde o cartão fica.
   //

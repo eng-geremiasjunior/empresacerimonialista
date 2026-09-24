@@ -394,8 +394,11 @@ export function CriarContaDeTeste({
       startTransition(() => router.push("/login"));
       return;
     }
+    // Direto para o evento de exemplo, no Roteiro do dia (24/09/2026): é
+    // onde o sistema mostra o que faz sem ela digitar nada. Sem exemplo, a
+    // rota segue para o painel.
     startTransition(() => {
-      router.push("/eventos/dashboard");
+      router.push("/eventos/exemplo");
       router.refresh();
     });
   }

@@ -176,7 +176,28 @@ export async function getEstadoDoGuia(): Promise<EstadoDoGuia | null> {
       }
     }
 
+    // O EVENTO DE EXEMPLO (174) abre o caminho antes de ela criar o dela
+    // (guia-vivo.ts, PASSO_EXEMPLO). Só com o guia vivo e só antes do
+    // evento dela: depois disso, nenhuma consulta a mais por navegação.
+    // Leitura pela sessão (a RLS mostra os eventos da empresa); falhar
+    // aqui é o mesmo que não ter exemplo — o guia começa como antes.
+    let exemplo: EstadoDoGuia["exemplo"] = null;
+    if (!d.criou_evento && !d.dispensado_em && !d.concluido_em) {
+      const ex = await supabase
+        .from("events")
+        .select("id, exemplo_visto")
+        .eq("exemplo", true)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!ex.error && ex.data) {
+        const linha = ex.data as { id: string; exemplo_visto?: string[] | null };
+        exemplo = { id: linha.id, viuRoteiro: (linha.exemplo_visto ?? []).includes("roteiro") };
+      }
+    }
+
     return {
+      exemplo,
       dispensadoEm: d.dispensado_em ?? null,
       concluidoEm: d.concluido_em ?? null,
       eventoId: d.evento_id ?? null,

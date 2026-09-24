@@ -194,8 +194,9 @@ export function ComecarAgora({ oferta }: { oferta: OfertaDoCheckout }) {
       startTransition(() => router.push("/login"));
       return;
     }
+    // o evento de exemplo quando a conta tem um; sem ele, o painel
     startTransition(() => {
-      router.push("/eventos/dashboard");
+      router.push("/eventos/exemplo");
       router.refresh();
     });
   }

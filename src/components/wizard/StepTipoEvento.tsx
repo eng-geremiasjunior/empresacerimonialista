@@ -8,7 +8,8 @@ type Props = {
   onSelect: (type: EventType) => void;
 };
 
-const ORDER: EventType[] = [
+/** A ordem dos tipos na escolha — a mesma na tela rápida (CriarEventoRapido). */
+export const ORDEM_DOS_TIPOS: EventType[] = [
   "casamento",
   "debutante",
   "formatura",
@@ -32,7 +33,7 @@ export function StepTipoEvento({ selected, onSelect }: Props) {
       </p>
 
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {ORDER.map((type) => {
+        {ORDEM_DOS_TIPOS.map((type) => {
           const active = selected === type;
           return (
             <button

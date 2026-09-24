@@ -26,6 +26,7 @@ import {
 import { StepDadosBasicos, type DadosBasicos } from "./StepDadosBasicos";
 import { StepEstruturacao } from "./StepEstruturacao";
 import { ColarBriefing } from "./ColarBriefing";
+import { CriarEventoRapido } from "./CriarEventoRapido";
 import {
   identidadeDaProposta,
   propostaParaConferencia,
@@ -74,6 +75,10 @@ export function EventWizard({
   meuMembroId,
   cenarios,
 }: Props) {
+  // A tela rápida (tipo, cliente, data) é a porta de entrada desde
+  // 24/09/2026; o assistente de quatro etapas fica a um clique, para quem
+  // quer dizer tudo antes de criar (CriarEventoRapido.tsx).
+  const [modo, setModo] = useState<"rapido" | "completo">("rapido");
   const [step, setStep] = useState(1);
   const [tipo, setTipo] = useState<EventType | null>(null);
   const [cliente, setCliente] = useState<ClienteEscolhido | null>(
@@ -150,7 +155,7 @@ export function EventWizard({
     setBriefing(propostaParaConferencia(p));
     setDoBriefing(
       preenchidos.length > 0
-        ? `Do briefing: ${preenchidos.join(", ")}. Confira cada passo antes de criar.`
+        ? `Do briefing: ${preenchidos.join(", ")}. Confira antes de criar.`
         : null
     );
   }
@@ -173,7 +178,12 @@ export function EventWizard({
     setRespostas((r) => ({ ...r, ...patch }));
   }
 
-  async function submit(incluirTimeline: boolean) {
+  /**
+   * `statusDaTelaRapida`: a tela rápida não pergunta a situação — o guia
+   * pede o evento que ela JÁ está organizando, e esse evento está fechado.
+   * O assistente completo continua perguntando (Dados → Situação).
+   */
+  async function submit(incluirTimeline: boolean, statusDaTelaRapida?: string) {
     if (!tipo) return;
     setCreating(true);
     setError(null);
@@ -192,7 +202,7 @@ export function EventWizard({
       guestsMax: dados.guestsMax,
       contractValue: dados.contractValue,
       entrada: dados.entrada,
-      status: dados.status,
+      status: statusDaTelaRapida ?? dados.status,
       responsavelId,
       respostas,
       briefing,
@@ -206,16 +216,58 @@ export function EventWizard({
     // Sucesso → a action redireciona para /eventos/[id].
   }
 
+  if (modo === "rapido") {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-end">
+          <Link href="/eventos" className="text-sm text-stone-500 hover:text-stone-900">
+            Cancelar
+          </Link>
+        </div>
+        <ColarBriefing aoProposta={aplicarBriefing} />
+        {doBriefing && <p className="text-sm text-stone-600">{doBriefing}</p>}
+        <CriarEventoRapido
+          tipo={tipo}
+          onTipo={setTipo}
+          clients={clients}
+          cliente={cliente}
+          onCliente={setCliente}
+          data={dados.date}
+          onData={(d) => patchDados({ date: d })}
+          creating={creating}
+          error={error}
+          // com o roteiro padrão do tipo: o primeiro evento abre no Roteiro
+          // do dia, e roteiro vazio não mostra nada
+          onCriar={() => submit(true, "confirmado")}
+          onMaisDetalhes={() => {
+            setError(null);
+            setModo("completo");
+            setStep(tipo ? (cliente ? 3 : 2) : 1);
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <WizardProgress steps={STEPS} current={step} />
-        <Link
-          href="/eventos"
-          className="shrink-0 text-sm text-stone-500 hover:text-stone-900"
-        >
-          Cancelar
-        </Link>
+        <div className="flex shrink-0 items-center gap-4">
+          <button
+            type="button"
+            onClick={() => {
+              setError(null);
+              setModo("rapido");
+            }}
+            className="text-sm text-stone-500 hover:text-stone-900"
+          >
+            Tela rápida
+          </button>
+          <Link href="/eventos" className="text-sm text-stone-500 hover:text-stone-900">
+            Cancelar
+          </Link>
+        </div>
       </div>
 
       {step === 1 && (
