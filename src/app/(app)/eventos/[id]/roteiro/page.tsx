@@ -219,18 +219,37 @@ export default async function RoteiroPage({
         }
       />
 
-      <ChecklistDoDiaAjuste
-        eventId={event.id}
-        itens={checklist}
-        membros={membrosResult.membros.map((m) => ({ id: m.id, nome: m.nome }))}
-        equipe={equipe.map((p) => ({ id: p.id, nome: p.nome }))}
-      />
-
+      {/* a equipe vem antes do checklist (25/09/2026): primeiro quem
+          trabalha, depois o que é de cada um */}
       <EquipeDoDia
         eventId={event.id}
         pessoas={equipe}
         base={publicBase()}
         eventoNome={nomeDoEvento}
+        horarios={items.map((i) => ({
+          id: i.id,
+          time: i.time,
+          title: i.title,
+          equipeId: i.equipe_do_dia_id ?? null,
+          responsavel: i.responsavel_nome,
+        }))}
+        checklist={checklist
+          .filter((c) => c.ativo)
+          .sort((a, b) => a.ordem - b.ordem)
+          .map((c) => ({
+            id: c.id,
+            bloco: c.bloco,
+            titulo: c.titulo,
+            horario: c.horario,
+            equipeId: c.equipeId ?? null,
+          }))}
+      />
+
+      <ChecklistDoDiaAjuste
+        eventId={event.id}
+        itens={checklist}
+        membros={membrosResult.membros.map((m) => ({ id: m.id, nome: m.nome }))}
+        equipe={equipe.map((p) => ({ id: p.id, nome: p.nome }))}
       />
 
       {suppliers.length > 0 && (
