@@ -78,7 +78,7 @@ export const PASSO_EXEMPLO: PassoDoGuia = {
   fato: "viu_exemplo",
   titulo: "Veja um evento pronto",
   texto:
-    "Um casamento de exemplo, todo montado. No Roteiro do dia, abra o link de um fornecedor: é o que ele recebe no celular, sem baixar nada.",
+    "Um evento de exemplo, todo montado. No Roteiro do dia, abra o link de um fornecedor: é o que ele recebe no celular, sem baixar nada.",
   alvo: "links-fornecedores",
   rota: "/eventos/:exemplo/roteiro",
 };

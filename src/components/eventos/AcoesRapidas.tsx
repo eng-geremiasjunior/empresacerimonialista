@@ -14,6 +14,7 @@ import {
   Zap,
 } from "lucide-react";
 import { tem } from "@/lib/capacidades";
+import { rotuloCortejo } from "@/lib/papel";
 import { TaskForm } from "@/components/tasks/TaskForm";
 import { BuscarVincularFornecedorModal } from "@/components/fornecedores/BuscarVincularFornecedorModal";
 import { createTask } from "@/app/(app)/tarefas/actions";
@@ -121,11 +122,13 @@ export function AcoesRapidas({
         {tem(tipo, "cortejo") && (
           <ItemBotao
             icon={ScrollText}
-            titulo={tipo === "formatura" ? "Papéis e chamada" : "Cortejo"}
+            titulo={rotuloCortejo(tipo)}
             descricao={
               tipo === "formatura"
                 ? "Formandos, mesa de honra e a chamada"
-                : "Quem entra, na ordem de entrada"
+                : tipo === "debutante"
+                  ? "Quem entra com ela, a valsa e as 15 velas"
+                  : "Quem entra, na ordem de entrada"
             }
             href={`/eventos/${eventId}/cortejo`}
           />

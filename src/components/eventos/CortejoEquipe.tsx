@@ -10,10 +10,12 @@ import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, ClipboardList, Pencil, Printer, Trash2, X } from "lucide-react";
 import {
   agruparCortejo,
+  detalheDoPapel,
   papeisDoTipo,
   rotuloDoPapel,
   type PessoaCortejo,
 } from "@/lib/portal-pessoas-shared";
+import { rotuloCortejo } from "@/lib/papel";
 import {
   adicionarPessoasEquipe,
   atualizarPessoaEquipe,
@@ -101,12 +103,14 @@ export function CortejoEquipe({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-gray-900">
-            {ehFormatura ? "Papéis e chamada" : "Cortejo"}
+            {rotuloCortejo(tipo)}
           </h2>
           <p className="mt-0.5 text-sm text-gray-500">
             {ehFormatura
               ? "Formandos na ordem de entrada, mesa de honra e quem discursa."
-              : "Quem entra, na ordem de entrada."}
+              : tipo === "debutante"
+                ? "Quem entra com ela, a valsa e as 15 velas, na ordem em que são chamados."
+                : "Quem entra, na ordem de entrada."}
           </p>
         </div>
         <a
@@ -244,7 +248,7 @@ export function CortejoEquipe({
                         <p className="truncate text-xs text-gray-500">
                           {[
                             p.pronuncia && `pronúncia: ${p.pronuncia}`,
-                            p.oQueLeva && `leva: ${p.oQueLeva}`,
+                            p.oQueLeva && `${detalheDoPapel(p.papel).curto}: ${p.oQueLeva}`,
                             p.contato,
                           ]
                             .filter(Boolean)

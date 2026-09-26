@@ -12,7 +12,7 @@ import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { criarAcessoPortal, linkParaCriarSenha, type PapelPortal } from "@/lib/portal-admin";
 import { enviarViaResend } from "@/lib/email";
-import { publicBase } from "@/lib/app-url";
+import { portalBase } from "@/lib/app-url";
 import { rotuloEventoPossessivo } from "@/lib/papel";
 
 function servico() {
@@ -93,7 +93,8 @@ export async function convidarClienteDoEvento(
   });
   if ("error" in acesso) return { ok: false, motivo: acesso.error };
 
-  const base = publicBase();
+  // a debutante tem o endereço dela (debut.eorganizei.com.br)
+  const base = portalBase(evento.type);
   // quem já é da equipe entra com a senha de sempre
   const link = acesso.ehEquipe ? `${base}/portal` : await linkParaCriarSenha(email, base);
   if (!link) return { ok: false, motivo: "Não foi possível gerar o link agora." };

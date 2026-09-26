@@ -81,6 +81,7 @@ export function rotuloEscolhas(tipoEvento?: string | null): string {
 
 const CORTEJO_POR_TIPO: Partial<Record<EventType, string>> = {
   formatura: "Papéis e chamada",
+  debutante: "A corte e as 15 velas",
 };
 
 /** O nome do destino "cortejo" no menu do portal — numa formatura a tela

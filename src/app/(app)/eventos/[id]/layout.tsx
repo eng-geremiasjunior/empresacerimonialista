@@ -107,6 +107,7 @@ export default async function EventoLayout({
           eventId={event.id}
           areas={AREAS_DO_EXEMPLO.map((a) => ({ ...a }))}
           visto={event.exemplo_visto ?? []}
+          tipo={event.type}
         />
       )}
       {/* Cabeçalho compacto e rico (item 1) */}

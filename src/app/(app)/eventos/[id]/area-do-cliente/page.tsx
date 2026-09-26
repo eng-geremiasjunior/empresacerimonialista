@@ -10,7 +10,7 @@ import {
   type EspacoLinha,
   type HospedagemLinha,
 } from "@/components/evento/SiteDoConvite";
-import { publicBase } from "@/lib/app-url";
+import { portalBase, publicBase } from "@/lib/app-url";
 import { tem } from "@/lib/capacidades";
 import { dataLonga } from "@/lib/rsvp-convite";
 
@@ -196,13 +196,14 @@ export default async function AreaDoClientePage({
           O endereço é o mesmo para todas as clientes. Cada uma vê apenas os
           eventos aos quais tem acesso.
         </p>
-        <Link
-          href="/portal/entrar"
+        <a
+          href={`${portalBase(tipo)}/portal/entrar`}
           target="_blank"
+          rel="noopener noreferrer"
           className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:border-gray-400"
         >
-          Abrir /portal/entrar
-        </Link>
+          Abrir {portalBase(tipo).replace(/^https?:\/\//, "")}/portal/entrar
+        </a>
       </section>
     </div>
   );

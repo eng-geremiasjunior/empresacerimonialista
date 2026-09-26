@@ -8,8 +8,9 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   agruparCortejo,
+  detalheDoPapel,
   papeisDoTipo,
-  rotuloDoPapel,
+  rotuloDoPapelSingular,
   type PessoaCortejo,
 } from "@/lib/portal-pessoas-shared";
 import {
@@ -129,7 +130,7 @@ export function ListaCortejo({
           >
             {papeis.map((p) => (
               <option key={p} value={p}>
-                {rotuloDoPapel(p).replace(/s$/, "")}
+                {rotuloDoPapelSingular(p)}
               </option>
             ))}
           </select>
@@ -157,7 +158,7 @@ export function ListaCortejo({
           {!ehFormatura && (
             <input
               style={campoStyle}
-              placeholder="O que leva (opcional)"
+              placeholder={`${detalheDoPapel(novo.papel).campo} (opcional)`}
               value={novo.oQueLeva}
               onChange={(e) => setNovo({ ...novo, oQueLeva: e.target.value })}
             />
@@ -301,7 +302,7 @@ function PessoaLinha({
               style={campoStyle}
               value={form.oQueLeva}
               onChange={(e) => setForm({ ...form, oQueLeva: e.target.value })}
-              placeholder="O que leva"
+              placeholder={detalheDoPapel(pessoa.papel).campo}
             />
             <input
               style={campoStyle}
@@ -342,7 +343,7 @@ function PessoaLinha({
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--esp-2)" }}>
             <Campo rotulo="Pronúncia" valor={pessoa.pronuncia} />
             <Campo rotulo="Contato" valor={pessoa.contato} />
-            <Campo rotulo="Vai levar" valor={pessoa.oQueLeva} />
+            <Campo rotulo={detalheDoPapel(pessoa.papel).rotulo} valor={pessoa.oQueLeva} />
             <Campo rotulo="Responsável" valor={pessoa.responsavel} />
             <Campo rotulo="Chegada" valor={pessoa.chegada} />
           </div>

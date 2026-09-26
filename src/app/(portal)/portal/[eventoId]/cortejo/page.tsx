@@ -43,7 +43,9 @@ export default async function PortalCortejoPage({
         apoio={
           ehFormatura
             ? "Formandos na ordem de entrada, mesa de honra e quem discursa. Basta o nome para começar."
-            : "Quem entra com vocês. Basta o nome para começar — o resto pode vir depois."
+            : evento.tipo === "debutante"
+              ? "Quem entra com ela, o príncipe, os pares da valsa e quem recebe as 15 velas, na ordem em que são chamados. Basta o nome para começar."
+              : "Quem entra com vocês. Basta o nome para começar — o resto pode vir depois."
         }
       />
       <ListaCortejo eventoId={evento.id} tipo={evento.tipo} pessoas={pessoas} />

@@ -310,6 +310,45 @@ export const getEventoDoPortal = cache(
   }
 );
 
+/**
+ * O termo do responsável (175): num evento de debutante, quem abre o
+ * portal é o pai, a mãe ou o responsável legal, e a debutante só navega
+ * depois que um deles confirmou. null = não há o que pedir (outro tipo
+ * de evento, ou a 175 ainda não aplicada).
+ */
+export type TermoDoResponsavel = {
+  ehDebutante: boolean;
+  confirmou: boolean;
+  algumResponsavelConfirmou: boolean;
+};
+
+export const getTermoDoResponsavel = cache(
+  async (eventId: string): Promise<TermoDoResponsavel | null> => {
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc("portal_termo_responsavel", {
+      p_event_id: eventId,
+    });
+    if (error) {
+      if (!/could not find the function/i.test(error.message)) {
+        console.error(`[portal] portal_termo_responsavel: ${error.message}`);
+      }
+      return null;
+    }
+    const t = data as {
+      exige?: boolean;
+      eh_debutante?: boolean;
+      confirmou?: boolean;
+      algum_responsavel_confirmou?: boolean;
+    } | null;
+    if (!t?.exige) return null;
+    return {
+      ehDebutante: t.eh_debutante === true,
+      confirmou: t.confirmou === true,
+      algumResponsavelConfirmou: t.algum_responsavel_confirmou === true,
+    };
+  }
+);
+
 /** Marca da cerimonialista — sai da MESMA query do evento (cache). */
 export async function getMarcaDaEmpresa(
   eventId: string

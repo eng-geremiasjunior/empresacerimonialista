@@ -4,6 +4,7 @@ import {
   getContatoCerimonialista,
   getEventoDoPortal,
   getPrestacaoDeContas,
+  getTermoDoResponsavel,
   nomeDeExibicao,
 } from "@/lib/supabase/portal";
 import { waLink } from "@/lib/fornecedores-shared";
@@ -11,6 +12,7 @@ import { NavPortal } from "@/components/portal/NavPortal";
 import { NavLateral } from "@/components/portal/NavLateral";
 import { TopoCelular } from "@/components/portal/TopoCelular";
 import { InstalarPortal } from "@/components/portal/InstalarPortal";
+import { TermoDoResponsavel } from "@/components/portal/TermoDoResponsavel";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +57,35 @@ export default async function PortalEventoLayout({
 }) {
   const evento = await getEventoDoPortal(params.eventoId);
   if (!evento) notFound();
+
+  // O termo do responsável (175): num evento de debutante, o pai, a mãe
+  // ou o responsável confirma antes de tudo, e a debutante só entra
+  // depois de algum deles. Sem a 175 aplicada, não há o que pedir.
+  const termo = evento.tipo === "debutante" ? await getTermoDoResponsavel(evento.id) : null;
+  const modoDoTermo = !termo
+    ? null
+    : termo.ehDebutante
+      ? termo.algumResponsavelConfirmou
+        ? null
+        : "esperar"
+      : termo.confirmou
+        ? null
+        : "confirmar";
+  if (modoDoTermo) {
+    return (
+      <div className="portal-raiz" data-tipo={evento.tipo}>
+        <div className="portal-fora">
+          <div style={{ maxWidth: 560, margin: "0 auto", padding: "var(--esp-8) var(--esp-5)" }}>
+            <TermoDoResponsavel
+              eventoId={evento.id}
+              modo={modoDoTermo}
+              marcaNome={evento.marca?.nome ?? null}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // cache(): as páginas pedem o mesmo contato e o banco responde uma vez
   const [contato, prestacao] = await Promise.all([

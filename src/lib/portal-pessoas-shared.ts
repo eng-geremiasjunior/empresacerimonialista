@@ -64,10 +64,39 @@ export const PAPEL_ROTULO: Record<string, string> = {
   docente: "Docentes",
   madrinha_anel: "Madrinha/Padrinho do anel",
   mesa_de_honra: "Mesa de honra",
+  // debutante (175, 25/09/2026): a corte e as 15 velas
+  principe: "Príncipe",
+  par_valsa: "Pares da valsa",
+  vela: "As 15 velas",
+  entrada: "Acompanham a entrada",
 };
 
 export function rotuloDoPapel(papel: string): string {
   return PAPEL_ROTULO[papel] ?? papel.replace(/_/g, " ");
+}
+
+// O singular não sai de tirar o "s" do plural em todos: "Pares da valsa"
+// e "As 15 velas" não viram singular assim.
+const PAPEL_SINGULAR: Record<string, string> = {
+  par_valsa: "Par da valsa",
+  vela: "Uma das 15 velas",
+  entrada: "Acompanha a entrada",
+};
+
+/** "Padrinho", "Par da valsa" — uma pessoa do grupo, para a escolha do papel. */
+export function rotuloDoPapelSingular(papel: string): string {
+  return PAPEL_SINGULAR[papel] ?? rotuloDoPapel(papel).replace(/s$/, "");
+}
+
+/**
+ * O detalhe livre da pessoa (coluna o_que_leva). No cortejo é o que ela
+ * leva (alianças, flores); nas 15 velas é quem ela é para a debutante.
+ */
+export function detalheDoPapel(papel: string): { campo: string; rotulo: string; curto: string } {
+  if (papel === "vela") {
+    return { campo: "Quem é para ela (avó, madrinha…)", rotulo: "Quem é", curto: "quem é" };
+  }
+  return { campo: "O que leva", rotulo: "Vai levar", curto: "leva" };
 }
 
 /** A ordem em que os grupos aparecem na tela, por tipo de evento. */
@@ -84,6 +113,8 @@ export const PAPEIS_POR_TIPO: Record<string, string[]> = {
     "madrinha_anel",
     "mesa_de_honra",
   ],
+  // a ordem é a da noite: quem entra com ela, a valsa, depois as velas
+  debutante: ["entrada", "principe", "par_valsa", "vela", "dama"],
 };
 
 export function papeisDoTipo(tipo: string | null | undefined): string[] {

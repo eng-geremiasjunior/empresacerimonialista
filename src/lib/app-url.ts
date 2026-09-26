@@ -50,3 +50,38 @@ export function publicBase(): string {
 export function linkPublico(caminho: `/${string}`): string {
   return `${publicBase()}${caminho}`;
 }
+
+/**
+ * O portal da família com endereço próprio por tipo de evento
+ * (25/09/2026): a debutante em debut.eorganizei.com.br. O da noiva
+ * (noiva.) vem depois — uma linha aqui; o middleware e o /auth/confirm
+ * leem daqui.
+ */
+export const SUBDOMINIO_DO_PORTAL: Partial<Record<string, string>> = {
+  debutante: "debut",
+};
+
+/** "debut." — o começo do host que é SÓ portal (middleware e /auth/confirm). */
+export const PREFIXOS_DO_PORTAL: string[] = Object.values(SUBDOMINIO_DO_PORTAL)
+  .filter((s): s is string => Boolean(s))
+  .map((s) => `${s}.`);
+
+/**
+ * Base dos links do PORTAL (convite, "entre em…"). O endereço próprio só
+ * vale quando o sistema roda no domínio principal: num preview
+ * (vercel.app) ou no localhost o link fica na mesma casa, senão um teste
+ * mandaria a cliente para a produção.
+ */
+export function portalBase(tipo?: string | null): string {
+  const base = publicBase();
+  const sub = tipo ? SUBDOMINIO_DO_PORTAL[tipo] : undefined;
+  if (!sub) return base;
+  try {
+    const u = new URL(base);
+    const host = u.hostname.replace(/^www\./, "");
+    if (host === "eorganizei.com.br") return `${u.protocol}//${sub}.${host}`;
+  } catch {
+    // base malformada: fica na base
+  }
+  return base;
+}

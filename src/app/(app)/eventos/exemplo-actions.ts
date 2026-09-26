@@ -9,7 +9,14 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getMeuCargo } from "@/lib/supabase/equipe";
-import { AREAS_DO_EXEMPLO, apagarEventoDeExemplo, viuTudo, type AreaDoExemplo } from "@/lib/evento-exemplo";
+import {
+  AREAS_DO_EXEMPLO,
+  apagarEventoDeExemplo,
+  criarEventoDeExemplo,
+  viuTudo,
+  type AreaDoExemplo,
+  type ModeloDoExemplo,
+} from "@/lib/evento-exemplo";
 
 export async function marcarExemploVisto(eventId: string, area: AreaDoExemplo): Promise<{ tudo: boolean }> {
   if (!AREAS_DO_EXEMPLO.some((a) => a.area === area)) return { tudo: false };
@@ -33,6 +40,25 @@ export async function apagarExemplo() {
   revalidatePath("/eventos");
   revalidatePath("/eventos/dashboard");
   redirect("/eventos");
+}
+
+/**
+ * Troca o exemplo pelo outro modelo (casamento ↔ 15 anos), pela faixa do
+ * exemplo. Abre direto no Roteiro do dia do novo, como o cadastro faz.
+ */
+export async function trocarModeloDoExemplo(modelo: ModeloDoExemplo) {
+  if (modelo !== "casamento" && modelo !== "debutante") return;
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { empresaId } = await getMeuCargo();
+  if (!user || !empresaId) return;
+  await apagarEventoDeExemplo(empresaId);
+  const novo = await criarEventoDeExemplo(empresaId, user.id, modelo);
+  revalidatePath("/eventos");
+  revalidatePath("/eventos/dashboard");
+  redirect(novo ? `/eventos/${novo}/roteiro` : "/eventos");
 }
 
 /**

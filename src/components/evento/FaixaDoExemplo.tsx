@@ -8,15 +8,31 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { apagarExemplo, marcarExemploVisto } from "@/app/(app)/eventos/exemplo-actions";
+import {
+  apagarExemplo,
+  marcarExemploVisto,
+  trocarModeloDoExemplo,
+} from "@/app/(app)/eventos/exemplo-actions";
 
 type Area = { area: string; rotulo: string; caminho: string };
 
-export function FaixaDoExemplo({ eventId, areas, visto }: { eventId: string; areas: Area[]; visto: string[] }) {
+export function FaixaDoExemplo({
+  eventId,
+  areas,
+  visto,
+  tipo,
+}: {
+  eventId: string;
+  areas: Area[];
+  visto: string[];
+  tipo: string;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [vistas, setVistas] = useState<string[]>(visto);
   const [apagando, iniciar] = useTransition();
+  const [trocando, iniciarTroca] = useTransition();
+  const outro = tipo === "debutante" ? "casamento" : "debutante";
 
   // a tela atual: o trecho depois de /eventos/<id>
   const resto = pathname.replace(`/eventos/${eventId}`, "").split("/").filter(Boolean)[0] ?? "";
@@ -70,14 +86,28 @@ export function FaixaDoExemplo({ eventId, areas, visto }: { eventId: string; are
             })}
           </div>
         </div>
-        <button
-          type="button"
-          disabled={apagando}
-          onClick={() => iniciar(() => apagarExemplo())}
-          className="shrink-0 rounded-lg border border-[#C9AFBE] bg-white px-3 py-1.5 text-xs font-medium text-[#5B4452] hover:border-[#6E3F5F]"
-        >
-          {apagando ? "Apagando…" : "Apagar o exemplo"}
-        </button>
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <button
+            type="button"
+            disabled={apagando || trocando}
+            onClick={() => iniciar(() => apagarExemplo())}
+            className="rounded-lg border border-[#C9AFBE] bg-white px-3 py-1.5 text-xs font-medium text-[#5B4452] hover:border-[#6E3F5F]"
+          >
+            {apagando ? "Apagando…" : "Apagar o exemplo"}
+          </button>
+          <button
+            type="button"
+            disabled={apagando || trocando}
+            onClick={() => iniciarTroca(() => trocarModeloDoExemplo(outro))}
+            className="text-xs font-medium text-[#6E3F5F] underline underline-offset-2"
+          >
+            {trocando
+              ? "Trocando…"
+              : outro === "debutante"
+                ? "Trabalha com 15 anos? Ver o exemplo de debutante"
+                : "Ver o exemplo de casamento"}
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -18,11 +18,30 @@
 import { type EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { PREFIXOS_DO_PORTAL } from "@/lib/app-url";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Para onde voltar. A sessão nasce no host que ABRIU o link — no portal
+ * com endereço próprio (debut.eorganizei.com.br), voltar para o endereço
+ * principal deixaria a família sem sessão, na porta de login. Só vale o
+ * subdomínio de portal do PRÓPRIO host; qualquer outro cabeçalho é
+ * ignorado.
+ */
+function origemDoPedido(request: NextRequest): string {
+  const url = new URL(request.url);
+  const host = (request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "").toLowerCase();
+  const prefixo = PREFIXOS_DO_PORTAL.find((p) => host.startsWith(p));
+  if (prefixo && host !== url.host && host.slice(prefixo.length) === url.host.replace(/^www\./, "")) {
+    return `${url.protocol}//${host}`;
+  }
+  return url.origin;
+}
+
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
+  const origin = origemDoPedido(request);
   const code = searchParams.get("code");
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
