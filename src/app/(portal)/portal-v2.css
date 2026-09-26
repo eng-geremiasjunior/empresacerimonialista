@@ -1,0 +1,187 @@
+/* ============================================================
+   Portal da família v2 (desenho "Portal da Família v2", 25/09/2026)
+   Liga só onde a casca v2 escreve .pv2 (hoje: evento de debutante).
+
+   A cor da festa é UMA: --destaque e as quatro derivadas saem de
+   src/lib/cor-da-festa.ts e são escritas no .pv2 pela casca. Registradas
+   com @property para a troca animar pelo portal inteiro (1 s).
+
+   Fontes: as do portal (next/font), pelas variáveis — nunca o nome
+   literal da família, que cai na fonte do sistema.
+   ============================================================ */
+
+@property --destaque { syntax: "<color>"; inherits: true; initial-value: #b4ada4; }
+@property --destaque-texto { syntax: "<color>"; inherits: true; initial-value: #6b6259; }
+@property --destaque-fundo { syntax: "<color>"; inherits: true; initial-value: #f2eee9; }
+@property --destaque-linha { syntax: "<color>"; inherits: true; initial-value: #e6e0d8; }
+@property --destaque-profundo { syntax: "<color>"; inherits: true; initial-value: #332b24; }
+
+@keyframes pv2-entrar { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes pv2-subir { from { transform: translateY(110%); } to { transform: none; } }
+@keyframes pv2-esmaecer { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pv2-flutuar { from { transform: translate(0, 0) scale(1); } to { transform: translate(34px, 46px) scale(1.15); } }
+@keyframes pv2-cintilar { 0%, 100% { opacity: 0; } 50% { opacity: 0.9; } }
+@keyframes pv2-cair {
+  0% { transform: translate(0, -40px) rotate(0); opacity: 0; }
+  10% { opacity: 0.85; }
+  100% { transform: translate(60px, 900px) rotate(540deg); opacity: 0; }
+}
+@keyframes pv2-varrer { 0% { transform: translateX(-130%) skewX(-18deg); } 60%, 100% { transform: translateX(330%) skewX(-18deg); } }
+@keyframes pv2-pulsar {
+  0% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--destaque) 60%, transparent); }
+  100% { box-shadow: 0 0 0 10px transparent; }
+}
+@keyframes pv2-retrato-zoom { from { transform: scale(1.02); } to { transform: scale(1.1) translateY(-1.5%); } }
+
+.pv2 {
+  --pv2-fundo-app: #f7f3ed;
+  --pv2-forte: #2b241f;
+  --pv2-forte-2: #332b24;
+  --pv2-texto: #3a312a;
+  --pv2-secundario: #4c443c;
+  --pv2-rotulo: #776d60;
+  --pv2-inativo: #5a5148;
+  --pv2-borda-campo: #e7dfd2;
+  --pv2-borda: #ede5d9;
+  --pv2-entre: #f2ece3;
+  --pv2-sombra-cartao: 0 24px 50px -32px rgba(50, 35, 45, 0.5);
+  --pv2-es: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --pv2-titulo: var(--fonte-portal-titulo), Georgia, "Times New Roman", serif;
+  --pv2-corpo: var(--fonte-portal-corpo), system-ui, -apple-system, sans-serif;
+  --pv2-tinta: #2b241f;
+  --pv2-tinta-suave: #4c443c;
+
+  position: relative;
+  min-height: 100vh;
+  background: var(--pv2-fundo-app);
+  color: var(--pv2-texto);
+  font-family: var(--pv2-corpo);
+  -webkit-font-smoothing: antialiased;
+  transition: --destaque 1s ease, --destaque-texto 1s ease, --destaque-fundo 1s ease,
+    --destaque-linha 1s ease, --destaque-profundo 1s ease;
+}
+.pv2 *, .pv2 *::before, .pv2 *::after { box-sizing: border-box; }
+.pv2 button, .pv2 input, .pv2 textarea, .pv2 select { font-family: inherit; }
+.pv2 :focus-visible { outline: 2px solid var(--destaque-texto); outline-offset: 2px; }
+
+/* o topo escuro (céu da noite, semana da festa; o retrato só no celular) */
+.pv2[data-escuro="1"] { --pv2-tinta: #fdfbf7; --pv2-tinta-suave: rgba(253, 251, 247, 0.82); }
+@media (max-width: 767px) {
+  .pv2[data-escuro="retrato"] { --pv2-tinta: #fdfbf7; --pv2-tinta-suave: rgba(253, 251, 247, 0.82); }
+}
+
+/* o fundo (atmosfera) fica parado enquanto o conteúdo rola */
+.pv2-atm { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.pv2-atm > * { position: absolute; inset: 0; pointer-events: none; }
+
+.pv2-vidro {
+  background: rgba(255, 255, 255, 0.78);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: var(--pv2-sombra-cartao);
+}
+
+/* o retrato no topo do Início: no celular ocupa o alto da tela e some
+   embaixo; no computador é um painel vertical à direita */
+.pv2-atm > .pv2-retrato {
+  inset: auto; left: 0; right: 0; top: 0; height: min(640px, 78vh); overflow: hidden;
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 48px), transparent);
+  mask-image: linear-gradient(180deg, #000 calc(100% - 48px), transparent);
+  background: repeating-linear-gradient(122deg, #3a2f35 0 12px, #44383f 12px 24px);
+}
+.pv2-retrato-veu {
+  background: linear-gradient(180deg, rgba(20, 14, 18, 0.45) 0%, rgba(20, 14, 18, 0) 16%, rgba(20, 14, 18, 0) 38%, rgba(20, 14, 18, 0.55) 62%, rgba(20, 14, 18, 0.82) 100%);
+}
+.pv2-lua { left: 50%; top: 1.4%; width: 30px; height: 30px; }
+.pv2-monograma { left: 40%; top: 30%; font-size: 440px; }
+@media (min-width: 768px) {
+  .pv2-atm > .pv2-retrato {
+    left: 62%; top: 40px; height: calc(100vh - 80px); border-radius: 0 0 0 40px;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 22%);
+    mask-image: linear-gradient(90deg, transparent, #000 22%);
+  }
+  .pv2-retrato-veu { background: linear-gradient(90deg, rgba(247, 243, 237, 0.25), transparent 40%); }
+  .pv2-lua { left: 46%; top: 8%; width: 70px; height: 70px; }
+  .pv2-monograma { left: 58%; top: 8%; font-size: 760px; }
+}
+
+/* ---------------- casca ---------------- */
+.pv2-topo {
+  position: sticky; top: 0; z-index: 15;
+  height: 56px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 14px 0 22px;
+}
+.pv2-conteudo { position: relative; z-index: 1; padding: 4px 20px 120px; }
+.pv2-lateral { display: none; }
+.pv2-abas {
+  position: fixed; left: 12px; right: 12px; bottom: 18px; z-index: 20;
+  height: 68px; padding: 6px; display: flex; gap: 4px; border-radius: 34px;
+  background: rgba(253, 251, 247, 0.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  backdrop-filter: blur(20px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 20px 40px -18px rgba(50, 35, 45, 0.45);
+}
+.pv2-aba {
+  min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; border: 0; border-radius: 28px; font-size: 11.5px; cursor: pointer; text-decoration: none;
+  transition: flex 0.45s var(--pv2-es), background 0.35s, color 0.35s;
+}
+
+@media (min-width: 768px) {
+  .pv2-topo, .pv2-abas { display: none; }
+  .pv2-lateral {
+    display: flex; flex-direction: column; gap: 26px;
+    position: fixed; z-index: 15; top: 16px; bottom: 16px; left: 16px; width: 272px;
+    padding: 28px 16px 20px; border-radius: 24px; overflow-y: auto;
+    background: rgba(255, 255, 255, 0.62);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 24px 50px -34px rgba(50, 35, 45, 0.5);
+  }
+  .pv2-conteudo { margin-left: 304px; padding: 40px 48px 64px; }
+  .pv2-conteudo > .pv2-largura { max-width: 1080px; margin: 0 auto; }
+}
+
+/* ---------------- Início ---------------- */
+.pv2-heroi { padding-top: 6px; }
+.pv2-heroi-retrato { padding-top: 300px; text-shadow: 0 1px 18px rgba(20, 14, 18, 0.55); }
+.pv2-titulo-heroi { font-size: 24px; line-height: 1.1; }
+.pv2-contagem { font-size: 104px; }
+.pv2-arco { width: 118px; height: 164px; }
+.pv2-pilha { height: 280px; }
+.pv2-cartao-pilha { height: 250px; }
+.pv2-novo { transition: transform 0.3s; }
+.pv2-novo:hover { transform: translateY(-4px); }
+@media (min-width: 768px) {
+  .pv2-heroi { padding-top: 30px; }
+  .pv2-heroi-retrato { padding-top: 30px; text-shadow: none; }
+  .pv2-titulo-heroi { font-size: 30px; }
+  .pv2-contagem { font-size: 168px; }
+  .pv2-arco { width: 260px; height: 340px; }
+  .pv2-pilha { height: 262px; }
+  .pv2-cartao-pilha { height: 232px; }
+}
+
+/* folhas de baixo (gaveta, cara da festa) */
+.pv2-veu { position: fixed; inset: 0; z-index: 30; background: rgba(40, 30, 36, 0.34); animation: pv2-esmaecer 0.35s ease both; }
+.pv2-folha {
+  position: fixed; z-index: 31; left: 10px; right: 10px; bottom: 10px; margin: 0 auto; max-width: 520px;
+  border-radius: 28px; background: rgba(253, 251, 247, 0.97);
+  box-shadow: 0 30px 60px -20px rgba(40, 30, 36, 0.5);
+  animation: pv2-subir 0.55s var(--pv2-es) both;
+  max-height: calc(100vh - 40px); overflow-y: auto;
+}
+
+/* versão leve: celular simples ou quem pediu menos movimento — o fundo
+   fica, o movimento sai */
+.pv2[data-leve="1"] .pv2-mov { animation: none !important; }
+.pv2[data-leve="1"] .pv2-so-cheio { display: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .pv2 .pv2-cortina { display: none !important; }
+  .pv2 .pv2-mov { animation: none !important; }
+  .pv2 .pv2-so-cheio { display: none !important; }
+  .pv2, .pv2 * { transition-duration: 0.01s !important; }
+}

@@ -55,6 +55,8 @@ type FornecedorDoExemplo = { ref: string; name: string; categoria: string; palav
 
 type Modelo = {
   cliente: string;
+  /** o nome do evento: o portal tira dele de quem é a festa */
+  nome: string;
   evento: {
     type: ModeloDoExemplo;
     dias: number;
@@ -79,6 +81,7 @@ type Modelo = {
 const MODELOS: Record<ModeloDoExemplo, Modelo> = {
   casamento: {
     cliente: "Exemplo · Marina e Téo",
+    nome: "Exemplo · Marina e Téo",
     evento: { type: "casamento", dias: 172, time: "17:00", location: "Villa Real", guests: 180, contract_value: 18500, verba_total: 92000 },
     fornecedores: [
       { ref: "buffet", name: "Buffet Aurora", categoria: "buffet", palavras: ["buffet", "jantar", "coquetel", "bolo", "comida"] },
@@ -110,6 +113,7 @@ const MODELOS: Record<ModeloDoExemplo, Modelo> = {
   },
   debutante: {
     cliente: "Exemplo · 15 anos da Júlia",
+    nome: "Exemplo · 15 anos da Júlia",
     evento: { type: "debutante", dias: 150, time: "20:00", location: "Casa Lírio", guests: 150, contract_value: 14500, verba_total: 70000 },
     fornecedores: [
       { ref: "buffet", name: "Buffet Aurora", categoria: "buffet", palavras: ["buffet", "jantar", "coquetel", "recepção", "recepcao", "drinks"] },
@@ -233,6 +237,7 @@ export async function criarEventoDeExemplo(
         empresa_id: empresaId,
         client_id: cliente.id,
         type: m.evento.type,
+        name: m.nome,
         date: emDias(m.evento.dias),
         time: m.evento.time,
         location: m.evento.location,

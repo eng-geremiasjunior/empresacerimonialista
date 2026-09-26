@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { EB_Garamond, Jost } from "next/font/google";
 import "./portal.css";
+import "./portal-v2.css";
 
 // As duas famílias do portal, e nenhuma terceira. A EB Garamond faz o
 // gesto (nome do evento, títulos, números); a Jost desaparece atrás da

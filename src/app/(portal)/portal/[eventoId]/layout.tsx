@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { cookies, headers } from "next/headers";
 import {
   getContatoCerimonialista,
   getEventoDoPortal,
@@ -13,6 +14,11 @@ import { NavLateral } from "@/components/portal/NavLateral";
 import { TopoCelular } from "@/components/portal/TopoCelular";
 import { InstalarPortal } from "@/components/portal/InstalarPortal";
 import { TermoDoResponsavel } from "@/components/portal/TermoDoResponsavel";
+import { CascaV2 } from "@/components/portal/v2/CascaV2";
+import { EntradaV2 } from "@/components/portal/v2/EntradaV2";
+import { destinosV2 } from "@/components/portal/v2/destinos";
+import { getEstiloDoPortal, getMeuAcesso } from "@/lib/supabase/portal-estilo";
+import { pessoaDoEvento, tituloDaFesta, usaPortalV2 } from "@/lib/portal-v2";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +77,61 @@ export default async function PortalEventoLayout({
       : termo.confirmou
         ? null
         : "confirmar";
+  // O portal v2 (desenho "Portal da Família v2", 25/09/2026): hoje, a
+  // debutante. A casca é outra; as telas que o desenho ainda vai trocar
+  // entram nela como estão.
+  if (usaPortalV2(evento.tipo)) {
+    const [contato, estilo, eu] = await Promise.all([
+      getContatoCerimonialista(evento.id),
+      getEstiloDoPortal(evento.id),
+      getMeuAcesso(evento.id),
+    ]);
+    const pessoa = pessoaDoEvento(evento.nome);
+    const titulo = tituloDaFesta(evento.nome, nomeDeExibicao(evento));
+    const zap = waLink(contato.whatsapp);
+    if (modoDoTermo) {
+      return (
+        <EntradaV2
+          eventoId={evento.id}
+          tipo={evento.tipo}
+          modo={modoDoTermo}
+          estilo={estilo}
+          marcaNome={evento.marca?.nome ?? null}
+          titulo={titulo}
+          pessoa={pessoa}
+          nomeDeQuemAbriu={eu.nome}
+          whatsappLink={zap}
+          contatoNome={contato.nome}
+        />
+      );
+    }
+    // a abertura: uma vez por sessão, só no Início (o cookie é da casca)
+    const noInicio = headers().get("x-caminho") === `/portal/${evento.id}`;
+    const jaAbriu = cookies().get(`pv2ab_${evento.id.slice(0, 8)}`)?.value === "1";
+    return (
+      <>
+        <CascaV2
+          eventoId={evento.id}
+          tipo={evento.tipo}
+          marcaNome={evento.marca?.nome ?? null}
+          marcaLogoUrl={evento.marca?.logoUrl ?? null}
+          contatoNome={contato.nome}
+          whatsappLink={zap}
+          inicial={(eu.nome ?? "•").charAt(0).toUpperCase()}
+          estilo={estilo}
+          destinos={destinosV2(evento.tipo)}
+          diasRestantes={evento.diasRestantes}
+          mostrarAbertura={noInicio && !jaAbriu}
+          tituloDoEvento={titulo}
+          pessoa={pessoa}
+        >
+          {children}
+        </CascaV2>
+        <InstalarPortal />
+      </>
+    );
+  }
+
   if (modoDoTermo) {
     return (
       <div className="portal-raiz" data-tipo={evento.tipo}>

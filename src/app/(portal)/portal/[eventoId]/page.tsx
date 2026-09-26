@@ -27,6 +27,10 @@ import {
 import { dataLonga, diaEMes, prazoPortal } from "@/components/portal/datas";
 import { hojeBR } from "@/lib/tempo";
 import { aberturaDaAssinatura, fraseDeCuidado } from "@/lib/papel";
+import { InicioV2 } from "@/components/portal/v2/InicioV2";
+import { linhaDoLocal, montarCuidando, montarNovo, montarPrecisa } from "@/components/portal/v2/dadosDoInicio";
+import { getMeuAcesso } from "@/lib/supabase/portal-estilo";
+import { pessoaDoEvento, tituloDaFesta, usaPortalV2 } from "@/lib/portal-v2";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +59,28 @@ export default async function PortalEventoPage({
   ]);
   const base = `/portal/${evento.id}`;
   const nome = nomeDeExibicao(evento);
+
+  // o Início do portal v2 (desenho "Portal da Família v2", 25/09/2026)
+  if (usaPortalV2(evento.tipo)) {
+    const eu = await getMeuAcesso(evento.id);
+    const hojeV2 = hojeBR();
+    const cerimonialista = contato.nome?.split(" ")[0] ?? "Sua cerimonialista";
+    return (
+      <InicioV2
+        nomeDeQuemAbriu={eu.nome}
+        titulo={tituloDaFesta(evento.nome, nome)}
+        dias={evento.diasRestantes}
+        hora={evento.hora ? evento.hora.slice(0, 5) : null}
+        linhaDoLocal={linhaDoLocal(evento.data, evento.hora, evento.local, evento.cidade)}
+        pessoa={pessoaDoEvento(evento.nome)}
+        precisa={montarPrecisa(home, base, hojeV2)}
+        mostrarPrecisa={home.quadro?.modalidade !== "so_o_dia"}
+        cerimonialista={cerimonialista}
+        cuidando={montarCuidando(home, hojeV2)}
+        novo={montarNovo(home, hojeV2, cerimonialista)}
+      />
+    );
+  }
 
   // resumo do investimento: a próxima parcela em aberto
   const hoje = hojeBR();

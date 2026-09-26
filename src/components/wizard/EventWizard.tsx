@@ -193,7 +193,9 @@ export function EventWizard({
       newClientPhone: cliente?.kind === "new" ? cliente.phone : "",
       newClientEmail: cliente?.kind === "new" ? emailCliente : "",
       type: tipo,
-      name: dados.name,
+      // sem nome digitado, o sugerido ("Debutante — Júlia"): o portal tira
+      // dele de quem é a festa, e a lista de eventos já mostrava assim
+      name: dados.name.trim() || suggestedName,
       date: dados.date,
       time: dados.time,
       city: dados.city,
