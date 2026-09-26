@@ -108,7 +108,8 @@
 
 /* ---------------- casca ---------------- */
 .pv2-topo {
-  position: sticky; top: 0; z-index: 15;
+  /* rola com a página, como no desenho: o menu fixo é a barra de baixo */
+  position: relative; z-index: 15;
   height: 56px; display: flex; align-items: center; justify-content: space-between;
   padding: 0 14px 0 22px;
 }
@@ -194,4 +195,27 @@
   .pv2 .pv2-mov { animation: none !important; }
   .pv2 .pv2-so-cheio { display: none !important; }
   .pv2, .pv2 * { transition-duration: 0.01s !important; }
+}
+
+/* ---------------- Dinheiro ---------------- */
+.pv2-din-total { font-size: 44px; }
+.pv2-din-alternar { display: grid; }
+.pv2-din-lados { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: start; }
+.pv2-din-lados[data-lado="carol"] > .pv2-din-fam { display: none; }
+.pv2-din-lados[data-lado="fam"] > .pv2-din-carol { display: none; }
+@media (min-width: 768px) {
+  .pv2-din-total { font-size: 50px; }
+  .pv2-din-alternar { display: none; }
+  .pv2-din-lados { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  .pv2-din-lados[data-lado] > .pv2-din-carol,
+  .pv2-din-lados[data-lado] > .pv2-din-fam { display: flex; }
+}
+
+/* o aviso de baixo (acima da barra do celular) */
+.pv2-toast {
+  position: fixed; left: 16px; right: 16px; bottom: 100px; z-index: 25;
+  display: flex; justify-content: center; pointer-events: none;
+}
+@media (min-width: 768px) {
+  .pv2-toast { left: 304px; bottom: 28px; }
 }

@@ -83,6 +83,8 @@ export type Lancamento = {
   objetivoId: string | null;
   comprovante: { nome: string; path: string } | null;
   formaPagamento: string | null;
+  /** quem da família marcou como pago pelo portal (178) */
+  pagoPelaFamilia?: string | null;
   /** documento do fornecedor no cadastro (CPF/CNPJ) — liga a conferência
    *  "igual ao cadastro" do comprovante lido */
   cnpj?: string | null;

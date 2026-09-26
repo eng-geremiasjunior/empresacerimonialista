@@ -43,6 +43,7 @@ export function TelaFinanceiro({
   linkCobranca,
   encerramento,
   itensDoOrcamento,
+  topoDaVerba,
 }: {
   eventId: string;
   dados: FinanceiroDoEvento;
@@ -54,6 +55,8 @@ export function TelaFinanceiro({
   linkCobranca: string | null;
   encerramento: React.ComponentProps<typeof AbaEncerramento>;
   itensDoOrcamento?: React.ReactNode;
+  /** o que a família pediu pelo portal (178), em cima da verba */
+  topoDaVerba?: React.ReactNode;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -214,6 +217,8 @@ export function TelaFinanceiro({
           </button>
         ))}
       </div>
+
+      {conta === "verba" && topoDaVerba}
 
       {conta === "verba" && (
         <AbaVerba

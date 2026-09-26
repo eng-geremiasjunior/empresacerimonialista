@@ -1,8 +1,8 @@
 // Os destinos do portal v2. A barra do celular mostra os quatro primeiros
 // e "Mais"; a coluna do computador mostra todos.
 //
-// As telas que o desenho ainda vai trocar apontam para as de hoje
-// (Dinheiro → investimento, até a fase 3). Tarefas
+// Dinheiro mora em /investimento (a rota de sempre; a tela v2 é a da
+// 178). Tarefas
 // da família e Fornecedores só entram quando existirem — a regra do
 // desenho é nenhuma tela "Em breve".
 

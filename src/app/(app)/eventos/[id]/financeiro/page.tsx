@@ -19,6 +19,7 @@ import {
 } from "@/lib/supabase/prestacao";
 import { TelaFinanceiro, type Conta } from "@/components/financeiro/tela/TelaFinanceiro";
 import { PainelConciliacao } from "@/components/financeiro/PainelConciliacao";
+import { PedidosDaFamilia } from "@/components/financeiro/PedidosDaFamilia";
 import { PainelFechamento } from "@/components/financeiro/PainelFechamento";
 import { PrestacaoDeContas } from "@/components/financeiro/PrestacaoDeContas";
 import {
@@ -154,6 +155,7 @@ export default async function EventoFinanceiroPage({
         cliente?.phone,
         `Oi${cliente?.name ? ` ${cliente.name.split(" ")[0]}` : ""}! Passando para combinar o próximo repasse da verba do evento.`
       )}
+      topoDaVerba={<PedidosDaFamilia eventId={eventId} />}
       itensDoOrcamento={
         orcamento && itensOrcamento.length > 0 ? (
           <ItensOrcamentoOriginal

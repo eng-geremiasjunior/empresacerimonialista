@@ -31,6 +31,9 @@ const COLUNAS = `id, event_id, type, value, due_date, paid, paid_at, description
   comprovante_path, comprovante_nome, comprovante_dados,
   suppliers(name, cpf)`;
 
+/** + quem da família marcou como pago pelo portal (178) */
+const COLUNAS_178 = `${COLUNAS}, pago_pela_familia_nome`;
+
 /** Coluna ou tabela que a migração 167 traz e o banco ainda não tem. */
 const AUSENTE = new Set(["42703", "42P01", "PGRST204", "PGRST205"]);
 const faltaMigracao = (erro: { code?: string } | null) =>
@@ -82,6 +85,7 @@ function mapearLancamento(t: Linha, nomeCliente: string): Lancamento {
         }
       : null,
     formaPagamento: (t.payment_method as string) ?? null,
+    pagoPelaFamilia: t.paid ? ((t.pago_pela_familia_nome as string) ?? null) : null,
     cnpj: sup?.cpf ?? null,
   };
 }
@@ -106,6 +110,23 @@ const rotuloCategoria = (c: string | null) =>
  * ainda não existem, repete sem — a tela continua de pé antes de você
  * aplicar a migração, só sem data de assinatura e sem categoria própria.
  */
+async function lerTransacoes(
+  supabase: ReturnType<typeof createClient>,
+  eventId: string
+) {
+  const novo = await supabase
+    .from("transactions")
+    .select(COLUNAS_178)
+    .eq("event_id", eventId)
+    .order("due_date", { ascending: true });
+  if (!novo.error || !faltaMigracao(novo.error)) return novo;
+  return supabase
+    .from("transactions")
+    .select(COLUNAS)
+    .eq("event_id", eventId)
+    .order("due_date", { ascending: true });
+}
+
 async function lerContratos(
   supabase: ReturnType<typeof createClient>,
   eventId: string
@@ -177,11 +198,7 @@ export const getFinanceiroDoEvento = cache(
     const [ev, txRes, contratosBrutos, saldoRes, vinculoRes, objetivosRes, registros] =
       await Promise.all([
         lerEvento(supabase, eventId),
-        supabase
-          .from("transactions")
-          .select(COLUNAS)
-          .eq("event_id", eventId)
-          .order("due_date", { ascending: true }),
+        lerTransacoes(supabase, eventId),
         lerContratos(supabase, eventId),
         supabase.rpc("saldo_do_caixa_evento", { p_event_id: eventId }),
         // objetivo ↔ fornecedor: o campo tipo fornecedor da decisão de

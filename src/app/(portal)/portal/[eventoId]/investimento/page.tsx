@@ -1,5 +1,8 @@
 import { notFound } from "next/navigation";
-import { getEventoDoPortal, getInvestimento } from "@/lib/supabase/portal";
+import { getContatoCerimonialista, getEventoDoPortal, getInvestimento } from "@/lib/supabase/portal";
+import { getDinheiroDoPortal } from "@/lib/supabase/portal-dinheiro";
+import { usaPortalV2 } from "@/lib/portal-v2";
+import { DinheiroV2 } from "@/components/portal/v2/DinheiroV2";
 import { txStatus } from "@/lib/financeiro-const";
 import { brl } from "@/components/planejamento/celebra";
 import { TopoInterno } from "@/components/portal/TopoInterno";
@@ -27,6 +30,22 @@ export default async function PortalInvestimentoPage({
 }) {
   const evento = await getEventoDoPortal(params.eventoId);
   if (!evento) notFound();
+
+  // portal v2 (178): os dois lados do dinheiro, com "marcar pago"
+  if (usaPortalV2(evento.tipo)) {
+    const [dados, contato] = await Promise.all([
+      getDinheiroDoPortal(evento.id),
+      getContatoCerimonialista(evento.id),
+    ]);
+    return (
+      <DinheiroV2
+        eventoId={evento.id}
+        dados={dados}
+        cerimonialista={contato.nome?.split(" ")[0] ?? "Sua cerimonialista"}
+        hoje={hojeBR()}
+      />
+    );
+  }
 
   const investimento = await getInvestimento(evento.id);
   const parcelas = investimento?.parcelas ?? [];

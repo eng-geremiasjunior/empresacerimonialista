@@ -905,6 +905,7 @@ function Fornecedor({
                     {p.pagoEm && (
                       <p className="fe-parcela-hist">
                         pago · {fmtData(p.pagoEm)} ·{" "}
+                        {p.pagoPelaFamilia ? `${p.pagoPelaFamilia.split(" ")[0]} marcou no portal · ` : ""}
                         {p.comprovante?.nome ?? "sem comprovante"}
                       </p>
                     )}
