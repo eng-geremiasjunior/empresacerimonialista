@@ -1,5 +1,9 @@
 import { notFound } from "next/navigation";
-import { getEventoDoPortal } from "@/lib/supabase/portal";
+import { getContatoCerimonialista, getEventoDoPortal } from "@/lib/supabase/portal";
+import { getPaletaDoPortal } from "@/lib/supabase/portal-paleta";
+import { getMeuAcesso } from "@/lib/supabase/portal-estilo";
+import { usaPortalV2 } from "@/lib/portal-v2";
+import { PaletaV2 } from "@/components/portal/v2/PaletaV2";
 import { getGuiaDoEvento } from "@/lib/supabase/guia-estilo";
 import { createClient } from "@/lib/supabase/server";
 import { tem } from "@/lib/capacidades";
@@ -22,6 +26,23 @@ export default async function PortalGuiaEstiloPage({
   // navegador continuam chegando aqui. Show e corporativo não têm guia —
   // a rota se defende como /site e /cortejo já se defendem.
   if (!tem(evento.tipo, "siteDoEvento")) notFound();
+
+  // portal v2 (181): a família monta a paleta e manda referências
+  if (usaPortalV2(evento.tipo)) {
+    const [dados, contato, eu] = await Promise.all([
+      getPaletaDoPortal(evento.id),
+      getContatoCerimonialista(evento.id),
+      getMeuAcesso(evento.id),
+    ]);
+    return (
+      <PaletaV2
+        eventoId={evento.id}
+        dados={dados}
+        cerimonialista={contato.nome?.split(" ")[0] ?? "Sua cerimonialista"}
+        eu={eu.nome}
+      />
+    );
+  }
 
   const supabase = createClient();
   const [guia, { data: acesso }] = await Promise.all([

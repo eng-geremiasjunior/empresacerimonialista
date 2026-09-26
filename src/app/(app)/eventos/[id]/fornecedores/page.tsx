@@ -1,5 +1,6 @@
 import { getFornecedoresDoEvento } from "@/lib/supabase/fornecedores-evento";
 import { createClient } from "@/lib/supabase/server";
+import { FornecedoresDaFamilia } from "@/components/evento/DaFamilia";
 import { contratoAnexado } from "@/lib/fornecedores-core";
 import { FornecedoresDoEvento } from "@/components/fornecedores/FornecedoresDoEvento";
 import { AdicionarFornecedorButton } from "@/components/fornecedores/AdicionarFornecedorButton";
@@ -55,7 +56,15 @@ export default async function EventoFornecedoresPage({
     });
   }
 
+  // os fornecedores que a família chamou pelo portal v2 (181); sem a 181, vazio
+  const { data: daFamilia } = await supabase
+    .from("familia_fornecedor")
+    .select("id, nome, o_que_faz, contato, contratado, autor_nome")
+    .eq("event_id", params.id)
+    .order("created_at", { ascending: true });
+
   return (
+    <>
     <FornecedoresDoEvento
       eventId={params.id}
       fornecedores={fornecedores}
@@ -63,5 +72,16 @@ export default async function EventoFornecedoresPage({
       botaoAdicionar={<AdicionarFornecedorButton eventId={params.id} />}
       extracao={<ExtrairContrato eventId={params.id} contratos={contratos} />}
     />
+    <FornecedoresDaFamilia
+      itens={((daFamilia ?? []) as { id: string; nome: string; o_que_faz: string | null; contato: string | null; contratado: boolean; autor_nome: string | null }[]).map((f) => ({
+        id: f.id,
+        nome: f.nome,
+        oQueFaz: f.o_que_faz,
+        contato: f.contato,
+        contratado: f.contratado,
+        autor: f.autor_nome,
+      }))}
+    />
+    </>
   );
 }

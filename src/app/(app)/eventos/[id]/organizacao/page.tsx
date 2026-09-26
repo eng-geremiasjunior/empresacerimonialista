@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getOrganizacao } from "@/lib/supabase/organizacao-query";
 import { OrganizacaoEvento } from "@/components/organizacao/OrganizacaoEvento";
 import { getPublico, getRecursos } from "@/lib/supabase/recursos";
+import { TarefasDaFamilia } from "@/components/evento/DaFamilia";
 
 export default async function EventoOrganizacaoPage({
   params,
@@ -35,9 +36,15 @@ export default async function EventoOrganizacaoPage({
 
   // As quantidades entram AQUI, não só numa aba: quem coordena precisa
   // saber quantos doces e quantos salgados na mesma tela em que trabalha.
-  const [recursos, publico] = await Promise.all([
+  const [recursos, publico, { data: daFamilia }] = await Promise.all([
     getRecursos(eventId),
     getPublico(eventId),
+    // as tarefas que a família incluiu no portal v2 (179); sem a 179, vazio
+    supabase
+      .from("familia_tarefa")
+      .select("id, titulo, quando, quem, feita_em, autor_nome")
+      .eq("event_id", eventId)
+      .order("quando", { ascending: true, nullsFirst: false }),
   ]);
 
   // "Hoje" nasce aqui, em Brasília, e desce como dado. A lista agrupa por
@@ -48,6 +55,7 @@ export default async function EventoOrganizacaoPage({
   });
 
   return (
+    <>
     <OrganizacaoEvento
       inicial={organizacao}
       eventId={eventId}
@@ -58,5 +66,16 @@ export default async function EventoOrganizacaoPage({
       recursos={recursos}
       publico={publico}
     />
+    <TarefasDaFamilia
+      itens={((daFamilia ?? []) as { id: string; titulo: string; quando: string | null; quem: string | null; feita_em: string | null; autor_nome: string | null }[]).map((t) => ({
+        id: t.id,
+        titulo: t.titulo,
+        quando: t.quando,
+        quem: t.quem,
+        feita: !!t.feita_em,
+        autor: t.autor_nome,
+      }))}
+    />
+    </>
   );
 }

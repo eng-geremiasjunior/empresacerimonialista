@@ -90,3 +90,34 @@ export function corValida(v: unknown): CorDaFesta | null {
   if (!nome || !(l >= 0.3 && l <= 0.85) || !(c >= 0 && c <= 0.2) || !(h >= 0 && h <= 360)) return null;
   return { nome, l, c, h };
 }
+
+/**
+ * A cor de uma paleta (#rrggbb) como cor da festa: sRGB → OKLab → OKLCH,
+ * presa aos limites do banco (176) para o destaque continuar legível
+ * (branco vira um claro com um pouco de cor; preto, um escuro).
+ */
+export function corDoHex(hex: string, nome: string): CorDaFesta | null {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return null;
+  const num = parseInt(m[1], 16);
+  const lin = (v: number) => {
+    const x = v / 255;
+    return x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+  };
+  const r = lin((num >> 16) & 255), g = lin((num >> 8) & 255), b = lin(num & 255);
+  const l_ = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m_ = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s_ = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  const L = 0.2104542553 * l_ + 0.793617785 * m_ - 0.0040720468 * s_;
+  const A = 1.9779984951 * l_ - 2.428592205 * m_ + 0.4505937099 * s_;
+  const B = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.808675766 * s_;
+  const C = Math.sqrt(A * A + B * B);
+  let H = (Math.atan2(B, A) * 180) / Math.PI;
+  if (H < 0) H += 360;
+  return {
+    nome: nome.trim().slice(0, 30) || "Cor da paleta",
+    l: Number(Math.min(0.85, Math.max(0.3, L)).toFixed(3)),
+    c: Number(Math.min(0.2, Math.max(0, C)).toFixed(3)),
+    h: Number(Math.min(360, Math.max(0, H)).toFixed(1)),
+  };
+}
