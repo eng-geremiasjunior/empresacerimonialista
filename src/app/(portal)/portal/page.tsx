@@ -3,6 +3,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getEventosDaCliente, nomeDeExibicao } from "@/lib/supabase/portal";
 import { getMeuCargo } from "@/lib/supabase/equipe";
+import { emailDoSuperAdmin } from "@/lib/supabase/admin-painel";
+import { EscolhaDoDono } from "@/components/portal/EscolhaDoDono";
 import { dataLonga } from "@/components/portal/datas";
 import { Cartao, Rotulo } from "@/components/portal/Nucleo";
 import { SairDoPortal } from "@/components/portal/SairDoPortal";
@@ -29,6 +31,8 @@ export default async function PortalHomePage() {
   // Sem vínculo nenhum: quem é da equipe volta para a área dela (chegou
   // aqui por engano ou digitando o endereço); quem não é vê o recado.
   if (eventos.length === 0) {
+    // o dono do sistema escolhe um evento das contas da casa para testar
+    if (await emailDoSuperAdmin()) return <EscolhaDoDono />;
     const { cargo } = await getMeuCargo();
     if (cargo !== null) redirect("/eventos/dashboard");
   }
