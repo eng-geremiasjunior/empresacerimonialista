@@ -32,6 +32,7 @@ import {
   type Arquetipos,
 } from "./celebra";
 import { BlocoCuradoria, type AcoesCuradoria } from "./BlocoCuradoria";
+import { BlocoPropostasDaFamilia } from "./BlocoPropostasDaFamilia";
 import { BlocoGuiaEstilo, type AcoesGuia } from "./BlocoGuiaEstilo";
 import type { Curadoria } from "@/lib/supabase/curadoria";
 import type { GuiaDeEstilo } from "@/lib/guia-shared";
@@ -1263,6 +1264,9 @@ export function DrawerDecisao({
               acoes={acoesCuradoria}
             />
           )}
+
+          {/* o que a família propôs pelo portal (177): some sem proposta */}
+          {!na && <BlocoPropostasDaFamilia eventId={eventId} decisaoId={decisao.id} />}
 
           {/* O guia de estilo (096) é o produto do briefing de decoração:
               mora dentro desta decisão, e só dela. */}

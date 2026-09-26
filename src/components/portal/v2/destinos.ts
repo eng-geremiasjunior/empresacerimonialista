@@ -1,8 +1,8 @@
 // Os destinos do portal v2. A barra do celular mostra os quatro primeiros
 // e "Mais"; a coluna do computador mostra todos.
 //
-// Fase 1 (25/09/2026): as telas que o desenho ainda vai trocar apontam
-// para as de hoje (Escolhas → perguntas, Dinheiro → investimento). Tarefas
+// As telas que o desenho ainda vai trocar apontam para as de hoje
+// (Dinheiro → investimento, até a fase 3). Tarefas
 // da família e Fornecedores só entram quando existirem — a regra do
 // desenho é nenhuma tela "Em breve".
 
@@ -24,7 +24,7 @@ const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 export function destinosV2(tipo: string | null | undefined): DestinoV2[] {
   const lista: (DestinoV2 | null)[] = [
     { id: "inicio", rotulo: "Início", seg: "" },
-    { id: "escolhas", rotulo: "Escolhas", seg: "perguntas", tambem: ["escolhas"] },
+    { id: "escolhas", rotulo: "Escolhas", seg: "escolhas", tambem: ["perguntas"] },
     { id: "dinheiro", rotulo: "Dinheiro", seg: "investimento", tambem: ["prestacao-de-contas"] },
     tem(tipo, "listaNominal")
       ? { id: "convidados", rotulo: capitalizar(rotuloPublico(tipo)), seg: "convidados" }

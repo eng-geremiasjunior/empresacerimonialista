@@ -79,7 +79,8 @@ export function brl(v: number | null | undefined): string {
 
 export function dataBr(iso: string | null): string {
   if (!iso) return "—";
-  const [a, m, d] = iso.split("-");
+  // aceita a data pura e o carimbo inteiro ("2026-09-26T18:47:20+00:00")
+  const [a, m, d] = iso.slice(0, 10).split("-");
   return `${d}/${m}/${a}`;
 }
 

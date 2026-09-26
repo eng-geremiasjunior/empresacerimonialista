@@ -5,6 +5,10 @@ import { rotuloEscolhas } from "@/lib/papel";
 import { TopoInterno } from "@/components/portal/TopoInterno";
 import { Cartao } from "@/components/portal/Nucleo";
 import { SelecaoCurada } from "@/components/portal/SelecaoCurada";
+import { EscolhasV2 } from "@/components/portal/v2/EscolhasV2";
+import { getEscolhasDoPortal } from "@/lib/supabase/portal-escolhas";
+import { usaPortalV2 } from "@/lib/portal-v2";
+import { hojeBR } from "@/lib/tempo";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +21,23 @@ export default async function PortalEscolhasPage({
 }) {
   const evento = await getEventoDoPortal(params.eventoId);
   if (!evento) notFound();
+
+  // portal v2 (177): mão dupla — escolher, propor e responder aqui
+  if (usaPortalV2(evento.tipo)) {
+    const [{ listadas, outras }, contatoV2] = await Promise.all([
+      getEscolhasDoPortal(evento.id, evento.data),
+      getContatoCerimonialista(evento.id),
+    ]);
+    return (
+      <EscolhasV2
+        eventoId={evento.id}
+        escolhas={listadas}
+        outras={outras}
+        cerimonialista={contatoV2.nome?.split(" ")[0] ?? "Sua cerimonialista"}
+        hoje={hojeBR()}
+      />
+    );
+  }
 
   const [curadorias, contato] = await Promise.all([
     getCuradoriasDoPortal(evento.id),

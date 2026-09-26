@@ -145,6 +145,16 @@
   .pv2-conteudo > .pv2-largura { max-width: 1080px; margin: 0 auto; }
 }
 
+/* ---------------- títulos e escolhas ---------------- */
+.pv2-h1 { font-size: 40px; }
+.pv2-opcao { width: 290px; }
+.pv2-clicavel { transition: transform 0.3s; }
+.pv2-clicavel:hover { transform: translateY(-3px); }
+@media (min-width: 768px) {
+  .pv2-h1 { font-size: 52px; }
+  .pv2-opcao { width: 320px; }
+}
+
 /* ---------------- Início ---------------- */
 .pv2-heroi { padding-top: 6px; }
 .pv2-heroi-retrato { padding-top: 300px; text-shadow: 0 1px 18px rgba(20, 14, 18, 0.55); }

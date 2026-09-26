@@ -48,7 +48,7 @@ export function montarPrecisa(home: HomeDoPortal, base: string, hoje: string): I
       sub: null,
       tempo: d.prazoPrevisto ? tempoDaPergunta(dias, d.prazoPrevisto) : "sem prazo",
       urgente: dias <= 7,
-      href: `${base}/perguntas?decisao=${d.id}`,
+      href: `${base}/escolhas/${d.id}`,
       ordem: dias,
     });
   }
