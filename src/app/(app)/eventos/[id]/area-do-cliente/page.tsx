@@ -11,6 +11,8 @@ import {
   type HospedagemLinha,
 } from "@/components/evento/SiteDoConvite";
 import { portalBase, publicBase } from "@/lib/app-url";
+import { emailDoSuperAdmin, servico } from "@/lib/supabase/admin-painel";
+import { AbrirPortalComoFamilia } from "@/components/evento/AbrirPortalComoFamilia";
 import { tem } from "@/lib/capacidades";
 import { dataLonga } from "@/lib/rsvp-convite";
 
@@ -36,6 +38,9 @@ export default async function AreaDoClientePage({
 
   if (!evento) notFound();
   const tipo = (evento as { type?: string | null }).type ?? null;
+
+  // o dono do sistema testa o portal das contas da casa como a família
+  const donoNaCasa = await donoEmContaDaCasa(params.id);
 
   // O site do casamento (128) e o conhecimento do espaço. Se a migração
   // ainda não rodou, tudo degrada para "montar o site" sem quebrar.
@@ -204,7 +209,19 @@ export default async function AreaDoClientePage({
         >
           Abrir {portalBase(tipo).replace(/^https?:\/\//, "")}/portal/entrar
         </a>
+        {donoNaCasa && <AbrirPortalComoFamilia eventId={params.id} />}
       </section>
     </div>
   );
+}
+
+/** O dono do sistema, num evento de conta da casa (conferido no servidor). */
+async function donoEmContaDaCasa(eventId: string): Promise<boolean> {
+  if (!(await emailDoSuperAdmin())) return false;
+  const db = servico();
+  const { data: ev } = await db.from("events").select("empresa_id").eq("id", eventId).maybeSingle();
+  const empresaId = (ev as { empresa_id?: string } | null)?.empresa_id;
+  if (!empresaId) return false;
+  const { data } = await db.from("contas_da_casa").select("empresa_id").eq("empresa_id", empresaId).maybeSingle();
+  return !!data;
 }
