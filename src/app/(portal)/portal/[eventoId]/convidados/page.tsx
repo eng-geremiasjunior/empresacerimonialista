@@ -7,6 +7,9 @@ import { TopoInterno } from "@/components/portal/TopoInterno";
 import { ListaConvidados } from "@/components/portal/ListaConvidados";
 import { LinkDoEvento } from "@/components/portal/LinkDoEvento";
 import { LembreteConvidados } from "@/components/portal/LembreteConvidados";
+import { ConvidadosV2 } from "@/components/portal/v2/ConvidadosV2";
+import { getConvidadosV2 } from "@/lib/supabase/portal-salao";
+import { pessoaDoEvento, usaPortalV2 } from "@/lib/portal-v2";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +29,21 @@ export default async function PortalConvidadosPage({
   // nominal para um show de 5.000 pessoas, que é justamente a escala em
   // que ela não se sustenta
   if (!tem(evento.tipo, "listaNominal")) notFound();
+
+  // portal v2 (180): o salão vivo, o buffet por idade e as listas
+  if (usaPortalV2(evento.tipo)) {
+    const { convidados: lista, mesas, elementos } = await getConvidadosV2(evento.id);
+    return (
+      <ConvidadosV2
+        eventoId={evento.id}
+        convidados={lista}
+        mesas={mesas}
+        elementos={elementos}
+        base={publicBase()}
+        debutante={pessoaDoEvento(evento.nome)}
+      />
+    );
+  }
 
   const convidados = await getConvidados(evento.id);
   const resumo = resumirConvidados(convidados);

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { garamond, jost } from "@/lib/fontes-convite";
 import "../(portal)/portal.css";
+import "../(portal)/portal-v2.css";
 import "./confirmar.css";
 import "./convite.css";
 

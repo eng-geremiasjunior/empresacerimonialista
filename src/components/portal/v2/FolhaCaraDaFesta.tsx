@@ -196,6 +196,19 @@ export function FolhaCaraDaFesta({
               </span>
             </button>
           )}
+          {estilo.retratoPath && (
+            // o convite sai para fora da família: quem liga é o responsável
+            // (a 180 ignora o toque da debutante)
+            <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, minHeight: 44, fontSize: 14, color: "#332b24", cursor: "pointer" }}>
+              Usar a foto no convite dos convidados
+              <input
+                type="checkbox"
+                checked={estilo.retratoNoConvite}
+                onChange={(e) => gravar({ ...estilo, retratoNoConvite: e.target.checked }, { retratoNoConvite: e.target.checked })}
+                style={{ width: 22, height: 22, accentColor: "var(--destaque-texto)" }}
+              />
+            </label>
+          )}
           <input
             ref={entrada}
             type="file"

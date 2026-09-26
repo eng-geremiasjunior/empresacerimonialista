@@ -57,12 +57,15 @@ export function EscolhasV2({
   outras,
   cerimonialista,
   hoje,
+  trilha,
 }: {
   eventoId: string;
   escolhas: Escolha[];
   outras: { decisaoId: string; titulo: string; topico: string }[];
   cerimonialista: string;
   hoje: string;
+  /** a trilha da noite (180): quantos momentos já têm música */
+  trilha?: { comMusica: number; total: number; ultima: string | null };
 }) {
   const [filtro, setFiltro] = useState("todas");
   const [verDecididas, setVerDecididas] = useState(false);
@@ -125,6 +128,25 @@ export function EscolhasV2({
             );
           })}
         </div>
+      )}
+
+      {trilha && (
+        <Link
+          href={`${base}/trilha`}
+          className="pv2-clicavel"
+          style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 18px", borderRadius: 24, background: "radial-gradient(60% 90% at 85% 20%, color-mix(in oklch, var(--destaque) 45%, transparent), transparent 70%), var(--destaque-profundo)", color: "#fdfbf7", textDecoration: "none", boxShadow: "0 24px 44px -28px rgba(20,12,18,.7)", animation: `pv2-entrar .6s ${ES} .1s backwards` }}
+        >
+          <span aria-hidden style={{ flex: "none", width: 54, height: 54, borderRadius: "50%", background: "repeating-radial-gradient(circle, #1c1719 0 2px, #2a2326 2px 4px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ width: 18, height: 18, borderRadius: "50%", background: "var(--destaque)" }} />
+          </span>
+          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+            <span style={{ fontFamily: "var(--pv2-titulo)", fontSize: 22, lineHeight: 1.1 }}>A trilha da noite</span>
+            <span style={{ fontSize: 13, opacity: 0.85 }}>
+              {trilha.comMusica ? `${trilha.comMusica} de ${trilha.total} momentos com música${trilha.ultima ? ` · ${trilha.ultima}` : ""}` : "a entrada, a valsa, as velas, o parabéns"}
+            </span>
+          </span>
+          <span aria-hidden style={{ fontSize: 22 }}>›</span>
+        </Link>
       )}
 
       {escolhas.length === 0 && (

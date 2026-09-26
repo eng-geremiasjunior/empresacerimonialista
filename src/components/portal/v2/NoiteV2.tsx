@@ -54,12 +54,15 @@ export function NoiteV2({
   sugestoes,
   cerimonialista,
   linha,
+  musicas = {},
 }: {
   eventoId: string;
   momentos: MomentoDoDia[];
   sugestoes: SugestaoCronograma[];
   cerimonialista: string;
   linha: string;
+  /** a música da trilha (180) de cada momento do roteiro, pelo id */
+  musicas?: Record<string, string>;
 }) {
   const router = useRouter();
   const [enviando, iniciar] = useTransition();
@@ -224,6 +227,16 @@ export function NoiteV2({
             <div className="pv2-palco-hora" style={{ fontFamily: TITULO, lineHeight: 0.9, letterSpacing: "-.02em" }}>{atual.hhmm}</div>
             <div style={{ fontFamily: TITULO, fontSize: 30, lineHeight: 1.1 }}>{atual.titulo}</div>
             {atual.duracao ? <div style={{ fontSize: 14, opacity: 0.85 }}>{duracaoEmTexto(atual.duracao)}</div> : null}
+            {musicas[atual.id] && (
+              <div style={{ marginTop: 6, alignSelf: "flex-start", maxWidth: "100%", height: 32, padding: "0 12px", display: "flex", alignItems: "center", gap: 8, borderRadius: 16, background: "rgba(0,0,0,.28)", WebkitBackdropFilter: "blur(8px)", backdropFilter: "blur(8px)", fontSize: 13, color: "#fdfbf7", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                <span aria-hidden style={{ display: "flex", gap: 2, alignItems: "center", height: 14 }}>
+                  {[0, 0.2, 0.4].map((d) => (
+                    <span key={d} className="pv2-mov" style={{ width: 2.5, height: 14, background: "var(--destaque)", borderRadius: 1, animation: `pv2-eq .8s ease-in-out ${d}s infinite`, animationPlayState: tocando ? "running" : "paused" }} />
+                  ))}
+                </span>
+                {musicas[atual.id]}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -285,7 +298,9 @@ export function NoiteV2({
                 </button>
                 <button type="button" onClick={() => m.min >= 0 && irPara(i)} style={{ flex: 1, minWidth: 0, padding: 0, border: 0, background: "none", textAlign: "left", cursor: "pointer" }}>
                   <div style={{ fontFamily: TITULO, fontSize: 19, lineHeight: 1.2, color: "#2b241f" }}>{m.titulo}</div>
-                  {m.duracao ? <div style={{ fontSize: 12.5, color: "#776d60" }}>{duracaoEmTexto(m.duracao)}</div> : null}
+                  {m.duracao || musicas[m.id] ? (
+                    <div style={{ fontSize: 12.5, color: "#776d60" }}>{[m.duracao ? duracaoEmTexto(m.duracao) : null, musicas[m.id]].filter(Boolean).join(" · ")}</div>
+                  ) : null}
                 </button>
                 {m.min >= 0 && !aberto && (!sug || sug.estado !== "pendente") && (
                   <button type="button" onClick={() => setForm({ id: m.id, de: m.hhmm, motivo: "" })} style={{ flex: "none", height: 40, padding: "0 12px", border: "1px solid rgba(0,0,0,.08)", borderRadius: 14, background: "rgba(255,255,255,.8)", fontSize: 13, color: "#3a312a", cursor: "pointer" }}>

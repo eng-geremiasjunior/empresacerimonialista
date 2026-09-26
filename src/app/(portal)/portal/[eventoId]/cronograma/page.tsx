@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { getContatoCerimonialista, getEventoDoPortal } from "@/lib/supabase/portal";
 import { usaPortalV2 } from "@/lib/portal-v2";
 import { NoiteV2 } from "@/components/portal/v2/NoiteV2";
+import { getTrilha } from "@/lib/supabase/portal-trilha";
+import { MOMENTOS_DA_TRILHA } from "@/lib/trilha";
 import { linhaDoLocal } from "@/components/portal/v2/dadosDoInicio";
 import {
   getProgramaDoDia,
@@ -27,7 +29,15 @@ export default async function PortalCronogramaPage({
 
   // portal v2: o palco com a luz de cada momento e a sugestão de horário
   if (usaPortalV2(evento.tipo)) {
-    const contato = await getContatoCerimonialista(evento.id);
+    const [contato, trilha] = await Promise.all([getContatoCerimonialista(evento.id), getTrilha(evento.id)]);
+    // a música de cada momento: o primeiro momento do roteiro que é dele
+    const musicas: Record<string, string> = {};
+    const doDia = momentos.filter((p) => !/ensaio|montagem|making|prepara/i.test(p.titulo));
+    for (const t of MOMENTOS_DA_TRILHA) {
+      const e = trilha[t.id];
+      const alvo = e && doDia.find((p) => t.noRoteiro.test(p.titulo) && !musicas[p.id]);
+      if (e && alvo) musicas[alvo.id] = e.artista ? `${e.titulo} · ${e.artista}` : e.titulo;
+    }
     return (
       <NoiteV2
         eventoId={evento.id}
@@ -35,6 +45,7 @@ export default async function PortalCronogramaPage({
         sugestoes={sugestoes}
         cerimonialista={contato.nome?.split(" ")[0] ?? "Sua cerimonialista"}
         linha={linhaDoLocal(evento.data, null, evento.local, evento.cidade)}
+        musicas={musicas}
       />
     );
   }

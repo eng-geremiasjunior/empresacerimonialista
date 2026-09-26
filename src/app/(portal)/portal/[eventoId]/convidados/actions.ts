@@ -191,3 +191,28 @@ export async function lancarConfirmacao(
   revalidar(eventoId);
   return { ok: true };
 }
+
+/**
+ * "Começar a lista" (portal v2): os nomes colados do WhatsApp, um por
+ * linha. Limpa numeração e marcadores, tira repetidos, no máximo 300.
+ */
+export async function adicionarVarios(eventoId: string, nomes: string[]): Promise<Retorno & { quantos?: number }> {
+  const vistos = new Set<string>();
+  const linhas = nomes
+    .map((n) => n.replace(/^[\s\-–—•*·\d.)]+/, "").trim().slice(0, 120))
+    .filter((n) => {
+      const k = n.toLowerCase();
+      if (!n || vistos.has(k)) return false;
+      vistos.add(k);
+      return true;
+    })
+    .slice(0, 300);
+  if (!linhas.length) return { error: "Cole pelo menos um nome." };
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("evento_convidado")
+    .insert(linhas.map((nome) => ({ event_id: eventoId, nome, origem: "cliente" })));
+  if (error) return { error: "Não foi possível adicionar." };
+  revalidar(eventoId);
+  return { ok: true, quantos: linhas.length };
+}

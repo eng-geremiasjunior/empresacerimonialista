@@ -5,6 +5,9 @@ import { publicBase } from "@/lib/app-url";
 import { linkDaCredencial } from "@/lib/recepcao";
 import { anfitrioesDoConvite } from "@/lib/anfitrioes-do-convite";
 import { convitePara, quandoLegivel } from "@/lib/rsvp-convite";
+import { ConviteV2 } from "@/components/rsvp/ConviteV2";
+import { getConviteDaFesta } from "@/lib/convite-da-festa";
+import { tituloDaFesta, usaPortalV2 } from "@/lib/portal-v2";
 
 export const dynamic = "force-dynamic";
 
@@ -85,6 +88,29 @@ export default async function ConfirmarPage({
         link: linkDaCredencial(publicBase(), credencialBruta.checkin_hash),
       }
     : null;
+
+  // portal v2 (180): o convite com a cara da festa e a resposta por pessoa
+  if (usaPortalV2(convite.evento_tipo)) {
+    const festa = await getConviteDaFesta(params.hash);
+    if (festa) {
+      return (
+        <main>
+          <ConviteV2
+            hash={params.hash}
+            nome={convite.nome}
+            titulo={tituloDaFesta(festa.nomeEvento, "Os 15 anos")}
+            quando={quandoLegivel(convite.evento_data, convite.evento_hora)}
+            onde={onde || null}
+            dataIso={convite.evento_data}
+            horaIso={convite.evento_hora}
+            festa={festa}
+            confirmacaoInicial={convite.confirmacao}
+            credencial={credencial}
+          />
+        </main>
+      );
+    }
+  }
 
   return (
     <main className="rsvp-fora">

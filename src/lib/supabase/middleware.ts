@@ -184,10 +184,13 @@ export async function updateSession(request: NextRequest) {
   // /api/documento/ também: o contrato de prestação abre pelo portal, e a
   // RLS de evento_documento é quem decide se ela vê aquele arquivo (o
   // termo de aceite a RLS do portal não entrega).
+  // /api/trilha: a busca de músicas da trilha da noite (portal v2, 180) é
+  // chamada pela família — a rota exige sessão e não lê banco nenhum.
   const isPublicConfirmar =
     pathname.startsWith("/confirmar/") ||
     pathname.startsWith("/c/") ||
-    pathname.startsWith("/api/documento/");
+    pathname.startsWith("/api/documento/") ||
+    pathname.startsWith("/api/trilha");
 
   // ------------------------------------------------------------------
   // As duas casas do sistema não se misturam.

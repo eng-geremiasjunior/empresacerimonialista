@@ -39,7 +39,8 @@ function atalho(titulo: string, base: string): { href: string; rotulo: string } 
   const t = titulo.toLowerCase();
   if (/convidad|rsvp/.test(t)) return { href: `${base}/convidados`, rotulo: "Abrir Convidados" };
   if (/vela|corte|pr[ií]ncipe|dama|pares da valsa|padrinho/.test(t)) return { href: `${base}/cortejo`, rotulo: "Abrir a corte" };
-  if (/m[uú]sica|trilha|playlist|tema|cores|paleta/.test(t)) return { href: `${base}/escolhas`, rotulo: "Abrir Escolhas" };
+  if (/m[uú]sica|trilha|playlist/.test(t)) return { href: `${base}/trilha`, rotulo: "Abrir a trilha" };
+  if (/tema|cores|paleta/.test(t)) return { href: `${base}/escolhas`, rotulo: "Abrir Escolhas" };
   if (/roteiro|hor[aá]rio|ensaio geral/.test(t)) return { href: `${base}/cronograma`, rotulo: "Abrir a noite" };
   if (/pagar|pagamento|parcela|sinal/.test(t)) return { href: `${base}/investimento`, rotulo: "Abrir Dinheiro" };
   return null;

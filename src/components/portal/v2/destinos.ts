@@ -23,7 +23,7 @@ const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 export function destinosV2(tipo: string | null | undefined): DestinoV2[] {
   const lista: (DestinoV2 | null)[] = [
     { id: "inicio", rotulo: "Início", seg: "" },
-    { id: "escolhas", rotulo: "Escolhas", seg: "escolhas", tambem: ["perguntas"] },
+    { id: "escolhas", rotulo: "Escolhas", seg: "escolhas", tambem: ["perguntas", "trilha"] },
     { id: "dinheiro", rotulo: "Dinheiro", seg: "investimento", tambem: ["prestacao-de-contas"] },
     tem(tipo, "listaNominal")
       ? { id: "convidados", rotulo: capitalizar(rotuloPublico(tipo)), seg: "convidados" }

@@ -252,3 +252,5 @@
 @media (min-width: 768px) {
   .pv2-chamas { gap: 18px; }
 }
+@keyframes pv2-girar { to { transform: rotate(360deg); } }
+@keyframes pv2-eq { 0%, 100% { transform: scaleY(.25); } 50% { transform: scaleY(1); } }
