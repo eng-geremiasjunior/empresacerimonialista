@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/client";
 import { brl } from "@/components/planejamento/celebra";
 import { parseBRL } from "@/lib/financeiro-core";
 import { comprimirFoto } from "@/lib/portfolio";
+import { NoTopo } from "./NoTopo";
 import type {
   DinheiroDoPortal,
   FornecedorDaCarol,
@@ -779,7 +780,7 @@ function FolhaPagar({
   }
 
   return (
-    <>
+    <NoTopo>
       <div className="pv2-veu" onClick={fechar} aria-hidden />
       <div className="pv2-folha" role="dialog" aria-modal="true" aria-label={`Marcar como pago: ${fornecedor}`} style={{ padding: "24px 22px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
         <div style={{ fontSize: 12.5, color: "#776d60" }}>
@@ -823,7 +824,7 @@ function FolhaPagar({
           {cerimonialista} vê o pagamento e o comprovante no financeiro da festa.
         </div>
       </div>
-    </>
+    </NoTopo>
   );
 }
 

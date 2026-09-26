@@ -1,10 +1,9 @@
 // Os destinos do portal v2. A barra do celular mostra os quatro primeiros
 // e "Mais"; a coluna do computador mostra todos.
 //
-// Dinheiro mora em /investimento (a rota de sempre; a tela v2 é a da
-// 178). Tarefas
-// da família e Fornecedores só entram quando existirem — a regra do
-// desenho é nenhuma tela "Em breve".
+// Dinheiro mora em /investimento e A noite em /cronograma (as rotas de
+// sempre, com a tela v2 dentro). Fornecedores só entra quando existir —
+// a regra do desenho é nenhuma tela "Em breve".
 
 import { rotuloPublico, tem } from "@/lib/capacidades";
 import { rotuloCortejo } from "@/lib/papel";
@@ -31,6 +30,7 @@ export function destinosV2(tipo: string | null | undefined): DestinoV2[] {
       : null,
     tem(tipo, "siteDoEvento") ? { id: "paleta", rotulo: "Paleta e estilo", seg: "guia-estilo" } : null,
     tem(tipo, "cortejo") ? { id: "corte", rotulo: rotuloCortejo(tipo), seg: "cortejo" } : null,
+    { id: "tarefas", rotulo: "Tarefas da família", seg: "tarefas" },
     { id: "noite", rotulo: "A noite", seg: "cronograma" },
   ];
   return lista.filter((d): d is DestinoV2 => d !== null);

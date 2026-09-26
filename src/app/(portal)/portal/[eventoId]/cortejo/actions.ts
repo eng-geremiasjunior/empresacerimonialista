@@ -141,3 +141,29 @@ export async function removerPessoaCortejo(
   revalidar(eventoId);
   return { ok: true };
 }
+
+/**
+ * A ordem de chamada das velas (portal v2): a lista inteira na ordem
+ * nova. Só mexe em quem é deste evento e deste papel; a RLS é a trava.
+ */
+export async function reordenarCortejo(
+  eventoId: string,
+  papel: string,
+  ids: string[]
+): Promise<Retorno> {
+  if (ids.length === 0 || ids.length > 60) return { error: "Lista inválida." };
+  const supabase = createClient();
+  const resultados = await Promise.all(
+    ids.map((id, i) =>
+      supabase
+        .from("evento_cortejo_pessoa")
+        .update({ ordem: (i + 1) * 10, updated_at: new Date().toISOString() })
+        .eq("id", id)
+        .eq("event_id", eventoId)
+        .eq("papel", papel)
+    )
+  );
+  if (resultados.some((r) => r.error)) return { error: "Não foi possível mudar a ordem." };
+  revalidar(eventoId);
+  return { ok: true };
+}

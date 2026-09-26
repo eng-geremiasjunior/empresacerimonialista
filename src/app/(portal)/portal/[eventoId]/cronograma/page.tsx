@@ -1,5 +1,8 @@
 import { notFound } from "next/navigation";
-import { getEventoDoPortal } from "@/lib/supabase/portal";
+import { getContatoCerimonialista, getEventoDoPortal } from "@/lib/supabase/portal";
+import { usaPortalV2 } from "@/lib/portal-v2";
+import { NoiteV2 } from "@/components/portal/v2/NoiteV2";
+import { linhaDoLocal } from "@/components/portal/v2/dadosDoInicio";
 import {
   getProgramaDoDia,
   getSugestoesDoEvento,
@@ -21,6 +24,20 @@ export default async function PortalCronogramaPage({
     getProgramaDoDia(evento.id),
     getSugestoesDoEvento(evento.id),
   ]);
+
+  // portal v2: o palco com a luz de cada momento e a sugestão de horário
+  if (usaPortalV2(evento.tipo)) {
+    const contato = await getContatoCerimonialista(evento.id);
+    return (
+      <NoiteV2
+        eventoId={evento.id}
+        momentos={momentos}
+        sugestoes={sugestoes}
+        cerimonialista={contato.nome?.split(" ")[0] ?? "Sua cerimonialista"}
+        linha={linhaDoLocal(evento.data, null, evento.local, evento.cidade)}
+      />
+    );
+  }
 
   return (
     <div className="portal-tela">
