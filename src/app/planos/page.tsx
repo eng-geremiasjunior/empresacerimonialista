@@ -1,9 +1,5 @@
 import type { Metadata } from "next";
-import { newsreader, planosDoSite } from "@/lib/planos-do-site";
-import { SiteModelo2 } from "@/components/planos/SiteModelo2";
-import { Medicao } from "@/components/marketing/Medicao";
-import { Origem } from "@/components/marketing/Origem";
-import { MedirCliques } from "@/components/marketing/MedirCliques";
+import { SiteDaHome } from "@/components/site/SiteDaHome";
 import { PlanosModelo1 } from "./Modelo1";
 
 export const dynamic = "force-dynamic";
@@ -21,8 +17,8 @@ export const metadata: Metadata = {
 // evento de teste, planos). O modelo 1, a página anterior, continua em
 // /planos?modelo=1.
 //
-// Desde 27/09/2026 a home (/) é o site navegável, com a mesma base; esta
-// página fica como está porque é o destino dos anúncios.
+// Desde 27/09/2026 é o SITE NAVEGÁVEL (SiteDaHome), o mesmo da raiz:
+// "pode ficar em planos mesmo, nos dois" (dono).
 export default async function PlanosPage({
   searchParams,
 }: {
@@ -30,16 +26,5 @@ export default async function PlanosPage({
 }) {
   if (searchParams?.modelo === "1") return <PlanosModelo1 />;
 
-  const { planos, hrefConta, hrefPlano } = await planosDoSite();
-
-  return (
-    <div className={newsreader.variable}>
-      <SiteModelo2 planos={planos} hrefConta={hrefConta} hrefPlano={hrefPlano} />
-      {/* a marca do anúncio guardada na primeira tela */}
-      <Origem />
-      {/* toda âncora desta página vira evento medido */}
-      <MedirCliques />
-      <Medicao />
-    </div>
-  );
+  return <SiteDaHome />;
 }

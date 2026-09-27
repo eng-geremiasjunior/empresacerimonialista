@@ -5,7 +5,8 @@
 // no celular, um botão "Menu" que abre tudo numa tela, à vista (regra do
 // dono: menu destacado, tudo à vista no celular).
 //
-// Os endereços são "/#…" para funcionarem de qualquer página do site.
+// As âncoras apontam para a /planos (a home do site, que abre também para
+// quem está logado), para funcionarem de qualquer página.
 //
 // A tela do celular vai para fora do cabeçalho por portal: o cabeçalho tem
 // backdrop-filter, e isso prende um position:fixed dentro dele.
@@ -18,21 +19,26 @@ export type GrupoDoMenu = { rotulo: string; itens: ItemDoMenu[] };
 export type EntradaDoMenu = ItemDoMenu | GrupoDoMenu;
 
 export const MENU_DO_SITE: EntradaDoMenu[] = [
-  { rotulo: "Como funciona", href: "/#apresentacao" },
+  {
+    rotulo: "Eventos",
+    itens: [
+      { rotulo: "Casamento", href: "/para/casamento", nota: "do sim ao fim da festa" },
+      { rotulo: "15 anos", href: "/para/15-anos", nota: "com a família junto" },
+      { rotulo: "Corporativo e outros", href: "/para/outros-eventos", nota: "aniversário, formatura e o que vier" },
+    ],
+  },
   {
     rotulo: "Funcionalidades",
     itens: [
-      { rotulo: "Um evento, uma tela", href: "/#ap-evento", nota: "o que fazer agora em cada evento" },
-      { rotulo: "Planejamento", href: "/#ap-planejamento", nota: "as decisões, com prazo" },
-      { rotulo: "Fornecedores", href: "/#ap-fornecedores", nota: "o roteiro de cada um, no celular" },
-      { rotulo: "Portal da família", href: "/#ap-portal", nota: "a família acompanha tudo" },
-      { rotulo: "Dia do evento", href: "/#ap-dia", nota: "tudo acontecendo, ao vivo" },
-      { rotulo: "Financeiro", href: "/#ap-financeiro", nota: "o dinheiro de cada evento" },
+      { rotulo: "Roteiro do dia e fornecedores", href: "/funcionalidades/roteiro-do-dia", nota: "cada um com a hora dele" },
+      { rotulo: "Portal da família", href: "/funcionalidades/portal-da-familia", nota: "a família acompanha tudo" },
+      { rotulo: "Planejamento", href: "/funcionalidades/planejamento", nota: "as decisões, com prazo" },
+      { rotulo: "Financeiro", href: "/funcionalidades/financeiro", nota: "o dinheiro de cada evento" },
     ],
   },
-  { rotulo: "Experimente", href: "/#a-demo" },
-  { rotulo: "Planos", href: "/#a-planos" },
-  { rotulo: "Dúvidas", href: "/#a-duvidas" },
+  { rotulo: "Como funciona", href: "/planos#apresentacao" },
+  { rotulo: "Planos", href: "/planos#a-planos" },
+  { rotulo: "Dúvidas", href: "/planos#a-duvidas" },
 ];
 
 const eGrupo = (e: EntradaDoMenu): e is GrupoDoMenu => "itens" in e;
@@ -157,8 +163,8 @@ export function MenuDoSite({ entradas = MENU_DO_SITE, hrefConta }: { entradas?: 
             <a href="/login">Entrar</a>
           </div>
         </div>,
-            // dentro do .s2 (que não tem filtro): herda as fontes do site
-            document.querySelector(".s2") ?? document.body
+            // dentro do .s2/.ps (sem filtro): herda as fontes do site
+            document.querySelector(".s2, .ps") ?? document.body
           )
         : null}
     </div>

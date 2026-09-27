@@ -38,6 +38,10 @@ const ROTAS_PUBLICAS: ((p: string) => boolean)[] = [
   (p) => p === "/termos",
   // os planos lado a lado — a pessoa escolhe ANTES de ter conta
   (p) => p === "/planos",
+  // o site navegável (27/09/2026): uma página por tipo de evento e uma
+  // por funcionalidade
+  (p) => p.startsWith("/para/"),
+  (p) => p.startsWith("/funcionalidades/"),
   // o teste de sete dias (154): quatro campos, sem cartão e sem conta
   (p) => p === "/criar-conta",
   // a página de preços, com o menu que leva a ela

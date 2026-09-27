@@ -16,67 +16,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 import { useEffect, useRef, useState } from "react";
-
-export type PassoDaApresentacao = {
-  id: string;
-  rotulo: string;
-  titulo: string;
-  texto: string;
-  /** /site/tela-*.webp, 720 x 1560 */
-  tela: string;
-  recorte: { src: string; largura: number; altura: number };
-};
-
-export const PASSOS_DA_HOME: PassoDaApresentacao[] = [
-  {
-    id: "evento",
-    rotulo: "Um evento, uma tela",
-    titulo: "Você abre o evento e sabe o que fazer agora.",
-    texto: "Quanto falta, quem ainda não confirmou e qual parcela venceu, com o botão para resolver do lado.",
-    tela: "/site/tela-evento.webp",
-    recorte: { src: "/site/recorte-evento.webp", largura: 760, altura: 380 },
-  },
-  {
-    id: "planejamento",
-    rotulo: "O planejamento",
-    titulo: "O que precisa ser decidido, na ordem certa.",
-    texto: "Cada decisão chega com prazo, do jeito de cada tipo de evento. O que foi decidido vira tarefa.",
-    tela: "/site/tela-planejamento.webp",
-    recorte: { src: "/site/recorte-planejamento.webp", largura: 760, altura: 456 },
-  },
-  {
-    id: "fornecedores",
-    rotulo: "Os fornecedores",
-    titulo: "Cada fornecedor recebe o roteiro dele, no celular.",
-    texto: "Um link por fornecedor, só com os horários dele. Ele confirma ali mesmo, e o link acompanha quando o roteiro muda.",
-    tela: "/site/tela-fornecedores.webp",
-    recorte: { src: "/site/recorte-fornecedores.webp", largura: 640, altura: 736 },
-  },
-  {
-    id: "portal",
-    rotulo: "A família",
-    titulo: "A família acompanha tudo num portal só dela.",
-    texto: "Escolhas, convidados, a noite e o dinheiro da festa. E você para de responder a mesma pergunta.",
-    tela: "/site/tela-portal.webp",
-    recorte: { src: "/site/recorte-portal.webp", largura: 760, altura: 502 },
-  },
-  {
-    id: "dia",
-    rotulo: "O dia do evento",
-    titulo: "No dia, você vê tudo acontecendo.",
-    texto: "O que está acontecendo agora, o que vem depois e quem avisou de um problema.",
-    tela: "/site/tela-dia.webp",
-    recorte: { src: "/site/recorte-dia.webp", largura: 760, altura: 578 },
-  },
-  {
-    id: "financeiro",
-    rotulo: "O financeiro",
-    titulo: "O dinheiro de cada evento, sem planilha.",
-    texto: "Parcela atrasada, pagamento sem comprovante e o que ainda falta contratar, num quadro só.",
-    tela: "/site/tela-financeiro.webp",
-    recorte: { src: "/site/recorte-financeiro.webp", largura: 760, altura: 426 },
-  },
-];
+import { PASSOS_DA_HOME, type PassoDaApresentacao } from "@/lib/site-paginas";
 
 const CSS = `
 .ap{border-top:1px solid rgba(34,30,27,.1);background:#FAF8F5}

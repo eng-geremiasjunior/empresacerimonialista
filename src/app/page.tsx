@@ -1,15 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { newsreader, planosDoSite } from "@/lib/planos-do-site";
-import { SiteModelo2 } from "@/components/planos/SiteModelo2";
-import { MenuDoSite } from "@/components/site/MenuDoSite";
-import { Apresentacao } from "@/components/site/Apresentacao";
-import { Palco } from "@/components/site/Palco";
-import { RoteiroAoVivo } from "@/components/site/RoteiroAoVivo";
-import { Medicao } from "@/components/marketing/Medicao";
-import { Origem } from "@/components/marketing/Origem";
-import { MedirCliques } from "@/components/marketing/MedirCliques";
+import { SiteDaHome } from "@/components/site/SiteDaHome";
 
 export const dynamic = "force-dynamic";
 
@@ -54,8 +46,8 @@ export default async function Home({
 
   // Quem não tem sessão vê o SITE (27/09/2026): a base da página de vendas
   // (modelo 2) com o menu do site, a apresentação que troca de tela com a
-  // rolagem, o palco do dia do evento e o roteiro andando. A /planos
-  // continua igual: é o destino dos anúncios.
+  // rolagem, o palco do dia do evento e o roteiro andando. A /planos, o
+  // destino dos anúncios, mostra o mesmo site (SiteDaHome).
   //
   // Antes (08/09/2026): quem não tinha sessão ia para a PÁGINA DE VENDAS, não o login.
   // Até aqui a raiz mandava todo mundo para /login: quem chegava por
@@ -64,25 +56,5 @@ export default async function Home({
   // A /planos existe, tem a demonstração do evento nascendo e é para onde
   // os anúncios apontam — é ela que responde "o que é isto?". O login
   // continua a um clique, no cabeçalho dela.
-  const { planos, hrefConta, hrefPlano } = await planosDoSite();
-  return (
-    <div className={newsreader.variable}>
-      <SiteModelo2
-        planos={planos}
-        hrefConta={hrefConta}
-        hrefPlano={hrefPlano}
-        menu={<MenuDoSite hrefConta={hrefConta} />}
-        apresentacao={
-          <>
-            <Apresentacao />
-            <Palco />
-            <RoteiroAoVivo />
-          </>
-        }
-      />
-      <Origem />
-      <MedirCliques />
-      <Medicao />
-    </div>
-  );
+  return <SiteDaHome />;
 }
