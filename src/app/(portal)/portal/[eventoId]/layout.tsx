@@ -18,6 +18,7 @@ import { CascaV2 } from "@/components/portal/v2/CascaV2";
 import { EntradaV2 } from "@/components/portal/v2/EntradaV2";
 import { destinosV2 } from "@/components/portal/v2/destinos";
 import { getEstiloDoPortal, getMeuAcesso } from "@/lib/supabase/portal-estilo";
+import { listaDePresentesLiberada } from "@/lib/supabase/portal-presentes";
 import { pessoaDoEvento, tituloDaFesta, usaPortalV2 } from "@/lib/portal-v2";
 
 export const dynamic = "force-dynamic";
@@ -81,10 +82,11 @@ export default async function PortalEventoLayout({
   // debutante. A casca é outra; as telas que o desenho ainda vai trocar
   // entram nela como estão.
   if (usaPortalV2(evento.tipo)) {
-    const [contato, estilo, eu] = await Promise.all([
+    const [contato, estilo, eu, presentes] = await Promise.all([
       getContatoCerimonialista(evento.id),
       getEstiloDoPortal(evento.id),
       getMeuAcesso(evento.id),
+      listaDePresentesLiberada(evento.id),
     ]);
     const pessoa = pessoaDoEvento(evento.nome);
     const titulo = tituloDaFesta(evento.nome, nomeDeExibicao(evento));
@@ -119,7 +121,7 @@ export default async function PortalEventoLayout({
           whatsappLink={zap}
           inicial={(eu.nome ?? "•").charAt(0).toUpperCase()}
           estilo={estilo}
-          destinos={destinosV2(evento.tipo)}
+          destinos={destinosV2(evento.tipo, { presentes })}
           diasRestantes={evento.diasRestantes}
           mostrarAbertura={noInicio && !jaAbriu}
           tituloDoEvento={titulo}

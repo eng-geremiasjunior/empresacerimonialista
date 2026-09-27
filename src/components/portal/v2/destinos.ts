@@ -20,7 +20,7 @@ export type DestinoV2 = {
 
 const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-export function destinosV2(tipo: string | null | undefined): DestinoV2[] {
+export function destinosV2(tipo: string | null | undefined, opcoes: { presentes?: boolean } = {}): DestinoV2[] {
   const lista: (DestinoV2 | null)[] = [
     { id: "inicio", rotulo: "Início", seg: "" },
     { id: "escolhas", rotulo: "Escolhas", seg: "escolhas", tambem: ["perguntas", "trilha"] },
@@ -32,6 +32,7 @@ export function destinosV2(tipo: string | null | undefined): DestinoV2[] {
     tem(tipo, "cortejo") ? { id: "corte", rotulo: rotuloCortejo(tipo), seg: "cortejo" } : null,
     { id: "tarefas", rotulo: "Tarefas da família", seg: "tarefas" },
     { id: "fornecedores", rotulo: "Fornecedores", seg: "fornecedores" },
+    opcoes.presentes ? { id: "presentes", rotulo: "Lista de presentes", seg: "presentes" } : null,
     { id: "noite", rotulo: "A noite", seg: "cronograma" },
   ];
   return lista.filter((d): d is DestinoV2 => d !== null);

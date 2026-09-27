@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { lerAssinatura } from "@/lib/pagarme";
+import { lerRecebedor } from "@/lib/pagarme-lista";
 import { hojeBR } from "@/lib/tempo";
 import { registrarErroDoServidor } from "@/lib/registro-do-sistema";
 import { conversaoDaAssinatura } from "@/lib/conversao-da-assinatura";
@@ -65,6 +66,9 @@ function autenticado(request: NextRequest): boolean {
   return diferenca === 0;
 }
 
+// os estados que a 182 aceita (o CHECK da tabela)
+const ESTADOS_DO_RECEBEDOR = ["registration", "affiliation", "active", "refused", "suspended", "blocked", "inactive"];
+
 type Corpo = {
   id?: string;
   type?: string;
@@ -96,6 +100,13 @@ export async function POST(request: NextRequest) {
 
   const db = servico();
 
+  // O aviso de recebedor (lista de presentes, 182) traz CPF e conta
+  // bancária da família: no log fica só o id e o estado.
+  const ehRecebedor = corpo.type.startsWith("recipient.");
+  const payload = ehRecebedor
+    ? { id: corpo.id, type: corpo.type, created_at: corpo.created_at, data: { id: corpo.data?.id, status: corpo.data?.status } }
+    : (corpo as unknown as Record<string, unknown>);
+
   // idempotência: a mesma notificação não é processada duas vezes
   const registro = await db
     .from("gateway_evento")
@@ -103,7 +114,7 @@ export async function POST(request: NextRequest) {
       gateway: "pagarme",
       evento_id: corpo.id,
       tipo: corpo.type,
-      payload: corpo as unknown as Record<string, unknown>,
+      payload,
     })
     .select("id")
     .single();
@@ -117,6 +128,34 @@ export async function POST(request: NextRequest) {
     console.error("[vela:pagarme] registro:", registro.error.message);
     await registrarErroDoServidor({ area: "Aviso da operadora", codigo: registro.error.code ?? "registro" });
     return NextResponse.json({ ok: false }, { status: 500 });
+  }
+
+  // O recebedor da lista de presentes (182): o aviso diz que mudou, a API
+  // diz como está — e só o estado entra no nosso banco.
+  if (ehRecebedor) {
+    const recebedorId = (corpo as { data?: { id?: string } }).data?.id;
+    const { data: rec } = recebedorId
+      ? await db.from("evento_recebedor").select("event_id").eq("pagarme_recipient_id", recebedorId).maybeSingle()
+      : { data: null };
+    let erro: string | null = rec ? null : "recebedor desconhecido";
+    if (rec && recebedorId) {
+      const atual = await lerRecebedor(recebedorId);
+      if (atual.ok && ESTADOS_DO_RECEBEDOR.includes(atual.dados.status)) {
+        await db
+          .from("evento_recebedor")
+          .update({ status: atual.dados.status, kyc_status: atual.dados.kyc_details?.status ?? null, updated_at: new Date().toISOString() })
+          .eq("pagarme_recipient_id", recebedorId);
+      } else if (atual.ok) {
+        erro = "estado do recebedor fora da lista";
+      } else {
+        erro = "leitura do recebedor";
+      }
+    }
+    await db
+      .from("gateway_evento")
+      .update({ processado_em: new Date().toISOString(), erro })
+      .eq("id", registro.data.id);
+    return NextResponse.json({ ok: true });
   }
 
   const assinaturaId = idDaAssinatura(corpo);
