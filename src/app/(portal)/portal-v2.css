@@ -199,11 +199,14 @@
 
 /* versão leve: celular simples ou quem pediu menos movimento — o fundo
    fica, o movimento sai */
+/* As chamas das velas (.pv2-vela) não entram na versão leve: são o
+   assunto da tela, e transformar 15 chamas é barato. Param só quando o
+   aparelho pede menos movimento, como no desenho. */
 .pv2[data-leve="1"] .pv2-mov { animation: none !important; }
 .pv2[data-leve="1"] .pv2-so-cheio { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .pv2 .pv2-cortina { display: none !important; }
-  .pv2 .pv2-mov { animation: none !important; }
+  .pv2 .pv2-mov, .pv2 .pv2-vela { animation: none !important; }
   .pv2 .pv2-so-cheio { display: none !important; }
   .pv2, .pv2 * { transition-duration: 0.01s !important; }
 }

@@ -197,7 +197,7 @@ export function NoiteV2({
           <div aria-hidden className="pv2-chamas" style={{ position: "absolute", left: 0, right: 0, top: "40%", display: "flex", justifyContent: "center" }}>
             {Array.from({ length: 15 }, (_, i) => (
               <span key={i} style={{ position: "relative", width: 5, height: 22, borderRadius: 2, background: "#f4ead8" }}>
-                <span className="pv2-mov" style={{ position: "absolute", left: "50%", top: -13, width: 9, height: 14, marginLeft: -4.5, borderRadius: "50% 50% 45% 45%/60% 60% 40% 40%", background: "radial-gradient(circle at 50% 70%,#fff6d8,#ffc15e 55%,#ff8a3d)", boxShadow: "0 0 14px 4px rgba(255,170,80,.55)", transformOrigin: "50% 100%", animation: `pv2-chama ${1.1 + (i % 4) * 0.23}s ease-in-out infinite` }} />
+                <span className="pv2-vela" style={{ position: "absolute", left: "50%", top: -13, width: 9, height: 14, marginLeft: -4.5, borderRadius: "50% 50% 45% 45%/60% 60% 40% 40%", background: "radial-gradient(circle at 50% 70%,#fff6d8,#ffc15e 55%,#ff8a3d)", boxShadow: "0 0 14px 4px rgba(255,170,80,.55)", transformOrigin: "50% 100%", animation: `pv2-chama ${1.1 + (i % 4) * 0.23}s ease-in-out infinite` }} />
               </span>
             ))}
           </div>

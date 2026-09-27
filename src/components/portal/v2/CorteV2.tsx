@@ -176,9 +176,9 @@ export function CorteV2({
             >
               {acesa && (
                 <>
-                  <span className="pv2-mov" style={{ position: "absolute", top: 0, left: "50%", width: 44, height: 44, marginLeft: -22, borderRadius: "50%", background: "radial-gradient(circle,rgba(255,190,110,.55),transparent 70%)", animation: `pv2-brilho 2.4s ease-in-out ${i * 0.17}s infinite` }} />
+                  <span className="pv2-vela" style={{ position: "absolute", top: 0, left: "50%", width: 44, height: 44, marginLeft: -22, borderRadius: "50%", background: "radial-gradient(circle,rgba(255,190,110,.55),transparent 70%)", animation: `pv2-brilho 2.4s ease-in-out ${i * 0.17}s infinite` }} />
                   <span
-                    className="pv2-mov"
+                    className="pv2-vela"
                     style={{
                       position: "relative", width: 11, height: 18, marginBottom: 1,
                       borderRadius: "50% 50% 45% 45%/60% 60% 40% 40%",
@@ -300,8 +300,8 @@ export function CorteV2({
           </div>
           <div key={ensaio} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: "0 28px", textAlign: "center" }}>
             <div style={{ position: "relative", width: 120, height: 190, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end" }}>
-              <span className="pv2-mov" style={{ position: "absolute", top: -10, width: 150, height: 150, borderRadius: "50%", background: "radial-gradient(circle,rgba(255,190,110,.6),transparent 70%)", animation: "pv2-esmaecer 1.2s ease .5s both, pv2-brilho 2.4s ease-in-out 1.7s infinite" }} />
-              <span className="pv2-mov" style={{ position: "relative", width: 26, height: 40, marginBottom: 2, borderRadius: "50% 50% 45% 45%/60% 60% 40% 40%", background: "radial-gradient(circle at 50% 72%,#fff7dc,#ffc25f 55%,#ff8b3d)", boxShadow: "0 0 34px 12px rgba(255,170,80,.55)", transformOrigin: "50% 100%", animation: `pv2-acender 1s ${ES} .5s both, pv2-chama 1.3s ease-in-out 1.5s infinite` }} />
+              <span className="pv2-vela" style={{ position: "absolute", top: -10, width: 150, height: 150, borderRadius: "50%", background: "radial-gradient(circle,rgba(255,190,110,.6),transparent 70%)", animation: "pv2-esmaecer 1.2s ease .5s both, pv2-brilho 2.4s ease-in-out 1.7s infinite" }} />
+              <span className="pv2-vela" style={{ position: "relative", width: 26, height: 40, marginBottom: 2, borderRadius: "50% 50% 45% 45%/60% 60% 40% 40%", background: "radial-gradient(circle at 50% 72%,#fff7dc,#ffc25f 55%,#ff8b3d)", boxShadow: "0 0 34px 12px rgba(255,170,80,.55)", transformOrigin: "50% 100%", animation: `pv2-acender 1s ${ES} .5s both, pv2-chama 1.3s ease-in-out 1.5s infinite` }} />
               <span style={{ width: 22, height: 110, borderRadius: "5px 5px 3px 3px", background: "linear-gradient(90deg,#e9dcc6,#fbf4e6 50%,#e2d3ba)" }} />
             </div>
             <div style={{ fontSize: 12, letterSpacing: ".16em", textTransform: "uppercase", opacity: 0.75, animation: "pv2-entrar .8s ease .2s backwards" }}>
