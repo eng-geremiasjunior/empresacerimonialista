@@ -51,6 +51,9 @@ const CSS = `
 .ms-grupo[data-aberto="1"]>button span{transform:rotate(180deg)}
 .ms-lista{position:absolute;top:calc(100% + 18px);left:-24px;width:330px;background:#FAF8F5;border:1px solid rgba(34,30,27,.12);box-shadow:0 24px 50px rgba(34,30,27,.14);padding:10px;display:flex;flex-direction:column;opacity:0;pointer-events:none;transform:translateY(-6px);transition:opacity .18s,transform .18s}
 .ms-grupo[data-aberto="1"] .ms-lista{opacity:1;pointer-events:auto;transform:none}
+/* a ponte sobre o vão entre o botão e a lista: sem ela, o mouse saía do
+   menu no caminho e a lista fechava antes do clique (dono, 27/09/2026) */
+.ms-lista::before{content:"";position:absolute;left:0;right:0;top:-22px;height:22px}
 .ms-lista a{display:flex;flex-direction:column;gap:3px;padding:11px 14px}
 .ms-lista a:hover{background:#F2EEE9;opacity:1!important}
 .ms-lista b{font-weight:400;font-size:15px}
@@ -74,6 +77,19 @@ const CSS = `
 function Grupo({ g }: { g: GrupoDoMenu }) {
   const [aberto, setAberto] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  // fechar com uma pequena espera: um desvio do mouse não derruba a lista
+  const fechar = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abrir = () => {
+    if (fechar.current) clearTimeout(fechar.current);
+    setAberto(true);
+  };
+  const sair = () => {
+    if (fechar.current) clearTimeout(fechar.current);
+    fechar.current = setTimeout(() => setAberto(false), 220);
+  };
+  useEffect(() => () => {
+    if (fechar.current) clearTimeout(fechar.current);
+  }, []);
   useEffect(() => {
     if (!aberto) return;
     const fora = (e: MouseEvent) => {
@@ -92,8 +108,8 @@ function Grupo({ g }: { g: GrupoDoMenu }) {
       ref={ref}
       className="ms-grupo"
       data-aberto={aberto ? "1" : "0"}
-      onMouseEnter={() => setAberto(true)}
-      onMouseLeave={() => setAberto(false)}
+      onMouseEnter={abrir}
+      onMouseLeave={sair}
     >
       <button type="button" aria-expanded={aberto} onClick={() => setAberto((a) => !a)}>
         {g.rotulo} <span aria-hidden>▾</span>
