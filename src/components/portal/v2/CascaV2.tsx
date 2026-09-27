@@ -94,7 +94,9 @@ export function CascaV2({
 
   useEffect(() => {
     const nav = navigator as Navigator & { deviceMemory?: number };
-    const fraco = (nav.deviceMemory ?? 8) <= 4 || (navigator.hardwareConcurrency ?? 8) <= 4;
+    // leve só para aparelho fraco de verdade: com 4 núcleos ou 4 GB (o
+    // computador do dono, muito celular) o fundo se mexe como no desenho
+    const fraco = (nav.deviceMemory ?? 8) <= 2 || (navigator.hardwareConcurrency ?? 8) <= 2;
     const menos = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     setLeve(fraco || menos);
   }, []);
