@@ -21,6 +21,27 @@ export function mascararTelefone(valor: string): string {
 }
 
 /**
+ * O WhatsApp do jeito que se escreve no Brasil: 33 9 9947-8774 (celular)
+ * e 33 3321-4455 (fixo). Pedido do dono para os formulários do site
+ * (27/09/2026).
+ */
+export function mascararWhatsapp(valor: string): string {
+  const d = soDigitos(valor).slice(0, 11);
+  if (d.length <= 2) return d;
+  const ddd = d.slice(0, 2);
+  const resto = d.slice(2);
+  // celular começa com 9 logo depois do DDD: o desenho já vale durante a
+  // digitação, sem pular de formato no último número
+  if (resto[0] === "9") {
+    const n = resto.slice(1);
+    if (!n) return `${ddd} 9`;
+    return `${ddd} 9 ${n.length > 4 ? `${n.slice(0, 4)}-${n.slice(4)}` : n}`;
+  }
+  const fixo = resto.slice(0, 8);
+  return `${ddd} ${fixo.length > 4 ? `${fixo.slice(0, 4)}-${fixo.slice(4)}` : fixo}`;
+}
+
+/**
  * Dez dígitos (fixo) ou onze (celular). O DDD brasileiro começa em 11, e
  * celular de onze dígitos sempre começa com 9 — as duas regras cortam a
  * maior parte da digitação errada antes de ela virar recusa.

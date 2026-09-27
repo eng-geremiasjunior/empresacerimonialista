@@ -6,6 +6,7 @@
 
 import { useState, useTransition } from "react";
 import { candidatarParceira } from "./actions";
+import { mascararWhatsapp } from "@/lib/contato";
 
 const ENSINA: [string, string][] = [
   ["curso", "Curso"],
@@ -36,6 +37,7 @@ const CSS = `
 
 export function FormParceira() {
   const [ensina, setEnsina] = useState<string | null>(null);
+  const [whats, setWhats] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [pronto, setPronto] = useState(false);
   const [enviando, iniciar] = useTransition();
@@ -90,7 +92,16 @@ export function FormParceira() {
       </div>
       <label>
         WhatsApp
-        <input name="whatsapp" type="tel" autoComplete="tel" maxLength={30} />
+        <input
+          name="whatsapp"
+          type="tel"
+          inputMode="numeric"
+          autoComplete="tel-national"
+          placeholder="33 9 9947-8774"
+          value={whats}
+          onChange={(e) => setWhats(mascararWhatsapp(e.target.value))}
+          maxLength={16}
+        />
       </label>
       <label>
         Em uma frase, o que você ensina (opcional)

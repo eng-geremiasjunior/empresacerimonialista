@@ -7,6 +7,7 @@
 
 import { headers } from "next/headers";
 import { ehEnsina, servicoParceiras } from "@/lib/parceiras";
+import { mascararWhatsapp, telefoneValido } from "@/lib/contato";
 
 export type ResultadoDaCandidatura = { ok: true } | { ok: false; erro: string };
 
@@ -20,13 +21,15 @@ export async function candidatarParceira(dados: FormData): Promise<ResultadoDaCa
   const email = limpo(dados.get("email"), 200).toLowerCase();
   const instagram = limpo(dados.get("instagram"), 80).replace(/^https?:\/\/(www\.)?instagram\.com\//i, "").replace(/\/+$/, "");
   const ensina = limpo(dados.get("ensina"), 20);
-  const whatsapp = limpo(dados.get("whatsapp"), 30) || null;
+  const whatsappCru = limpo(dados.get("whatsapp"), 30);
+  const whatsapp = whatsappCru ? mascararWhatsapp(whatsappCru) : null;
   const sobre = limpo(dados.get("sobre"), 600) || null;
 
   if (nome.length < 2) return { ok: false, erro: "Diga o seu nome." };
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, erro: "Confira o e-mail." };
   if (instagram.replace(/^@/, "").length < 2) return { ok: false, erro: "Diga o seu Instagram." };
   if (!ehEnsina(ensina)) return { ok: false, erro: "Escolha o que você ensina." };
+  if (whatsappCru && !telefoneValido(whatsappCru)) return { ok: false, erro: "Confira o WhatsApp: DDD e número, como 33 9 9947-8774." };
 
   const h = headers();
   const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip") ?? "desconhecido";
