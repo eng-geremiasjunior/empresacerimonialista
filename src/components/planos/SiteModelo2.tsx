@@ -8,7 +8,7 @@
 // mouse em cima e por 15 s depois de um clique) e o evento de teste, que
 // não salva nada. Preços e limites chegam prontos do servidor (painel).
 
-import { createElement, useEffect, useRef, useState } from "react";
+import { createElement, useEffect, useRef, useState, type ReactNode } from "react";
 import { SiteModelo2Miolo } from "./SiteModelo2Miolo";
 import { SistemaPorDentro } from "./SistemaPorDentro";
 import { hojeBR } from "@/lib/tempo";
@@ -39,6 +39,10 @@ const CSS = `
    minmax(0,1fr) eles se espremiam e cortavam) */
 .s2 .s2-planos{grid-template-columns:repeat(4,minmax(200px,1fr))!important}
 @media (max-width:760px){.s2 .s2-nav{display:none!important}}
+/* o site navegável (27/09/2026): com o menu do site, o menu de âncoras sai;
+   com a apresentação, o tour de 6 passos sai (os dois contavam a mesma coisa) */
+.s2.s2-com-menu .s2-nav{display:none!important}
+.s2.s2-com-apresentacao section#a-como{display:none!important}
 @media (max-width:620px){
   .s2 .s2-g{padding-left:20px!important;padding-right:20px!important}
   /* no celular o herói empilha: a foto inteira em cima (ela à direita,
@@ -85,12 +89,18 @@ export function SiteModelo2({
   planos,
   hrefConta,
   hrefPlano,
+  menu,
+  apresentacao,
 }: {
   planos: PlanosDoSite;
   /** o cadastro (visitante) ou a assinatura (dona logada) */
   hrefConta: string;
   /** prefixo do botão de plano pago: "/comecar?plano=" ou "/assinatura?plano=" */
   hrefPlano: string;
+  /** o menu do site (home); sem ele fica o menu de âncoras da página */
+  menu?: ReactNode;
+  /** a apresentação e as seções que andam com a rolagem (home) */
+  apresentacao?: ReactNode;
 }) {
   const [notif, setNotif] = useState(0);
   const [tour, setTour] = useState(1);
@@ -213,11 +223,20 @@ export function SiteModelo2({
     hrefConta,
     hrefPlano,
     sistemaPorDentro: <SistemaPorDentro />,
+    menu: menu ?? null,
+    // o "Ver como funciona" do topo e o rodapé apontam para #a-como: com a
+    // apresentação no lugar do tour, a âncora passa a ser ela
+    apresentacao: apresentacao ? (
+      <>
+        <span id="a-como" aria-hidden />
+        {apresentacao}
+      </>
+    ) : null,
     ...planos,
   };
 
   return (
-    <div className="s2">
+    <div className={"s2" + (menu ? " s2-com-menu" : "") + (apresentacao ? " s2-com-apresentacao" : "")}>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <SiteModelo2Miolo {...valores} />
     </div>

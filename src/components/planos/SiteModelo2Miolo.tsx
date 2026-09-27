@@ -75,7 +75,9 @@ export function SiteModelo2Miolo(v: any) {
     eventosProfissional,
     precoMaster,
     eventosMaster,
-    sistemaPorDentro
+    sistemaPorDentro,
+    menu,
+    apresentacao
   } = v;
   return (
 <div style={{ "fontVariantNumeric": "lining-nums", "background": "#FAF8F5", "color": "#221E1B", "fontFamily": "var(--eo-sans)", "fontWeight": "300" }}>
@@ -86,6 +88,7 @@ export function SiteModelo2Miolo(v: any) {
 <nav className="s2-nav" style={{ "display": "flex", "gap": "32px", "fontSize": "14px", "letterSpacing": ".02em", "flexWrap": "wrap" }}>
 <a href="#a-como">Como funciona</a><a href="#a-demo">Experimente</a><a href="#a-planos">Planos</a><a href="#a-duvidas">Dúvidas</a>
 </nav>
+{menu}
 <div style={{ "display": "flex", "gap": "20px", "alignItems": "center", "fontSize": "14px" }}>
 <a href="/login">Entrar</a>
 <a href={hrefConta} style={{ "background": "#6E2E34", "color": "#FAF8F5", "padding": "11px 20px", "borderRadius": "2px", "fontWeight": "400", "letterSpacing": ".03em" }}>Começar com 1 evento</a>
@@ -135,6 +138,7 @@ export function SiteModelo2Miolo(v: any) {
 </div>
 </div>
 
+{apresentacao}
 <section className="s2-g" id="a-como" onMouseEnter={tourHoverOn} onMouseLeave={tourHoverOff} style={{ "maxWidth": "1200px", "margin": "0 auto", "padding": "110px 32px", "display": "flex", "flexDirection": "column", "gap": "48px" }}>
 <div style={{ "display": "flex", "flexDirection": "column", "gap": "14px", "alignItems": "center", "textAlign": "center" }}>
 <p style={{ "fontSize": "12px", "letterSpacing": ".22em", "textTransform": "uppercase", "color": "#6E2E34", "fontWeight": "400" }}>Como funciona</p>
