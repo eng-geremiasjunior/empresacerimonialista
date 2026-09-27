@@ -2,19 +2,18 @@
 
 // A faixa do evento de exemplo (174): em toda tela do exemplo, bem à
 // vista, diz que é exemplo, marca a tela que ela está vendo e mostra o
-// que ainda falta ver. Quando ela passou por todas, o exemplo sai de
-// cena na próxima vez que ela abrir Eventos (ou agora, no botão).
+// que ainda falta ver — o portal da família incluído, que abre numa aba
+// nova como a cliente vê (27/09/2026). Quando ela passou por tudo nos dois
+// exemplos, eles saem de cena na próxima vez que ela abrir Eventos (ou
+// agora, no botão).
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import {
-  apagarExemplo,
-  marcarExemploVisto,
-  trocarModeloDoExemplo,
-} from "@/app/(app)/eventos/exemplo-actions";
+import { apagarExemplo, marcarExemploVisto, verExemplo } from "@/app/(app)/eventos/exemplo-actions";
+import { AbrirPortalDoExemplo } from "./AbrirPortalDoExemplo";
 
-type Area = { area: string; rotulo: string; caminho: string };
+type Area = { area: string; rotulo: string; caminho: string | null };
 
 export function FaixaDoExemplo({
   eventId,
@@ -31,12 +30,13 @@ export function FaixaDoExemplo({
   const router = useRouter();
   const [vistas, setVistas] = useState<string[]>(visto);
   const [apagando, iniciar] = useTransition();
-  const [trocando, iniciarTroca] = useTransition();
-  const outro = tipo === "debutante" ? "casamento" : "debutante";
+  const [indo, iniciarIda] = useTransition();
+  const modelo = tipo === "debutante" ? "debutante" : "casamento";
+  const outro = modelo === "debutante" ? "casamento" : "debutante";
 
   // a tela atual: o trecho depois de /eventos/<id>
   const resto = pathname.replace(`/eventos/${eventId}`, "").split("/").filter(Boolean)[0] ?? "";
-  const atual = areas.find((a) => a.caminho.replace("/", "") === resto)?.area ?? null;
+  const atual = areas.find((a) => a.caminho !== null && a.caminho.replace("/", "") === resto)?.area ?? null;
 
   useEffect(() => {
     if (!atual || vistas.includes(atual)) return;
@@ -47,12 +47,13 @@ export function FaixaDoExemplo({
   }, [atual]);
 
   const tudo = areas.every((a) => vistas.includes(a.area));
+  const chip = (ok: boolean) =>
+    ok
+      ? "rounded-full border border-[#C9AFBE] bg-white/60 px-2.5 py-1 text-xs text-[#5B4452] line-through decoration-[#6E3F5F]/40"
+      : "rounded-full border border-[#6E3F5F] bg-white px-2.5 py-1 text-xs font-medium text-[#6E3F5F] hover:bg-[#6E3F5F] hover:text-white";
 
   return (
-    <div
-      role="note"
-      className="rounded-xl border-2 border-[#6E3F5F] bg-[#F7EFF3] px-4 py-3 text-[#3B2233]"
-    >
+    <div role="note" className="rounded-xl border-2 border-[#6E3F5F] bg-[#F7EFF3] px-4 py-3 text-[#3B2233]">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="flex items-center gap-2 text-sm font-semibold">
@@ -63,22 +64,27 @@ export function FaixaDoExemplo({
           </p>
           <p className="mt-1 text-[13px] text-[#5B4452]">
             {tudo
-              ? "Você já passou por tudo. O exemplo sai quando você voltar para Eventos."
-              : "Ele some sozinho depois que você passar por estas telas:"}
+              ? "Você já passou por tudo neste exemplo."
+              : "Passe por estas telas — o portal abre como a sua cliente vê:"}
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {areas.map((a) => {
               const ok = vistas.includes(a.area);
+              if (a.caminho === null) {
+                return (
+                  <AbrirPortalDoExemplo
+                    key={a.area}
+                    modelo={modelo}
+                    className={chip(ok)}
+                    rotulo={`${ok ? "✓ " : ""}${modelo === "debutante" ? "Portal da debutante" : "Portal da noiva"}`}
+                    aoAbrir={() => {
+                      if (!ok) setVistas((v) => [...v, a.area]);
+                    }}
+                  />
+                );
+              }
               return (
-                <Link
-                  key={a.area}
-                  href={`/eventos/${eventId}${a.caminho}`}
-                  className={
-                    ok
-                      ? "rounded-full border border-[#C9AFBE] bg-white/60 px-2.5 py-1 text-xs text-[#5B4452] line-through decoration-[#6E3F5F]/40"
-                      : "rounded-full border border-[#6E3F5F] bg-white px-2.5 py-1 text-xs font-medium text-[#6E3F5F] hover:bg-[#6E3F5F] hover:text-white"
-                  }
-                >
+                <Link key={a.area} href={`/eventos/${eventId}${a.caminho}`} className={chip(ok)}>
                   {ok ? "✓ " : ""}
                   {a.rotulo}
                 </Link>
@@ -89,23 +95,19 @@ export function FaixaDoExemplo({
         <div className="flex shrink-0 flex-col items-end gap-2">
           <button
             type="button"
-            disabled={apagando || trocando}
+            disabled={apagando || indo}
             onClick={() => iniciar(() => apagarExemplo())}
             className="rounded-lg border border-[#C9AFBE] bg-white px-3 py-1.5 text-xs font-medium text-[#5B4452] hover:border-[#6E3F5F]"
           >
-            {apagando ? "Apagando…" : "Apagar o exemplo"}
+            {apagando ? "Apagando…" : "Apagar os exemplos"}
           </button>
           <button
             type="button"
-            disabled={apagando || trocando}
-            onClick={() => iniciarTroca(() => trocarModeloDoExemplo(outro))}
+            disabled={apagando || indo}
+            onClick={() => iniciarIda(() => verExemplo(outro))}
             className="text-xs font-medium text-[#6E3F5F] underline underline-offset-2"
           >
-            {trocando
-              ? "Trocando…"
-              : outro === "debutante"
-                ? "Trabalha com 15 anos? Ver o exemplo de debutante"
-                : "Ver o exemplo de casamento"}
+            {indo ? "Abrindo…" : outro === "debutante" ? "Ver também o exemplo de 15 anos" : "Ver também o exemplo de casamento"}
           </button>
         </div>
       </div>

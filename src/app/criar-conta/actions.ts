@@ -56,7 +56,7 @@ import {
 import { centavos, PROMOCAO_LANCAMENTO } from "@/lib/planos";
 import { ofertaDoTeste } from "@/lib/teste-com-cartao";
 import { TERMOS_VERSAO } from "@/lib/termos";
-import { criarEventoDeExemplo, modeloPelaOrigem } from "@/lib/evento-exemplo";
+import { criarOsDoisExemplos, modeloPelaOrigem } from "@/lib/evento-exemplo";
 
 /** Mesmo cliente de serviço do checkout: `assinaturas` não tem policy de escrita. */
 function servico() {
@@ -350,8 +350,9 @@ async function depoisDeNascer(
 
   // O evento de exemplo (174): a conta não nasce vazia. Nunca derruba o
   // cadastro — sem ele, ela só entra num painel vazio, como antes.
-  // quem veio do anúncio de 15 anos abre nos 15 anos
-  await criarEventoDeExemplo(c.empresaId, c.userId, modeloPelaOrigem(lerOrigemDoCookie()));
+  // Desde 27/09/2026 são DOIS (casamento e 15 anos), para ela conhecer os
+  // dois portais; quem veio do anúncio de 15 anos abre nos 15 anos.
+  await criarOsDoisExemplos(c.empresaId, c.userId, modeloPelaOrigem(lerOrigemDoCookie()));
 
   // O primeiro e-mail. Com cartão, já diz o dia e o valor da primeira
   // cobrança; no Gratuito, sem caixa de teste nenhuma.

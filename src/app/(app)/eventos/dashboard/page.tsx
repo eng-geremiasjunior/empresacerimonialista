@@ -43,6 +43,8 @@ const SAUDE_VAZIA: Saude = {
 import { getSaldoEmpresaMes } from "@/lib/supabase/financeiro-empresa";
 import { SAUDE_UI, saudeEmPalavras, type Saude } from "@/lib/saude-evento";
 import { getMeuCargo } from "@/lib/supabase/equipe";
+import { conhecaPorDentroDaConta } from "@/lib/conheca-por-dentro";
+import { ConhecaPorDentro } from "@/components/evento/ConhecaPorDentro";
 import { formatCurrency, formatDate } from "@/lib/format";
 import {
   EVENT_STATUS_LABELS,
@@ -155,8 +157,11 @@ export default async function DashboardPage() {
   // Os números do negócio (faturamento, eventos em andamento, em
   // orçamento) são da dona; quem conduz um evento abre o Dashboard para
   // saber o que precisa de atenção, não para ver o caixa.
-  const { cargo } = await getMeuCargo();
+  const { cargo, empresaId } = await getMeuCargo();
   const dona = cargo === "proprietaria";
+  // o convite para conhecer o sistema por dentro (27/09/2026): conta nova
+  // ou com exemplo; só a dona, que é quem decide indicar
+  const porDentro = dona ? await conhecaPorDentroDaConta(empresaId) : null;
 
   // getSaudeBulk devolve uma entrada por id pedido (percorre eventIds,
   // não as linhas), então a falta abaixo não deve acontecer. Se acontecer,
@@ -238,6 +243,8 @@ export default async function DashboardPage() {
         tarefasHoje={briefing.tarefasHoje}
         alertas={alertas}
       />
+
+      {porDentro?.mostrar && <ConhecaPorDentro exemploCasamento={porDentro.exemploCasamento} />}
 
       {/* Radar primeiro: o Copiloto acima, os eventos com o ponto de saúde
           logo abaixo, e os números do negócio só para a dona, em três

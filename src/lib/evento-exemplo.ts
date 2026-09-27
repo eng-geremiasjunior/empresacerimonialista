@@ -1,9 +1,10 @@
 // O evento de exemplo (174, 23/09/2026 — pedido do dono): a conta nova não
-// nasce vazia. No cadastro entra UM evento fictício (um casamento, ou os
-// 15 anos para quem veio do anúncio de debutante), todo preenchido e
-// marcado como exemplo, para ela ver como o eOrganizei fica com um evento
-// de verdade. Ele some sozinho quando ela já passou pelas telas
-// principais dele, ou quando ela clica em apagar.
+// nasce vazia. No cadastro entram DOIS eventos fictícios (desde 27/09/2026:
+// um casamento e uns 15 anos; o do anúncio de onde ela veio abre primeiro),
+// todos preenchidos e marcados como exemplo, para ela ver como o eOrganizei
+// fica com um evento de verdade — e, pelo botão "ver como a família vê",
+// os dois portais. Eles saem de cena quando ela já passou pelas telas
+// principais dos dois (o portal incluído), ou quando ela clica em apagar.
 //
 // O exemplo não conta no plano, não entra no painel do dono, não manda
 // nada a ninguém (sem e-mail, sem WhatsApp, cliente e fornecedores sem
@@ -23,6 +24,9 @@ export const AREAS_DO_EXEMPLO = [
   { area: "roteiro", rotulo: "Roteiro do dia", caminho: "/roteiro" },
   { area: "financeiro", rotulo: "Financeiro", caminho: "/financeiro" },
   { area: "rsvp", rotulo: "Convidados", caminho: "/rsvp" },
+  // o portal da família (27/09/2026): não é tela do evento — abre numa aba
+  // nova, com o login dela, como a cliente vê. caminho null = botão
+  { area: "portal", rotulo: "Portal da família", caminho: null },
 ] as const;
 
 export type AreaDoExemplo = (typeof AREAS_DO_EXEMPLO)[number]["area"];
@@ -196,11 +200,13 @@ export async function criarEventoDeExemplo(
   const db = servico();
   const m = MODELOS[modelo];
   try {
+    // um exemplo de cada tipo (27/09/2026: casamento e 15 anos lado a lado)
     const { data: jaTem } = await db
       .from("events")
       .select("id")
       .eq("empresa_id", empresaId)
       .eq("exemplo", true)
+      .eq("type", m.evento.type)
       .limit(1);
     if (jaTem && jaTem.length) return jaTem[0].id as string;
 
@@ -405,6 +411,35 @@ export async function criarEventoDeExemplo(
 }
 
 /** Apaga o exemplo da conta (evento, cliente e fornecedores do exemplo). */
+/**
+ * Os dois exemplos da conta nova (27/09/2026, pedido do dono: ela precisa
+ * ver por dentro os dois portais para indicar às clientes). O do anúncio de
+ * onde ela veio nasce por último: é o que o cadastro abre (/eventos/exemplo
+ * pega o mais novo).
+ */
+export async function criarOsDoisExemplos(
+  empresaId: string,
+  userId: string,
+  primeiro: ModeloDoExemplo
+): Promise<void> {
+  const outro: ModeloDoExemplo = primeiro === "debutante" ? "casamento" : "debutante";
+  await criarEventoDeExemplo(empresaId, userId, outro);
+  await criarEventoDeExemplo(empresaId, userId, primeiro);
+}
+
+/** O id do exemplo daquele modelo, se existir. */
+export async function exemploDoModelo(empresaId: string, modelo: ModeloDoExemplo): Promise<string | null> {
+  const { data } = await servico()
+    .from("events")
+    .select("id")
+    .eq("empresa_id", empresaId)
+    .eq("exemplo", true)
+    .eq("type", MODELOS[modelo].evento.type)
+    .limit(1)
+    .maybeSingle();
+  return (data as { id: string } | null)?.id ?? null;
+}
+
 export async function apagarEventoDeExemplo(empresaId: string): Promise<void> {
   const db = servico();
   await db.from("events").delete().eq("empresa_id", empresaId).eq("exemplo", true);
