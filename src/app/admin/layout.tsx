@@ -18,6 +18,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   Activity,
+  Handshake,
   LayoutDashboard,
   MessageSquare,
   ScrollText,
@@ -28,6 +29,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { contarSuporteNaoLidas, emailDoSuperAdmin } from "@/lib/supabase/admin-painel";
+import { contarCandidatas } from "@/lib/supabase/admin-parceiras";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +46,7 @@ const ITENS: Item[] = [
   { chave: "ativacao", href: "/admin/ativacao", rotulo: "Ativação e uso", Icone: Activity },
   { chave: "receita", href: "/admin/receita", rotulo: "Receita", Icone: Wallet },
   { chave: "suporte", href: "/admin/suporte", rotulo: "Suporte", Icone: MessageSquare },
+  { chave: "parceiras", href: "/admin/parceiras", rotulo: "Parceiras", Icone: Handshake },
   { chave: "sistema", href: "/admin/sistema", rotulo: "Sistema", Icone: Server },
   { chave: "auditoria", href: "/admin/auditoria", rotulo: "Auditoria", Icone: ScrollText },
   { chave: "ajustes", href: "/admin/ajustes", rotulo: "Ajustes", Icone: SlidersHorizontal },
@@ -78,6 +81,8 @@ export default async function AdminLayout({
   // As mensagens novas da caixinha do sistema (161), sem as das contas da
   // casa. Erro vira 0 dentro da função: sem a migração, o item só não acende.
   const suporteNovas = await contarSuporteNaoLidas();
+  // candidaturas de parceira sem decisão (183); sem a migração, 0
+  const candidatas = await contarCandidatas();
 
   return (
     <div
@@ -104,6 +109,11 @@ export default async function AdminLayout({
             >
               <Icone size={16} strokeWidth={2} aria-hidden className="shrink-0 text-[#9a9ba1]" />
               <span className="min-w-0 flex-1 truncate">{rotulo}</span>
+              {chave === "parceiras" && candidatas > 0 && (
+                <span className="rounded-full bg-[#b98fac] px-1.5 py-0.5 text-[10px] font-semibold text-[#2a1f27]">
+                  {candidatas}
+                </span>
+              )}
               {chave === "suporte" && suporteNovas > 0 && (
                 <span className="rounded-full bg-[#b98fac] px-1.5 py-0.5 text-[10px] font-semibold text-[#2a1f27]">
                   {suporteNovas}

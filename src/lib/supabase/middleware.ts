@@ -42,6 +42,9 @@ const ROTAS_PUBLICAS: ((p: string) => boolean)[] = [
   // por funcionalidade
   (p) => p.startsWith("/para/"),
   (p) => p.startsWith("/funcionalidades/"),
+  // parcerias (183): a página de candidatura e o link próprio de cada parceira
+  (p) => p === "/parceiras",
+  (p) => p.startsWith("/p/"),
   // o teste de sete dias (154): quatro campos, sem cartão e sem conta
   (p) => p === "/criar-conta",
   // a página de preços, com o menu que leva a ela

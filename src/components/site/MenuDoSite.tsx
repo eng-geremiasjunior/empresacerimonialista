@@ -38,7 +38,7 @@ export const MENU_DO_SITE: EntradaDoMenu[] = [
   },
   { rotulo: "Como funciona", href: "/planos#apresentacao" },
   { rotulo: "Planos", href: "/planos#a-planos" },
-  { rotulo: "Dúvidas", href: "/planos#a-duvidas" },
+  { rotulo: "Parcerias", href: "/parceiras" },
 ];
 
 const eGrupo = (e: EntradaDoMenu): e is GrupoDoMenu => "itens" in e;
