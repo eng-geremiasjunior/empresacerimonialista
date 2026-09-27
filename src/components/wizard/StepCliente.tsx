@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { juntarCasal, separarCasal } from "./nomesDoCasal";
 
 export type ClientOption = { id: string; name: string; phone: string | null };
 
@@ -16,9 +17,14 @@ type Props = {
   /** pré-preenchido (ex.: lido do briefing) — ela confere e continua */
   inicial?: { name: string; phone: string } | null;
   onChoose: (c: ClienteEscolhido) => void;
+  /** no casamento, a cliente nova é a noiva e o noivo (nomesDoCasal.ts) */
+  tipo?: string | null;
 };
 
-export function StepCliente({ clients, inicial, onChoose }: Props) {
+export function StepCliente({ clients, inicial, onChoose, tipo }: Props) {
+  const casamento = tipo === "casamento";
+  const [noiva, setNoiva] = useState(() => separarCasal(inicial?.name ?? "")[0]);
+  const [noivo, setNoivo] = useState(() => separarCasal(inicial?.name ?? "")[1]);
   const [search, setSearch] = useState("");
   const [newName, setNewName] = useState(inicial?.name ?? "");
   const [newPhone, setNewPhone] = useState(inicial?.phone ?? "");
@@ -81,6 +87,42 @@ export function StepCliente({ clients, inicial, onChoose }: Props) {
 
       <div className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {casamento ? (
+            <>
+              <div>
+                <label htmlFor="cli_noiva" className="mb-1 block text-sm font-medium">
+                  Nome da noiva
+                </label>
+                <input
+                  id="cli_noiva"
+                  type="text"
+                  value={noiva}
+                  onChange={(e) => {
+                    setNoiva(e.target.value);
+                    setNewName(juntarCasal(e.target.value, noivo));
+                  }}
+                  placeholder="Ex.: Marina"
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label htmlFor="cli_noivo" className="mb-1 block text-sm font-medium">
+                  Nome do noivo
+                </label>
+                <input
+                  id="cli_noivo"
+                  type="text"
+                  value={noivo}
+                  onChange={(e) => {
+                    setNoivo(e.target.value);
+                    setNewName(juntarCasal(noiva, e.target.value));
+                  }}
+                  placeholder="Ex.: Pedro"
+                  className={inputClass}
+                />
+              </div>
+            </>
+          ) : (
           <div>
             <label htmlFor="cli_new_name" className="mb-1 block text-sm font-medium">
               Nome do cliente
@@ -94,6 +136,7 @@ export function StepCliente({ clients, inicial, onChoose }: Props) {
               className={inputClass}
             />
           </div>
+          )}
           <div>
             <label htmlFor="cli_new_phone" className="mb-1 block text-sm font-medium">
               Telefone{" "}

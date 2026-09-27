@@ -291,6 +291,7 @@ export function EventWizard({
       {step === 2 && (
         <StepCliente
           clients={clients}
+          tipo={tipo}
           inicial={
             cliente?.kind === "new"
               ? { name: cliente.name, phone: cliente.phone }

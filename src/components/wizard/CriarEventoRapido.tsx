@@ -20,6 +20,7 @@ import { EventTypeIcon } from "@/components/EventTypeIcon";
 import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
 import { ORDEM_DOS_TIPOS } from "./StepTipoEvento";
 import type { ClienteEscolhido, ClientOption } from "./StepCliente";
+import { juntarCasal, separarCasal } from "./nomesDoCasal";
 
 const inputClass =
   "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-base focus:border-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-200 sm:text-sm";
@@ -57,12 +58,21 @@ export function CriarEventoRapido({
   onMaisDetalhes,
 }: Props) {
   const [nome, setNome] = useState(nomeDo(cliente));
+  const [noiva, setNoiva] = useState(() => separarCasal(nomeDo(cliente))[0]);
+  const [noivo, setNoivo] = useState(() => separarCasal(nomeDo(cliente))[1]);
   // O briefing (ou a cliente vinda da URL) pode preencher o nome depois.
   // Só troca quando o nome de fora é OUTRO: o que ela digita volta aparado
   // de onCliente, e sobrescrever comeria o espaço entre as palavras.
   useEffect(() => {
     const vindo = nomeDo(cliente);
     setNome((atual) => (atual.trim() === vindo.trim() ? atual : vindo));
+    // o casal que veio de fora (briefing) preenche os dois campos
+    if (juntarCasal(noiva, noivo) !== vindo.trim()) {
+      const [a, b] = separarCasal(vindo);
+      setNoiva(a);
+      setNoivo(b);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cliente]);
 
   // Um campo só para a cliente: o nome que bate com uma cliente cadastrada
@@ -82,6 +92,18 @@ export function CriarEventoRapido({
     }
     onCliente({ kind: "new", name: limpo, phone: cliente?.kind === "new" ? cliente.phone : "" });
   }
+
+  // no casamento, a noiva e o noivo em campos separados (nomesDoCasal.ts);
+  // cada um com o seu estado, para o espaço de um nome composto não sumir
+  const casamento = tipo === "casamento";
+  // trocou para casamento depois de digitar no campo único: o nome se divide
+  useEffect(() => {
+    if (!casamento || juntarCasal(noiva, noivo) === nome.trim()) return;
+    const [a, b] = separarCasal(nome);
+    setNoiva(a);
+    setNoivo(b);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [casamento]);
 
   const pronto = tipo !== null && nome.trim().length > 0 && data !== "";
 
@@ -116,7 +138,47 @@ export function CriarEventoRapido({
         </div>
       </div>
 
+      {casamento && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="rap_noiva" className="mb-1 block text-sm font-medium text-stone-700">
+              Nome da noiva
+            </label>
+            <input
+              id="rap_noiva"
+              type="text"
+              autoComplete="off"
+              value={noiva}
+              onChange={(e) => {
+                setNoiva(e.target.value);
+                mudarNome(juntarCasal(e.target.value, noivo));
+              }}
+              placeholder="Ex.: Marina"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label htmlFor="rap_noivo" className="mb-1 block text-sm font-medium text-stone-700">
+              Nome do noivo
+            </label>
+            <input
+              id="rap_noivo"
+              type="text"
+              autoComplete="off"
+              value={noivo}
+              onChange={(e) => {
+                setNoivo(e.target.value);
+                mudarNome(juntarCasal(noiva, e.target.value));
+              }}
+              placeholder="Ex.: Pedro"
+              className={inputClass}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {!casamento && (
         <div>
           <label htmlFor="rap_cliente" className="mb-1 block text-sm font-medium text-stone-700">
             Cliente
@@ -139,6 +201,7 @@ export function CriarEventoRapido({
             </datalist>
           )}
         </div>
+        )}
         <div>
           <label htmlFor="rap_data" className="mb-1 block text-sm font-medium text-stone-700">
             Data
