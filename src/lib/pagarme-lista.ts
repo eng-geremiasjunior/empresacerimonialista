@@ -75,13 +75,15 @@ export async function criarRecebedor(d: DadosDoRecebedor & { email: string; codi
       professional_occupation: d.profissao.trim(),
       address: {
         street: d.rua.trim(),
-        complementary: d.complemento.trim() || "",
+        // a Pagar.me exige os dois preenchidos (422 com string vazia); não
+        // pedimos ponto de referência à família
+        complementary: d.complemento.trim() || "Não informado",
         street_number: d.numero.trim(),
         neighborhood: d.bairro.trim(),
         city: d.cidade.trim(),
         state: d.uf.trim().toUpperCase(),
         zip_code: so(d.cep),
-        reference_point: "",
+        reference_point: "Não informado",
       },
       phone_numbers: [{ ddd: cel.slice(0, 2), number: cel.slice(2), type: "mobile" }],
     },

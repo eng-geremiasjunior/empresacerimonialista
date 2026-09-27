@@ -57,7 +57,9 @@ export async function cadastrarRecebedor(eventoId: string, dados: DadosDoRecebed
       error:
         r.status === 422 || r.status === 400
           ? "A Pagar.me recusou algum dado. Confira CPF, conta e endereço."
-          : "Não foi possível falar com a Pagar.me agora. Tente de novo em instantes.",
+          : r.status === 412
+            ? "A Pagar.me ainda não liberou contas de recebimento. Fale com a cerimonialista."
+            : "Não foi possível falar com a Pagar.me agora. Tente de novo em instantes.",
     };
   }
   const partes = dados.nome.trim().split(/\s+/);
