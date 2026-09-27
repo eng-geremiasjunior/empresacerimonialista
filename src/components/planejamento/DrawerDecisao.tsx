@@ -1014,7 +1014,7 @@ export function DrawerDecisao({
           {ehDataDoCasamento && (
             <div>
               <label style={{ ...monoLabel, display: "block", marginBottom: 6 }}>
-                data do casamento · data
+                data do evento · data
               </label>
               <input
                 type="date"

@@ -537,7 +537,7 @@ function LinhaObjetivo({
               <button
                 type="button"
                 onClick={onDesligar}
-                title="Este assunto não existe neste casamento"
+                title="Este assunto não existe neste evento"
                 style={{
                   border: "none",
                   background: "none",
@@ -548,7 +548,7 @@ function LinhaObjetivo({
                   cursor: "pointer",
                 }}
               >
-                Não se aplica a este casamento
+                Não se aplica a este evento
               </button>
             </div>
           )}
