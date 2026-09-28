@@ -265,10 +265,10 @@ export function InicioV2({
               <h2 style={{ margin: 0, fontFamily: "var(--pv2-titulo)", fontWeight: 400, fontSize: 22, color: "#332b24" }}>
                 Chegou de novo
               </h2>
-              <div
+              <div className="pv2-faixa"
                 style={{
                   display: "flex", gap: 12, overflowX: "auto", scrollSnapType: "x mandatory", margin: "0 -20px",
-                  padding: "0 20px 8px", scrollbarWidth: "none",
+                  padding: "0 20px 8px",
                 }}
               >
                 {novo.map((c, i) => {

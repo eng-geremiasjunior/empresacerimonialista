@@ -184,7 +184,7 @@ export function PaletaV2({
       {dados.paletas.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <h2 style={h2}>Paletas de {cerimonialista}</h2>
-          <div style={{ display: "flex", gap: 12, overflowX: "auto", scrollbarWidth: "none", margin: "0 -20px", padding: "4px 20px 10px" }}>
+          <div className="pv2-faixa" style={{ display: "flex", gap: 12, overflowX: "auto", margin: "0 -20px", padding: "4px 20px 10px" }}>
             {dados.paletas.map((p) => (
               <div key={p.id} style={{ flex: "none", width: 220, padding: 12, borderRadius: 20, background: "rgba(255,255,255,.85)", display: "flex", flexDirection: "column", gap: 8 }}>
                 <div style={{ display: "flex", height: 56, borderRadius: 12, overflow: "hidden" }}>

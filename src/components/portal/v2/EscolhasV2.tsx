@@ -97,7 +97,7 @@ export function EscolhasV2({
       </div>
 
       {topicos.length > 1 && (
-        <div style={{ display: "flex", gap: 12, overflowX: "auto", scrollSnapType: "x mandatory", scrollbarWidth: "none", margin: "0 -20px", padding: "4px 20px 12px" }}>
+        <div className="pv2-faixa" style={{ display: "flex", gap: 12, overflowX: "auto", scrollSnapType: "x mandatory", margin: "0 -20px", padding: "4px 20px 12px" }}>
           {["todas", ...topicos].map((t, i) => {
             const nv = escolhas.filter((e) => (t === "todas" || e.topico === t) && e.estado === "voces").length;
             const on = filtro === t;

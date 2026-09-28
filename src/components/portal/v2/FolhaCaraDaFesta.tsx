@@ -223,7 +223,7 @@ export function FolhaCaraDaFesta({
 
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={rotulo}>Fundo do portal</div>
-          <div style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none", padding: "4px 2px 6px" }}>
+          <div className="pv2-faixa" style={{ display: "flex", gap: 8, overflowX: "auto", padding: "4px 2px 6px" }}>
             {FUNDOS.map((f) => {
               const on = estilo.fundo === f.id;
               return (

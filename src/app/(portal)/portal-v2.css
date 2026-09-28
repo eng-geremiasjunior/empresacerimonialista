@@ -175,6 +175,16 @@
 .pv2-arco { width: 118px; height: 164px; }
 .pv2-pilha { height: 280px; }
 .pv2-cartao-pilha { height: 250px; }
+/* Faixas que rolam de lado. No celular o dedo arrasta e a barra some;
+   com mouse (pointer: fine) a barra aparece fina, na cor da festa — sem
+   ela o computador não tem como rolar para o lado. */
+.pv2-faixa { scrollbar-width: none; }
+.pv2-faixa::-webkit-scrollbar { display: none; }
+@media (pointer: fine) {
+  .pv2-faixa { scrollbar-width: thin; scrollbar-color: color-mix(in oklch, var(--destaque) 45%, transparent) transparent; }
+  .pv2-faixa::-webkit-scrollbar { display: block; height: 6px; }
+  .pv2-faixa::-webkit-scrollbar-thumb { background: color-mix(in oklch, var(--destaque) 45%, transparent); border-radius: 3px; }
+}
 .pv2-novo { transition: transform 0.3s; }
 .pv2-novo:hover { transform: translateY(-4px); }
 @media (min-width: 768px) {

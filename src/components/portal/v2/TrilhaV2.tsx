@@ -164,7 +164,7 @@ export function TrilhaV2({
       {/* a faixa dos momentos */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <button type="button" aria-label="Momento anterior" onClick={() => setIdx(Math.max(0, idx - 1))} disabled={idx === 0} style={seta(idx === 0)}>‹</button>
-        <div ref={faixa} style={{ position: "relative", flex: 1, minWidth: 0, overflowX: "auto", scrollbarWidth: "none", padding: "6px 0" }}>
+        <div ref={faixa} className="pv2-faixa" style={{ position: "relative", flex: 1, minWidth: 0, overflowX: "auto", padding: "6px 0" }}>
           <div style={{ position: "relative", display: "flex", gap: 8, width: "max-content", padding: "0 30%" }}>
             <span aria-hidden style={{ position: "absolute", left: "30%", right: "30%", top: 24, height: 2, background: "var(--destaque-linha)" }} />
             {MOMENTOS_DA_TRILHA.map((x, i) => {

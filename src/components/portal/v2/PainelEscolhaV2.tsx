@@ -170,7 +170,7 @@ export function PainelEscolhaV2({
           </div>
 
           {!comparar ? (
-            <div style={{ display: "flex", gap: 14, overflowX: "auto", scrollSnapType: "x mandatory", scrollbarWidth: "none", margin: "0 -20px", padding: "10px 20px 18px" }}>
+            <div className="pv2-faixa" style={{ display: "flex", gap: 14, overflowX: "auto", scrollSnapType: "x mandatory", margin: "0 -20px", padding: "10px 20px 18px" }}>
               {cur.opcoes.map((o, i) => {
                 const sel = escolhida === o.id;
                 const outro = !!escolhida && !sel;
