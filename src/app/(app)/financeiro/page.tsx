@@ -16,6 +16,8 @@ import { ReceitaEmpresa } from "@/components/financeiro-empresa/ReceitaEmpresa";
 import { DespesasFixas } from "@/components/financeiro-empresa/DespesasFixas";
 import { HistoricoEmpresa } from "@/components/financeiro-empresa/HistoricoEmpresa";
 import { EmpresaChart } from "@/components/financeiro-empresa/EmpresaChart";
+import { ComprasALancar } from "@/components/financeiro-empresa/ComprasALancar";
+import { getComprasALancar } from "@/lib/supabase/estoque";
 
 export default async function FinanceiroEmpresaPage({
   searchParams,
@@ -65,11 +67,13 @@ export default async function FinanceiroEmpresaPage({
     );
   }
 
-  const [receitas, fixas, historico, meses] = await Promise.all([
+  const [receitas, fixas, historico, meses, comprasALancar] = await Promise.all([
     getReceitasEmpresaMes(),
     getDespesasFixas(),
     getHistoricoEmpresa(current),
     getEmpresa6Meses(),
+    // a compra do estoque (184) sugere a despesa; ela confirma aqui
+    getComprasALancar(),
   ]);
 
   return (
@@ -85,6 +89,8 @@ export default async function FinanceiroEmpresaPage({
       </div>
 
       <ResumoEmpresa data={resumo} />
+
+      <ComprasALancar compras={comprasALancar} />
 
       <ReceitaEmpresa receitas={receitas} />
 

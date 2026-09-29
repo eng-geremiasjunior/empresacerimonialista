@@ -62,5 +62,6 @@ export const VISOES_FORNECEDORES: Visao[] = [
 // evento. Compras entra na fatia 2 — nenhuma visão "em breve".
 export const VISOES_ESTOQUE: Visao[] = [
   { label: "Itens", href: "/estoque", icone: "itens" },
+  { label: "Compras", href: "/estoque/compras", icone: "compras" },
   { label: "Por evento", href: "/estoque/eventos", icone: "porEvento" },
 ];

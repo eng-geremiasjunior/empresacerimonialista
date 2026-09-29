@@ -295,3 +295,103 @@ export async function getHistoricoDoItem(itemId: string): Promise<MovimentoDoIte
     };
   });
 }
+
+/* ------------------------------------------------------------------ */
+/* Compras (fatia 2)                                                    */
+/* ------------------------------------------------------------------ */
+
+export type CompraDoEstoque = {
+  id: string;
+  data: string;
+  fornecedorNome: string | null;
+  numeroNota: string | null;
+  chaveNfe: string | null;
+  total: number;
+  origem: "xml" | "pdf" | "foto" | "planilha" | "manual";
+  documentoPath: string | null;
+  lancamentoId: string | null;
+  lancadaFora: boolean;
+  itens: number;
+  /** os três primeiros nomes, para a linha da lista */
+  resumo: string;
+  criadaEm: string;
+};
+
+type CompraRow = {
+  id: string;
+  data: string;
+  fornecedor_nome: string | null;
+  numero_nota: string | null;
+  chave_nfe: string | null;
+  total: number | string;
+  origem: CompraDoEstoque["origem"];
+  documento_path: string | null;
+  lancamento_id: string | null;
+  lancada_fora: boolean;
+  created_at: string;
+};
+
+async function comprasComItens(rows: CompraRow[]): Promise<CompraDoEstoque[]> {
+  if (rows.length === 0) return [];
+  const { data: movs } = await createClient()
+    .from("estoque_movimento")
+    .select("compra_id, quantidade, estoque_item ( nome )")
+    .in("compra_id", rows.map((r) => r.id));
+  type M = { compra_id: string; quantidade: number | string; estoque_item: { nome: string } | { nome: string }[] | null };
+  const porCompra = new Map<string, string[]>();
+  for (const m of (movs ?? []) as unknown as M[]) {
+    const nome = umObjeto(m.estoque_item)?.nome ?? "item";
+    const l = porCompra.get(m.compra_id) ?? [];
+    l.push(nome);
+    porCompra.set(m.compra_id, l);
+  }
+  return rows.map((r) => {
+    const nomes = porCompra.get(r.id) ?? [];
+    return {
+      id: r.id,
+      data: r.data,
+      fornecedorNome: r.fornecedor_nome,
+      numeroNota: r.numero_nota,
+      chaveNfe: r.chave_nfe,
+      total: num(r.total),
+      origem: r.origem,
+      documentoPath: r.documento_path,
+      lancamentoId: r.lancamento_id,
+      lancadaFora: r.lancada_fora,
+      itens: nomes.length,
+      resumo: nomes.slice(0, 3).join(", ") + (nomes.length > 3 ? ` e mais ${nomes.length - 3}` : ""),
+      criadaEm: r.created_at,
+    };
+  });
+}
+
+const SELECT_COMPRA = "id, data, fornecedor_nome, numero_nota, chave_nfe, total, origem, documento_path, lancamento_id, lancada_fora, created_at";
+
+/** As últimas 100 compras. */
+export async function getCompras(): Promise<{ compras: CompraDoEstoque[]; migracaoPendente: boolean }> {
+  const { data, error } = await createClient()
+    .from("estoque_compra")
+    .select(SELECT_COMPRA)
+    .order("data", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) {
+    if (migracaoAusente(error)) return { compras: [], migracaoPendente: true };
+    console.error("[eorganizei:estoque] compras:", error.message);
+    return { compras: [], migracaoPendente: false };
+  }
+  return { compras: await comprasComItens((data ?? []) as CompraRow[]), migracaoPendente: false };
+}
+
+/** As compras que ainda não viraram lançamento no Financeiro da empresa. */
+export async function getComprasALancar(): Promise<CompraDoEstoque[]> {
+  const { data, error } = await createClient()
+    .from("estoque_compra")
+    .select(SELECT_COMPRA)
+    .is("lancamento_id", null)
+    .eq("lancada_fora", false)
+    .order("data", { ascending: false })
+    .limit(50);
+  if (error) return [];
+  return comprasComItens((data ?? []) as CompraRow[]);
+}

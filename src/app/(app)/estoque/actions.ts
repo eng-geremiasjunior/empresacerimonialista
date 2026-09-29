@@ -348,3 +348,179 @@ export async function reservarParaEvento(
   revalidar();
   return r;
 }
+
+/* ------------------------------------------------------------------ */
+/* Compras (fatia 2) — a nota que repõe o acervo                        */
+/* ------------------------------------------------------------------ */
+
+export type CompraParaRegistrar = {
+  data: string;
+  fornecedorNome: string | null;
+  numeroNota: string | null;
+  chaveNfe: string | null;
+  total: number | null;
+  origem: "xml" | "pdf" | "foto" | "planilha" | "manual";
+  itens: LinhaParaImportar[];
+};
+
+function revalidarCompras() {
+  revalidar();
+  revalidatePath("/estoque/compras");
+  revalidatePath("/financeiro");
+}
+
+/**
+ * Grava a compra e uma entrada por item. Item que já existe recebe a
+ * quantidade e o custo novo; item novo nasce aqui. A nota repetida (mesma
+ * chave) é recusada com a data em que já entrou.
+ */
+export async function registrarCompra(c: CompraParaRegistrar): Promise<{ error: string } | { success: true; id: string }> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(c.data)) return { error: "Confira a data da compra." };
+  const itens = c.itens.filter((l) => l.nome.trim() && Number.isFinite(l.quantidade) && l.quantidade > 0);
+  if (itens.length === 0) return { error: "A compra precisa de pelo menos um item com quantidade." };
+  if (itens.length > 300) return { error: "Registre até 300 itens por compra." };
+  const chave = c.chaveNfe ? c.chaveNfe.replace(/\D/g, "") : null;
+  if (chave && chave.length !== 44) return { error: "A chave da nota tem 44 dígitos." };
+
+  const supabase = createClient();
+  if (chave) {
+    const { data: ja } = await supabase.from("estoque_compra").select("data").eq("chave_nfe", chave).maybeSingle();
+    if (ja) return { error: `Esta nota já entrou em ${String(ja.data).split("-").reverse().join("/")}.` };
+  }
+
+  const somaItens = itens.reduce((s, l) => s + (l.custoUnitario ?? 0) * l.quantidade, 0);
+  const total = c.total != null && c.total > 0 ? c.total : Math.round(somaItens * 100) / 100;
+
+  const { data: compra, error } = await supabase
+    .from("estoque_compra")
+    .insert({
+      data: c.data,
+      fornecedor_nome: c.fornecedorNome?.trim().slice(0, 120) || null,
+      numero_nota: c.numeroNota?.trim().slice(0, 30) || null,
+      chave_nfe: chave,
+      total,
+      origem: c.origem,
+    })
+    .select("id")
+    .single();
+  if (error || !compra) {
+    console.error("[eorganizei:estoque] compra:", error?.message);
+    return { error: error?.code === "23505" ? "Esta nota já foi registrada." : "Não foi possível registrar a compra." };
+  }
+
+  for (const l of itens) {
+    const nome = l.nome.trim().slice(0, 80);
+    const custo = numeroOuNulo(l.custoUnitario);
+    let itemId = l.itemExistenteId;
+    if (!itemId) {
+      const { data: ja } = await supabase.from("estoque_item").select("id").eq("codigo", codigoDoItem(nome)).maybeSingle();
+      if (ja) itemId = ja.id as string;
+    }
+    if (itemId) {
+      if (custo != null) await supabase.from("estoque_item").update({ custo_unitario: custo }).eq("id", itemId);
+    } else {
+      const { data: criado, error: erroItem } = await supabase
+        .from("estoque_item")
+        .insert({ codigo: codigoDoItem(nome), nome, categoria_id: l.categoriaId || null, unidade: unidadeLimpa(l.unidade), custo_unitario: custo })
+        .select("id")
+        .single();
+      if (erroItem || !criado) return { error: `Não foi possível criar "${nome}".` };
+      itemId = criado.id as string;
+    }
+    const { error: erroMov } = await supabase.from("estoque_movimento").insert({
+      item_id: itemId,
+      tipo: "entrada",
+      quantidade: l.quantidade,
+      custo_unitario: custo,
+      compra_id: compra.id,
+      motivo: c.fornecedorNome ? `compra · ${c.fornecedorNome.trim().slice(0, 60)}` : "compra",
+    });
+    if (erroMov) return { error: `Não foi possível gravar a quantidade de "${nome}".` };
+  }
+  revalidarCompras();
+  return { success: true, id: compra.id as string };
+}
+
+/** O arquivo da nota já subiu para o bucket (pasta da empresa); guarda o caminho. */
+export async function anexarDocumentoDaCompra(compraId: string, path: string): Promise<Resultado> {
+  if (!/^[0-9a-f-]{36}\/estoque\/[0-9a-f-]{36}\.(pdf|jpg|jpeg|png|webp)$/i.test(path)) return { error: "Caminho inválido." };
+  const { data, error } = await createClient().from("estoque_compra").update({ documento_path: path }).eq("id", compraId).select("id");
+  if (error || !data?.length) return { error: "Não foi possível guardar a nota." };
+  revalidarCompras();
+  return { success: true };
+}
+
+/** Uma URL assinada (10 min) para abrir a nota guardada. */
+export async function urlDaNota(compraId: string): Promise<string | null> {
+  const supabase = createClient();
+  const { data } = await supabase.from("estoque_compra").select("documento_path").eq("id", compraId).maybeSingle();
+  const path = data?.documento_path as string | null | undefined;
+  if (!path) return null;
+  const { data: assinada } = await supabase.storage.from("comprovantes").createSignedUrl(path, 60 * 10);
+  return assinada?.signedUrl ?? null;
+}
+
+/** A compra vira despesa no Financeiro da empresa — só com o clique dela. */
+export async function lancarCompra(compraId: string): Promise<Resultado> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Não autenticado." };
+  const { data: c } = await supabase
+    .from("estoque_compra")
+    .select("id, data, fornecedor_nome, total, lancamento_id, lancada_fora")
+    .eq("id", compraId)
+    .maybeSingle();
+  if (!c) return { error: "Compra não encontrada." };
+  if (c.lancamento_id || c.lancada_fora) return { success: true };
+  const total = Number(c.total);
+  if (!(total > 0)) return { error: "Informe o total da compra antes de lançar." };
+
+  const { count } = await supabase.from("estoque_movimento").select("id", { count: "exact", head: true }).eq("compra_id", compraId);
+  const { data: lanc, error } = await supabase
+    .from("business_transactions")
+    .insert({
+      cerimonialista_id: user.id,
+      type: "despesa",
+      category: "estoque",
+      description: `Compra de estoque${c.fornecedor_nome ? ` · ${c.fornecedor_nome}` : ""} · ${count ?? 0} ${count === 1 ? "item" : "itens"}`,
+      value: total,
+      due_date: c.data,
+      paid: true,
+      paid_at: new Date().toISOString(),
+      recurring: false,
+    })
+    .select("id")
+    .single();
+  if (error || !lanc) {
+    console.error("[eorganizei:estoque] lançar:", error?.message);
+    return { error: "Não foi possível lançar no Financeiro." };
+  }
+  const { error: erroVinc } = await supabase.from("estoque_compra").update({ lancamento_id: lanc.id }).eq("id", compraId);
+  if (erroVinc) return { error: "Lançou, mas não ficou marcado na compra." };
+  revalidarCompras();
+  return { success: true };
+}
+
+/** Ela já lançou por fora: some da fila sem lançamento. */
+export async function marcarLancadaFora(compraId: string): Promise<Resultado> {
+  const { data, error } = await createClient().from("estoque_compra").update({ lancada_fora: true }).eq("id", compraId).select("id");
+  if (error || !data?.length) return { error: "Não foi possível marcar." };
+  revalidarCompras();
+  return { success: true };
+}
+
+/** Desfaz a compra e as entradas dela — só enquanto não virou lançamento. */
+export async function desfazerCompra(compraId: string): Promise<Resultado> {
+  const supabase = createClient();
+  const { data: c } = await supabase.from("estoque_compra").select("lancamento_id, lancada_fora").eq("id", compraId).maybeSingle();
+  if (!c) return { error: "Compra não encontrada." };
+  if (c.lancamento_id || c.lancada_fora) return { error: "Esta compra já foi lançada. Apague o lançamento no Financeiro antes." };
+  const { error: e1 } = await supabase.from("estoque_movimento").delete().eq("compra_id", compraId);
+  if (e1) return { error: "Não foi possível desfazer as entradas." };
+  const { error: e2 } = await supabase.from("estoque_compra").delete().eq("id", compraId);
+  if (e2) return { error: "Não foi possível apagar a compra." };
+  revalidarCompras();
+  return { success: true };
+}

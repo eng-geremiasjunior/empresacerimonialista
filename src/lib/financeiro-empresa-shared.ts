@@ -13,6 +13,8 @@ export const DESPESA_CATEGORIAS: Record<string, string> = {
   alimentacao_manha: "Café da manhã",
   alimentacao_tarde: "Lanche da tarde",
   almoco: "Almoço",
+  // a compra registrada no Estoque (184): nasce como "a lançar" e ela confirma
+  estoque: "Compras de estoque",
   outro: "Outra despesa",
 };
 
