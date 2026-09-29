@@ -551,3 +551,48 @@ export function listaRecepcao(
     .map((c) => ({ nome: c.nome, mesa: rotulo.get(c.mesaId as string) ?? "" }))
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 }
+
+/* ---------------- quem senta onde (30/09/2026) ---------------- */
+
+const LIGACOES = new Set(["e", "da", "de", "do", "das", "dos", "di", "du"]);
+
+/** "Renata e Paulo Siqueira" → "RS"; "Vó Cida" → "VC"; "Ana" → "AN" */
+export function iniciaisDe(nome: string): string {
+  const partes = nome
+    .trim()
+    .split(/\s+/)
+    .filter((p) => p && !LIGACOES.has(p.toLocaleLowerCase("pt-BR")));
+  if (partes.length === 0) return "?";
+  if (partes.length === 1) return partes[0].slice(0, 2).toLocaleUpperCase("pt-BR");
+  return (partes[0][0] + partes[partes.length - 1][0]).toLocaleUpperCase("pt-BR");
+}
+
+/** Quem está na mesa, na ordem das cadeiras (a ordem marcada primeiro,
+ *  depois o nome). Quem não vai não entra. */
+export function naMesaEmOrdem<T extends ConvidadoCroqui>(mesaId: string, convidados: T[]): T[] {
+  return convidados
+    .filter((c) => c.mesaId === mesaId && c.confirmacao !== "nao_vai")
+    .sort(
+      (a, b) =>
+        (a.ordemNaMesa ?? 999) - (b.ordemNaMesa ?? 999) || a.nome.localeCompare(b.nome, "pt-BR")
+    );
+}
+
+/** O que vai escrito em cada cadeira: as iniciais de quem senta e, para
+ *  cada acompanhante, as dele (quando tem nome) ou "+". */
+export function cadeirasOcupadas(
+  naMesa: (ConvidadoCroqui & { acompanhantesNominais?: { nome: string }[] })[]
+): string[] {
+  const rotulos: string[] = [];
+  for (const c of naMesa) {
+    rotulos.push(iniciaisDe(c.nome));
+    for (let i = 0; i < c.acompanhantes; i++) {
+      const nominal = c.acompanhantesNominais?.[i]?.nome?.trim();
+      rotulos.push(nominal ? iniciaisDe(nominal) : "+");
+    }
+  }
+  return rotulos;
+}
+
+/** lugares que ainda sobram (negativo = passou) */
+export const lugaresLivres = (mesa: Mesa, ocupacao: number): number => mesa.lugares - ocupacao;

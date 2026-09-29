@@ -2,23 +2,41 @@
 
 // A aba Mesas: croqui em escala + lista de convidados + saúde ao vivo.
 //
-// Desktop: arrasta mesa no croqui, arrasta convidado da lista para a
-// mesa. Celular: o croqui vira leitura e a atribuição é por lista —
-// toca no convidado, escolhe a mesa. Grava só no soltar; o movimento é
-// estado local.
+// Refeita para o celular em 30/09/2026 (referências do dono: as iniciais
+// em volta da mesa, e a mesa andando junto com o convidado). O mesmo
+// croqui no computador e no celular: tocar marca a peça, a folha da peça
+// diz quem senta, e sentar não depende de arrastar — pela mesa ("Sentar",
+// várias pessoas de uma vez) ou pelo convidado (as mesas onde ele cabe,
+// ou "Ver no salão" e tocar na mesa). No computador o arrasto continua:
+// mesa no croqui e convidado da lista para a mesa. Grava só no soltar; o
+// movimento é estado local.
 //
 // O que é interno fica interno: o motivo de "não sentar junto" aparece
 // SÓ aqui, marcado como anotação sua; restrição alimentar circula por
 // categoria (a contagem do buffet) com o detalhe nominal restrito a
 // esta tela.
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Armchair, Image as IconePlanta, Plus, Printer, Trash2, UserRound, X } from "lucide-react";
 import {
+  Armchair,
+  ChevronDown,
+  ChevronUp,
+  Image as IconePlanta,
+  Plus,
+  Printer,
+  Search,
+  Trash2,
+  UserRound,
+  X,
+} from "lucide-react";
+import {
+  cadeirasOcupadas,
+  caixaDaMesa,
   contadores,
   distanciaEntre,
+  naMesaEmOrdem,
   pegadaDaMesa,
   NOME_ELEMENTO,
   NOME_RESTRICAO,
@@ -40,7 +58,9 @@ import {
   adicionarConvidadosEmLote,
   ajustarPlanta,
   alocarConvidado,
+  alocarVarios,
   atualizarConvidadoCroqui,
+  atualizarElemento,
   atualizarMesa,
   criarElemento,
   criarMesas,
@@ -72,6 +92,16 @@ const botao =
 const botaoForte =
   "rounded-lg bg-gray-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50";
 
+/** "04" vira "Mesa 04"; "Família da noiva" fica como ela escreveu */
+const nomeDaMesa = (rotulo: string) => (/^\d+$/.test(rotulo.trim()) ? `Mesa ${rotulo}` : rotulo);
+
+function livresEmPalavras(livres: number): string {
+  if (livres > 1) return `${livres} lugares livres`;
+  if (livres === 1) return "1 lugar livre";
+  if (livres === 0) return "completa";
+  return `${-livres} ${livres === -1 ? "pessoa" : "pessoas"} a mais que os lugares`;
+}
+
 export function MesasDoEvento({
   eventId,
   tipoEvento,
@@ -102,9 +132,17 @@ export function MesasDoEvento({
 
   // espelho otimista: o arrasto atualiza aqui na hora; o servidor confirma depois
   const [mesas, setMesas] = useState(mesasProp);
+  const [elementos, setElementos] = useState(elementosProp);
   const [convidados, setConvidados] = useState(convidadosProp);
   useEffect(() => setMesas(mesasProp), [mesasProp]);
+  useEffect(() => setElementos(elementosProp), [elementosProp]);
   useEffect(() => setConvidados(convidadosProp), [convidadosProp]);
+
+  // "Ver no salão": o convidado na mão, esperando o toque numa mesa
+  const [naMao, setNaMao] = useState<string | null>(null);
+  // a mesa aberta no "Sentar" (várias pessoas de uma vez)
+  const [sentandoNa, setSentandoNa] = useState<string | null>(null);
+  const croquiRef = useRef<HTMLDivElement>(null);
 
   // "hoje" só depois de montar: relógio no 1º render quebra a hidratação
   const [hoje, setHoje] = useState<string | null>(null);
@@ -138,8 +176,8 @@ export function MesasDoEvento({
 
   const circulacao = useMemo(() => problemasDeCirculacao(mesas, []), [mesas]);
   const circulacaoSaida = useMemo(
-    () => problemasDeCirculacao(mesas, elementosProp),
-    [mesas, elementosProp]
+    () => problemasDeCirculacao(mesas, elementos),
+    [mesas, elementos]
   );
   const sobrepostasIds = useMemo(() => {
     const ids = new Set<string>();
@@ -172,6 +210,33 @@ export function MesasDoEvento({
     }
     return m;
   }, [mesas, saude]);
+
+  // o que vai escrito em cada cadeira, e quantos já sentam em cada mesa
+  const ocupantes = useMemo(() => {
+    const m = new Map<string, string[]>();
+    for (const mesa of mesas) m.set(mesa.id, cadeirasOcupadas(naMesaEmOrdem(mesa.id, convidados)));
+    return m;
+  }, [mesas, convidados]);
+  const ocupacaoDe = useMemo(
+    () => new Map([...saude.entries()].map(([id, s]) => [id, s.ocupacao])),
+    [saude]
+  );
+
+  // sentando alguém pelo salão: as mesas onde ele não cabe ficam apagadas
+  const convidadoNaMao = naMao ? convidados.find((c) => c.id === naMao) ?? null : null;
+  const semLugarParaQuemEstaNaMao = useMemo(() => {
+    if (!convidadoNaMao) return undefined;
+    const precisa = 1 + convidadoNaMao.acompanhantes;
+    return new Set(
+      mesas
+        .filter(
+          (m) =>
+            m.tipo === "bolo" ||
+            m.lugares - (ocupacaoDe.get(m.id) ?? 0) + (convidadoNaMao.mesaId === m.id ? precisa : 0) < precisa
+        )
+        .map((m) => m.id)
+    );
+  }, [convidadoNaMao, mesas, ocupacaoDe]);
 
   const cont = useMemo(() => contadores(convidados), [convidados]);
   // "chegaram" NÃO se soma aqui: vem de presentes_do_evento (148), a
@@ -211,6 +276,7 @@ export function MesasDoEvento({
       setMesas((atual) => atual.map((m) => (m.id === id ? { ...m, xCm, yCm } : m)));
       rodar(() => moverMesa(eventId, id, xCm, yCm));
     } else {
+      setElementos((atual) => atual.map((el) => (el.id === id ? { ...el, xCm, yCm } : el)));
       rodar(() => moverElemento(eventId, id, xCm, yCm));
     }
   }
@@ -220,6 +286,34 @@ export function MesasDoEvento({
       atual.map((c) => (c.id === convidadoId ? { ...c, mesaId, ordemNaMesa: null } : c))
     );
     rodar(() => alocarConvidado(eventId, convidadoId, mesaId));
+  }
+
+  function sentarVarios(convidadoIds: string[], mesaId: string) {
+    const ids = new Set(convidadoIds);
+    setConvidados((atual) =>
+      atual.map((c) => (ids.has(c.id) ? { ...c, mesaId, ordemNaMesa: null } : c))
+    );
+    rodar(() => alocarVarios(eventId, convidadoIds, mesaId));
+  }
+
+  // o toque no croqui: com alguém na mão, a mesa tocada é onde ele senta
+  function tocou(id: string | null) {
+    if (naMao) {
+      // mesa apagada é aviso, não trava: lotar é escolha dela (a saúde avisa)
+      if (id && mesas.some((m) => m.id === id && m.tipo !== "bolo")) {
+        alocar(naMao, id);
+        setNaMao(null);
+        setSelecionada(id);
+      }
+      return;
+    }
+    setSelecionada(id);
+  }
+
+  function verNoSalao(convidadoId: string) {
+    setSelecionada(null);
+    setNaMao(convidadoId);
+    croquiRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function marcarChegada(convidadoId: string, presente: boolean) {
@@ -248,6 +342,8 @@ export function MesasDoEvento({
   }
 
   const mesaAtiva = mesas.find((m) => m.id === selecionada) ?? null;
+  const elementoAtivo = elementos.find((el) => el.id === selecionada) ?? null;
+  const mesaSentando = mesas.find((m) => m.id === sentandoNa) ?? null;
 
   return (
     <div className="space-y-4">
@@ -291,45 +387,44 @@ export function MesasDoEvento({
             pendente={pendente}
           />
 
-          {/* o croqui arrasta no desktop; no celular é leitura */}
-          <div className="hidden md:block">
+          {/* o mesmo croqui no computador e no celular: abre com o salão
+              inteiro e aproxima para mexer */}
+          <div ref={croquiRef} className="scroll-mt-40 space-y-2">
+            {convidadoNaMao && (
+              <div className="flex items-center gap-3 rounded-lg bg-gray-900 px-3 py-2 text-sm text-white">
+                <span className="min-w-0 flex-1 truncate">
+                  Sentando <b className="font-semibold">{convidadoNaMao.nome}</b>
+                  {convidadoNaMao.acompanhantes > 0 ? ` +${convidadoNaMao.acompanhantes}` : ""} · toque na mesa
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setNaMao(null)}
+                  className="shrink-0 text-gray-300 underline-offset-2 hover:text-white hover:underline"
+                >
+                  Cancelar
+                </button>
+              </div>
+            )}
             <Croqui
               larguraCm={salao.larguraCm}
               alturaCm={salao.alturaCm}
               mesas={mesas}
-              elementos={elementosProp}
+              elementos={elementos}
               ocupacao={ocupacao}
               comProblema={comProblema}
               sobrepostasIds={sobrepostasIds}
               saidaObstruidaIds={saidaObstruidaIds}
               selecionada={selecionada}
               editavel
+              arrastavel={!naMao}
+              navegavel
+              ocupantes={ocupantes}
+              apagadas={semLugarParaQuemEstaNaMao}
               planta={plantaNoCroqui}
-              aoSelecionar={setSelecionada}
+              aoSelecionar={tocou}
               aoMover={moveu}
               aoSoltarConvidado={(mesaId, convidadoId) => alocar(convidadoId, mesaId)}
             />
-          </div>
-          <div className="md:hidden">
-            <Croqui
-              larguraCm={salao.larguraCm}
-              alturaCm={salao.alturaCm}
-              mesas={mesas}
-              elementos={elementosProp}
-              ocupacao={ocupacao}
-              comProblema={comProblema}
-              sobrepostasIds={sobrepostasIds}
-              saidaObstruidaIds={saidaObstruidaIds}
-              selecionada={selecionada}
-              editavel={false}
-              planta={plantaNoCroqui}
-              aoSelecionar={setSelecionada}
-              aoMover={() => undefined}
-              aoSoltarConvidado={() => undefined}
-            />
-            <p className="mt-1 text-xs text-gray-400">
-              No celular o croqui é leitura — a mesa de cada convidado você escolhe na lista.
-            </p>
           </div>
 
           <AvisosAoVivo
@@ -339,14 +434,19 @@ export function MesasDoEvento({
             rotuloDe={rotuloDe}
           />
 
-          {mesaAtiva && (
-            <PainelMesa
+          {(mesaAtiva || elementoAtivo) && (
+            <PainelDaSelecao
+              key={selecionada ?? ""}
               eventId={eventId}
               tipoEvento={tipoEvento}
               mesa={mesaAtiva}
+              elemento={elementoAtivo}
               convidados={convidados}
+              ocupacao={mesaAtiva ? ocupacaoDe.get(mesaAtiva.id) ?? 0 : 0}
+              alocar={alocar}
               rodar={rodar}
               pendente={pendente}
+              aoSentar={() => mesaAtiva && setSentandoNa(mesaAtiva.id)}
               aoFechar={() => setSelecionada(null)}
             />
           )}
@@ -368,13 +468,32 @@ export function MesasDoEvento({
           convidados={convidados}
           mesas={mesas}
           rotuloDe={rotuloDe}
+          ocupacaoDe={ocupacaoDe}
           diaDoEvento={diaDoEvento}
           alocar={alocar}
+          aoVerNoSalao={verNoSalao}
           marcarChegada={marcarChegada}
           rodar={rodar}
           pendente={pendente}
         />
       </div>
+
+      {/* no celular a folha da peça marcada cobre o fim da tela: sobra
+          espaço para a lista continuar alcançável */}
+      {(mesaAtiva || elementoAtivo) && <div aria-hidden className="h-[45vh] md:hidden" />}
+
+      {mesaSentando && (
+        <SentarNaMesa
+          mesa={mesaSentando}
+          convidados={convidados}
+          ocupacao={ocupacaoDe.get(mesaSentando.id) ?? 0}
+          aoSentar={(ids) => {
+            sentarVarios(ids, mesaSentando.id);
+            setSentandoNa(null);
+          }}
+          aoFechar={() => setSentandoNa(null)}
+        />
+      )}
     </div>
   );
 }
@@ -744,140 +863,390 @@ function AvisosAoVivo({
 }
 
 /* ================================================================
- * Painel da mesa selecionada
+ * A peça marcada: a folha da mesa (ou do elemento)
  * ================================================================ */
 
-function PainelMesa({
+/** No celular, folha presa ao pé da tela; no computador, o painel
+ *  debaixo do croqui. Mesa: quem senta (tirar com o ×), Sentar, Girar e
+ *  Editar. Elemento: Girar e Remover. */
+function PainelDaSelecao({
   eventId,
   tipoEvento,
   mesa,
+  elemento,
   convidados,
+  ocupacao,
+  alocar,
   rodar,
   pendente,
+  aoSentar,
   aoFechar,
 }: {
   eventId: string;
   tipoEvento: string;
-  mesa: Mesa;
-  convidados: ConvidadoCroqui[];
+  mesa: Mesa | null;
+  elemento: Elemento | null;
+  convidados: ConvidadoDaLista[];
+  ocupacao: number;
+  alocar: (convidadoId: string, mesaId: string | null) => void;
   rodar: (a: () => Promise<{ error?: string } | { success: true }>) => void;
   pendente: boolean;
+  aoSentar: () => void;
   aoFechar: () => void;
 }) {
-  const [rotulo, setRotulo] = useState(mesa.rotulo);
-  const [lugares, setLugares] = useState(String(mesa.lugares));
+  const [editando, setEditando] = useState(false);
+  const [rotulo, setRotulo] = useState(mesa?.rotulo ?? "");
+  const [lugares, setLugares] = useState(String(mesa?.lugares ?? ""));
   useEffect(() => {
-    setRotulo(mesa.rotulo);
-    setLugares(String(mesa.lugares));
-  }, [mesa.id, mesa.rotulo, mesa.lugares]);
+    setRotulo(mesa?.rotulo ?? "");
+    setLugares(String(mesa?.lugares ?? ""));
+  }, [mesa?.rotulo, mesa?.lugares]);
 
-  const naMesa = convidados
-    .filter((c) => c.mesaId === mesa.id && c.confirmacao !== "nao_vai")
-    .sort((a, b) => (a.ordemNaMesa ?? 99) - (b.ordemNaMesa ?? 99) || a.nome.localeCompare(b.nome, "pt-BR"));
-  const [arrastando, setArrastando] = useState<string | null>(null);
+  const folha =
+    "fixed inset-x-0 bottom-0 z-40 max-h-[65vh] overflow-y-auto rounded-t-2xl border-t border-gray-300 bg-white px-4 pb-5 pt-2 shadow-[0_-10px_30px_rgba(28,25,23,0.10)] md:static md:z-auto md:max-h-none md:overflow-visible md:rounded-xl md:border md:border-gray-300 md:p-4 md:shadow-none";
+  const pega = <div aria-hidden className="mx-auto mb-2 h-1 w-8 rounded-full bg-gray-300 md:hidden" />;
+  const fechar = (
+    <button type="button" onClick={aoFechar} aria-label="Fechar" className="shrink-0 rounded p-1 text-gray-400 hover:text-gray-700">
+      <X size={16} />
+    </button>
+  );
 
-  function reordenar(alvoId: string) {
-    if (!arrastando || arrastando === alvoId) return;
+  if (elemento) {
+    return (
+      <section className={folha} aria-label={NOME_ELEMENTO[elemento.tipo]}>
+        {pega}
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-gray-900">
+            {NOME_ELEMENTO[elemento.tipo]}
+            {elemento.rotulo?.trim() ? <span className="ml-2 font-normal text-gray-400">{elemento.rotulo}</span> : null}
+          </h3>
+          {fechar}
+        </div>
+        <div className="mt-3 flex items-center gap-2">
+          <button
+            type="button"
+            className={botao}
+            disabled={pendente}
+            onClick={() => rodar(() => atualizarElemento(eventId, elemento.id, { rotacao: (elemento.rotacao + 90) % 360 }))}
+          >
+            Girar
+          </button>
+          <button
+            type="button"
+            className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-500 hover:border-red-300 hover:text-red-600"
+            disabled={pendente}
+            onClick={() => {
+              aoFechar();
+              rodar(() => removerElemento(eventId, elemento.id));
+            }}
+          >
+            <Trash2 size={14} />
+            Remover
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  if (!mesa) return null;
+  const naMesa = naMesaEmOrdem(mesa.id, convidados);
+  const redonda = caixaDaMesa(mesa).raio != null;
+  const livres = mesa.lugares - ocupacao;
+
+  function mover(id: string, passo: -1 | 1) {
+    if (!mesa) return;
     const ids = naMesa.map((c) => c.id);
-    const de = ids.indexOf(arrastando);
-    const para = ids.indexOf(alvoId);
-    ids.splice(de, 1);
-    ids.splice(para, 0, arrastando);
+    const i = ids.indexOf(id);
+    const j = i + passo;
+    if (i < 0 || j < 0 || j >= ids.length) return;
+    [ids[i], ids[j]] = [ids[j], ids[i]];
     rodar(() => ordenarMesa(eventId, mesa.id, ids));
-    setArrastando(null);
   }
 
   return (
-    <section className="rounded-xl border border-gray-300 bg-white p-4">
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-gray-900">
-          Mesa {mesa.rotulo}
-          <span className="ml-2 font-normal text-gray-400">{nomeTipoMesa(mesa.tipo, tipoEvento)}</span>
-        </h3>
-        <button type="button" onClick={aoFechar} className="text-gray-400 hover:text-gray-600">
-          <X size={16} />
-        </button>
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-end gap-3">
-        <label className="text-xs text-gray-500">
-          Nome
-          <input
-            className={`${campo} mt-1 block w-36`}
-            value={rotulo}
-            onChange={(e) => setRotulo(e.target.value)}
-            onBlur={() => rotulo !== mesa.rotulo && rodar(() => atualizarMesa(eventId, mesa.id, { rotulo }))}
-          />
-        </label>
-        <label className="text-xs text-gray-500">
-          Lugares
-          <input
-            className={`${campo} mt-1 block w-20`}
-            inputMode="numeric"
-            value={lugares}
-            onChange={(e) => setLugares(e.target.value)}
-            onBlur={() =>
-              Number(lugares) !== mesa.lugares &&
-              rodar(() => atualizarMesa(eventId, mesa.id, { lugares: Number(lugares) }))
-            }
-          />
-        </label>
-        <button
-          type="button"
-          className={botao}
-          disabled={pendente}
-          onClick={() => rodar(() => atualizarMesa(eventId, mesa.id, { rotacao: (mesa.rotacao + 45) % 360 }))}
-        >
-          Girar 45°
-        </button>
-        <label className="flex items-center gap-1.5 text-xs text-gray-600">
-          <input
-            type="checkbox"
-            checked={mesa.assentoMarcado}
-            onChange={(e) => rodar(() => atualizarMesa(eventId, mesa.id, { assentoMarcado: e.target.checked }))}
-          />
-          Lugar marcado
-        </label>
-        <button
-          type="button"
-          className="ml-auto rounded-lg border border-gray-200 p-1.5 text-gray-400 hover:border-red-300 hover:text-red-600"
-          title="Remover mesa (quem estava nela volta para a lista)"
-          disabled={pendente}
-          onClick={() => {
-            aoFechar();
-            rodar(() => removerMesa(eventId, mesa.id));
-          }}
-        >
-          <Trash2 size={14} />
-        </button>
-      </div>
-
-      {mesa.assentoMarcado && naMesa.length > 0 && (
-        <div className="mt-3">
-          <p className="text-xs font-medium text-gray-500">
-            A ordem é o lugar, da esquerda para a direita — arraste para trocar.
+    <section className={folha} aria-label={nomeDaMesa(mesa.rotulo)}>
+      {pega}
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h3 className="truncate text-base font-semibold text-gray-900">{nomeDaMesa(mesa.rotulo)}</h3>
+          <p className="text-xs text-gray-500">
+            {mesa.tipo === "bolo" ? nomeTipoMesa(mesa.tipo, tipoEvento) : livresEmPalavras(livres)}
           </p>
-          <ol className="mt-1.5 space-y-1">
-            {naMesa.map((c, i) => (
+        </div>
+        {fechar}
+      </div>
+
+      {mesa.tipo !== "bolo" &&
+        (naMesa.length > 0 ? (
+          <ul className="mt-3 flex flex-wrap gap-1.5">
+            {naMesa.map((c) => (
               <li
                 key={c.id}
-                draggable
-                onDragStart={() => setArrastando(c.id)}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  reordenar(c.id);
-                }}
-                className="flex cursor-grab items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-sm text-gray-800"
+                className="inline-flex max-w-full items-center gap-1 rounded-full border border-gray-200 bg-gray-50 py-0.5 pl-2.5 pr-1 text-xs text-gray-800"
               >
-                <span className="w-5 text-xs text-gray-400">{i + 1}º</span>
-                {c.nome}
+                <span className="truncate">{c.nome}</span>
+                {c.acompanhantes > 0 && <span className="shrink-0 text-gray-400">+{c.acompanhantes}</span>}
+                <button
+                  type="button"
+                  aria-label={`Tirar ${c.nome} da mesa`}
+                  onClick={() => alocar(c.id, null)}
+                  className="shrink-0 rounded-full p-0.5 text-gray-400 hover:bg-gray-200 hover:text-gray-700"
+                >
+                  <X size={12} />
+                </button>
               </li>
             ))}
-          </ol>
+          </ul>
+        ) : (
+          <p className="mt-3 text-xs text-gray-400">Ninguém sentado ainda.</p>
+        ))}
+
+      <div className="mt-3 flex items-center gap-2">
+        {mesa.tipo !== "bolo" && (
+          <button type="button" className={`${botaoForte} flex-1 md:flex-none`} onClick={aoSentar}>
+            Sentar
+          </button>
+        )}
+        {!redonda && (
+          <button
+            type="button"
+            className={botao}
+            disabled={pendente}
+            onClick={() => rodar(() => atualizarMesa(eventId, mesa.id, { rotacao: (mesa.rotacao + 45) % 360 }))}
+          >
+            Girar
+          </button>
+        )}
+        <button
+          type="button"
+          className={`${botao} inline-flex items-center gap-1`}
+          aria-expanded={editando}
+          onClick={() => setEditando((v) => !v)}
+        >
+          Editar
+          {editando ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </button>
+      </div>
+
+      {editando && (
+        <div className="mt-3 space-y-3 border-t border-gray-100 pt-3">
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="text-xs text-gray-500">
+              Nome ou número
+              <input
+                className={`${campo} mt-1 block w-44`}
+                value={rotulo}
+                onChange={(e) => setRotulo(e.target.value)}
+                onBlur={() => rotulo !== mesa.rotulo && rodar(() => atualizarMesa(eventId, mesa.id, { rotulo }))}
+              />
+            </label>
+            <label className="text-xs text-gray-500">
+              Lugares
+              <input
+                className={`${campo} mt-1 block w-20`}
+                inputMode="numeric"
+                value={lugares}
+                onChange={(e) => setLugares(e.target.value)}
+                onBlur={() =>
+                  Number(lugares) !== mesa.lugares &&
+                  rodar(() => atualizarMesa(eventId, mesa.id, { lugares: Number(lugares) }))
+                }
+              />
+            </label>
+            <label className="flex items-center gap-1.5 pb-1.5 text-xs text-gray-600">
+              <input
+                type="checkbox"
+                checked={mesa.assentoMarcado}
+                onChange={(e) => rodar(() => atualizarMesa(eventId, mesa.id, { assentoMarcado: e.target.checked }))}
+              />
+              Lugar marcado
+            </label>
+          </div>
+
+          {mesa.assentoMarcado && naMesa.length > 1 && (
+            <ol className="space-y-1">
+              {naMesa.map((c, i) => (
+                <li
+                  key={c.id}
+                  className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1 text-sm text-gray-800"
+                >
+                  <span className="w-6 text-xs text-gray-400">{i + 1}º</span>
+                  <span className="min-w-0 flex-1 truncate">{c.nome}</span>
+                  <button
+                    type="button"
+                    aria-label={`${c.nome} um lugar antes`}
+                    disabled={pendente || i === 0}
+                    onClick={() => mover(c.id, -1)}
+                    className="rounded p-1 text-gray-400 hover:text-gray-800 disabled:opacity-30"
+                  >
+                    <ChevronUp size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`${c.nome} um lugar depois`}
+                    disabled={pendente || i === naMesa.length - 1}
+                    onClick={() => mover(c.id, 1)}
+                    className="rounded p-1 text-gray-400 hover:text-gray-800 disabled:opacity-30"
+                  >
+                    <ChevronDown size={14} />
+                  </button>
+                </li>
+              ))}
+            </ol>
+          )}
+
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-500 hover:border-red-300 hover:text-red-600"
+            disabled={pendente}
+            onClick={() => {
+              aoFechar();
+              rodar(() => removerMesa(eventId, mesa.id));
+            }}
+          >
+            <Trash2 size={14} />
+            Remover mesa
+          </button>
         </div>
       )}
     </section>
+  );
+}
+
+/* ================================================================
+ * Sentar na mesa: várias pessoas de uma vez
+ * ================================================================ */
+
+function SentarNaMesa({
+  mesa,
+  convidados,
+  ocupacao,
+  aoSentar,
+  aoFechar,
+}: {
+  mesa: Mesa;
+  convidados: ConvidadoDaLista[];
+  ocupacao: number;
+  aoSentar: (ids: string[]) => void;
+  aoFechar: () => void;
+}) {
+  const [busca, setBusca] = useState("");
+  const [marcados, setMarcados] = useState<Set<string>>(new Set());
+
+  // quem ainda não tem lugar (e não recusou)
+  const semMesa = useMemo(
+    () =>
+      convidados
+        .filter((c) => c.confirmacao !== "nao_vai" && !c.mesaId)
+        .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
+    [convidados]
+  );
+  const q = busca.trim().toLocaleLowerCase("pt-BR");
+  const lista = q ? semMesa.filter((c) => c.nome.toLocaleLowerCase("pt-BR").includes(q)) : semMesa;
+
+  const pessoas = semMesa.filter((c) => marcados.has(c.id)).reduce((s, c) => s + 1 + c.acompanhantes, 0);
+  const sobram = mesa.lugares - ocupacao - pessoas;
+
+  function alternar(id: string) {
+    setMarcados((atual) => {
+      const novo = new Set(atual);
+      if (novo.has(id)) novo.delete(id);
+      else novo.add(id);
+      return novo;
+    });
+  }
+
+  useEffect(() => {
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") aoFechar();
+    };
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, [aoFechar]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 md:items-center md:p-6"
+      onClick={aoFechar}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Sentar na ${nomeDaMesa(mesa.rotulo)}`}
+        onClick={(e) => e.stopPropagation()}
+        className="flex max-h-[88vh] w-full flex-col rounded-t-2xl bg-white shadow-xl md:max-w-md md:rounded-2xl"
+      >
+        <div className="flex items-start justify-between gap-2 border-b border-gray-100 px-4 pb-3 pt-4">
+          <div className="min-w-0">
+            <h3 className="truncate text-base font-semibold text-gray-900">Sentar na {nomeDaMesa(mesa.rotulo)}</h3>
+            <p className={`text-xs ${sobram < 0 ? "text-amber-700" : "text-gray-500"}`}>
+              {pessoas === 0
+                ? livresEmPalavras(mesa.lugares - ocupacao)
+                : sobram >= 0
+                  ? `sobram ${sobram} ${sobram === 1 ? "lugar" : "lugares"}`
+                  : `passa ${-sobram} ${sobram === -1 ? "lugar" : "lugares"}`}
+            </p>
+          </div>
+          <button type="button" onClick={aoFechar} aria-label="Fechar" className="rounded p-1 text-gray-400 hover:text-gray-700">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="px-4 pt-3">
+          <label className="flex items-center gap-2 rounded-lg border border-gray-300 px-2.5 py-1.5 focus-within:border-gray-500">
+            <Search size={14} className="shrink-0 text-gray-400" />
+            <input
+              className="min-w-0 flex-1 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none"
+              placeholder="Buscar pelo nome"
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+            />
+          </label>
+        </div>
+
+        <ul className="min-h-0 flex-1 overflow-y-auto px-4 py-2">
+          {lista.length === 0 && (
+            <li className="py-6 text-center text-sm text-gray-400">
+              {semMesa.length === 0 ? "Todo mundo já tem mesa." : "Ninguém com esse nome sem mesa."}
+            </li>
+          )}
+          {lista.map((c) => {
+            const marcado = marcados.has(c.id);
+            return (
+              <li key={c.id} className="border-b border-gray-100 last:border-0">
+                <label className="flex cursor-pointer items-center gap-3 py-2.5">
+                  <input
+                    type="checkbox"
+                    checked={marcado}
+                    onChange={() => alternar(c.id)}
+                    className="h-4 w-4 shrink-0 accent-gray-900"
+                  />
+                  <span className="min-w-0 flex-1 truncate text-sm text-gray-900">
+                    {c.nome}
+                    {c.acompanhantes > 0 && <span className="text-gray-400"> +{c.acompanhantes}</span>}
+                    {c.confirmacao === "aguardando" && <span className="text-xs text-gray-400"> · sem resposta</span>}
+                  </span>
+                  <span className="shrink-0 text-xs tabular-nums text-gray-400">
+                    {1 + c.acompanhantes} {c.acompanhantes > 0 ? "lugares" : "lugar"}
+                  </span>
+                </label>
+              </li>
+            );
+          })}
+        </ul>
+
+        <div className="border-t border-gray-100 px-4 py-3">
+          <button
+            type="button"
+            className={`${botaoForte} w-full py-2.5`}
+            disabled={marcados.size === 0}
+            onClick={() => aoSentar([...marcados])}
+          >
+            {pessoas === 0 ? "Sentar" : `Sentar ${pessoas} ${pessoas === 1 ? "pessoa" : "pessoas"}`}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1018,8 +1387,10 @@ function ListaLateral({
   convidados,
   mesas,
   rotuloDe,
+  ocupacaoDe,
   diaDoEvento,
   alocar,
+  aoVerNoSalao,
   marcarChegada,
   rodar,
   pendente,
@@ -1029,8 +1400,11 @@ function ListaLateral({
   convidados: ConvidadoDaLista[];
   mesas: Mesa[];
   rotuloDe: Map<string, string>;
+  /** mesaId → pessoas sentadas (com acompanhantes) */
+  ocupacaoDe: Map<string, number>;
   diaDoEvento: boolean;
   alocar: (convidadoId: string, mesaId: string | null) => void;
+  aoVerNoSalao: (convidadoId: string) => void;
   marcarChegada: (convidadoId: string, presente: boolean) => void;
   rodar: (a: () => Promise<{ error?: string } | { success: true }>) => void;
   pendente: boolean;
@@ -1052,10 +1426,21 @@ function ListaLateral({
     if (filtro === "para_sentar") l = l.filter((c) => c.confirmacao !== "nao_vai");
     if (filtro === "sem_mesa") l = l.filter((c) => c.confirmacao !== "nao_vai" && !c.mesaId);
     if (filtro === "nao_vai") l = l.filter((c) => c.confirmacao === "nao_vai");
+    // busca pelo nome ou pela mesa ("mesa 4", "04", "família da noiva"):
+    // a mesa anda junto com o convidado
     const q = busca.trim().toLocaleLowerCase("pt-BR");
-    if (q) l = l.filter((c) => c.nome.toLocaleLowerCase("pt-BR").includes(q));
+    if (q) {
+      const daMesa = q.replace(/^mesa\s+/, "");
+      const semZero = (t: string) => t.replace(/^0+(?=\d)/, "");
+      l = l.filter((c) => {
+        if (c.nome.toLocaleLowerCase("pt-BR").includes(q)) return true;
+        const r = c.mesaId ? (rotuloDe.get(c.mesaId) ?? "").toLocaleLowerCase("pt-BR") : "";
+        if (!r) return false;
+        return semZero(r) === semZero(daMesa) || (daMesa.length > 2 && r.includes(daMesa));
+      });
+    }
     return [...l].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
-  }, [convidados, filtro, busca]);
+  }, [convidados, filtro, busca, rotuloDe]);
 
   const mesasOrdenadas = [...mesas].sort(
     (a, b) => a.ordem - b.ordem || a.rotulo.localeCompare(b.rotulo, "pt-BR")
@@ -1096,7 +1481,7 @@ function ListaLateral({
 
       <input
         className={`${campo} w-full`}
-        placeholder="Buscar pelo nome"
+        placeholder="Buscar nome ou mesa"
         value={busca}
         onChange={(e) => setBusca(e.target.value)}
       />
@@ -1217,10 +1602,12 @@ function ListaLateral({
             convidados={convidados}
             mesas={mesasOrdenadas}
             rotuloDe={rotuloDe}
+            ocupacaoDe={ocupacaoDe}
             expandido={expandido === c.id}
             aoExpandir={() => setExpandido(expandido === c.id ? null : c.id)}
             diaDoEvento={diaDoEvento}
             alocar={alocar}
+            aoVerNoSalao={aoVerNoSalao}
             marcarChegada={marcarChegada}
             rodar={rodar}
             pendente={pendente}
@@ -1241,10 +1628,12 @@ function LinhaConvidado({
   convidados,
   mesas,
   rotuloDe,
+  ocupacaoDe,
   expandido,
   aoExpandir,
   diaDoEvento,
   alocar,
+  aoVerNoSalao,
   marcarChegada,
   rodar,
   pendente,
@@ -1255,10 +1644,12 @@ function LinhaConvidado({
   convidados: ConvidadoCroqui[];
   mesas: Mesa[];
   rotuloDe: Map<string, string>;
+  ocupacaoDe: Map<string, number>;
   expandido: boolean;
   aoExpandir: () => void;
   diaDoEvento: boolean;
   alocar: (convidadoId: string, mesaId: string | null) => void;
+  aoVerNoSalao: (convidadoId: string) => void;
   marcarChegada: (convidadoId: string, presente: boolean) => void;
   rodar: (a: () => Promise<{ error?: string } | { success: true }>) => void;
   pendente: boolean;
@@ -1274,6 +1665,24 @@ function LinhaConvidado({
   ].filter(Boolean);
 
   const adultos = convidados.filter((o) => o.id !== c.id && !o.ehCrianca);
+
+  // "pelo convidado": as mesas com os lugares que sobram para ele
+  const precisa = 1 + c.acompanhantes;
+  const opcoes = mesas
+    .filter((m) => m.tipo !== "bolo")
+    .map((m) => {
+      const atual = c.mesaId === m.id;
+      const livres = m.lugares - (ocupacaoDe.get(m.id) ?? 0) + (atual ? precisa : 0);
+      return { m, livres, cabe: livres >= precisa, atual };
+    })
+    .sort(
+      (a, b) =>
+        // a mesa dos noivos não é sugestão para convidado: vai para o fim
+        Number(a.m.tipo === "noivos") - Number(b.m.tipo === "noivos") ||
+        Number(b.cabe) - Number(a.cabe) ||
+        (a.cabe ? a.livres - b.livres : b.livres - a.livres) ||
+        a.m.ordem - b.m.ordem
+    );
 
   return (
     <li className="py-2">
@@ -1319,21 +1728,59 @@ function LinhaConvidado({
       {expandido && (
         <div className="mt-2 space-y-2 rounded-lg bg-gray-50 p-2.5">
           {podeSentar && (
-            <label className="block text-xs text-gray-500">
-              Mesa
-              <select
-                className={`${campo} mt-1 block w-full`}
-                value={c.mesaId ?? ""}
-                onChange={(e) => alocar(c.id, e.target.value || null)}
-              >
-                <option value="">Sem mesa</option>
-                {mesas.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.rotulo} · {nomeTipoMesa(m.tipo, tipoEvento)}
-                  </option>
+            <div>
+              <p className="text-xs text-gray-500">
+                Mesa
+                {c.acompanhantes > 0 && <span className="text-gray-400"> · precisa de {precisa} lugares</span>}
+              </p>
+              {/* as mesas onde cabe primeiro, a mais cheia antes; as que
+                  não cabem vêm apagadas, mas ainda tocáveis */}
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {opcoes.map(({ m, livres, cabe, atual }) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    disabled={pendente}
+                    onClick={() => {
+                      if (!atual) alocar(c.id, m.id);
+                      aoExpandir();
+                    }}
+                    className={`rounded-lg px-2.5 py-1 text-xs ${
+                      atual
+                        ? "bg-gray-900 text-white"
+                        : cabe
+                          ? "border border-gray-300 bg-white text-gray-800 hover:border-gray-400"
+                          : "border border-gray-200 bg-white text-gray-400 hover:border-gray-300"
+                    }`}
+                  >
+                    {m.rotulo} · {atual ? "aqui" : livres <= 0 ? "lotada" : livres === 1 ? "1 livre" : `${livres} livres`}
+                  </button>
                 ))}
-              </select>
-            </label>
+                {c.mesaId && (
+                  <button
+                    type="button"
+                    disabled={pendente}
+                    onClick={() => {
+                      alocar(c.id, null);
+                      aoExpandir();
+                    }}
+                    className="rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs text-gray-600 hover:border-gray-300"
+                  >
+                    Tirar da mesa
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    aoVerNoSalao(c.id);
+                    aoExpandir();
+                  }}
+                  className="rounded-lg px-2.5 py-1 text-xs text-gray-600 underline underline-offset-2 hover:text-gray-900"
+                >
+                  Ver no salão
+                </button>
+              </div>
+            </div>
           )}
 
           <label className="flex items-center gap-1.5 text-xs text-gray-600">

@@ -437,6 +437,26 @@ export async function alocarConvidado(
   return { success: true };
 }
 
+/** "Sentar N pessoas" (30/09/2026): a mesa escolhida pelo celular, com
+ *  várias pessoas marcadas de uma vez. Uma escrita só. */
+export async function alocarVarios(
+  eventId: string,
+  convidadoIds: string[],
+  mesaId: string
+): Promise<Resultado> {
+  const ids = [...new Set(convidadoIds)].slice(0, 200);
+  if (ids.length === 0) return { error: "Escolha quem vai sentar." };
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("evento_convidado")
+    .update({ mesa_id: mesaId, ordem_na_mesa: null, updated_at: new Date().toISOString() })
+    .in("id", ids)
+    .eq("event_id", eventId);
+  if (error) return causa(error, "Não foi possível sentar");
+  revalidar(eventId);
+  return { success: true };
+}
+
 /** mesa com assento marcado: a ordem da lista É o lugar (esquerda→direita) */
 export async function ordenarMesa(
   eventId: string,
