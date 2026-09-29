@@ -10,6 +10,7 @@ import { AcoesDoEvento } from "@/components/eventos/AcoesDoEvento";
 import { BlocoDeFases } from "@/components/eventos/BlocoDeFases";
 import { RequerAtencao } from "@/components/eventos/RequerAtencao";
 import { UltimaAba } from "@/components/eventos/UltimaAba";
+import { LembrarEvento } from "@/components/eventos/LembrarEvento";
 import { getCabecalhoEvento } from "@/lib/supabase/resumo-evento";
 import { faseDoSegmento, type FaseDoEvento } from "@/lib/fases-do-evento";
 import { formatDate } from "@/lib/format";
@@ -131,6 +132,13 @@ export default async function EventoLayout({
   return (
     <EventoContainer>
       <UltimaAba eventId={event.id} />
+      <LembrarEvento
+        eventId={event.id}
+        titulo={titulo}
+        data={formatDate(event.date)}
+        capa={event.cover_image_url}
+        tipo={event.type}
+      />
       {/* o evento de exemplo da conta nova (174): bem à vista, em toda tela dele */}
       {event.exemplo && (
         <FaixaDoExemplo

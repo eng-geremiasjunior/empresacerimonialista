@@ -16,6 +16,8 @@ import {
   ICONES_DO_MENU as ICONS,
   MENU_DO_APP as NAV,
 } from "@/lib/menu-do-app";
+import { FOTO_DA_AREA } from "@/lib/fotos-de-evento";
+import { CHAVE_ULTIMA_TELA, gravar } from "@/lib/ultima-tela";
 
 function Icon({ name, className }: { name: string; className?: string }) {
   return (
@@ -177,6 +179,29 @@ export function AppShell({
       if (!r.ok) setMostrarExplicacoes(true);
     });
   };
+
+  // A última tela que ela usou (29/09/2026): o 1º bloco do painel. As
+  // telas de um evento são gravadas pelo layout do evento (LembrarEvento),
+  // que sabe o nome dele; aqui ficam as áreas do menu. Painel, conta e
+  // ajuda não contam como "de onde eu parei".
+  useEffect(() => {
+    if (!pathname) return;
+    if (/^\/eventos\/(dashboard|novo)(\/|$)/.test(pathname)) return;
+    if (/^\/eventos\/[0-9a-f-]{36}(\/|$)/.test(pathname)) return;
+    const item = NAV.filter((i) => !i.cargos || (cargo !== null && i.cargos.includes(cargo)))
+      .filter((i) => !["/eventos/dashboard", "/ajuda", "/assinatura", "/configuracoes"].includes(i.href))
+      .find((i) => isActive(pathname, i.href));
+    if (!item) return;
+    const foto = FOTO_DA_AREA[item.href] ?? { src: "/site/foto-palco.webp", posicao: "45% 40%" };
+    gravar(CHAVE_ULTIMA_TELA, {
+      href: pathname,
+      titulo: item.label,
+      detalhe: null,
+      foto: foto.src,
+      posicao: foto.posicao,
+      externa: false,
+    });
+  }, [pathname, cargo]);
 
   // Data calculada no cliente para evitar divergência de hidratação
   useEffect(() => {

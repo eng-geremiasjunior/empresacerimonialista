@@ -9,12 +9,12 @@
 // exemplos) fica logo abaixo das áreas. Os textos não estreitam para
 // casamento: o sistema é de eventos (regra do dono, 12/09/2026).
 
-import Image from "next/image";
 import Link from "next/link";
 import { ComeceAqui } from "@/components/dashboard/ComeceAqui";
 import { ConhecaPorDentro } from "@/components/evento/ConhecaPorDentro";
 import { pularBoasVindas } from "@/app/(app)/eventos/dashboard/actions";
-import { MENU_DO_APP } from "@/lib/menu-do-app";
+import { areasDoSistema } from "@/lib/areas-do-painel";
+import { CartaoDeArea } from "@/components/dashboard/CartaoDeArea";
 import type { Cargo } from "@/lib/equipe-shared";
 
 const TINTA = "#221E1B";
@@ -27,60 +27,7 @@ const SALVIA = "#6E7F63";
 const F_TITLE = "var(--font-title), Inter, system-ui, sans-serif";
 const F_MONO = "var(--font-mono), 'IBM Plex Mono', ui-monospace, monospace";
 
-// As fotos das áreas são as que o dono escolheu (29/09/2026, public/
-// primeiro-acesso), alternando os tipos de evento; trocar é só o caminho
-// e o enquadramento.
-const AREAS: { href: string; titulo: string; texto: string; foto: string; posicao: string }[] = [
-  {
-    href: "/eventos",
-    titulo: "Eventos",
-    texto: "Casamentos, 15 anos, formaturas e outras festas, com tarefas, convidados, mesas e o dia do evento.",
-    foto: "/primeiro-acesso/formatura.webp",
-    posicao: "38% 40%",
-  },
-  {
-    href: "/clientes",
-    titulo: "Clientes",
-    texto: "Noivos, famílias, empresas e contatos, com o histórico de cada um.",
-    foto: "/site/foto-15-anos.webp",
-    posicao: "50% 32%",
-  },
-  {
-    href: "/orcamentos",
-    titulo: "Gestão comercial",
-    texto: "Orçamentos e propostas até virarem contrato fechado.",
-    foto: "/primeiro-acesso/comercial.webp",
-    posicao: "50% 30%",
-  },
-  {
-    href: "/fornecedores",
-    titulo: "Fornecedores",
-    texto: "Sua lista de parceiros, pronta para vincular a cada evento.",
-    foto: "/primeiro-acesso/fornecedores.webp",
-    posicao: "48% 42%",
-  },
-  {
-    href: "/cerimonialistas",
-    titulo: "Equipe",
-    texto: "Quem trabalha com você e o que cada pessoa tem para fazer.",
-    foto: "/primeiro-acesso/equipe.webp",
-    posicao: "50% 38%",
-  },
-  {
-    href: "/financeiro",
-    titulo: "Financeiro",
-    texto: "Recebimentos dos clientes e pagamentos aos fornecedores.",
-    foto: "/primeiro-acesso/financeiro.webp",
-    posicao: "50% 50%",
-  },
-];
-
 const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
-
-function podeVer(href: string, cargo: Cargo | null): boolean {
-  const item = MENU_DO_APP.find((i) => i.href === href);
-  return !item?.cargos || (cargo !== null && item.cargos.includes(cargo));
-}
 
 export function BoasVindas({
   saudacao,
@@ -100,7 +47,7 @@ export function BoasVindas({
   cargo: Cargo | null;
   porDentro: { mostrar: boolean; exemploCasamento: string | null } | null;
 }) {
-  const areas = AREAS.filter((a) => podeVer(a.href, cargo));
+  const areas = areasDoSistema(cargo);
   const mesAnterior = MESES[(mesAtual + 11) % 12];
 
   return (
@@ -140,20 +87,7 @@ export function BoasVindas({
         <h2 style={{ margin: 0, fontFamily: F_TITLE, fontWeight: 600, fontSize: 15 }}>O que você encontra aqui</h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(max(220px, calc((100% - 24px) / 3)), 1fr))", gap: 12 }}>
           {areas.map((a) => (
-            <Link
-              key={a.href}
-              href={a.href}
-              className="pa-cartao"
-              style={{ display: "flex", minHeight: 84, background: "#fff", border: `1px solid ${LINHA}`, borderRadius: 12, overflow: "hidden", color: TINTA, transition: "border-color 140ms ease" }}
-            >
-              <span style={{ width: 84, flex: "none", position: "relative", background: NEVOA }}>
-                <Image src={a.foto} alt="" fill sizes="84px" style={{ objectFit: "cover", objectPosition: a.posicao }} />
-              </span>
-              <span style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
-                <span style={{ fontFamily: F_TITLE, fontWeight: 600, fontSize: 14 }}>{a.titulo}</span>
-                <span style={{ fontSize: 12, lineHeight: 1.4, color: CORPO }}>{a.texto}</span>
-              </span>
-            </Link>
+            <CartaoDeArea key={a.href} {...a} />
           ))}
         </div>
       </section>

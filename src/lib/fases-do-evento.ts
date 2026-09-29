@@ -152,6 +152,21 @@ export const LINKS_DO_CABECALHO: {
  */
 export type NavegacaoDoEvento = { seg: string; ir: (seg: string) => void };
 
+/**
+ * O nome de uma tela do evento pelo segmento da rota ("" = Visão geral).
+ * null = tela que não conta como "de onde eu parei" (editar).
+ */
+export function rotuloDaTela(seg: string): string | null {
+  const cabecalho = LINKS_DO_CABECALHO.find((l) => l.seg === seg);
+  if (cabecalho) return cabecalho.label;
+  if (seg === "planejamento") return "Planejamento";
+  for (const f of FASES) {
+    const aba = f.abas.find((a) => a.seg === seg);
+    if (aba) return aba.label;
+  }
+  return null;
+}
+
 /** Chave da última aba lembrada no navegador, por evento. */
 export function chaveDaUltimaAba(eventId: string): string {
   return `eorg-ultima-aba:${eventId}`;

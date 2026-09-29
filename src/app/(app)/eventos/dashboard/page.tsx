@@ -57,15 +57,33 @@ import { hojeBR, horaBR, horaMinutoBR } from "@/lib/tempo";
 import { getPrimeiroAcesso } from "@/lib/supabase/primeiro-acesso";
 import { BoasVindas } from "@/components/dashboard/BoasVindas";
 import { PassosQueFaltam } from "@/components/dashboard/PassosQueFaltam";
+import { ProximosEventosCard, type ProximoEvento } from "@/components/dashboard/ProximosEventosCard";
+import { AreasDoPainel } from "@/components/dashboard/AreasDoPainel";
+import { areasDoSistema } from "@/lib/areas-do-painel";
+import { fotoDoTipo } from "@/lib/fotos-de-evento";
 
 type UpcomingEvent = {
   id: string;
   type: EventType;
+  name: string | null;
   date: string;
+  time: string | null;
   location: string | null;
   status: EventStatus;
+  exemplo: boolean | null;
+  cover_image_url: string | null;
   clients: { name: string } | null;
 };
+
+/** "hoje", "amanhã", "em 12 dias" — falar em tempo, não em data */
+function quandoFalta(dataIso: string, hojeIso: string): string {
+  const dias = Math.round(
+    (Date.UTC(+dataIso.slice(0, 4), +dataIso.slice(5, 7) - 1, +dataIso.slice(8, 10)) -
+      Date.UTC(+hojeIso.slice(0, 4), +hojeIso.slice(5, 7) - 1, +hojeIso.slice(8, 10))) /
+      86_400_000
+  );
+  return dias <= 0 ? "hoje" : dias === 1 ? "amanhã" : `em ${dias} dias`;
+}
 
 function greeting(hour: number) {
   if (hour >= 5 && hour < 12) return "Bom dia";
@@ -140,7 +158,7 @@ export default async function DashboardPage() {
 
   const { data } = await supabase
     .from("events")
-    .select("id, type, date, location, status, clients(name)")
+    .select("id, type, name, date, time, location, status, exemplo, cover_image_url, clients(name)")
     .gte("date", todayIso)
     .in("status", ["orcamento", "confirmado"])
     .order("date", { ascending: true })
@@ -198,6 +216,39 @@ export default async function DashboardPage() {
       }
       return { event, saude: saude ?? SAUDE_VAZIA };
     });
+
+  // O álbum dos próximos eventos (29/09/2026): os três primeiros pela
+  // data, sem o exemplo, cada um com a capa (ou a foto do tipo) e até três
+  // sugestões tiradas da saúde, com o botão de resolver.
+  const proximos: ProximoEvento[] = eventsWithHealth
+    .filter(({ event }) => !event.exemplo)
+    .slice(0, 3)
+    .map(({ event, saude }) => {
+      const doTipo = fotoDoTipo(event.type);
+      const capa = event.cover_image_url;
+      return {
+        id: event.id,
+        titulo:
+          event.name ||
+          `${EVENT_TYPE_LABELS[event.type]}${event.clients?.name ? ` — ${event.clients.name}` : ""}`,
+        linha: [formatDate(event.date), event.time?.slice(0, 5), event.location].filter(Boolean).join(" · "),
+        quando: quandoFalta(event.date, todayIso),
+        foto: capa ? { ...doTipo, src: capa, posicao: "50% 50%", zoom: 1, foco: "50% 50%" } : doTipo,
+        externa: capa ? /^https?:\/\//.test(capa) : false,
+        sugestoes: (saude.semDados ? [] : saude.alertas).slice(0, 3).map((a) => ({
+          texto: a.texto,
+          acao: a.acao,
+          href: `/eventos/${event.id}/${a.destino}`,
+        })),
+      };
+    });
+
+  // "O que você encontra aqui": Eventos e Clientes ficam só enquanto não
+  // há última tela / último evento neste navegador
+  const areas = areasDoSistema(cargo);
+  const areaEventos = areas.find((a) => a.href === "/eventos");
+  const areaClientes = areas.find((a) => a.href === "/clientes");
+  const outrasAreas = areas.filter((a) => a.href !== "/eventos" && a.href !== "/clientes");
 
   const dateLabel = (() => {
     // formata a DATA de Brasília, não a do processo — senão a linha embaixo
@@ -283,6 +334,12 @@ export default async function DashboardPage() {
             <KpiCard key={kpi.title} kpi={kpi} icon={icon} />
           ))}
         </div>
+      )}
+
+      <ProximosEventosCard eventos={proximos} />
+
+      {areaEventos && areaClientes && (
+        <AreasDoPainel semMemoriaTela={areaEventos} semMemoriaEvento={areaClientes} areas={outrasAreas} />
       )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">

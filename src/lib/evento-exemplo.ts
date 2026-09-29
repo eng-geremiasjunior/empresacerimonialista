@@ -15,6 +15,7 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { hojeBR } from "@/lib/tempo";
+import { CAPA_DO_EXEMPLO } from "@/lib/fotos-de-evento";
 
 /** As telas que ela precisa ter aberto para o exemplo sair de cena. */
 export const AREAS_DO_EXEMPLO = [
@@ -257,6 +258,8 @@ export async function criarEventoDeExemplo(
         whatsapp_auto: false,
         rsvp_aberto: false,
         exemplo: true,
+        // a capa padrão do exemplo (29/09/2026): o casal e a debutante
+        cover_image_url: CAPA_DO_EXEMPLO[m.evento.type] ?? null,
       })
       .select("id")
       .single();
