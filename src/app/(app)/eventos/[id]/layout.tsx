@@ -276,7 +276,7 @@ export default async function EventoLayout({
                 <Play size={14} strokeWidth={2} />
                 Modo Evento
               </Link>
-              <AcoesDoEvento eventId={event.id} />
+              <AcoesDoEvento eventId={event.id} secundario={modoDestaque} />
             </div>
           </div>
         </header>

@@ -8,10 +8,14 @@
 // Copiloto por regras, não IA: cada linha é contagem determinística
 // sobre tarefas, fornecedores, parcelas e roteiro (saude-evento.ts).
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { DestinoDoEvento } from "@/components/eventos/DestinoDoEvento";
 import type { SaudeAlerta } from "@/lib/saude-evento";
-import { faseDoSegmento, segmentoDoCaminho } from "@/lib/fases-do-evento";
+import {
+  faseDoSegmento,
+  segmentoDoCaminho,
+  type NavegacaoDoEvento,
+} from "@/lib/fases-do-evento";
 
 /** "O evento é em 12 dias." → "o evento é em 12 dias" */
 function porqueEmLinha(p: string): string {
@@ -22,12 +26,15 @@ function porqueEmLinha(p: string): string {
 export function RequerAtencao({
   alertas,
   eventId,
+  navegacao,
 }: {
   alertas: SaudeAlerta[];
   eventId: string;
+  /** só na demonstração da página de vendas: troca a tela sem roteador */
+  navegacao?: NavegacaoDoEvento;
 }) {
   const pathname = usePathname() ?? "";
-  const seg = segmentoDoCaminho(pathname, eventId);
+  const seg = navegacao ? navegacao.seg : segmentoDoCaminho(pathname, eventId);
   const fase = faseDoSegmento(seg);
   const noResumo = seg === "";
 
@@ -80,12 +87,19 @@ export function RequerAtencao({
           );
         }
         return (
-          <Link key={i} href={`/eventos/${eventId}/${a.destino}`} className="ev-pilula" style={estilo}>
+          <DestinoDoEvento
+            key={i}
+            href={`/eventos/${eventId}/${a.destino}`}
+            seg={a.destino}
+            navegacao={navegacao}
+            className="ev-pilula"
+            style={estilo}
+          >
             <span>{texto}</span>
             <span style={{ fontWeight: 600, color: "var(--ev-accent)", whiteSpace: "nowrap" }}>
               {a.acao} →
             </span>
-          </Link>
+          </DestinoDoEvento>
         );
       })}
     </section>

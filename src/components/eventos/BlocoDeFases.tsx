@@ -10,8 +10,8 @@
 // Sem "?" em lugar nenhum: a explicação do menu vira dica ao passar o
 // mouse.
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { DestinoDoEvento } from "@/components/eventos/DestinoDoEvento";
 import { tem } from "@/lib/capacidades";
 import { explicacaoDoEvento } from "@/lib/explicacoes-do-menu";
 import {
@@ -19,6 +19,7 @@ import {
   faseDoSegmento,
   segmentoDoCaminho,
   type FaseDoEvento,
+  type NavegacaoDoEvento,
   type TabCounters,
 } from "@/lib/fases-do-evento";
 import type { FasesEvento } from "@/lib/supabase/resumo-evento";
@@ -36,6 +37,7 @@ export function BlocoDeFases({
   counters,
   pendencias,
   respostasDaCliente = 0,
+  navegacao,
 }: {
   eventId: string;
   fases: FasesEvento;
@@ -45,14 +47,19 @@ export function BlocoDeFases({
   pendencias: Record<FaseDoEvento, number>;
   /** blocos do Planejamento com resposta da cliente sem conferir (091) */
   respostasDaCliente?: number;
+  /** só na demonstração da página de vendas: troca a tela sem roteador */
+  navegacao?: NavegacaoDoEvento;
 }) {
   const pathname = usePathname() ?? "";
   const base = `/eventos/${eventId}`;
-  const segAtual = segmentoDoCaminho(pathname, eventId);
+  const segAtual = navegacao ? navegacao.seg : segmentoDoCaminho(pathname, eventId);
   const faseAtiva = faseDoSegmento(segAtual);
   const idx = FASES.findIndex((f) => f.id === faseAtiva);
   const aberta = idx >= 0 ? FASES[idx] : null;
-  const abas = (aberta?.abas ?? []).filter((a) => !a.requer || tem(tipoEvento, a.requer));
+  // só as abas que este tipo de evento tem (um show não tem RSVP nem mesas)
+  const abasDe = (d: (typeof FASES)[number]) =>
+    d.abas.filter((a) => !a.requer || tem(tipoEvento, a.requer));
+  const abas = aberta ? abasDe(aberta) : [];
 
   return (
     <div
@@ -89,14 +96,17 @@ export function BlocoDeFases({
           }
 
           return (
-            <Link
+            <DestinoDoEvento
               key={f.id}
               href={`${base}/${f.rota}`}
+              seg={f.rota}
+              navegacao={navegacao}
               title={dica(f.rota)}
-              aria-current={ativa ? "page" : undefined}
+              ativo={ativa}
               className="ev-fase"
               style={{
                 position: "relative",
+                width: "100%",
                 display: "flex",
                 flexDirection: "column",
                 gap: 3,
@@ -186,7 +196,9 @@ export function BlocoDeFases({
                   lineHeight: 1.4,
                 }}
               >
-                {f.telas}
+                {/* a lista sai das abas que existem para este tipo; o
+                    Planejamento não tem abas e diz o que tem dentro */}
+                {abasDe(f).length > 0 ? abasDe(f).map((a) => a.label).join(" · ") : f.telas}
               </span>
               <span
                 aria-hidden
@@ -204,7 +216,7 @@ export function BlocoDeFases({
                 />
               </span>
               <span className="sr-only">{`${pct}% concluído.`}</span>
-            </Link>
+            </DestinoDoEvento>
           );
         })}
       </nav>
@@ -239,13 +251,16 @@ export function BlocoDeFases({
               const ativa = segAtual === aba.seg || (aba.seg === "organizacao" && segAtual === "tarefas");
               const n = aba.counter ? counters[aba.counter] ?? 0 : 0;
               return (
-                <Link
+                <DestinoDoEvento
                   key={aba.seg}
                   href={href}
+                  seg={aba.seg}
+                  navegacao={navegacao}
                   title={dica(aba.seg)}
-                  aria-current={ativa ? "page" : undefined}
+                  ativo={ativa}
                   className="ev-aba"
                   style={{
+                    background: "transparent",
                     display: "flex",
                     alignItems: "center",
                     gap: 6,
@@ -277,7 +292,7 @@ export function BlocoDeFases({
                       {n}
                     </span>
                   )}
-                </Link>
+                </DestinoDoEvento>
               );
             })}
           </nav>

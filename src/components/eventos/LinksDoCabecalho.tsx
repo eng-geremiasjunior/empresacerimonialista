@@ -6,9 +6,13 @@
 // quem nunca usou o sistema entende sem clicar. A dica de cada um vai
 // no `title`.
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LINKS_DO_CABECALHO, segmentoDoCaminho } from "@/lib/fases-do-evento";
+import { DestinoDoEvento } from "@/components/eventos/DestinoDoEvento";
+import {
+  LINKS_DO_CABECALHO,
+  segmentoDoCaminho,
+  type NavegacaoDoEvento,
+} from "@/lib/fases-do-evento";
 
 // Heroicons outline (traço 1.7): grade 2×2, pessoa, relógio.
 const ICONE: Record<string, string> = {
@@ -18,9 +22,16 @@ const ICONE: Record<string, string> = {
   historico: "M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z",
 };
 
-export function LinksDoCabecalho({ eventId }: { eventId: string }) {
+export function LinksDoCabecalho({
+  eventId,
+  navegacao,
+}: {
+  eventId: string;
+  /** só na demonstração da página de vendas: troca a tela sem roteador */
+  navegacao?: NavegacaoDoEvento;
+}) {
   const pathname = usePathname() ?? "";
-  const atual = segmentoDoCaminho(pathname, eventId);
+  const atual = navegacao ? navegacao.seg : segmentoDoCaminho(pathname, eventId);
   const base = `/eventos/${eventId}`;
 
   return (
@@ -42,11 +53,13 @@ export function LinksDoCabecalho({ eventId }: { eventId: string }) {
       {LINKS_DO_CABECALHO.map((l) => {
         const ativo = atual === l.seg;
         return (
-          <Link
+          <DestinoDoEvento
             key={l.seg}
             href={l.seg ? `${base}/${l.seg}` : base}
+            seg={l.seg}
+            navegacao={navegacao}
             title={l.dica}
-            aria-current={ativo ? "page" : undefined}
+            ativo={ativo}
             className="ev-seg"
             style={{
               display: "flex",
@@ -78,7 +91,7 @@ export function LinksDoCabecalho({ eventId }: { eventId: string }) {
               <path d={ICONE[l.seg]} />
             </svg>
             {l.label}
-          </Link>
+          </DestinoDoEvento>
         );
       })}
     </nav>

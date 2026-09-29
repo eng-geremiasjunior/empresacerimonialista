@@ -31,7 +31,7 @@ const EVENTO: PassoDaApresentacao = {
   titulo: "Você abre o evento e sabe o que fazer agora.",
   texto: "Quanto falta, quem ainda não confirmou e qual parcela venceu, com o botão para resolver do lado.",
   tela: "/site/tela-evento.webp",
-  recorte: r("evento", 760, 380),
+  recorte: r("evento", 746, 378),
 };
 const PLANEJAMENTO: PassoDaApresentacao = {
   id: "planejamento",

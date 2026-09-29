@@ -15,7 +15,15 @@ import {
   Truck,
 } from "lucide-react";
 
-export function AcoesDoEvento({ eventId }: { eventId: string }) {
+export function AcoesDoEvento({
+  eventId,
+  secundario = false,
+}: {
+  eventId: string;
+  /** quando o Modo Evento é o destaque (7 dias ou menos), Ações cede o
+   *  primário: um botão escuro por vez */
+  secundario?: boolean;
+}) {
   const ref = useRef<HTMLDetailsElement>(null);
   const base = `/eventos/${eventId}`;
   const fechar = () => {
@@ -35,7 +43,7 @@ export function AcoesDoEvento({ eventId }: { eventId: string }) {
   return (
     <details ref={ref} style={{ position: "relative" }}>
       <summary
-        className="ev-btn-primario ev-foco list-none"
+        className={`${secundario ? "ev-btn-secundario" : "ev-btn-primario"} ev-foco list-none`}
         style={{
           display: "inline-flex",
           alignItems: "center",
@@ -43,8 +51,9 @@ export function AcoesDoEvento({ eventId }: { eventId: string }) {
           height: 40,
           padding: "0 16px",
           borderRadius: 10,
-          background: "var(--ev-accent)",
-          color: "#fff",
+          background: secundario ? "var(--ev-card-bg)" : "var(--ev-accent)",
+          color: secundario ? "var(--ev-text-strong)" : "#fff",
+          border: secundario ? "1px solid var(--ev-card-border)" : "1px solid transparent",
           fontFamily: "var(--font-ui)",
           fontSize: 13.5,
           fontWeight: 600,

@@ -1,9 +1,8 @@
 "use client";
 
 // Liga o tema neutro (handoff Celebra Pro) enquanto a tela de Planejamento
-// está montada. O atributo vive no <body> para alcançar o canvas e o chrome
-// do evento (header + stepper + abas), que trocam de cor via tokens --ev-*.
-// A sidebar global fica fora de propósito — fronteira a avaliar no browser.
+// está montada: o canvas recuado do <body>. O chrome do evento (cabeçalho e
+// bloco de fases, Modelo A) NÃO muda de cor aqui — é o mesmo em toda aba.
 
 import { useEffect } from "react";
 

@@ -145,6 +145,13 @@ export const LINKS_DO_CABECALHO: {
   },
 ];
 
+/**
+ * Navegação sem roteador: a demonstração da página de vendas desenha o
+ * bloco de fases, o Requer atenção e os atalhos do cabeçalho REAIS, e
+ * troca a tela no lugar. `seg` é a tela aberta; `ir` recebe o clique.
+ */
+export type NavegacaoDoEvento = { seg: string; ir: (seg: string) => void };
+
 /** Chave da última aba lembrada no navegador, por evento. */
 export function chaveDaUltimaAba(eventId: string): string {
   return `eorg-ultima-aba:${eventId}`;

@@ -133,43 +133,19 @@
   .ev-cabecalho { flex-direction: column; }
   .ev-capa { flex: none !important; max-width: none !important; min-width: 0 !important; width: 100%; height: 150px; border-radius: 13px 13px 0 0 !important; }
   .ev-cabecalho-texto { padding: 18px 20px 16px !important; }
-  .ev-titulo { font-size: clamp(26px, 7.5vw, 40px) !important; }
+  /* no celular o nome do evento quebra em duas linhas em vez de virar
+     "Casamento — Isab…": é a informação mais importante da tela */
+  .ev-titulo { font-size: clamp(26px, 7.2vw, 40px) !important; white-space: normal !important; overflow: visible !important; text-wrap: balance; }
 }
 
 /* ============================================================
-   Tema neutro (Celebra Pro / handoff do Planejamento).
-   Profundidade em NEUTROS, não em matiz: canvas recuado #E4E5E7,
-   cartões brancos flutuando, um único destaque (ameixa). Cor só
-   com função semântica, no menor volume possível.
+   Tema neutro do Planejamento: só o canvas recuado (#E4E5E7), com os
+   cartões brancos flutuando. Até 28/09/2026 este bloco também repintava
+   o chrome do evento em ameixa; com o Modelo A o cabeçalho e o bloco de
+   fases são os MESMOS em toda aba do evento (chumbo e sálvia).
    ============================================================ */
 body[data-tema="neutro"] {
   background-color: #e4e5e7;
-
-  --ev-accent: #6e3f5f;
-  --ev-accent-tint: #f2f0f2;
-  --ev-warn: #8a7448;
-  --ev-warn-tint: #f1eee6;
-  --ev-track: #e4e6e8;
-  --ev-card-bg: #ffffff;
-  --ev-card-border: #a9aeb3;
-  --ev-card-border-soft: #dcdfe1;
-  --ev-text-strong: #23262a;
-  --ev-text-body: #3c4145;
-  --ev-text-muted: #5b6167;
-  --ev-text-faint: #8a9096;
-  --ev-ok: #6e7f63;
-  --ev-late: #96605a;
-  --ev-cta: #6e3f5f;
-  --ev-cta-ring: rgba(110, 63, 95, 0.25);
-  /* estados sem comemoração: decidido/concluído é neutro de propósito */
-  --ev-st-orcamento-bg: #f1eee6;
-  --ev-st-orcamento-fg: #8a7448;
-  --ev-st-confirmado-bg: #eff0f1;
-  --ev-st-confirmado-fg: #5b6167;
-  --ev-st-concluido-bg: #eff0f1;
-  --ev-st-concluido-fg: #5b6167;
-  --ev-st-cancelado-bg: #f1eae8;
-  --ev-st-cancelado-fg: #96605a;
 }
 
 /* ------------------------------------------------------------------
