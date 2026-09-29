@@ -74,6 +74,13 @@ export function GuiaVivo({
    * guia tira o escuro e o anel e leva o cartão para o canto esquerdo.
    */
   const [painel, setPainel] = useState(false);
+  /**
+   * A tela de boas-vindas do painel (29/09/2026) marca
+   * `data-guia-silencio`: ela mesma conduz quem acabou de chegar (o
+   * primeiro evento e o evento pronto), e o cartão do guia cobria o
+   * "Criar evento" no celular. Enquanto ela estiver na tela, o guia espera.
+   */
+  const [silencio, setSilencio] = useState(false);
   /** Em que passo eu ja rolei a tela ate o alvo. Uma vez por passo. */
   const rolouNoPasso = useRef<string | null>(null);
 
@@ -112,6 +119,12 @@ export function GuiaVivo({
 
   const medir = useCallback(() => {
     if (!guia) return;
+    const calado = !!document.querySelector("[data-guia-silencio]");
+    setSilencio(calado);
+    if (calado) {
+      setAlvo(null);
+      return;
+    }
     const comPainel = !!document.querySelector("[data-guia-painel]");
     setPainel(comPainel);
     if (comPainel) {
@@ -187,7 +200,10 @@ export function GuiaVivo({
     };
   }, [guia, montado, medir]);
 
-  if (!guia || !montado || terminou || pulouAgora) return null;
+  if (!guia || !montado || terminou || pulouAgora || silencio) return null;
+  // lido também no render: sem isto o cartão piscava um quadro antes da
+  // primeira medida
+  if (document.querySelector("[data-guia-silencio]")) return null;
 
   const { passo, numero, total, rota, evento, falta, sugestoes, decidiuSemTarefa } = guia;
   const texto =

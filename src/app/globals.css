@@ -138,6 +138,18 @@
   .ev-titulo { font-size: clamp(26px, 7.2vw, 40px) !important; white-space: normal !important; overflow: visible !important; text-wrap: balance; }
 }
 
+/* ------------------------------------------------------------------
+   Painel do primeiro acesso (29/09/2026): o que o inline não alcança.
+   ------------------------------------------------------------------ */
+.pa-pular:hover { background: #f2eee9 !important; color: #221e1b !important; }
+.pa-cartao:hover { border-color: #b8b1a9 !important; }
+.pa-suporte:hover { background: #f2eee9 !important; }
+@media (max-width: 639px) {
+  .pa-titulo { font-size: 32px !important; }
+  .pa-comece { flex-direction: column; }
+  .pa-comece-foto { flex: none !important; max-width: none !important; min-width: 0 !important; height: 170px; }
+}
+
 /* ============================================================
    Tema neutro do Planejamento: só o canvas recuado (#E4E5E7), com os
    cartões brancos flutuando. Até 28/09/2026 este bloco também repintava

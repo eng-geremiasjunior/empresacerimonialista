@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
-import { LifeBuoy, Send, X } from "lucide-react";
+import { Send, X } from "lucide-react";
 import {
   enviarMensagemDeSuporte,
   lerConversaDeSuporte,
@@ -18,15 +18,14 @@ import {
  * suporte?' ou 'tem dúvidas?', e então ali recebo a mensagem". As
  * mensagens chegam no painel de gestão, e a resposta volta para cá.
  *
- * O X NÃO some com o suporte: encolhe a caixa num link pequeno
- * "Suporte". Sumir de vez deixaria quem fechou uma vez sem porta de ajuda
- * justamente no dia em que ela precisasse.
+ * Desde 29/09/2026 (handoff do painel do primeiro acesso) o cartão é
+ * "Prefere ajuda de uma pessoa?", sempre à vista, sem o X de encolher:
+ * a porta de ajuda não some nunca.
  *
  * O Instagram fica dentro, como segunda porta: se a mensagem não sair, a
  * pessoa não fica sem saída.
  */
 
-const CHAVE_RECOLHIDO = "eorg:suporte:recolhido";
 /** Com a caixa aberta, a resposta do dono aparece rápido. */
 const POLL_ABERTA_MS = 20_000;
 /** Fechada, só para acender o pontinho de resposta nova. */
@@ -46,7 +45,6 @@ function hora(iso: string) {
 export function CaixaDeSuporte() {
   const pathname = usePathname();
   const [montado, setMontado] = useState(false);
-  const [recolhido, setRecolhido] = useState(false);
   const [aberta, setAberta] = useState(false);
   const [mensagens, setMensagens] = useState<MensagemDeSuporte[]>([]);
   const [naoLidas, setNaoLidas] = useState(0);
@@ -60,11 +58,6 @@ export function CaixaDeSuporte() {
   // hidratação.
   useEffect(() => {
     setMontado(true);
-    try {
-      setRecolhido(localStorage.getItem(CHAVE_RECOLHIDO) === "1");
-    } catch {
-      /* navegador que bloqueia armazenamento: caixa aberta, sem memória */
-    }
     // O botão do e-mail da resposta chega com ?suporte=abrir: a caixinha
     // abre sozinha (e abrir é o que conta a resposta como vista), e o
     // parâmetro sai do endereço para recarregar não abrir de novo.
@@ -95,15 +88,6 @@ export function CaixaDeSuporte() {
     if (aberta) fimRef.current?.scrollIntoView({ block: "end" });
   }, [aberta, mensagens.length]);
 
-  function recolher() {
-    setRecolhido(true);
-    try {
-      localStorage.setItem(CHAVE_RECOLHIDO, "1");
-    } catch {
-      /* sem armazenamento: vale até recarregar */
-    }
-  }
-
   async function enviar() {
     const t = texto.trim();
     if (!t || enviando) return;
@@ -125,38 +109,74 @@ export function CaixaDeSuporte() {
 
   return (
     <>
-      {recolhido ? (
+      <div
+        style={{
+          background: "#292524",
+          border: "1px solid #3B3835",
+          borderRadius: 12,
+          padding: 14,
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {/* sem foto por decisão do dono: o símbolo do "e", redondo */}
+          <span
+            aria-hidden
+            style={{
+              width: 34,
+              height: 34,
+              flex: "none",
+              borderRadius: 999,
+              background: "#6E3F5F",
+              display: "grid",
+              placeItems: "center",
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 64 64" aria-hidden="true">
+              <g fill="none" stroke="#fff" strokeWidth="7" strokeLinecap="round">
+                <path d="M18 33H46" />
+                <path d="M46 33A14 14 0 1 0 41.9 42.9" />
+              </g>
+            </svg>
+          </span>
+          <span style={{ fontFamily: "var(--font-title), Inter, sans-serif", fontWeight: 600, fontSize: 13, lineHeight: 1.3, color: "#fff" }}>
+            Prefere ajuda de uma pessoa?
+          </span>
+          {ponto && <span className="ml-auto h-2 w-2 shrink-0 rounded-full bg-emerald-400" aria-label="Resposta nova" />}
+        </div>
+        <span style={{ fontSize: 12, lineHeight: 1.45, color: "#D6D3D1" }}>
+          {ponto
+            ? "A equipe respondeu você."
+            : "Quem responde é a nossa equipe, não um robô. Pode perguntar qualquer coisa."}
+        </span>
+        <span style={{ fontFamily: "var(--font-mono), 'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: "0.03em", color: "#A8A29E" }}>
+          SEG A SEX · 9H ÀS 18H
+        </span>
         <button
           type="button"
           onClick={() => setAberta(true)}
-          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-stone-400 hover:bg-stone-800/60 hover:text-white"
+          className="pa-suporte"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+            width: "100%",
+            padding: "8px 12px",
+            borderRadius: 8,
+            border: 0,
+            background: "#fff",
+            color: "#221E1B",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
         >
-          <LifeBuoy size={13} />
-          Suporte
-          {ponto && <span className="ml-auto h-2 w-2 rounded-full bg-emerald-400" aria-label="Resposta nova" />}
+          Fale com o suporte
         </button>
-      ) : (
-        <div className="relative rounded-xl border border-stone-700 bg-stone-800/60 p-3">
-          <button
-            type="button"
-            onClick={recolher}
-            aria-label="Fechar"
-            className="absolute right-1.5 top-1.5 rounded p-1 text-stone-500 hover:bg-stone-700 hover:text-white"
-          >
-            <X size={12} />
-          </button>
-          <button type="button" onClick={() => setAberta(true)} className="block w-full pr-5 text-left">
-            <span className="flex items-center gap-1.5 text-xs font-semibold text-white">
-              <LifeBuoy size={13} className="text-emerald-400" />
-              Tem dúvidas?
-              {ponto && <span className="h-2 w-2 rounded-full bg-emerald-400" aria-label="Resposta nova" />}
-            </span>
-            <span className="mt-1 block text-xs leading-snug text-stone-400">
-              {ponto ? "A equipe respondeu você." : "Fale com a gente por aqui."}
-            </span>
-          </button>
-        </div>
-      )}
+      </div>
 
       {/* PORTAL, não filho da barra: a <aside> tem transform (é gaveta
           no celular), e transform num ancestral faz `position: fixed`

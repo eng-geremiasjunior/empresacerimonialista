@@ -53,7 +53,10 @@ import {
   type EventType,
 } from "@/lib/types";
 import type { DonutSlice, Kpi } from "@/lib/dashboard-mock";
-import { hojeBR, horaBR } from "@/lib/tempo";
+import { hojeBR, horaBR, horaMinutoBR } from "@/lib/tempo";
+import { getPrimeiroAcesso } from "@/lib/supabase/primeiro-acesso";
+import { BoasVindas } from "@/components/dashboard/BoasVindas";
+import { PassosQueFaltam } from "@/components/dashboard/PassosQueFaltam";
 
 type UpcomingEvent = {
   id: string;
@@ -114,6 +117,27 @@ export default async function DashboardPage() {
   const now = new Date();
   const todayIso = hojeBR(now);
 
+  // Quem acaba de chegar (0 evento de verdade e não pulou) vê as boas-
+  // vindas no lugar do painel, antes de qualquer consulta de números.
+  const { cargo, empresaId } = await getMeuCargo();
+  const primeiroAcesso = await getPrimeiroAcesso(cargo, empresaId);
+  if (primeiroAcesso.boasVindas) {
+    const porDentroNovo = cargo === "proprietaria" ? await conhecaPorDentroDaConta(empresaId) : null;
+    const diaDaSemana = format(new Date(`${todayIso}T12:00:00`), "EEEE", { locale: ptBR })
+      .split("-")[0]
+      .toUpperCase();
+    return (
+      <BoasVindas
+        saudacao={greeting(horaBR(now))}
+        primeiroNome={primeiroAcesso.primeiroNome}
+        meta={`${diaDaSemana} · ${formatDate(todayIso)} · ${horaMinutoBR(now)}`}
+        mesAtual={Number(todayIso.slice(5, 7)) - 1}
+        cargo={cargo}
+        porDentro={porDentroNovo}
+      />
+    );
+  }
+
   const { data } = await supabase
     .from("events")
     .select("id, type, date, location, status, clients(name)")
@@ -157,7 +181,6 @@ export default async function DashboardPage() {
   // Os números do negócio (faturamento, eventos em andamento, em
   // orçamento) são da dona; quem conduz um evento abre o Dashboard para
   // saber o que precisa de atenção, não para ver o caixa.
-  const { cargo, empresaId } = await getMeuCargo();
   const dona = cargo === "proprietaria";
   // o convite para conhecer o sistema por dentro (27/09/2026): conta nova
   // ou com exemplo; só a dona, que é quem decide indicar
@@ -243,6 +266,10 @@ export default async function DashboardPage() {
         tarefasHoje={briefing.tarefasHoje}
         alertas={alertas}
       />
+
+      {/* os passos que faltam depois do primeiro evento (fornecedores,
+          equipe), até serem feitos ou dispensados */}
+      {primeiroAcesso.passos && <PassosQueFaltam passos={primeiroAcesso.passos} />}
 
       {porDentro?.mostrar && <ConhecaPorDentro exemploCasamento={porDentro.exemploCasamento} />}
 
