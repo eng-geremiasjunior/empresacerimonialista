@@ -1,5 +1,9 @@
 "use client";
 
+// Ações rápidas (Modelo A): grade de seis quadrinhos, ícone e rótulo.
+// Nova tarefa, Adicionar fornecedor e Adicionar observação abrem no
+// lugar; os outros levam à tela.
+
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -7,11 +11,10 @@ import {
   ListPlus,
   MessageSquare,
   ScrollText,
-  Users,
+  Truck,
   Wallet,
   StickyNote,
   X,
-  Zap,
 } from "lucide-react";
 import { tem } from "@/lib/capacidades";
 import { rotuloCortejo } from "@/lib/papel";
@@ -20,38 +23,47 @@ import { BuscarVincularFornecedorModal } from "@/components/fornecedores/BuscarV
 import { createTask } from "@/app/(app)/tarefas/actions";
 import { criarNota } from "@/app/(app)/eventos/[id]/notas-actions";
 
-function ItemBotao({
+const quadrinho: React.CSSProperties = {
+  border: "1px solid var(--ev-card-border)",
+  borderRadius: 10,
+  padding: "12px 6px",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: 8,
+  textAlign: "center",
+  fontFamily: "var(--font-ui)",
+  fontSize: 12,
+  lineHeight: 1.25,
+  color: "var(--ev-text-body)",
+  cursor: "pointer",
+  background: "#fff",
+  transition: "background 140ms ease, border-color 140ms ease",
+};
+
+function Quadrinho({
   icon: Icon,
   titulo,
-  descricao,
   onClick,
   href,
 }: {
   icon: typeof ListPlus;
   titulo: string;
-  descricao: string;
   onClick?: () => void;
   href?: string;
 }) {
-  const cls =
-    "flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-gray-50";
   const inner = (
     <>
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-        <Icon size={17} strokeWidth={1.75} />
-      </span>
-      <span className="min-w-0">
-        <span className="block text-sm font-medium text-gray-800">{titulo}</span>
-        <span className="block truncate text-xs text-gray-500">{descricao}</span>
-      </span>
+      <Icon size={18} strokeWidth={1.6} />
+      {titulo}
     </>
   );
   return href ? (
-    <Link href={href} className={cls}>
+    <Link href={href} className="ev-cartao-link" style={quadrinho}>
       {inner}
     </Link>
   ) : (
-    <button onClick={onClick} className={cls}>
+    <button type="button" onClick={onClick} className="ev-cartao-link" style={quadrinho}>
       {inner}
     </button>
   );
@@ -89,56 +101,30 @@ export function AcoesRapidas({
   }
 
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-      <h3 className="flex items-center gap-1.5 text-sm font-semibold text-gray-900">
-        <Zap size={15} className="text-indigo-500" />
+    <section
+      aria-label="Ações rápidas"
+      style={{
+        background: "var(--ev-card-bg)",
+        border: "1px solid var(--ev-card-border)",
+        borderRadius: 14,
+        padding: "14px 16px 16px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+      }}
+    >
+      <span style={{ fontFamily: "var(--font-ui)", fontSize: 14, fontWeight: 600, paddingLeft: 4, color: "var(--ev-text-strong)" }}>
         Ações rápidas
-      </h3>
-      <div className="mt-2 space-y-0.5">
-        <ItemBotao
-          icon={ListPlus}
-          titulo="Nova tarefa"
-          descricao="Crie uma tarefa para este evento"
-          onClick={() => setTarefa(true)}
-        />
-        <ItemBotao
-          icon={Users}
-          titulo="Adicionar fornecedor"
-          descricao="Busque e vincule do seu cadastro"
-          onClick={() => setFornecedor(true)}
-        />
-        <ItemBotao
-          icon={MessageSquare}
-          titulo="Abrir comunicação"
-          descricao="Converse com equipe e fornecedores"
-          href={`/eventos/${eventId}/comunicacao`}
-        />
-        <ItemBotao
-          icon={Wallet}
-          titulo="Abrir financeiro"
-          descricao="Contratos, parcelas e despesas"
-          href={`/eventos/${eventId}/financeiro`}
-        />
+      </span>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(88px, 1fr))", gap: 8 }}>
+        <Quadrinho icon={ListPlus} titulo="Nova tarefa" onClick={() => setTarefa(true)} />
+        <Quadrinho icon={Truck} titulo="Adicionar fornecedor" onClick={() => setFornecedor(true)} />
+        <Quadrinho icon={MessageSquare} titulo="Abrir comunicação" href={`/eventos/${eventId}/comunicacao`} />
+        <Quadrinho icon={Wallet} titulo="Abrir financeiro" href={`/eventos/${eventId}/financeiro`} />
         {tem(tipo, "cortejo") && (
-          <ItemBotao
-            icon={ScrollText}
-            titulo={rotuloCortejo(tipo)}
-            descricao={
-              tipo === "formatura"
-                ? "Formandos, mesa de honra e a chamada"
-                : tipo === "debutante"
-                  ? "Quem entra com ela, a valsa e as 15 velas"
-                  : "Quem entra, na ordem de entrada"
-            }
-            href={`/eventos/${eventId}/cortejo`}
-          />
+          <Quadrinho icon={ScrollText} titulo={rotuloCortejo(tipo)} href={`/eventos/${eventId}/cortejo`} />
         )}
-        <ItemBotao
-          icon={StickyNote}
-          titulo="Adicionar observação"
-          descricao="Anote algo sobre o evento"
-          onClick={() => setNota(true)}
-        />
+        <Quadrinho icon={StickyNote} titulo="Adicionar observação" onClick={() => setNota(true)} />
       </div>
 
       {tarefa && (
@@ -167,9 +153,7 @@ export function AcoesRapidas({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 p-4">
           <div className="w-full max-w-sm rounded-xl bg-white p-5 shadow-xl">
             <div className="flex items-center justify-between">
-              <h4 className="text-sm font-semibold text-gray-900">
-                Nova observação
-              </h4>
+              <h4 className="text-sm font-semibold text-gray-900">Nova observação</h4>
               <button
                 onClick={() => setNota(false)}
                 aria-label="Fechar"
@@ -184,7 +168,7 @@ export function AcoesRapidas({
               autoFocus
               rows={3}
               placeholder="Anote algo sobre este evento…"
-              className="mt-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+              className="ev-foco mt-3 w-full rounded-lg border border-[color:var(--ev-card-border)] px-3 py-2 text-sm"
             />
             {notaErro && <p className="mt-1 text-sm text-rose-600">{notaErro}</p>}
             <div className="mt-3 flex justify-end gap-2">
@@ -197,7 +181,7 @@ export function AcoesRapidas({
               <button
                 onClick={salvarNota}
                 disabled={pending}
-                className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-60"
+                className="ev-btn-primario rounded-lg bg-[color:var(--ev-accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
               >
                 {pending ? "Salvando…" : "Salvar"}
               </button>

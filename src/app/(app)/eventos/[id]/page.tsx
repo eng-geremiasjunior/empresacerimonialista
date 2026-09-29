@@ -1,23 +1,24 @@
-// Painel de Resumo do evento (redesign): responde "como está?", "o que
-// fazer agora?" e "há risco?". Dados 100% reais.
+// Visão geral do evento (Modelo A): Informações do evento à esquerda;
+// à direita, o que vem a seguir (ou "Para começar" num evento novo), a
+// Google Agenda de quem a conectou, as ações rápidas e a pergunta ao
+// evento. Dados 100% reais.
 
 import Link from "next/link";
-import {
-  AtSign,
-  CircleUserRound,
-  Mail,
-  MessageCircle,
-  Phone,
-} from "lucide-react";
+import { CircleUserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getResumoEvento } from "@/lib/supabase/resumo-evento";
+import { getMeuCargo } from "@/lib/supabase/equipe";
 import { Avatar } from "@/components/ui/Avatar";
 import { avatarPublicUrl } from "@/lib/avatar";
-import { ResumoOperacional } from "@/components/eventos/ResumoOperacional";
 import { AcoesRapidas } from "@/components/eventos/AcoesRapidas";
 import { ColacaoLigada, type ElosColacao } from "@/components/eventos/ColacaoLigada";
-import { ProximasAtividades } from "@/components/eventos/ProximasAtividades";
-import { NotasRapidas } from "@/components/eventos/NotasRapidas";
+import {
+  ParaComecar,
+  ProximasAtividades,
+  type PassoParaComecar,
+} from "@/components/eventos/ProximasAtividades";
+import { GoogleAgendaDoEvento } from "@/components/eventos/GoogleAgendaDoEvento";
+import { ObservacoesDoEvento } from "@/components/eventos/ObservacoesDoEvento";
 import { AssistenteEvento } from "@/components/eventos/AssistenteEvento";
 import {
   BriefingExtracaoCaixa,
@@ -30,7 +31,7 @@ import {
 } from "@/lib/briefing-core";
 import { CARGO_LABELS, type Cargo } from "@/lib/equipe-shared";
 import { EVENT_TYPE_LABELS } from "@/lib/types";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
 import type { NotaEvento } from "./notas-actions";
 
 type LinhaFornecedor = {
@@ -42,6 +43,32 @@ type LinhaFornecedor = {
 function iniciais(nome: string) {
   const p = nome.trim().split(/\s+/);
   return ((p[0]?.[0] ?? "") + (p[1]?.[0] ?? "")).toUpperCase() || "?";
+}
+
+// Valor contratado e forma de pagamento: só quem contrata vê (regra de
+// 15/09/2026 — o dado comercial não é operacional).
+const VE_VALOR: Cargo[] = ["proprietaria", "coordenadora"];
+
+const cartao: React.CSSProperties = {
+  background: "var(--ev-card-bg)",
+  border: "1px solid var(--ev-card-border)",
+  borderRadius: 14,
+  overflow: "hidden",
+};
+
+const rotulo: React.CSSProperties = {
+  fontFamily: "var(--font-ui)",
+  fontSize: 12,
+  color: "var(--ev-text-muted)",
+};
+
+function Campo({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+      <span style={rotulo}>{label}</span>
+      {children}
+    </div>
+  );
 }
 
 export default async function ResumoPage({
@@ -57,9 +84,21 @@ export default async function ResumoPage({
     return <p className="text-sm text-gray-500">Evento não encontrado.</p>;
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [
+    {
+      data: { user },
+    },
+    { cargo },
+    conexaoGoogle,
+  ] = await Promise.all([
+    supabase.auth.getUser(),
+    getMeuCargo(),
+    // a agenda de quem está logado (168); sem a migração, sem o bloco
+    supabase.rpc("minha_conexao_google"),
+  ]);
+  const veValor = cargo !== null && VE_VALOR.includes(cargo);
+  const google =
+    ((conexaoGoogle.data as { falha: string | null }[] | null) ?? [])[0] ?? null;
 
   // Formatura: o elo baile ↔ colação (125). Filho aponta o pai; pai com
   // colação própria ganha o atalho; turma "separados" sem o evento ainda
@@ -106,7 +145,7 @@ export default async function ResumoPage({
     }
   }
 
-  // Notas (degrada se a migração 028 ainda não rodou).
+  // Observações (degrada se a migração 028 ainda não rodou).
   let notas: NotaEvento[] = [];
   const notasRes = await supabase
     .from("event_notes")
@@ -126,9 +165,6 @@ export default async function ResumoPage({
       .eq("event_id", eventId)
       .eq("status", "proposta")
       .maybeSingle(),
-    // o que ficou de fora na última conferência e ela ainda não leu: a
-    // caixa que exibia o aviso é desmontada pela revalidação da própria
-    // aplicação, então o texto vem do banco
     supabase
       .from("briefing_extracao")
       .select("id, aplicado")
@@ -157,8 +193,6 @@ export default async function ResumoPage({
     fornecedores: FornecedorEscolhivel[];
   } | null = null;
   if (propostaRes.data) {
-    // o select do cadastro agrupa por categoria; sem a 026 a caixa ainda
-    // funciona, só sem o agrupamento
     const comCat = await supabase
       .from("suppliers")
       .select("id, name, supplier_categorias(categoria)")
@@ -184,8 +218,7 @@ export default async function ResumoPage({
     };
   }
 
-  // "220 pessoas, pode chegar a 240": o teto mora ao lado do número, não
-  // numa caixa própria.
+  // "220 pessoas, pode chegar a 240": o teto mora ao lado do número.
   const g = resumo.event.guests;
   const textoConvidados =
     g != null
@@ -201,119 +234,177 @@ export default async function ResumoPage({
     `${EVENT_TYPE_LABELS[resumo.event.type]}${resumo.client?.name ? ` — ${resumo.client.name}` : ""}`;
 
   const c = resumo.client;
-  const op = resumo.operacional;
-  const temNumeros =
-    op.checklistTotal + op.cronogramaItens + op.fornecedoresTotal + op.comunicacaoNaoLidas > 0;
-  const contatos = [
-    c?.phone && { icon: Phone, texto: c.phone },
-    c?.email && { icon: Mail, texto: c.email },
-    c?.instagram && { icon: AtSign, texto: c.instagram },
-  ].filter(Boolean) as { icon: typeof Phone; texto: string }[];
+  const telefone = c?.whatsapp || c?.phone || null;
+
+  // Evento novo: os três primeiros passos, cada um com a fase certa.
+  const passos: PassoParaComecar[] = [
+    {
+      titulo: "Começar pelo Planejamento",
+      descricao: "Cada decisão vira tarefa com prazo na Organização.",
+      acao: "Abrir",
+      seg: "planejamento",
+      feito: resumo.criterios.temTarefas,
+    },
+    {
+      titulo: "Vincular os fornecedores",
+      descricao: "Quem está contratado para este evento.",
+      acao: "Vincular",
+      seg: "fornecedores",
+      feito: resumo.criterios.temFornecedores,
+    },
+    {
+      titulo: "Montar o roteiro do dia",
+      descricao: "A linha do tempo que cada fornecedor vê no link dele.",
+      acao: "Montar",
+      seg: "roteiro",
+      feito: resumo.criterios.cronogramaOk,
+    },
+  ];
+  const novo = resumo.saude.semDados;
 
   return (
-    // grid-cols-1 (minmax(0, 1fr)): sem ele, no celular a coluna crescia até
-    // o conteúdo mais largo (482 px numa tela de 390) e a página inteira
-    // andava para os lados, cortando os cartões e o painel da IA.
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-      {/* Coluna principal */}
-      <div className="space-y-8 lg:col-span-2">
-        {/* Cliente */}
-        <section>
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-900">Cliente</h2>
+    // Dois filhos diretos, sempre: a coluna das informações e a coluna
+    // do que vem a seguir. Com mais filhos o auto-fit abriria uma
+    // terceira coluna em telas largas.
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 380px), 1fr))",
+        gap: 16,
+        alignItems: "start",
+      }}
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
+        <section style={cartao} aria-label="Informações do evento">
+          <div
+            style={{
+              padding: "18px 24px",
+              borderBottom: "1px solid var(--ev-card-border)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 12,
+            }}
+          >
+            <span style={{ fontFamily: "var(--font-title)", fontSize: 16, fontWeight: 600, color: "var(--ev-text-strong)" }}>
+              Informações do evento
+            </span>
             <Link
               href={`/eventos/${eventId}/editar`}
-              className="text-xs font-medium text-gray-500 hover:text-gray-900"
+              style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--ev-text-muted)" }}
+              className="hover:!text-[color:var(--ev-text-strong)]"
             >
-              Editar dados do evento
+              Editar dados
             </Link>
           </div>
 
-          {c ? (
-            <div className="mt-3">
-              <p className="text-base font-medium text-gray-900">{c.name}</p>
-              {(contatos.length > 0 || c.whatsapp) && (
-                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-gray-600">
-                  {c.whatsapp && (
-                    <span className="flex items-center gap-1.5 text-emerald-600">
-                      <MessageCircle size={14} />
-                      {c.whatsapp}
+          <div
+            style={{
+              padding: "22px 24px",
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              gap: 24,
+            }}
+          >
+            {c ? (
+              <div style={{ display: "flex", gap: 16, minWidth: 0 }}>
+                <span
+                  aria-hidden
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: 999,
+                    background: "var(--ev-nevoa)",
+                    display: "grid",
+                    placeItems: "center",
+                    fontFamily: "var(--font-title)",
+                    fontSize: 16,
+                    fontWeight: 600,
+                    color: "var(--ev-text-body)",
+                    flex: "none",
+                  }}
+                >
+                  {iniciais(c.name)}
+                </span>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 10,
+                    fontFamily: "var(--font-ui)",
+                    fontSize: 13,
+                    color: "var(--ev-text-body)",
+                    minWidth: 0,
+                  }}
+                >
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    <span style={{ fontFamily: "var(--font-title)", fontSize: 17, fontWeight: 600, color: "var(--ev-text-strong)" }}>
+                      {c.name}
                     </span>
-                  )}
-                  {contatos.map(({ icon: Icon, texto }, i) => (
-                    <span key={i} className="flex items-center gap-1.5">
-                      <Icon size={14} className="text-gray-400" />
-                      {texto}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                {resumo.responsavel && (
-                  <div>
-                    <p className="text-xs text-gray-400">
-                      Cerimonialista responsável
-                    </p>
-                    <div className="mt-1 flex items-center gap-2">
-                      <Avatar
-                        src={avatarPublicUrl(resumo.responsavel.user_id)}
-                        fallback={iniciais(resumo.responsavel.nome)}
-                        size="sm"
-                      />
-                      <span className="text-sm text-gray-800">
+                    <span style={rotulo}>Cliente</span>
+                  </div>
+                  {resumo.responsavel && (
+                    <Campo label="Cerimonialista responsável">
+                      <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <Avatar
+                          src={avatarPublicUrl(resumo.responsavel.user_id)}
+                          fallback={iniciais(resumo.responsavel.nome)}
+                          size="sm"
+                          className="!h-5 !w-5 !text-[9px]"
+                        />
                         {resumo.responsavel.nome}
-                        <span className="text-gray-400">
-                          {" "}
-                          · {CARGO_LABELS[resumo.responsavel.cargo as Cargo] ??
-                            resumo.responsavel.cargo}
+                        <span style={{ color: "var(--ev-text-muted)" }}>
+                          · {CARGO_LABELS[resumo.responsavel.cargo as Cargo] ?? resumo.responsavel.cargo}
                         </span>
                       </span>
-                    </div>
-                  </div>
-                )}
-                {resumo.event.contract_value != null && (
-                  <div>
-                    <p className="text-xs text-gray-400">Valor contratado</p>
-                    <p className="mt-1 text-sm font-medium text-gray-900">
-                      {formatCurrency(resumo.event.contract_value)}
-                    </p>
-                  </div>
-                )}
-                {resumo.formaPagamento && (
-                  <div>
-                    <p className="text-xs text-gray-400">Forma de pagamento</p>
-                    <p className="mt-1 text-sm text-gray-800">
-                      {resumo.formaPagamento}
-                    </p>
-                  </div>
-                )}
-                {textoConvidados && (
-                  <div>
-                    <p className="text-xs text-gray-400">Convidados esperados</p>
-                    <p className="mt-1 text-sm text-gray-800">{textoConvidados}</p>
-                  </div>
-                )}
+                    </Campo>
+                  )}
+                  {telefone && (
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>{telefone}</span>
+                  )}
+                  {c.email && <span style={{ overflowWrap: "anywhere" }}>{c.email}</span>}
+                  {c.instagram && <span style={{ color: "var(--ev-text-muted)" }}>@{c.instagram.replace(/^@/, "")}</span>}
+                </div>
               </div>
+            ) : (
+              <p style={{ margin: 0, display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--ev-text-muted)" }}>
+                <CircleUserRound size={15} />
+                Sem cliente vinculado.
+              </p>
+            )}
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
+              {veValor && resumo.event.contract_value != null && (
+                <Campo label="Valor contratado">
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 500, color: "var(--ev-text-strong)" }}>
+                    {formatCurrency(resumo.event.contract_value)}
+                  </span>
+                </Campo>
+              )}
+              {veValor && resumo.formaPagamento && (
+                <Campo label="Forma de pagamento">
+                  <span style={{ fontFamily: "var(--font-ui)", fontSize: 15, color: "var(--ev-text-strong)" }}>
+                    {resumo.formaPagamento}
+                  </span>
+                </Campo>
+              )}
+              {textoConvidados && (
+                <Campo label="Convidados esperados">
+                  <span style={{ fontFamily: "var(--font-ui)", fontSize: 15, color: "var(--ev-text-strong)" }}>
+                    {textoConvidados}
+                  </span>
+                </Campo>
+              )}
             </div>
-          ) : (
-            <p className="mt-3 flex items-center gap-2 text-sm text-gray-500">
-              <CircleUserRound size={15} className="text-gray-400" />
-              Sem cliente vinculado.
-            </p>
-          )}
+          </div>
+
+          <ObservacoesDoEvento
+            eventId={eventId}
+            notas={notas}
+            currentUserId={user?.id ?? null}
+          />
         </section>
 
-        <NotasRapidas
-          eventId={eventId}
-          notas={notas}
-          currentUserId={user?.id ?? null}
-        />
-        {/* Só quando há o que contar: num evento recém-criado, quatro
-            cartões "0/0" não ajudam ninguém a decidir nada. */}
-        {temNumeros && (
-          <ResumoOperacional eventId={eventId} op={resumo.operacional} />
-        )}
         {briefing && (
           <BriefingExtracaoCaixa
             eventId={eventId}
@@ -331,14 +422,14 @@ export default async function ResumoPage({
         )}
       </div>
 
-      {/* Coluna lateral */}
-      <div className="space-y-6">
-        <ProximasAtividades eventId={eventId} proximas={resumo.proximas} />
-        <AcoesRapidas
-          eventId={eventId}
-          eventLabel={eventLabel}
-          tipo={resumo.event.type}
-        />
+      <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
+        {novo ? (
+          <ParaComecar eventId={eventId} passos={passos} />
+        ) : (
+          <ProximasAtividades eventId={eventId} proximas={resumo.proximas} />
+        )}
+        {google && <GoogleAgendaDoEvento dataEvento={resumo.event.date} falha={google.falha} />}
+        <AcoesRapidas eventId={eventId} eventLabel={eventLabel} tipo={resumo.event.type} />
         {elosColacao && <ColacaoLigada eventId={eventId} elo={elosColacao} />}
         <AssistenteEvento eventId={eventId} />
       </div>

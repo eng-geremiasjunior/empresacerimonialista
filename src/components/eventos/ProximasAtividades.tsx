@@ -1,77 +1,125 @@
+"use client";
+
+// Próximas atividades (Modelo A): as tarefas dos próximos 7 dias, cada
+// uma com o círculo de concluir, a data em mono e a etiqueta de onde
+// vem. Num evento sem nada montado vira "Para começar": três passos, um
+// link para a fase certa em cada um.
+
 import Link from "next/link";
-import { CalendarClock, Mail } from "lucide-react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Check } from "lucide-react";
 import type { ProximaTarefa, ResumoEvento } from "@/lib/supabase/resumo-evento";
+import { alternarTarefa } from "@/app/(app)/eventos/[id]/organizacao/actions";
 import { formatTime } from "@/lib/format";
 
-const MESES = [
-  "JAN",
-  "FEV",
-  "MAR",
-  "ABR",
-  "MAI",
-  "JUN",
-  "JUL",
-  "AGO",
-  "SET",
-  "OUT",
-  "NOV",
-  "DEZ",
-];
-const SEMANA = [
-  "Domingo",
-  "Segunda-feira",
-  "Terça-feira",
-  "Quarta-feira",
-  "Quinta-feira",
-  "Sexta-feira",
-  "Sábado",
-];
+const cartao: React.CSSProperties = {
+  background: "var(--ev-card-bg)",
+  border: "1px solid var(--ev-card-border)",
+  borderRadius: 14,
+  overflow: "hidden",
+};
 
-function SeloData({ dateIso }: { dateIso: string }) {
-  const d = new Date(`${dateIso}T00:00:00`);
-  return (
-    <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-lg bg-gray-50 leading-none">
-      <span className="text-base font-semibold text-gray-900">
-        {d.getDate()}
-      </span>
-      <span className="text-[10px] font-medium text-gray-400">
-        {MESES[d.getMonth()]}
-      </span>
-    </div>
-  );
+const cabecalho: React.CSSProperties = {
+  padding: "16px 20px",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+};
+
+const tituloDoBloco: React.CSSProperties = {
+  fontFamily: "var(--font-title)",
+  fontSize: 16,
+  fontWeight: 600,
+  color: "var(--ev-text-strong)",
+};
+
+function quando(t: ProximaTarefa, grupo: "hoje" | "amanha" | "depois"): string {
+  const hora = t.due_time ? ` · ${formatTime(t.due_time)}` : "";
+  if (grupo === "hoje") return `Hoje${hora}`;
+  if (grupo === "amanha") return `Amanhã${hora}`;
+  const [, m, d] = t.due_date.split("-");
+  return `${d}/${m}${hora}`;
 }
 
-function Item({
-  dateIso,
-  titulo,
-  subtitulo,
-  href,
-  icon,
-}: {
-  dateIso: string;
+export type PassoParaComecar = {
   titulo: string;
-  subtitulo: string;
-  href: string;
-  icon?: React.ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      className="flex items-center gap-3 rounded-lg py-1.5 transition-colors hover:bg-gray-50"
-    >
-      {icon ?? <SeloData dateIso={dateIso} />}
-      <div className="min-w-0">
-        <p className="truncate text-sm font-medium text-gray-800">{titulo}</p>
-        <p className="text-xs text-gray-400">{subtitulo}</p>
-      </div>
-    </Link>
-  );
-}
+  descricao: string;
+  acao: string;
+  seg: string;
+  feito: boolean;
+};
 
-function subtitulo(t: ProximaTarefa) {
-  const d = new Date(`${t.due_date}T00:00:00`);
-  const dia = SEMANA[d.getDay()];
-  return t.due_time ? `${dia} · ${formatTime(t.due_time)}` : dia;
+export function ParaComecar({
+  eventId,
+  passos,
+}: {
+  eventId: string;
+  passos: PassoParaComecar[];
+}) {
+  const feitos = passos.filter((p) => p.feito).length;
+  // o primeiro passo em aberto é o destacado
+  const atual = passos.findIndex((p) => !p.feito);
+  return (
+    <section style={cartao} aria-label="Para começar">
+      <div style={cabecalho}>
+        <span style={tituloDoBloco}>Para começar</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ev-text-muted)" }}>
+          {feitos} de {passos.length}
+        </span>
+      </div>
+      {passos.map((p, i) => {
+        const destaque = i === atual;
+        return (
+          <div
+            key={p.seg}
+            style={{
+              padding: "12px 20px",
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              borderTop: "1px solid var(--ev-card-border)",
+              background: destaque ? "var(--ev-ok-tint)" : "#fff",
+            }}
+          >
+            <span
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: 999,
+                display: "grid",
+                placeItems: "center",
+                fontFamily: "var(--font-title)",
+                fontSize: 11,
+                fontWeight: 600,
+                flex: "none",
+                background: p.feito ? "var(--ev-ok)" : destaque ? "var(--ev-ok)" : "var(--ev-nevoa)",
+                color: p.feito || destaque ? "#fff" : "var(--ev-text-muted)",
+              }}
+            >
+              {p.feito ? <Check size={12} strokeWidth={3} /> : i + 1}
+            </span>
+            <span style={{ flex: 1, display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
+              <span style={{ fontFamily: "var(--font-ui)", fontSize: 13, fontWeight: 600, color: "var(--ev-text-strong)" }}>
+                {p.titulo}
+              </span>
+              <span style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--ev-text-muted)" }}>
+                {p.descricao}
+              </span>
+            </span>
+            {!p.feito && (
+              <Link
+                href={`/eventos/${eventId}/${p.seg}`}
+                style={{ fontFamily: "var(--font-ui)", fontSize: 12, fontWeight: 600, color: "var(--ev-accent)", whiteSpace: "nowrap" }}
+              >
+                {p.acao} →
+              </Link>
+            )}
+          </div>
+        );
+      })}
+    </section>
+  );
 }
 
 export function ProximasAtividades({
@@ -81,58 +129,162 @@ export function ProximasAtividades({
   eventId: string;
   proximas: ResumoEvento["proximas"];
 }) {
-  const todas: ProximaTarefa[] = [
-    ...proximas.hoje,
-    ...proximas.amanha,
-    ...proximas.proximos7,
-  ];
-  const vazio = todas.length === 0 && !proximas.confirmacaoAgendada;
+  const router = useRouter();
+  const [feitas, setFeitas] = useState<Set<string>>(new Set());
+  const [, startTransition] = useTransition();
+
+  const linhas: { t: ProximaTarefa; grupo: "hoje" | "amanha" | "depois" }[] = [
+    ...proximas.hoje.map((t) => ({ t, grupo: "hoje" as const })),
+    ...proximas.amanha.map((t) => ({ t, grupo: "amanha" as const })),
+    ...proximas.proximos7.map((t) => ({ t, grupo: "depois" as const })),
+  ].filter(({ t }) => !feitas.has(t.id));
+  const vazio = linhas.length === 0 && !proximas.confirmacaoAgendada;
+
+  function concluir(id: string) {
+    setFeitas((s) => new Set(s).add(id));
+    startTransition(async () => {
+      const r = await alternarTarefa(eventId, id, true);
+      if ("error" in r) {
+        setFeitas((s) => {
+          const n = new Set(s);
+          n.delete(id);
+          return n;
+        });
+        return;
+      }
+      router.refresh();
+    });
+  }
 
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-      <div className="flex items-center justify-between">
-        <h3 className="flex items-center gap-1.5 text-sm font-semibold text-gray-900">
-          <CalendarClock size={15} className="text-gray-400" />
-          Próximas atividades
-        </h3>
+    <section style={cartao} aria-label="Próximas atividades">
+      <div style={cabecalho}>
+        <span style={tituloDoBloco}>Próximas atividades</span>
         <Link
           href={`/eventos/${eventId}/organizacao`}
-          className="text-xs font-medium text-gray-500 hover:text-gray-900"
+          style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--ev-text-muted)" }}
         >
-          Ver todas
+          Ver todas →
         </Link>
       </div>
 
       {vazio ? (
-        <p className="mt-3 text-sm text-gray-500">
+        <p
+          style={{
+            margin: 0,
+            padding: "12px 20px 16px",
+            borderTop: "1px solid var(--ev-card-border)",
+            fontFamily: "var(--font-ui)",
+            fontSize: 13,
+            color: "var(--ev-text-muted)",
+          }}
+        >
           Nada agendado para os próximos dias.
         </p>
       ) : (
-        <div className="mt-2 space-y-0.5">
-          {todas.map((t) => (
-            <Item
+        <>
+          {linhas.map(({ t, grupo }) => (
+            <div
               key={t.id}
-              dateIso={t.due_date}
-              titulo={t.title}
-              subtitulo={subtitulo(t)}
-              href={`/eventos/${eventId}/organizacao`}
-            />
+              style={{
+                padding: "10px 20px",
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                borderTop: "1px solid var(--ev-card-border)",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => concluir(t.id)}
+                aria-label={`Concluir: ${t.title}`}
+                title="Concluir"
+                className="hover:border-[color:var(--ev-ok)] hover:bg-[color:var(--ev-ok-tint)]"
+                style={{
+                  width: 16,
+                  height: 16,
+                  borderRadius: 999,
+                  border: "1.5px solid var(--ev-text-faint)",
+                  background: "transparent",
+                  flex: "none",
+                  cursor: "pointer",
+                  padding: 0,
+                  transition: "background 140ms ease, border-color 140ms ease",
+                }}
+              />
+              <Link
+                href={`/eventos/${eventId}/organizacao?tarefa=${t.id}`}
+                style={{ flex: 1, display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}
+              >
+                <span
+                  style={{
+                    fontFamily: "var(--font-ui)",
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: "var(--ev-text-strong)",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {t.title}
+                </span>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ev-text-muted)" }}>
+                  {quando(t, grupo)}
+                </span>
+              </Link>
+              <Etiqueta>Organização</Etiqueta>
+            </div>
           ))}
           {proximas.confirmacaoAgendada && (
-            <Item
-              dateIso={proximas.confirmacaoAgendada}
-              titulo="Convites de confirmação aos fornecedores"
-              subtitulo="Envio automático"
-              href={`/eventos/${eventId}/fornecedores`}
-              icon={
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-50">
-                  <Mail size={16} className="text-indigo-500" />
-                </div>
-              }
-            />
+            <div
+              style={{
+                padding: "10px 20px",
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                borderTop: "1px solid var(--ev-card-border)",
+              }}
+            >
+              <span aria-hidden style={{ width: 16, height: 16, borderRadius: 999, background: "var(--ev-nevoa)", flex: "none" }} />
+              <Link
+                href={`/eventos/${eventId}/fornecedores`}
+                style={{ flex: 1, display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}
+              >
+                <span style={{ fontFamily: "var(--font-ui)", fontSize: 13, fontWeight: 500, color: "var(--ev-text-strong)" }}>
+                  Convites de confirmação aos fornecedores
+                </span>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ev-text-muted)" }}>
+                  {proximas.confirmacaoAgendada.split("-").reverse().slice(0, 2).join("/")} · envio automático
+                </span>
+              </Link>
+              <Etiqueta>Fornecedores</Etiqueta>
+            </div>
           )}
-        </div>
+        </>
       )}
     </section>
+  );
+}
+
+function Etiqueta({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        height: 20,
+        padding: "0 8px",
+        borderRadius: 999,
+        background: "var(--ev-nevoa)",
+        color: "var(--ev-text-muted)",
+        fontFamily: "var(--font-ui)",
+        fontSize: 11,
+        fontWeight: 600,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {children}
+    </span>
   );
 }

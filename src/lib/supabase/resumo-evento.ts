@@ -375,6 +375,7 @@ export async function getCabecalhoEvento(
       financeiroVencendo: receberContador,
       planejamentoDaCliente: decisoesDaCliente,
       contratosAguardando,
+      tarefasVencidas,
     },
   };
 }
@@ -388,6 +389,8 @@ export type EventoContadores = {
   planejamentoDaCliente: number;
   /** contratos recebidos sem leitura fechada (138/140) */
   contratosAguardando: number;
+  /** tarefas abertas com prazo vencido — o contador da aba Tarefas */
+  tarefasVencidas: number;
 };// getEventoContadores foi removida: ninguém a chamava e ela refazia, em 4
 // consultas separadas, o que getCabecalhoEvento já calcula. O type
 // EventoContadores fica — está na assinatura do cabeçalho.

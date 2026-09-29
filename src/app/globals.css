@@ -68,37 +68,72 @@
   --ring-focus: 0 0 0 3px rgba(110, 63, 95, 0.16);
 
   /* ============================================================
-     Chrome do evento (header, stepper, abas, Resumo do Copiloto).
-     Defaults = as cores de hoje — nada muda fora do tema neutro.
-     Sob body[data-tema="neutro"] (tela de Planejamento) os mesmos
-     componentes falam a língua neutra do handoff, sem reconstrução.
+     Chrome do evento (cabeçalho, bloco de fases, Requer atenção,
+     Resumo) — Modelo A, 28/09/2026 (handoff design_handoff_evento_
+     modelo_a/tokens.css). O acento é CHUMBO; sálvia marca o que está
+     em dia; a hierarquia é por cinza quente. Nenhuma outra tela lê
+     estes tokens.
      ============================================================ */
-  --ev-accent: #0f9b84;
-  --ev-accent-tint: #e7f4f1;
-  --ev-warn: #b07514;
-  --ev-warn-tint: #f8efdd;
-  --ev-track: #e8e8e4;
+  --ev-accent: #3b3835;
+  --ev-accent-hover: #22201e;
+  --ev-accent-tint: #efeeec;
+  --ev-warn: #a5813c;
+  --ev-warn-tint: #f5eedf;
+  --ev-track: #f2eee9;
+  --ev-marfim: #faf8f5;
+  --ev-nevoa: #f2eee9;
   --ev-card-bg: #ffffff;
-  --ev-card-border: #e5e7eb;
-  --ev-card-border-soft: #f0f0ee;
-  --ev-text-strong: #1b1c1e;
-  --ev-text-body: #33373d;
-  --ev-text-muted: #797e86;
-  --ev-text-faint: #a2a6ad;
-  --ev-ok: #059669;
-  --ev-late: #dc2626;
-  /* CTA "Modo Evento" no dia do evento (hoje: indigo; neutro: ameixa) */
-  --ev-cta: #4f46e5;
-  --ev-cta-ring: #c7d2fe;
-  /* pílula de status do evento (orçamento/confirmado/concluído/cancelado) */
-  --ev-st-orcamento-bg: #fffbeb;
-  --ev-st-orcamento-fg: #b45309;
-  --ev-st-confirmado-bg: #ecfdf5;
-  --ev-st-confirmado-fg: #047857;
-  --ev-st-concluido-bg: #f0f9ff;
-  --ev-st-concluido-fg: #0369a1;
-  --ev-st-cancelado-bg: #fff1f2;
-  --ev-st-cancelado-fg: #be123c;
+  --ev-card-border: #e6e0d8;
+  --ev-card-border-soft: #e6e0d8;
+  --ev-text-strong: #221e1b;
+  --ev-text-body: #6b6259;
+  --ev-text-muted: #928a81;
+  --ev-text-faint: #b4ada4;
+  --ev-ok: #6e7f63;
+  --ev-ok-tint: #edf0ea;
+  --ev-ok-dark: #4f6147;
+  --ev-late: #a5544b;
+  --ev-late-tint: #f5e6e3;
+  /* CTA "Modo Evento" no dia do evento */
+  --ev-cta: #3b3835;
+  --ev-cta-ring: rgba(59, 56, 53, 0.25);
+  /* pílula de status do evento: confirmado em sálvia; o resto sem
+     comemoração */
+  --ev-st-orcamento-bg: #f5eedf;
+  --ev-st-orcamento-fg: #a5813c;
+  --ev-st-confirmado-bg: #edf0ea;
+  --ev-st-confirmado-fg: #4f6147;
+  --ev-st-concluido-bg: #f2eee9;
+  --ev-st-concluido-fg: #6b6259;
+  --ev-st-cancelado-bg: #f5e6e3;
+  --ev-st-cancelado-fg: #a5544b;
+}
+
+/* ------------------------------------------------------------------
+   Evento — Modelo A: o que o estilo inline não alcança (hover, foco e
+   as quebras do celular). Classes mínimas, só no chrome do evento.
+   ------------------------------------------------------------------ */
+.ev-fase:not([aria-current]):hover { background: var(--ev-marfim) !important; }
+.ev-aba:hover { color: var(--ev-text-strong) !important; }
+.ev-pilula:hover { border-color: var(--ev-text-faint) !important; }
+.ev-cartao-link:hover { border-color: var(--ev-text-faint) !important; background: var(--ev-marfim); }
+.ev-seg:hover { background: #ffffff !important; color: var(--ev-text-strong) !important; }
+.ev-btn-primario:hover { background: var(--ev-accent-hover) !important; }
+.ev-btn-secundario:hover { border-color: var(--ev-text-faint) !important; background: var(--ev-marfim) !important; }
+.ev-foco:focus-visible { outline: none; border-color: var(--ev-accent) !important; box-shadow: 0 0 0 3px rgba(59, 56, 53, 0.16); }
+/* abaixo de ~720px as três fases empilham e o conector › gira 90° */
+@media (max-width: 719px) {
+  .ev-fases-grade { grid-template-columns: minmax(0, 1fr) !important; }
+  .ev-fase + .ev-fase { border-left: 0 !important; border-top: 1px solid var(--ev-card-border); }
+  .ev-conector { left: 50% !important; top: -11px !important; margin-top: 0 !important; margin-left: -11px; transform: rotate(90deg); }
+  .ev-ponta { display: none !important; }
+}
+/* no celular a foto de capa sobe e o texto vem embaixo */
+@media (max-width: 639px) {
+  .ev-cabecalho { flex-direction: column; }
+  .ev-capa { flex: none !important; max-width: none !important; min-width: 0 !important; width: 100%; height: 150px; border-radius: 13px 13px 0 0 !important; }
+  .ev-cabecalho-texto { padding: 18px 20px 16px !important; }
+  .ev-titulo { font-size: clamp(26px, 7.5vw, 40px) !important; }
 }
 
 /* ============================================================

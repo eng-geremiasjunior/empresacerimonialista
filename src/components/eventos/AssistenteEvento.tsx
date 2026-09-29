@@ -1,10 +1,8 @@
 "use client";
 
-// Assistente do evento: pergunta e resposta sobre ESTE evento.
-//
-// Só consulta — não cria nem altera nada. Serve para a cerimonialista
-// achar rápido o que já está no sistema ("quanto falta receber?", "o que
-// vence essa semana?") sem navegar por quatro abas.
+// Perguntar sobre este evento (Modelo A): pergunta e resposta sobre ESTE
+// evento. Só consulta — não cria nem altera nada. As quatro perguntas
+// prontas preenchem o campo; enviar é o clique dela.
 
 import { useRef, useState } from "react";
 import { Send, Sparkles } from "lucide-react";
@@ -21,7 +19,6 @@ function semMarkdown(texto: string): string {
     .replace(/^(\s*)\*\s+/gm, "$1- ");
 }
 
-// Perguntas de partida: mostram o que ele sabe responder, sem manual.
 const SUGESTOES = [
   "O que vence esta semana?",
   "Quanto falta receber?",
@@ -35,6 +32,7 @@ export function AssistenteEvento({ eventId }: { eventId: string }) {
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const fimRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   async function perguntar(texto: string) {
     const pergunta = texto.trim();
@@ -66,81 +64,145 @@ export function AssistenteEvento({ eventId }: { eventId: string }) {
       setErro("não consegui responder agora.");
     } finally {
       setCarregando(false);
-      setTimeout(
-        () => fimRef.current?.scrollIntoView({ behavior: "smooth" }),
-        50
-      );
+      setTimeout(() => fimRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
     }
   }
 
+  function preencher(s: string) {
+    setInput(s);
+    inputRef.current?.focus();
+  }
+
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-      <h3 className="flex items-center gap-1.5 text-sm font-semibold text-gray-900">
-        <Sparkles size={15} className="text-indigo-500" />
-        Perguntar sobre este evento
-      </h3>
+    <section
+      aria-label="Perguntar sobre este evento"
+      style={{
+        background: "var(--ev-card-bg)",
+        border: "1px solid var(--ev-card-border)",
+        borderRadius: 14,
+        padding: "16px 18px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <Sparkles size={16} strokeWidth={1.6} style={{ color: "var(--ev-accent)" }} />
+        <span style={{ fontFamily: "var(--font-ui)", fontSize: 14, fontWeight: 600, color: "var(--ev-text-strong)" }}>
+          Perguntar sobre este evento
+        </span>
+      </div>
 
       {messages.length === 0 && (
-        <div className="mt-2.5 flex flex-wrap gap-1.5">
-          {SUGESTOES.map((s) => (
-            <button
-              key={s}
-              onClick={() => perguntar(s)}
-              className="rounded-full border border-gray-200 px-2.5 py-1 text-xs text-gray-600 transition-colors hover:border-gray-300 hover:bg-gray-50"
-            >
-              {s}
-            </button>
-          ))}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {SUGESTOES.map((s) => {
+            const marcada = input === s;
+            return (
+              <button
+                key={s}
+                type="button"
+                onClick={() => preencher(s)}
+                className="ev-pilula"
+                style={{
+                  padding: "5px 10px",
+                  borderRadius: 999,
+                  border: `1px solid ${marcada ? "var(--ev-accent)" : "var(--ev-card-border)"}`,
+                  background: marcada ? "var(--ev-accent-tint)" : "#fff",
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 12,
+                  color: "var(--ev-text-body)",
+                  cursor: "pointer",
+                  transition: "border-color 140ms ease",
+                }}
+              >
+                {s}
+              </button>
+            );
+          })}
         </div>
       )}
 
       {messages.length > 0 && (
-        <div className="mt-3 max-h-80 space-y-2.5 overflow-y-auto pr-1">
+        <div style={{ maxHeight: 320, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, paddingRight: 4 }}>
           {messages.map((m, i) => (
-            <div
-              key={i}
-              className={m.role === "user" ? "text-right" : "text-left"}
-            >
+            <div key={i} style={{ textAlign: m.role === "user" ? "right" : "left" }}>
               <span
-                className={`inline-block max-w-[92%] whitespace-pre-wrap rounded-lg px-3 py-2 text-[13px] leading-snug ${
-                  m.role === "user"
-                    ? "bg-gray-900 text-white"
-                    : "border border-gray-200 bg-gray-50 text-gray-800"
-                }`}
+                style={{
+                  display: "inline-block",
+                  maxWidth: "92%",
+                  whiteSpace: "pre-wrap",
+                  borderRadius: 10,
+                  padding: "8px 12px",
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 13,
+                  lineHeight: 1.45,
+                  textAlign: "left",
+                  background: m.role === "user" ? "var(--ev-accent)" : "var(--ev-marfim)",
+                  color: m.role === "user" ? "#fff" : "var(--ev-text-strong)",
+                  border: m.role === "user" ? "none" : "1px solid var(--ev-card-border)",
+                }}
               >
                 {m.content}
               </span>
             </div>
           ))}
           {carregando && (
-            <p className="text-[12.5px] text-gray-500">consultando o evento…</p>
+            <p style={{ margin: 0, fontSize: 12.5, color: "var(--ev-text-muted)" }}>consultando o evento…</p>
           )}
           <div ref={fimRef} />
         </div>
       )}
 
-      {erro && <p className="mt-2 text-[12.5px] text-rose-600">{erro}</p>}
+      {erro && <p style={{ margin: 0, fontSize: 12.5, color: "var(--ev-late)" }}>{erro}</p>}
 
-      <div className="mt-3 flex gap-2">
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <input
+          ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && perguntar(input)}
           placeholder="Ex.: o que falta fechar?"
           disabled={carregando}
-          className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-[13px] text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+          className="ev-foco"
+          style={{
+            flex: 1,
+            minWidth: 0,
+            height: 40,
+            padding: "0 12px",
+            borderRadius: 10,
+            border: "1px solid var(--ev-card-border)",
+            background: "#fff",
+            fontFamily: "var(--font-ui)",
+            fontSize: 13,
+            color: "var(--ev-text-strong)",
+          }}
         />
         <button
+          type="button"
           onClick={() => perguntar(input)}
           disabled={carregando || !input.trim()}
           aria-label="Perguntar"
-          className="rounded-lg bg-gray-900 px-3 py-2 text-white transition-colors hover:bg-gray-800 disabled:opacity-50"
+          className="ev-btn-primario"
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 10,
+            border: "none",
+            background: "var(--ev-accent)",
+            color: "#fff",
+            display: "grid",
+            placeItems: "center",
+            flex: "none",
+            cursor: "pointer",
+            opacity: carregando || !input.trim() ? 0.5 : 1,
+            transition: "background 140ms ease",
+          }}
         >
-          <Send size={15} />
+          <Send size={16} strokeWidth={1.8} />
         </button>
       </div>
 
-      <p className="mt-2 text-[11px] text-gray-500">
+      <p style={{ margin: 0, fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--ev-text-muted)" }}>
         Responde com os dados deste evento. Não altera nada.
       </p>
     </section>

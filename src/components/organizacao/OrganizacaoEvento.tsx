@@ -21,7 +21,6 @@ import {
   CalendarClock,
   Check,
   GitBranch,
-  GitMerge,
   ListChecks,
   Plus,
   Search,
@@ -75,8 +74,16 @@ import { plural } from "@/lib/format";
 import { inicioDoDiaBR } from "@/lib/tempo";
 
 type Vista = "lista" | "timeline" | "agenda";
-type Filtro = "todas" | "atrasadas" | "andamento" | "concluidas";
+// Modelo A: um seletor só — Abertas · Atrasadas · Próximos 7 dias ·
+// Concluídas — no lugar das quatro pílulas e do interruptor.
+type Filtro = "abertas" | "atrasadas" | "prox7" | "concluidas";
 type Fornecedor = { id: string; nome: string; temWhatsapp: boolean };
+
+const VISTA_ROTULO: Record<Vista, string> = {
+  lista: "Lista",
+  timeline: "Timeline",
+  agenda: "Agenda",
+};
 
 const MES_ABREV = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
 
@@ -165,9 +172,10 @@ export function OrganizacaoEvento({
   publico?: { quantidade: number; origem: string } | null;
 }) {
   const [vista, setVista] = useState<Vista>("lista");
-  const [filtro, setFiltro] = useState<Filtro>("todas");
-  const [prox7, setProx7] = useState(false);
+  const [filtro, setFiltro] = useState<Filtro>("abertas");
   const [busca, setBusca] = useState("");
+  const [buscaAberta, setBuscaAberta] = useState(false);
+  const menuVista = useRef<HTMLDetailsElement>(null);
   // Drawer: id da tarefa aberta, "nova" para criação, null fechado.
   const [sel, setSel] = useState<string | null>(tarefaInicial ?? null);
 
@@ -220,33 +228,42 @@ export function OrganizacaoEvento({
     });
   }
 
-  // Filtros aplicados (busca + chip + próximos 7 dias)
+  // Cada tarefa cai num só filtro do seletor (concluída nunca conta como
+  // aberta, atrasada ou próxima). A busca vale por cima de qualquer um.
+  const hojeMs = new Date(`${hoje}T00:00:00`).getTime();
+  const seteDias = hojeMs + 7 * 86_400_000;
+  const passaNoFiltro = (t: Tarefa, f: Filtro): boolean => {
+    if (f === "concluidas") return t.status === "concluido";
+    if (t.status === "concluido") return false;
+    if (f === "abertas") return true;
+    if (!t.dueDate) return false;
+    const d = new Date(`${t.dueDate}T00:00:00`).getTime();
+    if (f === "atrasadas") return d < hojeMs;
+    return d >= hojeMs && d <= seteDias;
+  };
+  const contagem = (f: Filtro) => org.tarefas.filter((t) => passaNoFiltro(t, f)).length;
+
   const tarefasVisiveis = useMemo(() => {
-    const hojeMs = new Date(`${hoje}T00:00:00`).getTime();
-    const seteDias = hojeMs + 7 * 86_400_000;
     const q = busca.trim().toLowerCase();
     return org.tarefas.filter((t) => {
       if (q) {
         const alvo = `${t.titulo} ${t.supplierNome ?? ""} ${t.local ?? ""}`.toLowerCase();
         if (!alvo.includes(q)) return false;
       }
-      if (filtro === "concluidas" && t.status !== "concluido") return false;
-      if (filtro === "andamento" && t.status === "concluido") return false;
-      if (filtro === "atrasadas") {
-        if (t.status === "concluido" || !t.dueDate) return false;
-        if (new Date(`${t.dueDate}T00:00:00`).getTime() >= hojeMs) return false;
-      }
-      if (prox7) {
-        if (!t.dueDate) return false;
-        const d = new Date(`${t.dueDate}T00:00:00`).getTime();
-        if (d < hojeMs || d > seteDias) return false;
-      }
-      return true;
+      return passaNoFiltro(t, filtro);
     });
-  }, [org.tarefas, filtro, prox7, busca, hoje]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [org.tarefas, filtro, busca, hoje]);
 
   const tarefaSel = sel && sel !== "nova" ? org.tarefas.find((t) => t.id === sel) ?? null : null;
   const abertas = org.tarefas.filter((t) => t.status !== "concluido").length;
+
+  const FILTROS: { id: Filtro; label: string }[] = [
+    { id: "abertas", label: "Abertas" },
+    { id: "atrasadas", label: "Atrasadas" },
+    { id: "prox7", label: "Próximos 7 dias" },
+    { id: "concluidas", label: "Concluídas" },
+  ];
 
   return (
     <TipoEventoCtx.Provider value={tipoEvento ?? null}>
@@ -258,144 +275,188 @@ export function OrganizacaoEvento({
         <PendenciasFinanceiras eventId={eventId} pendencias={org.pendencias} />
       )}
 
-      {/* cabeçalho da seção */}
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
-        <div>
-          <h2
-            style={{
-              margin: 0,
-              fontFamily: "var(--font-title)",
-              fontWeight: 700,
-              fontSize: 19,
-              letterSpacing: "-0.02em",
-            }}
-          >
-            Tarefas da Organização
-          </h2>
-          <p style={{ margin: "3px 0 0", display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--text-muted)" }}>
-            <GitMerge size={13} style={{ color: "var(--accent)" }} />
-            Fonte única — cada tarefa nasce de uma decisão e aparece só aqui.
-          </p>
-        </div>
-        {/* alvo do guia em evento SEM método (aniversário, bodas…): lá
-            a primeira tarefa nasce à mão, não de uma decisão */}
-        <span data-guia="nova-tarefa" className="inline-flex">
-          <Button onClick={() => setSel("nova")}>
-            <Plus size={15} />
-            Nova tarefa
-          </Button>
-        </span>
-      </div>
-
-      <PainelQuantidades
-        eventId={eventId}
-        recursos={recursos ?? []}
-        publico={publico ?? null}
-      />
-
-      {/* toolbar */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
-        <SegmentedControl<Vista>
-          value={vista}
-          onChange={setVista}
-          options={[
-            { value: "lista", label: "Lista" },
-            { value: "timeline", label: "Timeline" },
-            { value: "agenda", label: <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><CalendarClock size={13} />Agenda</span> },
-          ]}
-        />
-
-        {vista !== "agenda" && (
-          <>
-            <div style={{ display: "inline-flex", gap: 6 }}>
-              {(
-                [
-                  ["todas", "Todas"],
-                  ["atrasadas", "Atrasadas"],
-                  ["andamento", "Em andamento"],
-                  ["concluidas", "Concluídas"],
-                ] as const
-              ).map(([f, label]) => {
-                const ativo = filtro === f;
+      {/* O cartão das tarefas (Modelo A): uma linha de controles, as
+          quantidades numa linha, e a lista. A origem de cada tarefa
+          aparece na linha dela — sem frase explicando o sistema. */}
+      <div
+        style={{
+          background: "var(--ev-card-bg, #fff)",
+          border: "1px solid var(--ev-card-border, var(--border-hairline))",
+          borderRadius: 14,
+          padding: "20px 24px 24px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 16,
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+          {vista !== "agenda" ? (
+            <div
+              role="tablist"
+              aria-label="Filtro de tarefas"
+              style={{ display: "flex", gap: 2, padding: 3, borderRadius: 10, background: "var(--ev-nevoa, var(--surface-sunken))", fontSize: 13, flexWrap: "wrap" }}
+            >
+              {FILTROS.map((f) => {
+                const ativo = filtro === f.id;
+                const n = contagem(f.id);
                 return (
                   <button
-                    key={f}
-                    onClick={() => setFiltro(f)}
+                    key={f.id}
+                    role="tab"
+                    aria-selected={ativo}
+                    onClick={() => setFiltro(f.id)}
+                    className="ev-seg"
                     style={{
-                      height: 32,
-                      padding: "0 13px",
-                      borderRadius: "var(--r-pill)",
-                      fontFamily: "var(--font-ui)",
-                      fontSize: 12.5,
-                      fontWeight: ativo ? 600 : 500,
+                      padding: "6px 12px",
+                      borderRadius: 7,
+                      border: "none",
                       cursor: "pointer",
-                      background: ativo ? "var(--text-strong)" : "var(--surface-card)",
-                      color: ativo ? "#fff" : "var(--text-muted)",
-                      border: ativo ? "1px solid var(--text-strong)" : "1px solid var(--border-hairline)",
-                      transition: "background 120ms ease",
+                      fontFamily: "var(--font-ui)",
+                      fontSize: 13,
+                      fontWeight: ativo ? 600 : 400,
+                      background: ativo ? "#fff" : "transparent",
+                      boxShadow: ativo ? "0 1px 2px rgba(0,0,0,.06)" : "none",
+                      color: f.id === "atrasadas" ? "var(--ev-late, var(--state-late))" : "var(--ev-text-body, var(--text-body))",
+                      whiteSpace: "nowrap",
+                      transition: "background 140ms ease",
                     }}
                   >
-                    {label}
+                    {f.label}{" "}
+                    <span style={{ fontFamily: "var(--font-mono)", opacity: 0.7 }}>{n > 0 ? n : ""}</span>
                   </button>
                 );
               })}
             </div>
+          ) : (
+            <span className="mono" style={{ fontFamily: "var(--font-mono)", fontSize: 11.5, color: "var(--text-muted)" }}>
+              {plural(org.compromissos.length, "compromisso", "compromissos")} ·{" "}
+              {plural(abertas, "tarefa aberta", "tarefas abertas")}
+            </span>
+          )}
 
-            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
-              <div
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            {vista !== "agenda" && (
+              buscaAberta || busca ? (
+                <div
+                  style={{
+                    display: "flex", alignItems: "center", gap: 7, height: 38, padding: "0 10px",
+                    background: "#fff", border: "1px solid var(--ev-card-border, var(--border-hairline))",
+                    borderRadius: 10, width: 220,
+                  }}
+                >
+                  <Search size={15} style={{ color: "var(--text-muted)", flex: "0 0 auto" }} />
+                  <input
+                    autoFocus
+                    value={busca}
+                    onChange={(e) => setBusca(e.target.value)}
+                    onBlur={() => { if (!busca) setBuscaAberta(false); }}
+                    onKeyDown={(e) => { if (e.key === "Escape") { setBusca(""); setBuscaAberta(false); } }}
+                    placeholder="Buscar tarefa, fornecedor…"
+                    aria-label="Buscar tarefa"
+                    style={{ border: "none", outline: "none", background: "transparent", flex: 1, minWidth: 0, fontSize: 13, fontFamily: "var(--font-ui)", color: "var(--text-strong)" }}
+                  />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setBuscaAberta(true)}
+                  aria-label="Buscar tarefa"
+                  title="Buscar tarefa"
+                  className="ev-btn-secundario"
+                  style={{
+                    width: 38, height: 38, borderRadius: 10, border: "1px solid var(--ev-card-border, var(--border-hairline))",
+                    background: "#fff", display: "grid", placeItems: "center", color: "var(--text-muted)", cursor: "pointer",
+                  }}
+                >
+                  <Search size={16} strokeWidth={1.6} />
+                </button>
+              )
+            )}
+
+            <details ref={menuVista} style={{ position: "relative" }}>
+              <summary
+                className="ev-btn-secundario list-none"
+                aria-label="Mudar a visão"
                 style={{
-                  display: "flex", alignItems: "center", gap: 7, height: 34, padding: "0 10px",
-                  background: "var(--surface-card)", border: "1px solid var(--border-hairline)",
-                  borderRadius: "var(--r-md)", width: 210,
+                  display: "inline-flex", alignItems: "center", gap: 6, height: 38, padding: "0 12px",
+                  border: "1px solid var(--ev-card-border, var(--border-hairline))", borderRadius: 10,
+                  background: "#fff", fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--text-body)",
+                  cursor: "pointer", userSelect: "none", whiteSpace: "nowrap",
                 }}
               >
-                <Search size={14} style={{ color: "var(--text-muted)", flex: "0 0 auto" }} />
-                <input
-                  value={busca}
-                  onChange={(e) => setBusca(e.target.value)}
-                  placeholder="Buscar tarefa, fornecedor…"
-                  style={{ border: "none", outline: "none", background: "transparent", flex: 1, minWidth: 0, fontSize: 12.5, fontFamily: "var(--font-ui)", color: "var(--text-strong)" }}
-                />
+                {vista === "agenda" && <CalendarClock size={13} />}
+                {VISTA_ROTULO[vista]}
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M6 9l6 6 6-6" /></svg>
+              </summary>
+              <div
+                role="menu"
+                style={{
+                  position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 20, minWidth: 150, padding: 6,
+                  borderRadius: 12, border: "1px solid var(--ev-card-border, var(--border-hairline))", background: "#fff",
+                  boxShadow: "0 8px 24px rgba(34,30,27,.10)",
+                }}
+              >
+                {(["lista", "timeline", "agenda"] as Vista[]).map((v) => (
+                  <button
+                    key={v}
+                    role="menuitemradio"
+                    aria-checked={vista === v}
+                    onClick={() => { setVista(v); if (menuVista.current) menuVista.current.open = false; }}
+                    className="hover:bg-[color:var(--ev-marfim,#faf8f5)]"
+                    style={{
+                      display: "flex", width: "100%", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 8,
+                      border: "none", background: "transparent", cursor: "pointer", textAlign: "left",
+                      fontFamily: "var(--font-ui)", fontSize: 13, fontWeight: vista === v ? 600 : 400, color: "var(--text-strong)",
+                    }}
+                  >
+                    {v === "agenda" && <CalendarClock size={13} />}
+                    {VISTA_ROTULO[v]}
+                  </button>
+                ))}
               </div>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "var(--text-muted)", cursor: "pointer" }}>
-                Próximos 7 dias
-                <Switch checked={prox7} onChange={setProx7} label="Próximos 7 dias" />
-              </label>
-            </div>
-          </>
+            </details>
+
+            {/* alvo do guia em evento SEM método (aniversário, bodas…): lá
+                a primeira tarefa nasce à mão, não de uma decisão */}
+            <span data-guia="nova-tarefa" className="inline-flex">
+              <Button onClick={() => setSel("nova")} className="ev-btn-primario" style={{ background: "var(--ev-accent, var(--accent))" }}>
+                <Plus size={15} />
+                Nova tarefa
+              </Button>
+            </span>
+          </div>
+        </div>
+
+        <PainelQuantidades
+          eventId={eventId}
+          recursos={recursos ?? []}
+          publico={publico ?? null}
+        />
+
+        {/* visões */}
+        {vista === "lista" && (
+          <VistaLista
+            tarefas={tarefasVisiveis}
+            dataEvento={org.dataEvento}
+            eventId={eventId}
+            hoje={hoje}
+            onAbrir={setSel}
+            onToggle={alternar}
+          />
+        )}
+        {vista === "timeline" && (
+          <VistaTimeline tarefas={tarefasVisiveis} onAbrir={setSel} />
+        )}
+        {vista === "agenda" && (
+          <VistaAgenda org={org} eventId={eventId} fornecedores={fornecedores} />
         )}
 
-        {vista === "agenda" && (
-          <span className="mono" style={{ marginLeft: "auto", fontFamily: "var(--font-mono)", fontSize: 11.5, color: "var(--text-muted)" }}>
-            {plural(org.compromissos.length, "compromisso", "compromissos")} ·{" "}
-              {plural(abertas, "tarefa aberta", "tarefas abertas")}
-          </span>
+        {/* CENTRAL DE DISPAROS — vive na Agenda: é lá que se marca reunião
+            com fornecedor. Só aparece com trabalho real (nada de caixa vazia). */}
+        {vista === "agenda" && org.disparos.length > 0 && (
+          <CentralDisparos disparos={org.disparos} onAbrir={setSel} />
         )}
       </div>
-
-      {/* visões */}
-      {vista === "lista" && (
-        <VistaLista
-          tarefas={tarefasVisiveis}
-          dataEvento={org.dataEvento}
-          eventId={eventId}
-          hoje={hoje}
-          onAbrir={setSel}
-          onToggle={alternar}
-        />
-      )}
-      {vista === "timeline" && (
-        <VistaTimeline tarefas={tarefasVisiveis} onAbrir={setSel} />
-      )}
-      {vista === "agenda" && (
-        <VistaAgenda org={org} eventId={eventId} fornecedores={fornecedores} />
-      )}
-
-      {/* CENTRAL DE DISPAROS — vive na Agenda: é lá que se marca reunião
-          com fornecedor. Só aparece com trabalho real (nada de caixa vazia). */}
-      {vista === "agenda" && org.disparos.length > 0 && (
-        <CentralDisparos disparos={org.disparos} onAbrir={setSel} />
-      )}
 
       {/* drawer */}
       {(tarefaSel || sel === "nova") && (
@@ -438,27 +499,26 @@ function VistaLista({
 
   if (tarefas.length === 0) {
     return (
-      <p style={{ padding: "28px 4px", fontSize: 13.5, color: "var(--text-muted)" }}>
-        Nenhuma tarefa aqui ainda.
+      <p style={{ margin: 0, padding: "12px 4px 4px", fontSize: 13.5, color: "var(--text-muted)" }}>
+        Nenhuma tarefa aqui.
       </p>
     );
   }
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {grupos.map((g) => (
-        <section key={g.chave} style={{ display: "flex", flexDirection: "column", gap: 11 }}>
-          {/* A hierarquia sai daqui, não de cor no cartão. Mesma
-              especificação do FieldLabel dos primitivos: 11px, 600,
-              caixa alta, tracking largo, em muted. Sem borda, sem fundo. */}
+        <section key={g.chave} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {/* A hierarquia sai daqui, não de cor no cartão: 11px, 600, caixa
+              alta. Só "Atrasadas" leva cor (terracota). */}
           <h3
             style={{
               margin: 0,
-              fontFamily: "var(--font-ui)",
+              fontFamily: "var(--font-title)",
               fontSize: 11,
               fontWeight: 600,
-              letterSpacing: "0.08em",
+              letterSpacing: "0.06em",
               textTransform: "uppercase",
-              color: "var(--text-muted)",
+              color: g.tom === "atrasada" ? "var(--ev-late, var(--state-late))" : "var(--text-muted)",
             }}
           >
             {g.titulo}
@@ -482,14 +542,13 @@ function VistaLista({
   );
 }
 
-// A cor da caixa de data é a única cor da linha, e agora ela SIGNIFICA
-// algo: ameixa = está chegando (hoje/amanhã), terracota = passou,
-// neutro = está no calendário. Antes toda tarefa com prazo era ameixa —
-// o acento virava papel de parede e não informava nada.
+// A cor da caixa de data é a única cor da linha, e ela SIGNIFICA algo:
+// terracota = passou; tinta = está chegando (hoje/amanhã); cinza = está
+// no calendário. Sem acento colorido (Modelo A).
 const TOM_DATA: Record<TomGrupo, { bg: string; fg: string }> = {
-  proxima: { bg: "var(--accent-tint)", fg: "var(--accent)" },
-  atrasada: { bg: "var(--state-late-bg)", fg: "var(--state-late)" },
-  quieta: { bg: "var(--surface-sunken)", fg: "var(--text-muted)" },
+  proxima: { bg: "var(--ev-nevoa, var(--surface-sunken))", fg: "var(--ev-text-strong, var(--text-strong))" },
+  atrasada: { bg: "var(--ev-late-tint, var(--state-late-bg))", fg: "var(--ev-late, var(--state-late))" },
+  quieta: { bg: "var(--ev-nevoa, var(--surface-sunken))", fg: "var(--text-muted)" },
 };
 
 function ChipData({
@@ -505,11 +564,11 @@ function ChipData({
     return (
       <div
         style={{
-          width: 64, flex: "0 0 64px", borderRadius: "var(--r-md)",
-          background: "var(--surface-sunken)", padding: "10px 6px", textAlign: "center",
+          width: 52, flex: "0 0 52px", borderRadius: 8,
+          background: "var(--ev-nevoa, var(--surface-sunken))", padding: "8px 4px", textAlign: "center",
         }}
       >
-        <div className="mono" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text-muted)" }}>
+        <div className="mono" style={{ fontFamily: "var(--font-mono)", fontSize: 10, lineHeight: 1.3, color: "var(--text-muted)" }}>
           SEM
           <br />
           PRAZO
@@ -522,14 +581,14 @@ function ChipData({
   return (
     <div
       style={{
-        width: 64, flex: "0 0 64px", borderRadius: "var(--r-md)",
-        background: c.bg, padding: "8px 6px", textAlign: "center",
+        width: 52, flex: "0 0 52px", borderRadius: 8,
+        background: c.bg, padding: "6px 0", textAlign: "center",
       }}
     >
-      <div style={{ fontFamily: "var(--font-title)", fontWeight: 700, fontSize: 20, lineHeight: 1.1, color: c.fg }}>
-        {Number(d)}
+      <div style={{ fontFamily: "var(--font-title)", fontWeight: 600, fontSize: 18, lineHeight: 1.15, color: c.fg }}>
+        {d}
       </div>
-      <div className="mono" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: c.fg }}>
+      <div className="mono" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: c.fg }}>
         {m}/{a}
       </div>
       {hora && (
@@ -568,35 +627,36 @@ function LinhaTarefa({
   return (
     <div
       onClick={() => onAbrir(t.id)}
+      className="ev-cartao-link"
       style={{
         display: "flex", alignItems: "center", gap: 16,
-        background: "var(--surface-card)", border: "1px solid var(--border-hairline)",
-        borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-sm)",
-        padding: "14px 18px", cursor: "pointer", opacity: feita ? 0.62 : 1,
+        background: "#fff", border: "1px solid var(--ev-card-border, var(--border-hairline))",
+        borderRadius: 12, padding: "12px 16px", cursor: "pointer", opacity: feita ? 0.62 : 1,
+        transition: "border-color 140ms ease, background 140ms ease",
       }}
     >
       <ChipData iso={t.dueDate} hora={t.dueTime} tom={feita ? "quieta" : tom} />
 
-      <div style={{ minWidth: 0, flex: 1 }}>
-        {/* O que muda no que é para agora é o PESO, não a cor — mesmo
-            padrão do cabeçalho do evento, que marca "faltam menos de 7
-            dias" escurecendo e engrossando, sem matiz nova. */}
+      <div style={{ minWidth: 0, flex: 1, display: "flex", flexDirection: "column", gap: 3 }}>
+        {/* O que muda no que é para agora é o PESO, não a cor. */}
         <p
           style={{
-            margin: 0, fontFamily: "var(--font-title)", fontWeight: feita ? 600 : peso, fontSize: 16,
-            letterSpacing: "-0.01em", textDecoration: feita ? "line-through" : "none",
+            margin: 0, fontFamily: "var(--font-ui)", fontWeight: feita ? 600 : peso, fontSize: 15,
+            textDecoration: feita ? "line-through" : "none",
             color: feita ? "var(--text-muted)" : "var(--text-strong)",
           }}
         >
           {t.titulo}
         </p>
-        <p className="mono" style={{ margin: "3px 0 0", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          ID #{t.id.slice(0, 4)}
+        {/* a origem da tarefa mora na linha dela: a decisão de onde
+            nasceu, ou o fornecedor e o local */}
+        <p className="mono" style={{ margin: 0, fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          #{t.id.slice(0, 4)}
+          {t.origemDecisao ? ` · da decisão “${t.origemDecisao}”` : ""}
           {t.supplierNome ? ` · ${t.supplierNome}` : ""}
           {t.local ? ` · ${t.local}` : ""}
-          {!t.supplierNome && !t.local && t.origemDecisao ? ` · ${t.origemDecisao}` : ""}
         </p>
-        <div style={{ display: "flex", gap: 6, marginTop: 7, flexWrap: "wrap", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap", alignItems: "center" }}>
           {/* O cabeçalho da seção já diz "Atrasadas", e a caixa de data
               já está em terracota. O selo aqui volta a dizer o que só ele
               sabe: em que pé a tarefa está. Antes o mesmo fato aparecia
@@ -609,7 +669,7 @@ function LinhaTarefa({
           {t.convite?.status === "sugerido" && (
             <Badge tone="wait">Sugestão p/ aprovar</Badge>
           )}
-          {t.priority && <Badge tone="plum">{PRIO_LABEL[t.priority] ?? t.priority}</Badge>}
+          {t.priority && <Badge tone="neutral">{PRIO_LABEL[t.priority] ?? t.priority}</Badge>}
           {/* "vencida" e "sem prazo" seriam repetição do cabeçalho da
               seção; o marco só entra quando tem algo próprio a dizer
               (D-7, 3S antes, dia do evento). */}
@@ -628,7 +688,7 @@ function LinhaTarefa({
               onClick={(e) => e.stopPropagation()}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 3,
-                background: "var(--accent-tint)", color: "var(--accent)",
+                background: "var(--ev-accent-tint, var(--accent-tint))", color: "var(--ev-accent, var(--accent))",
                 borderRadius: "var(--r-pill)", padding: "3px 9px",
                 fontSize: 11, fontWeight: 600, textDecoration: "none",
               }}
@@ -646,7 +706,7 @@ function LinhaTarefa({
         }}
         aria-label={feita ? "Reabrir tarefa" : "Concluir tarefa"}
         style={{
-          width: 24, height: 24, flex: "0 0 auto", borderRadius: "50%",
+          width: 20, height: 20, flex: "0 0 auto", borderRadius: "50%",
           border: feita ? "none" : "1.5px solid var(--border-strong)",
           background: feita ? "var(--state-ok)" : "var(--surface-card)",
           color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
