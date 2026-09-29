@@ -3,15 +3,20 @@ import { servico } from "@/lib/supabase/admin-painel";
 import { Cartao, Rotulo } from "@/components/portal/Nucleo";
 import { SairDoPortal } from "@/components/portal/SairDoPortal";
 import { entrarComoFamilia } from "@/app/(app)/eventos/[id]/area-do-cliente/portal-dono-actions";
-import { PREFIXOS_DO_PORTAL } from "@/lib/app-url";
+import { PREFIXOS_DO_PORTAL, SUBDOMINIO_DO_PORTAL } from "@/lib/app-url";
 
 // A entrada do portal para o dono do sistema quando ele ainda não é
 // família de evento nenhum: os eventos das contas da casa (as de teste),
 // cada um com "Entrar como a família". Quem chama já conferiu que ele é
 // o dono (SUPER_ADMIN_EMAILS); a trava de conta da casa está também na
-// ação. No endereço de um portal (debut.), só os eventos daquele tipo.
+// ação. No endereço de um portal (debut., casamento.), só os eventos
+// daquele tipo — o mapa sai da mesma lista do app-url.
 
-const TIPO_DO_PREFIXO: Record<string, string> = { "debut.": "debutante" };
+const TIPO_DO_PREFIXO: Record<string, string> = Object.fromEntries(
+  Object.entries(SUBDOMINIO_DO_PORTAL)
+    .filter((par): par is [string, string] => Boolean(par[1]))
+    .map(([tipo, sub]) => [`${sub}.`, tipo])
+);
 
 export async function EscolhaDoDono() {
   const host = headers().get("x-forwarded-host") ?? headers().get("host") ?? "";

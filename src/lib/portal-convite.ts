@@ -93,7 +93,7 @@ export async function convidarClienteDoEvento(
   });
   if ("error" in acesso) return { ok: false, motivo: acesso.error };
 
-  // a debutante tem o endereço dela (debut.eorganizei.com.br)
+  // o endereço do portal do tipo (debut., casamento.)
   const base = portalBase(evento.type);
   // quem já é da equipe entra com a senha de sempre
   const link = acesso.ehEquipe ? `${base}/portal` : await linkParaCriarSenha(email, base);

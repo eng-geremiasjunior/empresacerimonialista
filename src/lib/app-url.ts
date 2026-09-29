@@ -52,13 +52,16 @@ export function linkPublico(caminho: `/${string}`): string {
 }
 
 /**
- * O portal da família com endereço próprio por tipo de evento
- * (25/09/2026): a debutante em debut.eorganizei.com.br. O da noiva
- * (noiva.) vem depois — uma linha aqui; o middleware e o /auth/confirm
- * leem daqui.
+ * O portal da família com endereço próprio por tipo de evento: a
+ * debutante em debut.eorganizei.com.br (25/09/2026) e a noiva em
+ * casamento.eorganizei.com.br (29/09/2026, subdomínio criado pelo dono).
+ * Uma linha aqui; o middleware e o /auth/confirm leem daqui. Os links
+ * antigos (eorganizei.com.br/portal) continuam abrindo: o endereço
+ * principal serve o portal também.
  */
 export const SUBDOMINIO_DO_PORTAL: Partial<Record<string, string>> = {
   debutante: "debut",
+  casamento: "casamento",
 };
 
 /** "debut." — o começo do host que é SÓ portal (middleware e /auth/confirm). */
