@@ -49,5 +49,7 @@ export async function desconectarGoogle(): Promise<{ ok?: boolean; error?: strin
   await db.from("google_agenda_fila").delete().eq("apenas_user_id", user.id);
 
   revalidatePath("/configuracoes");
+  // o bloco da Visão geral de cada evento também mostra a conexão
+  revalidatePath("/eventos/[id]", "page");
   return { ok: true };
 }

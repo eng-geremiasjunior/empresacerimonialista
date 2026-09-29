@@ -9,29 +9,13 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarDays } from "lucide-react";
 import { desconectarGoogle } from "@/app/(app)/configuracoes/google-actions";
+import {
+  AVISOS_GOOGLE as AVISOS,
+  diaMes,
+  type ConexaoGoogleNaTela,
+} from "@/lib/google/na-tela";
 
-export type ConexaoGoogleNaTela = {
-  google_email: string | null;
-  conectado_em: string;
-  pode_ler_ocupado: boolean;
-  falha: string | null;
-  falha_em: string | null;
-};
-
-function diaMes(iso: string | null): string {
-  if (!iso) return "";
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
-  return m ? `${m[3]}/${m[2]}` : "";
-}
-
-const AVISOS: Record<string, string> = {
-  ok: "Conectado. Seus eventos e compromissos estão indo para a agenda eOrganizei do seu Google.",
-  ok_sem_ocupado:
-    "Conectado. Seus eventos estão indo para o Google; como você não permitiu ler a disponibilidade, os horários da sua agenda pessoal não entram na oferta a fornecedores.",
-  recusado:
-    "A conexão não foi feita: sem a permissão de criar uma agenda, o sistema não tem onde gravar. Tente de novo e marque as permissões.",
-  erro: "Não foi possível conectar agora. Tente de novo em instantes.",
-};
+export type { ConexaoGoogleNaTela };
 
 const botao =
   "inline-block rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50";

@@ -14,6 +14,8 @@ import { appUrl } from "@/lib/app-url";
 import { cifrar } from "@/lib/google/cifra";
 import {
   COOKIE_ESTADO,
+  COOKIE_VOLTA,
+  destinoDeVolta,
   ESCOPO_AGENDA,
   ESCOPO_OCUPADO,
   googleConfigurado,
@@ -34,11 +36,15 @@ function iguais(a: string, b: string): boolean {
 }
 
 export async function GET(request: NextRequest) {
+  // a tela de onde ela saiu (Configurações ou a Visão geral de um evento),
+  // conferida de novo: o cookie não é confiável só por ser nosso
+  const destino = destinoDeVolta(request.cookies.get(COOKIE_VOLTA)?.value);
   const voltar = (aviso: string, motivo?: string) => {
     const p = new URLSearchParams({ google: aviso });
     if (motivo) p.set("motivo", motivo.slice(0, 60));
-    const r = NextResponse.redirect(new URL(`/configuracoes?${p.toString()}`, appUrl()));
+    const r = NextResponse.redirect(new URL(`${destino}?${p.toString()}`, appUrl()));
     r.cookies.set(COOKIE_ESTADO, "", { path: "/api/google", maxAge: 0 });
+    r.cookies.set(COOKIE_VOLTA, "", { path: "/api/google", maxAge: 0 });
     return r;
   };
   // Toda falha diz ONDE falhou: um código curto na tela (para quem está
@@ -68,7 +74,7 @@ export async function GET(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return NextResponse.redirect(new URL("/login?next=/configuracoes", appUrl()));
+  if (!user) return NextResponse.redirect(new URL(`/login?next=${encodeURIComponent(destino)}`, appUrl()));
   const { data: cargo } = await supabase.rpc("meu_cargo");
   const c = (cargo as { empresa_id: string }[] | null)?.[0];
   if (!c) return falhar("sem_cargo");

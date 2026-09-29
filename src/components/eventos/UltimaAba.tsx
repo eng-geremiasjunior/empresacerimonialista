@@ -30,7 +30,10 @@ export function UltimaAba({ eventId }: { eventId: string }) {
     const primeiraVez = anterior.current === null;
     anterior.current = pathname;
 
-    if (pathname === base && primeiraVez) {
+    // voltando do Google Agenda (?google=), ela tem de ver o recado na
+    // Visão geral — não ser levada para a última aba
+    const voltaDoGoogle = /[?&]google=/.test(window.location.search);
+    if (pathname === base && primeiraVez && !voltaDoGoogle) {
       let guardada: string | null = null;
       try {
         guardada = localStorage.getItem(chave);

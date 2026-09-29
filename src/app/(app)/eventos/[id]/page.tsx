@@ -18,6 +18,8 @@ import {
   type PassoParaComecar,
 } from "@/components/eventos/ProximasAtividades";
 import { GoogleAgendaDoEvento } from "@/components/eventos/GoogleAgendaDoEvento";
+import { googleConfigurado } from "@/lib/google/oauth";
+import type { ConexaoGoogleNaTela } from "@/lib/google/na-tela";
 import { ObservacoesDoEvento } from "@/components/eventos/ObservacoesDoEvento";
 import { AssistenteEvento } from "@/components/eventos/AssistenteEvento";
 import {
@@ -73,8 +75,11 @@ function Campo({ label, children }: { label: string; children: React.ReactNode }
 
 export default async function ResumoPage({
   params,
+  searchParams,
 }: {
   params: { id: string };
+  /** a volta do Google Agenda (?google=&motivo=) quando ela conectou daqui */
+  searchParams?: { google?: string; motivo?: string };
 }) {
   const supabase = createClient();
   const eventId = params.id;
@@ -93,12 +98,15 @@ export default async function ResumoPage({
   ] = await Promise.all([
     supabase.auth.getUser(),
     getMeuCargo(),
-    // a agenda de quem está logado (168); sem a migração, sem o bloco
+    // a agenda de quem está logado (168), pela função que devolve só o
+    // que a tela mostra; sem a 168 ou sem as chaves do Google no
+    // ambiente, sem o bloco — como em Configurações
     supabase.rpc("minha_conexao_google"),
   ]);
   const veValor = cargo !== null && VE_VALOR.includes(cargo);
+  const googleDisponivel = googleConfigurado() && !conexaoGoogle.error;
   const google =
-    ((conexaoGoogle.data as { falha: string | null }[] | null) ?? [])[0] ?? null;
+    ((conexaoGoogle.data as ConexaoGoogleNaTela[] | null) ?? [])[0] ?? null;
 
   // Formatura: o elo baile ↔ colação (125). Filho aponta o pai; pai com
   // colação própria ganha o atalho; turma "separados" sem o evento ainda
@@ -428,7 +436,15 @@ export default async function ResumoPage({
         ) : (
           <ProximasAtividades eventId={eventId} proximas={resumo.proximas} />
         )}
-        {google && <GoogleAgendaDoEvento dataEvento={resumo.event.date} falha={google.falha} />}
+        {googleDisponivel && (
+          <GoogleAgendaDoEvento
+            eventId={eventId}
+            dataEvento={resumo.event.date}
+            conexao={google}
+            aviso={searchParams?.google ?? null}
+            motivo={searchParams?.motivo ?? null}
+          />
+        )}
         <AcoesRapidas eventId={eventId} eventLabel={eventLabel} tipo={resumo.event.type} />
         {elosColacao && <ColacaoLigada eventId={eventId} elo={elosColacao} />}
         <AssistenteEvento eventId={eventId} />
