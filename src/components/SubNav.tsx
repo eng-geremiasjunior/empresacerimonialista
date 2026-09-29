@@ -35,6 +35,9 @@ import {
   Globe,
   Inbox,
   List,
+  Package,
+  PartyPopper,
+  ShoppingCart,
   Truck,
   type LucideIcon,
 } from "lucide-react";
@@ -53,6 +56,9 @@ const ICONES: Record<IconeDaVisao, LucideIcon> = {
   cadastro: Truck,
   contratos: FileSignature,
   agenda: CalendarClock,
+  itens: Package,
+  compras: ShoppingCart,
+  porEvento: PartyPopper,
 };
 
 export function SubNav({

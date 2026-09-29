@@ -1,29 +1,33 @@
 "use client";
 
-// A Operação: o que se conta neste evento.
+// A Operação: o que a festa usa.
 //
 // Antes do sistema saber contar coisa, a única coisa que ele sabia sobre
 // bebida era um campo de texto livre. Aqui o item tem quantidade,
 // unidade e ciclo: previ, comprei, entrou, sobrou. E o que sobrou vira
 // dinheiro perdido, que é o número que faz alguém mudar de comportamento.
 //
-// A tela era uma planilha de oito colunas, três delas vazias até o dia da
-// festa. Virou painel: três indicadores, o que falta comprar em cima, o
-// que já entrou recolhido embaixo, e o progresso por categoria ao lado. A
-// contagem do dia saiu da tabela e virou bloco próprio, que só abre
-// quando a data chega — antes disso ela seria uma coluna cinza pedindo
-// número que ninguém tem.
+// Refeita em 28/09/2026 (184): a tela tinha três cartões de número e
+// duas listas antes de qualquer ação, e ele achou confusa. Agora é UMA
+// lista, agrupada pelo assunto do método, e cada linha diz de onde o
+// item vem e tem uma ação:
+//   * comprar para a festa (o de sempre: previsto, custo, "comprei");
+//   * do estoque da empresa (reserva do acervo; "separado" no dia);
+//   * o fornecedor entrega (vem no contrato);
+//   * o que não se compra (garçom, mesa do buffet) só se confere.
+// Os três cartões viraram uma frase de radar, que some quando não há
+// nada. A contagem do dia continua, e agora devolve ao estoque o que
+// voltou.
 //
 // Três coisas que o desenho não podia saber e o dado exige:
-//   * `comprado` é QUANTIDADE, não sim/não. A caixinha marca "comprei
-//     tudo" (grava previsto); compra parcial continua na lista de cima,
-//     dizendo quanto já entrou.
+//   * `comprado` é QUANTIDADE, não sim/não. "Comprei tudo" grava o
+//     previsto; compra parcial continua na fila, dizendo quanto entrou.
 //   * o custo é POR UNIDADE — é dele que saem a perda e o consumo por
 //     pessoa que o sistema aprende entre eventos. Ao lado do campo vai o
 //     total calculado, senão digitar 620 pensando no bolo inteiro viraria
 //     620 por quilo.
-//   * fornecedor, observação e ruptura não cabem numa linha de 44px:
-//     moram no detalhe que abre ao clicar no nome.
+//   * fornecedor, observação e remover não cabem numa linha: moram no
+//     detalhe que abre ao clicar no nome.
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -38,16 +42,23 @@ import {
   veredito,
   type Recurso,
 } from "@/lib/recursos-core";
+import { fraseDoConflito, type ConflitoDeEstoque } from "@/lib/estoque-core";
+import type { ItemParaOperacao } from "@/lib/supabase/recursos";
 import { desmascararDinheiro, mascararDinheiro } from "@/lib/format";
 import {
   criarRecurso,
   definirFornecedor,
+  definirOrigem,
+  desfazerReserva,
+  fecharReserva,
   marcarRuptura,
+  marcarSeparado,
   recalcularPrevisto,
   removerRecurso,
   salvarNumero,
   salvarObservacao,
   trazerDoMetodo,
+  usarDoEstoque,
 } from "@/app/(app)/eventos/[id]/operacao/actions";
 
 export type FornecedorRef = { id: string; nome: string };
@@ -65,14 +76,13 @@ const C = {
   line: "#E3E3E1",
   line2: "#F1F1EF",
   linhaCard: "#ECECEA",
-  track: "#ECECEA",
   text: "#232326",
   text2: "#6E6E6C",
   muted: "#8A8A88",
   disabled: "#A9A9A7",
   graphite: "#3A3A3E",
-  graphite900: "#1C1C1F",
   outline: "#D6D6D3",
+  alerta: "#A5544B",
 };
 
 const MONO = "var(--font-mono, 'IBM Plex Mono', monospace)";
@@ -95,17 +105,70 @@ const btnBase: React.CSSProperties = {
   transition: "background-color 150ms ease, border-color 150ms ease",
 };
 
+const btnForte: React.CSSProperties = {
+  ...btnBase,
+  border: `1px solid ${C.graphite}`,
+  background: C.graphite,
+  color: "#fff",
+};
+
+const btnLeve: React.CSSProperties = {
+  ...btnBase,
+  border: `1px solid ${C.outline}`,
+  background: C.surface,
+  color: C.text,
+};
+
+const pill: React.CSSProperties = {
+  display: "inline-block",
+  border: `1px solid ${C.line}`,
+  background: C.pill,
+  borderRadius: 99,
+  padding: "3px 10px",
+  fontSize: 12,
+  color: C.text2,
+  whiteSpace: "nowrap",
+};
+
 /**
  * Comprado é quantidade: o item sai da fila quando entrou tudo.
  *
  * Sem previsto também conta. Item que veio de contrato ("o buffet entrega
  * 20 arranjos") nasce com comprado e sem previsto — ninguém o dimensionou,
  * e ele já está comprado. Exigir previsto o deixaria para sempre na fila
- * de compras, com a caixinha desligada.
+ * de compras.
  */
 function jaComprado(r: Recurso): boolean {
   const comprado = r.comprado ?? 0;
   return comprado > 0 && comprado >= (r.previsto ?? 0);
+}
+
+type Estado = "conferir" | "estoque" | "fornecedor" | "comprado" | "comprar";
+
+/** O estado da linha decide o que ela diz e a ação que oferece. */
+function estadoDe(r: Recurso): Estado {
+  if (r.reserva) return "estoque";
+  if (r.origemSuprimento === "fornecedor") return "fornecedor";
+  if (!r.compravel) return "conferir";
+  if (jaComprado(r)) return "comprado";
+  return "comprar";
+}
+
+/** Os itens do acervo mais parecidos com esta linha, primeiro os iguais. */
+function candidatos(r: Recurso, itens: ItemParaOperacao[], busca: string): ItemParaOperacao[] {
+  const q = busca.trim().toLowerCase();
+  const palavras = r.codigo.split("_").filter((p) => p.length > 2);
+  const pontos = (i: ItemParaOperacao) => {
+    if (i.codigo === r.codigo) return 3;
+    if (i.codigo.startsWith(r.codigo) || r.codigo.startsWith(i.codigo)) return 2;
+    return palavras.some((p) => i.codigo.includes(p)) ? 1 : 0;
+  };
+  const lista = q ? itens.filter((i) => i.nome.toLowerCase().includes(q)) : itens;
+  return lista
+    .map((i) => ({ i, p: pontos(i) }))
+    .sort((a, b) => b.p - a.p || a.i.nome.localeCompare(b.i.nome, "pt"))
+    .slice(0, q ? 12 : 6)
+    .map((x) => x.i);
 }
 
 export function OperacaoEvento({
@@ -115,6 +178,9 @@ export function OperacaoEvento({
   publico,
   temMapa,
   contagemLiberada,
+  eventoData,
+  itensDoEstoque,
+  conflitos,
 }: {
   eventId: string;
   recursos: Recurso[];
@@ -123,11 +189,16 @@ export function OperacaoEvento({
   temMapa: boolean;
   /** a data do evento chegou — antes disso não há o que contar */
   contagemLiberada: boolean;
+  eventoData: string | null;
+  itensDoEstoque: ItemParaOperacao[];
+  conflitos: ConflitoDeEstoque[];
 }) {
   const router = useRouter();
   const [pendente, iniciar] = useTransition();
   const [erro, setErro] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
   const [aberto, setAberto] = useState<string | null>(null);
+  const [escolhendo, setEscolhendo] = useState<string | null>(null);
   const [novoAberto, setNovoAberto] = useState(false);
   const [salvoEm, setSalvoEm] = useState<string | null>(null);
 
@@ -141,78 +212,45 @@ export function OperacaoEvento({
       }
       // Um número gravado num campo sem borda não muda nada na tela — e
       // sem sinal nenhum a pessoa fica sem saber se aconteceu.
-      setSalvoEm(
-        new Date().toLocaleTimeString("pt-BR", {
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      );
+      setSalvoEm(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
       router.refresh();
     });
   }
 
-  const pendentes = useMemo(() => recursos.filter((r) => !jaComprado(r)), [recursos]);
-  const comprados = useMemo(() => recursos.filter(jaComprado), [recursos]);
-
-  const investido = useMemo(
-    () =>
-      recursos.reduce((soma, r) => {
-        const cc = custoComprado(r);
-        return cc == null ? soma : soma + cc;
-      }, 0),
-    [recursos]
-  );
-
-  // o cabeçalho da lista soma o que está NELA; o indicador soma tudo que
-  // já custou, inclusive a compra parcial que ainda espera na fila
-  const investidoComprados = useMemo(
-    () =>
-      comprados.reduce((soma, r) => {
-        const cc = custoComprado(r);
-        return cc == null ? soma : soma + cc;
-      }, 0),
-    [comprados]
-  );
-
-  const contados = useMemo(
-    () => recursos.filter((r) => r.entrada != null).length,
-    [recursos]
-  );
-
-  const categorias = useMemo(() => {
-    const m = new Map<string, { total: number; ok: number; custo: number }>();
+  const grupos = useMemo(() => {
+    const m = new Map<string, Recurso[]>();
     for (const r of recursos) {
       const g = r.grupo ?? "Outros itens";
-      const c = m.get(g) ?? { total: 0, ok: 0, custo: 0 };
-      c.total++;
-      if (jaComprado(r)) {
-        c.ok++;
-        c.custo += custoComprado(r) ?? 0;
-      }
-      m.set(g, c);
+      if (!m.has(g)) m.set(g, []);
+      m.get(g)!.push(r);
     }
     return [...m.entries()];
   }, [recursos]);
 
+  // o radar: só o que pede ação, e só quando existe
+  const aComprar = recursos.filter((r) => estadoDe(r) === "comprar" && (r.previsto ?? 0) > 0).length;
+  const aSeparar = recursos.filter((r) => r.reserva && !r.reserva.separadoEm && !r.reserva.fechadoEm).length;
+  const doEstoque = recursos.filter((r) => r.reserva).length;
+  const investido = recursos.reduce((s, r) => {
+    if (r.origemSuprimento !== "compra") return s;
+    return s + (custoComprado(r) ?? 0);
+  }, 0);
+  const radar = [
+    aComprar > 0 ? `${aComprar} ${aComprar === 1 ? "item ainda a comprar" : "itens ainda a comprar"}` : null,
+    aSeparar > 0 ? `${aSeparar} do estoque ${aSeparar === 1 ? "a separar" : "a separar"}` : null,
+    investido > 0 ? `${reais(investido)} em compras` : null,
+  ].filter(Boolean) as string[];
+
   const defasagem = defasagemDoPublico(recursos, publico);
-  const porConvidado =
-    publico && publico.quantidade > 0 ? investido / publico.quantidade : null;
+  const temEstoque = itensDoEstoque.length > 0;
 
   return (
     <section className="mt-6" style={{ color: C.text }}>
-      {/* título + as duas ações da tela */}
+      {/* título + as ações da tela */}
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
         <div className="min-w-0">
-          <h2
-            style={{
-              margin: 0,
-              fontFamily: TITULO,
-              fontSize: 22,
-              fontWeight: 600,
-              letterSpacing: "-0.02em",
-            }}
-          >
-            O que este evento consome
+          <h2 style={{ margin: 0, fontFamily: TITULO, fontSize: 22, fontWeight: 600, letterSpacing: "-0.02em" }}>
+            O que a festa usa
           </h2>
           <p className="mt-1" style={{ fontSize: 14, color: C.muted }}>
             {publico && publico.quantidade > 0 ? (
@@ -222,36 +260,19 @@ export function OperacaoEvento({
                 <>
                   {defasagem.baseAntiga != null ? (
                     <>
-                      Dimensionado por{" "}
-                      <b style={{ color: C.text }}>{defasagem.baseAntiga}</b>
+                      Dimensionado por <b style={{ color: C.text }}>{defasagem.baseAntiga}</b>
                       {" — hoje são "}
-                      <b style={{ color: C.text }}>
-                        {publico.quantidade}{" "}
-                        {publico.origem === "confirmados"
-                          ? "confirmados"
-                          : "estimados"}
-                      </b>
-                      {defasagem.itens === 1
-                        ? " (1 item pelo número antigo)"
-                        : ` (${defasagem.itens} itens pelo número antigo)`}
                     </>
                   ) : (
-                    <>
-                      {defasagem.itens} itens dimensionados por um público antigo
-                      {" — hoje são "}
-                      <b style={{ color: C.text }}>
-                        {publico.quantidade}{" "}
-                        {publico.origem === "confirmados"
-                          ? "confirmados"
-                          : "estimados"}
-                      </b>
-                    </>
+                    <>{defasagem.itens} itens dimensionados por um público antigo{" — hoje são "}</>
                   )}
+                  <b style={{ color: C.text }}>
+                    {publico.quantidade} {publico.origem === "confirmados" ? "confirmados" : "estimados"}
+                  </b>
                 </>
               ) : (
                 <>
-                  Dimensionado por{" "}
-                  <b style={{ color: C.text }}>{publico.quantidade}</b>{" "}
+                  Para <b style={{ color: C.text }}>{publico.quantidade}</b>{" "}
                   {publico.origem === "confirmados" ? "confirmados" : "estimados"}
                 </>
               )
@@ -261,7 +282,7 @@ export function OperacaoEvento({
           </p>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
           <button
             onClick={() => {
               // Único caminho do sistema que apaga número digitado à mão.
@@ -273,40 +294,54 @@ export function OperacaoEvento({
             }}
             disabled={pendente}
             className={ALTURA_BOTAO}
-            style={{
-              ...btnBase,
-              border: `1px solid ${C.outline}`,
-              background: C.surface,
-              color: C.text,
-              opacity: pendente ? 0.5 : 1,
-            }}
+            style={{ ...btnLeve, opacity: pendente ? 0.5 : 1 }}
           >
             Recalcular previsto
           </button>
           <Link
             href={`/imprimir/operacao/${eventId}`}
             target="_blank"
-            className={ALTURA_BOTAO}
-            style={{
-              ...btnBase,
-              border: `1px solid ${C.graphite}`,
-              background: C.graphite,
-              color: "#fff",
-              display: "inline-flex",
-              alignItems: "center",
-            }}
+            className={`${ALTURA_BOTAO} inline-flex items-center`}
+            style={btnLeve}
           >
             Folha de contagem
           </Link>
+          {doEstoque > 0 && (
+            <Link
+              href={`/imprimir/separacao/${eventId}`}
+              target="_blank"
+              className={`${ALTURA_BOTAO} inline-flex items-center`}
+              style={btnForte}
+            >
+              Lista de separação
+            </Link>
+          )}
         </div>
       </div>
 
+      {/* o radar: uma frase, e só quando há o que dizer */}
+      {(radar.length > 0 || conflitos.length > 0) && (
+        <div className="mt-4" style={{ fontSize: 14, lineHeight: 1.6 }}>
+          {radar.length > 0 && <div style={{ color: C.text2 }}>{radar.join(" · ")}</div>}
+          {conflitos.map((c) => (
+            <div key={c.itemId} style={{ color: C.alerta }}>
+              {c.comQuem ? `${fraseDoConflito(c)} na data da festa` : `${fraseDoConflito(c)} no estoque`}
+            </div>
+          ))}
+        </div>
+      )}
+
       {erro && (
-        <p className="mt-3" style={{ fontSize: 13, color: "#A5544B" }}>
+        <p className="mt-3" style={{ fontSize: 13, color: C.alerta }}>
           {erro}
         </p>
       )}
-      {!erro && salvoEm && (
+      {!erro && aviso && (
+        <p className="mt-3" style={{ fontSize: 13, color: C.text2 }}>
+          {aviso}
+        </p>
+      )}
+      {!erro && !aviso && salvoEm && (
         <p className="mt-2" style={{ fontFamily: MONO, fontSize: 11.5, color: C.disabled }}>
           salvo às {salvoEm}
         </p>
@@ -320,208 +355,74 @@ export function OperacaoEvento({
           onCriar={() => setNovoAberto(true)}
         />
       ) : (
-        <>
-          {/* três indicadores */}
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            <Indicador rotulo="A comprar">
-              <Cifra>
-                {pendentes.length}{" "}
-                <span style={{ fontSize: 14, fontWeight: 400, color: C.muted }}>
-                  de {recursos.length} itens
-                </span>
-              </Cifra>
-            </Indicador>
-
-            <Indicador rotulo="Custo até agora">
-              <Cifra>{reais(investido)}</Cifra>
-              {porConvidado != null && (
+        <div className="mt-5 flex flex-col gap-5">
+          <div style={card}>
+            {grupos.map(([nome, lista]) => (
+              <div key={nome}>
                 <div
-                  style={{
-                    fontFamily: MONO,
-                    fontSize: 12,
-                    color: C.muted,
-                    marginTop: 2,
-                  }}
+                  className="flex items-baseline justify-between gap-2"
+                  style={{ padding: "12px 16px 6px", borderBottom: `1px solid ${C.linhaCard}` }}
                 >
-                  {reais(Math.round(porConvidado))} / convidado
-                </div>
-              )}
-            </Indicador>
-
-            <Indicador rotulo="Contagem no dia">
-              {contagemLiberada ? (
-                <Cifra>
-                  {contados}{" "}
-                  <span style={{ fontSize: 14, fontWeight: 400, color: C.muted }}>
-                    de {recursos.length} registrados
+                  <h3 style={{ margin: 0, fontFamily: TITULO, fontSize: 15, fontWeight: 600 }}>{nome}</h3>
+                  <span style={{ fontFamily: MONO, fontSize: 11.5, color: C.muted }}>
+                    {lista.filter((r) => estadoDe(r) !== "comprar").length}/{lista.length} resolvidos
                   </span>
-                </Cifra>
-              ) : (
-                <>
-                  <div style={{ marginTop: 10, fontSize: 14, color: C.muted }}>
-                    Libera no dia do evento
-                  </div>
-                  <div
-                    style={{
-                      height: 5,
-                      background: C.track,
-                      borderRadius: 4,
-                      marginTop: 10,
-                    }}
-                  />
-                </>
-              )}
-            </Indicador>
-          </div>
-
-          {/* duas colunas só no desktop: no tablet — que é onde a contagem
-              do dia acontece — a lateral desce e as linhas ganham a
-              largura inteira */}
-          <div className="mt-6 grid items-start gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
-            <div className="flex min-w-0 flex-col gap-5">
-              {/* ainda a comprar */}
-              <div style={card}>
-                <CabecalhoCard
-                  titulo="Ainda a comprar"
-                  meta={`${pendentes.length} ${pendentes.length === 1 ? "item" : "itens"}`}
-                />
-                {pendentes.length === 0 ? (
-                  <p style={{ padding: "14px 16px", fontSize: 14, color: C.muted }}>
-                    Tudo comprado.
-                  </p>
-                ) : (
-                  pendentes.map((r) => (
-                    <LinhaItem
-                      key={r.id}
-                      eventId={eventId}
-                      r={r}
-                      fornecedores={fornecedores}
-                      aberto={aberto === r.id}
-                      onAbrir={() => setAberto(aberto === r.id ? null : r.id)}
-                      pendente={pendente}
-                      rodar={rodar}
-                    />
-                  ))
-                )}
-
-                <div
-                  className="flex flex-wrap items-center gap-3"
-                  style={{ padding: "12px 16px", borderTop: `1px solid ${C.line2}` }}
-                >
-                  <button
-                    onClick={() => setNovoAberto((v) => !v)}
-                    style={{ fontSize: 13, fontWeight: 500, color: C.text2 }}
-                  >
-                    Acrescentar item
-                  </button>
-                  {temMapa && (
-                    <button
-                      onClick={() => rodar(() => trazerDoMetodo(eventId))}
-                      disabled={pendente}
-                      style={{ fontSize: 13, color: C.muted, opacity: pendente ? 0.5 : 1 }}
-                    >
-                      buscar itens novos do método
-                    </button>
-                  )}
                 </div>
+                {lista.map((r) => (
+                  <LinhaItem
+                    key={r.id}
+                    eventId={eventId}
+                    r={r}
+                    estado={estadoDe(r)}
+                    fornecedores={fornecedores}
+                    itensDoEstoque={itensDoEstoque}
+                    temEstoque={temEstoque}
+                    eventoData={eventoData}
+                    aberto={aberto === r.id}
+                    onAbrir={() => setAberto(aberto === r.id ? null : r.id)}
+                    escolhendo={escolhendo === r.id}
+                    onEscolher={(v) => setEscolhendo(v ? r.id : null)}
+                    pendente={pendente}
+                    rodar={rodar}
+                    avisar={setAviso}
+                  />
+                ))}
               </div>
+            ))}
 
-              {/* comprados — histórico, recolhido visualmente */}
-              {comprados.length > 0 && (
-                <div style={card}>
-                  <CabecalhoCard
-                    titulo="Comprados"
-                    esmaecido
-                    meta={`${comprados.length} ${comprados.length === 1 ? "item" : "itens"}${
-                      investidoComprados > 0 ? ` · ${reais(investidoComprados)}` : ""
-                    }`}
-                  />
-                  {comprados.map((r) => (
-                    <LinhaItem
-                      key={r.id}
-                      eventId={eventId}
-                      r={r}
-                      fornecedores={fornecedores}
-                      aberto={aberto === r.id}
-                      onAbrir={() => setAberto(aberto === r.id ? null : r.id)}
-                      pendente={pendente}
-                      rodar={rodar}
-                      comprado
-                    />
-                  ))}
-                </div>
+            <div
+              className="flex flex-wrap items-center gap-3"
+              style={{ padding: "12px 16px", borderTop: `1px solid ${C.line2}` }}
+            >
+              <button onClick={() => setNovoAberto((v) => !v)} style={{ fontSize: 13, fontWeight: 500, color: C.text2 }}>
+                Acrescentar item
+              </button>
+              {temMapa && (
+                <button
+                  onClick={() => rodar(() => trazerDoMetodo(eventId))}
+                  disabled={pendente}
+                  style={{ fontSize: 13, color: C.muted, opacity: pendente ? 0.5 : 1 }}
+                >
+                  buscar itens novos do método
+                </button>
               )}
-
-              {/* a contagem do dia, fora da tabela */}
-              {contagemLiberada && (
-                <ContagemDoDia
-                  eventId={eventId}
-                  recursos={recursos}
-                  pendente={pendente}
-                  rodar={rodar}
-                />
+              {!temEstoque && (
+                <Link href="/estoque" style={{ fontSize: 13, color: C.muted, textDecoration: "underline", textUnderlineOffset: 2 }}>
+                  cadastrar o estoque da empresa
+                </Link>
               )}
             </div>
-
-            {/* por categoria */}
-            <div style={{ ...card, padding: 16 }}>
-              <h3
-                style={{
-                  margin: "0 0 14px",
-                  fontFamily: TITULO,
-                  fontSize: 16,
-                  fontWeight: 600,
-                }}
-              >
-                Por categoria
-              </h3>
-              {categorias.map(([nome, c]) => (
-                <div
-                  key={nome}
-                  style={{ padding: "10px 0", borderBottom: `1px solid ${C.line2}` }}
-                >
-                  <div className="flex items-baseline justify-between gap-2">
-                    <div style={{ fontSize: 14, fontWeight: 600 }}>{nome}</div>
-                    <div style={{ fontFamily: MONO, fontSize: 11.5, color: C.muted }}>
-                      {c.ok}/{c.total} comprados{c.custo > 0 ? ` · ${reais(c.custo)}` : ""}
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      height: 5,
-                      background: C.track,
-                      borderRadius: 4,
-                      marginTop: 8,
-                      overflow: "hidden",
-                    }}
-                  >
-                    <div
-                      style={{
-                        height: "100%",
-                        background: C.graphite,
-                        borderRadius: 4,
-                        width: `${Math.round((100 * c.ok) / Math.max(1, c.total))}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-              <div style={{ marginTop: 14, fontSize: 13, color: C.muted, lineHeight: 1.5 }}>
-                Marcar um item como comprado atualiza o custo e o progresso da
-                categoria.
-              </div>
-            </div>
           </div>
-        </>
+
+          {/* a contagem do dia, fora da tabela */}
+          {contagemLiberada && (
+            <ContagemDoDia eventId={eventId} recursos={recursos} pendente={pendente} rodar={rodar} />
+          )}
+        </div>
       )}
 
       {novoAberto && (
-        <NovoItem
-          eventId={eventId}
-          pendente={pendente}
-          rodar={rodar}
-          onFechar={() => setNovoAberto(false)}
-        />
+        <NovoItem eventId={eventId} pendente={pendente} rodar={rodar} onFechar={() => setNovoAberto(false)} />
       )}
     </section>
   );
@@ -529,86 +430,13 @@ export function OperacaoEvento({
 
 /* ---------------------------------------------------------------- */
 
-function Indicador({
-  rotulo,
-  children,
-}: {
-  rotulo: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div style={{ ...card, padding: "14px 16px" }}>
-      <div
-        style={{
-          fontSize: 11,
-          fontWeight: 600,
-          letterSpacing: "0.06em",
-          color: C.muted,
-          textTransform: "uppercase",
-        }}
-      >
-        {rotulo}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function Cifra({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        marginTop: 6,
-        fontFamily: TITULO,
-        fontSize: 26,
-        fontWeight: 600,
-        letterSpacing: "-0.02em",
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function CabecalhoCard({
-  titulo,
-  meta,
-  esmaecido,
-}: {
-  titulo: string;
-  meta: string;
-  esmaecido?: boolean;
-}) {
-  return (
-    <div
-      className="flex items-baseline justify-between gap-2"
-      style={{ padding: "14px 16px", borderBottom: `1px solid ${C.linhaCard}` }}
-    >
-      <h3
-        style={{
-          margin: 0,
-          fontFamily: TITULO,
-          fontSize: 16,
-          fontWeight: 600,
-          color: esmaecido ? C.muted : C.text,
-        }}
-      >
-        {titulo}
-      </h3>
-      <span style={{ fontFamily: MONO, fontSize: 12, color: C.muted }}>{meta}</span>
-    </div>
-  );
-}
-
 /** "6 unidades × 220 estimados" / "12 unidades · definido à mão" */
 function specDoItem(r: Recurso): string {
   const base = textoDaBase(r);
   if (r.regra === "fixo") {
     // o pedido da cliente também aparece em item fixo: é ele que explica
     // por que o Recalcular não mexe naquele número
-    return `${numero(r.indice)} ${r.unidade}${
-      base && r.baseOrigem === "manual" ? ` · ${base}` : ""
-    }`;
+    return `${numero(r.indice)} ${r.unidade}${base && r.baseOrigem === "manual" ? ` · ${base}` : ""}`;
   }
   return `${numero(r.indice)} ${r.unidade} × ${base ?? "—"}`;
 }
@@ -616,216 +444,333 @@ function specDoItem(r: Recurso): string {
 function LinhaItem({
   eventId,
   r,
+  estado,
   fornecedores,
+  itensDoEstoque,
+  temEstoque,
+  eventoData,
   aberto,
   onAbrir,
+  escolhendo,
+  onEscolher,
   pendente,
   rodar,
-  comprado,
+  avisar,
 }: {
   eventId: string;
   r: Recurso;
+  estado: Estado;
   fornecedores: FornecedorRef[];
+  itensDoEstoque: ItemParaOperacao[];
+  temEstoque: boolean;
+  eventoData: string | null;
   aberto: boolean;
   onAbrir: () => void;
+  escolhendo: boolean;
+  onEscolher: (v: boolean) => void;
   pendente: boolean;
   rodar: (fn: () => Promise<Resultado>) => void;
-  comprado?: boolean;
+  avisar: (texto: string | null) => void;
 }) {
   const previsto = r.previsto ?? 0;
   const total = custoComprado(r);
   // compra parcial não tem lugar no desenho, mas tem no evento: some da
   // caixinha e vira número dito na linha
-  const parcial = !comprado && (r.comprado ?? 0) > 0 && (r.comprado ?? 0) < previsto;
+  const parcial = estado === "comprar" && (r.comprado ?? 0) > 0 && (r.comprado ?? 0) < previsto;
+  const res = r.reserva;
+  const resolvido = estado === "comprado" || estado === "fornecedor" || (estado === "estoque" && !!res?.fechadoEm);
+
+  const origemTexto =
+    estado === "estoque" && res
+      ? `${numero(res.quantidade)} ${r.unidade} · do estoque${res.itemNome !== r.nome ? ` (${res.itemNome})` : ""}`
+      : estado === "fornecedor"
+        ? `${numero(previsto)} ${r.unidade} · o fornecedor entrega`
+        : estado === "conferir"
+          ? `conferir com ${r.fornecedorNome ?? "o fornecedor"}`
+          : null;
 
   return (
     <>
       <div
-        className="flex items-center gap-3"
-        style={{
-          padding: "11px 16px",
-          borderBottom: `1px solid ${C.line2}`,
-          minHeight: 44,
-          boxSizing: "border-box",
-        }}
+        className="flex flex-wrap items-center gap-x-3 gap-y-2"
+        style={{ padding: "11px 16px", borderBottom: `1px solid ${C.line2}`, minHeight: 44, boxSizing: "border-box" }}
       >
-        {/* desmarcar sempre pode; marcar precisa de um número para gravar
-            (comprado É a quantidade, não um sim) */}
-        <input
-          type="checkbox"
-          checked={!!comprado}
-          disabled={pendente || (!comprado && previsto <= 0)}
-          title={
-            comprado
-              ? "Desmarcar"
-              : previsto <= 0
-                ? "Informe o previsto para marcar como comprado"
-                : "Marcar como comprado"
-          }
-          onChange={() =>
-            rodar(() =>
-              salvarNumero(eventId, r.id, "comprado", comprado ? null : previsto)
-            )
-          }
-          style={{ width: 17, height: 17, flex: "none", cursor: "pointer", accentColor: C.graphite }}
-        />
-
-        <button onClick={onAbrir} className="min-w-0 flex-1 text-left">
-          <div
-            style={{
-              fontSize: 15,
-              fontWeight: 500,
-              color: comprado ? C.text2 : C.text,
-            }}
-          >
-            {r.nome}
-          </div>
-          <div
-            style={{
-              fontFamily: MONO,
-              fontSize: 11.5,
-              color: comprado ? C.disabled : C.muted,
-              marginTop: 1,
-            }}
-          >
-            {specDoItem(r)}
-            {r.fornecedorNome ? ` · ${r.fornecedorNome}` : ""}
+        <button onClick={onAbrir} className="min-w-[180px] flex-1 text-left">
+          <div style={{ fontSize: 15, fontWeight: 500, color: resolvido ? C.text2 : C.text }}>{r.nome}</div>
+          <div style={{ fontFamily: MONO, fontSize: 11.5, color: resolvido ? C.disabled : C.muted, marginTop: 1 }}>
+            {origemTexto ?? specDoItem(r)}
+            {!origemTexto && r.fornecedorNome ? ` · ${r.fornecedorNome}` : ""}
             {parcial ? ` · ${numero(r.comprado)} de ${numero(previsto)} comprados` : ""}
           </div>
         </button>
 
-        {comprado ? (
-          <>
-            <span
-              style={{
-                border: `1px solid ${C.line}`,
-                background: C.pill,
-                borderRadius: 99,
-                padding: "3px 10px",
-                fontSize: 12,
-                color: C.text2,
-                flex: "none",
-              }}
-            >
-              comprado
+        {estado === "estoque" && res ? (
+          <div className="flex items-center gap-2">
+            <span style={{ ...pill, fontWeight: res.fechadoEm ? 400 : 600, color: res.fechadoEm ? C.text2 : C.text }}>
+              {res.fechadoEm
+                ? res.reutilizavel
+                  ? `voltou ${numero(res.devolvido)}${(res.perdido ?? 0) > 0 ? ` · perdeu ${numero(res.perdido)}` : ""}`
+                  : `consumiu ${numero(res.consumido)}`
+                : res.separadoEm
+                  ? "separado"
+                  : "a separar"}
             </span>
-            <div
-              style={{
-                fontFamily: MONO,
-                fontSize: 13,
-                color: C.text,
-                width: 90,
-                textAlign: "right",
-                flex: "none",
-              }}
-            >
+            {!res.fechadoEm && (
+              <button
+                onClick={() => rodar(() => marcarSeparado(eventId, res.id, !res.separadoEm))}
+                disabled={pendente}
+                className="h-8"
+                style={{ ...(res.separadoEm ? btnLeve : btnForte), fontSize: 13, padding: "0 12px", borderRadius: 8 }}
+              >
+                {res.separadoEm ? "Voltou à prateleira" : "Separado"}
+              </button>
+            )}
+          </div>
+        ) : estado === "fornecedor" ? (
+          <span style={pill}>garantido</span>
+        ) : estado === "comprado" ? (
+          <>
+            <span style={pill}>comprado</span>
+            <div style={{ fontFamily: MONO, fontSize: 13, color: C.text, width: 90, textAlign: "right", flex: "none" }}>
               {total == null ? "—" : reais(total)}
             </div>
           </>
         ) : (
           <>
             <div style={{ textAlign: "right", flex: "none" }}>
-              <Campo
-                eventId={eventId}
-                r={r}
-                campo="previsto"
-                valor={r.previsto}
-                rodar={rodar}
-                largura={62}
-                alinhado
-                peso={600}
-                familia={TITULO}
-              />
-              <div style={{ fontSize: 11, color: C.muted, marginTop: -2 }}>
-                {r.unidade}
-              </div>
+              <Campo eventId={eventId} r={r} campo="previsto" valor={r.previsto} rodar={rodar} largura={62} alinhado peso={600} familia={TITULO} />
+              <div style={{ fontSize: 11, color: C.muted, marginTop: -2 }}>{r.unidade}</div>
             </div>
 
-            <div
-              className="flex items-center justify-end gap-1.5"
-              style={{ flex: "none", width: 148 }}
-            >
-              <span style={{ fontSize: 13, color: C.muted }}>R$</span>
-              <Campo
-                eventId={eventId}
-                r={r}
-                campo="custo_unitario"
-                valor={r.custoUnitario}
-                rodar={rodar}
-                moeda
-                largura={64}
-                caixa
-                titulo="Custo por unidade"
-              />
-              {/* o total aparece assim que ela digita: sem isto, 620 no
-                  bolo viraria 620 por quilo sem ninguém perceber. Na fila
-                  de compras a conta é sobre o previsto — é o que ela vai
-                  comprar. */}
-              <span
-                style={{
-                  fontFamily: MONO,
-                  fontSize: 11.5,
-                  color: C.muted,
-                  width: 60,
-                  textAlign: "right",
-                }}
+            {estado === "comprar" && (
+              <div className="flex items-center justify-end gap-1.5" style={{ flex: "none" }}>
+                <span style={{ fontSize: 13, color: C.muted }}>R$</span>
+                <Campo eventId={eventId} r={r} campo="custo_unitario" valor={r.custoUnitario} rodar={rodar} moeda largura={64} caixa titulo="Custo por unidade" />
+                {/* o total aparece assim que ela digita: sem isto, 620 no
+                    bolo viraria 620 por quilo sem ninguém perceber */}
+                <span style={{ fontFamily: MONO, fontSize: 11.5, color: C.muted, width: 60, textAlign: "right" }}>
+                  {r.custoUnitario == null || previsto <= 0 ? "" : `= ${reais(r.custoUnitario * previsto)}`}
+                </span>
+              </div>
+            )}
+
+            {/* uma ação por linha: o menu resolve de onde vem */}
+            <details className="relative" style={{ flex: "none" }}>
+              <summary
+                className="list-none cursor-pointer select-none h-8 inline-flex items-center"
+                style={{ ...btnLeve, fontSize: 13, padding: "0 12px", borderRadius: 8 }}
               >
-                {r.custoUnitario == null || previsto <= 0
-                  ? ""
-                  : `= ${reais(r.custoUnitario * previsto)}`}
-              </span>
-            </div>
+                {estado === "conferir" ? "Do estoque ▾" : "Resolver ▾"}
+              </summary>
+              <div
+                className="absolute right-0 z-20 mt-1 flex min-w-[200px] flex-col"
+                style={{ ...card, padding: 6, boxShadow: "0 12px 28px -14px rgba(0,0,0,.35)" }}
+              >
+                {estado === "comprar" && (
+                  <button
+                    disabled={pendente || previsto <= 0}
+                    title={previsto <= 0 ? "Informe o previsto para marcar como comprado" : undefined}
+                    onClick={(e) => {
+                      e.currentTarget.closest("details")?.removeAttribute("open");
+                      rodar(() => salvarNumero(eventId, r.id, "comprado", previsto));
+                    }}
+                    style={{ textAlign: "left", padding: "8px 10px", borderRadius: 8, fontSize: 14, opacity: previsto <= 0 ? 0.5 : 1 }}
+                  >
+                    Comprei tudo
+                  </button>
+                )}
+                {temEstoque && (
+                  <button
+                    disabled={pendente}
+                    onClick={(e) => {
+                      e.currentTarget.closest("details")?.removeAttribute("open");
+                      onEscolher(true);
+                    }}
+                    style={{ textAlign: "left", padding: "8px 10px", borderRadius: 8, fontSize: 14 }}
+                  >
+                    Usar do estoque
+                  </button>
+                )}
+                {estado === "comprar" && (
+                  <button
+                    disabled={pendente}
+                    onClick={(e) => {
+                      e.currentTarget.closest("details")?.removeAttribute("open");
+                      rodar(() => definirOrigem(eventId, r.id, "fornecedor"));
+                    }}
+                    style={{ textAlign: "left", padding: "8px 10px", borderRadius: 8, fontSize: 14 }}
+                  >
+                    O fornecedor entrega
+                  </button>
+                )}
+                {!temEstoque && estado === "conferir" && (
+                  <Link href="/estoque" style={{ padding: "8px 10px", fontSize: 14, color: C.text2 }}>
+                    Cadastrar o estoque
+                  </Link>
+                )}
+              </div>
+            </details>
           </>
         )}
       </div>
 
-      {aberto && (
-        <DetalheItem
+      {escolhendo && (
+        <EscolherDoEstoque
           eventId={eventId}
           r={r}
-          fornecedores={fornecedores}
+          itens={itensDoEstoque}
+          eventoData={eventoData}
           pendente={pendente}
           rodar={rodar}
+          avisar={avisar}
+          onFechar={() => onEscolher(false)}
         />
+      )}
+
+      {aberto && (
+        <DetalheItem eventId={eventId} r={r} estado={estado} fornecedores={fornecedores} pendente={pendente} rodar={rodar} />
       )}
     </>
   );
 }
 
-/** Fornecedor, observação e remover — o que não cabe na linha. */
+/** Escolher o item do acervo que supre esta linha, com o disponível na data. */
+function EscolherDoEstoque({
+  eventId,
+  r,
+  itens,
+  eventoData,
+  pendente,
+  rodar,
+  avisar,
+  onFechar,
+}: {
+  eventId: string;
+  r: Recurso;
+  itens: ItemParaOperacao[];
+  eventoData: string | null;
+  pendente: boolean;
+  rodar: (fn: () => Promise<Resultado>) => void;
+  avisar: (texto: string | null) => void;
+  onFechar: () => void;
+}) {
+  const [busca, setBusca] = useState("");
+  const [escolhido, setEscolhido] = useState<ItemParaOperacao | null>(null);
+  const faltaComprar = Math.max(0, (r.previsto ?? 0) - (r.comprado ?? 0));
+  const [qtd, setQtd] = useState(String(faltaComprar || r.previsto || ""));
+  const lista = candidatos(r, itens, busca);
+  const quantidade = Number(qtd.replace(",", "."));
+
+  return (
+    <div style={{ padding: "12px 16px", background: C.campo, borderBottom: `1px solid ${C.line2}` }}>
+      <div className="flex flex-wrap items-center gap-3">
+        <input
+          autoFocus
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          placeholder="Buscar no estoque"
+          aria-label="Buscar no estoque"
+          style={{ ...input, width: 220, marginTop: 0 }}
+        />
+        <span style={{ fontSize: 12.5, color: C.muted }}>
+          {eventoData ? "disponível na data da festa" : "disponível hoje"}
+        </span>
+      </div>
+      <div className="mt-2 flex flex-col">
+        {lista.length === 0 && <span style={{ fontSize: 13, color: C.muted, padding: "6px 0" }}>Nada com esse nome no estoque.</span>}
+        {lista.map((i) => {
+          const on = escolhido?.id === i.id;
+          return (
+            <button
+              key={i.id}
+              onClick={() => setEscolhido(i)}
+              className="flex items-baseline justify-between gap-3 text-left"
+              style={{ padding: "7px 8px", borderRadius: 8, background: on ? C.surface : "transparent", border: `1px solid ${on ? C.outline : "transparent"}` }}
+            >
+              <span style={{ fontSize: 14, color: C.text }}>
+                {i.nome}
+                {i.categoriaNome ? <span style={{ color: C.muted }}> · {i.categoriaNome}</span> : null}
+              </span>
+              <span style={{ fontFamily: MONO, fontSize: 12, color: i.disponivel < quantidade ? C.alerta : C.text2, whiteSpace: "nowrap" }}>
+                {numero(i.disponivel)} disponíveis · {numero(i.saldo)} {i.unidade}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex flex-wrap items-end gap-3">
+        <label style={{ fontSize: 12, color: C.muted }}>
+          Quantidade
+          <input
+            type="number"
+            min={0}
+            step="any"
+            inputMode="decimal"
+            value={qtd}
+            onChange={(e) => setQtd(e.target.value)}
+            style={{ ...input, width: 110, textAlign: "right", fontFamily: MONO }}
+          />
+        </label>
+        <button
+          disabled={pendente || !escolhido || !(quantidade > 0)}
+          onClick={() =>
+            rodar(async () => {
+              const res = await usarDoEstoque(eventId, escolhido!.id, quantidade, r.id);
+              if ("error" in res) return res;
+              avisar(
+                res.falta > 0
+                  ? `Reservado. Faltam ${numero(res.falta)} de ${escolhido!.nome} na data — veja Estoque › Por evento.`
+                  : null
+              );
+              onFechar();
+              return res as unknown as Resultado;
+            })
+          }
+          className="h-9"
+          style={{ ...btnForte, fontSize: 13, opacity: pendente || !escolhido || !(quantidade > 0) ? 0.4 : 1 }}
+        >
+          Reservar
+        </button>
+        <button onClick={onFechar} style={{ fontSize: 13, color: C.muted, padding: "0 4px 8px" }}>
+          cancelar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const input = {
+  marginTop: 4,
+  display: "block",
+  borderRadius: 8,
+  border: `1px solid ${C.line}`,
+  background: C.surface,
+  padding: "6px 8px",
+  fontSize: 14,
+  color: C.text,
+} as const;
+
+/** Fornecedor, observação, desfazer e remover — o que não cabe na linha. */
 function DetalheItem({
   eventId,
   r,
+  estado,
   fornecedores,
   pendente,
   rodar,
 }: {
   eventId: string;
   r: Recurso;
+  estado: Estado;
   fornecedores: FornecedorRef[];
   pendente: boolean;
   rodar: (fn: () => Promise<Resultado>) => void;
 }) {
   const entrada = { fontSize: 12, color: C.muted } as const;
-  const input = {
-    marginTop: 4,
-    display: "block",
-    borderRadius: 8,
-    border: `1px solid ${C.line}`,
-    background: C.surface,
-    padding: "6px 8px",
-    fontSize: 14,
-    color: C.text,
-  } as const;
+  const link = { fontSize: 12, color: C.muted, paddingBottom: 6 } as const;
 
   return (
-    <div
-      style={{
-        padding: "12px 16px",
-        background: C.campo,
-        borderBottom: `1px solid ${C.line2}`,
-      }}
-    >
+    <div style={{ padding: "12px 16px", background: C.campo, borderBottom: `1px solid ${C.line2}` }}>
       <div className="flex flex-wrap items-end gap-4">
         <label style={entrada}>
           Fornecedor
@@ -856,11 +801,22 @@ function DetalheItem({
           />
         </label>
 
-        <button
-          onClick={() => rodar(() => removerRecurso(eventId, r.id))}
-          disabled={pendente}
-          style={{ fontSize: 12, color: C.muted, paddingBottom: 6 }}
-        >
+        {estado === "estoque" && r.reserva && !r.reserva.fechadoEm && (
+          <button onClick={() => rodar(() => desfazerReserva(eventId, r.reserva!.id))} disabled={pendente} style={link}>
+            desfazer a reserva
+          </button>
+        )}
+        {estado === "fornecedor" && (
+          <button onClick={() => rodar(() => definirOrigem(eventId, r.id, "compra"))} disabled={pendente} style={link}>
+            voltar a comprar
+          </button>
+        )}
+        {estado === "comprado" && (
+          <button onClick={() => rodar(() => salvarNumero(eventId, r.id, "comprado", null))} disabled={pendente} style={link}>
+            desmarcar comprado
+          </button>
+        )}
+        <button onClick={() => rodar(() => removerRecurso(eventId, r.id))} disabled={pendente} style={link}>
           remover
         </button>
       </div>
@@ -883,114 +839,171 @@ function ContagemDoDia({
   pendente: boolean;
   rodar: (fn: () => Promise<Resultado>) => void;
 }) {
-  const registrados = recursos.filter((r) => r.entrada != null).length;
+  const registrados = recursos.filter((r) => r.entrada != null || r.reserva?.fechadoEm).length;
 
   return (
     <div style={card}>
-      <CabecalhoCard
-        titulo="Contagem do dia"
-        meta={`${registrados} de ${recursos.length} registrados`}
-      />
-      {recursos.map((r) => {
-        const c = consumido(r);
-        const v = veredito(r);
-        return (
-          <div
-            key={r.id}
-            className="flex flex-wrap items-center gap-3"
-            style={{
-              padding: "11px 16px",
-              borderBottom: `1px solid ${C.line2}`,
-              minHeight: 44,
-              boxSizing: "border-box",
-            }}
-          >
-            <div className="min-w-0 flex-1">
-              <div style={{ fontSize: 15, fontWeight: 500 }}>{r.nome}</div>
-              {/* o que se compara com a contagem: o comprado quando existe,
-                  senão o previsto — "— unidades compradas" não é frase */}
-              <div style={{ fontFamily: MONO, fontSize: 11.5, color: C.muted, marginTop: 1 }}>
-                {(r.comprado ?? 0) > 0
-                  ? `${numero(r.comprado)} ${r.unidade} comprados`
-                  : (r.previsto ?? 0) > 0
-                    ? `${numero(r.previsto)} ${r.unidade} previstos`
-                    : "sem quantidade"}
-              </div>
-            </div>
-
-            <RotuloCampo texto="entrada">
-              <Campo
-                eventId={eventId}
-                r={r}
-                campo="entrada"
-                valor={r.entrada}
-                rodar={rodar}
-                largura={64}
-                caixa
-                alinhado
-              />
-            </RotuloCampo>
-
-            <RotuloCampo texto="sobra">
-              <Campo
-                eventId={eventId}
-                r={r}
-                campo="sobra"
-                valor={r.sobra}
-                rodar={rodar}
-                largura={64}
-                caixa
-                alinhado
-              />
-            </RotuloCampo>
-
-            <RotuloCampo texto="acabou às">
-              <input
-                type="time"
-                defaultValue={r.acabouEm ?? ""}
-                onBlur={(e) =>
-                  rodar(() => marcarRuptura(eventId, r.id, e.target.value || null))
-                }
-                disabled={pendente}
-                style={{
-                  width: 92,
-                  height: 32,
-                  borderRadius: 8,
-                  border: `1px solid ${C.line}`,
-                  background: C.campo,
-                  padding: "0 8px",
-                  fontFamily: MONO,
-                  fontSize: 13,
-                  color: C.text,
-                }}
-              />
-            </RotuloCampo>
-
-            <div style={{ width: 150, textAlign: "right", flex: "none" }}>
-              <div style={{ fontFamily: MONO, fontSize: 11.5, color: C.muted }}>
-                {c == null ? "" : `consumiu ${numero(c)}`}
-              </div>
-              <PillVeredito v={v} />
-            </div>
-          </div>
-        );
-      })}
+      <div
+        className="flex items-baseline justify-between gap-2"
+        style={{ padding: "14px 16px", borderBottom: `1px solid ${C.linhaCard}` }}
+      >
+        <h3 style={{ margin: 0, fontFamily: TITULO, fontSize: 16, fontWeight: 600 }}>Contagem do dia</h3>
+        <span style={{ fontFamily: MONO, fontSize: 12, color: C.muted }}>
+          {registrados} de {recursos.length} registrados
+        </span>
+      </div>
+      {recursos.map((r) =>
+        r.reserva ? (
+          <LinhaDevolucao key={r.id} eventId={eventId} r={r} pendente={pendente} rodar={rodar} />
+        ) : (
+          <LinhaContagem key={r.id} eventId={eventId} r={r} pendente={pendente} rodar={rodar} />
+        )
+      )}
     </div>
   );
 }
 
-function RotuloCampo({
-  texto,
-  children,
+function LinhaContagem({
+  eventId,
+  r,
+  pendente,
+  rodar,
 }: {
-  texto: string;
-  children: React.ReactNode;
+  eventId: string;
+  r: Recurso;
+  pendente: boolean;
+  rodar: (fn: () => Promise<Resultado>) => void;
 }) {
+  const c = consumido(r);
+  const v = veredito(r);
+  return (
+    <div
+      className="flex flex-wrap items-center gap-3"
+      style={{ padding: "11px 16px", borderBottom: `1px solid ${C.line2}`, minHeight: 44, boxSizing: "border-box" }}
+    >
+      <div className="min-w-0 flex-1">
+        <div style={{ fontSize: 15, fontWeight: 500 }}>{r.nome}</div>
+        {/* o que se compara com a contagem: o comprado quando existe,
+            senão o previsto — "— unidades compradas" não é frase */}
+        <div style={{ fontFamily: MONO, fontSize: 11.5, color: C.muted, marginTop: 1 }}>
+          {(r.comprado ?? 0) > 0
+            ? `${numero(r.comprado)} ${r.unidade} ${r.origemSuprimento === "fornecedor" ? "entregues" : "comprados"}`
+            : (r.previsto ?? 0) > 0
+              ? `${numero(r.previsto)} ${r.unidade} previstos`
+              : "sem quantidade"}
+        </div>
+      </div>
+
+      <RotuloCampo texto="entrada">
+        <Campo eventId={eventId} r={r} campo="entrada" valor={r.entrada} rodar={rodar} largura={64} caixa alinhado />
+      </RotuloCampo>
+
+      <RotuloCampo texto="sobra">
+        <Campo eventId={eventId} r={r} campo="sobra" valor={r.sobra} rodar={rodar} largura={64} caixa alinhado />
+      </RotuloCampo>
+
+      <RotuloCampo texto="acabou às">
+        <input
+          type="time"
+          defaultValue={r.acabouEm ?? ""}
+          onBlur={(e) => rodar(() => marcarRuptura(eventId, r.id, e.target.value || null))}
+          disabled={pendente}
+          style={{ width: 92, height: 32, borderRadius: 8, border: `1px solid ${C.line}`, background: C.campo, padding: "0 8px", fontFamily: MONO, fontSize: 13, color: C.text }}
+        />
+      </RotuloCampo>
+
+      <div style={{ width: 150, textAlign: "right", flex: "none" }}>
+        <div style={{ fontFamily: MONO, fontSize: 11.5, color: C.muted }}>{c == null ? "" : `consumiu ${numero(c)}`}</div>
+        <PillVeredito v={v} />
+      </div>
+    </div>
+  );
+}
+
+/** O item que veio do estoque: o que voltou (acervo) ou o que sobrou (consumível). */
+function LinhaDevolucao({
+  eventId,
+  r,
+  pendente,
+  rodar,
+}: {
+  eventId: string;
+  r: Recurso;
+  pendente: boolean;
+  rodar: (fn: () => Promise<Resultado>) => void;
+}) {
+  const res = r.reserva!;
+  const [voltou, setVoltou] = useState(String(res.quantidade));
+  const [sobrou, setSobrou] = useState("0");
+  const n = (s: string) => Number(s.replace(",", "."));
+
+  return (
+    <div
+      className="flex flex-wrap items-center gap-3"
+      style={{ padding: "11px 16px", borderBottom: `1px solid ${C.line2}`, minHeight: 44, boxSizing: "border-box" }}
+    >
+      <div className="min-w-0 flex-1">
+        <div style={{ fontSize: 15, fontWeight: 500 }}>{r.nome}</div>
+        <div style={{ fontFamily: MONO, fontSize: 11.5, color: C.muted, marginTop: 1 }}>
+          {numero(res.quantidade)} {r.unidade} do estoque{res.separadoEm ? "" : " · não foi separado"}
+        </div>
+      </div>
+
+      {res.fechadoEm ? (
+        <span style={pill}>
+          {res.reutilizavel
+            ? `voltou ${numero(res.devolvido)}${(res.perdido ?? 0) > 0 ? ` · perdeu ${numero(res.perdido)}` : ""}`
+            : `consumiu ${numero(res.consumido)}${(res.devolvido ?? 0) > 0 ? ` · voltou ${numero(res.devolvido)}` : ""}`}
+        </span>
+      ) : (
+        <>
+          <RotuloCampo texto={res.reutilizavel ? "voltou" : "sobrou"}>
+            <input
+              type="number"
+              min={0}
+              max={res.quantidade}
+              step="any"
+              inputMode="decimal"
+              value={res.reutilizavel ? voltou : sobrou}
+              onChange={(e) => (res.reutilizavel ? setVoltou(e.target.value) : setSobrou(e.target.value))}
+              style={{ width: 64, height: 32, borderRadius: 8, border: `1px solid ${C.line}`, background: C.campo, padding: "0 8px", fontFamily: MONO, fontSize: 13, color: C.text, textAlign: "right" }}
+            />
+          </RotuloCampo>
+          <div style={{ fontFamily: MONO, fontSize: 11.5, color: C.muted, width: 110, textAlign: "right" }}>
+            {res.reutilizavel
+              ? n(voltou) < res.quantidade
+                ? `perdeu ${numero(res.quantidade - n(voltou))}`
+                : ""
+              : `consumiu ${numero(Math.max(0, res.quantidade - n(sobrou)))}`}
+          </div>
+          <button
+            disabled={pendente}
+            onClick={() =>
+              rodar(() =>
+                fecharReserva(
+                  eventId,
+                  res.id,
+                  res.reutilizavel
+                    ? { devolvido: n(voltou), perdido: Math.max(0, res.quantidade - n(voltou)) }
+                    : { consumido: Math.max(0, res.quantidade - n(sobrou)), devolvido: n(sobrou) }
+                )
+              )
+            }
+            className="h-8"
+            style={{ ...btnForte, fontSize: 13, padding: "0 12px", borderRadius: 8 }}
+          >
+            Devolver ao estoque
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+function RotuloCampo({ texto, children }: { texto: string; children: React.ReactNode }) {
   return (
     <label style={{ flex: "none" }}>
-      <span style={{ display: "block", fontSize: 11, color: C.muted, marginBottom: 3 }}>
-        {texto}
-      </span>
+      <span style={{ display: "block", fontSize: 11, color: C.muted, marginBottom: 3 }}>{texto}</span>
       {children}
     </label>
   );
@@ -1011,21 +1024,7 @@ function PillVeredito({ v }: { v: ReturnType<typeof veredito> }) {
 
   const forte = v.tipo === "faltou" || v.tipo === "sobrou";
   return (
-    <span
-      style={{
-        display: "inline-block",
-        marginTop: 3,
-        border: `1px solid ${C.line}`,
-        background: C.pill,
-        borderRadius: 99,
-        padding: "3px 10px",
-        fontSize: 12,
-        fontWeight: forte ? 600 : 400,
-        color: forte ? C.text : C.text2,
-      }}
-    >
-      {texto}
-    </span>
+    <span style={{ ...pill, marginTop: 3, fontWeight: forte ? 600 : 400, color: forte ? C.text : C.text2 }}>{texto}</span>
   );
 }
 
@@ -1063,23 +1062,13 @@ function Campo({
   // Um caminho só para gravar, usado pelo Enter e por sair do campo.
   function gravar(bruto: string) {
     const texto = bruto.trim();
-    const novo =
-      texto === ""
-        ? null
-        : moeda
-          ? desmascararDinheiro(texto)
-          : Number(texto.replace(",", "."));
+    const novo = texto === "" ? null : moeda ? desmascararDinheiro(texto) : Number(texto.replace(",", "."));
     if (novo === valor) return;
     if (novo != null && !Number.isFinite(novo)) return;
     rodar(() => salvarNumero(eventId, r.id, campo, novo));
   }
 
-  const formatado =
-    valor == null
-      ? ""
-      : moeda
-        ? mascararDinheiro(valor.toFixed(2).replace(".", ","))
-        : String(valor);
+  const formatado = valor == null ? "" : moeda ? mascararDinheiro(valor.toFixed(2).replace(".", ",")) : String(valor);
 
   return (
     <input
@@ -1097,9 +1086,6 @@ function Campo({
       // Sem `disabled` de propósito: desativar os 60 campos a cada
       // gravação engolia o que ela digitasse no campo seguinte.
       onChange={
-        // O input é não controlado (a key o remonta quando o servidor
-        // muda). Para o dinheiro sair 4.590,00 enquanto ela digita, a
-        // máscara é aplicada no próprio elemento.
         moeda
           ? (e) => {
               e.target.value = mascararDinheiro(e.target.value);
@@ -1107,13 +1093,10 @@ function Campo({
           : undefined
       }
       onKeyDown={(e) => {
-        // Numa tela de números, o gesto é digitar e apertar Enter. Sem
-        // isto, o valor só era gravado ao SAIR do campo — quem apertava
-        // Enter via o número na tela, ia embora e perdia tudo.
-        //
-        // E o Enter grava DIRETO, não por blur(): blur depende de a
-        // janela ter foco, e "depende" não é palavra que se queira entre
-        // a contagem do bar e o banco.
+        // Numa tela de números, o gesto é digitar e apertar Enter. E o
+        // Enter grava DIRETO, não por blur(): blur depende de a janela
+        // ter foco, e "depende" não é palavra que se queira entre a
+        // contagem do bar e o banco.
         if (e.key === "Enter") {
           e.preventDefault();
           gravar(e.currentTarget.value);
@@ -1157,42 +1140,15 @@ function VazioOperacao({
   onCriar: () => void;
 }) {
   return (
-    <div
-      className="mt-6 text-center"
-      style={{
-        border: `1px dashed ${C.line}`,
-        borderRadius: 14,
-        padding: "32px 20px",
-      }}
-    >
+    <div className="mt-6 text-center" style={{ border: `1px dashed ${C.line}`, borderRadius: 14, padding: "32px 20px" }}>
       <p style={{ fontSize: 14, color: C.text2 }}>Nada a contar ainda neste evento.</p>
       <div className="mt-3 flex flex-wrap justify-center gap-2">
         {temMapa && (
-          <button
-            onClick={rodar}
-            disabled={pendente}
-            className={ALTURA_BOTAO}
-            style={{
-              ...btnBase,
-              border: `1px solid ${C.graphite}`,
-              background: C.graphite,
-              color: "#fff",
-              opacity: pendente ? 0.5 : 1,
-            }}
-          >
+          <button onClick={rodar} disabled={pendente} className={ALTURA_BOTAO} style={{ ...btnForte, opacity: pendente ? 0.5 : 1 }}>
             Trazer os itens do método
           </button>
         )}
-        <button
-          onClick={onCriar}
-          className={ALTURA_BOTAO}
-          style={{
-            ...btnBase,
-            border: `1px solid ${C.outline}`,
-            background: C.surface,
-            color: C.text,
-          }}
-        >
+        <button onClick={onCriar} className={ALTURA_BOTAO} style={btnLeve}>
           Criar um item
         </button>
       </div>
@@ -1217,45 +1173,22 @@ function NovoItem({
   const [indice, setIndice] = useState("1");
 
   const rotulo = { fontSize: 12, color: C.muted } as const;
-  const input = {
-    marginTop: 4,
-    display: "block",
-    borderRadius: 10,
-    border: `1px solid ${C.line}`,
-    background: C.surface,
-    padding: "8px 10px",
-    fontSize: 14,
-    color: C.text,
-  } as const;
+  const campo = { ...input, borderRadius: 10, padding: "8px 10px" } as const;
 
   return (
     <div className="mt-4" style={{ ...card, padding: 16 }}>
       <div className="flex flex-wrap items-end gap-3">
         <label style={rotulo}>
           Item
-          <input
-            autoFocus
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            placeholder="Gelo em escama"
-            style={{ ...input, width: 208 }}
-          />
+          <input autoFocus value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Gelo em escama" style={{ ...campo, width: 208 }} />
         </label>
         <label style={rotulo}>
           Unidade
-          <input
-            value={unidade}
-            onChange={(e) => setUnidade(e.target.value)}
-            style={{ ...input, width: 112 }}
-          />
+          <input value={unidade} onChange={(e) => setUnidade(e.target.value)} style={{ ...campo, width: 112 }} />
         </label>
         <label style={rotulo}>
           Como se calcula
-          <select
-            value={regra}
-            onChange={(e) => setRegra(e.target.value)}
-            style={{ ...input, width: 160 }}
-          >
+          <select value={regra} onChange={(e) => setRegra(e.target.value)} style={{ ...campo, width: 160 }}>
             <option value="por_pessoa">por pessoa</option>
             <option value="por_unidade">por mesa</option>
             <option value="fixo">quantidade fixa</option>
@@ -1263,14 +1196,7 @@ function NovoItem({
         </label>
         <label style={rotulo}>
           {regra === "fixo" ? "Quantidade" : "Quanto por unidade"}
-          <input
-            type="number"
-            min={0}
-            step="any"
-            value={indice}
-            onChange={(e) => setIndice(e.target.value)}
-            style={{ ...input, width: 112, textAlign: "right", fontFamily: MONO }}
-          />
+          <input type="number" min={0} step="any" value={indice} onChange={(e) => setIndice(e.target.value)} style={{ ...campo, width: 112, textAlign: "right", fontFamily: MONO }} />
         </label>
 
         <button
@@ -1291,13 +1217,7 @@ function NovoItem({
           }
           disabled={pendente || !nome.trim()}
           className={ALTURA_BOTAO}
-          style={{
-            ...btnBase,
-            border: `1px solid ${C.graphite}`,
-            background: C.graphite,
-            color: "#fff",
-            opacity: pendente || !nome.trim() ? 0.4 : 1,
-          }}
+          style={{ ...btnForte, opacity: pendente || !nome.trim() ? 0.4 : 1 }}
         >
           Acrescentar
         </button>

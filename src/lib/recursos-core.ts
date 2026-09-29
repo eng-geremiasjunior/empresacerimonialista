@@ -8,6 +8,23 @@
 
 export type RegraRecurso = "fixo" | "por_pessoa" | "por_unidade";
 
+/** De onde o item vem (184): comprar para a festa, do estoque da empresa, ou o fornecedor entrega. */
+export type OrigemSuprimento = "compra" | "estoque" | "fornecedor";
+
+/** A reserva do estoque que supre esta linha (184). */
+export type ReservaDoRecurso = {
+  id: string;
+  itemId: string;
+  itemNome: string;
+  reutilizavel: boolean;
+  quantidade: number;
+  separadoEm: string | null;
+  fechadoEm: string | null;
+  devolvido: number | null;
+  consumido: number | null;
+  perdido: number | null;
+};
+
 export type Recurso = {
   id: string;
   codigo: string;
@@ -28,6 +45,10 @@ export type Recurso = {
   observacao: string | null;
   grupo: string | null;
   ordem: number;
+  origemSuprimento: OrigemSuprimento;
+  /** false = não se compra (garçom, mesa do buffet): só se confere */
+  compravel: boolean;
+  reserva: ReservaDoRecurso | null;
 };
 
 /** Quanto realmente saiu. null enquanto a contagem do dia não fechou. */
@@ -86,14 +107,21 @@ export function veredito(r: Recurso, margemPct = 10): Veredito {
   return { tipo: "certo" };
 }
 
-/** A conta do dimensionamento, igual à do banco (132). */
+/** Peso e volume aceitam fração; o resto se conta em inteiros (184). */
+const UNIDADES_COM_FRACAO = ["kg", "g", "litros", "litro", "l", "ml", "metros", "metro", "m", "cm"];
+
+/** A conta do dimensionamento, igual à do banco (132; arredondamento 184). */
 export function calcularPrevisto(
   regra: RegraRecurso,
   indice: number,
-  base: number
+  base: number,
+  unidade = "unidades"
 ): number {
   if (regra === "fixo") return indice;
-  return Math.round(indice * base * 100) / 100;
+  const bruto = indice * base;
+  return UNIDADES_COM_FRACAO.includes(unidade.toLowerCase())
+    ? Math.round(bruto * 100) / 100
+    : Math.ceil(bruto);
 }
 
 export type DefasagemPublico = {

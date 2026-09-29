@@ -69,6 +69,15 @@ export const EXPLICACOES_DO_MENU: ExplicacaoDoMenu[] = [
       "Equipe → Cadastrar. A pessoa entra com o e-mail e a senha dela — o seu login continua sendo só seu.",
   },
   {
+    href: "/estoque",
+    oQueE:
+      "O que a sua empresa tem: cadeiras, taças, toalhas, água, velas — com quanto existe, quanto está reservado e quanto vale.",
+    paraQue:
+      "Você confere o estoque antes de fechar a data, e a equipe chega na montagem sabendo o que separar.",
+    comoUsar:
+      "Estoque → Importar (a planilha ou a foto do seu controle) ou Novo item. Dentro do evento, em Operação, escolha “do estoque” na linha do item.",
+  },
+  {
     href: "/fornecedores",
     oQueE:
       "Sua agenda de buffet, foto, som, decoração, segurança — com contato, categoria e os valores que já praticaram.",

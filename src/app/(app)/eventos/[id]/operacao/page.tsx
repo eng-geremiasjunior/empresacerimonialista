@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { getPublico, getRecursos } from "@/lib/supabase/recursos";
+import { getItensParaOperacao, getPublico, getRecursos } from "@/lib/supabase/recursos";
+import { getConflitosDoEvento } from "@/lib/supabase/estoque";
 import { OperacaoEvento } from "@/components/operacao/OperacaoEvento";
 
 export const metadata = { title: "Operação" };
@@ -12,16 +13,6 @@ export default async function EventoOperacaoPage({
   const eventId = params.id;
   const supabase = createClient();
 
-  const [recursos, publico] = await Promise.all([
-    getRecursos(eventId),
-    getPublico(eventId),
-  ]);
-
-  const { data: sups } = await supabase
-    .from("suppliers")
-    .select("id, name")
-    .order("name");
-
   // A contagem do dia só abre quando o dia chega: antes disso, entrada e
   // sobra seriam campos pedindo número que ninguém tem. Fuso de São Paulo
   // porque a festa é aqui, não em UTC.
@@ -33,14 +24,20 @@ export default async function EventoOperacaoPage({
   const hoje = new Date().toLocaleDateString("en-CA", {
     timeZone: "America/Sao_Paulo",
   });
-  const contagemLiberada = !!ev?.date && String(ev.date) <= hoje;
+  const eventoData = ev?.date ? String(ev.date) : null;
+  const contagemLiberada = !!eventoData && eventoData <= hoje;
 
-  // Evento nascido antes do método não tem mapa — oferecer "trazer do
-  // método" ali seria um botão que não faz nada.
-  const { count: objetivos } = await supabase
-    .from("evento_objetivo")
-    .select("*", { count: "exact", head: true })
-    .eq("event_id", eventId);
+  const [recursos, publico, itensDoEstoque, conflitos, { data: sups }, { count: objetivos }] =
+    await Promise.all([
+      getRecursos(eventId),
+      getPublico(eventId),
+      getItensParaOperacao(eventoData),
+      getConflitosDoEvento(eventId),
+      supabase.from("suppliers").select("id, name").order("name"),
+      // Evento nascido antes do método não tem mapa — oferecer "trazer do
+      // método" ali seria um botão que não faz nada.
+      supabase.from("evento_objetivo").select("*", { count: "exact", head: true }).eq("event_id", eventId),
+    ]);
 
   return (
     <OperacaoEvento
@@ -50,6 +47,9 @@ export default async function EventoOperacaoPage({
       publico={publico}
       temMapa={(objetivos ?? 0) > 0}
       contagemLiberada={contagemLiberada}
+      eventoData={eventoData}
+      itensDoEstoque={itensDoEstoque}
+      conflitos={conflitos}
     />
   );
 }

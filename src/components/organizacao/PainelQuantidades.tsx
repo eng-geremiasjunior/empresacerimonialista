@@ -31,8 +31,14 @@ export function PainelQuantidades({
   const visiveis = recursos.slice(0, MAX_VISIVEIS);
   const restantes = recursos.length - visiveis.length;
   const aComprar = recursos.filter(
-    (r) => (r.previsto ?? 0) > 0 && (r.comprado ?? 0) < (r.previsto ?? 0)
+    (r) =>
+      r.compravel &&
+      r.origemSuprimento === "compra" &&
+      (r.previsto ?? 0) > 0 &&
+      (r.comprado ?? 0) < (r.previsto ?? 0)
   ).length;
+  // do estoque e ainda na prateleira (184)
+  const aSeparar = recursos.filter((r) => r.reserva && !r.reserva.separadoEm && !r.reserva.fechadoEm).length;
 
   return (
     <section style={{ marginBottom: 16 }}>
@@ -58,6 +64,11 @@ export function PainelQuantidades({
           <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
             · {aComprar}{" "}
             {aComprar === 1 ? "item ainda a comprar" : "itens ainda a comprar"}
+          </span>
+        )}
+        {aSeparar > 0 && (
+          <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
+            · {aSeparar} do estoque a separar
           </span>
         )}
       </div>
@@ -110,6 +121,7 @@ export function PainelQuantidades({
                 {numero(c ?? r.previsto)}{" "}
                 <span style={{ fontSize: 11.5, color: "var(--text-muted)", fontWeight: 400 }}>
                   {r.unidade}
+                  {r.reserva ? " · do estoque" : ""}
                 </span>
                 {r.acabouEm && (
                   <span

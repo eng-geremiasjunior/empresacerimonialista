@@ -24,7 +24,10 @@ export type IconeDaVisao =
   | "catalogo"
   | "cadastro"
   | "contratos"
-  | "agenda";
+  | "agenda"
+  | "itens"
+  | "compras"
+  | "porEvento";
 
 export type Visao = { label: string; href: string; icone: IconeDaVisao; cargos?: string[] };
 
@@ -53,4 +56,11 @@ export const VISOES_FORNECEDORES: Visao[] = [
   { label: "Cadastro", href: "/fornecedores", icone: "cadastro" },
   { label: "Contratos", href: "/contratos", icone: "contratos", cargos: CONDUZ },
   { label: "Agenda de reuniões", href: "/agenda", icone: "agenda" },
+];
+
+// Estoque (184, 28/09/2026): o que a empresa tem, e o que vai para cada
+// evento. Compras entra na fatia 2 — nenhuma visão "em breve".
+export const VISOES_ESTOQUE: Visao[] = [
+  { label: "Itens", href: "/estoque", icone: "itens" },
+  { label: "Por evento", href: "/estoque/eventos", icone: "porEvento" },
 ];

@@ -1,14 +1,20 @@
 "use server";
 
-// Ações da Operação: os números do recurso. A RLS por evento
-// (pode_editar_evento) é a guarda real; aqui só gravamos e revalidamos.
+// Ações da Operação: os números do recurso, e de onde ele vem. A RLS por
+// evento (pode_editar_evento) é a guarda real; aqui só gravamos e
+// revalidamos.
 //
 // Regra que atravessa tudo aqui: nada é calculado às escondidas. O
 // previsto só é recalculado quando ela pede (botão), e o lançamento no
 // financeiro só nasce como PENDÊNCIA — dinheiro não se move sozinho.
+//
+// Desde a 184 a linha diz de onde vem: comprar para a festa, do estoque
+// da empresa (reserva) ou o fornecedor entrega. Só a compra abre
+// pendência financeira — o gatilho do banco sai cedo nas outras.
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { codigoDoItem } from "@/lib/estoque-core";
 
 export type AcaoResult = { error: string } | { success: true; id?: string };
 
@@ -27,6 +33,8 @@ function revalidar(eventId: string) {
   revalidatePath(`/eventos/${eventId}/operacao`);
   revalidatePath(`/eventos/${eventId}/organizacao`);
   revalidatePath(`/eventos/${eventId}/financeiro`);
+  revalidatePath("/estoque");
+  revalidatePath("/estoque/eventos");
 }
 
 /** Um número por vez: a tela salva no blur, sem formulário nem "Salvar". */
@@ -170,6 +178,29 @@ export async function trazerDoMetodo(
   return { success: true, novos: Number(data ?? 0) };
 }
 
+/**
+ * codigo: chave estável dentro do evento (unique event_id + codigo) — e é
+ * por ele que a estatística reconhece o mesmo item em eventos diferentes,
+ * e que o item acha o acervo (184). Por isso DETERMINÍSTICO. Mesmo nome
+ * duas vezes no MESMO evento: sufixo, só aqui, onde ele é inevitável.
+ */
+async function codigoLivre(
+  supabase: ReturnType<typeof createClient>,
+  eventId: string,
+  nome: string
+): Promise<string> {
+  const base = codigoDoItem(nome);
+  const { data: usados } = await supabase
+    .from("evento_recurso")
+    .select("codigo")
+    .eq("event_id", eventId)
+    .like("codigo", `${base}%`);
+  const tomados = new Set((usados ?? []).map((u) => u.codigo as string));
+  let codigo = base;
+  for (let i = 2; tomados.has(codigo); i++) codigo = `${base}_${i}`;
+  return codigo;
+}
+
 export async function criarRecurso(
   eventId: string,
   dados: { nome: string; unidade: string; regra: string; indice: number }
@@ -180,34 +211,13 @@ export async function criarRecurso(
     return { error: "Regra inválida." };
   }
 
-  // codigo: chave estável dentro do evento (unique event_id + codigo) —
-  // e é por ele que a estatística reconhece o mesmo item em eventos
-  // diferentes. Por isso DETERMINÍSTICO: "Gelo em escama" tem o mesmo
-  // código em toda festa, senão o histórico nunca acumula. A faixa de
-  // acentos vai em escape unicode, não em caractere literal.
-  const base =
-    nome
-      .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "_")
-      .replace(/^_|_$/g, "")
-      .slice(0, 40) || "item";
-
   const supabase = createClient();
+  const codigo = await codigoLivre(supabase, eventId, nome);
 
-  // Mesmo nome duas vezes no MESMO evento: o unique barraria. Sufixo só
-  // aqui, onde ele é inevitável.
-  const { data: usados } = await supabase
-    .from("evento_recurso")
-    .select("codigo")
-    .eq("event_id", eventId)
-    .like("codigo", `${base}%`);
-
-  const tomados = new Set((usados ?? []).map((u) => u.codigo as string));
-  let codigo = base;
-  for (let i = 2; tomados.has(codigo); i++) codigo = `${base}_${i}`;
-
+  // quantidade fixa: o número digitado JÁ É o previsto — sem isto o item
+  // nascia sem previsto, e o total do custo e o "comprei tudo" ficavam
+  // esperando um número que ela já tinha dado
+  const fixo = dados.regra === "fixo" && dados.indice > 0;
   const { data: criado, error } = await supabase
     .from("evento_recurso")
     .insert({
@@ -218,6 +228,7 @@ export async function criarRecurso(
       regra: dados.regra,
       indice: dados.indice,
       ordem: 900,
+      ...(fixo ? { previsto: dados.indice, base_origem: "fixo" } : {}),
     })
     .select("id")
     .single();
@@ -244,6 +255,238 @@ export async function removerRecurso(
     .eq("event_id", eventId);
 
   if (error) return { error: "Não foi possível remover o item." };
+  revalidar(eventId);
+  return { success: true };
+}
+
+/* ------------------------------------------------------------------ */
+/* De onde vem cada item (184)                                         */
+/* ------------------------------------------------------------------ */
+
+export type Origem = "compra" | "estoque" | "fornecedor";
+
+/**
+ * "O fornecedor entrega" / voltar a "comprar". Marcar como entregue pelo
+ * fornecedor garante a quantidade (comprado = previsto) sem abrir
+ * pendência: o gatilho sai cedo fora da compra.
+ */
+export async function definirOrigem(
+  eventId: string,
+  recursoId: string,
+  origem: Exclude<Origem, "estoque">
+): Promise<AcaoResult> {
+  const supabase = createClient();
+  const { data: atual } = await supabase
+    .from("evento_recurso")
+    .select("previsto")
+    .eq("id", recursoId)
+    .eq("event_id", eventId)
+    .maybeSingle();
+  if (!atual) return { error: "Item não encontrado." };
+
+  const patch: Record<string, unknown> = { origem_suprimento: origem };
+  if (origem === "fornecedor") patch.comprado = atual.previsto ?? null;
+  else patch.comprado = null;
+
+  const { data, error } = await supabase
+    .from("evento_recurso")
+    .update(patch)
+    .eq("id", recursoId)
+    .eq("event_id", eventId)
+    .select("id");
+  if (error || !data?.length) return { error: "Não foi possível salvar." };
+  revalidar(eventId);
+  return { success: true };
+}
+
+export type ResultadoDaReserva =
+  | { error: string }
+  | { success: true; reservaId: string; falta: number };
+
+/**
+ * Usar do estoque: reserva o item para este evento. Com `recursoId`, a
+ * linha da Operação passa a vir do estoque; sem ele (o "Usar" da tela
+ * do Estoque), nasce uma linha avulsa na Operação para a reserva ter
+ * onde aparecer. Reserva NÃO mexe no saldo — desconta do disponível — e
+ * nunca abre pendência financeira.
+ *
+ * Faltar quantidade não barra: avisa (a Wedy faz igual). Quem decide se
+ * aluga o resto é ela.
+ */
+export async function usarDoEstoque(
+  eventId: string,
+  itemId: string,
+  quantidade: number,
+  recursoId?: string | null
+): Promise<ResultadoDaReserva> {
+  if (!Number.isFinite(quantidade) || quantidade <= 0) {
+    return { error: "Informe a quantidade." };
+  }
+  const supabase = createClient();
+
+  const [{ data: item }, { data: evento }] = await Promise.all([
+    supabase.from("estoque_item").select("id, nome, unidade, codigo").eq("id", itemId).maybeSingle(),
+    supabase.from("events").select("id, date").eq("id", eventId).maybeSingle(),
+  ]);
+  if (!item) return { error: "Item do estoque não encontrado." };
+  if (!evento) return { error: "Evento não encontrado." };
+
+  // a linha da Operação que esta reserva supre
+  let recurso = recursoId ?? null;
+  if (!recurso) {
+    const { data: existente } = await supabase
+      .from("estoque_reserva")
+      .select("evento_recurso_id")
+      .eq("event_id", eventId)
+      .eq("item_id", itemId)
+      .maybeSingle();
+    recurso = (existente?.evento_recurso_id as string | null) ?? null;
+  }
+  if (!recurso) {
+    const codigo = await codigoLivre(supabase, eventId, item.nome as string);
+    const { data: criado, error } = await supabase
+      .from("evento_recurso")
+      .insert({
+        event_id: eventId,
+        codigo,
+        nome: item.nome,
+        unidade: item.unidade,
+        regra: "fixo",
+        indice: quantidade,
+        base_origem: "fixo",
+        previsto: quantidade,
+        ordem: 900,
+        origem_suprimento: "estoque",
+        comprado: quantidade,
+      })
+      .select("id")
+      .single();
+    if (error || !criado) return { error: "Não foi possível criar a linha na Operação." };
+    recurso = criado.id as string;
+  }
+
+  const { data: reserva, error: erroReserva } = await supabase
+    .from("estoque_reserva")
+    .upsert(
+      { event_id: eventId, item_id: itemId, quantidade, evento_recurso_id: recurso },
+      { onConflict: "event_id,item_id" }
+    )
+    .select("id")
+    .single();
+  if (erroReserva || !reserva) {
+    console.error("[eorganizei:estoque] reservar:", erroReserva?.message);
+    return { error: "Não foi possível reservar." };
+  }
+
+  // a linha passa a vir do estoque: garantida, sem compra
+  await supabase
+    .from("evento_recurso")
+    .update({ origem_suprimento: "estoque", comprado: quantidade })
+    .eq("id", recurso)
+    .eq("event_id", eventId);
+
+  const { data: disp } = await supabase.rpc("estoque_disponivel", {
+    p_item: itemId,
+    p_data: evento.date,
+  });
+  // o disponível já desconta esta reserva; negativo = quanto falta
+  const falta = disp == null ? 0 : Math.max(0, -Number(disp));
+
+  revalidar(eventId);
+  return { success: true, reservaId: reserva.id as string, falta };
+}
+
+/** Saiu do depósito para a festa (ou voltou para a prateleira). */
+export async function marcarSeparado(
+  eventId: string,
+  reservaId: string,
+  separado: boolean
+): Promise<AcaoResult> {
+  const { data, error } = await createClient()
+    .from("estoque_reserva")
+    .update({ separado_em: separado ? new Date().toISOString() : null })
+    .eq("id", reservaId)
+    .eq("event_id", eventId)
+    .is("fechado_em", null)
+    .select("id");
+  if (error || !data?.length) return { error: "Não foi possível marcar." };
+  revalidar(eventId);
+  return { success: true };
+}
+
+/** Desfazer a reserva: a linha volta a "comprar". */
+export async function desfazerReserva(eventId: string, reservaId: string): Promise<AcaoResult> {
+  const supabase = createClient();
+  const { data: r } = await supabase
+    .from("estoque_reserva")
+    .select("evento_recurso_id, fechado_em")
+    .eq("id", reservaId)
+    .eq("event_id", eventId)
+    .maybeSingle();
+  if (!r) return { error: "Reserva não encontrada." };
+  if (r.fechado_em) return { error: "Esta reserva já foi fechada." };
+
+  const { error } = await supabase.from("estoque_reserva").delete().eq("id", reservaId).eq("event_id", eventId);
+  if (error) return { error: "Não foi possível desfazer." };
+  if (r.evento_recurso_id) {
+    await supabase
+      .from("evento_recurso")
+      .update({ origem_suprimento: "compra", comprado: null })
+      .eq("id", r.evento_recurso_id)
+      .eq("event_id", eventId);
+  }
+  revalidar(eventId);
+  return { success: true };
+}
+
+/**
+ * Depois da festa: o que voltou, o que foi consumido, o que se perdeu.
+ * É o que baixa do saldo (função do banco, idempotente). No consumível a
+ * contagem do dia também ganha entrada e sobra, para a estatística de
+ * consumo por pessoa continuar aprendendo.
+ */
+export async function fecharReserva(
+  eventId: string,
+  reservaId: string,
+  numeros: { devolvido?: number | null; consumido?: number | null; perdido?: number | null }
+): Promise<AcaoResult> {
+  const supabase = createClient();
+  const { data: r } = await supabase
+    .from("estoque_reserva")
+    .select("quantidade, evento_recurso_id, fechado_em, estoque_item ( estoque_categoria ( reutilizavel ) )")
+    .eq("id", reservaId)
+    .eq("event_id", eventId)
+    .maybeSingle();
+  if (!r) return { error: "Reserva não encontrada." };
+  if (r.fechado_em) return { success: true };
+
+  for (const v of [numeros.devolvido, numeros.consumido, numeros.perdido]) {
+    if (v != null && (!Number.isFinite(v) || v < 0)) return { error: "O número não pode ser negativo." };
+  }
+
+  const { error } = await supabase.rpc("estoque_fechar_reserva", {
+    p_reserva: reservaId,
+    p_devolvido: numeros.devolvido ?? null,
+    p_consumido: numeros.consumido ?? null,
+    p_perdido: numeros.perdido ?? null,
+  });
+  if (error) {
+    console.error("[eorganizei:estoque] fechar:", error.message);
+    return { error: "Não foi possível fechar." };
+  }
+
+  const item = Array.isArray(r.estoque_item) ? r.estoque_item[0] : r.estoque_item;
+  const cat = item?.estoque_categoria;
+  const reutilizavel = (Array.isArray(cat) ? cat[0] : cat)?.reutilizavel ?? true;
+  if (!reutilizavel && r.evento_recurso_id) {
+    const quantidade = Number(r.quantidade);
+    const consumido = Math.min(quantidade, numeros.consumido ?? quantidade);
+    await supabase
+      .from("evento_recurso")
+      .update({ entrada: quantidade, sobra: Math.max(0, quantidade - consumido) })
+      .eq("id", r.evento_recurso_id)
+      .eq("event_id", eventId);
+  }
   revalidar(eventId);
   return { success: true };
 }
