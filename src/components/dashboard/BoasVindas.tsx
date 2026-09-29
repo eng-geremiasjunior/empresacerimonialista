@@ -11,6 +11,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { ComeceAqui } from "@/components/dashboard/ComeceAqui";
 import { ConhecaPorDentro } from "@/components/evento/ConhecaPorDentro";
 import { pularBoasVindas } from "@/app/(app)/eventos/dashboard/actions";
 import { MENU_DO_APP } from "@/lib/menu-do-app";
@@ -26,17 +27,16 @@ const SALVIA = "#6E7F63";
 const F_TITLE = "var(--font-title), Inter, system-ui, sans-serif";
 const F_MONO = "var(--font-mono), 'IBM Plex Mono', ui-monospace, monospace";
 
-// As fotos são de eventos reais, do próprio site (public/site, public/
-// images, public/portal), alternando os tipos. O dono troca quando tiver
-// as definitivas: é só o caminho e o enquadramento.
-const FOTO_COMECE = { src: "/site/foto-casamento.webp", posicao: "50% 38%" };
+// As fotos das áreas são as que o dono escolheu (29/09/2026, public/
+// primeiro-acesso), alternando os tipos de evento; trocar é só o caminho
+// e o enquadramento.
 const AREAS: { href: string; titulo: string; texto: string; foto: string; posicao: string }[] = [
   {
     href: "/eventos",
     titulo: "Eventos",
     texto: "Casamentos, 15 anos, formaturas e outras festas, com tarefas, convidados, mesas e o dia do evento.",
-    foto: "/site/foto-palco.webp",
-    posicao: "40% 40%",
+    foto: "/primeiro-acesso/formatura.webp",
+    posicao: "38% 40%",
   },
   {
     href: "/clientes",
@@ -49,29 +49,29 @@ const AREAS: { href: string; titulo: string; texto: string; foto: string; posica
     href: "/orcamentos",
     titulo: "Gestão comercial",
     texto: "Orçamentos e propostas até virarem contrato fechado.",
-    foto: "/images/hero-padrao.jpg",
-    posicao: "62% 40%",
+    foto: "/primeiro-acesso/comercial.webp",
+    posicao: "50% 30%",
   },
   {
     href: "/fornecedores",
     titulo: "Fornecedores",
     texto: "Sua lista de parceiros, pronta para vincular a cada evento.",
-    foto: "/portal/flores.jpg",
-    posicao: "50% 50%",
+    foto: "/primeiro-acesso/fornecedores.webp",
+    posicao: "48% 42%",
   },
   {
     href: "/cerimonialistas",
     titulo: "Equipe",
     texto: "Quem trabalha com você e o que cada pessoa tem para fazer.",
-    foto: "/site/foto-outros.webp",
-    posicao: "50% 58%",
+    foto: "/primeiro-acesso/equipe.webp",
+    posicao: "50% 38%",
   },
   {
     href: "/financeiro",
     titulo: "Financeiro",
     texto: "Recebimentos dos clientes e pagamentos aos fornecedores.",
-    foto: "/site/foto-casamento.webp",
-    posicao: "50% 80%",
+    foto: "/primeiro-acesso/financeiro.webp",
+    posicao: "50% 50%",
   },
 ];
 
@@ -131,40 +131,9 @@ export function BoasVindas({
         </form>
       </div>
 
-      {/* 2. a ação: o primeiro evento (o "Importar" volta com a importação completa) */}
-      <section
-        aria-label="Comece aqui"
-        className="pa-comece"
-        style={{ display: "flex", minHeight: 230, background: "#fff", border: `1px solid ${LINHA}`, borderRadius: 14, overflow: "hidden" }}
-      >
-        <div className="pa-comece-foto" style={{ flex: "0 1 36%", maxWidth: 420, minWidth: 180, position: "relative", background: NEVOA }}>
-          <Image
-            src={FOTO_COMECE.src}
-            alt="Cerimônia montada ao ar livre, com o arco de flores"
-            fill
-            sizes="(max-width: 640px) 100vw, 420px"
-            priority
-            style={{ objectFit: "cover", objectPosition: FOTO_COMECE.posicao }}
-          />
-        </div>
-        <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 10, justifyContent: "center", minWidth: 0 }}>
-          <span style={{ fontFamily: F_MONO, fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", color: SALVIA }}>COMECE AQUI</span>
-          <h2 style={{ margin: 0, fontFamily: F_TITLE, fontWeight: 600, fontSize: 22, letterSpacing: "-0.02em" }}>Cadastre seu primeiro evento</h2>
-          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, color: CORPO, maxWidth: "52ch", textWrap: "pretty" }}>
-            Nome do cliente, tipo de evento, data e local. O resto do sistema se organiza a partir dele.
-          </p>
-          <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 6, flexWrap: "wrap" }}>
-            <Link
-              href="/eventos/novo"
-              className="ev-btn-primario ev-foco"
-              style={{ display: "inline-flex", alignItems: "center", height: 40, padding: "0 18px", borderRadius: 10, background: "var(--ev-accent)", color: "#fff", fontSize: 14, fontWeight: 600, transition: "background 140ms ease" }}
-            >
-              Criar evento
-            </Link>
-            <span style={{ fontFamily: F_MONO, fontSize: 12, color: APOIO }}>cerca de 2 min</span>
-          </div>
-        </div>
-      </section>
+      {/* 2. a ação: o primeiro evento, com o álbum vivo dos tipos de evento
+          (o "Importar" volta com a importação completa) */}
+      <ComeceAqui />
 
       {/* 3. o que ela encontra aqui */}
       <section aria-label="O que você encontra aqui" style={{ display: "flex", flexDirection: "column", gap: 12 }}>

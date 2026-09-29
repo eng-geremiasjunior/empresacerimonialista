@@ -144,6 +144,23 @@
 .pa-pular:hover { background: #f2eee9 !important; color: #221e1b !important; }
 .pa-cartao:hover { border-color: #b8b1a9 !important; }
 .pa-suporte:hover { background: #f2eee9 !important; }
+/* o álbum vivo do "Comece aqui": esmaece de uma foto para a outra e cada
+   uma aproxima devagar (Ken Burns), alternando o sentido */
+.pa-slide { position: absolute; inset: 0; opacity: 0; transition: opacity 1200ms ease; }
+.pa-slide[data-ativo="1"] { opacity: 1; }
+.pa-kb { will-change: transform; transform: scale(var(--z, 1)); }
+.pa-kb-a { animation: pa-kb-a 7000ms linear forwards; }
+.pa-kb-b { animation: pa-kb-b 7000ms linear forwards; }
+@keyframes pa-kb-a { from { transform: scale(calc(var(--z, 1) * 1.02)) translate(0, 0); } to { transform: scale(calc(var(--z, 1) * 1.1)) translate(-1.5%, -1%); } }
+@keyframes pa-kb-b { from { transform: scale(calc(var(--z, 1) * 1.1)) translate(-1%, 0.8%); } to { transform: scale(calc(var(--z, 1) * 1.02)) translate(0, 0); } }
+.pa-palavra { display: inline-block; animation: pa-palavra 650ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes pa-palavra { from { transform: translateY(0.55em); opacity: 0; } to { transform: none; opacity: 1; } }
+.pa-selo { animation: pa-selo 500ms ease both; }
+@keyframes pa-selo { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .pa-slide { transition: none; }
+  .pa-kb-a, .pa-kb-b, .pa-palavra, .pa-selo { animation: none !important; }
+}
 @media (max-width: 639px) {
   .pa-titulo { font-size: 32px !important; }
   .pa-comece { flex-direction: column; }
