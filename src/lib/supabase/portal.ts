@@ -358,12 +358,26 @@ export async function getMarcaDaEmpresa(
 }
 
 /**
+ * O evento é da conta de família de quem está logada (187)? Então não há
+ * cerimonialista: o portal esconde "a sua cerimonialista" (seria ela
+ * mesma) e oferece o convite. false também quando a 187 não existe.
+ */
+export const getEventoDaFamilia = cache(async (eventId: string): Promise<boolean> => {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("portal_evento_da_familia", { p_event_id: eventId });
+  if (error) return false;
+  return data === true;
+});
+
+/**
  * Contato da cerimonialista. Vem por RPC porque a fonte é fraca: o
  * telefone da PESSOA não existe no schema, então cai no WhatsApp
  * institucional da empresa (que varia por tipo de evento desde a 057).
+ * No evento da conta de família não há cerimonialista: vazio.
  */
 export const getContatoCerimonialista = cache(
   async (eventId: string): Promise<ContatoCerimonialista> => {
+    if (await getEventoDaFamilia(eventId)) return { nome: null, whatsapp: null };
     const supabase = createClient();
     const { data } = await supabase
       .rpc("portal_contato_cerimonialista", { p_event_id: eventId })

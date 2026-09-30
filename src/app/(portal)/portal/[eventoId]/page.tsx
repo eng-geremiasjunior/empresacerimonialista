@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import {
   getContatoCerimonialista,
+  getEventoDaFamilia,
   getEventoDoPortal,
   getHomePortal,
   nomeDeExibicao,
@@ -31,6 +32,8 @@ import { InicioV2 } from "@/components/portal/v2/InicioV2";
 import { linhaDoLocal, montarCuidando, montarNovo, montarPrecisa } from "@/components/portal/v2/dadosDoInicio";
 import { getMeuAcesso } from "@/lib/supabase/portal-estilo";
 import { pessoaDoEvento, tituloDaFesta, usaPortalV2 } from "@/lib/portal-v2";
+import { ChamadaDaCerimonialista } from "@/components/portal/ChamadaDaCerimonialista";
+import { estadoDoConvite } from "./cerimonialista/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -53,10 +56,19 @@ export default async function PortalEventoPage({
   const evento = await getEventoDoPortal(params.eventoId);
   if (!evento) notFound();
 
-  const [home, contato] = await Promise.all([
+  const [home, contato, daFamilia] = await Promise.all([
     getHomePortal(evento.id, evento.data),
     getContatoCerimonialista(evento.id),
+    getEventoDaFamilia(evento.id),
   ]);
+  // a conta de família (187/188): sem cerimonialista, a porta do convite
+  const pedido = daFamilia ? (await estadoDoConvite(evento.id)).pedido : null;
+  const chamada = daFamilia ? (
+    <ChamadaDaCerimonialista
+      eventoId={evento.id}
+      pedidoDe={pedido ? pedido.empresa?.trim() || pedido.quem?.trim() || "Uma cerimonialista" : null}
+    />
+  ) : null;
   const base = `/portal/${evento.id}`;
   const nome = nomeDeExibicao(evento);
 
@@ -66,6 +78,8 @@ export default async function PortalEventoPage({
     const hojeV2 = hojeBR();
     const cerimonialista = contato.nome?.split(" ")[0] ?? "Sua cerimonialista";
     return (
+      <>
+      {chamada}
       <InicioV2
         nomeDeQuemAbriu={eu.nome}
         titulo={tituloDaFesta(evento.nome, nome)}
@@ -79,6 +93,7 @@ export default async function PortalEventoPage({
         cuidando={montarCuidando(home, hojeV2)}
         novo={montarNovo(home, hojeV2, cerimonialista)}
       />
+      </>
     );
   }
 
@@ -96,6 +111,7 @@ export default async function PortalEventoPage({
 
   return (
     <>
+      {chamada}
       {/* topo: sino + iniciais (só computador; no celular o topo fixo já os tem) */}
       <div className="portal-so-pc">
         <div style={{ padding: "22px 40px 0" }}>

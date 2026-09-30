@@ -8,6 +8,7 @@
 import "server-only";
 import {
   exigirSuperAdmin,
+  idsDeFamilia,
   lerTudo,
   registrarAcaoAdmin,
   servico,
@@ -93,7 +94,11 @@ export async function getResumoDasContas(): Promise<LeituraDoPainel<ResumoDaCont
     console.error("[eorganizei:admin] resumo das contas:", error.code, (error.message ?? "").slice(0, 120));
     return { ok: false, motivo: "erro", mensagem: "Não foi possível ler as contas agora." };
   }
-  const contas = (Array.isArray(data) ? data : []) as ResumoDaConta[];
+  // as contas de família (187) não são contas do SaaS: fora da lista
+  const familia = await idsDeFamilia(servico());
+  const contas = ((Array.isArray(data) ? data : []) as ResumoDaConta[]).filter(
+    (c) => !familia.has(c.empresa_id)
+  );
   return { ok: true, dados: await anexarCheckout(contas) };
 }
 

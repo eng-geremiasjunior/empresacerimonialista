@@ -133,6 +133,16 @@ export async function criarAcessoPortal(params: {
   // papéis usa dois e-mails.
   // ------------------------------------------------------------------
   if (existente) {
+    // a conta da família (187): a noiva abriu a conta sozinha e é dona da
+    // conta de família dela. Não é "da sua equipe", e o nome dela não
+    // deve aparecer para outra conta. O caminho é o convite dela.
+    if (existente.app_metadata?.familia === true) {
+      return {
+        error:
+          "Este e-mail já tem uma conta própria da família no eorganizei. Peça a ela o link de convite, " +
+          "em “A sua cerimonialista”, no portal dela.",
+      };
+    }
     const { data: membro } = await admin
       .from("membros_equipe")
       .select("nome, cargo")
@@ -300,8 +310,19 @@ export async function regerarSenhaProvisoria(
   if (!admin) {
     return { error: "SUPABASE_SERVICE_ROLE_KEY não configurada no ambiente" };
   }
-  const senha = gerarSenhaProvisoria();
   const { data: user } = await admin.auth.admin.getUserById(userId);
+  // Conta própria (187) ou login de alguma equipe: a senha é da pessoa, e
+  // trocá-la entregaria a entrada (e o "Só de vocês", 178) a quem clicou.
+  // A conferência é pela chave de serviço: pela sessão de quem pede, a RLS
+  // de membros_equipe esconde as fichas de outras contas.
+  if (user?.user?.app_metadata?.familia === true) {
+    return { error: "Esta é a conta própria da família: a senha é dela e não se troca por aqui." };
+  }
+  const { data: ficha } = await admin.from("membros_equipe").select("id").eq("user_id", userId).limit(1);
+  if (ficha && ficha.length > 0) {
+    return { error: "Este acesso usa um login de equipe: a senha dele não se troca por aqui." };
+  }
+  const senha = gerarSenhaProvisoria();
   const { error } = await admin.auth.admin.updateUserById(userId, {
     password: senha,
     app_metadata: {

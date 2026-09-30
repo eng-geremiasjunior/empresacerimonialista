@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { cookies, headers } from "next/headers";
 import {
   getContatoCerimonialista,
+  getEventoDaFamilia,
   getEventoDoPortal,
   getPrestacaoDeContas,
   getTermoDoResponsavel,
@@ -65,6 +66,12 @@ export default async function PortalEventoLayout({
   const evento = await getEventoDoPortal(params.eventoId);
   if (!evento) notFound();
 
+  // Conta de família (187): o evento é da própria noiva, sem
+  // cerimonialista — a marca no topo volta a ser a nossa, e o contato da
+  // cerimonialista some (getContatoCerimonialista já devolve vazio).
+  const daFamilia = await getEventoDaFamilia(evento.id);
+  const marca = daFamilia ? null : evento.marca;
+
   // O termo do responsável (175): num evento de debutante, o pai, a mãe
   // ou o responsável confirma antes de tudo, e a debutante só entra
   // depois de algum deles. Sem a 175 aplicada, não há o que pedir.
@@ -98,7 +105,7 @@ export default async function PortalEventoLayout({
           tipo={evento.tipo}
           modo={modoDoTermo}
           estilo={estilo}
-          marcaNome={evento.marca?.nome ?? null}
+          marcaNome={marca?.nome ?? null}
           titulo={titulo}
           pessoa={pessoa}
           nomeDeQuemAbriu={eu.nome}
@@ -115,8 +122,8 @@ export default async function PortalEventoLayout({
         <CascaV2
           eventoId={evento.id}
           tipo={evento.tipo}
-          marcaNome={evento.marca?.nome ?? null}
-          marcaLogoUrl={evento.marca?.logoUrl ?? null}
+          marcaNome={marca?.nome ?? null}
+          marcaLogoUrl={marca?.logoUrl ?? null}
           contatoNome={contato.nome}
           whatsappLink={zap}
           inicial={(eu.nome ?? "•").charAt(0).toUpperCase()}
@@ -142,7 +149,7 @@ export default async function PortalEventoLayout({
             <TermoDoResponsavel
               eventoId={evento.id}
               modo={modoDoTermo}
-              marcaNome={evento.marca?.nome ?? null}
+              marcaNome={marca?.nome ?? null}
             />
           </div>
         </div>
@@ -172,8 +179,8 @@ export default async function PortalEventoLayout({
           <NavLateral
             eventoId={evento.id}
             tipo={evento.tipo}
-            marcaNome={evento.marca?.nome ?? null}
-            marcaLogoUrl={evento.marca?.logoUrl ?? null}
+            marcaNome={marca?.nome ?? null}
+            marcaLogoUrl={marca?.logoUrl ?? null}
             cerimonialistaNome={contato.nome}
             cerimonialistaZap={zap}
             temPrestacao={temPrestacao}
@@ -185,8 +192,8 @@ export default async function PortalEventoLayout({
                 eventoId={evento.id}
                 tipo={evento.tipo}
                 nomeEvento={nomeDeExibicao(evento)}
-                marcaNome={evento.marca?.nome ?? null}
-                marcaLogoUrl={evento.marca?.logoUrl ?? null}
+                marcaNome={marca?.nome ?? null}
+                marcaLogoUrl={marca?.logoUrl ?? null}
                 temPrestacao={temPrestacao}
               />
             </div>

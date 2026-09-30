@@ -13,6 +13,7 @@
 // "verifique sua caixa" mesmo quando não há conta.
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -101,8 +102,9 @@ export function PortalLoginForm({
   const rodape = (
     <>
       <div className="acesso-rule" />
+      {/* 187: a família também abre a conta sozinha, sem cerimonialista */}
       <p className="acesso-help">
-        Primeiro acesso? <b>Fale com sua cerimonialista</b>
+        Ainda não tem conta? <Link href="/portal/criar-conta"><b>Criar a conta da sua festa</b></Link>
       </p>
       <p className="acesso-vela">eorganizei</p>
     </>
@@ -144,7 +146,7 @@ export function PortalLoginForm({
           <div className="acesso-col">
             <p className="acesso-titulo">Entrar no portal</p>
             <p className="acesso-sub">
-              Use o e-mail que você recebeu da sua cerimonialista.
+              Use o e-mail da sua conta.
             </p>
             {erro && (
               <p className="acesso-alert" role="alert">
@@ -277,8 +279,8 @@ export function PortalLoginForm({
             </button>
             <p className="acesso-titulo">Esqueci minha senha</p>
             <p className="acesso-sub">
-              Informe o e-mail que sua cerimonialista cadastrou e enviamos um
-              link para você definir uma senha nova.
+              Informe o e-mail da sua conta e enviamos um link para você
+              definir uma senha nova.
             </p>
             <form className="acesso-fields" method="post" onSubmit={enviarLink}>
               <div className="acesso-field">

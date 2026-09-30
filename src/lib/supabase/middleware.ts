@@ -73,6 +73,10 @@ const ROTAS_PUBLICAS: ((p: string) => boolean)[] = [
   (p) => p.startsWith("/api/album/"),
   // Portal da Cliente: a porta é pública; o resto exige sessão
   (p) => p.startsWith("/portal/entrar"),
+  // a conta da família (187): a outra metade da porta
+  (p) => p.startsWith("/portal/criar-conta"),
+  // o convite da família para a cerimonialista (188): o link é a credencial
+  (p) => p.startsWith("/convite-cerimonialista/"),
   // callback do OTP: roda ANTES de existir sessão
   (p) => p.startsWith("/auth/confirm"),
   // a tela de senha nova — a sessão nasce em /auth/confirm e o formulário
@@ -187,7 +191,8 @@ export async function updateSession(request: NextRequest) {
   // Quatro destas rotas voltam aqui embaixo por outro motivo: não é
   // "quem entra sem sessão", é para onde vai quem JÁ tem uma.
   const isLoginPage = pathname.startsWith("/login");
-  const isPortalEntrar = pathname.startsWith("/portal/entrar");
+  const isPortalEntrar =
+    pathname.startsWith("/portal/entrar") || pathname.startsWith("/portal/criar-conta");
   const isAuthConfirm = pathname.startsWith("/auth/confirm");
   // /c/ junto: a noiva LOGADA no portal abre o próprio site do casamento
   // pelos dois endereços — sem isto seria expulsa para /portal.
@@ -229,6 +234,19 @@ export async function updateSession(request: NextRequest) {
       url.pathname = "/portal";
       return NextResponse.redirect(url);
     }
+  }
+
+  // O convite da família (188): ela abriu o link sem sessão, entrou ou
+  // criou a conta, e caiu na agenda. A primeira tela da agenda devolve
+  // para o convite, uma vez só (o cookie é apagado aqui).
+  const convite = request.cookies.get("eorg_convite")?.value;
+  if (user && !ehPortal && convite && /^[0-9a-f]{64}$/.test(convite) && pathname.startsWith("/eventos")) {
+    const url = request.nextUrl.clone();
+    url.search = "";
+    url.pathname = `/convite-cerimonialista/${convite}`;
+    const resposta = NextResponse.redirect(url);
+    resposta.cookies.set("eorg_convite", "", { path: "/", maxAge: 0 });
+    return resposta;
   }
 
   // Quem NÃO é do portal (equipe) pode abrir /portal: um e-mail é uma

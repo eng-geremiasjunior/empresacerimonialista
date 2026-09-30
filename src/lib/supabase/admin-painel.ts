@@ -136,14 +136,37 @@ export function tabelaAusente(error: { code?: string; message?: string } | null)
  * reaplicada), nenhuma: o painel segue como antes, sem cair.
  */
 export async function idsDaCasa(db: Servico): Promise<Set<string>> {
-  const { data, error } = await db.from("contas_da_casa").select("empresa_id");
+  const [{ data, error }, familia] = await Promise.all([
+    db.from("contas_da_casa").select("empresa_id"),
+    idsDeFamilia(db),
+  ]);
   if (error) {
     if (!tabelaAusente(error)) {
       console.error("[eorganizei:admin] contas da casa:", error.code, (error.message ?? "").slice(0, 120));
     }
+    return familia;
+  }
+  // as contas de família (187) também ficam fora de todo número: a noiva
+  // que abriu a conta sozinha não é cliente do SaaS
+  return new Set([...(data ?? []).map((r) => r.empresa_id as string), ...familia]);
+}
+
+/**
+ * As contas de família (187): a noiva, ou a família da debutante, que
+ * abriu a conta sozinha no portal. Sem a coluna (187 não aplicada),
+ * nenhuma.
+ */
+export async function idsDeFamilia(db: Servico): Promise<Set<string>> {
+  // paginado: o PostgREST corta em 1000 linhas por resposta
+  try {
+    const linhas = await lerTudo<{ id: string }>(
+      (de, ate) => db.from("empresas").select("id").eq("tipo", "familia").order("id").range(de, ate),
+      "as contas de família"
+    );
+    return new Set(linhas.map((r) => r.id));
+  } catch {
     return new Set();
   }
-  return new Set((data ?? []).map((r) => r.empresa_id as string));
 }
 
 // ------------------------------------------------------------------
@@ -501,7 +524,9 @@ export async function getContas(): Promise<ContaAdmin[]> {
   const usuarioPorId = new Map(todosUsuarios.map((u) => [u.id, u]));
 
   const contas: ContaAdmin[] = [];
-  for (const e of empresas ?? []) {
+  // as contas de família (187) não são contas do SaaS: fora da lista
+  const familia = await idsDeFamilia(db);
+  for (const e of (empresas ?? []).filter((x) => !familia.has(x.id as string))) {
     const [{ count: membros }, { data: evs }, { data: ult }, conv, tar, forn] =
       await Promise.all([
         db

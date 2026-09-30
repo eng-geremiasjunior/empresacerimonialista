@@ -648,3 +648,118 @@
     transition-duration: 1ms !important;
   }
 }
+
+/* ---------------- a conta da família (187) ----------------
+   "Criar conta" na mesma porta: a escolha da festa e de quem é você
+   são botões lado a lado (dois ou três toques, nada de lista). */
+
+.acesso-grupo {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.acesso-grupo legend {
+  padding: 0;
+  margin-bottom: 7px;
+  font-size: 10.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.acesso-opcoes {
+  display: flex;
+  gap: 8px;
+}
+
+.acesso-opcao {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink-soft);
+  font-family: inherit;
+  font-size: 14.5px;
+  cursor: pointer;
+  transition: border-color 160ms ease, color 160ms ease;
+}
+
+.acesso-opcao:hover {
+  border-color: var(--gold);
+}
+
+.acesso-opcao[aria-pressed="true"] {
+  border-color: var(--tinta);
+  color: var(--tinta);
+  box-shadow: inset 0 0 0 1px var(--tinta);
+}
+
+.acesso-opcao:focus-visible,
+.acesso-keep:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.acesso-keep.acesso-caixa {
+  align-items: flex-start;
+  text-align: left;
+  line-height: 1.45;
+}
+
+.acesso-keep.acesso-caixa .acesso-box {
+  flex: none;
+  margin-top: 1px;
+}
+
+.acesso-keep a {
+  color: var(--gold-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.acesso-escondido {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* a caixa de marcar de verdade (input nativo), com o desenho da casa:
+   o texto ao lado pode ter link (termos), o que um botão não aceita */
+.acesso-caixa {
+  position: relative;
+}
+
+.acesso-nativa {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+}
+
+.acesso-nativa + .acesso-box svg {
+  opacity: 0;
+}
+
+.acesso-nativa:checked + .acesso-box {
+  background: var(--gold);
+  border-color: var(--gold);
+}
+
+.acesso-nativa:checked + .acesso-box svg {
+  opacity: 1;
+}
+
+.acesso-nativa:focus-visible + .acesso-box {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
