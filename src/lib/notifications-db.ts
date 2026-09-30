@@ -17,7 +17,8 @@ export type NotificationType =
   | "compromisso"
   | "orcamento_comentario"
   // alguém pediu orçamento pela página pública (165)
-  | "pedido_orcamento";
+  | "pedido_orcamento"
+  | "site";
 
 export type NotificationRow = {
   id: string;

@@ -18,6 +18,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   Activity,
+  Globe,
   Handshake,
   LayoutDashboard,
   MessageSquare,
@@ -30,6 +31,7 @@ import {
 } from "lucide-react";
 import { contarSuporteNaoLidas, emailDoSuperAdmin } from "@/lib/supabase/admin-painel";
 import { contarCandidatas } from "@/lib/supabase/admin-parceiras";
+import { contarFilaSites } from "@/lib/supabase/admin-sites";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +48,7 @@ const ITENS: Item[] = [
   { chave: "ativacao", href: "/admin/ativacao", rotulo: "Ativação e uso", Icone: Activity },
   { chave: "receita", href: "/admin/receita", rotulo: "Receita", Icone: Wallet },
   { chave: "suporte", href: "/admin/suporte", rotulo: "Suporte", Icone: MessageSquare },
+  { chave: "sites", href: "/admin/sites", rotulo: "Sites", Icone: Globe },
   { chave: "parceiras", href: "/admin/parceiras", rotulo: "Parceiras", Icone: Handshake },
   { chave: "sistema", href: "/admin/sistema", rotulo: "Sistema", Icone: Server },
   { chave: "auditoria", href: "/admin/auditoria", rotulo: "Auditoria", Icone: ScrollText },
@@ -83,6 +86,8 @@ export default async function AdminLayout({
   const suporteNovas = await contarSuporteNaoLidas();
   // candidaturas de parceira sem decisão (183); sem a migração, 0
   const candidatas = await contarCandidatas();
+  // versões de site esperando a revisão do dono (185)
+  const sitesNaFila = await contarFilaSites();
 
   return (
     <div
@@ -112,6 +117,11 @@ export default async function AdminLayout({
               {chave === "parceiras" && candidatas > 0 && (
                 <span className="rounded-full bg-[#b98fac] px-1.5 py-0.5 text-[10px] font-semibold text-[#2a1f27]">
                   {candidatas}
+                </span>
+              )}
+              {chave === "sites" && sitesNaFila > 0 && (
+                <span className="rounded-full bg-[#b98fac] px-1.5 py-0.5 text-[10px] font-semibold text-[#2a1f27]">
+                  {sitesNaFila}
                 </span>
               )}
               {chave === "suporte" && suporteNovas > 0 && (

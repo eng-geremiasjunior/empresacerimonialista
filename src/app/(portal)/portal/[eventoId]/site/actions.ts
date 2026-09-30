@@ -16,6 +16,9 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import type { BlocoDoSite, TemaDoSite } from "@/lib/site-blocos";
+import { enviarViaResend } from "@/lib/email";
+import { appUrl } from "@/lib/app-url";
 
 export type ResultadoSite = { ok?: boolean; error?: string };
 
@@ -199,6 +202,100 @@ export async function definirBlocos(
   });
   if (error) {
     console.error("[vela:portal] blocos:", error.code, error.message);
+    return { error: erroDeEscrita(error) };
+  }
+  volta(eventoId);
+  return { ok: true };
+}
+
+// ------------------------------------------------------------------
+// O site por blocos e a publicação com revisão (185, 30/09/2026)
+// ------------------------------------------------------------------
+// A família monta e publica; cada publicação vai para a revisão do dono
+// do sistema antes de ir ao ar. A cerimonialista não mexe no site.
+
+/** A ordem dos blocos, quais aparecem, o texto livre e o tema. */
+export async function salvarEstruturaSite(
+  eventoId: string,
+  estrutura: BlocoDoSite[],
+  tema: TemaDoSite
+): Promise<ResultadoSite> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("portal_salvar_estrutura_site", {
+    p_event_id: eventoId,
+    p_estrutura: estrutura,
+    p_tema: tema,
+  });
+  if (error) {
+    console.error("[vela:portal] estrutura:", error.code, error.message);
+    return { error: erroDeEscrita(error) };
+  }
+  volta(eventoId);
+  return { ok: true };
+}
+
+/** "Publicar": a versão de agora vai para a revisão. A que já estava no
+ *  ar continua no ar até esta ser aprovada. */
+export async function publicarSiteDaFamilia(eventoId: string): Promise<ResultadoSite> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("portal_enviar_site_para_revisao", {
+    p_event_id: eventoId,
+  });
+  if (error) {
+    console.error("[vela:portal] publicar:", error.code, error.message);
+    return { error: erroDeEscrita(error) };
+  }
+  await avisarDonoDaFila(eventoId);
+  volta(eventoId);
+  return { ok: true };
+}
+
+/** Um e-mail para o dono do sistema: há site na fila de revisão. Sem nome
+ *  de ninguém no assunto nem no corpo — só o link para o painel. Falhar
+ *  aqui nunca desfaz a publicação. */
+async function avisarDonoDaFila(eventoId: string): Promise<void> {
+  const para = (process.env.SUPER_ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim())
+    .filter(Boolean)[0];
+  if (!para) return;
+  try {
+    const link = `${appUrl()}/admin/sites/${eventoId}`;
+    await enviarViaResend({
+      to: para,
+      subject: "Um site espera a sua revisão",
+      html: `<p>Uma família publicou o site do evento e ele espera a sua revisão antes de ir ao ar.</p><p><a href="${link}">Abrir a revisão</a></p>`,
+      tipo: "site_para_revisar",
+    });
+  } catch {
+    console.error("[vela:portal] aviso da fila: não saiu");
+  }
+}
+
+/** O endereço (…/c/<slug>): livre até a primeira aprovação, depois fixo. */
+export async function definirEnderecoDoSite(eventoId: string, slug: string): Promise<ResultadoSite> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("definir_slug_site", {
+    p_event_id: eventoId,
+    p_slug: slug,
+  });
+  if (error) {
+    console.error("[vela:portal] endereco:", error.code);
+    return { error: erroDeEscrita(error) };
+  }
+  volta(eventoId);
+  return { ok: true };
+}
+
+/** Tira do ar, ou devolve ao ar a última versão aprovada. */
+export async function ligarSite(eventoId: string, noAr: boolean): Promise<ResultadoSite> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("publicar_site", {
+    p_event_id: eventoId,
+    p_publicado: noAr,
+  });
+  if (error) {
+    console.error("[vela:portal] ligar:", error.code);
     return { error: erroDeEscrita(error) };
   }
   volta(eventoId);

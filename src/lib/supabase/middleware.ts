@@ -89,6 +89,9 @@ const ROTAS_PUBLICAS: ((p: string) => boolean)[] = [
   (p) => p.startsWith("/api/pagina/"),
   // o site do casamento pelo endereço bonito (/c/ana-e-bruno)
   (p) => p.startsWith("/c/"),
+  // o manifesto do aplicativo (só marca e ícones): toda página pede, e o
+  // convidado sem sessão recebia a tela de login no lugar dele
+  (p) => p === "/manifest.webmanifest",
   // guia de estilo na mão do fornecedor
   (p) => p.startsWith("/guia/"),
   // Central de Solicitações na mão do fornecedor

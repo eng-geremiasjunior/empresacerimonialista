@@ -3,6 +3,7 @@
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
+  Globe,
   Clock,
   CalendarDays,
   Banknote,
@@ -30,6 +31,7 @@ const TYPE_ICON: Record<NotificationType, LucideIcon> = {
   compromisso: CalendarClock,
   orcamento_comentario: MessageSquareText,
   pedido_orcamento: Inbox,
+  site: Globe,
 };
 
 type Props = {

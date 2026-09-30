@@ -48,7 +48,7 @@ export default async function AreaDoClientePage({
     supabase
       .from("evento_site")
       .select(
-        "mensagem, historia, dress_code, blocos, slug, publicado, publicado_conteudo, evento_dados_na_publicacao"
+        "mensagem, historia, dress_code, slug, publicado, evento_dados_na_publicacao, revisao_status, retirado_pelo_dono_em"
       )
       .eq("event_id", params.id)
       .maybeSingle(),
@@ -69,21 +69,6 @@ export default async function AreaDoClientePage({
       .order("ordem");
     hospedagens = (h ?? []) as HospedagemLinha[];
   }
-
-  // "há alteração não publicada" = o rascunho difere da fotografia
-  const foto = (siteRow?.publicado_conteudo ?? null) as {
-    mensagem?: string | null;
-    historia?: string | null;
-    dress_code?: string | null;
-    blocos?: unknown;
-  } | null;
-  const temAlteracao =
-    siteRow?.publicado === true &&
-    foto !== null &&
-    ((siteRow.mensagem ?? null) !== (foto.mensagem ?? null) ||
-      (siteRow.historia ?? null) !== (foto.historia ?? null) ||
-      (siteRow.dress_code ?? null) !== (foto.dress_code ?? null) ||
-      JSON.stringify(siteRow.blocos ?? []) !== JSON.stringify(foto.blocos ?? []));
 
   // dado do evento mudou depois da publicação? (o site mostra ao vivo;
   // o aviso existe porque o texto do casal pode citar a data antiga)
@@ -176,13 +161,13 @@ export default async function AreaDoClientePage({
           site={{
             existe: siteRow != null,
             publicado: siteRow?.publicado === true,
-            temAlteracao,
+            revisao: (siteRow as { revisao_status?: string } | null)?.revisao_status ?? "rascunho",
+            retirado: !!(siteRow as { retirado_pelo_dono_em?: string | null } | null)?.retirado_pelo_dono_em,
             divergenciaEvento,
             slug: siteRow?.slug ?? null,
             mensagem: siteRow?.mensagem ?? null,
             historia: siteRow?.historia ?? null,
             dressCode: siteRow?.dress_code ?? null,
-            blocos: (siteRow?.blocos ?? []) as { titulo: string; texto: string }[],
           }}
           urlHash={`${publicBase()}/confirmar/evento/${rsvpHash}`}
           urlSlugBase={`${publicBase()}/c`}

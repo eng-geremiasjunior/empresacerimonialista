@@ -7,12 +7,16 @@
 // todo vem pronto do servidor (a RPC site_publico), então este arquivo
 // não busca nada — só desenha e reage.
 //
-// A ordem das seções é a do desenho: envelope → capa → contagem →
-// mensagem → história → local → dress code → RSVP → presentes →
-// hospedagens → álbum → música → recados → rodapé. Cada bloco só
-// aparece se tiver conteúdo — convite com seção vazia parece defeito.
+// Desde a 185 a ordem é a da ESTRUTURA que a família arruma no portal
+// (lib/site-blocos.ts): a capa abre, o rodapé fecha, e no meio os blocos
+// na ordem dela, escondidos fora. Sem estrutura salva, a ordem do desenho:
+// envelope → capa → contagem → mensagem → história → local → dress code →
+// RSVP → presentes → hospedagens → álbum → música → recados → rodapé.
+// Cada bloco só aparece se tiver conteúdo — convite com seção vazia
+// parece defeito. Este é o desenho do "Modelo 1"; os outros modelos
+// desenham os mesmos blocos.
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { ComoChegar } from "@/components/ComoChegar";
 import {
   conviteCom,
@@ -23,6 +27,11 @@ import {
   temNome,
 } from "@/lib/rsvp-convite";
 import type { SitePublico } from "@/lib/site-publico-tipos";
+import { estruturaEfetiva, varsDoTema, type BlocoDoSite } from "@/lib/site-blocos";
+// o CSS viaja com o componente: a prévia da família (portal) e a revisão
+// do dono (/admin) desenham o mesmo site fora do layout de /c. Todo ele
+// mora dentro de .cv, então não vaza para a tela em volta.
+import "@/app/confirmar/convite.css";
 import { RsvpConvite } from "@/components/convite/RsvpConvite";
 import {
   AlbumDoConvite,
@@ -58,14 +67,17 @@ export function ConviteCompleto({
   dados,
   fotosAlbum,
   fotoCasalUrl,
+  semEnvelope = false,
 }: {
   dados: SitePublico;
+  /** a prévia (família, revisão do dono, página de vendas) abre direto */
+  semEnvelope?: boolean;
   /** URLs já assinadas no servidor (bucket privado) */
   fotosAlbum: { url: string; autor: string | null }[];
   fotoCasalUrl: string | null;
 }) {
   const { evento, empresa, site, cores, paleta, espaco, rsvp, blocos, recados } = dados;
-  const [aberto, setAberto] = useState(false);
+  const [aberto, setAberto] = useState(semEnvelope);
   const [copiado, setCopiado] = useState(false);
   const contagem = useContagem(evento.data, evento.hora);
 
@@ -85,7 +97,11 @@ export function ConviteCompleto({
       : {}),
     ...(cores?.tinta ? { "--cv-tinta": cores.tinta } : {}),
     ...(cores?.fundo ? { "--cv-fundo": cores.fundo } : {}),
+    // o tema da 185 vence as três cores antigas
+    ...varsDoTema(site?.tema),
   } as React.CSSProperties;
+
+  const estrutura = estruturaEfetiva(site?.estrutura);
 
   async function copiarPix() {
     if (!site?.pix_chave) return;
@@ -95,6 +111,269 @@ export function ConviteCompleto({
       setTimeout(() => setCopiado(false), 2200);
     } catch {
       /* navegador sem permissão: a chave está na tela para copiar à mão */
+    }
+  }
+
+  /** Um bloco da estrutura → a seção dele (ou nada, se não tem conteúdo). */
+  function desenhar(b: BlocoDoSite): ReactNode {
+    switch (b.tipo) {
+      case "capa":
+        return (
+          <header className="cv-capa">
+            {evento.capa_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={evento.capa_url} alt="" className="cv-capa-foto" />
+            )}
+            <div className="cv-capa-veu" />
+            <div className="cv-capa-conteudo">
+              <div className="cv-capa-eyebrow">Você está convidado para</div>
+              {/* sem nome, a frase inteira vira o título: "o casamento" */}
+              {temNome(evento.anfitrioes) ? (
+                <>
+                  <div className="cv-capa-para">{convitePara(evento.tipo)}</div>
+                  <h1 className="cv-capa-nomes">{evento.anfitrioes}</h1>
+                </>
+              ) : (
+                <h1 className="cv-capa-nomes">{conviteCom(convitePara(evento.tipo), null)}</h1>
+              )}
+            </div>
+            <div className="cv-cartao">
+              <div>
+                <div className="cv-rotulo">Quando</div>
+                <div className="cv-cartao-valor">{quandoLegivel(evento.data, evento.hora)}</div>
+              </div>
+              {onde && (
+                <>
+                  <div className="cv-cartao-divisor" />
+                  <div>
+                    <div className="cv-rotulo">Onde</div>
+                    <div className="cv-cartao-valor">{onde}</div>
+                  </div>
+                </>
+              )}
+            </div>
+          </header>
+        );
+
+      case "contagem":
+        return (
+          <div className="cv-contagem">
+            {[
+              { v: contagem ? String(contagem.d).padStart(3, "0") : "—", r: "dias" },
+              { v: contagem?.h ?? "—", r: "horas" },
+              { v: contagem?.m ?? "—", r: "minutos" },
+              { v: contagem?.s ?? "—", r: "segundos" },
+            ].map((c) => (
+              <div className="cv-contagem-celula" key={c.r}>
+                <div className="cv-contagem-numero">{c.v}</div>
+                <div className="cv-rotulo cv-contagem-rotulo">{c.r}</div>
+              </div>
+            ))}
+          </div>
+        );
+
+      case "mensagem":
+        if (!site?.mensagem) return null;
+        return (
+          <section className="cv-mensagem">
+            <p className="cv-mensagem-texto">“{site.mensagem}”</p>
+            {temNome(evento.anfitrioes) && (
+              <div className="cv-mensagem-assinatura">{evento.anfitrioes}</div>
+            )}
+          </section>
+        );
+
+      case "historia":
+        if (!site?.historia) return null;
+        return (
+          <section className="cv-historia">
+            {fotoCasalUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={fotoCasalUrl} alt="" className="cv-historia-foto" />
+            ) : (
+              <div className="cv-historia-foto" />
+            )}
+            <div className="cv-historia-texto">
+              <div className="cv-eyebrow">Nossa história</div>
+              {site.historia_titulo && <h2 className="cv-historia-titulo">{site.historia_titulo}</h2>}
+              <p className="cv-texto">{site.historia}</p>
+            </div>
+          </section>
+        );
+
+      case "local":
+        if (!evento.local && !evento.cidade) return null;
+        return (
+          <section className="cv-local">
+            <div className="cv-eyebrow">Cerimônia e recepção</div>
+            <h2 className="cv-titulo">{evento.local ?? evento.cidade}</h2>
+            <p className="cv-local-endereco">
+              {[evento.cidade, quandoLegivel(evento.data, evento.hora)].filter(Boolean).join(" · ")}
+            </p>
+            {enderecoMapa && (
+              <div className="cv-local-acoes">
+                <ComoChegar endereco={enderecoMapa} />
+              </div>
+            )}
+          </section>
+        );
+
+      case "dress_code":
+        if (!site?.dress_code) return null;
+        return (
+          <section className="cv-escuro">
+            <div className="cv-eyebrow">O que vestir</div>
+            {site.dress_code_titulo && <h2 className="cv-escuro-titulo">{site.dress_code_titulo}</h2>}
+            <p className="cv-escuro-texto">{site.dress_code}</p>
+            {paleta && paleta.length > 0 && (
+              <div className="cv-paleta" style={{ justifyContent: "center", marginTop: 22 }}>
+                {paleta.map((c, i) => (
+                  <span key={i} className="cv-cor" style={{ background: c.hex }} title={c.nome} />
+                ))}
+              </div>
+            )}
+          </section>
+        );
+
+      case "rsvp":
+        return (
+          <section className="cv-secao cv-secao-centro" id="rsvp">
+            <div className="cv-eyebrow">Confirmação de presença</div>
+            <h2 className="cv-titulo">Você vai poder ir?</h2>
+            <div style={{ marginTop: 24, textAlign: "left" }}>
+              <RsvpConvite
+                hash={rsvp.hash}
+                aberto={rsvp.aberto}
+                prazo={rsvp.prazo}
+                menu={rsvp.menu ?? []}
+                tituloAgenda={tituloAgenda}
+                data={evento.data}
+                hora={evento.hora}
+                local={onde || null}
+              />
+            </div>
+          </section>
+        );
+
+      case "presentes":
+        if (!(site?.pix_chave || site?.presentes_texto || site?.presentes_link)) return null;
+        return (
+          <section className="cv-presentes">
+            <div className="cv-eyebrow">Presentes</div>
+            {site.presentes_texto && <p className="cv-presentes-frase">{site.presentes_texto}</p>}
+            {site.pix_chave && (
+              <div className="cv-pix">
+                <div className="cv-rotulo">Chave PIX</div>
+                <div className="cv-pix-linha">
+                  <span className="cv-pix-chave">{site.pix_chave}</span>
+                  <button
+                    type="button"
+                    className="cv-copiar"
+                    data-copiado={copiado ? "sim" : "nao"}
+                    onClick={copiarPix}
+                  >
+                    {copiado ? "Copiada" : "Copiar"}
+                  </button>
+                </div>
+                {site.pix_titular && <p className="cv-pix-titular">{site.pix_titular}</p>}
+              </div>
+            )}
+            {site.presentes_link && /^https?:\/\//i.test(site.presentes_link) && (
+              <p style={{ marginTop: 26 }}>
+                <a
+                  className="cv-botao-leve"
+                  href={site.presentes_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Ver lista de presentes
+                </a>
+              </p>
+            )}
+          </section>
+        );
+
+      case "hospedagem":
+        if (hospedagens.length === 0 && !espaco?.transporte) return null;
+        return (
+          <section className="cv-hospedagens">
+            <div className="cv-eyebrow">Vindo de fora</div>
+            <h2 className="cv-titulo">Onde ficar</h2>
+            {hospedagens.length > 0 && (
+              <ul className="cv-hospedagem-lista">
+                {hospedagens.map((h, i) => {
+                  const href = h.link && /^https?:\/\//i.test(h.link) ? h.link : null;
+                  return (
+                    <li key={i} className="cv-hospedagem">
+                      <p className="cv-hospedagem-nome">
+                        {href ? (
+                          <a href={href} target="_blank" rel="noopener noreferrer">
+                            {h.nome}
+                          </a>
+                        ) : (
+                          h.nome
+                        )}
+                      </p>
+                      <p className="cv-hospedagem-info">
+                        {[h.distancia, h.faixa_preco, h.nota].filter(Boolean).join(" · ")}
+                      </p>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            {espaco?.transporte && (
+              <p className="cv-texto" style={{ marginTop: 26 }}>
+                {espaco.transporte}
+              </p>
+            )}
+          </section>
+        );
+
+      // os três do convidado continuam dependendo também da chave que a
+      // família liga e desliga durante a festa
+      case "album":
+        return blocos?.album ? <AlbumDoConvite hash={rsvp.hash} fotos={fotosAlbum} /> : null;
+      case "playlist":
+        return blocos?.playlist ? <MusicaDoConvite hash={rsvp.hash} /> : null;
+      case "mural":
+        return blocos?.recados ? <RecadosDoConvite hash={rsvp.hash} recados={recados ?? []} /> : null;
+
+      case "texto": {
+        const titulo = typeof b.conteudo?.titulo === "string" ? b.conteudo.titulo.trim() : "";
+        const texto = typeof b.conteudo?.texto === "string" ? b.conteudo.texto.trim() : "";
+        if (!titulo && !texto) return null;
+        return (
+          <section className="cv-secao cv-secao-centro">
+            {titulo && <h2 className="cv-titulo">{titulo}</h2>}
+            {texto && (
+              <p className="cv-texto" style={{ marginTop: titulo ? 16 : 0, whiteSpace: "pre-line" }}>
+                {texto}
+              </p>
+            )}
+          </section>
+        );
+      }
+
+      case "rodape":
+        return (
+          <>
+            <footer className="cv-rodape">{evento.data.split("-").reverse().join(" . ")}</footer>
+            {empresa && (
+              <div style={{ padding: "0 0 40px", textAlign: "center" }}>
+                {empresa.logo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={empresa.logo_url} alt={empresa.nome} style={{ maxHeight: 34, opacity: 0.55 }} />
+                ) : null}
+              </div>
+            )}
+          </>
+        );
+
+      // os blocos novos (momentos, galeria, especiais, vídeo, enquete,
+      // perguntas) entram com os modelos: até lá, não desenham nada
+      default:
+        return null;
     }
   }
 
@@ -124,246 +403,11 @@ export function ConviteCompleto({
         </div>
       )}
 
-      {/* capa */}
-      <header className="cv-capa">
-        {evento.capa_url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={evento.capa_url} alt="" className="cv-capa-foto" />
-        )}
-        <div className="cv-capa-veu" />
-        <div className="cv-capa-conteudo">
-          <div className="cv-capa-eyebrow">Você está convidado para</div>
-          {/* sem nome, a frase inteira vira o título: "o casamento" */}
-          {temNome(evento.anfitrioes) ? (
-            <>
-              <div className="cv-capa-para">{convitePara(evento.tipo)}</div>
-              <h1 className="cv-capa-nomes">{evento.anfitrioes}</h1>
-            </>
-          ) : (
-            <h1 className="cv-capa-nomes">{conviteCom(convitePara(evento.tipo), null)}</h1>
-          )}
-        </div>
-        <div className="cv-cartao">
-          <div>
-            <div className="cv-rotulo">Quando</div>
-            <div className="cv-cartao-valor">
-              {quandoLegivel(evento.data, evento.hora)}
-            </div>
-          </div>
-          {onde && (
-            <>
-              <div className="cv-cartao-divisor" />
-              <div>
-                <div className="cv-rotulo">Onde</div>
-                <div className="cv-cartao-valor">{onde}</div>
-              </div>
-            </>
-          )}
-        </div>
-      </header>
-
-      {/* contagem */}
-      <div className="cv-contagem">
-        {[
-          { v: contagem ? String(contagem.d).padStart(3, "0") : "—", r: "dias" },
-          { v: contagem?.h ?? "—", r: "horas" },
-          { v: contagem?.m ?? "—", r: "minutos" },
-          { v: contagem?.s ?? "—", r: "segundos" },
-        ].map((c) => (
-          <div className="cv-contagem-celula" key={c.r}>
-            <div className="cv-contagem-numero">{c.v}</div>
-            <div className="cv-rotulo cv-contagem-rotulo">{c.r}</div>
-          </div>
+      {estrutura
+        .filter((b) => b.visivel !== false)
+        .map((b) => (
+          <Fragment key={b.id}>{desenhar(b)}</Fragment>
         ))}
-      </div>
-
-      {/* mensagem */}
-      {site?.mensagem && (
-        <section className="cv-mensagem">
-          <p className="cv-mensagem-texto">“{site.mensagem}”</p>
-          {temNome(evento.anfitrioes) && (
-            <div className="cv-mensagem-assinatura">{evento.anfitrioes}</div>
-          )}
-        </section>
-      )}
-
-      {/* história */}
-      {site?.historia && (
-        <section className="cv-historia">
-          {fotoCasalUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={fotoCasalUrl} alt="" className="cv-historia-foto" />
-          ) : (
-            <div className="cv-historia-foto" />
-          )}
-          <div className="cv-historia-texto">
-            <div className="cv-eyebrow">Nossa história</div>
-            {site.historia_titulo && (
-              <h2 className="cv-historia-titulo">{site.historia_titulo}</h2>
-            )}
-            <p className="cv-texto">{site.historia}</p>
-          </div>
-        </section>
-      )}
-
-      {/* local */}
-      {(evento.local || evento.cidade) && (
-        <section className="cv-local">
-          <div className="cv-eyebrow">Cerimônia e recepção</div>
-          <h2 className="cv-titulo">{evento.local ?? evento.cidade}</h2>
-          <p className="cv-local-endereco">
-            {[evento.cidade, quandoLegivel(evento.data, evento.hora)]
-              .filter(Boolean)
-              .join(" · ")}
-          </p>
-          {enderecoMapa && (
-            <div className="cv-local-acoes">
-              <ComoChegar endereco={enderecoMapa} />
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* dress code */}
-      {site?.dress_code && (
-        <section className="cv-escuro">
-          <div className="cv-eyebrow">O que vestir</div>
-          {site.dress_code_titulo && (
-            <h2 className="cv-escuro-titulo">{site.dress_code_titulo}</h2>
-          )}
-          <p className="cv-escuro-texto">{site.dress_code}</p>
-          {paleta && paleta.length > 0 && (
-            <div className="cv-paleta" style={{ justifyContent: "center", marginTop: 22 }}>
-              {paleta.map((c, i) => (
-                <span
-                  key={i}
-                  className="cv-cor"
-                  style={{ background: c.hex }}
-                  title={c.nome}
-                />
-              ))}
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* RSVP */}
-      <section className="cv-secao cv-secao-centro" id="rsvp">
-        <div className="cv-eyebrow">Confirmação de presença</div>
-        <h2 className="cv-titulo">Você vai poder ir?</h2>
-        <div style={{ marginTop: 24, textAlign: "left" }}>
-          <RsvpConvite
-            hash={rsvp.hash}
-            aberto={rsvp.aberto}
-            prazo={rsvp.prazo}
-            menu={rsvp.menu ?? []}
-            tituloAgenda={tituloAgenda}
-            data={evento.data}
-            hora={evento.hora}
-            local={onde || null}
-          />
-        </div>
-      </section>
-
-      {/* presentes */}
-      {(site?.pix_chave || site?.presentes_texto || site?.presentes_link) && (
-        <section className="cv-presentes">
-          <div className="cv-eyebrow">Presentes</div>
-          {site.presentes_texto && (
-            <p className="cv-presentes-frase">{site.presentes_texto}</p>
-          )}
-          {site.pix_chave && (
-            <div className="cv-pix">
-              <div className="cv-rotulo">Chave PIX</div>
-              <div className="cv-pix-linha">
-                <span className="cv-pix-chave">{site.pix_chave}</span>
-                <button
-                  type="button"
-                  className="cv-copiar"
-                  data-copiado={copiado ? "sim" : "nao"}
-                  onClick={copiarPix}
-                >
-                  {copiado ? "Copiada" : "Copiar"}
-                </button>
-              </div>
-              {site.pix_titular && (
-                <p className="cv-pix-titular">{site.pix_titular}</p>
-              )}
-            </div>
-          )}
-          {site.presentes_link && /^https?:\/\//i.test(site.presentes_link) && (
-            <p style={{ marginTop: 26 }}>
-              <a
-                className="cv-botao-leve"
-                href={site.presentes_link}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Ver lista de presentes
-              </a>
-            </p>
-          )}
-        </section>
-      )}
-
-      {/* vindo de fora */}
-      {(hospedagens.length > 0 || espaco?.transporte) && (
-        <section className="cv-hospedagens">
-          <div className="cv-eyebrow">Vindo de fora</div>
-          <h2 className="cv-titulo">Onde ficar</h2>
-          {hospedagens.length > 0 && (
-            <ul className="cv-hospedagem-lista">
-              {hospedagens.map((h, i) => {
-                const href = h.link && /^https?:\/\//i.test(h.link) ? h.link : null;
-                return (
-                  <li key={i} className="cv-hospedagem">
-                    <p className="cv-hospedagem-nome">
-                      {href ? (
-                        <a href={href} target="_blank" rel="noopener noreferrer">
-                          {h.nome}
-                        </a>
-                      ) : (
-                        h.nome
-                      )}
-                    </p>
-                    <p className="cv-hospedagem-info">
-                      {[h.distancia, h.faixa_preco, h.nota].filter(Boolean).join(" · ")}
-                    </p>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          {espaco?.transporte && (
-            <p className="cv-texto" style={{ marginTop: 26 }}>
-              {espaco.transporte}
-            </p>
-          )}
-        </section>
-      )}
-
-      {blocos?.album && <AlbumDoConvite hash={rsvp.hash} fotos={fotosAlbum} />}
-      {blocos?.playlist && <MusicaDoConvite hash={rsvp.hash} />}
-      {blocos?.recados && (
-        <RecadosDoConvite hash={rsvp.hash} recados={recados ?? []} />
-      )}
-
-      <footer className="cv-rodape">
-        {evento.data.split("-").reverse().join(" . ")}
-      </footer>
-
-      {empresa && (
-        <div style={{ padding: "0 0 40px", textAlign: "center" }}>
-          {empresa.logo_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={empresa.logo_url}
-              alt={empresa.nome}
-              style={{ maxHeight: 34, opacity: 0.55 }}
-            />
-          ) : null}
-        </div>
-      )}
     </main>
   );
 }

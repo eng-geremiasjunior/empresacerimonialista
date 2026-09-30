@@ -36,7 +36,7 @@ const PRINCIPAIS: Destino[] = [
   { seg: "escolhas", rotulo: "Escolhas do casal", rotuloCurto: "Escolhas", icone: "Heart" },
   { seg: "fornecedores", rotulo: "Fornecedores", icone: "Briefcase", emBreve: true },
   { seg: "convidados", rotulo: "Convidados", icone: "Users" },
-  { seg: "site", rotulo: "Convite", icone: "Globe" },
+  { seg: "site", rotulo: "Nosso site", icone: "Globe" },
   { seg: "linha-do-tempo", rotulo: "Linha do tempo", icone: "CalendarDays" },
 ];
 

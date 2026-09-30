@@ -171,7 +171,10 @@ export type AcaoDoPainel =
   | "custos_copiados"
   | "caixa_informado"
   | "ajuste_alterado"
-  | "email_enviado";
+  | "email_enviado"
+  | "site_aprovado"
+  | "site_recusado"
+  | "site_tirado_do_ar";
 
 export async function registrarAcaoAdmin(
   db: Servico,

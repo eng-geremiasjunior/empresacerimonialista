@@ -2,6 +2,8 @@
 // e a folha de metadados leem daqui. Conteúdo do casal vem da fotografia
 // publicada; evento e hospedagens vêm ao vivo.
 
+import type { TemaDoSite } from "@/lib/site-blocos";
+
 export type SitePublico = {
   evento: {
     tipo: string;
@@ -25,6 +27,11 @@ export type SitePublico = {
     pix_titular: string | null;
     presentes_link: string | null;
     blocos: { titulo: string; texto: string }[];
+    /** a ordem dos blocos (185); ausente ou vazia = a ordem do desenho.
+     *  Crua do banco: passa por estruturaEfetiva() antes de desenhar. */
+    estrutura?: unknown;
+    /** o modelo e as cores (185) */
+    tema?: TemaDoSite | null;
   } | null;
   /** as três cores do convite; null = paleta do guia ou o padrão */
   cores: { acento: string | null; tinta: string | null; fundo: string | null } | null;

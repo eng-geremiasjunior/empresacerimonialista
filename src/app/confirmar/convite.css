@@ -29,6 +29,7 @@
   --mono: "JetBrains Mono", ui-monospace, monospace;
 
   position: relative;
+  container-type: inline-size;
   max-width: 1120px;
   margin: 0 auto;
   background: var(--cv-fundo);
@@ -676,7 +677,11 @@
 }
 
 /* ---------- celular ---------- */
-@media (max-width: 640px) {
+/* Pela largura do PRÓPRIO site, não da janela (30/09/2026): a prévia da
+   família (430px dentro do portal) e a revisão do dono (/admin) desenham o
+   site numa caixa estreita dentro de uma tela larga. No celular dá no mesmo
+   — lá o site tem a largura da tela. */
+@container (max-width: 640px) {
   .cv-capa {
     height: 640px;
   }

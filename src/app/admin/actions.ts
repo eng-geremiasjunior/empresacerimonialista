@@ -34,6 +34,7 @@ import {
   salvarSaldoDb,
 } from "@/lib/supabase/admin-receita";
 import { desmascararDinheiro } from "@/lib/format";
+import { decidirSiteDb, tirarSiteDoArDb } from "@/lib/supabase/admin-sites";
 import { ehCodigoDoPlano } from "@/lib/planos";
 
 export type ResultadoAdmin = { ok?: boolean; error?: string };
@@ -482,4 +483,35 @@ export async function marcarContatado(id: string, falou: boolean): Promise<Resul
     console.error("[eorganizei:admin] marcarContatado:", e instanceof Error ? e.message : e);
     return { error: e instanceof Error ? e.message : "Não foi possível marcar." };
   }
+}
+
+// ------------------------------------------------------------------
+// A revisão dos sites (185/186): aprovar, recusar, tirar do ar
+// ------------------------------------------------------------------
+
+export async function decidirSite(
+  eventId: string,
+  aprovar: boolean,
+  motivo: string | null,
+  versao: number
+): Promise<ResultadoAdmin> {
+  const m = (motivo ?? "").trim();
+  if (!aprovar && !m) return { error: "Diga o motivo da recusa — a família lê." };
+  if (m.length > 300) return { error: "O motivo passa de 300 caracteres." };
+  const r = await decidirSiteDb(eventId, aprovar, aprovar ? null : m, versao);
+  if ("error" in r) return { error: r.error };
+  revalidatePath("/admin/sites");
+  revalidatePath(`/admin/sites/${eventId}`);
+  return { ok: true };
+}
+
+export async function tirarSiteDoAr(eventId: string, motivo: string): Promise<ResultadoAdmin> {
+  const m = motivo.trim();
+  if (!m) return { error: "Diga o motivo — a família lê." };
+  if (m.length > 300) return { error: "O motivo passa de 300 caracteres." };
+  const r = await tirarSiteDoArDb(eventId, m);
+  if ("error" in r) return { error: r.error };
+  revalidatePath("/admin/sites");
+  revalidatePath(`/admin/sites/${eventId}`);
+  return { ok: true };
 }

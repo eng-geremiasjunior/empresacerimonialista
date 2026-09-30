@@ -1,9 +1,10 @@
 "use server";
 
-// O site do casamento pelo lado da EQUIPE: blocos práticos, espaço (com
-// as hospedagens que acumulam), endereço bonito e a publicação — que é
-// dela, nunca do casal. Erro de RLS silenciosa vira erro na tela
-// (.select("id") + zero linhas), padrão da casa.
+// O que a EQUIPE ainda faz para o site do evento: o espaço, com as
+// hospedagens que acumulam e aparecem ao vivo no site. O site em si
+// (blocos, endereço, publicação) é da família desde 30/09/2026 (185/186).
+// Erro de RLS silenciosa vira erro na tela (.select("id") + zero linhas),
+// padrão da casa.
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
@@ -39,45 +40,6 @@ function linkSeguro(v: string | undefined): string | null {
     // sem esquema: assume https, que é o que a pessoa quis dizer
     return /^[\w.-]+\.[a-z]{2,}(\/|$)/i.test(s) ? `https://${s}` : null;
   }
-}
-
-export async function garantirSite(eventId: string): Promise<Resultado> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from("evento_site")
-    .upsert({ event_id: eventId }, { onConflict: "event_id", ignoreDuplicates: true });
-  if (error) {
-    console.error("[vela:site] garantir:", error.code, error.message);
-    return { error: erroDaRpc(error) };
-  }
-  volta(eventId);
-  return { ok: true };
-}
-
-export async function salvarBlocosSite(
-  eventId: string,
-  blocos: { titulo: string; texto: string }[]
-): Promise<Resultado> {
-  if (blocos.length > 8) return { error: "No máximo 8 blocos." };
-  const limpos = blocos
-    .map((b) => ({
-      titulo: b.titulo.trim().slice(0, 60),
-      texto: b.texto.trim().slice(0, 800),
-    }))
-    .filter((b) => b.titulo && b.texto);
-
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from("evento_site")
-    .update({ blocos: limpos, updated_at: new Date().toISOString() })
-    .eq("event_id", eventId)
-    .select("id");
-  if (error) return { error: "Não foi possível salvar." };
-  if (!data || data.length === 0) {
-    return { error: "Você não tem permissão para editar este evento." };
-  }
-  volta(eventId);
-  return { ok: true };
 }
 
 export async function vincularEspaco(
@@ -249,40 +211,6 @@ export async function removerHospedagem(
   if (error) return { error: "Não foi possível remover." };
   if (!data || data.length === 0) {
     return { error: "Você não tem permissão para editar espaços." };
-  }
-  volta(eventId);
-  return { ok: true };
-}
-
-export async function definirSlug(
-  eventId: string,
-  slug: string
-): Promise<Resultado> {
-  const supabase = createClient();
-  const { error } = await supabase.rpc("definir_slug_site", {
-    p_event_id: eventId,
-    p_slug: slug,
-  });
-  if (error) {
-    console.error("[vela:site] slug:", error.code, error.message);
-    return { error: erroDaRpc(error) };
-  }
-  volta(eventId);
-  return { ok: true };
-}
-
-export async function publicarSite(
-  eventId: string,
-  publicado: boolean
-): Promise<Resultado> {
-  const supabase = createClient();
-  const { error } = await supabase.rpc("publicar_site", {
-    p_event_id: eventId,
-    p_publicado: publicado,
-  });
-  if (error) {
-    console.error("[vela:site] publicar:", error.code, error.message);
-    return { error: erroDaRpc(error) };
   }
   volta(eventId);
   return { ok: true };

@@ -1,12 +1,12 @@
 "use client";
 
-// O site do casamento pelo lado da equipe, dentro da Área do cliente.
+// O site do evento pelo lado da equipe, dentro da Área do cliente.
 //
-// A regra de publicação: tudo é rascunho até ELA publicar; publicar
-// congela a fotografia que o público vê. Se o casal (ou ela) editar
-// depois, o ar não muda — o estado avisa e ela republica. O casal
-// escreve a parte dele pelo portal; aqui mora o profissional: espaço,
-// hospedagens, blocos práticos, endereço e a publicação.
+// Desde 30/09/2026 (migrações 185 e 186) o site é da FAMÍLIA: ela monta,
+// escolhe o endereço e publica pelo portal, e cada publicação passa pela
+// revisão do dono do sistema. A cerimonialista não mexe no site — aqui ela
+// vê o estado e o link, e cuida do que é dela e aparece ao vivo no site:
+// o espaço e as hospedagens.
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -14,11 +14,7 @@ import { ExternalLink, Globe, Plus, Trash2 } from "lucide-react";
 import {
   adicionarHospedagem,
   criarEspaco,
-  definirSlug,
-  garantirSite,
-  publicarSite,
   removerHospedagem,
-  salvarBlocosSite,
   salvarEspaco,
   vincularEspaco,
 } from "@/app/(app)/eventos/[id]/site-actions";
@@ -54,13 +50,15 @@ export type HospedagemLinha = {
 export type SiteEstado = {
   existe: boolean;
   publicado: boolean;
-  temAlteracao: boolean;
+  /** rascunho | em_analise | aprovado | recusado (185) */
+  revisao: string;
+  /** o dono do sistema tirou do ar */
+  retirado: boolean;
   divergenciaEvento: string | null;
   slug: string | null;
   mensagem: string | null;
   historia: string | null;
   dressCode: string | null;
-  blocos: { titulo: string; texto: string }[];
 };
 
 export function SiteDoConvite({
@@ -91,8 +89,6 @@ export function SiteDoConvite({
     [espacos, espacoAtualId]
   );
 
-  const [slug, setSlug] = useState(site.slug ?? "");
-  const [blocos, setBlocos] = useState(site.blocos);
   const [novoEspaco, setNovoEspaco] = useState(false);
   const [formEspaco, setFormEspaco] = useState({
     nome: espacoAtual?.nome ?? "",
@@ -139,49 +135,31 @@ export function SiteDoConvite({
     });
   }
 
+  // o estado do site, em palavras — quem publica é a família
   const estado = !site.existe
-    ? null
-    : site.publicado
-      ? site.temAlteracao
-        ? { rotulo: "No ar · com alterações não publicadas", cor: "bg-amber-50 text-amber-700 border-amber-200" }
-        : { rotulo: "No ar", cor: "bg-emerald-50 text-emerald-700 border-emerald-200" }
-      : { rotulo: "Rascunho", cor: "bg-stone-100 text-stone-600 border-stone-200" };
-
-  if (!site.existe) {
-    return (
-      <section className="rounded-xl border border-gray-200 bg-white p-4">
-        <h3 className="flex items-center gap-1.5 text-sm font-semibold text-gray-900">
-          <Globe size={15} className="text-indigo-500" />
-          Site do casamento
-        </h3>
-        <p className="mt-1 text-sm text-gray-500">
-          A página que os convidados abrem: informações, a mensagem do casal
-          e a confirmação de presença — no link que a cliente já espalha.
-        </p>
-        <button
-          onClick={() => rodar(() => garantirSite(eventId))}
-          disabled={pendente}
-          className={`mt-3 ${botaoPrimario}`}
-        >
-          Montar o site
-        </button>
-        {erro && <p className="mt-2 text-sm text-rose-600">{erro}</p>}
-      </section>
-    );
-  }
+    ? { rotulo: "A família ainda não começou o site", cor: "bg-stone-100 text-stone-600 border-stone-200" }
+    : site.retirado
+      ? { rotulo: "Tirado do ar pelo eorganizei", cor: "bg-rose-50 text-rose-700 border-rose-200" }
+      : site.revisao === "em_analise"
+        ? { rotulo: site.publicado ? "No ar · nova versão em análise" : "Em análise", cor: "bg-amber-50 text-amber-700 border-amber-200" }
+        : site.publicado
+          ? { rotulo: "No ar", cor: "bg-emerald-50 text-emerald-700 border-emerald-200" }
+          : site.revisao === "recusado"
+            ? { rotulo: "Voltou para ajustes da família", cor: "bg-stone-100 text-stone-600 border-stone-200" }
+            : site.revisao === "aprovado"
+              ? { rotulo: "Fora do ar", cor: "bg-stone-100 text-stone-600 border-stone-200" }
+              : { rotulo: "Rascunho da família", cor: "bg-stone-100 text-stone-600 border-stone-200" };
 
   return (
     <section className="space-y-4 rounded-xl border border-gray-200 bg-white p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="flex items-center gap-1.5 text-sm font-semibold text-gray-900">
           <Globe size={15} className="text-indigo-500" />
-          Site do casamento
+          Site do evento
         </h3>
-        {estado && (
-          <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${estado.cor}`}>
-            {estado.rotulo}
-          </span>
-        )}
+        <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${estado.cor}`}>
+          {estado.rotulo}
+        </span>
       </div>
 
       {site.divergenciaEvento && site.publicado && (
@@ -191,7 +169,7 @@ export function SiteDoConvite({
         </p>
       )}
 
-      {/* o link + publicar */}
+      {/* os links (a família publica pelo portal) */}
       <div className="rounded-lg bg-stone-50 p-3">
         <p className="break-all text-xs text-stone-600">
           <a href={urlHash} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:underline">
@@ -203,62 +181,6 @@ export function SiteDoConvite({
             <a href={`${urlSlugBase}/${site.slug}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:underline">
               {urlSlugBase}/{site.slug} <ExternalLink size={11} />
             </a>
-          </p>
-        )}
-        <div className="mt-2.5 flex flex-wrap gap-2">
-          {/* a divergência do evento (data/hora/local) também destrava o
-              botão: é republicando que o aviso se fecha */}
-          <button
-            onClick={() => rodar(() => publicarSite(eventId, true))}
-            disabled={
-              pendente ||
-              (site.publicado && !site.temAlteracao && !site.divergenciaEvento)
-            }
-            className={botaoPrimario}
-          >
-            {site.publicado ? "Publicar alterações" : "Publicar"}
-          </button>
-          {site.publicado && (
-            <button
-              onClick={() => {
-                if (confirm("Tirar o site do ar? Quem abrir o link verá só a confirmação de presença.")) {
-                  rodar(() => publicarSite(eventId, false));
-                }
-              }}
-              disabled={pendente}
-              className={botaoLeve}
-            >
-              Despublicar
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* endereço bonito */}
-      <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
-          Endereço
-        </p>
-        <div className="mt-1.5 flex gap-2">
-          <input
-            value={slug}
-            onChange={(e) => setSlug(e.target.value.toLowerCase())}
-            placeholder="ana-e-bruno"
-            disabled={site.publicado}
-            className={inputCls}
-          />
-          <button
-            onClick={() => rodar(() => definirSlug(eventId, slug))}
-            disabled={pendente || site.publicado || !slug.trim() || slug === (site.slug ?? "")}
-            className={botaoLeve}
-          >
-            Salvar
-          </button>
-        </div>
-        {site.publicado && (
-          <p className="mt-1 text-xs text-gray-400">
-            Para mudar o endereço, despublique primeiro. O endereço antigo
-            continua abrindo o site para sempre.
           </p>
         )}
       </div>
@@ -454,83 +376,23 @@ export function SiteDoConvite({
         )}
       </div>
 
-      {/* blocos práticos */}
-      <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
-          Informações práticas
-        </p>
-        <div className="mt-1.5 space-y-2">
-          {blocos.map((b, i) => (
-            <div key={i} className="space-y-1.5 rounded-lg bg-stone-50 p-2.5">
-              <div className="flex items-center gap-2">
-                <input
-                  value={b.titulo}
-                  onChange={(e) =>
-                    setBlocos(blocos.map((x, j) => (j === i ? { ...x, titulo: e.target.value } : x)))
-                  }
-                  placeholder="Título (ex.: Estacionamento)"
-                  className={inputCls}
-                />
-                <button
-                  onClick={() => setBlocos(blocos.filter((_, j) => j !== i))}
-                  aria-label="Remover bloco"
-                  className="rounded p-1.5 text-gray-400 hover:bg-rose-50 hover:text-rose-600"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-              <textarea
-                value={b.texto}
-                onChange={(e) =>
-                  setBlocos(blocos.map((x, j) => (j === i ? { ...x, texto: e.target.value } : x)))
-                }
-                placeholder="Texto"
-                rows={2}
-                className={inputCls}
-              />
-            </div>
-          ))}
-          <div className="flex gap-2">
-            {blocos.length < 8 && (
-              <button
-                onClick={() => setBlocos([...blocos, { titulo: "", texto: "" }])}
-                className={botaoLeve}
-              >
-                <Plus size={13} className="mr-1 inline" />
-                Bloco
-              </button>
-            )}
-            <button
-              onClick={() => rodar(() => salvarBlocosSite(eventId, blocos))}
-              disabled={pendente}
-              className={botaoPrimario}
-            >
-              Salvar informações
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* a parte do casal — só leitura aqui */}
       <div>
         <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
-          A parte do casal
-          <span className="ml-1.5 normal-case tracking-normal">
-            (eles escrevem pelo portal)
-          </span>
+          O que a família escreveu
         </p>
         <div className="mt-1.5 space-y-1 text-sm text-gray-600">
           <p>
             <span className="text-gray-400">Mensagem:</span>{" "}
-            {site.mensagem || <span className="text-gray-400">— ainda nada</span>}
+            {site.mensagem || <span className="text-gray-400">ainda nada</span>}
           </p>
           <p>
             <span className="text-gray-400">História:</span>{" "}
-            {site.historia || <span className="text-gray-400">— ainda nada</span>}
+            {site.historia || <span className="text-gray-400">ainda nada</span>}
           </p>
           <p>
             <span className="text-gray-400">O que vestir:</span>{" "}
-            {site.dressCode || <span className="text-gray-400">— ainda nada</span>}
+            {site.dressCode || <span className="text-gray-400">ainda nada</span>}
           </p>
         </div>
       </div>
