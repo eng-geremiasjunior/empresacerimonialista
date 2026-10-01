@@ -55,7 +55,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR">
+    // o ScriptRevelar dos sites põe a classe sm-js aqui antes da hidratação
+    <html lang="pt-BR" suppressHydrationWarning>
       <body
         className={`${inter.variable} ${instrumentSans.variable} ${plexMono.variable} min-h-screen bg-stone-50 font-sans text-stone-900 antialiased`}
       >

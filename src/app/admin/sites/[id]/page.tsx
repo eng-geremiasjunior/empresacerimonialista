@@ -60,7 +60,7 @@ export default async function SiteParaRevisarPage({ params }: { params: { id: st
           <section className="flex min-w-0 flex-col gap-2">
             <h2 className="text-sm font-semibold text-stone-700">Para aprovar</h2>
             <div className="max-h-[80vh] overflow-y-auto rounded-lg border-2 border-stone-900 bg-white">
-              <PreviaDoSite dados={r.pendente} fotosAlbum={pend.fotosAlbum} fotoCasalUrl={pend.fotoCasalUrl} />
+              <PreviaDoSite dados={r.pendente} fotosAlbum={pend.fotosAlbum} fotoCasalUrl={pend.fotoCasalUrl} modo="revisao" />
             </div>
           </section>
         )}
@@ -68,7 +68,7 @@ export default async function SiteParaRevisarPage({ params }: { params: { id: st
           <section className="flex min-w-0 flex-col gap-2">
             <h2 className="text-sm font-semibold text-stone-700">{r.publicado ? "No ar agora" : "A última versão aprovada (fora do ar)"}</h2>
             <div className="max-h-[80vh] overflow-y-auto rounded-lg border border-stone-200 bg-white">
-              <PreviaDoSite dados={r.no_ar} fotosAlbum={noAr.fotosAlbum} fotoCasalUrl={noAr.fotoCasalUrl} />
+              <PreviaDoSite dados={r.no_ar} fotosAlbum={noAr.fotosAlbum} fotoCasalUrl={noAr.fotoCasalUrl} modo="revisao" />
             </div>
           </section>
         )}

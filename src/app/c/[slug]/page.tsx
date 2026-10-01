@@ -1,7 +1,7 @@
 import { cache } from "react";
 import type { Metadata } from "next";
 import { permanentRedirect } from "next/navigation";
-import { ConviteCompleto } from "@/components/convite/ConviteCompleto";
+import { SiteDoEvento } from "@/components/site/SiteDoEvento";
 import { assinarMidiaDoConvite } from "@/lib/supabase/assinar-midia-convite";
 import { clienteAnonimoPublico } from "@/lib/supabase/anon-publico";
 import { anfitrioesDoConvite } from "@/lib/anfitrioes-do-convite";
@@ -74,10 +74,10 @@ export default async function ConviteSlugPage({
 
   const midia = await assinarMidiaDoConvite(site);
   return (
-    <ConviteCompleto
+    <SiteDoEvento
       dados={site}
-      fotosAlbum={midia.fotosAlbum}
-      fotoCasalUrl={midia.fotoCasalUrl}
+      midia={{ fotosAlbum: midia.fotosAlbum, fotoCasalUrl: midia.fotoCasalUrl, urls: {} }}
+      modo="publico"
     />
   );
 }

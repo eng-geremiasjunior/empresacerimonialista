@@ -1,0 +1,38 @@
+/* A base comum dos 6 modelos novos. O "convite" de hoje (ConviteCompleto)
+   não passa por aqui: continua com o convite.css dele, intocado.
+
+   Todo vw e svh do desenho vira calc(N * var(--sm-vw)) e var(--sm-vh).
+   No público, a tela de verdade; na prévia, a largura da caixa (a prévia
+   de 430px dentro de uma janela larga sai igual ao celular). */
+
+.sm-raiz {
+  --sm-vw: 1vw;
+  --sm-vh: 1svh;
+  /* nunca overflow:hidden: anula o position:sticky das cenas e da
+     história horizontal. clip corta o que vaza sem criar rolagem. */
+  overflow-x: clip;
+  background: var(--sm-bg);
+  color: var(--sm-ink);
+  font-family: var(--sf-texto-fam);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+.sm-raiz *,
+.sm-raiz *::before,
+.sm-raiz *::after {
+  box-sizing: border-box;
+}
+
+/* Prévia da família e revisão do dono: a caixa vira a "tela". A altura é
+   fixa (uma tela de 800px), porque a caixa cresce com o próprio site. */
+.sm-previa {
+  container-type: inline-size;
+  width: 100%;
+}
+
+.sm-previa > .sm-raiz {
+  --sm-vw: 1cqi;
+  --sm-vh: 8px;
+}

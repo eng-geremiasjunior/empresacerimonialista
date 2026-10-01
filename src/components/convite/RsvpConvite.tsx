@@ -2,25 +2,11 @@
 
 // O RSVP do convite: a confirmação com o desenho do casamento.
 //
-// A diferença para o cartão simples (/confirmar) é que aqui o
-// acompanhante tem NOME — é o que a recepção confere na entrada — e o
-// convidado escolhe o menu e deixa um recado. A máquina por baixo é a
-// mesma de sempre: POST /api/rsvp/[hash], que já cuida de dedupe, teto
-// da lista, rate-limit e e-mail.
+// A lógica (estado, envio, acompanhantes, menu, recado, QR) mora no
+// useRsvp, que os modelos novos também usam; aqui fica só o desenho.
 
-import { useState } from "react";
-import { CredencialEntrada, type Credencial } from "@/components/rsvp/ConfirmacaoConvidado";
-
-type Acompanhante = { nome: string; crianca: boolean };
-
-const ERROS: Record<string, string> = {
-  nome_obrigatorio: "Precisamos do seu nome.",
-  email_invalido: "Confira o e-mail — é por ele que a confirmação chega.",
-  link_fechado: "As confirmações já foram encerradas.",
-  link_invalido: "Este link não está mais válido.",
-  lista_cheia: "A lista está completa. Fale direto com os anfitriões.",
-  muitas_tentativas: "Muitas tentativas seguidas. Aguarde um minuto.",
-};
+import { CredencialEntrada } from "@/components/rsvp/ConfirmacaoConvidado";
+import { formatarPrazo, useRsvp } from "@/components/site/pecas/useRsvp";
 
 /** .ics de uma linha só — funciona no iPhone e no Outlook. */
 function arquivoDeAgenda(titulo: string, dataIso: string, hora: string | null) {
@@ -71,20 +57,30 @@ export function RsvpConvite({
   hora: string | null;
   local: string | null;
 }) {
-  const [vai, setVai] = useState<boolean | null>(null);
-  const [nome, setNome] = useState("");
-  const [email, setEmail] = useState("");
-  const [acompanhantes, setAcompanhantes] = useState<Acompanhante[]>([]);
-  const [menuEscolhido, setMenuEscolhido] = useState("");
-  const [restricao, setRestricao] = useState("");
-  const [recado, setRecado] = useState("");
-  const [enviando, setEnviando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
-  const [pronto, setPronto] = useState(false);
-  // a entrada, desenhada pela rota: quem confirma por aqui saía sem nada
-  const [credencial, setCredencial] = useState<Credencial | null>(null);
-
-  const total = 1 + acompanhantes.length;
+  const {
+    vai,
+    setVai,
+    nome,
+    setNome,
+    email,
+    setEmail,
+    acompanhantes,
+    adicionarAcompanhante,
+    mudarAcompanhante,
+    removerAcompanhante,
+    menuEscolhido,
+    setMenuEscolhido,
+    restricao,
+    setRestricao,
+    recado,
+    setRecado,
+    total,
+    enviando,
+    erro,
+    pronto,
+    credencial,
+    enviar,
+  } = useRsvp(hash);
 
   if (!aberto) {
     return (
@@ -93,50 +89,6 @@ export function RsvpConvite({
         coisa, fale direto com os anfitriões.
       </p>
     );
-  }
-
-  async function enviar() {
-    if (!nome.trim()) return setErro(ERROS.nome_obrigatorio);
-    if (!email.trim()) return setErro(ERROS.email_invalido);
-    setEnviando(true);
-    setErro(null);
-    try {
-      const nomes = acompanhantes.filter((a) => a.nome.trim());
-      const res = await fetch(`/api/rsvp/${hash}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nome,
-          email,
-          confirmacao: vai ? "confirmado" : "nao_vai",
-          acompanhantes: vai ? nomes.filter((a) => !a.crianca).length : 0,
-          criancas: vai ? nomes.filter((a) => a.crianca).length : 0,
-          restricao: vai ? restricao || null : null,
-          // o que o convite acrescentou ao cadastro de sempre
-          acompanhantesNomes: vai ? nomes : [],
-          menu: vai ? menuEscolhido || null : null,
-          recado: recado || null,
-        }),
-      });
-      const r = (await res.json()) as {
-        ok?: boolean;
-        erro?: string;
-        qr?: string;
-        codigo?: string;
-      };
-      setEnviando(false);
-      if (!r.ok) {
-        setErro(ERROS[r.erro ?? ""] ?? "Não conseguimos registrar agora. Tente de novo.");
-        return;
-      }
-      setCredencial(
-        vai && r.qr && r.codigo ? { qr: r.qr, codigo: r.codigo, nome: nome.trim() } : null
-      );
-      setPronto(true);
-    } catch {
-      setEnviando(false);
-      setErro("Não conseguimos registrar agora. Tente de novo.");
-    }
   }
 
   if (pronto) {
@@ -237,32 +189,20 @@ export function RsvpConvite({
                       className="cv-campo cv-campo-caixa"
                       placeholder="Nome do acompanhante"
                       value={a.nome}
-                      onChange={(e) =>
-                        setAcompanhantes(
-                          acompanhantes.map((x, j) =>
-                            j === i ? { ...x, nome: e.target.value } : x
-                          )
-                        )
-                      }
+                      onChange={(e) => mudarAcompanhante(i, { nome: e.target.value })}
                     />
                     <label className="cv-nota" style={{ marginTop: 0, whiteSpace: "nowrap" }}>
                       <input
                         type="checkbox"
                         checked={a.crianca}
-                        onChange={(e) =>
-                          setAcompanhantes(
-                            acompanhantes.map((x, j) =>
-                              j === i ? { ...x, crianca: e.target.checked } : x
-                            )
-                          )
-                        }
+                        onChange={(e) => mudarAcompanhante(i, { crianca: e.target.checked })}
                       />{" "}
                       criança
                     </label>
                     <button
                       type="button"
                       className="cv-remover"
-                      onClick={() => setAcompanhantes(acompanhantes.filter((_, j) => j !== i))}
+                      onClick={() => removerAcompanhante(i)}
                     >
                       Remover
                     </button>
@@ -272,7 +212,7 @@ export function RsvpConvite({
                 <button
                   type="button"
                   className="cv-adicionar"
-                  onClick={() => setAcompanhantes([...acompanhantes, { nome: "", crianca: false }])}
+                  onClick={adicionarAcompanhante}
                 >
                   + Adicionar acompanhante
                 </button>
@@ -330,15 +270,4 @@ export function RsvpConvite({
       )}
     </div>
   );
-}
-
-const MESES = [
-  "janeiro", "fevereiro", "março", "abril", "maio", "junho",
-  "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
-];
-
-function formatarPrazo(iso: string): string {
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
-  if (!m) return iso;
-  return `${Number(m[3])} de ${MESES[Number(m[2]) - 1]}`;
 }

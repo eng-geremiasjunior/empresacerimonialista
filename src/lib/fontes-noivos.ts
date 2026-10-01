@@ -12,13 +12,8 @@ import localFont from "next/font/local";
 //                       Apache 2.0). Ícone novo = baixar de novo com o nome
 //                       incluído em `icon_names` (lista em ferramentas).
 
-export const marcellus = localFont({
-  src: "../fontes/noivos/Marcellus-latin.woff2",
-  weight: "400",
-  style: "normal",
-  variable: "--pn-f-titulo",
-  display: "swap",
-});
+// declarada em fonte-marcellus, que os sites também usam
+export { marcellus } from "./fonte-marcellus";
 
 export const nunitoSans = localFont({
   src: "../fontes/noivos/NunitoSans-latin-var.woff2",

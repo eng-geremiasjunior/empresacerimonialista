@@ -7,7 +7,7 @@
 // seis atalhos (Adicionar bloco, Aparência, Detalhes, Ver o site,
 // Divulgar, Mural) e a lista dos blocos: tocar abre o bloco para editar,
 // ↑ ↓ mudam a ordem (no celular nada de arrastar — a lição das Mesas) e o
-// olho esconde. A prévia é o site DE VERDADE (ConviteCompleto) com o que
+// olho esconde. A prévia é o site DE VERDADE (SiteDoEvento) com o que
 // está escrito agora, inclusive o que ainda não foi salvo.
 //
 // Publicar manda a versão para a revisão do dono do sistema; a versão
@@ -30,8 +30,8 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import { ConviteCompleto } from "@/components/convite/ConviteCompleto";
 import { PreviaDoSite } from "@/components/convite/PreviaDoSite";
+import { SiteDoEvento } from "@/components/site/SiteDoEvento";
 import type { SitePublico } from "@/lib/site-publico-tipos";
 import { dataLonga, quandoLegivel } from "@/lib/rsvp-convite";
 import {
@@ -211,7 +211,7 @@ function SiteEmEscala({
           opacity: escala ? 1 : 0,
         }}
       >
-        <ConviteCompleto dados={dados} fotosAlbum={fotosAlbum} fotoCasalUrl={fotoCasalUrl} semEnvelope />
+        <SiteDoEvento dados={dados} midia={{ fotosAlbum, fotoCasalUrl, urls: {} }} modo="previa" semEnvelope />
       </div>
     </div>
   );
