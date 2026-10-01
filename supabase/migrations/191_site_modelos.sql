@@ -38,6 +38,27 @@
 --      e o menu da confirmação vêm do bloco rsvp da fotografia e, sem ele
 --      (ou vazio), das colunas de antes. O resto é o corpo da 185, igual.
 --   site_fotografia não muda: estrutura e tema já entram nela.
+--   4) Depois da revisão por céticos (01/10), antes de aplicar:
+--        · a _base só aceita foto que JÁ ESTÁ no balde (um caminho só
+--          reservado subiria depois da aprovação do dono);
+--        · o bloco 'historia' aceita a 'foto' da história (o quadro 4/5
+--          do Clássico);
+--        · site_publico (o que o ANÔNIMO recebe) manda só o conteúdo do
+--          que aparece: bloco escondido, ou que o modelo não desenha, sai
+--          sem 'conteudo'; com o bloco escondido, as colunas dele (Pix,
+--          titular, link, textos) saem nulas. A prévia da noiva e a
+--          revisão do dono continuam com tudo (site_montado não muda);
+--        · evento nulo não passa na régua;
+--        · (2ª revisão) a capa e o rodapé não se escondem; a foto do
+--          casal de antes (balde 'inspiracoes', que aceita troca) não vai
+--          ao anônimo nos modelos novos nem com a história escondida; o
+--          álbum e o mural escondidos não mandam fotos nem recados.
+--      Reaplicar a 191 inteira por cima é seguro (tudo create or replace).
+--
+-- ORDEM: aplicar a 191 ANTES de o ramo modelos-de-site ir ao ar (o
+-- editor novo grava 'cenas', 'jeito' e o tema novo, que a _base da 186
+-- recusa). Com o main de hoje no ar, a 191 funciona: ele só grava cores
+-- e texto livre.
 --
 -- Os textos de sempre (mensagem, história, traje, Pix, titular, link)
 -- continuam nas colunas, escritos por portal_salvar_site e
@@ -91,9 +112,10 @@ security definer
 set search_path = public
 as $$
   select case
-    when p_valor is null or jsonb_typeof(p_valor) = 'null' then true
+    when p_valor is null or jsonb_typeof(p_valor) = 'null' then true   -- o espaço vazio
+    when p_event_id is null then false                                 -- sem evento, nenhuma foto é dele
     when jsonb_typeof(p_valor) = 'string' then
-      p_valor #>> '{}' ~ ('^' || p_event_id::text || '/[0-9a-f-]{36}\.(jpg|webp)$')
+      coalesce(p_valor #>> '{}' ~ ('^' || p_event_id::text || '/[0-9a-f-]{36}\.(jpg|webp)$'), false)
     else false
   end;
 $$;
@@ -209,6 +231,9 @@ declare
   v_chave text;
   v_valor jsonb;
 begin
+  if p_event_id is null then
+    return 'evento inválido';
+  end if;
   if p_estrutura is null or jsonb_typeof(p_estrutura) <> 'array' then
     return 'estrutura inválida';
   end if;
@@ -227,6 +252,11 @@ begin
                                      or v_bloco->>'variante' !~ '^[a-z0-9-]{1,30}$'))
        or (v_bloco ? 'visivel' and jsonb_typeof(v_bloco->'visivel') <> 'boolean') then
       return 'bloco inválido';
+    end if;
+    -- a capa e o rodapé são fixos: os modelos desenham sempre (e a régua
+    -- do público tiraria o conteúdo de um bloco escondido)
+    if v_bloco->>'tipo' in ('capa', 'rodape') and v_bloco->'visivel' = 'false'::jsonb then
+      return 'a capa e o rodapé não se escondem';
     end if;
 
     continue when not v_bloco ? 'conteudo';
@@ -262,9 +292,14 @@ begin
       v_fotos := v_fotos + case when jsonb_typeof(v_c->'foto') = 'string' then 1 else 0 end;
 
     elsif v_tipo = 'historia' then
-      if not public.site_so_chaves(v_c, array['marcos']) then
+      -- 'foto': o quadro único da história (o 4/5 do Clássico)
+      if not public.site_so_chaves(v_c, array['marcos', 'foto']) then
         return 'história: conteúdo inválido';
       end if;
+      if not public.site_foto_ok(v_c->'foto', p_event_id) then
+        return 'foto inválida';
+      end if;
+      v_fotos := v_fotos + case when jsonb_typeof(v_c->'foto') = 'string' then 1 else 0 end;
       if not public.site_lista_ok(v_c->'marcos', 10) then
         return 'história: até 10 marcos';
       end if;
@@ -547,6 +582,25 @@ begin
     raise exception '%', v_erro;
   end if;
 
+  -- toda foto da estrutura já precisa ESTAR no balde: um caminho só
+  -- reservado (a URL de envio ainda valendo) subiria depois da aprovação
+  -- do dono. O arquivo que existe não muda (sem upsert, sem policy de
+  -- update ou delete), então o que se salva é o que o dono revisa.
+  -- Os cinco caminhos são todos os lugares onde a régua aceita foto.
+  if exists (
+    select 1
+      from (select jsonb_path_query(p_estrutura, 'lax $[*].conteudo.foto') as f
+            union all select jsonb_path_query(p_estrutura, 'lax $[*].conteudo.fotos[*]')
+            union all select jsonb_path_query(p_estrutura, 'lax $[*].conteudo.marcos[*].foto')
+            union all select jsonb_path_query(p_estrutura, 'lax $[*].conteudo.itens[*].foto')
+            union all select jsonb_path_query(p_estrutura, 'lax $[*].conteudo.pares[*].fotos[*]')) x
+     where jsonb_typeof(x.f) = 'string'
+       and not exists (select 1 from storage.objects o
+                        where o.bucket_id = 'site' and o.name = x.f #>> '{}')
+  ) then
+    raise exception 'uma foto ainda não terminou de subir — envie de novo';
+  end if;
+
   select public.site_itens_de_presente(s.estrutura) into v_salvos
     from public.evento_site s
    where s.event_id = p_event_id
@@ -733,6 +787,126 @@ $$;
 
 revoke all on function public.site_montado(uuid, jsonb) from public, anon, authenticated;
 
+-- ------------------------------------------------------------
+-- 6) O QUE O ANÔNIMO RECEBE: só o conteúdo do que aparece
+-- ------------------------------------------------------------
+-- A fotografia aprovada guarda o site inteiro, inclusive o que o casal
+-- escondeu com o olho e o que o modelo escolhido não desenha. O
+-- convidado não vê, mas o navegador dele receberia (a página serializa os
+-- dados, e a RPC abre para a chave pública). Aqui o bloco fica e só sai
+-- o 'conteudo' (sem o bloco, a tela recriaria o tipo como visível):
+--   · bloco escondido (visivel = false);
+--   · modelo 'convite' (ou sem modelo): ele só lê o conteúdo do texto
+--     livre — o resto ele tira das colunas;
+--   · 'cenas' fora do Monograma, 'jeito' fora do Clássico e das Alianças
+--     (espelha MODELOS[*].desenha em src/lib/site-modelos.ts; o texto
+--     livre e os blocos de hoje os modelos novos desenham no estilo deles).
+-- E as colunas de cada bloco escondido saem nulas quando não há nenhum
+-- bloco visível do mesmo tipo: a chave Pix costuma ser CPF ou telefone.
+-- Com a estrutura vazia vale a ordem padrão (tudo visível): nada sai.
+-- A prévia da noiva e a revisão do dono usam site_montado direto, com
+-- tudo; esta régua vale só para a site_publico.
+create or replace function public.site_so_o_que_aparece(p_conteudo jsonb)
+returns jsonb
+language sql
+immutable
+security definer
+set search_path = public
+as $$
+  select case
+    when p_conteudo is null or coalesce(jsonb_typeof(p_conteudo->'estrutura'), '') <> 'array'
+      then p_conteudo
+    else
+      jsonb_set(p_conteudo, '{estrutura}', coalesce((
+        select jsonb_agg(
+                 case
+                   when jsonb_typeof(x.b) <> 'object' then x.b
+                   when x.b->'visivel' = 'false'::jsonb
+                     or (coalesce(p_conteudo->'tema'->>'modelo', '') not in
+                           ('classico', 'aliancas', 'cartoes', 'monograma', 'franca', 'violino')
+                         and x.b->>'tipo' is distinct from 'texto')
+                     or (x.b->>'tipo' = 'cenas'
+                         and p_conteudo->'tema'->>'modelo' is distinct from 'monograma')
+                     or (x.b->>'tipo' = 'jeito'
+                         and coalesce(p_conteudo->'tema'->>'modelo', '') not in ('classico', 'aliancas'))
+                   then x.b - 'conteudo'
+                   else x.b
+                 end
+                 order by x.n)
+          from jsonb_array_elements(p_conteudo->'estrutura') with ordinality x(b, n)
+      ), '[]'::jsonb))
+      || (select coalesce(jsonb_object_agg(c.k, null::jsonb), '{}'::jsonb)
+            from (values ('presentes', 'pix_chave'), ('presentes', 'pix_titular'),
+                         ('presentes', 'presentes_link'), ('presentes', 'presentes_texto'),
+                         ('historia', 'historia'), ('historia', 'historia_titulo'),
+                         ('historia', 'foto_casal_path'),
+                         ('dress_code', 'dress_code'), ('dress_code', 'dress_code_titulo'),
+                         ('mensagem', 'mensagem')) c(tipo, k)
+           where exists (select 1 from jsonb_array_elements(p_conteudo->'estrutura') b
+                          where b->>'tipo' = c.tipo and b->'visivel' = 'false'::jsonb)
+             and not exists (select 1 from jsonb_array_elements(p_conteudo->'estrutura') b
+                              where b->>'tipo' = c.tipo
+                                and b->'visivel' is distinct from 'false'::jsonb))
+      -- os modelos novos só desenham fotos do balde 'site', que passam
+      -- pela régua (a foto já precisa estar lá) e pela revisão; a foto do
+      -- casal de antes (balde 'inspiracoes', que aceita troca) não vai
+      || case when p_conteudo->'tema'->>'modelo' in
+                ('classico', 'aliancas', 'cartoes', 'monograma', 'franca', 'violino')
+              then '{"foto_casal_path": null}'::jsonb
+              else '{}'::jsonb end
+  end
+$$;
+
+revoke all on function public.site_so_o_que_aparece(jsonb) from public, anon, authenticated;
+
+-- o corpo da 185, trocando só a chave 'site' pela versão limpa
+create or replace function public.site_publico(p_ref text)
+returns json
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with alvo as (
+    select e.id as event_id, false as por_slug, null::text as slug_usado
+    from public.events e
+    where e.rsvp_hash = p_ref
+    union all
+    select s.event_id, true, s.slug
+    from public.site_slugs s
+    where s.slug = lower(p_ref)
+    limit 1
+  ),
+  s as (
+    select es.event_id as ev_id, es.publicado_conteudo, a.por_slug, a.slug_usado
+    from alvo a
+    join public.evento_site es on es.event_id = a.event_id
+    where es.publicado
+  )
+  select (
+    public.site_montado(s.ev_id, s.publicado_conteudo)
+    || jsonb_build_object('site', public.site_so_o_que_aparece(s.publicado_conteudo))
+    -- o álbum e o mural escondidos: as fotos e os recados dos convidados
+    -- não vão (a chave do site continua ligada; o olho é do bloco)
+    || (select coalesce(jsonb_object_agg(c.k, null::jsonb), '{}'::jsonb)
+          from (values ('album', 'album'), ('mural', 'recados')) c(tipo, k)
+         where jsonb_typeof(s.publicado_conteudo->'estrutura') = 'array'
+           and exists (select 1 from jsonb_array_elements(s.publicado_conteudo->'estrutura') b
+                        where b->>'tipo' = c.tipo and b->'visivel' = 'false'::jsonb)
+           and not exists (select 1 from jsonb_array_elements(s.publicado_conteudo->'estrutura') b
+                            where b->>'tipo' = c.tipo
+                              and b->'visivel' is distinct from 'false'::jsonb))
+    || jsonb_build_object(
+         'ref_e_slug_antigo',
+         (s.por_slug and s.slug_usado is distinct from
+            (select slug from public.site_slugs where event_id = s.ev_id and atual)))
+  )::json
+  from s
+$$;
+
+revoke all on function public.site_publico(text) from public;
+grant execute on function public.site_publico(text) to anon, authenticated;
+
 commit;
 
 -- ------------------------------------------------------------
@@ -748,7 +922,7 @@ with ex as (
 completo as (
   select replace($j$[
     {"id": "capa", "tipo": "capa", "conteudo": {"nome1": "Ana", "nome2": "Bia", "frase": "Vamos casar", "foto": "@F"}},
-    {"id": "historia", "tipo": "historia", "conteudo": {"marcos": [
+    {"id": "historia", "tipo": "historia", "conteudo": {"foto": "@F", "marcos": [
       {"ano": "2019", "cidade": "Rio", "curto": "O café", "titulo": "Onde tudo começou", "texto": "…", "icone": "cafe", "foto": "@F"},
       {"titulo": "O pedido", "icone": null, "foto": null}]}},
     {"id": "momentos", "tipo": "momentos", "conteudo": {"itens": [{"rotulo": "Cerimônia", "hora": "16:30", "nota": "Na capela"}, {"rotulo": "Festa", "hora": "23:59"}]}},
@@ -772,6 +946,8 @@ recusados(caso, estrutura, tema) as (
   select x.caso, replace(x.estrutura, '@F', (select f from ex))::jsonb, x.tema::jsonb
     from (values
       ('tipo desconhecido',        '[{"tipo": "carrossel"}]', '{}'),
+      ('capa escondida',           '[{"tipo": "capa", "visivel": false}]', '{}'),
+      ('rodapé escondido',         '[{"tipo": "rodape", "visivel": false}]', '{}'),
       ('chave desconhecida',       '[{"tipo": "capa", "conteudo": {"titulo": "x"}}]', '{}'),
       ('número no lugar de texto', '[{"tipo": "capa", "conteudo": {"nome1": 5}}]', '{}'),
       ('nome com 41 letras',       '[{"tipo": "capa", "conteudo": {"nome1": "' || repeat('a', 41) || '"}}]', '{}'),
@@ -781,6 +957,7 @@ recusados(caso, estrutura, tema) as (
       ('marco que não é objeto',   '[{"tipo": "historia", "conteudo": {"marcos": ["x"]}}]', '{}'),
       ('marcos em objeto',         '[{"tipo": "historia", "conteudo": {"marcos": {"a": 1}}}]', '{}'),
       ('título e texto na história (ficam nas colunas)', '[{"tipo": "historia", "conteudo": {"titulo": "x"}}]', '{}'),
+      ('foto da história de outro evento', '[{"tipo": "historia", "conteudo": {"foto": "' || (select f_outro from ex) || '"}}]', '{}'),
       ('hora 24:00',               '[{"tipo": "momentos", "conteudo": {"itens": [{"rotulo": "x", "hora": "24:00"}]}}]', '{}'),
       ('hora 7:30',                '[{"tipo": "momentos", "conteudo": {"itens": [{"rotulo": "x", "hora": "7:30"}]}}]', '{}'),
       ('9 momentos',               '[{"tipo": "momentos", "conteudo": {"itens": [' || rtrim(repeat('{"rotulo": "x"},', 9), ',') || ']}}]', '{}'),
@@ -823,7 +1000,7 @@ recusados(caso, estrutura, tema) as (
       ('chave de tema desconhecida', '[]', '{"extra": true}')
     ) x(caso, estrutura, tema)
 )
-select 'a _base tem a mesma assinatura, security definer e search_path, usa a regra nova e trava os presentes em gestao' as item,
+select 'a _base tem a mesma assinatura, security definer e search_path, usa a regra nova, trava os presentes em gestao e exige a foto no balde' as item,
        coalesce((select p.prosecdef
                         and p.prorettype = 'void'::regtype
                         and 'search_path=public' = any (p.proconfig)
@@ -831,6 +1008,8 @@ select 'a _base tem a mesma assinatura, security definer e search_path, usa a re
                         and p.prosrc like '%site_erro_da_estrutura(p_event_id, p_estrutura, p_tema)%'
                         and p.prosrc like '%site_itens_de_presente(p_estrutura)%'
                         and p.prosrc like '%portal_pode_fazer(p_event_id, ''gestao'')%'
+                        and p.prosrc like '%storage.objects%'
+                        and p.prosrc like '%conteudo.pares[*].fotos[*]%'
                    from pg_proc p
                   where p.oid = to_regprocedure('public.portal_salvar_estrutura_site_base(uuid, jsonb, jsonb)')), false) as ok
 union all
@@ -926,5 +1105,88 @@ select 'site_montado: endereço só nos modelos novos com o local visível, praz
        and not has_function_privilege('anon', 'public.site_montado(uuid, jsonb)', 'execute')
        and not has_function_privilege('authenticated', 'public.site_montado(uuid, jsonb)', 'execute')
 union all
-select 'a página pública continua só com o que está no ar',
-       pg_get_functiondef('public.site_publico(text)'::regprocedure) like '%where es.publicado%';
+select 'a régua recusa evento nulo e foto sem evento (o espaço vazio continua valendo)',
+       public.site_erro_da_estrutura(null, '[]'::jsonb, '{}'::jsonb) is not null
+       and public.site_foto_ok(to_jsonb((select f from ex)), null) = false
+       and public.site_fotos_ok(jsonb_build_array((select f from ex)), 3, null) = false
+       and public.site_foto_ok('null'::jsonb, null) = true
+union all
+select 'o anônimo recebe o bloco escondido sem conteúdo, e a chave Pix nula com os presentes escondidos',
+       (select (r->'estrutura'->0) ? 'conteudo' = false
+               and (r->'estrutura'->0->>'tipo') = 'especiais'
+               and (r->'estrutura'->1->'conteudo'->>'titulo') = 'Recado'
+               and (r->'estrutura'->2) ? 'conteudo' = false
+               and r->'pix_chave' = 'null'::jsonb
+               and r->'pix_titular' = 'null'::jsonb
+               and r->>'mensagem' = 'Olá'
+          from (select public.site_so_o_que_aparece(jsonb_build_object(
+                  'mensagem', 'Olá', 'pix_chave', '11999990000', 'pix_titular', 'Ana',
+                  'tema', jsonb_build_object('modelo', 'classico'),
+                  'estrutura', jsonb_build_array(
+                    jsonb_build_object('tipo', 'especiais', 'visivel', false,
+                                       'conteudo', jsonb_build_object('pares', jsonb_build_array(jsonb_build_object('nomes', 'Caio e Duda')))),
+                    jsonb_build_object('tipo', 'texto', 'conteudo', jsonb_build_object('titulo', 'Recado', 'texto', 'Venham!')),
+                    jsonb_build_object('tipo', 'presentes', 'visivel', false,
+                                       'conteudo', jsonb_build_object('itens', jsonb_build_array(jsonb_build_object('id', 'a', 'valor_centavos', 5000)))),
+                    jsonb_build_object('tipo', 'mensagem')))) as r) t)
+union all
+select 'o anônimo não recebe o que o modelo não desenha (cenas fora do Monograma, jeito fora do Clássico e das Alianças, e no Convite só o texto livre)',
+       (select (public.site_so_o_que_aparece(jsonb_build_object('tema', jsonb_build_object('modelo', 'franca'),
+                  'estrutura', jsonb_build_array(
+                    jsonb_build_object('tipo', 'cenas', 'conteudo', jsonb_build_object('itens', '[]'::jsonb)),
+                    jsonb_build_object('tipo', 'jeito', 'conteudo', jsonb_build_object('frases', '["x"]'::jsonb)),
+                    jsonb_build_object('tipo', 'momentos', 'conteudo', jsonb_build_object('itens', '[]'::jsonb)))))->'estrutura') as e) is not null
+       and (select not (e->0 ? 'conteudo') and not (e->1 ? 'conteudo') and (e->2 ? 'conteudo')
+              from (select public.site_so_o_que_aparece(jsonb_build_object('tema', jsonb_build_object('modelo', 'franca'),
+                      'estrutura', jsonb_build_array(
+                        jsonb_build_object('tipo', 'cenas', 'conteudo', jsonb_build_object('itens', '[]'::jsonb)),
+                        jsonb_build_object('tipo', 'jeito', 'conteudo', jsonb_build_object('frases', '["x"]'::jsonb)),
+                        jsonb_build_object('tipo', 'momentos', 'conteudo', jsonb_build_object('itens', '[]'::jsonb)))))->'estrutura' as e) t)
+       and (select (e->0 ? 'conteudo') and (e->1 ? 'conteudo')
+              from (select public.site_so_o_que_aparece(jsonb_build_object('tema', jsonb_build_object('modelo', 'monograma'),
+                      'estrutura', jsonb_build_array(
+                        jsonb_build_object('tipo', 'cenas', 'conteudo', jsonb_build_object('itens', '[]'::jsonb)),
+                        jsonb_build_object('tipo', 'texto', 'conteudo', jsonb_build_object('texto', 'x')))))->'estrutura' as e) t)
+       and (select not (e->0 ? 'conteudo') and (e->1 ? 'conteudo')
+              from (select public.site_so_o_que_aparece(jsonb_build_object(
+                      'estrutura', jsonb_build_array(
+                        jsonb_build_object('tipo', 'capa', 'conteudo', jsonb_build_object('nome1', 'Ana')),
+                        jsonb_build_object('tipo', 'texto', 'conteudo', jsonb_build_object('texto', 'x')))))->'estrutura' as e) t)
+       -- sem estrutura (sites da 128/129): nada muda
+       and public.site_so_o_que_aparece('{"mensagem": "Olá", "pix_chave": "x"}'::jsonb) = '{"mensagem": "Olá", "pix_chave": "x"}'::jsonb
+       and not has_function_privilege('anon', 'public.site_so_o_que_aparece(jsonb)', 'execute')
+       and not has_function_privilege('authenticated', 'public.site_so_o_que_aparece(jsonb)', 'execute')
+union all
+select 'um bloco de presentes escondido e outro visível: a chave Pix fica; jeito fica nas Alianças',
+       (select r->>'pix_chave' = '11999990000'
+               and not ((r->'estrutura'->0) ? 'conteudo')
+               and ((r->'estrutura'->1) ? 'conteudo')
+               and ((r->'estrutura'->2) ? 'conteudo')
+          from (select public.site_so_o_que_aparece(jsonb_build_object(
+                  'pix_chave', '11999990000',
+                  'tema', jsonb_build_object('modelo', 'aliancas'),
+                  'estrutura', jsonb_build_array(
+                    jsonb_build_object('tipo', 'presentes', 'visivel', false, 'conteudo', jsonb_build_object('itens', '[]'::jsonb)),
+                    jsonb_build_object('tipo', 'presentes', 'conteudo', jsonb_build_object('itens', '[]'::jsonb)),
+                    jsonb_build_object('tipo', 'jeito', 'conteudo', jsonb_build_object('frases', '["x"]'::jsonb))))) as r) t)
+union all
+select 'a foto do casal de antes não vai nos modelos novos nem com a história escondida; no Convite com a história visível, fica',
+       public.site_so_o_que_aparece('{"foto_casal_path": "a/b.jpg", "tema": {"modelo": "classico"}, "estrutura": [{"tipo": "texto"}]}'::jsonb)->'foto_casal_path' = 'null'::jsonb
+       and public.site_so_o_que_aparece('{"foto_casal_path": "a/b.jpg", "estrutura": [{"tipo": "historia", "visivel": false}]}'::jsonb)->'foto_casal_path' = 'null'::jsonb
+       and public.site_so_o_que_aparece('{"foto_casal_path": "a/b.jpg", "estrutura": [{"tipo": "historia"}]}'::jsonb)->>'foto_casal_path' = 'a/b.jpg'
+union all
+select 'cada site já publicado abre pela página pública nova, sem conteúdo de bloco escondido',
+       coalesce((select bool_and(r is not null
+                                 and not exists (select 1 from jsonb_array_elements(
+                                                    case when jsonb_typeof(r::jsonb->'site'->'estrutura') = 'array'
+                                                         then r::jsonb->'site'->'estrutura' else '[]'::jsonb end) b
+                                                  where b->'visivel' = 'false'::jsonb and b ? 'conteudo'))
+                   from (select public.site_publico(e.rsvp_hash) as r
+                           from public.evento_site es
+                           join public.events e on e.id = es.event_id
+                          where es.publicado and e.rsvp_hash is not null) x), true)
+union all
+select 'a página pública continua só com o que está no ar, agora pela régua do que aparece, e aberta ao anon',
+       pg_get_functiondef('public.site_publico(text)'::regprocedure) like '%where es.publicado%'
+       and pg_get_functiondef('public.site_publico(text)'::regprocedure) like '%site_so_o_que_aparece(s.publicado_conteudo)%'
+       and has_function_privilege('anon', 'public.site_publico(text)', 'execute');

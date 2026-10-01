@@ -180,7 +180,7 @@ export function ModeloClassico({ dados, midia, modo }: PropsDoModelo) {
     const p: PropsDaSecao = { dados, bloco: b, casal, modo, ancora: ancoraDe(b) };
     switch (b.tipo) {
       case "historia":
-        return <Historia {...p} fotoCasalUrl={midia.fotoCasalUrl} />;
+        return <Historia {...p} fotoCasalUrl={null /* só fotos do balde site: a foto do casal de antes aceita troca depois da revisão (191) */} />;
       case "momentos":
         return <GrandeDia {...p} comLocal={tipos.has("local")} />;
       case "contagem":

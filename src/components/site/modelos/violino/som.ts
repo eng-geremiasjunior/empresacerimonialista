@@ -24,13 +24,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ModoDoSite } from "@/components/site/SiteDoEvento";
 
 /**
- * A faixa do violino. O arquivo do pacote do dono (Pixabay, 4 min) ainda
- * não está no repositório nem teve a licença conferida; até lá, null: sem
- * faixa, o botão da capa e a pílula de som não aparecem.
- * Quando entrar: recodificar a 96–128 kbps e servir do próprio domínio
- * (ou de um balde com CORS), porque o GainNode exige CORS.
+ * A faixa do violino: "Beautiful and Emotional Solo Violin (EP15)", de
+ * iamnop, Pixabay (id 356054), pela Licença de Conteúdo do Pixabay (uso
+ * comercial livre, sem crédito obrigatório) — o dono baixou e confirmou
+ * em 01/10/2026. 4 min, recodificada a 128 kbps (3,8 MB) e servida do
+ * próprio domínio, porque o GainNode exige a mesma origem (ou CORS). Só
+ * baixa no toque do convidado, e nunca na prévia nem na revisão.
  */
-export const FAIXA_DO_VIOLINO: string | null = null;
+export const FAIXA_DO_VIOLINO: string | null = "/site/violino.mp3";
 
 const SUBIDA_MS = 700;
 const OCIOSO_MS = 1300;

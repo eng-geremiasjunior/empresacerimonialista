@@ -10,6 +10,8 @@ import { getSiteParaRevisar } from "@/lib/supabase/admin-sites";
 import { assinarMidiaDoConvite, assinarMidiaDoSite } from "@/lib/supabase/assinar-midia-convite";
 import { haQuanto } from "@/lib/comercial/pedidos";
 import { quandoLegivel } from "@/lib/rsvp-convite";
+import { lerEstrutura } from "@/lib/site-blocos";
+import { fotosDaEstrutura } from "@/lib/site-conteudo";
 import { PreviaDoSite } from "@/components/convite/PreviaDoSite";
 import { DecisaoDoSite } from "../DecisaoDoSite";
 import { FotosDaVersao, PresentesDaVersao, TrocaDeAparencia } from "@/components/admin/sites/MudancasDaVersao";
@@ -34,6 +36,12 @@ export default async function SiteParaRevisarPage({ params }: { params: { id: st
   ]);
   const base = r.pendente ?? r.no_ar;
   const agora = new Date();
+  // o dono não aprova foto que não viu: a da versão pendente que ficou
+  // sem URL assinada trava o "Aprovar e publicar"
+  const assinadas: Record<string, string> = urlsPend;
+  const semPrevia = r.pendente
+    ? fotosDaEstrutura(lerEstrutura(r.pendente.site?.estrutura)).filter((f) => !assinadas[f]).length
+    : 0;
 
   return (
     <div data-adm-secao="sites" className="flex flex-col gap-4">
@@ -58,7 +66,13 @@ export default async function SiteParaRevisarPage({ params }: { params: { id: st
         </p>
       </header>
 
-      <DecisaoDoSite eventId={params.id} versao={r.versao} emAnalise={r.status === "em_analise"} noAr={r.publicado} />
+      <DecisaoDoSite
+        eventId={params.id}
+        versao={r.versao}
+        emAnalise={r.status === "em_analise"}
+        noAr={r.publicado}
+        semPrevia={semPrevia}
+      />
 
       {r.pendente && (
         <div className="flex flex-col gap-4">

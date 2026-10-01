@@ -25,6 +25,12 @@
 // texto e a foto do casal vêm entre o título e a onda (trocar de modelo
 // não perde conteúdo). Revisão do dono: todos os capítulos abertos, um
 // embaixo do outro.
+//
+// O desenho do T03/T04 não tem foto ÚNICA da história (só a 16/10 de cada
+// capítulo): a foto do casal de antes (foto_casal_path) aparece só quando
+// existe — nunca o espaço vazio na prévia, que nada no editor preenche. A
+// foto da história do Clássico (conteudo.foto) não é desenhada aqui; fica
+// guardada no bloco.
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { lerHistoria, type IconeDoMarco, type Marco } from "@/lib/site-conteudo";
@@ -76,7 +82,8 @@ export function Historia({ dados, bloco, ancora, modo, fotoCasalUrl }: PropsDaSe
   const site = dados.site;
   const marcos = lerHistoria(bloco.conteudo).marcos;
   const titulo = site?.historia_titulo || TITULO_DO_DESENHO;
-  const temFoto = useTemFoto();
+  // sem espaço vazio na prévia: o T03 não desenha a foto única
+  const temFotoDoCasal = !!fotoCasalUrl;
 
   return (
     <section id={ancora} data-sec={ancora} data-revelar="up" className="k-cartao k-historia">
@@ -85,7 +92,7 @@ export function Historia({ dados, bloco, ancora, modo, fotoCasalUrl }: PropsDaSe
         <div className="k-historia-texto">
           <h2 className="k-h2">{titulo}</h2>
           {site?.historia && <p className="k-historia-p">{site.historia}</p>}
-          {temFoto(null, fotoCasalUrl) && (
+          {temFotoDoCasal && (
             <div className="k-capitulo-foto">
               <FotoDoCartao url={fotoCasalUrl} />
             </div>
@@ -97,10 +104,10 @@ export function Historia({ dados, bloco, ancora, modo, fotoCasalUrl }: PropsDaSe
           titulo={titulo}
           espalhar={modo === "revisao"}
           abertura={
-            (site?.historia || temFoto(null, fotoCasalUrl)) && (
+            (site?.historia || temFotoDoCasal) && (
               <div className={`k-historia-abre ${site?.historia ? "" : "k-historia-abre--so-foto"}`}>
                 {site?.historia && <p className="k-historia-p">{site.historia}</p>}
-                {temFoto(null, fotoCasalUrl) && (
+                {temFotoDoCasal && (
                   <div className="k-capitulo-foto">
                     <FotoDoCartao url={fotoCasalUrl} />
                   </div>

@@ -12,6 +12,7 @@
 // dono e o editor do portal.
 
 import { estruturaEfetiva, type BlocoDoSite } from "@/lib/site-blocos";
+import { modeloDoTema, type ModeloId } from "@/lib/site-modelos";
 import type { SitePublico } from "@/lib/site-publico-tipos";
 import { temNome } from "@/lib/rsvp-convite";
 
@@ -71,7 +72,10 @@ export type Marco = {
   icone: IconeDoMarco | null;
   foto: CaminhoDeFoto | null;
 };
-export type ConteudoHistoria = { marcos: Marco[] };
+/** foto: o espaço único da história (a foto 4/5 do Clássico), um caminho
+ *  do balde 'site' como o da capa; os modelos com foto por marco não a
+ *  desenham. */
+export type ConteudoHistoria = { foto: CaminhoDeFoto | null; marcos: Marco[] };
 export type Momento = { rotulo: string; hora: string; nota: string };
 export type ConteudoMomentos = { itens: Momento[] };
 export type Cena = { frase: string; foto: CaminhoDeFoto | null };
@@ -145,7 +149,8 @@ export function lerCapa(c: unknown): ConteudoCapa {
 
 /** Marco sem título nem texto não conta história: sai. */
 export function lerHistoria(c: unknown): ConteudoHistoria {
-  const marcos = lista(obj(c).marcos)
+  const o = obj(c);
+  const marcos = lista(o.marcos)
     .map((m): Marco => {
       const o = obj(m);
       const icone = (ICONES_DO_MARCO as readonly string[]).includes(o.icone as string)
@@ -163,7 +168,7 @@ export function lerHistoria(c: unknown): ConteudoHistoria {
     })
     .filter((m) => m.titulo || m.texto)
     .slice(0, LIMITES.marcos);
-  return { marcos };
+  return { foto: foto(o.foto), marcos };
 }
 
 /** A hora da programação: a MESMA régua do banco (191, v_hora). */
@@ -291,9 +296,12 @@ export function fotosDaEstrutura(estrutura: BlocoDoSite[]): CaminhoDeFoto[] {
       case "capa":
         todas.push(...[lerCapa(c).foto].filter((f): f is string => !!f));
         break;
-      case "historia":
-        todas.push(...lerHistoria(c).marcos.map((m) => m.foto).filter((f): f is string => !!f));
+      case "historia": {
+        // a foto única da história antes das dos marcos (a ordem do desenho)
+        const h = lerHistoria(c);
+        todas.push(...[h.foto, ...h.marcos.map((m) => m.foto)].filter((f): f is string => !!f));
         break;
+      }
       case "cenas":
         todas.push(...lerCenas(c).itens.map((m) => m.foto).filter((f): f is string => !!f));
         break;
@@ -315,6 +323,73 @@ export function fotosDaEstrutura(estrutura: BlocoDoSite[]): CaminhoDeFoto[] {
     }
   }
   return Array.from(new Set(todas)).slice(0, LIMITES.fotosPorEstrutura);
+}
+
+// ------------------------------------------------- o que o convidado vê
+
+/** O conteúdo do bloco não vai ao convidado: a MESMA régua da
+ *  site_publico (191). Não é modeloDesenha: o texto livre não está no
+ *  'desenha' de todo modelo e os novos o desenham pelo BlocosNoEstilo. */
+function conteudoFica(modelo: ModeloId, tipo: unknown, visivel: unknown): boolean {
+  if (visivel === false) return false;
+  if (modelo === "convite") return tipo === "texto";
+  if (tipo === "cenas") return modelo === "monograma";
+  if (tipo === "jeito") return modelo === "classico" || modelo === "aliancas";
+  return true;
+}
+
+/** As colunas da fotografia que saem quando o tipo só tem bloco escondido. */
+const COLUNAS_DO_TIPO = {
+  presentes: ["pix_chave", "pix_titular", "presentes_link", "presentes_texto"],
+  historia: ["historia", "historia_titulo", "foto_casal_path"],
+  dress_code: ["dress_code", "dress_code_titulo"],
+  mensagem: ["mensagem"],
+} as const satisfies Record<string, readonly (keyof NonNullable<SitePublico["site"]>)[]>;
+
+/**
+ * A página do convidado só com o que aparece — a defesa a mais da régua
+ * que a site_publico (191) já aplica ao anônimo:
+ * · o bloco fica, sem a chave conteudo, quando está escondido; no
+ *   Convite (ou tema sem modelo / desconhecido), exceto o texto livre;
+ *   'cenas' fora do Monograma; 'jeito' fora do Clássico e do Alianças;
+ * · as colunas de presentes, história, traje e mensagem saem quando há
+ *   bloco escondido desse tipo e nenhum visível.
+ * A estrutura é a crua do banco (nada é renomeado nem descartado além
+ * disso). A prévia da noiva e a revisão do dono continuam com tudo.
+ */
+export function soOQueAparece(dados: SitePublico): SitePublico {
+  const site = dados.site;
+  if (!site || !Array.isArray(site.estrutura)) return dados;
+  const modelo = modeloDoTema(site.tema ?? null);
+
+  const escondidos = new Set<string>();
+  const visiveis = new Set<string>();
+  const estrutura = (site.estrutura as unknown[]).map((b) => {
+    if (!b || typeof b !== "object" || Array.isArray(b)) return b;
+    const o = b as Record<string, unknown>;
+    if (typeof o.tipo === "string") (o.visivel === false ? escondidos : visiveis).add(o.tipo);
+    if (!("conteudo" in o) || conteudoFica(modelo, o.tipo, o.visivel)) return b;
+    const semConteudo = { ...o };
+    delete semConteudo.conteudo;
+    return semConteudo;
+  });
+
+  const novo: NonNullable<SitePublico["site"]> = { ...site, estrutura };
+  for (const [tipo, colunas] of Object.entries(COLUNAS_DO_TIPO)) {
+    if (!escondidos.has(tipo) || visiveis.has(tipo)) continue;
+    for (const c of colunas) novo[c] = null;
+  }
+  // os modelos novos só desenham fotos do balde 'site' (revisadas); a foto
+  // do casal de antes aceita troca depois da revisão
+  if (modelo !== "convite") novo.foto_casal_path = null;
+  // o álbum e o mural escondidos: as fotos e os recados dos convidados não vão
+  const soEscondido = (tipo: string) => escondidos.has(tipo) && !visiveis.has(tipo);
+  return {
+    ...dados,
+    site: novo,
+    album: soEscondido("album") ? null : dados.album,
+    recados: soEscondido("mural") ? null : dados.recados,
+  };
 }
 
 // ---------------------------------------------------------------- nomes

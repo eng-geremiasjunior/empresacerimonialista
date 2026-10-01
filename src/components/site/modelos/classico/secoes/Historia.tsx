@@ -6,22 +6,26 @@
 // com o fio de acento crescendo com a rolagem e cada ponto preenchido
 // quando passa de 62% da tela.
 //
-// Sem marcos, fica só o texto de hoje (título e história). A foto é a
-// foto do casal da história (foto_casal_path).
+// Sem marcos, fica só o texto de hoje (título e história). A foto é a do
+// bloco (conteudo.foto, que a noiva escolhe no editor); sem ela, a foto do
+// casal de antes (foto_casal_path).
 
 import { useRef } from "react";
 import { lerHistoria } from "@/lib/site-conteudo";
 import { useCena } from "@/components/site/pecas/useCena";
-import { Quadro, type PropsDaSecao } from "../comum";
+import { Quadro, useUrlDaFoto, type PropsDaSecao } from "../comum";
 
 export function temHistoria(p: Pick<PropsDaSecao, "dados" | "bloco">): boolean {
   const s = p.dados.site;
-  return !!(s?.historia || s?.historia_titulo || lerHistoria(p.bloco.conteudo).marcos.length);
+  const h = lerHistoria(p.bloco.conteudo);
+  return !!(s?.historia || s?.historia_titulo || h.marcos.length || h.foto);
 }
 
 export function Historia({ dados, bloco, ancora, modo, fotoCasalUrl }: PropsDaSecao & { fotoCasalUrl: string | null }) {
   const site = dados.site;
-  const marcos = lerHistoria(bloco.conteudo).marcos;
+  const { foto, marcos } = lerHistoria(bloco.conteudo);
+  const resolver = useUrlDaFoto();
+  const fotoUrl = foto ? resolver(foto) : fotoCasalUrl;
   const casca = useRef<HTMLDivElement>(null);
   const camada = useRef<HTMLDivElement>(null);
   const linhaDoTempo = useRef<HTMLDivElement>(null);
@@ -53,9 +57,9 @@ export function Historia({ dados, bloco, ancora, modo, fotoCasalUrl }: PropsDaSe
   return (
     <section id={ancora} className="c-secao c-historia">
       <div className="c-historia-grade">
-        {(fotoCasalUrl || modo === "previa") && (
+        {(fotoUrl || modo === "previa") && (
           <div ref={casca} className="c-historia-foto">
-            <Quadro url={fotoCasalUrl} proporcao="4/5" parallax={{ ref: camada }} />
+            <Quadro url={fotoUrl} proporcao="4/5" parallax={{ ref: camada }} />
           </div>
         )}
         <div className="c-historia-texto">

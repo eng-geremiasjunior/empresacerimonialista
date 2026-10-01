@@ -171,7 +171,7 @@ export function ModeloFranca({ dados, midia, modo }: PropsDoModelo) {
       case "mensagem":
         return <Bienvenue {...p} />;
       case "historia":
-        return <Historia {...p} fotoCasalUrl={midia.fotoCasalUrl} />;
+        return <Historia {...p} fotoCasalUrl={null /* só fotos do balde site: a foto do casal de antes aceita troca depois da revisão (191) */} />;
       case "local":
         return <Chateau {...p} />;
       case "momentos":

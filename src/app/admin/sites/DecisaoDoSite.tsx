@@ -20,11 +20,14 @@ export function DecisaoDoSite({
   versao,
   emAnalise,
   noAr,
+  semPrevia = 0,
 }: {
   eventId: string;
   versao: number;
   emAnalise: boolean;
   noAr: boolean;
+  /** fotos da versão pendente sem URL assinada: com alguma, não aprova */
+  semPrevia?: number;
 }) {
   const router = useRouter();
   const [pendente, iniciar] = useTransition();
@@ -57,12 +60,17 @@ export function DecisaoDoSite({
           <>
             <button
               type="button"
-              disabled={pendente}
+              disabled={pendente || semPrevia > 0}
               onClick={() => rodar(() => decidirSite(eventId, true, null, versao), "Aprovado: o site está no ar.")}
-              className={`${botao} bg-stone-900 text-white hover:bg-stone-700`}
+              className={`${botao} bg-stone-900 text-white hover:bg-stone-700 disabled:hover:bg-stone-900`}
             >
               Aprovar e publicar
             </button>
+            {semPrevia > 0 && (
+              <span className="text-xs text-red-700">
+                {semPrevia === 1 ? "1 foto sem prévia" : `${semPrevia} fotos sem prévia`}
+              </span>
+            )}
             <button
               type="button"
               disabled={pendente}

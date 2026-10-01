@@ -6,6 +6,7 @@ import { assinarMidiaDoConvite, assinarMidiaDoSite } from "@/lib/supabase/assina
 import { clienteAnonimoPublico } from "@/lib/supabase/anon-publico";
 import { anfitrioesDoConvite } from "@/lib/anfitrioes-do-convite";
 import { conviteCom, convitePara, nomeOuConvite, quandoLegivel } from "@/lib/rsvp-convite";
+import { soOQueAparece } from "@/lib/site-conteudo";
 import type { SitePublico } from "@/lib/site-publico-tipos";
 
 export const dynamic = "force-dynamic";
@@ -75,12 +76,14 @@ export default async function ConfirmarEventoPage({
   // 1ª camada: o site publicado
   const site = await carregarSite(params.hash);
   if (site) {
-    // as fotos vivem em bucket privado: o servidor assina antes de
-    // entregar, e só os caminhos que a RPC autorizou
-    const [midia, urls] = await Promise.all([assinarMidiaDoConvite(site), assinarMidiaDoSite(site, { soVisiveis: true })]);
+    // só o que aparece (a régua da site_publico, de novo aqui). As fotos
+    // vivem em bucket privado: o servidor assina antes de entregar, e só
+    // os caminhos que a RPC autorizou
+    const dados = soOQueAparece(site);
+    const [midia, urls] = await Promise.all([assinarMidiaDoConvite(dados), assinarMidiaDoSite(dados, { soVisiveis: true })]);
     return (
       <SiteDoEvento
-        dados={site}
+        dados={dados}
         midia={{ fotosAlbum: midia.fotosAlbum, fotoCasalUrl: midia.fotoCasalUrl, urls }}
         modo="publico"
       />

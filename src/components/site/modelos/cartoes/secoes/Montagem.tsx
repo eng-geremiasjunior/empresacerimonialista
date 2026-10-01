@@ -200,7 +200,7 @@ export function MeioDosCartoes({
     const p: PropsDaSecao = { dados, bloco: b, casal, modo, ancora: ancoras.get(b.id) };
     switch (b.tipo) {
       case "historia":
-        return <Historia {...p} fotoCasalUrl={midia.fotoCasalUrl} />;
+        return <Historia {...p} fotoCasalUrl={null /* só fotos do balde site: a foto do casal de antes aceita troca depois da revisão (191) */} />;
       case "momentos":
         return <GrandeDia {...p} atraso={atraso} />;
       case "local":

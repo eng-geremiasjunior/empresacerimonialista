@@ -187,7 +187,7 @@ export function ModeloViolino({ dados, midia, modo }: PropsDoModelo) {
       case "mensagem":
         return <Bienvenue {...p} />;
       case "historia":
-        return <Trilha {...p} fotoCasalUrl={midia.fotoCasalUrl} motor={som.motor} />;
+        return <Trilha {...p} fotoCasalUrl={null /* só fotos do balde site: a foto do casal de antes aceita troca depois da revisão (191) */} motor={som.motor} />;
       case "local":
         return <Chateau {...p} />;
       case "momentos":

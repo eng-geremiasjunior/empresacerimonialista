@@ -1,20 +1,21 @@
 "use client";
 
-// Nossa história: os marcos. O título e o texto únicos continuam nas
-// colunas (o NossoSite cuida deles); aqui só a lista.
-// 191: { marcos[≤10]: { ano ≤10, cidade ≤40, curto ≤24, titulo ≤80,
+// Nossa história: a foto da história e os marcos. O título e o texto
+// únicos continuam nas colunas (o NossoSite cuida deles); aqui a foto e a
+// lista.
+// 191: { foto, marcos[≤10]: { ano ≤10, cidade ≤40, curto ≤24, titulo ≤80,
 //        texto ≤600, icone ∈ ICONES_DO_MARCO, foto } }.
 //
 // Cada modelo pede só o que desenha (o que não aparece não é pedido, mas
 // o que já foi escrito fica guardado — trocar de modelo não perde nada):
-//   classico           ano, título
-//   aliancas           ano, título, foto
-//   cartoes, monograma ano, curto, título, texto, ícone, foto
-//   franca, violino    ano, cidade, título, texto, foto
+//   classico           a foto da história (4/5); marcos: ano, título
+//   aliancas           marcos: ano, título, foto
+//   cartoes, monograma marcos: ano, curto, título, texto, ícone, foto
+//   franca, violino    marcos: ano, cidade, título, texto, foto
 
 import { Coffee, Heart, Home, Plane, Gem } from "lucide-react";
 import type { IconeDoMarco } from "@/lib/site-conteudo";
-import type { ModeloId } from "@/lib/site-modelos";
+import { MODELOS, type ModeloId } from "@/lib/site-modelos";
 import { TRACO } from "@/components/portal/icones";
 import { CampoFoto, espacoDoModelo, temFotoPorItem } from "./CampoFoto";
 import { BotaoAdicionar, Campo, ItemDaLista, campo, coluna, iconeBotao, mover } from "./pecas";
@@ -49,6 +50,13 @@ function oQuePede(modelo: ModeloId): Pede {
   }
 }
 
+/** O desenho tem a foto ÚNICA da história (um espaço que não é de cada
+ *  marco)? Só o Clássico; o Convite não desenha as fotos do balde. */
+function temFotoUnica(modelo: ModeloId): boolean {
+  if (modelo === "convite") return false;
+  return (MODELOS[modelo].espacos.historia ?? []).some((e) => !e.porItem);
+}
+
 const ICONES: { id: IconeDoMarco; nome: string; Icone: typeof Coffee }[] = [
   { id: "cafe", nome: "Café", Icone: Coffee },
   { id: "aviao", nome: "Viagem", Icone: Plane },
@@ -73,11 +81,17 @@ export function EditorHistoria({ conteudo, onChange, modelo, eventoId, urls, des
       };
     });
 
+  // a foto da história fica no bloco mesmo no modelo que não a desenha
+  const foto = fotoDoEvento(obj(conteudo).foto, eventoId);
+
   const pede = oQuePede(modelo);
   const comFoto = temFotoPorItem(modelo, "historia");
+  const fotoUnica = temFotoUnica(modelo);
+  const espacoUnico = espacoDoModelo(modelo, "historia");
 
-  const gravar = (nova: MarcoEditado[]) =>
+  const gravar = (nova: MarcoEditado[], novaFoto: string | null = foto) =>
     onChange({
+      ...compacto({ foto: novaFoto }),
       marcos: nova.map((m) =>
         compacto({ ano: m.ano, cidade: m.cidade, curto: m.curto, titulo: m.titulo, texto: m.texto, icone: m.icone, foto: m.foto })
       ),
@@ -86,6 +100,20 @@ export function EditorHistoria({ conteudo, onChange, modelo, eventoId, urls, des
 
   return (
     <div style={coluna}>
+      {fotoUnica && (
+        <CampoFoto
+          caminho={foto}
+          onChange={(c) => gravar(marcos, c)}
+          eventoId={eventoId}
+          urls={urls}
+          modelo={modelo}
+          forma={espacoUnico.forma}
+          proporcao={espacoUnico.proporcao}
+          pedirEnvio={pedirEnvio}
+          desabilitado={desabilitado}
+          rotulo="a foto da história"
+        />
+      )}
       {marcos.map((m, i) => {
         const espaco = espacoDoModelo(modelo, "historia", i);
         return (
