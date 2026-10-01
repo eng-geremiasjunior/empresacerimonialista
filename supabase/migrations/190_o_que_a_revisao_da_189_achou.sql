@@ -7,9 +7,9 @@
 -- convergente (pode rodar de novo), não apaga dado, não muda o nível de
 -- ninguém. Precisa estar no ar ANTES do primeiro acesso com nível
 -- diferente de 'casal' (tela "Família e acessos", convite com papel,
--- UPDATE manual de nivel) e ANTES do deploy que lê as opções das Escolhas
--- pela RPC nova (a tela tem plano B, mas sem a RPC ninguém além do casal
--- vê opção nenhuma).
+-- UPDATE manual de nivel). O app que lê as opções das Escolhas pela RPC
+-- nova pode subir antes (sem a RPC ele lê a tabela, como hoje); o app
+-- antigo com a 190 no ar mostra as rodadas sem opções a quem não é casal.
 --
 --   1) evento_campo_valor: dinheiro (moeda, verba, reserva, valor…,
 --      orçamento…) só com 'financeiro'; alergia e medicamento só com

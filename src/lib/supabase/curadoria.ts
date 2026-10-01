@@ -82,8 +82,11 @@ export const getCuradoriasDoPortal = cache(
     if (linhas.length === 0) return [];
 
     const rpc = await supabase.rpc("portal_opcoes_das_escolhas", { p_event_id: eventId });
+    // só a RPC ausente (190 ainda não aplicada) cai na tabela: outro erro
+    // ali devolveria vazio a quem não é casal, e as opções sumiriam caladas
+    const semRpc = rpc.error?.code === "PGRST202" || rpc.error?.code === "42883";
     const opcoesLidas = (
-      rpc.error
+      semRpc
         ? (
             await supabase
               .from("decisao_opcao")
