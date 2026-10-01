@@ -59,6 +59,11 @@ function mapearOpcao(o: Record<string, unknown>): OpcaoCurada {
  * As rodadas que a CLIENTE enxerga: só as publicadas (rascunho é
  * trabalho da cerimonialista) — a policy da 092 já garante isso, e o
  * filtro aqui repete porque a equipe também abre o portal.
+ *
+ * As opções vêm de portal_opcoes_das_escolhas (190): o preço só chega
+ * para quem vê o Financeiro (o casal e a equipe); para os outros níveis
+ * `valor` vem nulo e a tela some com ele. Sem a RPC (190 ainda não
+ * aplicada), lê a tabela — a RLS decide.
  */
 export const getCuradoriasDoPortal = cache(
   async (eventId: string): Promise<Curadoria[]> => {
@@ -67,14 +72,32 @@ export const getCuradoriasDoPortal = cache(
       .from("decisao_curadoria")
       .select(
         `id, evento_decisao_id, estado, escolhida_opcao_id, motivo_recusa, publicada_em, respondida_em,
-         evento_decisao!inner(titulo, evento_objetivo(nome)),
-         decisao_opcao(${COLUNAS_OPCAO})`
+         evento_decisao!inner(titulo, evento_objetivo(nome))`
       )
       .eq("event_id", eventId)
       .in("estado", ["publicada", "escolhida", "recusada"])
       .order("publicada_em", { ascending: false });
 
     const linhas = (data ?? []) as unknown as Record<string, unknown>[];
+    if (linhas.length === 0) return [];
+
+    const rpc = await supabase.rpc("portal_opcoes_das_escolhas", { p_event_id: eventId });
+    const opcoesLidas = (
+      rpc.error
+        ? (
+            await supabase
+              .from("decisao_opcao")
+              .select(`curadoria_id, ${COLUNAS_OPCAO}`)
+              .in("curadoria_id", linhas.map((c) => c.id as string))
+          ).data
+        : rpc.data
+    ) as Record<string, unknown>[] | null;
+    const opcoesPorRodada = new Map<string, Record<string, unknown>[]>();
+    for (const o of opcoesLidas ?? []) {
+      const k = o.curadoria_id as string;
+      opcoesPorRodada.set(k, [...(opcoesPorRodada.get(k) ?? []), o]);
+    }
+
     return linhas.map((c) => {
       const dec = c.evento_decisao as {
         titulo: string;
@@ -90,7 +113,7 @@ export const getCuradoriasDoPortal = cache(
         motivoRecusa: (c.motivo_recusa as string) ?? null,
         publicadaEm: (c.publicada_em as string) ?? null,
         respondidaEm: (c.respondida_em as string) ?? null,
-        opcoes: ((c.decisao_opcao as Record<string, unknown>[]) ?? [])
+        opcoes: (opcoesPorRodada.get(c.id as string) ?? [])
           .map(mapearOpcao)
           .sort((a, b) => a.ordem - b.ordem),
       };
