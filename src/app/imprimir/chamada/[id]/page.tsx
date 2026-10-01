@@ -8,6 +8,7 @@ import {
   type PessoaCortejo,
 } from "@/lib/portal-pessoas-shared";
 import { BotaoImprimir } from "@/app/imprimir/mesas/[id]/BotaoImprimir";
+import { ROTULO_DO_LADO, emSequencia, papelDoCortejo, quemEntra } from "@/lib/cortejo-casamento";
 import "@/app/imprimir/mesas/[id]/impressos.css";
 
 export const dynamic = "force-dynamic";
@@ -56,12 +57,23 @@ export default async function ImprimirChamadaPage({
     ((eventData as { evento_pai_id?: string | null }).evento_pai_id as
       | string
       | null) ?? (eventData as { id: string }).id;
-  const { data: cortejoData } = await supabase
+  // as colunas da 192 (par, lado, musica) com plano B, se ela não foi aplicada
+  const primeira = await supabase
     .from("evento_cortejo_pessoa")
-    .select("id, papel, nome, contato, o_que_leva, responsavel, chegada, pronuncia, ordem")
+    .select("id, papel, nome, contato, o_que_leva, responsavel, chegada, pronuncia, ordem, par, lado, musica")
     .eq("event_id", alvoCortejo)
     .order("ordem")
     .order("nome");
+  let cortejoData = primeira.data as Record<string, unknown>[] | null;
+  if (primeira.error) {
+    const alt = await supabase
+      .from("evento_cortejo_pessoa")
+      .select("id, papel, nome, contato, o_que_leva, responsavel, chegada, pronuncia, ordem")
+      .eq("event_id", alvoCortejo)
+      .order("ordem")
+      .order("nome");
+    cortejoData = alt.data as Record<string, unknown>[] | null;
+  }
 
   const ev = eventData as unknown as {
     id: string;
@@ -84,10 +96,16 @@ export default async function ImprimirChamadaPage({
         chegada: p.chegada,
         pronuncia: (p.pronuncia as string | null) ?? null,
         ordem: (p.ordem as number | null) ?? 0,
+        par: (p.par as string | null) ?? null,
+        lado: (p.lado as "noivo" | "noiva" | null) ?? null,
+        musica: (p.musica as string | null) ?? null,
       }) as PessoaCortejo
   );
 
   const ehFormatura = ev.type === "formatura";
+  // casamento: o corredor de entrada, numa sequência só (192)
+  const ehCasamento = ev.type === "casamento";
+  const sequencia = ehCasamento ? emSequencia(pessoas) : [];
   const grupos = agruparCortejo(pessoas, ev.type as string);
   const formandos = grupos.find((g) => g.papel === "formando")?.pessoas ?? [];
   const apoio = ehFormatura
@@ -130,7 +148,7 @@ export default async function ImprimirChamadaPage({
         <p style={{ fontSize: 13, color: "#57534e" }}>
           {alvoCortejo !== (eventData as { id: string }).id
             ? "A lista desta turma fica no evento principal (o baile). Se ela já foi montada e não aparece aqui, o evento principal não está na sua escala."
-            : "Ninguém cadastrado ainda. Monte as listas em Papéis e chamada."}
+            : "Ninguém cadastrado ainda. Monte a lista na aba Cortejo do evento."}
         </p>
       )}
 
@@ -162,7 +180,46 @@ export default async function ImprimirChamadaPage({
         </table>
       )}
 
-      {apoio.length > 0 && (
+      {ehCasamento && sequencia.length > 0 && (
+        <table className="imp-tabela">
+          <thead>
+            <tr>
+              <th style={{ width: 34 }}>Nº</th>
+              <th style={{ width: 190 }}>Entrada</th>
+              <th>Quem entra</th>
+              <th style={{ width: 210 }}>Música</th>
+              {/* para riscar à caneta conforme entram */}
+              <th style={{ width: 26 }}>OK</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sequencia.map((p, i) => {
+              const quem = quemEntra({ nome: p.nome, par: p.par ?? null });
+              return (
+                <tr key={p.id}>
+                  <td className="imp-mesa-num">{i + 1}</td>
+                  <td>
+                    {papelDoCortejo(p.papel).rotulo}
+                    {p.lado ? (
+                      <div style={{ fontSize: 11.5, color: "#57534e", marginTop: 2 }}>{ROTULO_DO_LADO[p.lado]}</div>
+                    ) : null}
+                  </td>
+                  <td>
+                    {quem ? <strong>{quem}</strong> : <span style={{ color: "#a8a29e" }}>a definir</span>}
+                    {p.oQueLeva ? (
+                      <div style={{ fontSize: 11.5, color: "#57534e", marginTop: 2 }}>leva: {p.oQueLeva}</div>
+                    ) : null}
+                  </td>
+                  <td style={{ fontSize: 12.5 }}>{p.musica ?? ""}</td>
+                  <td style={{ borderLeft: "1px solid #e7e5e4" }}> </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+
+      {!ehCasamento && apoio.length > 0 && (
         <div className="imp-duas-colunas" style={{ marginTop: 18 }}>
           {apoio.map((g) => (
             <table key={g.papel} className="imp-tabela" style={{ marginBottom: 14 }}>

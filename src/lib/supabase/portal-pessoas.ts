@@ -57,40 +57,54 @@ export const getConvidados = cache(
   }
 );
 
-export const getCortejo = cache(
-  async (eventId: string): Promise<PessoaCortejo[]> => {
-    const supabase = createClient();
-    // `pronuncia` pode não existir ainda (125 pendente) — pede as colunas
-    // uma a uma e degrada sem a nota em vez de derrubar a lista inteira.
+// As colunas do cortejo, da mais nova para a mais antiga: sem a 192 (par,
+// lado, musica) ou sem a 125 (pronuncia), a leitura degrada em vez de
+// derrubar a lista inteira.
+const COLUNAS_DO_CORTEJO = [
+  "id, papel, nome, contato, o_que_leva, responsavel, chegada, pronuncia, ordem, par, lado, musica",
+  "id, papel, nome, contato, o_que_leva, responsavel, chegada, pronuncia, ordem",
+  "id, papel, nome, contato, o_que_leva, responsavel, chegada, ordem",
+];
+
+async function lerCortejo(eventId: string): Promise<PessoaCortejo[]> {
+  const supabase = createClient();
+  let data: Record<string, unknown>[] | null = null;
+  for (const colunas of COLUNAS_DO_CORTEJO) {
     const res = await supabase
       .from("evento_cortejo_pessoa")
-      .select(
-        "id, papel, nome, contato, o_que_leva, responsavel, chegada, pronuncia, ordem"
-      )
+      .select(colunas)
       .eq("event_id", eventId)
       .order("ordem")
       .order("nome");
-    let data: Record<string, unknown>[] | null = res.data;
-    if (res.error) {
-      const alt = await supabase
-        .from("evento_cortejo_pessoa")
-        .select("id, papel, nome, contato, o_que_leva, responsavel, chegada, ordem")
-        .eq("event_id", eventId)
-        .order("ordem")
-        .order("nome");
-      data = alt.data;
+    if (!res.error) {
+      data = res.data as unknown as Record<string, unknown>[];
+      break;
     }
-
-    return (data ?? []).map((p: Record<string, unknown>) => ({
-      id: p.id,
-      papel: p.papel,
-      nome: p.nome,
-      contato: p.contato,
-      oQueLeva: p.o_que_leva,
-      responsavel: p.responsavel,
-      chegada: p.chegada,
-      pronuncia: (p.pronuncia as string | null) ?? null,
-      ordem: (p.ordem as number | null) ?? 0,
-    })) as PessoaCortejo[];
   }
+
+  return (data ?? []).map((p: Record<string, unknown>) => ({
+    id: p.id,
+    papel: p.papel,
+    nome: p.nome,
+    contato: p.contato,
+    oQueLeva: p.o_que_leva,
+    responsavel: p.responsavel,
+    chegada: p.chegada,
+    pronuncia: (p.pronuncia as string | null) ?? null,
+    ordem: (p.ordem as number | null) ?? 0,
+    par: (p.par as string | null) ?? null,
+    lado: (p.lado as "noivo" | "noiva" | null) ?? null,
+    musica: (p.musica as string | null) ?? null,
+  })) as PessoaCortejo[];
+}
+
+/**
+ * O cortejo como a FAMÍLIA vê (portal): sem as entradas "a definir" do
+ * cortejo tradicional (nome vazio, 192), que só fazem sentido para a equipe.
+ */
+export const getCortejo = cache(async (eventId: string): Promise<PessoaCortejo[]> =>
+  (await lerCortejo(eventId)).filter((p) => p.nome.trim() !== "")
 );
+
+/** O cortejo da equipe: tudo, as entradas "a definir" incluídas. */
+export const getCortejoDaEquipe = cache(lerCortejo);

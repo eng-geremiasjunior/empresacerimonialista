@@ -45,6 +45,12 @@ export type PessoaCortejo = {
   /** anotação interna de pronúncia — NUNCA sai em rota pública */
   pronuncia: string | null;
   ordem: number;
+  /** quem entra junto (192, casamento) */
+  par?: string | null;
+  /** lado do noivo ou da noiva (192, casamento) */
+  lado?: "noivo" | "noiva" | null;
+  /** a música da entrada (192, casamento) */
+  musica?: string | null;
 };
 
 export const PAPEL_ROTULO: Record<string, string> = {
@@ -69,6 +75,15 @@ export const PAPEL_ROTULO: Record<string, string> = {
   par_valsa: "Pares da valsa",
   vela: "As 15 velas",
   entrada: "Acompanham a entrada",
+  // casamento, a sequência de entrada (192)
+  celebrante: "Celebrante",
+  noivo: "Noivo",
+  noiva: "Noiva",
+  pais: "Pais",
+  avos: "Avós",
+  testemunha: "Testemunhas",
+  florista: "Pétalas",
+  outro: "Outra entrada",
 };
 
 export function rotuloDoPapel(papel: string): string {

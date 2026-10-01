@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCortejo } from "@/lib/supabase/portal-pessoas";
+import { getCortejo, getCortejoDaEquipe } from "@/lib/supabase/portal-pessoas";
 import { tem } from "@/lib/capacidades";
 import { CortejoEquipe } from "@/components/eventos/CortejoEquipe";
+import { CortejoCasamento } from "@/components/eventos/CortejoCasamento";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,12 @@ export default async function CortejoEquipePage({
         </p>
       );
     }
+  }
+
+  // o casamento é o corredor de entrada, em sequência (192); os outros
+  // tipos seguem com as listas por grupo
+  if (data.type === "casamento") {
+    return <CortejoCasamento eventId={alvoId} printEventId={data.id} pessoas={await getCortejoDaEquipe(alvoId)} />;
   }
 
   const pessoas = await getCortejo(alvoId);
