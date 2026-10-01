@@ -11,6 +11,7 @@
 // só o JS e o CSS do modelo do casal.
 
 import type { ComponentType, CSSProperties } from "react";
+import dynamic from "next/dynamic";
 import { ConviteCompleto } from "@/components/convite/ConviteCompleto";
 import { ContextoDoSite } from "@/components/site/pecas/contexto";
 import type { SitePublico } from "@/lib/site-publico-tipos";
@@ -41,7 +42,8 @@ export type PropsDoModelo = {
 //   classico: dynamic(() => import("./modelos/classico/ModeloClassico").then((m) => m.ModeloClassico)),
 // Sem a linha, o modelo cai no convite.
 const DESENHADOS: Partial<Record<ModeloNovo, ComponentType<PropsDoModelo>>> = {
-  // classico, cartoes, monograma, franca, violino, aliancas
+  classico: dynamic(() => import("./modelos/classico/ModeloClassico").then((m) => m.ModeloClassico)),
+  // cartoes, monograma, franca, violino, aliancas
 };
 
 export function SiteDoEvento({

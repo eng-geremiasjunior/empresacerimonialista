@@ -1,0 +1,1705 @@
+/* T01 · Clássico editorial. Os valores são os literais do protótipo
+   (handoff/prototipos/Template 01.dc.html); tudo escopado em .sm-classico.
+
+   · cores: --sm-* (site-paletas: as 5 paletas do T01);
+   · fontes: --sf-* (site-pares: o par do casal na escala do T01);
+   · todo vw/svh do desenho passa por --sm-vw/--sm-vh (site-base.css):
+     clamp(20px,5vw,64px) → clamp(20px, calc(5 * var(--sm-vw)), 64px);
+   · a raiz não tem overflow:hidden nem container-type (site-base.css). */
+
+.sm-classico {
+  /* o protótipo não define line-height em ancestral nenhum: tudo sem
+     valor próprio sai com normal (o preflight do Tailwind põe 1.5 no html) */
+  line-height: normal;
+  --c-e: cubic-bezier(.2, .7, .2, 1);
+  --c-px: clamp(20px, calc(5 * var(--sm-vw)), 64px);
+  --c-py: clamp(96px, calc(14 * var(--sm-vw)), 176px);
+  font-size: var(--sf-texto-tam);
+  font-weight: var(--sf-texto-peso);
+  min-height: calc(100 * var(--sm-vh));
+}
+
+.sm-classico a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.sm-classico a:hover {
+  opacity: .7;
+}
+
+.sm-classico input,
+.sm-classico textarea,
+.sm-classico button,
+.sm-classico select {
+  font: inherit;
+  color: inherit;
+}
+
+.sm-classico button {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.sm-classico button:disabled {
+  cursor: default;
+}
+
+.sm-classico p,
+.sm-classico h1,
+.sm-classico h2 {
+  margin: 0;
+}
+
+.sm-classico :focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: 3px;
+}
+
+.sm-classico .c-so-leitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------ comuns */
+
+.sm-classico .c-secao {
+  padding: var(--c-py) var(--c-px);
+}
+
+.sm-classico .c-alt {
+  background: var(--sm-alt);
+}
+
+.sm-classico .c-escuro {
+  background: var(--sm-dark);
+  color: var(--sm-dark-ink);
+}
+
+.sm-classico .c-eyebrow {
+  font-size: 12px;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: var(--sm-accent);
+}
+
+.sm-classico .c-escuro .c-eyebrow {
+  color: inherit;
+  opacity: .75;
+}
+
+.sm-classico .c-h2 {
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-style: var(--sf-tit-estilo);
+  text-transform: var(--sf-tit-caixa);
+  letter-spacing: var(--sf-tit-ls);
+  font-size: var(--sf-tit-tam);
+  line-height: 1.1;
+}
+
+.sm-classico .c-h2--balance {
+  text-wrap: balance;
+}
+
+.sm-classico .c-h2--sm {
+  font-size: var(--sf-tit-tam-sm);
+  line-height: 1.15;
+}
+
+.sm-classico .c-h2--fim {
+  line-height: 1.15;
+}
+
+.sm-classico .c-nome {
+  font-family: var(--sf-nome-fam);
+  font-weight: var(--sf-nome-peso);
+  font-style: var(--sf-nome-estilo);
+  text-transform: var(--sf-nome-caixa);
+  letter-spacing: var(--sf-nome-ls);
+  line-height: var(--sf-nome-lh);
+}
+
+.sm-classico .c-fio {
+  display: block;
+  width: 1px;
+  background: currentColor;
+}
+
+/* botões: 11px, ls .24em; no hover o espaçamento cresce em .5s */
+.sm-classico .c-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 17px 30px;
+  border: 1px solid var(--sm-ink);
+  background: transparent;
+  font-size: 11px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: letter-spacing .5s ease;
+}
+
+.sm-classico .c-btn:hover {
+  letter-spacing: .3em;
+  opacity: 1;
+}
+
+.sm-classico .c-btn--cheio {
+  background: var(--sm-ink);
+  color: var(--sm-bg);
+}
+
+.sm-classico .c-btn--claro {
+  border-color: var(--sm-dark-ink);
+  background: var(--sm-dark-ink);
+  color: var(--sm-dark);
+}
+
+.sm-classico .c-btn--grande {
+  padding: 19px 44px;
+  letter-spacing: .26em;
+}
+
+.sm-classico .c-btn--grande:hover {
+  letter-spacing: .32em;
+}
+
+.sm-classico .c-btn:disabled:hover {
+  letter-spacing: .26em;
+}
+
+/* "Como chegar →", "Ver a lista na loja →" */
+.sm-classico .c-sublinhado {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--sm-ink);
+  font-size: 11px;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+}
+
+/* "Alterar resposta", "Escolher outro presente" */
+.sm-classico .c-volta {
+  margin-top: 8px;
+  padding: 0 0 6px;
+  border: 0;
+  border-bottom: 1px solid var(--sm-line-strong);
+  background: transparent;
+  font-size: 11px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+/* quadro de foto: a moldura fica, a camada [data-zoom] é a cortina */
+.sm-classico .c-quadro {
+  position: relative;
+  overflow: hidden;
+}
+
+.sm-classico .c-quadro-zoom,
+.sm-classico .c-quadro-hover {
+  position: absolute;
+  inset: 0;
+}
+
+.sm-classico .c-quadro-hover {
+  transition: transform 1.8s var(--c-e);
+}
+
+.sm-classico .c-quadro:hover .c-quadro-hover {
+  transform: scale(1.05);
+}
+
+.sm-classico .c-quadro-parallax {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -8%;
+  height: 116%;
+}
+
+.sm-classico .c-quadro-foto {
+  height: 100%;
+}
+
+/* ---------------------------------------------------------- abertura */
+
+.sm-classico .c-abertura {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  cursor: pointer;
+}
+
+/* sem JS (ou reduced-motion, que nem põe a classe) não há quem abra */
+html:not(.sm-js) .sm-classico .c-abertura {
+  display: none;
+}
+
+.sm-classico .c-porta {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50.5%;
+  background: var(--sm-alt);
+  transition: transform 1.7s cubic-bezier(.77, 0, .18, 1);
+}
+
+.sm-classico .c-porta--esq {
+  left: 0;
+}
+
+.sm-classico .c-porta--dir {
+  right: 0;
+  border-left: 1px solid var(--sm-line);
+}
+
+.sm-classico .c-abertura[data-abrindo] .c-porta--esq {
+  transform: translateX(-101%);
+}
+
+.sm-classico .c-abertura[data-abrindo] .c-porta--dir {
+  transform: translateX(101%);
+}
+
+.sm-classico .c-abertura-miolo {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  padding: 24px;
+  text-align: center;
+  transition: opacity .7s ease, transform 1s var(--c-e);
+}
+
+.sm-classico .c-abertura[data-abrindo] .c-abertura-miolo {
+  opacity: 0;
+  transform: scale(1.06);
+}
+
+.sm-classico .c-abertura-rotulo {
+  font-size: 12px;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: var(--sm-accent);
+}
+
+.sm-classico .c-selo {
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  background: var(--sm-accent);
+  color: var(--sm-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 6px var(--sm-alt), 0 0 0 7px var(--sm-accent), 0 18px 40px rgba(0, 0, 0, .18);
+}
+
+.sm-classico .c-selo-letras {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--sf-nome-fam);
+  font-weight: var(--sf-nome-peso);
+  font-style: var(--sf-nome-estilo);
+  font-size: var(--sf-selo-tam);
+  line-height: 1;
+}
+
+.sm-classico .c-abertura-nomes {
+  font-size: var(--sf-nome-tam-sm);
+}
+
+.sm-classico .c-abertura-toque {
+  font-size: 12px;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: var(--sm-muted);
+}
+
+/* --------------------------------------------------------------- nav */
+
+.sm-classico .c-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 14px clamp(20px, calc(4 * var(--sm-vw)), 48px);
+  background: var(--sm-nav);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--sm-line);
+  opacity: 0;
+  transform: translateY(-100%);
+  pointer-events: none;
+  transition: opacity .6s ease, transform .6s var(--c-e);
+}
+
+.sm-classico .c-nav[data-visivel] {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+/* revisão do dono: parada no alto */
+.sm-classico .c-nav--estatica {
+  position: relative;
+}
+
+.sm-classico .c-nav-mono {
+  display: flex;
+  align-items: center;
+  font-family: var(--sf-nome-fam);
+  font-weight: var(--sf-nome-peso);
+  font-style: var(--sf-nome-estilo);
+  font-size: var(--sf-nav-mono-tam);
+  line-height: 1;
+}
+
+.sm-classico .c-mono {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sm-classico .c-nav-links {
+  display: flex;
+  align-items: center;
+  gap: clamp(16px, calc(3 * var(--sm-vw)), 36px);
+  font-size: 11px;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+}
+
+.sm-classico .c-nav-botao {
+  padding: 10px 18px;
+  border: 1px solid var(--sm-ink);
+}
+
+/* no celular, só "Confirmar presença" */
+@media (max-width: 760px) {
+  .sm-classico .c-nav-link {
+    display: none;
+  }
+}
+
+@container (max-width: 760px) {
+  .sm-classico .c-nav-link {
+    display: none;
+  }
+}
+
+/* -------------------------------------------------------------- hero */
+
+.sm-classico .c-hero {
+  position: relative;
+  height: calc(100 * var(--sm-vh));
+  min-height: 600px;
+  overflow: hidden;
+  background: var(--sm-hero-bg);
+}
+
+.sm-classico .c-hero-foto {
+  position: absolute;
+  inset: 0;
+}
+
+.sm-classico .c-hero-veu {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(18, 14, 11, .35) 0%, rgba(18, 14, 11, .2) 45%, rgba(18, 14, 11, .6) 100%);
+}
+
+.sm-classico .c-hero-miolo {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 96px 24px;
+  text-align: center;
+  color: var(--sm-hero-ink);
+}
+
+.sm-classico .c-hero-nomes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-shadow: 0 2px 30px rgba(0, 0, 0, .25);
+}
+
+.sm-classico .c-hero-iniciais {
+  display: flex;
+  align-items: center;
+  gap: .28em;
+  font-size: var(--sf-inic-tam);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.sm-classico .c-hero-iniciais--sm {
+  font-size: var(--sf-inic-tam-sm);
+}
+
+.sm-classico .c-hero-h1 {
+  font-size: var(--sf-nome-tam);
+  text-wrap: balance;
+}
+
+.sm-classico .c-hero-h1--sm {
+  font-size: var(--sf-nome-tam-sm);
+  text-wrap: wrap;
+}
+
+.sm-classico .c-hero-linha {
+  width: 72px;
+  height: 1px;
+  background: rgba(255, 255, 255, .75);
+}
+
+.sm-classico .c-hero-frase {
+  max-width: 520px;
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  font-size: clamp(18px, calc(2.2 * var(--sm-vw)), 24px);
+  line-height: 1.5;
+  text-wrap: balance;
+}
+
+.sm-classico .c-hero-quando {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+  letter-spacing: .34em;
+  text-transform: uppercase;
+}
+
+.sm-classico .c-hero-onde {
+  font-size: 11px;
+  letter-spacing: .28em;
+  opacity: .85;
+}
+
+.sm-classico .c-hero-seta {
+  pointer-events: auto;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+}
+
+.sm-classico .c-hero-seta span {
+  font-size: 16px;
+  letter-spacing: 0;
+}
+
+/* a entrada do hero começa oculta só com JS (sm-js) e até ser liberada */
+html.sm-js .sm-classico .c-hero:not([data-pronto]) :is([data-hero], [data-hero-foto], [data-hero-linha]) {
+  opacity: 0;
+  visibility: hidden;
+  filter: none;
+}
+
+/* ---------------------------------------------------------- história */
+
+.sm-classico .c-historia-grade {
+  max-width: 1160px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+  gap: clamp(48px, calc(7 * var(--sm-vw)), 112px);
+  align-items: center;
+}
+
+.sm-classico .c-historia-foto {
+  position: relative;
+}
+
+.sm-classico .c-historia-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.sm-classico .c-historia-p {
+  max-width: 460px;
+  line-height: 1.8;
+  color: var(--sm-muted);
+  text-wrap: pretty;
+  white-space: pre-line;
+}
+
+.sm-classico .c-tl {
+  position: relative;
+  max-width: 760px;
+  margin: clamp(96px, calc(12 * var(--sm-vw)), 160px) auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(56px, calc(8 * var(--sm-vw)), 96px);
+}
+
+.sm-classico .c-tl-fundo,
+.sm-classico .c-tl-fio {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 50%;
+  width: 1px;
+  background: var(--sm-line);
+}
+
+.sm-classico .c-tl-fio {
+  background: var(--sm-accent);
+  transform-origin: top;
+  transform: scaleY(0);
+}
+
+.sm-classico .c-tl-marco {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 64px 1fr;
+  align-items: center;
+}
+
+.sm-classico .c-tl-ano {
+  text-align: right;
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-style: var(--sf-tit-estilo);
+  font-size: clamp(28px, calc(4 * var(--sm-vw)), 48px);
+  line-height: 1;
+  letter-spacing: var(--sf-tit-ls-suave);
+}
+
+.sm-classico .c-tl-meio {
+  display: flex;
+  justify-content: center;
+}
+
+.sm-classico .c-tl-ponto {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 1px solid var(--sm-accent);
+  background: var(--sm-bg);
+  transition: background .6s ease;
+}
+
+.sm-classico .c-tl-ponto[data-on] {
+  background: var(--sm-accent);
+}
+
+.sm-classico .c-tl-titulo {
+  font-size: clamp(15px, calc(1.6 * var(--sm-vw)), 18px);
+  line-height: 1.5;
+  text-wrap: balance;
+}
+
+/* ------------------------------------------------------ o grande dia */
+
+.sm-classico .c-dia {
+  text-align: center;
+}
+
+.sm-classico .c-dia-miolo {
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+}
+
+.sm-classico .c-dia-local {
+  font-size: 13px;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: var(--sm-muted);
+}
+
+.sm-classico .c-dia-grade {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(var(--c-colunas, 3), minmax(0, 1fr));
+  margin: 40px 0 24px;
+  border-top: 1px solid var(--sm-line);
+  border-bottom: 1px solid var(--sm-line);
+}
+
+.sm-classico .c-dia-item {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 36px 8px;
+  border-left: 1px solid var(--sm-line);
+}
+
+.sm-classico .c-dia-item[data-col="primeira"] {
+  border-left: none;
+}
+
+.sm-classico .c-dia-item[data-linha="seguinte"] {
+  border-top: 1px solid var(--sm-line);
+}
+
+.sm-classico .c-dia-rotulo {
+  font-size: 11px;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: var(--sm-muted);
+}
+
+.sm-classico .c-dia-hora {
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-style: var(--sf-tit-estilo);
+  font-size: clamp(28px, calc(4.4 * var(--sm-vw)), 48px);
+  line-height: 1;
+}
+
+.sm-classico .c-dia-nota {
+  font-size: .8em;
+  line-height: 1.5;
+  color: var(--sm-muted);
+}
+
+.sm-classico .c-dia-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+}
+
+/* ---------------------------------------------------------- contagem */
+
+.sm-classico .c-contagem {
+  padding: clamp(96px, calc(13 * var(--sm-vw)), 160px) var(--c-px);
+  text-align: center;
+}
+
+.sm-classico .c-contagem-miolo {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+}
+
+.sm-classico .c-contagem-faltam {
+  font-size: 12px;
+  letter-spacing: .34em;
+  text-transform: uppercase;
+  opacity: .75;
+}
+
+.sm-classico .c-contagem-grade {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(8px, calc(3 * var(--sm-vw)), 48px);
+}
+
+.sm-classico .c-contagem-un {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+/* vazio no servidor: a altura de uma linha segura o lugar */
+.sm-classico .c-contagem-n {
+  min-height: 1em;
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-size: clamp(44px, calc(9 * var(--sm-vw)), 120px);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.sm-classico .c-contagem-r {
+  font-size: 11px;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  opacity: .7;
+}
+
+.sm-classico .c-contagem-para {
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  font-size: clamp(18px, calc(2.2 * var(--sm-vw)), 24px);
+  opacity: .9;
+}
+
+.sm-classico .c-contagem-final {
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-style: var(--sf-tit-estilo);
+  font-size: var(--sf-tit-tam);
+}
+
+/* ------------------------------------------------------------- local */
+
+.sm-classico .c-local-miolo {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.sm-classico .c-local-foto {
+  width: 100%;
+  min-height: 320px;
+}
+
+.sm-classico .c-local-cartao {
+  /* o protótipo não tem reset: o padding soma à largura (no celular o
+     cartão sangra até as bordas, cortado pelo overflow-x da raiz) */
+  box-sizing: content-box;
+  position: relative;
+  margin-top: -96px;
+  width: min(520px, calc(100% - 32px));
+  background: var(--sm-bg);
+  padding: clamp(36px, calc(5 * var(--sm-vw)), 56px);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .25);
+}
+
+.sm-classico .c-local-cartao--so {
+  margin-top: 0;
+}
+
+.sm-classico .c-local-endereco {
+  color: var(--sm-muted);
+  line-height: 1.7;
+}
+
+/* -------------------------------------------------------------- traje */
+
+.sm-classico .c-traje-grade {
+  max-width: 1160px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: clamp(48px, calc(7 * var(--sm-vw)), 96px);
+  align-items: center;
+}
+
+.sm-classico .c-traje-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sm-classico .c-traje-p {
+  max-width: 420px;
+  line-height: 1.8;
+  color: var(--sm-muted);
+  text-wrap: pretty;
+  white-space: pre-line;
+}
+
+.sm-classico .c-traje-fotos {
+  display: grid;
+  grid-template-columns: repeat(var(--c-colunas, 3), minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+/* --------------------------------------------------------------- rsvp */
+
+.sm-classico .c-rsvp-miolo {
+  position: relative;
+  max-width: 680px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  text-align: center;
+}
+
+.sm-classico .c-rsvp-prazo {
+  color: var(--sm-muted);
+  line-height: 1.7;
+}
+
+.sm-classico .c-rsvp-data {
+  font-size: 13px;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: var(--sm-ink);
+}
+
+.sm-classico .c-rsvp-abrir {
+  margin-top: 12px;
+  padding: 19px 40px;
+}
+
+.sm-classico .c-form {
+  width: 100%;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  text-align: left;
+}
+
+.sm-classico .c-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sm-classico .c-campo-rotulo {
+  font-size: 11px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--sm-muted);
+}
+
+.sm-classico .c-campo-entrada {
+  width: 100%;
+  padding: 10px 0;
+  border: 0;
+  border-bottom: 1px solid var(--sm-line-strong);
+  border-radius: 0;
+  background: transparent;
+  font-size: 17px;
+  outline: none;
+}
+
+.sm-classico .c-campo-entrada:focus-visible {
+  border-bottom-color: currentColor;
+}
+
+.sm-classico .c-campo-entrada::placeholder {
+  color: var(--sm-muted);
+  opacity: .7;
+}
+
+.sm-classico .c-campo-entrada--grande {
+  font-size: 18px;
+}
+
+.sm-classico .c-campo-texto {
+  resize: none;
+}
+
+.sm-classico .c-campo-erro {
+  font-size: 13px;
+  color: var(--sm-accent);
+}
+
+.sm-classico .c-campo-entrada[aria-invalid] {
+  border-bottom-color: var(--sm-accent);
+}
+
+.sm-classico .c-escolhas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.sm-classico .c-escolha {
+  padding: 16px 12px;
+  border: 1px solid var(--sm-ink);
+  background: transparent;
+  color: var(--sm-ink);
+  cursor: pointer;
+  transition: all .4s ease;
+}
+
+.sm-classico .c-escolha[aria-pressed="true"] {
+  background: var(--sm-ink);
+  color: var(--sm-bg);
+}
+
+.sm-classico .c-escolha--pequena {
+  flex: none;
+  padding: 8px 14px;
+  font-size: 11px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+}
+
+.sm-classico .c-acomp {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--sm-line-strong);
+}
+
+.sm-classico .c-acomp-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sm-classico .c-acomp-conta {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.sm-classico .c-redondo {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--sm-line-strong);
+  background: transparent;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+/* o "−" em 0 só trava; no desenho não muda de aparência */
+.sm-classico .c-redondo:disabled {
+  cursor: default;
+}
+
+.sm-classico .c-acomp-n {
+  min-width: 20px;
+  text-align: center;
+  font-family: var(--sf-tit-fam);
+  font-size: 26px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sm-classico .c-acomp-linha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sm-classico .c-acomp-linha .c-campo-entrada {
+  flex: 1;
+  min-width: 0;
+}
+
+.sm-classico .c-tirar {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  font-size: 20px;
+  color: var(--sm-muted);
+}
+
+.sm-classico .c-form-enviar {
+  align-self: center;
+}
+
+.sm-classico .c-rsvp-fim {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.sm-classico .c-rsvp-fim-p {
+  color: var(--sm-muted);
+  line-height: 1.7;
+}
+
+.sm-classico .c-rsvp-entrada {
+  color: var(--sm-ink);
+}
+
+.sm-classico .c-petalas {
+  position: absolute;
+  inset: -80px -40px;
+  pointer-events: none;
+}
+
+.sm-classico .c-petalas-caixa {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.sm-classico .c-petala {
+  position: absolute;
+  top: 0;
+  border-radius: 80% 0 80% 0;
+  background: var(--sm-accent);
+  opacity: 0;
+}
+
+/* ---------------------------------------------------------- presentes */
+
+.sm-classico .c-presentes-miolo {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  text-align: center;
+}
+
+.sm-classico .c-presentes-frase {
+  color: var(--sm-muted);
+  line-height: 1.7;
+  white-space: pre-line;
+}
+
+.sm-classico .c-presentes-rotulo {
+  margin-top: 24px;
+}
+
+.sm-classico .c-presentes-grade {
+  width: 100%;
+  max-width: var(--c-max, none);
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 20px;
+  text-align: left;
+}
+
+.sm-classico .c-presente {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 0 0 28px;
+  background: var(--sm-bg);
+  border: 1px solid var(--sm-line);
+  text-align: left;
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  transition: opacity .6s ease, transform .7s var(--c-e), box-shadow .7s ease, border-color .6s ease;
+}
+
+.sm-classico .c-presente--sem-foto {
+  padding-top: 28px;
+}
+
+.sm-classico .c-presente[data-on] {
+  border-color: var(--sm-ink);
+  transform: translateY(-8px);
+  box-shadow: 0 30px 50px -28px rgba(0, 0, 0, .35);
+}
+
+.sm-classico .c-presente[data-dim] {
+  opacity: .5;
+}
+
+.sm-classico .c-presente-foto {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+}
+
+.sm-classico .c-presente-img {
+  position: absolute;
+  inset: 0;
+  transition: transform 1.4s var(--c-e);
+}
+
+.sm-classico .c-presente[data-on] .c-presente-img {
+  transform: scale(1.06);
+}
+
+/* o ✓: some com visibility depois do fade; entra com mola */
+.sm-classico .c-check {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 1;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--sm-ink);
+  color: var(--sm-bg);
+  font-size: 15px;
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(.4);
+  transition: opacity .5s ease, transform .6s cubic-bezier(.34, 1.56, .64, 1), visibility 0s linear .5s;
+}
+
+.sm-classico .c-presente[data-on] .c-check {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+  transition: opacity .5s ease, transform .6s cubic-bezier(.34, 1.56, .64, 1), visibility 0s;
+}
+
+.sm-classico .c-presente-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 24px;
+}
+
+.sm-classico .c-presente--sem-foto .c-presente-txt {
+  padding-right: 62px;
+}
+
+.sm-classico .c-presente-titulo {
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-style: var(--sf-tit-estilo);
+  text-transform: var(--sf-tit-caixa);
+  letter-spacing: var(--sf-tit-ls-suave);
+  font-size: var(--sf-card-tit);
+  line-height: 1.2;
+}
+
+.sm-classico .c-presente-desc {
+  font-size: .92em;
+  line-height: 1.6;
+  color: var(--sm-muted);
+}
+
+.sm-classico .c-presente-valor {
+  margin-top: 4px;
+  font-size: 13px;
+  letter-spacing: .2em;
+  color: var(--sm-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.sm-classico .c-presentear,
+.sm-classico .c-pix {
+  width: 100%;
+  max-width: 640px;
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.sm-classico .c-presentear-frase {
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  font-size: clamp(20px, calc(2.4 * var(--sm-vw)), 26px);
+  line-height: 1.4;
+}
+
+.sm-classico .c-valores {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.sm-classico .c-valor {
+  min-width: 96px;
+  padding: 14px 20px;
+  border: 1px solid var(--sm-ink);
+  background: transparent;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: all .4s ease;
+}
+
+.sm-classico .c-valor[aria-pressed="true"] {
+  background: var(--sm-ink);
+  color: var(--sm-bg);
+}
+
+.sm-classico .c-presentear-botao {
+  transition: letter-spacing .5s ease, opacity .4s;
+}
+
+.sm-classico .c-presentear-botao[data-apagado] {
+  opacity: .4;
+}
+
+.sm-classico .c-pix-corpo,
+.sm-classico .c-pix-corpo > [aria-live] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.sm-classico .c-pix-qr {
+  width: 220px;
+  padding: 10px;
+}
+
+.sm-classico .c-pix-valor {
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-style: var(--sf-tit-estilo);
+  font-size: var(--sf-tit-tam-sm);
+  line-height: 1.2;
+}
+
+.sm-classico .c-pix-nota,
+.sm-classico .c-pix-copiado {
+  color: var(--sm-muted);
+  line-height: 1.7;
+}
+
+.sm-classico .c-chave {
+  width: min(520px, 100%);
+  margin-top: 24px;
+  padding: clamp(32px, calc(4 * var(--sm-vw)), 48px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  background: var(--sm-bg);
+  border: 1px solid var(--sm-line);
+}
+
+.sm-classico .c-chave-valor {
+  font-family: var(--sf-tit-fam);
+  font-size: var(--sf-card-tit);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.sm-classico .c-chave-titular {
+  font-size: .92em;
+  color: var(--sm-muted);
+}
+
+.sm-classico .c-presentes-loja {
+  margin-top: 16px;
+}
+
+/* -------------------------------------------------------- nosso jeito */
+
+.sm-classico .c-jeito-miolo {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(48px, calc(7 * var(--sm-vw)), 80px);
+}
+
+.sm-classico .c-jeito-h2 {
+  max-width: 640px;
+}
+
+.sm-classico .c-jeito-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  column-gap: clamp(40px, calc(6 * var(--sm-vw)), 96px);
+}
+
+.sm-classico .c-jeito-item {
+  display: flex;
+  align-items: baseline;
+  gap: 24px;
+  padding: 28px 0;
+  border-top: 1px solid var(--sm-line);
+}
+
+.sm-classico .c-jeito-n {
+  font-size: 12px;
+  letter-spacing: .2em;
+  color: var(--sm-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.sm-classico .c-jeito-txt {
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  font-size: clamp(22px, calc(2.8 * var(--sm-vw)), 32px);
+  line-height: 1.3;
+}
+
+/* ------------------------------------------------------------ galeria */
+
+/* depois de uma seção de fundo bg (o "Nosso jeito" do desenho) a galeria
+   não tem respiro em cima */
+.sm-classico .c-galeria--colada {
+  padding-top: 0;
+}
+
+.sm-classico .c-galeria-grade {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(12px, calc(2 * var(--sm-vw)), 24px);
+}
+
+.sm-classico .c-galeria-larga {
+  grid-column: 1 / -1;
+}
+
+.sm-classico .c-galeria-desce {
+  margin-top: clamp(40px, calc(8 * var(--sm-vw)), 120px);
+}
+
+.sm-classico .c-galeria-frase {
+  grid-column: 1 / -1;
+  max-width: 640px;
+  margin: clamp(56px, calc(9 * var(--sm-vw)), 120px) auto;
+  text-align: center;
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  font-weight: var(--sf-tit-peso);
+  font-size: clamp(26px, calc(3.6 * var(--sm-vw)), 44px);
+  line-height: 1.3;
+  text-wrap: balance;
+}
+
+/* ---------------------------------------------------------- padrinhos */
+
+.sm-classico .c-padrinhos {
+  text-align: center;
+}
+
+.sm-classico .c-padrinhos-miolo {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(48px, calc(7 * var(--sm-vw)), 80px);
+}
+
+.sm-classico .c-padrinhos-grade {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 56px 32px;
+}
+
+.sm-classico .c-par {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.sm-classico .c-par-fotos {
+  display: flex;
+}
+
+.sm-classico .c-par-foto {
+  flex: none;
+  width: 112px;
+  height: 112px;
+  box-shadow: 0 0 0 4px var(--sm-alt);
+}
+
+.sm-classico .c-par-foto--segunda {
+  margin-left: -24px;
+}
+
+.sm-classico .c-par-nomes {
+  font-family: var(--sf-tit-fam);
+  font-style: var(--sf-tit-estilo);
+  font-size: clamp(20px, calc(2.2 * var(--sm-vw)), 24px);
+  letter-spacing: var(--sf-tit-ls-suave);
+}
+
+/* ------------------------------------------------------------- recado */
+
+.sm-classico .c-recado {
+  padding: clamp(112px, calc(16 * var(--sm-vw)), 200px) var(--c-px);
+  text-align: center;
+}
+
+.sm-classico .c-recado-miolo {
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+}
+
+.sm-classico .c-recado-p {
+  line-height: 1.85;
+  color: var(--sm-muted);
+  text-wrap: pretty;
+  white-space: pre-line;
+}
+
+.sm-classico .c-recado-nomes {
+  font-size: var(--sf-nome-tam-md);
+  color: var(--sm-accent);
+}
+
+/* ------------------------------------------------------------ hashtag */
+
+.sm-classico .c-hashtag {
+  padding: clamp(80px, calc(11 * var(--sm-vw)), 140px) var(--c-px);
+  text-align: center;
+}
+
+.sm-classico .c-hashtag-miolo {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.sm-classico .c-hashtag-tag {
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-style: var(--sf-tit-estilo);
+  letter-spacing: var(--sf-tit-ls-suave);
+  font-size: clamp(32px, calc(6 * var(--sm-vw)), 72px);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------------------- rodapé */
+
+.sm-classico .c-rodape {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: clamp(80px, calc(11 * var(--sm-vw)), 128px) 24px 40px;
+  background: var(--sm-dark);
+  color: var(--sm-dark-ink);
+  text-align: center;
+}
+
+.sm-classico .c-rodape-nomes {
+  font-size: var(--sf-nome-tam-md);
+}
+
+.sm-classico .c-rodape-data {
+  font-size: 12px;
+  letter-spacing: .34em;
+}
+
+.sm-classico .c-rodape-carinho {
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  opacity: .8;
+}
+
+.sm-classico .c-rodape-assinatura {
+  margin-top: 72px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 10px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+}
+
+.sm-classico .c-rodape-assinatura span {
+  opacity: .5;
+}
+
+.sm-classico .c-rodape-logo {
+  display: block;
+  width: auto;
+  max-width: 96px;
+  max-height: 22px;
+  opacity: .6;
+}
+
+/* ------------------------------------- blocos sem desenho no handoff */
+
+.sm-classico .c-bloco {
+  text-align: center;
+}
+
+.sm-classico .c-bloco-miolo {
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+
+.sm-classico .c-bloco-p {
+  max-width: 560px;
+  line-height: 1.8;
+  color: var(--sm-muted);
+}
+
+.sm-classico .c-bloco-p--livre {
+  white-space: pre-line;
+  text-wrap: pretty;
+}
+
+.sm-classico .c-bloco-form {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.sm-classico .c-campo-entrada--centro {
+  max-width: 320px;
+  text-align: center;
+}
+
+.sm-classico .c-arquivo {
+  cursor: pointer;
+}
+
+.sm-classico .c-bloco-nota {
+  font-size: .8em;
+  line-height: 1.6;
+  color: var(--sm-muted);
+}
+
+.sm-classico .c-lista {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.sm-classico .c-lista-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 24px 0;
+  border-top: 1px solid var(--sm-line);
+}
+
+.sm-classico .c-lista-item:last-child {
+  border-bottom: 1px solid var(--sm-line);
+}
+
+.sm-classico .c-lista-titulo {
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-style: var(--sf-tit-estilo);
+  font-size: var(--sf-card-tit);
+  line-height: 1.2;
+}
+
+.sm-classico .c-lista-info {
+  font-size: .92em;
+  color: var(--sm-muted);
+}
+
+.sm-classico .c-album-grade {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 140px), 1fr));
+  gap: 12px;
+}
+
+.sm-classico .c-album-foto {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+}
+
+.sm-classico .c-recados {
+  width: 100%;
+  max-width: 620px;
+  text-align: left;
+}
+
+.sm-classico .c-recados-item {
+  padding: 18px 0;
+  border-top: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+}
+
+.sm-classico .c-recados-texto {
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  font-size: 1.1em;
+  line-height: 1.5;
+}
+
+.sm-classico .c-recados-nome {
+  margin-top: 8px;
+  font-size: 11px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  opacity: .7;
+}
+
+.sm-classico .c-escuro .c-campo-entrada {
+  border-bottom-color: color-mix(in srgb, var(--sm-dark-ink) 30%, transparent);
+}
+
+.sm-classico .c-escuro .c-campo-entrada::placeholder,
+.sm-classico .c-escuro .c-bloco-nota,
+.sm-classico .c-escuro .c-campo-erro {
+  color: inherit;
+  opacity: .75;
+}
+
+/* ------------------------------------------------- reduced-motion
+   Reveals, hero, parallax, contagem, pétalas e abertura já saem pelo JS
+   (peças comuns); aqui saem as transições do próprio CSS: cartão que
+   sobe, ✓ com mola, zoom do hover, espaçamento dos botões. */
+@media (prefers-reduced-motion: reduce) {
+  .sm-classico *,
+  .sm-classico *::before,
+  .sm-classico *::after {
+    transition-duration: .01ms !important;
+    transition-delay: 0s !important;
+  }
+
+  .sm-classico .c-quadro:hover .c-quadro-hover,
+  .sm-classico .c-presente[data-on],
+  .sm-classico .c-presente[data-on] .c-presente-img {
+    transform: none;
+  }
+
+  .sm-classico .c-btn:hover {
+    letter-spacing: .24em;
+  }
+
+  .sm-classico .c-btn--grande:hover {
+    letter-spacing: .26em;
+  }
+}

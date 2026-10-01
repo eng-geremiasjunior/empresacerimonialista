@@ -13,7 +13,7 @@
 // A fonte do nome vem sem preload; o hero espera document.fonts.load dela
 // ou 1,2 s, o que vier primeiro, para o nome não piscar na reserva.
 //
-// Prévia, revisão e reduced-motion pulam tudo: aberta desde o começo e
+// Prévia, revisão, reduced-motion e página sem sm-js pulam tudo: aberta desde o começo e
 // animar=false (o modelo mostra o quadro final). A rolagem nunca fica
 // travada: a trava sai quando abre e quando o componente desmonta.
 
@@ -71,9 +71,12 @@ export function useAbertura(o: OpcoesDaAbertura): Abertura {
   heroEm.current = o.heroEmMs;
   fimEm.current = o.fimEmMs;
 
-  // reduced-motion e prévia: abre na hora, sem animação
+  // reduced-motion e prévia: abre na hora, sem animação. Idem quando a
+  // hidratação chega sem a classe sm-js (o ScriptRevelar a tira se o JS
+  // demora mais de 4 s): a camada da abertura já está escondida pelo CSS e
+  // ninguém clicaria para destravar a rolagem
   useEffect(() => {
-    if (pula || movimentoReduzido()) {
+    if (pula || movimentoReduzido() || !document.documentElement.classList.contains("sm-js")) {
       setAnimar(false);
       setEstado("aberta");
       setHeroLiberado(true);

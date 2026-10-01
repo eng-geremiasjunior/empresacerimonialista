@@ -95,3 +95,10 @@ debutantes; ele liga o provedor).
 - Provas contra o banco e no navegador (Chrome sem janela, contas de
   teste apagadas no fim) só na máquina dele: a nuvem não tem as chaves do
   Supabase nem as ferramentas de prova.
+
+## Para ele decidir
+- Hashtag do T01 ("Compartilhe esse momento com a gente #MarinaEJoao"):
+  hoje é fixa antes do rodapé, como no desenho, e só some sem nome; a
+  noiva não tem como escondê-la nem mudar o texto. Opções: um tipo de
+  bloco (ou chave do tema) próprio, com olho e a hashtag editável; ou
+  prendê-la a outro bloco (galeria/mural visível).

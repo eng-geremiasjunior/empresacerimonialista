@@ -8,6 +8,10 @@
 // confere o hash e devolve um token para UM arquivo; o navegador manda
 // direto para o Storage. Antes disso, comprime — 300 convidados × foto
 // de celular é a primeira feature cujo custo cresce com gente de fora.
+//
+// A lógica de cada um mora num gancho (useAlbumDoConvite,
+// useMusicaDoConvite, useRecadosDoConvite): os modelos novos vestem os
+// mesmos blocos no estilo deles (modelos/<id>/BlocosNoEstilo).
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -33,13 +37,8 @@ async function comprimir(file: File): Promise<Blob> {
   return blob ?? file;
 }
 
-export function AlbumDoConvite({
-  hash,
-  fotos,
-}: {
-  hash: string;
-  fotos: { url: string; autor: string | null }[];
-}) {
+/** A lógica do álbum, sem desenho: o convite e os modelos novos vestem. */
+export function useAlbumDoConvite(hash: string) {
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [enviadas, setEnviadas] = useState(0);
@@ -97,6 +96,18 @@ export function AlbumDoConvite({
     setEnviadas((n) => n + ok);
   }
 
+  return { enviando, erro, enviadas, autor, setAutor, subir };
+}
+
+export function AlbumDoConvite({
+  hash,
+  fotos,
+}: {
+  hash: string;
+  fotos: { url: string; autor: string | null }[];
+}) {
+  const { enviando, erro, enviadas, autor, setAutor, subir } = useAlbumDoConvite(hash);
+
   return (
     <section className="cv-album">
       <div className="cv-eyebrow">Álbum da festa</div>
@@ -151,7 +162,8 @@ export function AlbumDoConvite({
   );
 }
 
-export function MusicaDoConvite({ hash }: { hash: string }) {
+/** A sugestão de música, sem desenho (sugerir_musica). */
+export function useMusicaDoConvite(hash: string) {
   const [titulo, setTitulo] = useState("");
   const [artista, setArtista] = useState("");
   const [nome, setNome] = useState("");
@@ -184,6 +196,13 @@ export function MusicaDoConvite({ hash }: { hash: string }) {
     setArtista("");
     setPronto(true);
   }
+
+  return { titulo, setTitulo, artista, setArtista, nome, setNome, enviando, pronto, erro, enviar };
+}
+
+export function MusicaDoConvite({ hash }: { hash: string }) {
+  const { titulo, setTitulo, artista, setArtista, nome, setNome, enviando, pronto, erro, enviar } =
+    useMusicaDoConvite(hash);
 
   return (
     <section className="cv-musica">
@@ -227,13 +246,8 @@ export function MusicaDoConvite({ hash }: { hash: string }) {
   );
 }
 
-export function RecadosDoConvite({
-  hash,
-  recados,
-}: {
-  hash: string;
-  recados: { nome: string | null; texto: string }[];
-}) {
+/** O mural de recados, sem desenho (deixar_recado). */
+export function useRecadosDoConvite(hash: string) {
   const [nome, setNome] = useState("");
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -259,6 +273,18 @@ export function RecadosDoConvite({
     setTexto("");
     setPronto(true);
   }
+
+  return { nome, setNome, texto, setTexto, enviando, pronto, erro, enviar };
+}
+
+export function RecadosDoConvite({
+  hash,
+  recados,
+}: {
+  hash: string;
+  recados: { nome: string | null; texto: string }[];
+}) {
+  const { nome, setNome, texto, setTexto, enviando, pronto, erro, enviar } = useRecadosDoConvite(hash);
 
   return (
     <section className="cv-escuro">
