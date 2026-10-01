@@ -1,0 +1,1994 @@
+/* As seções dos Cartões (T03) — as mesmas do Monograma (T04), que
+   importa as seções daqui. Os valores são os literais do protótipo
+   (handoff/prototipos/Template 03.dc.html). Tudo escopado em .k-casca, a
+   classe da raiz de quem usa as seções (dentro do .sm-cartoes ou do
+   .sm-monograma), e nada aqui sabe o nome do modelo.
+
+   · cores: --sm-* (site-paletas: a paleta pêssego do T03/T04);
+   · fontes: --sf-* (site-pares: o par do casal na escala do T03/T04);
+   · todo vw/vh do desenho passa por --sm-vw/--sm-vh (site-base.css);
+   · o protótipo não tem reset: tudo é content-box. A raiz (.sm-raiz *)
+     põe border-box; onde a diferença aparece (largura ou altura mínima
+     com padding ou borda), a peça volta a content-box. */
+
+.k-casca {
+  /* o protótipo não define line-height em ancestral nenhum: tudo sem
+     valor próprio sai com normal (o preflight do Tailwind põe 1.5) */
+  line-height: normal;
+  font-size: var(--sf-texto-tam);
+  font-weight: var(--sf-texto-peso);
+  min-height: calc(100 * var(--sm-vh));
+  --k-e: cubic-bezier(.2, .7, .2, 1);
+  --k-mola: cubic-bezier(.34, 1.56, .64, 1);
+  --k-card: var(--sm-card, var(--sm-paper));
+  --k-soft: var(--sm-soft, var(--sm-alt));
+  --k-sage: var(--sm-sage, var(--sm-alt));
+  --k-acento-texto: var(--sm-accent-text, var(--sm-accent));
+}
+
+.k-casca a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.k-casca a:hover {
+  opacity: .8;
+}
+
+.k-casca input,
+.k-casca textarea,
+.k-casca button,
+.k-casca select {
+  font: inherit;
+  color: inherit;
+}
+
+.k-casca button {
+  margin: 0;
+}
+
+.k-casca p,
+.k-casca h1,
+.k-casca h2,
+.k-casca ul {
+  margin: 0;
+}
+
+.k-casca ul {
+  padding: 0;
+  list-style: none;
+}
+
+.k-casca :focus-visible {
+  outline: 2px solid var(--k-acento-texto);
+  outline-offset: 3px;
+}
+
+/* as âncoras não somem embaixo do dock preso no alto */
+.k-casca [id] {
+  scroll-margin-top: 128px;
+}
+
+.k-casca .k-so-leitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ----------------------------------------------------------- página */
+
+.k-casca .k-pagina {
+  box-sizing: content-box;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: clamp(12px, calc(2 * var(--sm-vw)), 24px) clamp(12px, calc(2.4 * var(--sm-vw)), 32px) 48px;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, calc(2 * var(--sm-vw)), 28px);
+}
+
+/* ---------------------------------------------------------- comuns */
+
+.k-casca .k-cartao {
+  background: var(--k-card);
+  border-radius: 32px;
+}
+
+.k-casca .k-cartao--ink {
+  background: var(--sm-ink);
+  color: var(--k-card);
+}
+
+.k-casca .k-rotulo {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+}
+
+.k-casca .k-rotulo--acento {
+  color: var(--k-acento-texto);
+}
+
+.k-casca .k-rotulo--claro-acento {
+  color: var(--sm-accent);
+}
+
+.k-casca .k-h2 {
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-style: var(--sf-tit-estilo);
+  text-transform: var(--sf-tit-caixa);
+  letter-spacing: var(--sf-tit-ls);
+  font-size: var(--sf-tit-tam);
+  line-height: 1.1;
+}
+
+.k-casca .k-h2--sm {
+  font-size: var(--sf-tit-tam-sm);
+}
+
+.k-casca .k-h2--balance {
+  text-wrap: balance;
+}
+
+.k-casca .k-h2--pedido {
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.k-casca .k-mudo {
+  color: var(--sm-muted);
+}
+
+.k-casca .k-mudo--claro {
+  color: inherit;
+  opacity: .75;
+}
+
+.k-casca .k-nome {
+  font-family: var(--sf-nome-fam);
+  font-weight: var(--sf-nome-peso);
+  font-style: var(--sf-nome-estilo);
+  text-transform: var(--sf-nome-caixa);
+  letter-spacing: var(--sf-nome-ls);
+  line-height: var(--sf-nome-lh);
+}
+
+.k-casca .k-amp {
+  color: var(--sm-accent);
+}
+
+.k-casca .k-amp-texto {
+  color: var(--k-acento-texto);
+}
+
+.k-casca .k-ponto {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--sm-accent);
+}
+
+.k-casca .k-ponto--forte {
+  background: var(--sm-line-strong);
+}
+
+.k-casca .k-icone {
+  display: block;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.k-casca .k-icone--28 {
+  width: 28px;
+  height: 28px;
+}
+
+.k-casca .k-icone--20 {
+  width: 20px;
+  height: 20px;
+  stroke-width: 1.7;
+}
+
+.k-casca .k-icone--18 {
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.8;
+}
+
+/* o ícone de 64px em sage (pedido, dress code) */
+.k-casca .k-selo-icone {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: var(--k-sage);
+  color: var(--sm-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* a foto que enche o espaço do cartão (o contêiner é posicionado) */
+.k-casca .k-foto {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* botões: ink, raio 18, peso 600 */
+.k-casca .k-botao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 0;
+  background: var(--sm-ink);
+  color: var(--k-card);
+  text-align: center;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.k-casca .k-botao--contorno {
+  padding: 17px;
+  border: 1px solid var(--sm-line-strong);
+  background: transparent;
+  color: inherit;
+  font-weight: 500;
+}
+
+.k-casca .k-botao--enviar {
+  padding: 19px;
+}
+
+.k-casca .k-botao--acento {
+  background: var(--sm-accent);
+  color: var(--sm-ink);
+}
+
+.k-casca .k-botao:disabled {
+  opacity: .6;
+  cursor: default;
+}
+
+/* O placeholder do Chromium (#757575), que o protótipo usa; o preflight
+   do Tailwind poria #9ca3af. Os campos sobre o ink têm regra própria. */
+.k-casca input::placeholder,
+.k-casca textarea::placeholder {
+  color: #757575;
+  opacity: 1;
+}
+
+.k-casca .k-pilula {
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: var(--sm-ink);
+  color: var(--k-card);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.k-casca .k-pilula-clara {
+  pointer-events: auto;
+  align-self: flex-start;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 22px;
+  border-radius: 999px;
+  background: var(--sm-dark-ink);
+  color: var(--sm-ink);
+  font-weight: 600;
+}
+
+/* "Alterar resposta", "Escolher outro presente" */
+.k-casca .k-volta {
+  align-self: flex-start;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  border-bottom: 1px solid var(--sm-line-strong);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.k-casca .k-volta--claro {
+  align-self: center;
+  border-bottom-color: rgba(251, 249, 245, .4);
+}
+
+.k-casca .k-erro {
+  font-size: 14px;
+  color: var(--k-acento-texto);
+}
+
+.k-casca .k-erro--claro {
+  color: var(--sm-accent);
+}
+
+/* --------------------------------------------------------- contagem */
+
+.k-casca .k-contagem {
+  display: flex;
+  gap: 8px;
+}
+
+.k-casca .k-contagem-caixa {
+  box-sizing: content-box;
+  width: clamp(64px, calc(7 * var(--sm-vw)), 84px);
+  padding: 14px 0 12px;
+  border-radius: 18px;
+  background: var(--sm-vidro);
+  color: var(--sm-dark-ink);
+  border: 1px solid var(--sm-vidro-borda);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.k-casca .k-contagem-caixa--seg {
+  background: var(--sm-accent);
+  color: var(--sm-ink);
+  border-color: var(--sm-accent);
+}
+
+.k-casca .k-contagem-n {
+  min-height: 1em;
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-size: clamp(26px, calc(3 * var(--sm-vw)), 36px);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.k-casca .k-contagem-rotulo {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.k-casca .k-contagem-fim {
+  padding: 14px 20px;
+  border-radius: 18px;
+  background: var(--sm-vidro);
+  border: 1px solid var(--sm-vidro-borda);
+  color: var(--sm-dark-ink);
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-size: clamp(20px, calc(2.2 * var(--sm-vw)), 26px);
+  line-height: 1.2;
+}
+
+/* ------------------------------------------------------------- dock */
+
+.k-casca .k-dock {
+  position: relative;
+  z-index: 40;
+  margin: calc(-1 * clamp(84px, calc(9 * var(--sm-vw)), 100px)) clamp(0px, calc(2 * var(--sm-vw)), 24px) 0;
+  background: var(--k-card);
+  border-radius: 28px;
+  box-shadow: 0 20px 50px -24px rgba(30, 40, 32, .35);
+  overflow-x: auto;
+}
+
+.k-casca .k-dock--preso {
+  position: sticky;
+  top: 12px;
+}
+
+.k-casca .k-dock-trilho {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 14px clamp(10px, calc(1.6 * var(--sm-vw)), 22px);
+  min-width: max-content;
+}
+
+.k-casca .k-dock-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: clamp(72px, calc(8.6 * var(--sm-vw)), 96px);
+  text-align: center;
+}
+
+.k-casca .k-dock-bola {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--k-soft);
+  color: var(--sm-ink);
+  transform: scale(1);
+  transition: background .4s ease, color .4s ease, transform .5s var(--k-mola);
+}
+
+.k-casca .k-dock-item[data-ativo] .k-dock-bola {
+  background: var(--sm-ink);
+  color: var(--k-card);
+  transform: scale(1.06);
+}
+
+.k-casca .k-dock-icone {
+  width: 22px;
+  height: 22px;
+  stroke-width: 1.7;
+}
+
+.k-casca .k-dock-rotulo {
+  font-size: 12.5px;
+  line-height: 1.25;
+  font-weight: 500;
+}
+
+/* ------------------------------------------------------------ pedido */
+
+.k-casca .k-pedido {
+  margin-top: clamp(8px, calc(1.6 * var(--sm-vw)), 20px);
+  padding: clamp(24px, calc(3 * var(--sm-vw)), 36px);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 24px 40px;
+  align-items: center;
+}
+
+.k-casca .k-pedido-esq {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  grid-column: span 2;
+  min-width: 0;
+}
+
+.k-casca .k-pedido-rotulo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--sm-muted);
+}
+
+.k-casca .k-pedido-titulo {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.k-casca .k-pedido-textos {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.k-casca .k-pedido-prazo {
+  color: var(--k-acento-texto);
+  font-weight: 600;
+}
+
+.k-casca .k-dica {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: var(--k-soft);
+  color: var(--sm-muted);
+}
+
+.k-casca .k-dica-icone {
+  width: 20px;
+  height: 20px;
+  color: var(--k-acento-texto);
+}
+
+.k-casca .k-pedido-botoes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* --------------------------------------------------------- destaques */
+
+.k-casca .k-destaques {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: clamp(16px, calc(2 * var(--sm-vw)), 24px);
+}
+
+.k-casca .k-destaque {
+  background: var(--k-card);
+  border-radius: 28px;
+  padding: 26px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: transform .5s var(--k-e), box-shadow .5s;
+}
+
+.k-casca .k-destaque--link:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 40px -28px rgba(30, 40, 32, .4);
+  opacity: 1;
+}
+
+.k-casca .k-destaque-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--sm-muted);
+}
+
+.k-casca .k-destaque-rotulo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.k-casca .k-destaque-icone {
+  width: 20px;
+  height: 20px;
+  color: var(--sm-ink);
+}
+
+.k-casca .k-destaque-seta {
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.8;
+  color: var(--k-acento-texto);
+}
+
+.k-casca .k-destaque-valor {
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-size: clamp(28px, calc(3 * var(--sm-vw)), 36px);
+  line-height: 1;
+}
+
+.k-casca .k-destaque-nota {
+  min-height: 1.2em;
+  font-size: 14px;
+  color: var(--sm-muted);
+}
+
+/* ---------------------------------------------------------- história */
+
+.k-casca .k-historia {
+  padding: clamp(28px, calc(3.4 * var(--sm-vw)), 44px) clamp(20px, calc(3 * var(--sm-vw)), 36px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.k-casca .k-historia-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+
+.k-casca .k-historia-titulos,
+.k-casca .k-historia-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.k-casca .k-historia-texto {
+  gap: 12px;
+}
+
+.k-casca .k-historia-p {
+  max-width: 760px;
+  color: var(--sm-muted);
+  line-height: 1.7;
+  text-wrap: pretty;
+  white-space: pre-line;
+}
+
+.k-casca .k-historia-texto .k-capitulo-foto {
+  margin-top: 12px;
+}
+
+/* com marcos: o texto e a foto do casal antes da onda */
+.k-casca .k-historia-abre {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 24px 36px;
+  align-items: center;
+}
+
+.k-casca .k-historia-abre .k-capitulo-foto {
+  grid-column: auto;
+}
+
+.k-casca .k-historia-abre--so-foto {
+  grid-template-columns: minmax(0, 760px);
+}
+
+.k-casca .k-legenda {
+  display: flex;
+  gap: 18px;
+  font-size: 13px;
+  color: var(--sm-muted);
+}
+
+.k-casca .k-legenda-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.k-casca .k-onda-rolagem {
+  overflow-x: auto;
+  margin: 0 -12px;
+  padding: 0 12px;
+}
+
+.k-casca .k-onda {
+  position: relative;
+  min-width: 760px;
+  height: 300px;
+  margin-top: 8px;
+}
+
+.k-casca .k-onda-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.k-casca .k-onda-tracejada {
+  fill: none;
+  stroke: var(--sm-line-strong);
+  stroke-width: 2;
+  stroke-dasharray: 3 8;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.k-casca .k-onda-corte {
+  position: absolute;
+  inset: 0;
+  transition: clip-path 1.1s var(--k-e);
+}
+
+.k-casca .k-onda-cheia {
+  fill: none;
+  stroke: var(--sm-accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.k-casca .k-marco {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 0;
+  height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.k-casca .k-marco:focus-visible {
+  outline: none;
+}
+
+.k-casca .k-marco:focus-visible .k-marco-bola {
+  outline: 2px solid var(--k-acento-texto);
+  outline-offset: 4px;
+}
+
+.k-casca .k-marco-bola {
+  box-sizing: content-box;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46px;
+  height: 46px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--k-card);
+  color: var(--sm-ink);
+  border: 1px solid var(--sm-line-strong);
+  box-shadow: none;
+  transition: all .6s var(--k-mola);
+}
+
+.k-casca .k-marco[data-estado="passado"] .k-marco-bola {
+  background: var(--sm-marco-passado, #f6dccb);
+  border-color: var(--sm-marco-passado, #f6dccb);
+}
+
+.k-casca .k-marco[data-estado="ativo"] .k-marco-bola {
+  width: 60px;
+  height: 60px;
+  background: var(--sm-ink);
+  color: var(--k-card);
+  border-color: var(--sm-ink);
+  box-shadow: 0 0 0 8px var(--sm-halo, rgba(232, 169, 135, .28));
+}
+
+.k-casca .k-marco-icone {
+  width: 20px;
+  height: 20px;
+  stroke-width: 1.7;
+}
+
+.k-casca .k-marco-legenda {
+  position: absolute;
+  left: 50%;
+  top: 36px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.k-casca .k-marco-legenda--acima {
+  top: -88px;
+}
+
+.k-casca .k-marco-ano {
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-size: 26px;
+  line-height: 1.1;
+}
+
+.k-casca .k-marco-curto {
+  font-size: 12.5px;
+  color: var(--sm-muted);
+}
+
+.k-casca .k-capitulo {
+  margin-top: 12px;
+  background: var(--k-soft);
+  border-radius: 24px;
+  padding: clamp(20px, calc(2.4 * var(--sm-vw)), 28px);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 24px;
+  align-items: center;
+}
+
+.k-casca .k-capitulo-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.k-casca .k-capitulo-titulo {
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-style: var(--sf-tit-estilo);
+  text-transform: var(--sf-tit-caixa);
+  letter-spacing: var(--sf-tit-ls-suave);
+  font-size: clamp(30px, calc(3.6 * var(--sm-vw)), 46px);
+  line-height: 1.05;
+}
+
+.k-casca .k-capitulo-p {
+  color: var(--sm-muted);
+  line-height: 1.7;
+  text-wrap: pretty;
+}
+
+.k-casca .k-capitulo-foto {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border-radius: 18px;
+  overflow: hidden;
+  grid-column: span 2;
+}
+
+/* ------------------------------------------------- grande dia e local */
+
+.k-casca .k-dupla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: clamp(16px, calc(2 * var(--sm-vw)), 24px);
+}
+
+.k-casca .k-dia {
+  padding: clamp(28px, calc(3.4 * var(--sm-vw)), 40px);
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.k-casca .k-agenda {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.k-casca .k-agenda-linha {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: var(--k-soft);
+}
+
+.k-casca .k-agenda-hora {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  min-width: 52px;
+}
+
+.k-casca .k-agenda-textos {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.k-casca .k-agenda-rotulo {
+  font-family: var(--sf-tit-fam);
+  font-style: var(--sf-tit-estilo);
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+.k-casca .k-agenda-nota {
+  font-size: 13.5px;
+  color: var(--sm-muted);
+}
+
+.k-casca .k-local {
+  position: relative;
+  border-radius: 32px;
+  overflow: hidden;
+  min-height: 460px;
+  background: var(--sm-dark);
+  color: var(--sm-dark-ink);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.k-casca .k-local-foto {
+  position: absolute;
+  inset: 0;
+}
+
+.k-casca .k-local-veu {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(15, 18, 15, 0) 30%, rgba(15, 18, 15, .78));
+}
+
+.k-casca .k-local-miolo {
+  position: relative;
+  padding: clamp(24px, calc(3 * var(--sm-vw)), 36px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.k-casca .k-local-nome {
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-style: var(--sf-tit-estilo);
+  text-transform: var(--sf-tit-caixa);
+  letter-spacing: var(--sf-tit-ls-suave);
+  font-size: clamp(30px, calc(3.6 * var(--sm-vw)), 44px);
+  line-height: 1.05;
+}
+
+.k-casca .k-local-endereco {
+  opacity: .85;
+}
+
+/* o zoom lento do T03: só no público e sem reduced-motion */
+@keyframes k-zoom-lento {
+  from {
+    transform: scale(1);
+  }
+
+  to {
+    transform: scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .k-casca[data-modo="publico"] .k-local-foto--lenta {
+    animation: k-zoom-lento 14s ease-in-out infinite alternate;
+  }
+}
+
+/* ----------------------------------------------------------- músicas */
+
+.k-casca .k-musicas {
+  padding: clamp(28px, calc(3.4 * var(--sm-vw)), 44px) clamp(20px, calc(3 * var(--sm-vw)), 36px);
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.k-casca .k-musicas-topo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.k-casca .k-pedido-musica {
+  max-width: 620px;
+  padding: 20px;
+  border-radius: 20px;
+  background: rgba(251, 249, 245, .07);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.k-casca .k-pedido-musica-linha {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.k-casca .k-pedido-musica-campo {
+  box-sizing: content-box;
+  flex: 1;
+  min-width: 180px;
+  padding: 14px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(251, 249, 245, .25);
+  background: transparent;
+  outline: none;
+}
+
+.k-casca .k-pedido-musica-campo:focus {
+  border-color: var(--sm-accent);
+}
+
+.k-casca .k-pedido-musica-campo::placeholder {
+  color: inherit;
+  opacity: .6;
+}
+
+.k-casca .k-pedido-musica-botao {
+  padding: 14px 22px;
+  border-radius: 999px;
+  border: 0;
+  background: var(--sm-accent);
+  color: var(--sm-ink);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.k-casca .k-pedido-musica-botao:disabled {
+  opacity: .6;
+  cursor: default;
+}
+
+.k-casca .k-pedido-musica-feito {
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  font-size: 20px;
+}
+
+/* --------------------------------------------------------- presentes */
+
+.k-casca .k-presentes {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, calc(2 * var(--sm-vw)), 24px);
+}
+
+.k-casca .k-presentes-topo {
+  padding: clamp(28px, calc(3.4 * var(--sm-vw)), 44px) clamp(20px, calc(3 * var(--sm-vw)), 36px);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 24px 48px;
+  align-items: center;
+}
+
+.k-casca .k-presentes-textos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.k-casca .k-presentes-loja {
+  justify-self: start;
+}
+
+/* a cota: o cartão soft de raio 24 que sobe 4px com a borda ink */
+.k-casca .k-cota {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: left;
+  border: 1px solid transparent;
+  background: var(--k-soft);
+  border-radius: 24px;
+  padding: 24px;
+  cursor: pointer;
+  transition: transform .6s var(--k-e), border-color .5s;
+}
+
+.k-casca .k-cota[data-on] {
+  border-color: var(--sm-ink);
+  transform: translateY(-4px);
+}
+
+.k-casca .k-cota-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.k-casca .k-cota-rotulo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--sm-muted);
+}
+
+.k-casca .k-cota-icone {
+  width: 20px;
+  height: 20px;
+  color: var(--sm-ink);
+}
+
+.k-casca .k-cota-pix {
+  font-weight: 600;
+  color: var(--k-acento-texto);
+}
+
+.k-casca .k-cota-total {
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-size: clamp(28px, calc(3 * var(--sm-vw)), 36px);
+  line-height: 1;
+}
+
+.k-casca .k-cota-nota {
+  font-size: 14px;
+  color: var(--sm-muted);
+}
+
+.k-casca .k-chave {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 24px;
+  border-radius: 24px;
+  background: var(--k-soft);
+}
+
+.k-casca .k-chave-valor {
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-size: clamp(22px, calc(2.4 * var(--sm-vw)), 28px);
+  line-height: 1.15;
+  word-break: break-all;
+}
+
+.k-casca .k-chave-titular {
+  font-size: 14px;
+  color: var(--sm-muted);
+}
+
+.k-casca .k-chave .k-botao {
+  padding: 14px 22px;
+}
+
+/* auto-fill (não auto-fit): com poucos presentes o card não estica até a
+   largura toda; com 6, a grade é a mesma do desenho */
+.k-casca .k-presentes-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+  gap: clamp(12px, calc(1.6 * var(--sm-vw)), 20px);
+}
+
+.k-casca .k-presente-casca {
+  display: flex;
+}
+
+.k-casca .k-presente {
+  flex: 1;
+  position: relative;
+  text-align: left;
+  border: 1.5px solid transparent;
+  background: var(--k-card);
+  border-radius: 28px;
+  padding: 10px 10px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  transition: transform .6s var(--k-e), box-shadow .6s, opacity .5s, border-color .5s;
+}
+
+.k-casca button.k-presente {
+  cursor: pointer;
+}
+
+.k-casca .k-presente[data-on] {
+  border-color: var(--sm-ink);
+  transform: translateY(-8px);
+  box-shadow: 0 30px 50px -28px rgba(30, 40, 32, .45);
+}
+
+.k-casca .k-presente[data-dim] {
+  opacity: .55;
+}
+
+.k-casca .k-presente--sem-foto {
+  padding-top: 22px;
+}
+
+.k-casca .k-presente-foto {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 3;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.k-casca .k-presente-img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  transform: scale(1);
+  transition: transform 1.4s var(--k-e);
+}
+
+.k-casca .k-presente[data-on] .k-presente-img {
+  transform: scale(1.07);
+}
+
+.k-casca .k-check {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--sm-ink);
+  color: var(--k-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(.4);
+  transition: opacity .4s, transform .6s var(--k-mola);
+}
+
+.k-casca .k-presente[data-on] .k-check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.k-casca .k-check-icone {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
+}
+
+.k-casca .k-presente-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 10px;
+}
+
+.k-casca .k-presente-titulo {
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-style: var(--sf-tit-estilo);
+  text-transform: var(--sf-tit-caixa);
+  letter-spacing: var(--sf-tit-ls-suave);
+  font-size: var(--sf-card-tit);
+  line-height: 1.2;
+}
+
+.k-casca .k-presente--sem-foto .k-presente-titulo {
+  padding-right: 40px;
+}
+
+.k-casca .k-presente-desc {
+  font-size: 14px;
+  color: var(--sm-muted);
+  line-height: 1.5;
+}
+
+.k-casca .k-presente-valor {
+  margin-top: 6px;
+  font-weight: 600;
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* a barra do presente: no fluxo na prévia; fixa e deslizando no público */
+.k-casca .k-folha {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.k-casca .k-folha--fixa {
+  position: fixed;
+  left: 50%;
+  bottom: clamp(14px, calc(3 * var(--sm-vw)), 28px);
+  z-index: 60;
+  width: min(560px, calc(100% - 24px));
+  max-width: none;
+  margin: 0;
+  transform: translate(-50%, 140%);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform .7s cubic-bezier(.2, .8, .2, 1), opacity .5s ease;
+}
+
+.k-casca .k-folha--fixa[data-aberta] {
+  transform: translate(-50%, 0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.k-casca .k-folha-caixa {
+  max-height: calc(100 * var(--sm-vh) - 40px);
+  overflow-y: auto;
+  padding: 12px 12px 12px 22px;
+  border-radius: 24px;
+  background: var(--sm-ink);
+  color: var(--k-card);
+  box-shadow: 0 30px 60px -20px rgba(20, 28, 22, .55);
+}
+
+.k-casca .k-folha-linha {
+  display: flex;
+  /* Adaptação: "Presentear com Pix · R$ X" é mais longo que o "Presentear
+     R$ X" do desenho; numa linha só, em 390 sobrariam ~20px para o título
+     (só reticências). Abaixo de ~480px o título fica em cima e o botão e o
+     × embaixo. */
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+
+.k-casca .k-folha-textos {
+  flex: 1 1 140px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.k-casca .k-folha-rotulo {
+  font-size: 12px;
+  opacity: .7;
+}
+
+.k-casca .k-folha-titulo {
+  font-family: var(--sf-tit-fam);
+  font-style: var(--sf-tit-estilo);
+  font-size: 20px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.k-casca .k-folha-presentear {
+  flex: none;
+  padding: 15px 22px;
+  border-radius: 16px;
+  border: 0;
+  background: var(--sm-accent);
+  color: var(--sm-ink);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.k-casca .k-folha-fechar {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(251, 249, 245, .1);
+  color: var(--k-card);
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.k-casca .k-folha-pix {
+  padding: 16px 10px 10px 0;
+}
+
+.k-casca .k-pix {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.k-casca .k-pix-qr {
+  max-width: 200px;
+  padding: 10px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.k-casca .k-pix-valor {
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-size: 28px;
+  line-height: 1;
+}
+
+.k-casca .k-pix-copiar {
+  width: 100%;
+}
+
+.k-casca .k-pix-nota {
+  font-size: 13px;
+  opacity: .75;
+}
+
+.k-casca .k-pix-copiado {
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+/* ----------------------------------------------------------- galeria */
+
+.k-casca .k-galeria {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: clamp(120px, calc(15 * var(--sm-vw)), 210px);
+  gap: clamp(10px, calc(1.4 * var(--sm-vw)), 18px);
+}
+
+.k-casca .k-galeria-item {
+  position: relative;
+  border-radius: 28px;
+  overflow: hidden;
+}
+
+.k-casca .k-galeria-zoom,
+.k-casca .k-galeria-hover {
+  position: absolute;
+  inset: 0;
+}
+
+.k-casca .k-galeria-hover {
+  transition: transform 1.6s var(--k-e);
+}
+
+.k-casca .k-galeria-hover:hover {
+  transform: scale(1.06);
+}
+
+.k-casca .k-galeria-frase {
+  margin-top: clamp(16px, calc(2 * var(--sm-vw)), 24px);
+  text-align: center;
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  font-size: clamp(18px, calc(2 * var(--sm-vw)), 22px);
+  line-height: 1.4;
+  color: var(--sm-muted);
+  text-wrap: balance;
+}
+
+/* ------------------------------------------------------------- traje */
+
+.k-casca .k-traje {
+  padding: clamp(28px, calc(3.4 * var(--sm-vw)), 40px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px 40px;
+}
+
+.k-casca .k-traje-textos {
+  flex: 1;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.k-casca .k-traje-titulo {
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-style: var(--sf-tit-estilo);
+  text-transform: var(--sf-tit-caixa);
+  letter-spacing: var(--sf-tit-ls-suave);
+  font-size: clamp(28px, calc(3 * var(--sm-vw)), 38px);
+  line-height: 1.1;
+}
+
+.k-casca .k-traje-p {
+  white-space: pre-line;
+}
+
+.k-casca .k-traje-fotos {
+  display: flex;
+  gap: 10px;
+}
+
+.k-casca .k-traje-foto {
+  position: relative;
+  width: clamp(72px, calc(9 * var(--sm-vw)), 112px);
+  aspect-ratio: 3 / 4;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+/* --------------------------------------------------------- padrinhos */
+
+.k-casca .k-padrinhos {
+  padding: clamp(28px, calc(3.4 * var(--sm-vw)), 44px) clamp(20px, calc(3 * var(--sm-vw)), 36px);
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.k-casca .k-padrinhos-topo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.k-casca .k-padrinhos-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 12px;
+}
+
+.k-casca .k-par {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px;
+  border-radius: 22px;
+  background: var(--k-soft);
+}
+
+.k-casca .k-par-foto {
+  flex: none;
+  width: 64px;
+  height: 64px;
+}
+
+.k-casca .k-par-nomes {
+  font-family: var(--sf-tit-fam);
+  font-style: var(--sf-tit-estilo);
+  font-size: 21px;
+  line-height: 1.2;
+}
+
+/* ------------------------------------------------------------ recado */
+
+.k-casca .k-recado {
+  padding: clamp(28px, calc(3.4 * var(--sm-vw)), 44px) clamp(20px, calc(3 * var(--sm-vw)), 36px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  text-align: center;
+}
+
+.k-casca .k-recado-p {
+  max-width: 640px;
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  font-size: clamp(20px, calc(2.2 * var(--sm-vw)), 24px);
+  line-height: 1.5;
+  text-wrap: balance;
+  white-space: pre-line;
+}
+
+.k-casca .k-recado-nomes {
+  font-size: var(--sf-nome-tam-sm);
+}
+
+/* -------------------------------------------------------------- rsvp */
+
+.k-casca .k-rsvp {
+  position: relative;
+  padding: clamp(28px, calc(4 * var(--sm-vw)), 56px) clamp(20px, calc(3.4 * var(--sm-vw)), 44px);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 32px clamp(32px, calc(5 * var(--sm-vw)), 72px);
+  align-items: start;
+  overflow: hidden;
+}
+
+.k-casca .k-rsvp-esq {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.k-casca .k-rsvp-dir {
+  position: relative;
+  min-width: 0;
+}
+
+.k-casca .k-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.k-casca .k-campo {
+  width: 100%;
+  padding: 17px 20px;
+  border-radius: 18px;
+  border: 1px solid transparent;
+  background: var(--k-soft);
+  font-size: 16px;
+  outline: none;
+}
+
+.k-casca .k-campo:focus {
+  border-color: var(--sm-line-strong);
+}
+
+.k-casca .k-campo[data-erro] {
+  border-color: var(--k-acento-texto);
+}
+
+.k-casca .k-campo--texto {
+  resize: none;
+  display: block;
+}
+
+.k-casca .k-campo--claro {
+  background: var(--k-card);
+}
+
+.k-casca .k-campo--ink {
+  background: transparent;
+  border-color: rgba(251, 249, 245, .25);
+}
+
+.k-casca .k-campo--ink:focus {
+  border-color: var(--sm-accent);
+}
+
+.k-casca .k-campo--ink::placeholder {
+  color: inherit;
+  opacity: .6;
+}
+
+.k-casca .k-escolhas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.k-casca .k-escolhas--soltas {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.k-casca .k-escolha {
+  padding: 16px 10px;
+  border-radius: 18px;
+  border: 1px solid var(--sm-ink);
+  background: transparent;
+  color: var(--sm-ink);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .35s;
+}
+
+.k-casca .k-escolha[aria-pressed="true"] {
+  background: var(--sm-ink);
+  color: var(--k-card);
+}
+
+.k-casca .k-escolhas--soltas .k-escolha {
+  padding: 12px 18px;
+}
+
+.k-casca .k-escolha--pequena {
+  flex: none;
+  padding: 10px 14px;
+  font-size: 14px;
+}
+
+.k-casca .k-acomp {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 12px 12px 20px;
+  border-radius: 18px;
+  background: var(--k-soft);
+}
+
+.k-casca .k-acomp-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.k-casca .k-acomp-rotulo {
+  font-weight: 500;
+}
+
+.k-casca .k-acomp-conta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.k-casca .k-redondo {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--k-card);
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.k-casca .k-redondo:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+.k-casca .k-redondo--pequeno {
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
+}
+
+.k-casca .k-acomp-n {
+  min-width: 18px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.k-casca .k-acomp-linha {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.k-casca .k-acomp-linha .k-campo {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+  padding: 13px 16px;
+}
+
+.k-casca .k-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.k-casca .k-rsvp-fim {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 32px;
+  border-radius: 24px;
+  background: var(--k-soft);
+}
+
+.k-casca .k-rsvp-fim--nao {
+  gap: 14px;
+}
+
+.k-casca .k-rsvp-coracao {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--sm-accent);
+  color: var(--sm-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.k-casca .k-rsvp-coracao-icone {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+  stroke: none;
+}
+
+.k-casca .k-rsvp-fim-titulo {
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-style: var(--sf-tit-estilo);
+  font-size: clamp(28px, calc(3 * var(--sm-vw)), 38px);
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.k-casca .k-rsvp-fim-titulo--nao {
+  font-weight: var(--sf-texto-peso);
+  font-size: clamp(26px, calc(3 * var(--sm-vw)), 34px);
+}
+
+.k-casca .k-rsvp-fim-p {
+  line-height: 1.6;
+}
+
+.k-casca .k-petalas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.k-casca .k-petala {
+  position: absolute;
+  top: 0;
+  border-radius: 80% 0 80% 0;
+  opacity: 0;
+}
+
+/* ------------------------------------------------------------ rodapé */
+
+.k-casca .k-rodape {
+  box-sizing: content-box;
+  position: relative;
+  border-radius: 32px;
+  overflow: hidden;
+  min-height: 420px;
+  background: var(--sm-dark);
+  color: var(--sm-dark-ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.k-casca .k-rodape-foto {
+  position: absolute;
+  inset: 0;
+  opacity: .45;
+}
+
+.k-casca .k-rodape-veu {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: rgba(15, 18, 15, .35);
+}
+
+.k-casca .k-rodape-miolo {
+  position: relative;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.k-casca .k-rodape-frase {
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  font-size: clamp(20px, calc(2.2 * var(--sm-vw)), 24px);
+  max-width: 520px;
+  line-height: 1.5;
+  text-wrap: balance;
+}
+
+.k-casca .k-rodape-nomes {
+  font-size: var(--sf-nome-tam-md);
+}
+
+.k-casca .k-rodape-hashtag {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .3em;
+}
+
+.k-casca .k-rodape-assinatura {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 10px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  opacity: .6;
+}
+
+.k-casca .k-rodape-logo {
+  display: block;
+  height: 18px;
+  width: auto;
+  max-width: 80px;
+  object-fit: contain;
+}
+
+/* --------------------------------------------- blocos sem desenho */
+
+.k-casca .k-bloco {
+  padding: clamp(28px, calc(3.4 * var(--sm-vw)), 44px) clamp(20px, calc(3 * var(--sm-vw)), 36px);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.k-casca .k-bloco-topo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.k-casca .k-bloco-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 560px;
+}
+
+.k-casca .k-bloco-p {
+  max-width: 760px;
+  line-height: 1.7;
+  white-space: pre-line;
+}
+
+.k-casca .k-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 12px;
+}
+
+.k-casca .k-lista-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 20px;
+  border-radius: 22px;
+  background: var(--k-soft);
+}
+
+.k-casca .k-lista-titulo {
+  font-family: var(--sf-tit-fam);
+  font-style: var(--sf-tit-estilo);
+  font-size: 21px;
+  line-height: 1.2;
+}
+
+.k-casca .k-lista-info {
+  font-size: 14px;
+  color: var(--sm-muted);
+}
+
+.k-casca .k-lista-link {
+  align-self: flex-start;
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--k-acento-texto);
+}
+
+.k-casca .k-arquivo {
+  cursor: pointer;
+}
+
+.k-casca .k-album-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 140px), 1fr));
+  gap: 10px;
+}
+
+.k-casca .k-album-foto {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 18px;
+}
+
+.k-casca .k-recados {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.k-casca .k-recados-item {
+  padding: 18px 20px;
+  border-radius: 20px;
+  background: rgba(251, 249, 245, .07);
+}
+
+.k-casca .k-recados-texto {
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  font-size: 1.1em;
+  line-height: 1.5;
+}
+
+.k-casca .k-recados-nome {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  opacity: .75;
+}
+
+/* ------------------------------------------------- reduced-motion
+   Reveals, hero, contagem, capítulo, pétalas e abertura já saem pelo JS
+   (peças comuns); aqui saem as transições e animações do CSS: dock com
+   mola, onda, cartões que sobem, ✓, zoom lento e do hover, barra do
+   presente. */
+@media (prefers-reduced-motion: reduce) {
+  .k-casca *,
+  .k-casca *::before,
+  .k-casca *::after {
+    transition-duration: .01ms !important;
+    transition-delay: 0s !important;
+    animation: none !important;
+  }
+
+  .k-casca .k-dock-item[data-ativo] .k-dock-bola,
+  .k-casca .k-destaque--link:hover,
+  .k-casca .k-cota[data-on],
+  .k-casca .k-presente[data-on],
+  .k-casca .k-presente[data-on] .k-presente-img,
+  .k-casca .k-galeria-hover:hover {
+    transform: none;
+  }
+}

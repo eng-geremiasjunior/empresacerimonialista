@@ -1,0 +1,2036 @@
+/* T02 · Alianças de ouro. Os valores são os literais do protótipo
+   (handoff/prototipos/Template 02.dc.html); tudo escopado em .sm-aliancas.
+
+   · cores: --sm-* (site-paletas: a paleta "ouro"; o ouro das alianças é
+     o metal e fica fixo no SVG);
+   · fontes: --sf-* (site-pares: o par do casal na escala do T02);
+   · todo vw/svh do desenho passa por --sm-vw/--sm-vh (site-base.css):
+     clamp(96px,14vw,176px) → clamp(96px, calc(14 * var(--sm-vw)), 176px);
+   · a raiz não tem overflow:hidden nem container-type (site-base.css): o
+     sticky da cena e da história depende disso;
+   · o reset da base é border-box e o protótipo é content-box: onde a
+     diferença aparece (polaroid, círculos do "− n +"), a medida soma a
+     borda e o padding. */
+
+.sm-aliancas {
+  /* o protótipo não define line-height em ancestral nenhum: tudo sem
+     valor próprio sai com normal (o preflight do Tailwind põe 1.5) */
+  line-height: normal;
+  --a-e: cubic-bezier(.2, .7, .2, 1);
+  --a-py: clamp(96px, calc(14 * var(--sm-vw)), 176px);
+  --a-px: clamp(20px, calc(5 * var(--sm-vw)), 64px);
+  font-size: var(--sf-texto-tam);
+  font-weight: var(--sf-texto-peso);
+  min-height: calc(100 * var(--sm-vh));
+}
+
+.sm-aliancas a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.sm-aliancas a:hover {
+  opacity: .75;
+}
+
+.sm-aliancas input,
+.sm-aliancas textarea,
+.sm-aliancas button,
+.sm-aliancas select {
+  font: inherit;
+  color: inherit;
+}
+
+.sm-aliancas button {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.sm-aliancas button:disabled {
+  cursor: default;
+}
+
+.sm-aliancas p,
+.sm-aliancas h1,
+.sm-aliancas h2 {
+  margin: 0;
+}
+
+.sm-aliancas :focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: 3px;
+}
+
+.sm-aliancas .a-so-leitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.sm-aliancas .a-nowrap {
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------ comuns */
+
+.sm-aliancas .a-secao {
+  padding: var(--a-py) var(--a-px);
+}
+
+.sm-aliancas .a-alt {
+  background: var(--sm-alt);
+}
+
+.sm-aliancas .a-escuro {
+  background: var(--sm-dark);
+  color: var(--sm-dark-ink);
+}
+
+.sm-aliancas .a-eyebrow {
+  font-size: 11px;
+  letter-spacing: .32em;
+  text-transform: uppercase;
+  color: var(--sm-accent);
+}
+
+.sm-aliancas .a-h2 {
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-style: var(--sf-tit-estilo);
+  text-transform: var(--sf-tit-caixa);
+  letter-spacing: var(--sf-tit-ls);
+  font-size: var(--sf-tit-tam);
+  line-height: 1.1;
+}
+
+.sm-aliancas .a-h2--balance {
+  text-wrap: balance;
+}
+
+.sm-aliancas .a-h2--sm {
+  font-size: var(--sf-tit-tam-sm);
+  line-height: 1.15;
+}
+
+.sm-aliancas .a-h2--fim {
+  line-height: 1.2;
+}
+
+.sm-aliancas .a-nome {
+  font-family: var(--sf-nome-fam);
+  font-weight: var(--sf-nome-peso);
+  font-style: var(--sf-nome-estilo);
+  text-transform: var(--sf-nome-caixa);
+  letter-spacing: var(--sf-nome-ls);
+  line-height: var(--sf-nome-lh);
+}
+
+/* o SVG das alianças ocupa a caixa de quem o recebe */
+.sm-aliancas .a-aneis {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* pílulas: 11px, ls .22em, raio 999px */
+.sm-aliancas .a-pilula {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 26px;
+  border-radius: 999px;
+  border: 1px solid var(--sm-ink);
+  background: transparent;
+  font-size: 11px;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.sm-aliancas .a-pilula--cheia {
+  background: var(--sm-ink);
+  color: var(--sm-bg);
+}
+
+.sm-aliancas .a-pilula--clara {
+  border-color: var(--sm-dark-ink);
+  background: var(--sm-dark-ink);
+  color: var(--sm-dark);
+}
+
+.sm-aliancas .a-pilula--grande {
+  padding: 18px 40px;
+  letter-spacing: .24em;
+}
+
+.sm-aliancas .a-pilula:disabled {
+  opacity: .6;
+}
+
+/* "Alterar resposta", "Escolher outro presente" */
+.sm-aliancas .a-volta {
+  padding: 0 0 6px;
+  border: 0;
+  border-bottom: 1px solid var(--sm-line-strong);
+  background: transparent;
+  font-size: 11px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.sm-aliancas .a-escuro .a-volta {
+  border-bottom-color: var(--sm-dark-line);
+}
+
+/* quadro de foto: a moldura fica, a camada [data-zoom] se revela */
+.sm-aliancas .a-quadro {
+  position: relative;
+  overflow: hidden;
+}
+
+.sm-aliancas .a-quadro--arco {
+  border-radius: 999px 999px 0 0;
+}
+
+.sm-aliancas .a-quadro--circulo {
+  border-radius: 50%;
+}
+
+.sm-aliancas .a-quadro-zoom,
+.sm-aliancas .a-quadro-hover {
+  position: absolute;
+  inset: 0;
+}
+
+.sm-aliancas .a-quadro-hover {
+  transition: transform 1.8s var(--a-e);
+}
+
+.sm-aliancas .a-quadro:hover .a-quadro-hover {
+  transform: scale(1.06);
+}
+
+.sm-aliancas .a-quadro:hover .a-quadro-hover--suave {
+  transform: scale(1.04);
+}
+
+.sm-aliancas .a-quadro-parallax {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -8%;
+  height: 116%;
+}
+
+.sm-aliancas .a-quadro-foto {
+  height: 100%;
+}
+
+/* ---------------------------------------------------------- abertura */
+
+.sm-aliancas .a-abertura {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  cursor: pointer;
+  background: var(--sm-dark);
+  color: var(--sm-dark-ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(24px, calc(5 * var(--sm-vh)), 48px);
+  padding: 24px;
+  text-align: center;
+  /* a saída começa aos 1900ms do toque (o "fading" do protótipo) */
+  transition: opacity 1.1s ease 1.9s, transform 1.4s var(--a-e) 1.9s;
+}
+
+.sm-aliancas .a-abertura[data-abrindo] {
+  opacity: 0;
+  transform: scale(1.08);
+}
+
+/* sem JS (ou reduced-motion, que nem põe a classe) não há quem abra */
+html:not(.sm-js) .sm-aliancas .a-abertura {
+  display: none;
+}
+
+.sm-aliancas .a-abertura-rotulo,
+.sm-aliancas .a-abertura-toque {
+  font-size: 11px;
+  letter-spacing: .34em;
+  text-transform: uppercase;
+  opacity: .75;
+}
+
+.sm-aliancas .a-abertura-toque {
+  transition: opacity .5s;
+}
+
+.sm-aliancas .a-abertura[data-abrindo] .a-abertura-toque {
+  opacity: 0;
+}
+
+.sm-aliancas .a-abertura-nomes {
+  font-size: var(--sf-nome-tam-sm);
+}
+
+.sm-aliancas .a-abertura-monograma {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.sm-aliancas .a-abertura-iniciais {
+  font-size: var(--sf-inic-tam-sm);
+}
+
+.sm-aliancas .a-abertura-nomes-xs {
+  font-size: var(--sf-nome-tam-xs);
+}
+
+.sm-aliancas .a-abertura-aneis {
+  position: relative;
+  width: min(560px, calc(88 * var(--sm-vw)));
+  aspect-ratio: 2 / 1;
+}
+
+/* ------------------------------------------------- botão flutuante */
+
+.sm-aliancas .a-flutuante {
+  position: fixed;
+  right: clamp(16px, calc(3 * var(--sm-vw)), 32px);
+  bottom: clamp(16px, calc(3 * var(--sm-vw)), 32px);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  opacity: 0;
+  transform: translateY(24px);
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity .6s ease, transform .6s var(--a-e), visibility 0s linear .6s;
+}
+
+.sm-aliancas .a-flutuante[data-visivel] {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  visibility: visible;
+  transition: opacity .6s ease, transform .6s var(--a-e), visibility 0s;
+}
+
+/* revisão do dono: parado no alto, à direita, no fluxo */
+.sm-aliancas .a-flutuante--estatico {
+  position: relative;
+  right: auto;
+  bottom: auto;
+  justify-content: flex-end;
+  padding: 16px var(--a-px) 0;
+  background: var(--sm-bg);
+}
+
+.sm-aliancas .a-flutuante-rsvp {
+  padding: 14px 22px;
+  border-radius: 999px;
+  background: var(--sm-ink);
+  color: var(--sm-bg);
+  font-size: 11px;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  box-shadow: 0 14px 30px -14px rgba(0, 0, 0, .45);
+}
+
+.sm-aliancas .a-flutuante-topo {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--sm-paper);
+  box-shadow: 0 14px 30px -14px rgba(0, 0, 0, .4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sm-aliancas .a-flutuante-anel {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.sm-aliancas .a-flutuante-prog {
+  transition: stroke-dashoffset 1.2s var(--a-e);
+}
+
+.sm-aliancas .a-flutuante-iniciais {
+  position: relative;
+  font-family: var(--sf-nome-fam);
+  font-style: var(--sf-nome-estilo);
+  font-size: var(--sf-mono-tam);
+  line-height: 1;
+}
+
+/* -------------------------------------------------------------- hero */
+
+.sm-aliancas .a-hero {
+  position: relative;
+  min-height: calc(100 * var(--sm-vh));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(20px, calc(3.6 * var(--sm-vh)), 36px);
+  padding: clamp(72px, calc(10 * var(--sm-vh)), 120px) 24px clamp(56px, calc(8 * var(--sm-vh)), 88px);
+  text-align: center;
+  overflow: hidden;
+}
+
+.sm-aliancas .a-po {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.sm-aliancas .a-po-grao {
+  position: absolute;
+  border-radius: 50%;
+  background: #e7c77f;
+  box-shadow: 0 0 10px 2px rgba(231, 199, 127, .55);
+  opacity: 0;
+}
+
+.sm-aliancas .a-hero-rotulo {
+  position: relative;
+  font-size: 11px;
+  letter-spacing: .32em;
+  text-transform: uppercase;
+  color: var(--sm-accent);
+  text-wrap: balance;
+}
+
+.sm-aliancas .a-hero-arco {
+  position: relative;
+  height: min(calc(48 * var(--sm-vh)), calc(100 * var(--sm-vw)));
+  aspect-ratio: 3 / 4;
+}
+
+.sm-aliancas .a-hero-contorno {
+  position: absolute;
+  inset: -12px;
+  border: 1px solid var(--sm-accent);
+  border-bottom: 0;
+  border-radius: 999px 999px 0 0;
+  opacity: .55;
+}
+
+.sm-aliancas .a-hero-foto {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px 999px 0 0;
+  overflow: hidden;
+}
+
+.sm-aliancas .a-hero-zoom {
+  position: absolute;
+  inset: 0;
+}
+
+.sm-aliancas .a-hero-img {
+  height: 100%;
+}
+
+.sm-aliancas .a-hero-nomes {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.sm-aliancas .a-hero-h1 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: .1em .32em;
+  font-size: var(--sf-nome-tam);
+}
+
+/* as alianças no lugar do "&" */
+.sm-aliancas .a-hero-aneis {
+  display: inline-block;
+  width: .95em;
+  height: .64em;
+}
+
+.sm-aliancas .a-hero-iniciais {
+  display: flex;
+  align-items: center;
+  gap: .22em;
+  font-size: var(--sf-inic-tam);
+}
+
+.sm-aliancas .a-hero-iniciais--sm {
+  font-size: var(--sf-inic-tam-sm);
+}
+
+.sm-aliancas .a-hero-aneis-i {
+  display: inline-block;
+  width: .8em;
+  height: .54em;
+}
+
+.sm-aliancas .a-hero-nomes-xs {
+  font-size: var(--sf-nome-tam-xs);
+}
+
+.sm-aliancas .a-hero-quando {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sm-aliancas .a-hero-data {
+  font-size: 13px;
+  letter-spacing: .34em;
+}
+
+.sm-aliancas .a-hero-onde {
+  font-size: 11px;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: var(--sm-muted);
+}
+
+.sm-aliancas .a-hero-role {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  font-size: 10px;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: var(--sm-muted);
+}
+
+.sm-aliancas .a-hero-cue {
+  width: 1px;
+  height: 36px;
+  background: var(--sm-accent);
+  transform-origin: top;
+}
+
+/* a entrada do hero começa oculta só com JS (sm-js) e até ser liberada */
+html.sm-js .sm-aliancas .a-hero:not([data-pronto]) :is([data-hero], [data-hero-foto], [data-hero-linha]) {
+  opacity: 0;
+  visibility: hidden;
+  filter: none;
+}
+
+/* -------------------------------------------- cena das alianças (#sim)
+   Com JS no público: 320vh com o miolo sticky, frases empilhadas no mesmo
+   lugar, trocadas pela rolagem. Sem isso (prévia, revisão, reduced-motion
+   — que nem põe a classe sm-js —, JS que não chegou): uma tela só. */
+
+.sm-aliancas .a-cena {
+  position: relative;
+  background: var(--sm-dark);
+  color: var(--sm-dark-ink);
+}
+
+.sm-aliancas .a-cena-sticky {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(24px, calc(5 * var(--sm-vh)), 56px);
+  min-height: calc(100 * var(--sm-vh));
+  padding: var(--a-py) 24px;
+}
+
+.sm-aliancas .a-cena-aneis {
+  width: min(720px, calc(94 * var(--sm-vw)));
+  aspect-ratio: 2 / 1;
+}
+
+.sm-aliancas .a-cena-frases {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.sm-aliancas .a-cena-frase {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-style: italic;
+  text-transform: var(--sf-tit-caixa);
+  letter-spacing: var(--sf-tit-ls-suave);
+  font-size: var(--sf-tit-tam);
+  line-height: 1.1;
+}
+
+.sm-aliancas .a-cena-data {
+  font-size: 12px;
+  letter-spacing: .36em;
+  text-transform: uppercase;
+}
+
+/* público com JS: a cena de verdade */
+html.sm-js .sm-aliancas .a-cena[data-modo="publico"] {
+  height: calc(320 * var(--sm-vh));
+}
+
+html.sm-js .sm-aliancas .a-cena[data-modo="publico"] .a-cena-sticky {
+  position: sticky;
+  top: 0;
+  height: calc(100 * var(--sm-vh));
+  min-height: 0;
+  padding: 0 24px;
+  overflow: hidden;
+}
+
+html.sm-js .sm-aliancas .a-cena[data-modo="publico"] .a-cena-frases {
+  display: block;
+  height: clamp(64px, calc(10 * var(--sm-vw)), 120px);
+}
+
+html.sm-js .sm-aliancas .a-cena[data-modo="publico"] .a-cena-frase {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+}
+
+html.sm-js .sm-aliancas .a-cena[data-modo="publico"] .a-cena-data {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* prévia da família: o quadro final ("um sim." e a data) */
+.sm-aliancas .a-cena[data-modo="previa"] .a-cena-frase:not(:last-child) {
+  display: none;
+}
+
+/* ----------------------------------------------- história horizontal
+   Com JS no público e marcos: sticky de 100vh e a trilha que anda de
+   lado (a altura da seção vem do JS). Fora disso: a trilha quebra em
+   linhas, no fluxo. */
+
+.sm-aliancas .a-hs {
+  position: relative;
+}
+
+.sm-aliancas .a-hs-sticky {
+  padding: var(--a-py) 0;
+}
+
+.sm-aliancas .a-hs-trilha {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(40px, calc(6 * var(--sm-vw)), 96px);
+  padding: 0 clamp(24px, calc(9 * var(--sm-vw)), 140px);
+}
+
+html.sm-js .sm-aliancas .a-hs[data-modo="publico"]:not(.a-hs--so):not(.a-hs--longa) .a-hs-sticky {
+  position: sticky;
+  top: 0;
+  height: calc(100 * var(--sm-vh));
+  padding: 0;
+  overflow: hidden;
+}
+
+html.sm-js .sm-aliancas .a-hs[data-modo="publico"]:not(.a-hs--so):not(.a-hs--longa) .a-hs-trilha {
+  height: 100%;
+  width: max-content;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  will-change: transform;
+}
+
+/* a régua da altura da tela (o JS compara com a abertura) */
+.sm-aliancas .a-hs-regua {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: calc(100 * var(--sm-vh));
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.sm-aliancas .a-hs--so .a-hs-trilha {
+  justify-content: flex-start;
+}
+
+.sm-aliancas .a-hs-abertura {
+  flex: none;
+  width: min(420px, calc(78 * var(--sm-vw)));
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sm-aliancas .a-hs-p {
+  line-height: 1.8;
+  color: var(--sm-muted);
+  text-wrap: pretty;
+  white-space: pre-line;
+}
+
+.sm-aliancas .a-hs-continue {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 10px;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: var(--sm-muted);
+}
+
+.sm-aliancas .a-hs-continue span {
+  width: 48px;
+  height: 1px;
+  background: var(--sm-accent);
+}
+
+/* "Continue rolando" só faz sentido onde a trilha anda */
+.sm-aliancas .a-hs-continue {
+  display: none;
+}
+
+html.sm-js .sm-aliancas .a-hs[data-modo="publico"] .a-hs-continue {
+  display: flex;
+}
+
+/* o polaroid: largura clamp(220px,24vw,330px) + o padding de 12px dos
+   dois lados (o protótipo é content-box) */
+.sm-aliancas .a-polaroid {
+  --a-giro: 0deg;
+  --a-desvio: 0px;
+  position: relative;
+  flex: none;
+  width: calc(clamp(220px, calc(24 * var(--sm-vw)), 330px) + 24px);
+  background: var(--sm-paper);
+  padding: 12px 12px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  box-shadow: 0 30px 50px -28px rgba(60, 40, 20, .45), 0 2px 6px rgba(60, 40, 20, .08);
+  transform: rotate(var(--a-giro)) translateY(var(--a-desvio));
+  transition: transform .8s var(--a-e);
+}
+
+.sm-aliancas .a-polaroid:hover {
+  transform: rotate(0deg) translateY(-6px);
+}
+
+.sm-aliancas .a-polaroid-foto {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+}
+
+.sm-aliancas .a-polaroid-zoom {
+  position: absolute;
+  inset: 0;
+}
+
+.sm-aliancas .a-polaroid-zoom .sm-foto {
+  height: 100%;
+}
+
+/* a revelação da foto: oculta até entrar pela direita (só com JS) */
+html.sm-js .sm-aliancas .a-hs[data-modo="publico"] [data-dev]:not([data-revelado]) [data-zoom] {
+  opacity: 0;
+  visibility: hidden;
+  filter: none;
+}
+
+.sm-aliancas .a-polaroid-legenda {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 6px;
+}
+
+.sm-aliancas .a-polaroid-titulo {
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.sm-aliancas .a-polaroid-ano {
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  font-size: 22px;
+  color: var(--sm-accent);
+}
+
+.sm-aliancas .a-hs-fim {
+  flex: none;
+  width: min(360px, calc(70 * var(--sm-vw)));
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-style: italic;
+  font-size: var(--sf-tit-tam-sm);
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+/* ------------------------------------------------------ o grande dia */
+
+.sm-aliancas .a-dia {
+  --a-px: clamp(16px, calc(5 * var(--sm-vw)), 64px);
+  display: flex;
+  justify-content: center;
+}
+
+.sm-aliancas .a-dia-caixa {
+  width: 100%;
+  max-width: 620px;
+}
+
+.sm-aliancas .a-convite {
+  position: relative;
+  background: var(--sm-paper);
+  padding: clamp(48px, calc(8 * var(--sm-vw)), 80px) clamp(24px, calc(6 * var(--sm-vw)), 64px);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  box-shadow: 0 40px 80px -40px rgba(60, 40, 20, .45);
+  transition: transform .6s var(--a-e);
+}
+
+.sm-aliancas .a-convite-moldura {
+  position: absolute;
+  inset: 14px;
+  border: 1px solid var(--sm-accent);
+  opacity: .45;
+  pointer-events: none;
+}
+
+.sm-aliancas .a-convite-reflexo {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 0%), rgba(255, 236, 190, .45), transparent 45%);
+}
+
+.sm-aliancas .a-convite > :not(.a-convite-moldura):not(.a-convite-reflexo) {
+  position: relative;
+}
+
+.sm-aliancas .a-convite-aneis {
+  width: 64px;
+  height: 44px;
+}
+
+.sm-aliancas .a-convite-local {
+  font-size: 12px;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: var(--sm-muted);
+}
+
+.sm-aliancas .a-convite-agenda {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  margin: 14px 0;
+}
+
+.sm-aliancas .a-convite-linha {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 16px 0;
+  border-top: 1px solid var(--sm-line);
+}
+
+.sm-aliancas .a-convite-rotulo-linha {
+  font-size: 12px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  text-align: left;
+}
+
+.sm-aliancas .a-convite-pontos {
+  flex: 1;
+  border-bottom: 1px dotted var(--sm-line-strong);
+  transform: translateY(-4px);
+}
+
+.sm-aliancas .a-convite-hora {
+  font-family: var(--sf-tit-fam);
+  font-style: var(--sf-tit-estilo);
+  font-size: 26px;
+  line-height: 1;
+}
+
+.sm-aliancas .a-convite-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* ---------------------------------------------------------- contagem */
+
+.sm-aliancas .a-contagem {
+  --a-px: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+  text-align: center;
+}
+
+.sm-aliancas .a-contagem-anel {
+  position: relative;
+  width: min(500px, calc(86 * var(--sm-vw)));
+  aspect-ratio: 1;
+}
+
+.sm-aliancas .a-contagem-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+.sm-aliancas .a-contagem-arco {
+  transition: stroke-dashoffset 1.2s var(--a-e);
+}
+
+.sm-aliancas .a-contagem-ponto {
+  filter: drop-shadow(0 0 6px rgba(233, 205, 135, .9));
+}
+
+.sm-aliancas .a-contagem-miolo {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.sm-aliancas .a-contagem-faltam {
+  font-size: 11px;
+  letter-spacing: .34em;
+  text-transform: uppercase;
+  color: var(--sm-accent);
+}
+
+.sm-aliancas .a-contagem-dias {
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-size: clamp(72px, calc(16 * var(--sm-vw)), 150px);
+  line-height: 1;
+}
+
+.sm-aliancas .a-contagem-rotulo {
+  font-size: 11px;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+}
+
+.sm-aliancas .a-contagem-menores {
+  display: flex;
+  gap: clamp(14px, calc(3 * var(--sm-vw)), 28px);
+  margin-top: 14px;
+}
+
+.sm-aliancas .a-contagem-un {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.sm-aliancas .a-contagem-n {
+  font-family: var(--sf-tit-fam);
+  font-size: clamp(22px, calc(4 * var(--sm-vw)), 32px);
+  line-height: 1;
+}
+
+.sm-aliancas .a-contagem-r {
+  font-size: 9px;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: var(--sm-muted);
+}
+
+.sm-aliancas .a-contagem-final {
+  max-width: 70%;
+  font-family: var(--sf-tit-fam);
+  font-style: var(--sf-tit-estilo);
+  font-size: var(--sf-tit-tam-sm);
+}
+
+.sm-aliancas .a-contagem-para {
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  font-size: clamp(20px, calc(2.4 * var(--sm-vw)), 26px);
+}
+
+/* ------------------------------------------------------- localização */
+
+.sm-aliancas .a-local-grade {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: clamp(40px, calc(7 * var(--sm-vw)), 96px);
+  align-items: center;
+}
+
+.sm-aliancas .a-local-grade--so {
+  max-width: 560px;
+  grid-template-columns: 1fr;
+}
+
+.sm-aliancas .a-local-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.sm-aliancas .a-local-endereco {
+  color: var(--sm-muted);
+  line-height: 1.7;
+}
+
+.sm-aliancas .a-local-botao {
+  align-self: flex-start;
+}
+
+/* --------------------------------------------------------- dress code */
+
+.sm-aliancas .a-traje {
+  text-align: center;
+}
+
+.sm-aliancas .a-traje-miolo {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.sm-aliancas .a-traje-p {
+  max-width: 440px;
+  line-height: 1.8;
+  color: var(--sm-muted);
+  text-wrap: pretty;
+  white-space: pre-line;
+}
+
+.sm-aliancas .a-traje-fotos {
+  --a-colunas: 3;
+  width: 100%;
+  max-width: calc(640px * var(--a-colunas) / 3);
+  margin-top: 32px;
+  display: grid;
+  grid-template-columns: repeat(var(--a-colunas), minmax(0, 1fr));
+  gap: clamp(10px, calc(2 * var(--sm-vw)), 20px);
+  align-items: end;
+}
+
+/* --------------------------------------------------------------- rsvp */
+
+.sm-aliancas .a-rsvp {
+  --a-px: clamp(16px, calc(5 * var(--sm-vw)), 64px);
+}
+
+.sm-aliancas .a-rsvp-miolo {
+  position: relative;
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 26px;
+}
+
+.sm-aliancas .a-rsvp-prazo {
+  line-height: 1.7;
+  opacity: .8;
+}
+
+.sm-aliancas .a-rsvp-abrir {
+  margin-top: 10px;
+  padding: 18px 36px;
+}
+
+.sm-aliancas .a-form {
+  width: 100%;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  text-align: left;
+}
+
+.sm-aliancas .a-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sm-aliancas .a-campo-rotulo {
+  font-size: 11px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  opacity: .7;
+}
+
+.sm-aliancas .a-campo-entrada {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--sm-line-strong);
+  border-radius: 0;
+  background: transparent;
+  padding: 10px 0;
+  font-size: 17px;
+  outline: none;
+}
+
+.sm-aliancas .a-escuro .a-campo-entrada {
+  border-bottom-color: var(--sm-dark-line);
+}
+
+.sm-aliancas .a-campo-entrada--grande {
+  font-size: 18px;
+}
+
+.sm-aliancas .a-campo-entrada--centro {
+  text-align: center;
+}
+
+.sm-aliancas .a-campo-entrada::placeholder {
+  color: inherit;
+  opacity: .5;
+}
+
+/* o foco de todos os campos é o sublinhado, sem anel */
+.sm-aliancas .a-campo-entrada:focus-visible {
+  outline: none;
+  border-bottom-color: currentColor;
+}
+
+.sm-aliancas .a-campo-entrada[aria-invalid="true"] {
+  border-bottom-color: var(--sm-gold);
+}
+
+.sm-aliancas .a-campo-texto {
+  resize: none;
+}
+
+.sm-aliancas .a-campo-erro {
+  font-size: 13px;
+  color: var(--sm-accent);
+}
+
+.sm-aliancas .a-escuro .a-campo-erro {
+  color: var(--sm-gold);
+}
+
+.sm-aliancas .a-escolhas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.sm-aliancas .a-escolhas--duas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.sm-aliancas .a-escolha {
+  padding: 16px 12px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  background: transparent;
+  transition: all .4s ease;
+}
+
+.sm-aliancas .a-escolhas:not(.a-escolhas--duas) .a-escolha {
+  padding: 14px 22px;
+}
+
+.sm-aliancas .a-escuro .a-escolha {
+  border-color: var(--sm-dark-ink);
+}
+
+.sm-aliancas .a-escolha[aria-pressed="true"] {
+  background: var(--sm-ink);
+  color: var(--sm-bg);
+}
+
+.sm-aliancas .a-escuro .a-escolha[aria-pressed="true"] {
+  background: var(--sm-dark-ink);
+  color: var(--sm-dark);
+}
+
+.sm-aliancas .a-escolha--pequena {
+  flex: none;
+  padding: 10px 16px;
+  font-size: 11px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+}
+
+.sm-aliancas .a-acomp {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--sm-dark-line);
+}
+
+.sm-aliancas .a-acomp-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sm-aliancas .a-acomp-conta {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* 44px com a borda: no protótipo também, o UA põe border-box em botões */
+.sm-aliancas .a-redondo {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--sm-dark-line);
+  background: transparent;
+  font-size: 18px;
+}
+
+/* o "−" no zero só deixa de responder: no desenho os dois círculos têm
+   o mesmo peso */
+.sm-aliancas .a-redondo:disabled {
+  cursor: default;
+}
+
+.sm-aliancas .a-acomp-n {
+  min-width: 20px;
+  text-align: center;
+  font-family: var(--sf-tit-fam);
+  font-size: 26px;
+}
+
+.sm-aliancas .a-acomp-linha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sm-aliancas .a-acomp-linha .a-campo-entrada {
+  flex: 1;
+  min-width: 0;
+}
+
+.sm-aliancas .a-tirar {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
+  opacity: .7;
+}
+
+.sm-aliancas .a-form-enviar {
+  align-self: center;
+}
+
+.sm-aliancas .a-rsvp-fim {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+}
+
+.sm-aliancas .a-rsvp-aneis {
+  position: relative;
+  width: min(360px, calc(80 * var(--sm-vw)));
+  aspect-ratio: 2 / 1;
+}
+
+.sm-aliancas .a-rsvp-fim-p {
+  line-height: 1.7;
+  opacity: .8;
+}
+
+/* ---------------------------------------------------------- presentes */
+
+.sm-aliancas .a-presentes-miolo {
+  max-width: 1160px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  text-align: center;
+}
+
+.sm-aliancas .a-presentes-frase {
+  color: var(--sm-muted);
+  line-height: 1.7;
+  white-space: pre-line;
+}
+
+.sm-aliancas .a-presentes-rotulo {
+  margin-top: 20px;
+}
+
+.sm-aliancas .a-presentes-grade {
+  width: 100%;
+  max-width: var(--a-max, none);
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  gap: 20px;
+  text-align: left;
+}
+
+.sm-aliancas .a-presente-caixa {
+  display: flex;
+}
+
+.sm-aliancas .a-presente {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 10px 10px 26px;
+  border-radius: 20px;
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(var(--sm-paper), var(--sm-paper)) padding-box,
+    linear-gradient(var(--sm-line), var(--sm-line)) border-box;
+  text-align: left;
+  overflow: hidden;
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  transition: opacity .6s ease, transform .7s var(--a-e), box-shadow .7s ease;
+}
+
+.sm-aliancas .a-presente--sem-foto {
+  padding-top: 26px;
+}
+
+.sm-aliancas .a-presente[data-on] {
+  background:
+    linear-gradient(var(--sm-paper), var(--sm-paper)) padding-box,
+    linear-gradient(135deg, #8a6526, #f4dc9c, #b8904a, #f4dc9c, #8a6526) border-box;
+  transform: translateY(-10px);
+  box-shadow: 0 34px 60px -30px rgba(120, 80, 20, .5);
+}
+
+.sm-aliancas .a-presente[data-dim] {
+  opacity: .5;
+}
+
+.sm-aliancas .a-presente-foto {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.sm-aliancas .a-presente-img {
+  position: absolute;
+  inset: 0;
+  transition: transform 1.4s var(--a-e);
+}
+
+.sm-aliancas .a-presente-img .sm-foto {
+  height: 100%;
+}
+
+.sm-aliancas .a-presente[data-on] .a-presente-img {
+  transform: scale(1.07);
+}
+
+.sm-aliancas .a-presente-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 10px;
+}
+
+.sm-aliancas .a-presente-titulo {
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-style: var(--sf-tit-estilo);
+  text-transform: var(--sf-tit-caixa);
+  letter-spacing: var(--sf-tit-ls-suave);
+  font-size: var(--sf-card-tit);
+  line-height: 1.2;
+}
+
+.sm-aliancas .a-presente-desc {
+  font-size: .92em;
+  line-height: 1.6;
+  color: var(--sm-muted);
+}
+
+.sm-aliancas .a-presente-valor {
+  margin-top: 8px;
+  font-family: var(--sf-tit-fam);
+  font-style: var(--sf-tit-estilo);
+  font-size: 22px;
+  color: var(--sm-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.sm-aliancas .a-presente-selo {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 52px;
+  height: 36px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: var(--sm-paper);
+  opacity: 0;
+  transform: scale(.5);
+  transition: opacity .5s ease, transform .7s cubic-bezier(.34, 1.56, .64, 1);
+}
+
+.sm-aliancas .a-presente[data-on] .a-presente-selo {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.sm-aliancas .a-presente-reflexo {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 60%;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(255, 240, 205, .55), transparent);
+  transform: translateX(-120%) skewX(-12deg);
+}
+
+.sm-aliancas .a-presente[data-on] .a-presente-reflexo {
+  transform: translateX(260%) skewX(-12deg);
+  transition: transform 1.3s cubic-bezier(.4, 0, .2, 1) .15s;
+}
+
+.sm-aliancas .a-presentear,
+.sm-aliancas .a-pix {
+  width: 100%;
+  max-width: 640px;
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+}
+
+.sm-aliancas .a-presentear-frase {
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  font-size: clamp(20px, calc(2.4 * var(--sm-vw)), 26px);
+  line-height: 1.4;
+}
+
+.sm-aliancas .a-pix-corpo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.sm-aliancas .a-pix-qr {
+  padding: 12px;
+  border-radius: 12px;
+  box-shadow: 0 24px 40px -26px rgba(60, 40, 20, .4);
+}
+
+.sm-aliancas .a-pix-valor {
+  font-family: var(--sf-tit-fam);
+  font-style: var(--sf-tit-estilo);
+  font-size: 26px;
+  color: var(--sm-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.sm-aliancas .a-pix-nota {
+  color: var(--sm-muted);
+  line-height: 1.7;
+}
+
+.sm-aliancas .a-pix-copiado {
+  font-family: var(--sf-tit-fam);
+  font-style: var(--sf-tit-estilo);
+  font-size: var(--sf-tit-tam-sm);
+  line-height: 1.2;
+  margin-bottom: 14px;
+}
+
+.sm-aliancas .a-pix-corpo [aria-live] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.sm-aliancas .a-presentes-loja {
+  margin-top: 20px;
+}
+
+/* sem itens: a chave Pix num card de papel com a borda de ouro */
+.sm-aliancas .a-chave {
+  margin-top: 20px;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 36px 24px;
+  border-radius: 20px;
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(var(--sm-paper), var(--sm-paper)) padding-box,
+    linear-gradient(135deg, #8a6526, #f4dc9c, #b8904a, #f4dc9c, #8a6526) border-box;
+  box-shadow: 0 34px 60px -30px rgba(120, 80, 20, .5);
+}
+
+.sm-aliancas .a-chave-aneis {
+  width: 52px;
+  height: 36px;
+}
+
+.sm-aliancas .a-chave-valor {
+  font-family: var(--sf-tit-fam);
+  font-size: 22px;
+  overflow-wrap: anywhere;
+}
+
+.sm-aliancas .a-chave-titular {
+  color: var(--sm-muted);
+  margin-bottom: 8px;
+}
+
+/* -------------------------------------------------------- nosso jeito */
+
+.sm-aliancas .a-jeito-miolo {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(48px, calc(7 * var(--sm-vw)), 80px);
+  text-align: center;
+}
+
+.sm-aliancas .a-jeito-h2 {
+  max-width: 640px;
+}
+
+.sm-aliancas .a-jeito-grade {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 28px;
+}
+
+.sm-aliancas .a-jeito-cartao {
+  --a-giro: 0deg;
+  background: var(--sm-paper);
+  padding: 36px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 24px 40px -26px rgba(60, 40, 20, .4);
+  transform: rotate(var(--a-giro));
+  transition: transform .7s var(--a-e);
+}
+
+.sm-aliancas .a-jeito-cartao:hover {
+  transform: rotate(0deg) translateY(-8px) scale(1.03);
+}
+
+.sm-aliancas .a-jeito-n {
+  font-size: 11px;
+  letter-spacing: .24em;
+  color: var(--sm-accent);
+}
+
+.sm-aliancas .a-jeito-txt {
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  font-size: clamp(20px, calc(2.2 * var(--sm-vw)), 26px);
+  line-height: 1.3;
+  text-wrap: balance;
+}
+
+/* ------------------------------------------------------------ galeria */
+
+.sm-aliancas .a-galeria {
+  --a-px: clamp(16px, calc(4 * var(--sm-vw)), 56px);
+}
+
+.sm-aliancas .a-galeria-grade {
+  --a-vao: clamp(10px, calc(2 * var(--sm-vw)), 24px);
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--a-vao);
+  align-items: start;
+}
+
+.sm-aliancas .a-galeria-arco {
+  grid-column: span 7;
+}
+
+.sm-aliancas .a-galeria-direita {
+  grid-column: span 5;
+  display: flex;
+  flex-direction: column;
+  gap: var(--a-vao);
+  margin-top: clamp(40px, calc(10 * var(--sm-vw)), 140px);
+}
+
+.sm-aliancas .a-galeria-ret {
+  border-radius: 16px;
+}
+
+.sm-aliancas .a-galeria-frase {
+  grid-column: 1 / -1;
+  margin: clamp(56px, calc(9 * var(--sm-vw)), 120px) auto;
+  max-width: 640px;
+  text-align: center;
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  font-weight: var(--sf-tit-peso);
+  font-size: clamp(26px, calc(3.6 * var(--sm-vw)), 44px);
+  line-height: 1.3;
+  text-wrap: balance;
+}
+
+.sm-aliancas .a-galeria-pano {
+  grid-column: 1 / -1;
+  border-radius: 16px;
+}
+
+/* no celular a grade empilha: o arco na largura toda, o círculo e o
+   retângulo lado a lado embaixo, sem o degrau */
+@media (max-width: 640px) {
+  .sm-aliancas .a-galeria-arco,
+  .sm-aliancas .a-galeria-direita {
+    grid-column: 1 / -1;
+  }
+
+  .sm-aliancas .a-galeria-direita {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0;
+  }
+
+  .sm-aliancas .a-galeria-direita > * {
+    flex: 0 1 calc(50% - var(--a-vao) / 2);
+  }
+}
+
+/* a prévia em escala (o portal mostra 430px numa janela larga): a mesma
+   quebra pela largura da caixa */
+@container (max-width: 640px) {
+  .sm-aliancas .a-galeria-arco,
+  .sm-aliancas .a-galeria-direita {
+    grid-column: 1 / -1;
+  }
+
+  .sm-aliancas .a-galeria-direita {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0;
+  }
+
+  .sm-aliancas .a-galeria-direita > * {
+    flex: 0 1 calc(50% - var(--a-vao) / 2);
+  }
+}
+
+/* ---------------------------------------------------------- padrinhos */
+
+.sm-aliancas .a-padrinhos {
+  text-align: center;
+}
+
+.sm-aliancas .a-padrinhos-miolo {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(48px, calc(7 * var(--sm-vw)), 80px);
+}
+
+.sm-aliancas .a-padrinhos-grade {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 56px 32px;
+}
+
+.sm-aliancas .a-par {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+}
+
+/* a cápsula 150×200 com o anel duplo */
+.sm-aliancas .a-par-capsula {
+  width: 150px;
+  height: 200px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px var(--sm-accent), 0 0 0 8px var(--sm-alt), 0 0 0 9px var(--sm-line);
+}
+
+.sm-aliancas .a-par-nomes {
+  font-family: var(--sf-tit-fam);
+  font-style: var(--sf-tit-estilo);
+  font-size: clamp(20px, calc(2.2 * var(--sm-vw)), 24px);
+  letter-spacing: var(--sf-tit-ls-suave);
+}
+
+/* ------------------------------------------------- recado e hashtag */
+
+.sm-aliancas .a-recado {
+  --a-py: clamp(112px, calc(16 * var(--sm-vw)), 200px);
+  text-align: center;
+}
+
+.sm-aliancas .a-recado--so-hashtag {
+  --a-py: clamp(80px, calc(11 * var(--sm-vw)), 128px);
+}
+
+.sm-aliancas .a-recado-miolo {
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+}
+
+.sm-aliancas .a-recado-p {
+  line-height: 1.85;
+  color: var(--sm-muted);
+  text-wrap: pretty;
+  white-space: pre-line;
+}
+
+.sm-aliancas .a-recado-nomes {
+  font-size: var(--sf-nome-tam-md);
+  color: var(--sm-accent);
+}
+
+.sm-aliancas .a-hashtag {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.sm-aliancas .a-recado--so-hashtag .a-hashtag {
+  margin-top: 0;
+}
+
+.sm-aliancas .a-hashtag-rotulo {
+  font-size: 11px;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: var(--sm-muted);
+}
+
+.sm-aliancas .a-hashtag-tag {
+  font-family: var(--sf-tit-fam);
+  font-style: var(--sf-tit-estilo);
+  font-size: clamp(26px, calc(4 * var(--sm-vw)), 44px);
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------------------- rodapé */
+
+.sm-aliancas .a-rodape {
+  background: var(--sm-dark);
+  color: var(--sm-dark-ink);
+  padding: clamp(80px, calc(11 * var(--sm-vw)), 128px) 24px 40px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.sm-aliancas .a-rodape-aneis {
+  width: 80px;
+  height: 54px;
+}
+
+.sm-aliancas .a-rodape-nomes {
+  font-size: var(--sf-nome-tam-md);
+}
+
+.sm-aliancas .a-rodape-data {
+  font-size: 12px;
+  letter-spacing: .34em;
+}
+
+.sm-aliancas .a-rodape-carinho {
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  opacity: .8;
+}
+
+.sm-aliancas .a-rodape-assinatura {
+  margin-top: 64px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 10px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+}
+
+.sm-aliancas .a-rodape-assinatura span {
+  opacity: .5;
+}
+
+/* no celular o botão flutuante (54px a 16px do fundo) ficaria por cima
+   da assinatura: o rodapé termina acima dele */
+@media (max-width: 640px) {
+  .sm-aliancas .a-rodape {
+    padding-bottom: calc(40px + 54px + 16px);
+  }
+}
+
+.sm-aliancas .a-rodape-logo {
+  height: 20px;
+  width: auto;
+  max-width: 96px;
+  object-fit: contain;
+  opacity: .8;
+}
+
+/* ------------------------------------- blocos que o desenho não tem */
+
+.sm-aliancas .a-bloco-miolo {
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  text-align: center;
+}
+
+.sm-aliancas .a-bloco-p {
+  line-height: 1.8;
+  color: var(--sm-muted);
+  text-wrap: pretty;
+}
+
+.sm-aliancas .a-escuro .a-bloco-p {
+  color: inherit;
+  opacity: .8;
+}
+
+.sm-aliancas .a-bloco-p--livre {
+  white-space: pre-line;
+}
+
+.sm-aliancas .a-bloco-form {
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  margin-top: 8px;
+}
+
+.sm-aliancas .a-bloco-nota {
+  font-size: 15px;
+  color: var(--sm-muted);
+  line-height: 1.6;
+}
+
+.sm-aliancas .a-escuro .a-bloco-nota {
+  color: inherit;
+  opacity: .75;
+}
+
+.sm-aliancas .a-arquivo {
+  cursor: pointer;
+}
+
+.sm-aliancas .a-lista {
+  width: 100%;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.sm-aliancas .a-lista-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 14px;
+  padding: 16px 0;
+  border-top: 1px solid var(--sm-line);
+}
+
+.sm-aliancas .a-lista-titulo {
+  font-family: var(--sf-tit-fam);
+  font-style: var(--sf-tit-estilo);
+  font-size: 22px;
+}
+
+.sm-aliancas .a-lista-info {
+  font-size: 12px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--sm-muted);
+}
+
+.sm-aliancas .a-album-grade {
+  width: 100%;
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.sm-aliancas .a-album-foto {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.sm-aliancas .a-recados {
+  width: 100%;
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 20px;
+}
+
+.sm-aliancas .a-recados-item {
+  background: var(--sm-paper);
+  color: var(--sm-ink);
+  padding: 28px 22px;
+  text-align: left;
+  box-shadow: 0 24px 40px -26px rgba(0, 0, 0, .5);
+}
+
+.sm-aliancas .a-recados-item:nth-child(4n + 1) { transform: rotate(-2deg); }
+.sm-aliancas .a-recados-item:nth-child(4n + 2) { transform: rotate(1.5deg); }
+.sm-aliancas .a-recados-item:nth-child(4n + 3) { transform: rotate(-1deg); }
+.sm-aliancas .a-recados-item:nth-child(4n + 4) { transform: rotate(2deg); }
+
+.sm-aliancas .a-recados-texto {
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  font-size: 20px;
+  line-height: 1.4;
+}
+
+.sm-aliancas .a-recados-nome {
+  margin-top: 12px;
+  font-size: 11px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--sm-accent);
+}
+
+/* ------------------------------------------------- reduced-motion
+   Reveals, hero, pó, contagem, estouro, alianças (o laço desenha uma vez,
+   no estado final) e abertura já saem pelo JS (peças comuns); a cena e a
+   história ficam sem sticky porque a classe sm-js nem entra. Aqui saem as
+   transições do próprio CSS: cartões que giram e sobem, selo com mola,
+   reflexo, zoom do hover, tilt do convite, anéis de progresso. */
+@media (prefers-reduced-motion: reduce) {
+  .sm-aliancas *,
+  .sm-aliancas *::before,
+  .sm-aliancas *::after {
+    transition-duration: .01ms !important;
+    transition-delay: 0s !important;
+  }
+
+  .sm-aliancas .a-quadro:hover .a-quadro-hover,
+  .sm-aliancas .a-presente[data-on],
+  .sm-aliancas .a-presente[data-on] .a-presente-img {
+    transform: none;
+  }
+
+  /* o hover não mexe: o cartão fica girado como estava */
+  .sm-aliancas .a-polaroid:hover {
+    transform: rotate(var(--a-giro)) translateY(var(--a-desvio));
+  }
+
+  .sm-aliancas .a-jeito-cartao:hover {
+    transform: rotate(var(--a-giro));
+  }
+
+  .sm-aliancas .a-presente-reflexo {
+    display: none;
+  }
+}

@@ -43,7 +43,11 @@ export type PropsDoModelo = {
 // Sem a linha, o modelo cai no convite.
 const DESENHADOS: Partial<Record<ModeloNovo, ComponentType<PropsDoModelo>>> = {
   classico: dynamic(() => import("./modelos/classico/ModeloClassico").then((m) => m.ModeloClassico)),
-  // cartoes, monograma, franca, violino, aliancas
+  aliancas: dynamic(() => import("./modelos/aliancas/ModeloAliancas").then((m) => m.ModeloAliancas)),
+  cartoes: dynamic(() => import("./modelos/cartoes/ModeloCartoes").then((m) => m.ModeloCartoes)),
+  monograma: dynamic(() => import("./modelos/monograma/ModeloMonograma").then((m) => m.ModeloMonograma)),
+  franca: dynamic(() => import("./modelos/franca/ModeloFranca").then((m) => m.ModeloFranca)),
+  violino: dynamic(() => import("./modelos/violino/ModeloViolino").then((m) => m.ModeloViolino)),
 };
 
 export function SiteDoEvento({

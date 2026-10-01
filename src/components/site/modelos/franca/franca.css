@@ -1,0 +1,2235 @@
+/* T05 · França. Os valores são os literais do protótipo
+   (handoff/prototipos/Template 05.dc.html); tudo escopado em .sm-franca.
+   O T06 (Violino) importa as seções daqui e envolve a árvore dele num
+   elemento .sm-franca para herdar este CSS.
+
+   · cores: --sm-* (site-paletas: a paleta Marinho, com o ouro, o selo de
+     cera, a fita e a moldura como variáveis próprias);
+   · fontes: --sf-* (site-pares: o par do casal na escala do T05/T06);
+   · todo vw/svh do desenho passa por --sm-vw/--sm-vh (site-base.css):
+     clamp(20px,5vw,64px) → clamp(20px, calc(5 * var(--sm-vw)), 64px);
+   · o reset da base é border-box e o protótipo é content-box: onde há
+     borda com largura fixa (os botões redondos de 44px, o carimbo de 62px,
+     o furinho da etiqueta) o tamanho aqui já soma a borda;
+   · a raiz não tem overflow:hidden nem container-type (site-base.css). */
+
+.sm-franca {
+  /* o protótipo não define line-height em ancestral nenhum: tudo sem
+     valor próprio sai com normal (o preflight do Tailwind põe 1.5) */
+  line-height: normal;
+  --f-e: cubic-bezier(.2, .7, .2, 1);
+  font-size: var(--sf-texto-tam);
+  font-weight: var(--sf-texto-peso);
+  min-height: calc(100 * var(--sm-vh));
+}
+
+.sm-franca a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.sm-franca a:hover {
+  opacity: .8;
+}
+
+.sm-franca input,
+.sm-franca textarea,
+.sm-franca button,
+.sm-franca select {
+  font: inherit;
+  color: inherit;
+}
+
+.sm-franca button {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: inherit;
+}
+
+.sm-franca button:disabled {
+  cursor: default;
+}
+
+.sm-franca p,
+.sm-franca h1,
+.sm-franca h2,
+.sm-franca h3,
+.sm-franca ul {
+  margin: 0;
+}
+
+.sm-franca :focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: 3px;
+}
+
+.sm-franca .f-so-leitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------ comuns */
+
+.sm-franca .f-secao {
+  padding: clamp(100px, calc(14 * var(--sm-vw)), 170px) clamp(20px, calc(5 * var(--sm-vw)), 64px);
+}
+
+.sm-franca .f-alt {
+  background: var(--sm-alt);
+}
+
+.sm-franca .f-escuro {
+  background: var(--sm-dark);
+  color: var(--sm-dark-ink);
+}
+
+.sm-franca .f-eyebrow {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .34em;
+  text-transform: uppercase;
+  color: var(--sm-gold-text);
+}
+
+.sm-franca .f-eyebrow--claro {
+  color: var(--sm-gold-light);
+}
+
+.sm-franca .f-h2 {
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-style: var(--sf-tit-estilo);
+  text-transform: var(--sf-tit-caixa);
+  letter-spacing: var(--sf-tit-ls);
+  font-size: var(--sf-tit-tam);
+  line-height: 1.1;
+}
+
+.sm-franca .f-h2--balance {
+  text-wrap: balance;
+}
+
+.sm-franca .f-h2--sm {
+  font-size: var(--sf-tit-tam-sm);
+}
+
+.sm-franca .f-nome {
+  font-family: var(--sf-nome-fam);
+  font-weight: var(--sf-nome-peso);
+  font-style: var(--sf-nome-estilo);
+  text-transform: var(--sf-nome-caixa);
+  letter-spacing: var(--sf-nome-ls);
+  line-height: var(--sf-nome-lh);
+}
+
+.sm-franca .f-amp {
+  font-style: normal;
+}
+
+/* o "&" das iniciais é menor: .55em (hero, brasão), .6em (barra) */
+.sm-franca .f-amp--inic {
+  font-size: .55em;
+}
+
+/* o cabeçalho das seções: rótulo, título e frase centrados */
+.sm-franca .f-cabeca {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+}
+
+.sm-franca .f-cabeca-p {
+  color: var(--sm-muted);
+}
+
+/* linha · losango · linha */
+.sm-franca .f-orn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--sm-gold);
+}
+
+.sm-franca .f-orn-linha {
+  width: 48px;
+  height: 1px;
+  background: currentColor;
+}
+
+.sm-franca .f-orn-losango {
+  width: 6px;
+  height: 6px;
+  background: currentColor;
+  transform: rotate(45deg);
+}
+
+.sm-franca .f-orn--hero {
+  color: var(--sm-gold-light);
+}
+
+.sm-franca .f-orn--hero .f-orn-linha {
+  width: 60px;
+}
+
+.sm-franca .f-orn--hero .f-orn-losango {
+  width: 7px;
+  height: 7px;
+}
+
+/* o cartão de papel com as duas molduras de ouro (programa, RSVP...) */
+.sm-franca .f-papel {
+  position: relative;
+  width: 100%;
+  margin: 0 auto;
+  background: var(--sm-paper);
+  box-shadow: 0 40px 80px -40px rgba(31, 42, 68, .35);
+}
+
+.sm-franca .f-moldura {
+  position: absolute;
+  border: 1px solid var(--sm-gold);
+  pointer-events: none;
+}
+
+.sm-franca .f-moldura--1 {
+  inset: 12px;
+  opacity: .6;
+}
+
+.sm-franca .f-moldura--2 {
+  inset: 17px;
+  opacity: .3;
+}
+
+.sm-franca .f-papel-miolo {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 20px;
+}
+
+/* a moldura de ouro em gradiente e o passe-partout (galeria, traje) */
+.sm-franca .f-moldura-ouro {
+  padding: clamp(8px, calc(1 * var(--sm-vw)), 12px);
+  border-radius: 2px;
+  background: var(--sm-moldura);
+  box-shadow: 0 30px 50px -30px rgba(31, 42, 68, .55), inset 0 0 0 1px rgba(255, 255, 255, .25);
+}
+
+.sm-franca .f-passe {
+  padding: clamp(8px, calc(1.2 * var(--sm-vw)), 14px);
+  border-radius: 2px;
+  background: var(--sm-paper);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, .18);
+}
+
+/* o selo de cera: a forma levemente irregular do desenho */
+.sm-franca .f-cera {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border-radius: 47% 53% 50% 50% / 52% 48% 52% 48%;
+  background: var(--sm-cera);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, .4), inset 0 0 0 6px rgba(0, 0, 0, .14), inset 0 0 0 8px rgba(255, 255, 255, .07);
+  color: var(--sm-cera-ink);
+  font-family: var(--sf-nome-fam);
+  font-style: var(--sf-nome-estilo);
+  font-weight: var(--sf-nome-peso);
+  font-size: var(--sf-selo-tam);
+  line-height: 1;
+}
+
+/* botões: 11px 600, ls .24em; no hover o espaçamento cresce em .5s */
+.sm-franca .f-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 17px 30px;
+  border: 1px solid var(--sm-ink);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: letter-spacing .5s ease;
+}
+
+.sm-franca .f-btn:hover {
+  letter-spacing: .3em;
+  opacity: 1;
+}
+
+.sm-franca .f-btn--cheio {
+  background: var(--sm-ink);
+  color: var(--sm-paper);
+}
+
+.sm-franca .f-btn--grande {
+  padding: 18px 40px;
+}
+
+.sm-franca .f-btn:disabled:hover {
+  letter-spacing: .24em;
+}
+
+/* "Ver a lista na loja →" */
+.sm-franca .f-sublinhado {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--sm-ink);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+}
+
+/* "Alterar resposta", "Escolher outro presente" */
+.sm-franca .f-volta {
+  padding: 0 0 6px;
+  border: 0;
+  border-bottom: 1px solid var(--sm-line-strong);
+  background: transparent;
+  font-size: 11px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.sm-franca .f-volta--claro {
+  border-bottom-color: rgba(251, 247, 240, .4);
+}
+
+/* ---------------------------------------------------------- envelope */
+
+.sm-franca .f-envelope {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  cursor: pointer;
+  background: radial-gradient(ellipse at 50% 40%, #2c3858, #141b2c 72%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(28px, calc(5 * var(--sm-vh)), 52px);
+  padding: 24px;
+  overflow: hidden;
+}
+
+/* sem JS (ou reduced-motion, que nem põe a classe) não há quem abra */
+html:not(.sm-js) .sm-franca .f-envelope {
+  display: none;
+}
+
+.sm-franca .f-env-topo {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .36em;
+  text-transform: uppercase;
+  color: var(--sm-gold-light);
+}
+
+.sm-franca .f-env {
+  position: relative;
+  width: min(520px, calc(86 * var(--sm-vw)));
+  aspect-ratio: 1.5;
+  perspective: 1400px;
+}
+
+.sm-franca .f-env-corpo {
+  position: absolute;
+  inset: 0;
+  background: #e3d7c1;
+  border-radius: 6px;
+  box-shadow: 0 50px 90px -30px rgba(0, 0, 0, .75);
+}
+
+.sm-franca .f-env-carta {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  top: 5%;
+  bottom: 6%;
+  z-index: 1;
+  background: var(--sm-paper);
+  border-radius: 3px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 9% 16px 0;
+  text-align: center;
+  color: var(--sm-ink);
+}
+
+.sm-franca .f-env-convidado {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: var(--sm-gold-text);
+}
+
+.sm-franca .f-env-nomes {
+  font-size: var(--sf-nome-tam-xs);
+}
+
+.sm-franca .f-env-data {
+  font-size: 11px;
+  letter-spacing: .3em;
+}
+
+.sm-franca .f-env-bolso {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #efe6d4, #e6dac4);
+  clip-path: polygon(0 0, 50% 57%, 100% 0, 100% 100%, 0 100%);
+}
+
+.sm-franca .f-env-aba {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 62%;
+  z-index: 3;
+  transform-origin: top center;
+  background: linear-gradient(180deg, #ddd0b6, #ece2cf);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.sm-franca .f-env-selo {
+  position: absolute;
+  left: 50%;
+  top: 60%;
+  z-index: 4;
+  width: clamp(78px, calc(14 * var(--sm-vw)), 100px);
+  transform: translate(-50%, -50%);
+}
+
+.sm-franca .f-env-dica {
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  font-size: clamp(18px, calc(2 * var(--sm-vw)), 22px);
+  color: #f3ece0;
+}
+
+/* --------------------------------------------------------------- nav */
+
+.sm-franca .f-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px clamp(20px, calc(4 * var(--sm-vw)), 48px);
+  background: var(--sm-nav);
+  border-bottom: 1px solid var(--sm-line);
+  opacity: 0;
+  transform: translateY(-100%);
+  pointer-events: none;
+  transition: opacity .6s ease, transform .6s var(--f-e);
+}
+
+.sm-franca .f-nav[data-visivel] {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+/* revisão do dono: parada no alto */
+.sm-franca .f-nav--estatica {
+  position: relative;
+}
+
+.sm-franca .f-nav-mono {
+  font-family: var(--sf-nome-fam);
+  font-weight: var(--sf-nome-peso);
+  font-style: var(--sf-nome-estilo);
+  font-size: var(--sf-nav-mono-tam);
+  line-height: 1;
+}
+
+.sm-franca .f-nav-mono .f-amp--inic {
+  font-size: .6em;
+  color: var(--sm-gold-text);
+}
+
+.sm-franca .f-nav-links {
+  display: flex;
+  align-items: center;
+  gap: clamp(16px, calc(2.6 * var(--sm-vw)), 32px);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+}
+
+.sm-franca .f-nav-botao {
+  padding: 11px 18px;
+  border: 1px solid var(--sm-ink);
+}
+
+/* até 820px, só "Confirmar presença" */
+@media (max-width: 820px) {
+  .sm-franca .f-nav-link {
+    display: none;
+  }
+}
+
+@container (max-width: 820px) {
+  .sm-franca .f-nav-link {
+    display: none;
+  }
+}
+
+/* -------------------------------------------------------------- hero */
+
+.sm-franca .f-hero {
+  position: relative;
+  height: calc(100 * var(--sm-vh));
+  min-height: 620px;
+  overflow: hidden;
+  background: var(--sm-dark);
+  color: #fbf5ea;
+}
+
+.sm-franca .f-hero-foto,
+.sm-franca .f-hero-par {
+  position: absolute;
+  inset: 0;
+}
+
+.sm-franca .f-hero-veu {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(20, 27, 44, .3), rgba(20, 27, 44, 0) 30%, rgba(20, 27, 44, .15) 55%, rgba(20, 27, 44, .78));
+}
+
+.sm-franca .f-hero-moldura {
+  position: absolute;
+  pointer-events: none;
+}
+
+.sm-franca .f-hero-moldura--1 {
+  inset: clamp(14px, calc(2.4 * var(--sm-vw)), 28px);
+  border: 1px solid rgba(217, 191, 140, .75);
+}
+
+.sm-franca .f-hero-moldura--2 {
+  inset: clamp(20px, calc(3.2 * var(--sm-vw)), 38px);
+  border: 1px solid rgba(217, 191, 140, .35);
+}
+
+.sm-franca .f-hero-miolo {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 18px;
+  padding: 0 32px clamp(64px, calc(10 * var(--sm-vh)), 110px);
+}
+
+.sm-franca .f-hero-rotulo {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .36em;
+  text-transform: uppercase;
+  color: var(--sm-gold-light);
+}
+
+.sm-franca .f-hero-h1 {
+  font-size: var(--sf-nome-tam);
+  text-wrap: balance;
+  text-shadow: 0 2px 30px rgba(0, 0, 0, .25);
+}
+
+.sm-franca .f-hero-h1 .f-amp,
+.sm-franca .f-hero-inic .f-amp {
+  color: var(--sm-gold-light);
+}
+
+.sm-franca .f-hero-inic {
+  font-family: var(--sf-nome-fam);
+  font-weight: var(--sf-nome-peso);
+  font-style: var(--sf-nome-estilo);
+  font-size: var(--sf-inic-tam);
+  line-height: 1;
+}
+
+.sm-franca .f-hero-ambos {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.sm-franca .f-hero-inic--sm {
+  font-size: var(--sf-inic-tam-sm);
+}
+
+.sm-franca .f-hero-nomes-sm {
+  font-size: var(--sf-nome-tam-sm);
+}
+
+.sm-franca .f-hero-quando {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sm-franca .f-hero-data {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: .34em;
+  text-transform: uppercase;
+}
+
+.sm-franca .f-hero-onde,
+.sm-franca .f-hero-frase {
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  font-size: 18px;
+}
+
+.sm-franca .f-hero-frase {
+  max-width: 560px;
+  opacity: .9;
+  text-wrap: balance;
+}
+
+/* o que o T06 põe embaixo do local (a pílula do som) é clicável */
+.sm-franca .f-hero-extra {
+  pointer-events: auto;
+}
+
+/* a entrada da capa começa oculta só com JS (sm-js) e até ser liberada */
+html.sm-js .sm-franca .f-hero:not([data-pronto]) :is([data-hero], [data-hero-foto], [data-moldura]) {
+  opacity: 0;
+  visibility: hidden;
+  filter: none;
+}
+
+/* --------------------------------------------------------- bienvenue */
+
+.sm-franca .f-bienvenue {
+  padding: clamp(100px, calc(14 * var(--sm-vw)), 180px) 24px;
+  text-align: center;
+}
+
+.sm-franca .f-bienvenue-miolo {
+  max-width: 680px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+
+.sm-franca .f-brasao {
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 0 1px var(--sm-gold), inset 0 0 0 6px var(--sm-bg), inset 0 0 0 7px var(--sm-gold);
+}
+
+.sm-franca .f-brasao-letras {
+  font-family: var(--sf-nome-fam);
+  font-weight: var(--sf-nome-peso);
+  font-style: var(--sf-nome-estilo);
+  font-size: var(--sf-brasao-tam);
+  line-height: 1;
+}
+
+.sm-franca .f-brasao-letras .f-amp {
+  color: var(--sm-gold-text);
+}
+
+.sm-franca .f-bienvenue-h2 {
+  line-height: 1.12;
+}
+
+.sm-franca .f-bienvenue-p {
+  max-width: 520px;
+  line-height: 1.85;
+  color: var(--sm-muted);
+  text-wrap: pretty;
+  white-space: pre-line;
+}
+
+/* ---------------------------------------------------------- história */
+
+.sm-franca .f-historia-miolo {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(48px, calc(6 * var(--sm-vw)), 72px);
+}
+
+.sm-franca .f-historia .f-cabeca {
+  gap: 16px;
+}
+
+.sm-franca .f-historia-texto {
+  max-width: 640px;
+  line-height: 1.85;
+  white-space: pre-line;
+}
+
+/* a faixa do desenho (1fr): 4 por linha no miolo de 1200px. Com menos
+   cartões, o contêiner encolhe para --f-n × 290px e eles não esticam. */
+.sm-franca .f-postais {
+  --f-postais-gap: clamp(24px, calc(3 * var(--sm-vw)), 40px);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  gap: var(--f-postais-gap);
+  max-width: calc(var(--f-n, 4) * 290px + (var(--f-n, 4) - 1) * var(--f-postais-gap));
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.sm-franca .f-postais--revisao .f-postais-item {
+  display: contents;
+}
+
+.sm-franca .f-historia-unica {
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.sm-franca .f-postal {
+  transform: rotate(var(--f-giro, 0deg));
+  transition: transform .7s var(--f-e);
+}
+
+.sm-franca .f-postal:hover {
+  transform: rotate(0deg) translateY(-8px);
+}
+
+.sm-franca .f-postal-cartao {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4.3;
+}
+
+.sm-franca .f-postal-botao {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+/* o giro do T06: o cartão gira em rotateY e as faces trocam de
+   opacidade de uma vez no meio (.5s), sem preserve-3d nem backface */
+.sm-franca .f-postal-giro {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: perspective(1400px) rotateY(0deg);
+  transition: transform 1.1s cubic-bezier(.3, .7, .2, 1);
+}
+
+.sm-franca .f-postal-giro[data-virado] {
+  transform: perspective(1400px) rotateY(180deg);
+}
+
+.sm-franca .f-postal-lado {
+  position: absolute;
+  inset: 0;
+  display: block;
+  transition: opacity 0s linear .5s, visibility 0s linear .5s;
+}
+
+.sm-franca .f-postal-lado--verso {
+  transform: scaleX(-1);
+  opacity: 0;
+  visibility: hidden;
+}
+
+.sm-franca .f-postal-giro[data-virado] .f-postal-lado--frente {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.sm-franca .f-postal-giro[data-virado] .f-postal-lado--verso {
+  opacity: 1;
+  visibility: visible;
+}
+
+.sm-franca .f-postal-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--sm-paper);
+  text-align: left;
+}
+
+.sm-franca .f-postal-frente {
+  padding: 12px 12px 16px;
+  box-shadow: 0 30px 50px -30px rgba(31, 42, 68, .5), 0 2px 6px rgba(31, 42, 68, .08);
+}
+
+.sm-franca .f-postal-verso {
+  padding: 22px 20px;
+  box-shadow: 0 30px 50px -30px rgba(31, 42, 68, .5);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.sm-franca .f-postal-foto {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sm-franca .f-postal-foto > .sm-foto {
+  position: absolute;
+  inset: 0;
+}
+
+.sm-franca .f-postal-selo {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 46px;
+  height: 56px;
+  padding: 4px;
+  background: var(--sm-paper);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .2);
+}
+
+.sm-franca .f-postal-selo-miolo {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  background: var(--sm-stamp);
+  border: 1px dashed rgba(255, 255, 255, .6);
+  color: #fbf5ea;
+  font-family: var(--sf-nome-fam);
+  font-style: var(--sf-nome-estilo);
+  font-size: var(--sf-carimbo-tam);
+  line-height: 1;
+}
+
+/* 62px de miolo + a borda de 1.5px (content-box no protótipo; aqui border-box) */
+.sm-franca .f-postal-carimbo {
+  position: absolute;
+  top: 26px;
+  right: 40px;
+  width: 65px;
+  height: 65px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(251, 245, 234, .85);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  color: #fbf5ea;
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: normal;
+  transform: rotate(-14deg);
+}
+
+/* cidade longa quebra dentro do círculo, sem estreitar o miolo */
+.sm-franca .f-postal-carimbo > span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.sm-franca .f-postal-legenda {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 4px;
+}
+
+.sm-franca .f-postal-cidade {
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.sm-franca .f-postal-ano {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .2em;
+  color: var(--sm-gold-text);
+}
+
+.sm-franca .f-postal-verso-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.sm-franca .f-postal-capitulo {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: var(--sm-gold-text);
+}
+
+/* 40×48 + a borda de 1px */
+.sm-franca .f-postal-selo-vazio {
+  flex: none;
+  width: 42px;
+  height: 50px;
+  border: 1px dashed var(--sm-line-strong);
+}
+
+.sm-franca .f-postal-titulo {
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-style: var(--sf-tit-estilo);
+  text-transform: var(--sf-tit-caixa);
+  letter-spacing: var(--sf-tit-ls-suave);
+  font-size: var(--sf-card-tit);
+  line-height: 1.15;
+}
+
+.sm-franca .f-postal-texto {
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--sm-muted);
+}
+
+.sm-franca .f-postal-pe {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sm-franca .f-postal-linha {
+  height: 1px;
+  background: var(--sm-line);
+}
+
+.sm-franca .f-postal-onde {
+  font-size: 11px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--sm-muted);
+}
+
+/* ----------------------------------------------------------- château */
+
+.sm-franca .f-chateau {
+  position: relative;
+  height: calc(260 * var(--sm-vh));
+}
+
+.sm-franca .f-chateau-quadro {
+  position: sticky;
+  top: 0;
+  height: calc(100 * var(--sm-vh));
+  overflow: hidden;
+}
+
+.sm-franca .f-chateau-mascara {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--sm-dark);
+  clip-path: inset(26% 33% 7% 33% round 999px 999px 0 0);
+}
+
+@media (max-width: 699px) {
+  .sm-franca .f-chateau-mascara {
+    clip-path: inset(26% 12% 7% 12% round 999px 999px 0 0);
+  }
+}
+
+@container (max-width: 699px) {
+  .sm-franca .f-chateau-mascara {
+    clip-path: inset(26% 12% 7% 12% round 999px 999px 0 0);
+  }
+}
+
+.sm-franca .f-chateau-img {
+  position: absolute;
+  inset: 0;
+  transform: scale(1.25);
+}
+
+.sm-franca .f-chateau-veu {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(20, 27, 44, 0) 40%, rgba(20, 27, 44, .75));
+}
+
+.sm-franca .f-chateau-intro {
+  position: absolute;
+  top: calc(6 * var(--sm-vh));
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 0 24px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.sm-franca .f-chateau-info {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(10 * var(--sm-vh));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 0 24px;
+  text-align: center;
+  color: #fbf5ea;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.sm-franca .f-chateau-nome {
+  line-height: 1.05;
+}
+
+.sm-franca .f-chateau-endereco {
+  opacity: .9;
+}
+
+.sm-franca .f-chateau-ir {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 28px;
+  background: #fbf5ea;
+  color: var(--sm-ink);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+}
+
+/* o quadro final: sem JS, e na prévia e na revisão (numa tela só) */
+html:not(.sm-js) .sm-franca .f-chateau-mascara,
+.sm-franca .f-chateau--final .f-chateau-mascara {
+  clip-path: inset(0 0 0 0);
+}
+
+html:not(.sm-js) .sm-franca .f-chateau-img,
+.sm-franca .f-chateau--final .f-chateau-img {
+  transform: none;
+}
+
+html:not(.sm-js) .sm-franca .f-chateau-intro,
+.sm-franca .f-chateau--final .f-chateau-intro {
+  opacity: 0;
+  visibility: hidden;
+}
+
+html:not(.sm-js) .sm-franca .f-chateau-info,
+.sm-franca .f-chateau--final .f-chateau-info {
+  opacity: 1;
+  visibility: visible;
+}
+
+.sm-franca .f-chateau--final {
+  height: calc(100 * var(--sm-vh));
+}
+
+.sm-franca .f-chateau--final .f-chateau-quadro {
+  position: relative;
+}
+
+/* sem foto do espaço: as informações no fundo escuro, sem o efeito */
+.sm-franca .f-chateau-so-miolo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+}
+
+.sm-franca .f-chateau-so .f-chateau-endereco {
+  opacity: .9;
+}
+
+/* ---------------------------------------------------------- programa */
+
+.sm-franca .f-programa {
+  padding: clamp(100px, calc(14 * var(--sm-vw)), 170px) clamp(16px, calc(5 * var(--sm-vw)), 64px);
+  display: flex;
+  justify-content: center;
+}
+
+.sm-franca .f-programa-cartao,
+.sm-franca .f-traje-cartao {
+  max-width: 600px;
+  padding: clamp(52px, calc(8 * var(--sm-vw)), 84px) clamp(24px, calc(6 * var(--sm-vw)), 64px);
+}
+
+.sm-franca .f-programa-linhas {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  margin: 12px 0 4px;
+}
+
+.sm-franca .f-programa-linha {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 18px 0;
+  border-top: 1px solid var(--sm-line);
+  text-align: left;
+}
+
+.sm-franca .f-programa-rotulos {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sm-franca .f-programa-rotulo {
+  font-family: var(--sf-tit-fam);
+  font-style: var(--sf-tit-estilo);
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.sm-franca .f-programa-sub {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--sm-muted);
+}
+
+.sm-franca .f-programa-pontos {
+  flex: 1;
+  border-bottom: 1px dotted var(--sm-line-strong);
+  transform: translateY(-6px);
+}
+
+.sm-franca .f-programa-hora {
+  font-family: var(--sf-tit-fam);
+  font-size: 26px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.sm-franca .f-traje {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.sm-franca .f-traje-rotulo {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: var(--sm-gold-text);
+}
+
+.sm-franca .f-traje-titulo {
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  font-size: 22px;
+}
+
+.sm-franca .f-traje-texto {
+  max-width: 420px;
+  margin-top: 6px;
+  line-height: 1.7;
+  color: var(--sm-muted);
+  white-space: pre-line;
+}
+
+.sm-franca .f-programa-agenda {
+  margin-top: 8px;
+}
+
+/* ------------------------------------------------------------- traje */
+
+.sm-franca .f-traje-secao {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(40px, calc(5 * var(--sm-vw)), 64px);
+}
+
+.sm-franca .f-traje-secao--colada {
+  padding-top: 0;
+}
+
+.sm-franca .f-traje-p {
+  max-width: 480px;
+  line-height: 1.85;
+  color: var(--sm-muted);
+  white-space: pre-line;
+}
+
+.sm-franca .f-traje-fotos {
+  width: 100%;
+  max-width: 1000px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(20px, calc(3 * var(--sm-vw)), 40px);
+}
+
+.sm-franca .f-traje-foto {
+  flex: 1 1 26%;
+  min-width: min(100%, 200px);
+  max-width: 300px;
+}
+
+/* ---------------------------------------------------------- contagem */
+
+.sm-franca .f-contagem {
+  padding: clamp(96px, calc(13 * var(--sm-vw)), 160px) clamp(16px, calc(5 * var(--sm-vw)), 64px);
+  text-align: center;
+}
+
+.sm-franca .f-contagem-miolo {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+}
+
+.sm-franca .f-contagem-grade {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.sm-franca .f-contagem-un {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  border-left: 1px solid rgba(220, 195, 147, .3);
+}
+
+.sm-franca .f-contagem-un:first-child {
+  border-left: none;
+}
+
+.sm-franca .f-contagem-n {
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-size: clamp(40px, calc(8.5 * var(--sm-vw)), 112px);
+  line-height: 1;
+  /* o número começa vazio (SSR): a linha não pode sumir */
+  min-height: 1em;
+}
+
+.sm-franca .f-contagem-r {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  opacity: .75;
+}
+
+.sm-franca .f-contagem-para {
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  font-size: clamp(18px, calc(2.2 * var(--sm-vw)), 24px);
+  opacity: .9;
+}
+
+.sm-franca .f-contagem-final {
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+/* ----------------------------------------------------------- galeria */
+
+.sm-franca .f-galeria {
+  padding: clamp(100px, calc(14 * var(--sm-vw)), 170px) clamp(16px, calc(4 * var(--sm-vw)), 56px);
+}
+
+.sm-franca .f-galeria-miolo {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(48px, calc(6 * var(--sm-vw)), 72px);
+}
+
+.sm-franca .f-galeria-h2 {
+  max-width: 640px;
+  line-height: 1.12;
+}
+
+.sm-franca .f-galeria-grade {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(20px, calc(3 * var(--sm-vw)), 40px);
+}
+
+.sm-franca .f-galeria-item {
+  flex: 1 1 var(--f-base);
+  min-width: min(100%, 240px);
+  max-width: var(--f-max);
+}
+
+.sm-franca .f-galeria-item--desce {
+  margin-top: 80px;
+}
+
+.sm-franca .f-galeria-item--oval :is(.f-moldura-ouro, .f-passe, .f-galeria-foto) {
+  border-radius: 50%;
+}
+
+.sm-franca .f-galeria-foto {
+  position: relative;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.sm-franca .f-galeria-zoom {
+  position: absolute;
+  inset: 0;
+  transition: transform 1.6s var(--f-e);
+}
+
+.sm-franca .f-galeria-foto:hover .f-galeria-zoom {
+  transform: scale(1.07);
+}
+
+.sm-franca .f-galeria-zoom .sm-foto--oval {
+  border-radius: 0;
+}
+
+/* ---------------------------------------------------------- boutique */
+
+.sm-franca .f-boutique-miolo {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(40px, calc(5 * var(--sm-vw)), 64px);
+}
+
+.sm-franca .f-boutique-grade {
+  width: 100%;
+  max-width: var(--f-max, none);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  gap: clamp(18px, calc(2.4 * var(--sm-vw)), 28px);
+}
+
+.sm-franca .f-presente-casca {
+  display: flex;
+}
+
+.sm-franca .f-presente {
+  flex: 1;
+  position: relative;
+  text-align: left;
+  border: 1px solid var(--sm-line);
+  background: var(--sm-paper);
+  padding: 12px 12px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  transition: transform .6s var(--f-e), box-shadow .6s, opacity .5s, border-color .5s;
+}
+
+.sm-franca button.f-presente {
+  cursor: pointer;
+}
+
+.sm-franca .f-presente[data-on] {
+  border-color: var(--sm-gold);
+  transform: translateY(-8px);
+  box-shadow: 0 34px 60px -30px rgba(31, 42, 68, .5);
+}
+
+.sm-franca .f-presente[data-dim] {
+  opacity: .55;
+}
+
+/* sem foto: o texto desce para a etiqueta caber no canto */
+.sm-franca .f-presente--sem-foto {
+  padding-top: 92px;
+}
+
+.sm-franca .f-presente-foto {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 4.4;
+  overflow: hidden;
+}
+
+.sm-franca .f-presente-img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  transition: transform 1.4s var(--f-e);
+}
+
+.sm-franca .f-presente[data-on] .f-presente-img {
+  transform: scale(1.05);
+}
+
+.sm-franca .f-fita {
+  position: absolute;
+  display: block;
+  transition: transform .7s cubic-bezier(.6, 0, .2, 1);
+}
+
+.sm-franca .f-fita--v {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 16px;
+  margin-left: -8px;
+  background: linear-gradient(90deg, var(--sm-fita), var(--sm-fita-claro), var(--sm-fita));
+  transform-origin: top;
+  transform: scaleY(0);
+}
+
+.sm-franca .f-fita--h {
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 16px;
+  margin-top: -8px;
+  background: linear-gradient(180deg, var(--sm-fita), var(--sm-fita-claro), var(--sm-fita));
+  transform-origin: left;
+  transform: scaleX(0);
+  transition-delay: .2s;
+}
+
+.sm-franca .f-presente[data-on] .f-fita--v {
+  transform: scaleY(1);
+}
+
+.sm-franca .f-presente[data-on] .f-fita--h {
+  transform: scaleX(1);
+}
+
+.sm-franca .f-laco {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: block;
+  width: 72px;
+  height: 44px;
+  margin: -22px 0 0 -36px;
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(.3);
+  transition: opacity .4s ease .6s, transform .7s cubic-bezier(.34, 1.56, .64, 1) .6s, visibility 0s linear 1.3s;
+}
+
+.sm-franca .f-presente[data-on] .f-laco {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+  transition: opacity .4s ease .6s, transform .7s cubic-bezier(.34, 1.56, .64, 1) .6s, visibility 0s linear .6s;
+}
+
+.sm-franca .f-laco > span {
+  position: absolute;
+  display: block;
+}
+
+.sm-franca .f-laco-esq {
+  left: 0;
+  top: 4px;
+  width: 34px;
+  height: 36px;
+  border-radius: 55% 30% 30% 55%;
+  background: var(--sm-fita-claro);
+  box-shadow: inset -5px 0 9px rgba(0, 0, 0, .28);
+  transform: rotate(-14deg);
+}
+
+.sm-franca .f-laco-dir {
+  right: 0;
+  top: 4px;
+  width: 34px;
+  height: 36px;
+  border-radius: 30% 55% 55% 30%;
+  background: var(--sm-fita-claro);
+  box-shadow: inset 5px 0 9px rgba(0, 0, 0, .28);
+  transform: rotate(14deg);
+}
+
+.sm-franca .f-laco-no {
+  left: 50%;
+  top: 50%;
+  width: 16px;
+  height: 18px;
+  margin: -9px 0 0 -8px;
+  border-radius: 5px;
+  background: var(--sm-fita);
+}
+
+.sm-franca .f-etiqueta {
+  position: absolute;
+  top: 12px;
+  right: 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform-origin: top center;
+  pointer-events: none;
+}
+
+.sm-franca .f-etiqueta-fio {
+  width: 1px;
+  height: 24px;
+  background: var(--sm-gold-text);
+}
+
+.sm-franca .f-etiqueta-tag {
+  padding: 9px 14px;
+  background: var(--sm-paper);
+  border: 1px solid var(--sm-gold);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 10px 18px -10px rgba(0, 0, 0, .45);
+}
+
+/* 6px + a borda de 1px */
+.sm-franca .f-etiqueta-furo {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--sm-gold);
+}
+
+.sm-franca .f-etiqueta-valor {
+  font-weight: 600;
+  font-size: 15px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.sm-franca .f-presente-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 8px;
+}
+
+.sm-franca .f-presente-titulo {
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-style: var(--sf-tit-estilo);
+  text-transform: var(--sf-tit-caixa);
+  letter-spacing: var(--sf-tit-ls-suave);
+  font-size: var(--sf-card-tit);
+  line-height: 1.2;
+}
+
+.sm-franca .f-presente-desc {
+  font-size: .92em;
+  line-height: 1.55;
+  color: var(--sm-muted);
+}
+
+.sm-franca .f-boutique-loja {
+  align-self: center;
+}
+
+/* a barra do presente: fixa embaixo (ink); sobe ao escolher */
+.sm-franca .f-barra {
+  position: fixed;
+  left: 50%;
+  bottom: clamp(14px, calc(3 * var(--sm-vw)), 28px);
+  z-index: 60;
+  width: min(560px, calc(100% - 24px));
+  transform: translate(-50%, 140%);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: transform .7s cubic-bezier(.2, .8, .2, 1), opacity .5s ease, visibility 0s linear .7s;
+}
+
+.sm-franca .f-barra[data-aberta] {
+  transform: translate(-50%, 0);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: transform .7s cubic-bezier(.2, .8, .2, 1), opacity .5s ease, visibility 0s linear 0s;
+}
+
+/* prévia e revisão: no fluxo, embaixo da grade */
+.sm-franca .f-barra--fluxo {
+  position: relative;
+  left: auto;
+  bottom: auto;
+  width: 100%;
+  max-width: 560px;
+  transform: none;
+}
+
+.sm-franca .f-barra--fluxo[data-aberta] {
+  transform: none;
+}
+
+.sm-franca .f-barra-corpo {
+  max-height: calc(100 * var(--sm-vh) - 40px);
+  overflow-y: auto;
+  padding: 12px 12px 12px 22px;
+  background: var(--sm-ink);
+  color: var(--sm-paper);
+  box-shadow: 0 30px 60px -20px rgba(20, 27, 44, .6);
+}
+
+.sm-franca .f-barra-linha {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.sm-franca .f-barra-texto {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sm-franca .f-barra-rotulo {
+  font-size: 11px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  opacity: .7;
+}
+
+.sm-franca .f-barra-titulo {
+  font-family: var(--sf-tit-fam);
+  font-style: var(--sf-tit-estilo);
+  font-size: 20px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sm-franca .f-barra-presentear {
+  flex: none;
+  padding: 15px 20px;
+  border: 0;
+  background: var(--sm-gold-light);
+  color: var(--sm-ink);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sm-franca .f-barra-fechar {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(251, 247, 240, .1);
+  color: var(--sm-paper);
+  font-size: 18px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.sm-franca .f-pix {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 10px 8px 0;
+  text-align: center;
+}
+
+.sm-franca .f-pix-qr {
+  max-width: 200px;
+}
+
+.sm-franca .f-pix-valor {
+  font-family: var(--sf-tit-fam);
+  font-size: 26px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.sm-franca .f-pix-nota {
+  font-size: 13px;
+  opacity: .75;
+}
+
+.sm-franca .f-pix-copiado {
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+/* sem itens: a chave Pix no cartão de papel */
+.sm-franca .f-chave {
+  max-width: 520px;
+  padding: clamp(48px, calc(7 * var(--sm-vw)), 72px) clamp(24px, calc(6 * var(--sm-vw)), 56px);
+}
+
+.sm-franca .f-chave-valor {
+  font-family: var(--sf-tit-fam);
+  font-size: 22px;
+  overflow-wrap: anywhere;
+}
+
+.sm-franca .f-chave-titular {
+  color: var(--sm-muted);
+}
+
+/* --------------------------------------------------------- padrinhos */
+
+.sm-franca .f-padrinhos {
+  text-align: center;
+}
+
+.sm-franca .f-padrinhos-miolo {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(48px, calc(6 * var(--sm-vw)), 72px);
+}
+
+.sm-franca .f-padrinhos-grade {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 56px 32px;
+}
+
+.sm-franca .f-par {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+}
+
+.sm-franca .f-par-aro {
+  padding: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8a6a3a, #e8d3a2 35%, #a9844d 60%, #f1ddb0);
+}
+
+.sm-franca .f-par-oval {
+  width: 150px;
+  height: 196px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 0 0 4px var(--sm-paper);
+}
+
+.sm-franca .f-par-nomes {
+  font-family: var(--sf-tit-fam);
+  font-style: var(--sf-tit-estilo);
+  font-size: clamp(20px, calc(2.2 * var(--sm-vw)), 24px);
+  letter-spacing: var(--sf-tit-ls-suave);
+}
+
+/* -------------------------------------------------------------- rsvp */
+
+.sm-franca .f-rsvp {
+  padding: clamp(100px, calc(14 * var(--sm-vw)), 170px) clamp(16px, calc(5 * var(--sm-vw)), 64px);
+}
+
+.sm-franca .f-rsvp-cartao {
+  max-width: 640px;
+  padding: clamp(48px, calc(7 * var(--sm-vw)), 76px) clamp(24px, calc(6 * var(--sm-vw)), 64px);
+}
+
+.sm-franca .f-rsvp-miolo {
+  gap: 18px;
+}
+
+.sm-franca .f-rsvp-miolo .f-h2 {
+  line-height: 1.15;
+}
+
+.sm-franca .f-form {
+  width: 100%;
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  text-align: left;
+}
+
+.sm-franca .f-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sm-franca .f-campo-rotulo {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--sm-muted);
+}
+
+.sm-franca .f-campo-entrada {
+  width: 100%;
+  padding: 10px 0;
+  border: 0;
+  border-bottom: 1px solid var(--sm-line-strong);
+  border-radius: 0;
+  background: transparent;
+  font-size: 17px;
+  outline: none;
+}
+
+.sm-franca .f-campo-entrada:focus-visible {
+  border-bottom-color: currentColor;
+}
+
+.sm-franca .f-campo-entrada::placeholder {
+  color: var(--sm-muted);
+  opacity: .7;
+}
+
+.sm-franca .f-campo-entrada--grande {
+  font-size: 18px;
+}
+
+.sm-franca .f-campo-entrada--centro {
+  text-align: center;
+}
+
+.sm-franca .f-campo-entrada[aria-invalid] {
+  border-bottom-color: var(--sm-erro);
+}
+
+.sm-franca .f-campo-texto {
+  resize: none;
+}
+
+.sm-franca .f-campo-erro {
+  font-size: 13px;
+  color: var(--sm-erro);
+}
+
+.sm-franca .f-escolhas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.sm-franca .f-escolha {
+  padding: 16px 10px;
+  border: 1px solid var(--sm-ink);
+  background: transparent;
+  color: var(--sm-ink);
+  text-align: center;
+  cursor: pointer;
+  transition: all .35s;
+}
+
+.sm-franca .f-escolha[aria-pressed="true"] {
+  background: var(--sm-ink);
+  color: var(--sm-paper);
+}
+
+.sm-franca .f-escolha--pequena {
+  flex: none;
+  padding: 8px 14px;
+  font-size: 11px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+}
+
+.sm-franca .f-acomp {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--sm-line-strong);
+}
+
+.sm-franca .f-acomp-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sm-franca .f-acomp-conta {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+/* 44px + a borda de 1px dos dois lados (content-box no protótipo) */
+.sm-franca .f-redondo {
+  width: 46px;
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--sm-line-strong);
+  background: transparent;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.sm-franca .f-acomp-n {
+  min-width: 18px;
+  text-align: center;
+  font-family: var(--sf-tit-fam);
+  font-size: 24px;
+}
+
+.sm-franca .f-acomp-linha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sm-franca .f-acomp-linha .f-campo-entrada {
+  flex: 1;
+  min-width: 0;
+}
+
+.sm-franca .f-tirar {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  font-size: 20px;
+  text-align: center;
+  color: var(--sm-muted);
+}
+
+.sm-franca .f-form-enviar {
+  align-self: center;
+}
+
+.sm-franca .f-carimbo {
+  margin: 10px 0;
+}
+
+.sm-franca .f-cera--carimbo {
+  width: 112px;
+  height: 112px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, .3), inset 0 0 0 7px rgba(0, 0, 0, .14), inset 0 0 0 9px rgba(255, 255, 255, .07);
+  transform: rotate(-8deg);
+}
+
+.sm-franca .f-rsvp-fim {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.sm-franca .f-rsvp-fim-p {
+  color: var(--sm-muted);
+  line-height: 1.7;
+}
+
+.sm-franca .f-rsvp-entrada {
+  color: var(--sm-ink);
+}
+
+/* ------------------------------------------------------------ rodapé */
+
+.sm-franca .f-rodape {
+  background: var(--sm-dark);
+  color: var(--sm-dark-ink);
+  padding: clamp(90px, calc(12 * var(--sm-vw)), 140px) 24px 40px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.sm-franca .f-rodape-nomes {
+  font-size: var(--sf-nome-tam-md);
+}
+
+.sm-franca .f-rodape-nomes .f-amp {
+  color: var(--sm-gold-light);
+}
+
+.sm-franca .f-rodape-data {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 12px;
+  letter-spacing: .34em;
+}
+
+.sm-franca .f-rodape-linha {
+  width: 40px;
+  height: 1px;
+  background: var(--sm-gold-light);
+}
+
+.sm-franca .f-rodape-hashtag {
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  font-size: 20px;
+  opacity: .9;
+}
+
+.sm-franca .f-rodape-assinatura {
+  margin-top: 64px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 10px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+}
+
+.sm-franca .f-rodape-assinatura > span {
+  opacity: .55;
+}
+
+.sm-franca .f-rodape-logo {
+  height: 22px;
+  width: auto;
+  max-width: 90px;
+  object-fit: contain;
+  opacity: .8;
+}
+
+/* ------------------------------------- blocos sem desenho no handoff */
+
+.sm-franca .f-bloco-miolo {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(36px, calc(4 * var(--sm-vw)), 52px);
+}
+
+.sm-franca .f-bloco-cartao {
+  max-width: 600px;
+  padding: clamp(44px, calc(6 * var(--sm-vw)), 64px) clamp(24px, calc(5 * var(--sm-vw)), 56px);
+  color: var(--sm-ink);
+}
+
+.sm-franca .f-bloco-form {
+  align-items: stretch;
+  text-align: left;
+  gap: 22px;
+}
+
+.sm-franca .f-bloco-form > .f-btn,
+.sm-franca .f-bloco-form > .f-arquivo {
+  align-self: center;
+}
+
+.sm-franca .f-arquivo {
+  cursor: pointer;
+}
+
+.sm-franca .f-lista {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sm-franca .f-lista-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 0;
+  border-top: 1px solid var(--sm-line);
+}
+
+.sm-franca .f-lista-item:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.sm-franca .f-lista-titulo {
+  font-family: var(--sf-tit-fam);
+  font-style: var(--sf-tit-estilo);
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.sm-franca .f-lista-info {
+  font-size: 14px;
+  color: var(--sm-muted);
+}
+
+.sm-franca .f-bloco-p {
+  line-height: 1.8;
+  color: var(--sm-muted);
+  white-space: pre-line;
+}
+
+.sm-franca .f-bloco-nota {
+  font-size: 14px;
+  color: var(--sm-muted);
+  text-align: center;
+}
+
+.sm-franca .f-escuro .f-bloco-miolo > .f-bloco-nota {
+  color: inherit;
+  opacity: .75;
+}
+
+.sm-franca .f-album-grade {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 14px;
+}
+
+.sm-franca .f-album-passe {
+  padding: 8px;
+  background: var(--sm-paper);
+  box-shadow: 0 20px 36px -24px rgba(31, 42, 68, .5);
+}
+
+.sm-franca .f-album-foto {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+.sm-franca .f-recados {
+  width: 100%;
+  display: grid;
+  gap: 24px;
+}
+
+.sm-franca .f-recados-item {
+  padding-top: 18px;
+  border-top: 1px solid rgba(220, 195, 147, .3);
+  text-align: center;
+}
+
+.sm-franca .f-recados-texto {
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  font-size: 20px;
+  line-height: 1.5;
+}
+
+.sm-franca .f-recados-nome {
+  margin-top: 8px;
+  font-size: 11px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  opacity: .7;
+}
+
+.sm-franca .f-texto-livre {
+  text-align: center;
+  gap: 28px;
+}
+
+.sm-franca .f-bloco-p--livre {
+  max-width: 600px;
+  line-height: 1.85;
+}
+
+/* ------------------------------------------------- reduced-motion
+   Reveals, capa, parallax, contagem, carimbo e envelope já saem pelo JS
+   (peças comuns); aqui saem as transições do próprio CSS: o giro do
+   postal (vira na hora), o cartão que sobe, as fitas, o laço com mola, o
+   zoom do hover e o espaçamento dos botões. O arco do château segue a
+   rolagem (é posição, não animação). */
+@media (prefers-reduced-motion: reduce) {
+  .sm-franca *,
+  .sm-franca *::before,
+  .sm-franca *::after {
+    transition-duration: .01ms !important;
+    transition-delay: 0s !important;
+  }
+
+  .sm-franca .f-galeria-foto:hover .f-galeria-zoom,
+  .sm-franca .f-presente[data-on],
+  .sm-franca .f-presente[data-on] .f-presente-img {
+    transform: none;
+  }
+
+  .sm-franca .f-postal:hover {
+    transform: rotate(var(--f-giro, 0deg));
+  }
+
+  .sm-franca .f-btn:hover {
+    letter-spacing: .24em;
+  }
+}

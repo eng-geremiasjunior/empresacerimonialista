@@ -1,0 +1,279 @@
+/* T03 · Cartões. O que só o T03 tem: a abertura com a foto, o cabeçalho
+   sem caixa e o hero em cartão. As seções que o T04 também usa estão em
+   secoes/secoes.css (escopadas em .k-casca). Valores literais do
+   protótipo (handoff/prototipos/Template 03.dc.html); todo vw/vh passa
+   por --sm-vw/--sm-vh (site-base.css). */
+
+/* --------------------------------------------------------- abertura */
+
+.sm-cartoes .k-abertura {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  cursor: pointer;
+  background: var(--sm-dark);
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity 1.2s ease;
+}
+
+/* sem JS (ou reduced-motion, que nem põe a classe) não há quem abra */
+html:not(.sm-js) .sm-cartoes .k-abertura {
+  display: none;
+}
+
+.sm-cartoes .k-abertura[data-abrindo] {
+  opacity: 0;
+}
+
+.sm-cartoes .k-abertura-foto {
+  position: absolute;
+  inset: 0;
+  transform: scale(1);
+  transition: transform 1.6s var(--k-e);
+  pointer-events: none;
+}
+
+.sm-cartoes .k-abertura[data-abrindo] .k-abertura-foto {
+  transform: scale(1.12);
+}
+
+.sm-cartoes .k-abertura-veu {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(15, 18, 15, .25), rgba(15, 18, 15, .35) 55%, rgba(15, 18, 15, .7));
+}
+
+.sm-cartoes .k-abertura-miolo {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 24px;
+  text-align: center;
+  color: var(--sm-dark-ink);
+}
+
+.sm-cartoes .k-abertura-iniciais {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: .08em;
+  font-family: var(--sf-nome-fam);
+  font-weight: var(--sf-nome-peso);
+  font-style: var(--sf-nome-estilo);
+  font-size: var(--sf-inic-tam);
+  line-height: 1;
+}
+
+.sm-cartoes .k-abertura-amp {
+  color: var(--sm-accent);
+  font-size: .55em;
+}
+
+.sm-cartoes .k-abertura-linha {
+  font-size: clamp(12px, calc(1.4 * var(--sm-vw)), 16px);
+  font-weight: 500;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.sm-cartoes .k-abertura-pe {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: clamp(40px, calc(9 * var(--sm-vh)), 80px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: var(--sm-dark-ink);
+}
+
+.sm-cartoes .k-abertura-toque {
+  font-family: var(--sf-tit-fam);
+  font-style: var(--sf-tit-estilo);
+  font-size: clamp(18px, calc(2 * var(--sm-vw)), 22px);
+  letter-spacing: .04em;
+}
+
+.sm-cartoes .k-abertura-fio {
+  width: 56px;
+  height: 1px;
+  background: var(--sm-dark-ink);
+  opacity: .8;
+}
+
+/* as linhas começam ocultas até a entrada pegar o primeiro quadro */
+html.sm-js .sm-cartoes .k-abertura:not([data-pronto]) [data-intro-i] {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* -------------------------------------------------------- cabeçalho */
+
+.sm-cartoes .k-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px clamp(8px, calc(1.6 * var(--sm-vw)), 20px);
+}
+
+.sm-cartoes .k-wordmark {
+  font-family: var(--sf-nome-fam);
+  font-weight: var(--sf-nome-peso);
+  font-style: var(--sf-nome-estilo);
+  text-transform: var(--sf-nome-caixa);
+  letter-spacing: var(--sf-nome-ls);
+  font-size: var(--sf-palavra-tam);
+  line-height: 1.1;
+}
+
+.sm-cartoes .k-cabecalho-dir {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sm-cartoes .k-cabecalho-data {
+  display: inline-flex;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--k-soft);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.sm-cartoes .k-cabecalho .k-pilula {
+  white-space: nowrap;
+}
+
+/* some até 640px (innerWidth > 640 no protótipo); na prévia, pela
+   largura da caixa */
+@media (max-width: 640px) {
+  .sm-cartoes .k-cabecalho-data {
+    display: none;
+  }
+}
+
+@container (max-width: 640px) {
+  .sm-cartoes .k-cabecalho-data {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------- hero */
+
+.sm-cartoes .k-hero {
+  position: relative;
+  border-radius: clamp(20px, calc(2.4 * var(--sm-vw)), 32px);
+  overflow: hidden;
+  min-height: clamp(520px, calc(78 * var(--sm-vh)), 760px);
+  background: var(--sm-dark);
+  color: var(--sm-dark-ink);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.sm-cartoes .k-hero-foto {
+  position: absolute;
+  inset: 0;
+}
+
+.sm-cartoes .k-hero-veu {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(15, 18, 15, 0) 35%, rgba(15, 18, 15, .72));
+}
+
+.sm-cartoes .k-hero-miolo {
+  position: relative;
+  pointer-events: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  padding: clamp(24px, calc(3.4 * var(--sm-vw)), 44px) clamp(20px, calc(3.4 * var(--sm-vw)), 44px) clamp(96px, calc(11 * var(--sm-vw)), 128px);
+}
+
+.sm-cartoes .k-hero-esq {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.sm-cartoes .k-hero-rotulo {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .28em;
+  text-transform: uppercase;
+}
+
+.sm-cartoes .k-hero .k-hero-nomes {
+  font-size: var(--sf-nome-tam);
+  text-wrap: balance;
+}
+
+/* as iniciais não levam a caixa nem o espaçamento do nome (acima do
+   .k-casca .k-nome, qualquer que seja a ordem das folhas) */
+.sm-cartoes .k-hero .k-hero-iniciais {
+  font-size: var(--sf-inic-tam-hero);
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.sm-cartoes .k-hero .k-hero-iniciais--sm {
+  font-size: var(--sf-inic-tam-sm);
+}
+
+.sm-cartoes .k-hero-amp-ini {
+  font-size: .6em;
+}
+
+.sm-cartoes .k-hero-ambos {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.sm-cartoes .k-hero .k-hero-nomes--sm {
+  font-size: var(--sf-nome-tam-sm);
+}
+
+.sm-cartoes .k-hero-quando {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.sm-cartoes .k-hero-ponto {
+  opacity: .6;
+}
+
+/* a entrada começa oculta só com JS (sm-js) e até ser liberada; a foto
+   já fica no primeiro quadro (scale 1.14, brightness .7) */
+html.sm-js .sm-cartoes .k-hero:not([data-pronto]) [data-hero] {
+  opacity: 0;
+  visibility: hidden;
+}
+
+html.sm-js .sm-cartoes .k-hero:not([data-pronto]) [data-hero-foto] {
+  transform: scale(1.14);
+  filter: brightness(.7);
+}

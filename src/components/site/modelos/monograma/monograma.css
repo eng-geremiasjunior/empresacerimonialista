@@ -1,0 +1,384 @@
+/* T04 · Monograma. O que só o T04 tem: a abertura com as faixas e o
+   monograma, o hero de borda a borda e os "Nossos momentos" (cenas). As
+   seções que ele divide com o T03 estão em cartoes/secoes/secoes.css
+   (escopadas em .k-casca, a classe da raiz dos dois). Valores literais do
+   protótipo (handoff/prototipos/Template 04.dc.html); todo vw/vh passa
+   por --sm-vw/--sm-vh (site-base.css). O protótipo é content-box; nada
+   aqui tem largura ou altura com padding/borda que mude com o reset. */
+
+/* --------------------------------------------------------- abertura */
+
+.sm-monograma .m-abertura {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+
+/* sem JS (ou reduced-motion, que nem põe a classe) não há quem abra */
+html:not(.sm-js) .sm-monograma .m-abertura {
+  display: none;
+}
+
+.sm-monograma .m-faixas {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+
+.sm-monograma .m-faixa {
+  flex: 1;
+  height: 100%;
+  margin-right: -1px;
+  background: var(--sm-ink);
+}
+
+.sm-monograma .m-mono {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  padding: 24px;
+  text-align: center;
+  color: var(--k-card);
+}
+
+/* o monograma espera a abertura começar (a fonte do nome chegar) */
+html.sm-js .sm-monograma .m-abertura:not([data-pronto]) .m-mono {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.sm-monograma .m-mono-caixa {
+  position: relative;
+  width: clamp(170px, calc(24 * var(--sm-vw)), 240px);
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sm-monograma .m-mono-anel {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.sm-monograma .m-mono-anel circle {
+  fill: none;
+  stroke: var(--sm-accent);
+  stroke-width: .6;
+  stroke-dasharray: 308;
+  stroke-dashoffset: 308;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+
+.sm-monograma .m-mono-iniciais {
+  display: flex;
+  align-items: baseline;
+  gap: .06em;
+  font-family: var(--sf-nome-fam);
+  font-weight: var(--sf-nome-peso);
+  font-style: var(--sf-nome-estilo);
+  font-size: var(--sf-inic-tam-sm);
+  line-height: 1;
+}
+
+.sm-monograma .m-mono-amp {
+  color: var(--sm-accent);
+  font-size: .55em;
+}
+
+.sm-monograma .m-mono-data {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .34em;
+}
+
+/* ------------------------------------------------------------- hero */
+
+.sm-monograma .m-hero {
+  position: relative;
+  height: calc(100 * var(--sm-vh));
+  min-height: 600px;
+  overflow: hidden;
+  background: var(--sm-dark);
+  color: var(--sm-dark-ink);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-radius: 0 0 clamp(24px, calc(3 * var(--sm-vw)), 40px) clamp(24px, calc(3 * var(--sm-vw)), 40px);
+}
+
+.sm-monograma .m-hero-foto,
+.sm-monograma .m-hero-par {
+  position: absolute;
+  inset: 0;
+}
+
+.sm-monograma .m-hero-veu {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(15, 18, 15, .4) 0%, rgba(15, 18, 15, 0) 22%, rgba(15, 18, 15, 0) 42%, rgba(15, 18, 15, .75));
+}
+
+.sm-monograma .m-hero-topo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: clamp(16px, calc(2.4 * var(--sm-vw)), 28px) clamp(20px, calc(3.4 * var(--sm-vw)), 44px);
+  pointer-events: none;
+}
+
+.sm-monograma .m-hero-topo a {
+  pointer-events: auto;
+}
+
+.sm-monograma .m-wordmark {
+  font-family: var(--sf-nome-fam);
+  font-weight: var(--sf-nome-peso);
+  font-style: var(--sf-nome-estilo);
+  text-transform: var(--sf-nome-caixa);
+  letter-spacing: var(--sf-nome-ls);
+  font-size: var(--sf-palavra-tam);
+  line-height: 1.1;
+}
+
+.sm-monograma .m-hero-pilula {
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: var(--sm-dark-ink);
+  color: var(--sm-ink);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sm-monograma .m-hero-miolo {
+  position: relative;
+  pointer-events: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 0 clamp(20px, calc(3.4 * var(--sm-vw)), 44px) clamp(110px, calc(12 * var(--sm-vw)), 140px);
+}
+
+.sm-monograma .m-hero-esq {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.sm-monograma .m-hero-rotulo {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .28em;
+  text-transform: uppercase;
+}
+
+.sm-monograma .m-hero .m-hero-nomes {
+  font-size: var(--sf-nome-tam);
+  text-wrap: balance;
+}
+
+/* as iniciais não levam a caixa nem o espaçamento do nome (acima do
+   .k-casca .k-nome, qualquer que seja a ordem das folhas) */
+.sm-monograma .m-hero .m-hero-iniciais {
+  font-size: var(--sf-inic-tam-hero);
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.sm-monograma .m-hero .m-hero-iniciais--sm {
+  font-size: var(--sf-inic-tam-sm);
+}
+
+.sm-monograma .m-hero-amp-ini {
+  font-size: .6em;
+}
+
+.sm-monograma .m-hero-ambos {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.sm-monograma .m-hero .m-hero-nomes--sm {
+  font-size: var(--sf-nome-tam-sm);
+}
+
+.sm-monograma .m-hero-quando {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.sm-monograma .m-hero-ponto {
+  opacity: .6;
+}
+
+/* a entrada começa oculta só com JS (sm-js) e até ser liberada; a foto
+   já fica no primeiro quadro (scale 1.14, brightness .7) */
+html.sm-js .sm-monograma .m-hero:not([data-pronto]) [data-hero] {
+  opacity: 0;
+  visibility: hidden;
+}
+
+html.sm-js .sm-monograma .m-hero:not([data-pronto]) [data-hero-foto] {
+  transform: scale(1.14);
+  filter: brightness(.7);
+}
+
+/* --------------------------------------------------- nossos momentos */
+
+/* 520vh no desenho (5 cenas); 100vh por cena + 20vh com 3 a 8 */
+.sm-monograma .m-cenas {
+  position: relative;
+  height: calc((100 * var(--m-cenas-n, 5) + 20) * var(--sm-vh));
+}
+
+.sm-monograma .m-cenas-quadro {
+  position: sticky;
+  top: 136px;
+  height: calc(100 * var(--sm-vh) - 156px);
+  min-height: 420px;
+  border-radius: 32px;
+  overflow: hidden;
+  background: var(--sm-dark);
+}
+
+/* prévia: o quadro final, sem prender */
+.sm-monograma .m-cenas--final {
+  height: auto;
+}
+
+.sm-monograma .m-cenas--final .m-cenas-quadro,
+.sm-monograma .m-cenas-lista .m-cenas-quadro {
+  position: relative;
+  top: auto;
+}
+
+/* revisão: cada cena num quadro, uma embaixo da outra */
+.sm-monograma .m-cenas-lista {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, calc(2 * var(--sm-vw)), 28px);
+}
+
+.sm-monograma .m-cenas-camada {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.sm-monograma .m-cenas-img {
+  position: absolute;
+  inset: 0;
+}
+
+.sm-monograma .m-cenas-veu {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at center, rgba(15, 18, 15, .5), rgba(15, 18, 15, .12) 72%),
+    linear-gradient(180deg, rgba(15, 18, 15, .35), rgba(15, 18, 15, 0) 25%, rgba(15, 18, 15, 0) 75%, rgba(15, 18, 15, .45));
+}
+
+.sm-monograma .m-cenas-frase-caixa {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 clamp(24px, calc(8 * var(--sm-vw)), 120px);
+  text-align: center;
+  color: var(--sm-dark-ink);
+  pointer-events: none;
+}
+
+.sm-monograma .m-cenas-frase {
+  margin: 0;
+  max-width: 780px;
+  font-family: var(--sf-tit-fam);
+  font-weight: var(--sf-tit-peso);
+  font-style: italic;
+  text-transform: var(--sf-tit-caixa);
+  letter-spacing: var(--sf-tit-ls-suave);
+  font-size: clamp(28px, calc(4.6 * var(--sm-vw)), 60px);
+  line-height: 1.15;
+  text-wrap: balance;
+  text-shadow: 0 2px 30px rgba(0, 0, 0, .3);
+}
+
+.sm-monograma .m-cenas-topo {
+  position: absolute;
+  top: clamp(18px, calc(2.4 * var(--sm-vw)), 28px);
+  left: clamp(18px, calc(2.4 * var(--sm-vw)), 28px);
+  right: clamp(18px, calc(2.4 * var(--sm-vw)), 28px);
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--sm-dark-ink);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.sm-monograma .m-cenas-barras {
+  position: absolute;
+  left: clamp(18px, calc(2.4 * var(--sm-vw)), 28px);
+  right: clamp(18px, calc(2.4 * var(--sm-vw)), 28px);
+  bottom: clamp(18px, calc(2.4 * var(--sm-vw)), 28px);
+  display: flex;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.sm-monograma .m-cenas-barra {
+  flex: 1;
+  height: 3px;
+  border-radius: 3px;
+  background: rgba(247, 241, 232, .3);
+  overflow: hidden;
+}
+
+.sm-monograma .m-cenas-barra-cheia {
+  height: 100%;
+  background: var(--sm-dark-ink);
+  transform-origin: left;
+}
+
+/* ------------------------------------------------- reduced-motion
+   A abertura não aparece (o useAbertura já começa aberto); o hero, o
+   parallax e o zoom das cenas saem pelo JS. As cenas continuam trocando
+   com a rolagem, sem zoom, deslize nem desfoque. */
+@media (prefers-reduced-motion: reduce) {
+  .sm-monograma .m-abertura {
+    display: none;
+  }
+
+  .sm-monograma .m-hero-par,
+  .sm-monograma .m-cenas-img {
+    transform: none !important;
+  }
+}

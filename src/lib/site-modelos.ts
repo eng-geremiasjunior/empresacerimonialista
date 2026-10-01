@@ -212,8 +212,10 @@ export const MODELOS: Record<ModeloNovo, DefinicaoDoModelo> = {
     desenha: [
       "capa",
       "contagem",
-      "rsvp",
+      // as cenas logo depois do topo: a estrutura padrão tem o rsvp perto
+      // do fim, e o bloco novo entra depois do anterior a ele no desenho
       "cenas",
+      "rsvp",
       "historia",
       "momentos",
       "local",

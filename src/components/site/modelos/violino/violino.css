@@ -1,0 +1,406 @@
+/* T06 · Violino. Os valores são os literais do protótipo
+   (handoff/prototipos/Template 06.dc.html); tudo escopado em .sm-violino.
+   O resto do desenho (envelope, capa, château, programa, galeria,
+   boutique, RSVP, rodapé) é o do T05: franca.css, que vale dentro do
+   elemento .sm-franca que o ModeloViolino põe em volta da árvore.
+
+   · cores: --sm-* (site-paletas: a Marinho do T05); o arco do violino e a
+     luz da ponta ficam fixos, como no desenho;
+   · todo vw/vh do desenho passa por --sm-vw/--sm-vh (site-base.css);
+   · o reset da base é border-box e o protótipo é content-box: aqui nenhum
+     elemento tem borda com largura fixa, então os tamanhos são os mesmos. */
+
+.sm-violino .v-raiz {
+  position: relative;
+}
+
+/* ------------------------------------------------------------ cordas */
+
+.sm-violino .v-cordas {
+  position: fixed;
+  left: clamp(6px, calc(1.6 * var(--sm-vw)), 24px);
+  top: 0;
+  z-index: 45;
+  width: clamp(16px, calc(2 * var(--sm-vw)), 28px);
+  height: 100vh;
+  pointer-events: none;
+  opacity: .75;
+}
+
+/* prévia e revisão: no alto do site, uma "tela" de altura */
+.sm-violino .v-cordas--parada {
+  position: absolute;
+  height: calc(100 * var(--sm-vh));
+}
+
+.sm-violino .v-cordas svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.sm-violino .v-cordas path {
+  fill: none;
+  stroke: var(--sm-gold);
+  vector-effect: non-scaling-stroke;
+}
+
+/* ------------------------------------------------- o som, na capa */
+
+.sm-violino .v-som-capa {
+  margin-top: 10px;
+  pointer-events: auto;
+}
+
+.sm-violino .v-som-botao {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 26px 16px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(220, 195, 147, .8);
+  background: rgba(20, 27, 44, .55);
+  color: #fbf5ea;
+  cursor: pointer;
+  transition: background .5s ease, transform .5s var(--f-e);
+}
+
+.sm-violino .v-som-botao:hover:not(:disabled) {
+  background: rgba(20, 27, 44, .8);
+  transform: translateY(-2px);
+}
+
+/* o anel é fixo: o anel pulsando em scale infinito travou a página */
+.sm-violino .v-som-anel {
+  position: absolute;
+  inset: -6px;
+  border-radius: 999px;
+  border: 1px solid rgba(220, 195, 147, .35);
+  pointer-events: none;
+}
+
+.sm-violino .v-som-play {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--sm-gold-light);
+  color: var(--sm-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sm-violino .v-som-play svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.sm-violino .v-som-textos {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  text-align: left;
+}
+
+.sm-violino .v-som-clique {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--sm-gold-light);
+}
+
+.sm-violino .v-som-frase {
+  font-family: var(--sf-tit-fam);
+  font-style: italic;
+  font-size: clamp(16px, calc(1.8 * var(--sm-vw)), 19px);
+  line-height: 1.25;
+}
+
+.sm-violino .v-som-role {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .28em;
+  text-transform: uppercase;
+  color: var(--sm-gold-light);
+}
+
+.sm-violino .v-som-deixa {
+  display: block;
+  width: 1px;
+  height: 38px;
+  background: var(--sm-gold-light);
+}
+
+/* ------------------------------------------------ a pílula flutuante */
+
+.sm-violino .v-pilula {
+  position: fixed;
+  left: clamp(14px, calc(3 * var(--sm-vw)), 28px);
+  bottom: clamp(14px, calc(3 * var(--sm-vw)), 28px);
+  z-index: 55;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(20px);
+  pointer-events: none;
+  transition: opacity .6s ease, transform .6s var(--f-e), visibility 0s linear .6s;
+}
+
+.sm-violino .v-pilula[data-visivel] {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  pointer-events: auto;
+  transition: opacity .6s ease, transform .6s var(--f-e), visibility 0s;
+}
+
+.sm-violino .v-pilula-botao {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px 10px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--sm-gold);
+  background: var(--sm-paper);
+  color: var(--sm-ink);
+  cursor: pointer;
+  box-shadow: 0 16px 30px -16px rgba(20, 27, 44, .45);
+}
+
+.sm-violino .v-pilula-circulo {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--sm-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* o furo em "f" do violino; pulsa pelo laço das cordas */
+.sm-violino .v-furo {
+  width: 24px;
+  height: 24px;
+  overflow: visible;
+  fill: none;
+  stroke: var(--sm-gold-light);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.sm-violino .v-furo circle {
+  fill: var(--sm-gold-light);
+}
+
+.sm-violino .v-pilula-rotulo {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+}
+
+/* -------------------------------------------- a trilha da história */
+
+/* a altura (curso + uma tela) vem do JS; antes dele, uma tela */
+.sm-violino .v-trilha {
+  position: relative;
+  min-height: calc(100 * var(--sm-vh));
+}
+
+.sm-violino .v-trilha-quadro {
+  position: sticky;
+  top: 0;
+  height: calc(100 * var(--sm-vh));
+  overflow: hidden;
+  /* clip: o foco num cartão fora da tela não rola o quadro por dentro */
+  overflow: clip;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(24px, calc(4 * var(--sm-vh)), 48px);
+  padding: 72px 0 24px;
+}
+
+/* antes da primeira medida (ou sem JS), a faixa ao menos rola de lado */
+.sm-violino .v-trilha:not([data-medida]):not(.v-trilha--parada) .v-trilha-quadro {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.sm-violino .v-trilha .f-cabeca {
+  gap: 16px;
+}
+
+.sm-violino .v-trilha-cabeca {
+  padding: 0 24px;
+}
+
+/* com poucos cartões a faixa centraliza (margem automática); larga demais,
+   a margem vira 0 e ela começa na esquerda, como no desenho */
+.sm-violino .v-faixa {
+  position: relative;
+  flex: none;
+  width: max-content;
+  margin-inline: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(28px, calc(3 * var(--sm-vw)), 44px);
+  padding: 18px clamp(24px, calc(8 * var(--sm-vw)), 120px) 30px;
+}
+
+.sm-violino .v-trilha:not(.v-trilha--parada) .v-faixa {
+  will-change: transform;
+}
+
+.sm-violino .v-faixa > .f-postal {
+  flex: none;
+  width: clamp(230px, calc(23 * var(--sm-vw)), 290px);
+}
+
+.sm-violino .v-varal {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.sm-violino .v-trilha:not([data-medida]) .v-varal {
+  visibility: hidden;
+}
+
+.sm-violino .v-varal-trilho {
+  fill: none;
+  stroke: var(--sm-line-strong);
+  stroke-width: 1.2;
+  stroke-dasharray: 2 7;
+  stroke-linecap: round;
+}
+
+.sm-violino .v-varal-linha {
+  fill: none;
+  stroke: var(--sm-gold);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.sm-violino .v-pino-aro {
+  fill: var(--sm-alt);
+  stroke: var(--sm-line-strong);
+  stroke-width: 1;
+}
+
+.sm-violino .v-pino-miolo {
+  fill: var(--sm-gold);
+  transform: scale(0);
+  transition: transform .6s cubic-bezier(.34, 1.56, .64, 1);
+}
+
+.sm-violino .v-varal-cabeca {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.sm-violino .v-arco-vara {
+  fill: none;
+  stroke: #6b4a2b;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+.sm-violino .v-arco-crina {
+  fill: none;
+  stroke: #f3ead6;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+
+.sm-violino .v-arco-talao {
+  fill: #3b2a1c;
+}
+
+.sm-violino .v-arco-olho {
+  fill: var(--sm-gold-light);
+}
+
+.sm-violino .v-arco-ponta {
+  fill: none;
+  stroke: #6b4a2b;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.sm-violino .v-arco-luz {
+  fill: rgba(220, 195, 147, .35);
+}
+
+.sm-violino .v-arco-brilho {
+  fill: #fff6de;
+}
+
+/* prévia e revisão: sem sticky; os cartões quebram em linhas, com o
+   espaçamento das seções do T05, e o varal é um fio só: na quebra, contorna
+   o último cartão pela direita (no padding da faixa) e volta pelo vão */
+.sm-violino .v-trilha--parada {
+  min-height: 0;
+}
+
+.sm-violino .v-trilha--parada .v-trilha-quadro {
+  position: static;
+  height: auto;
+  overflow: visible;
+  padding: clamp(100px, calc(14 * var(--sm-vw)), 170px) 0;
+  gap: clamp(48px, calc(6 * var(--sm-vw)), 72px);
+}
+
+.sm-violino .v-trilha--parada .v-faixa {
+  width: auto;
+  max-width: 1400px;
+  flex-wrap: wrap;
+  justify-content: center;
+  row-gap: 56px;
+  padding: 18px clamp(20px, calc(5 * var(--sm-vw)), 64px) 30px;
+}
+
+/* ---------------------------------------------- as notas do RSVP */
+
+/* o desenho põe as notas no miolo do cartão com −40px dos lados e −60px
+   em cima e embaixo; aqui o contêiner é o cartão, então desconta o
+   padding dele (clamp(48px,7vw,76px) clamp(24px,6vw,64px)) */
+.sm-violino .v-notas {
+  position: absolute;
+  left: calc(clamp(24px, calc(6 * var(--sm-vw)), 64px) - 40px);
+  right: calc(clamp(24px, calc(6 * var(--sm-vw)), 64px) - 40px);
+  top: calc(clamp(48px, calc(7 * var(--sm-vw)), 76px) - 60px);
+  bottom: calc(clamp(48px, calc(7 * var(--sm-vw)), 76px) - 60px);
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* ------------------------------------------------- reduced-motion
+   As transições já saem pelo franca.css (tudo dentro de .sm-franca).
+   Aqui: o botão da capa não sobe e a pílula aparece sem deslizar. As
+   cordas, o balanço do arco, a linha que desce e as notas saem pelo JS. */
+@media (prefers-reduced-motion: reduce) {
+  .sm-violino .v-som-botao:hover:not(:disabled) {
+    transform: none;
+  }
+
+  .sm-violino .v-pilula {
+    transform: none;
+  }
+}
