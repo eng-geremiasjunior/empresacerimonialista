@@ -18,11 +18,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { escolherLembrar } from "@/lib/lembrar-sessao";
+import { FOTO_CASAL_EXEMPLO } from "@/lib/portal-fotos";
 import "../noivos.css";
 import "./login-noivos.css";
 
-const FOTO =
-  "https://images.unsplash.com/photo-1467715701630-de0db4a0fbf0?w=1800&q=70&auto=format&fit=crop";
+const FOTO = FOTO_CASAL_EXEMPLO;
 
 const CORES_DAS_FOLHAS = ["#c8672f", "#d9a441", "#a8452a", "#e08a3c", "#8c5a2b", "#b8862e"];
 const FOLHAS = Array.from({ length: 14 }, (_, i) => ({

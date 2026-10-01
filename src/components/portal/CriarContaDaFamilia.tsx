@@ -17,6 +17,7 @@ import {
   type TipoDaFesta,
 } from "@/app/(portal)/portal/criar-conta/actions";
 import { IconeAlerta, IconeCheck } from "./AcessoOrnamento";
+import { FOTO_CASAL_EXEMPLO } from "@/lib/portal-fotos";
 
 const PAPEIS: Record<TipoDaFesta, { valor: PapelDaFamilia; rotulo: string }[]> = {
   casamento: [
@@ -81,7 +82,12 @@ export function CriarContaDaFamilia({
   const casamento = tipo === "casamento";
 
   return (
-    <main className="acesso">
+    // casamento: a foto do casal do login dos noivos no lugar das flores
+    // (pedido dele, 30/09); 15 anos continua com as flores
+    <main
+      className="acesso"
+      style={casamento ? ({ "--foto": `url("${FOTO_CASAL_EXEMPLO}")` } as React.CSSProperties) : undefined}
+    >
       <section className="acesso-arte">
         <div className="acesso-arte-topo">
           e<span style={{ color: "#B98FAC" }}>organizei</span>
