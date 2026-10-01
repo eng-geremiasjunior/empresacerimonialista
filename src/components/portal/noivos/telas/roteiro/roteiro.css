@@ -1,0 +1,385 @@
+/* ============================================================
+   Roteiro do dia — Portal dos Noivos v4 (README §16; protótipo,
+   template 690–706, lógica 1104–1105). Os valores são os do desenho,
+   copiados como estão. Botões e campos levam o prefixo .pn-roteiro para
+   vencer o `.pn button` da fundação. As adaptações de celular ficam no
+   @media do fim.
+   ============================================================ */
+
+.pn-roteiro {
+  position: relative;
+  background: #fff;
+  border-radius: 30px;
+  padding: 32px 36px;
+  box-shadow: var(--pn-sombra-card);
+  line-height: normal;
+  animation: pn-rise 0.5s ease both;
+}
+.pn-roteiro-titulo {
+  margin: 6px 0 0;
+  font-size: 40px;
+  font-weight: 400;
+  line-height: normal;
+  color: var(--pn-verde);
+}
+.pn-roteiro-vazio {
+  margin: 16px 0 0;
+  font-size: 15px;
+  color: var(--pn-texto-2);
+}
+
+/* a lista com a linha vertical */
+.pn-roteiro-lista {
+  position: relative;
+  margin-top: 24px;
+}
+.pn-roteiro-lista ol,
+.pn-roteiro-pedidos ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pn-roteiro-lista ol {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+/* O protótipo põe a linha em left:95px, que é a borda esquerda dos
+   pontos (coluna de 80px + 10px de vão + 5px para centrar o ponto de
+   20px na coluna de 30px). Aqui ela passa pelo CENTRO dos pontos
+   (105px − 1px da espessura) — adaptação dita no relatório. */
+.pn-roteiro-fio {
+  position: absolute;
+  left: 104px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: var(--pn-trilho);
+}
+.pn-roteiro-linha {
+  position: relative;
+  display: grid;
+  grid-template-columns: 80px 30px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+  animation: pn-rise 0.45s ease both;
+}
+.pn-roteiro-hora {
+  font-size: 20px;
+  color: var(--pn-verde);
+  text-align: right;
+}
+.pn-roteiro-hora.sem {
+  color: var(--pn-texto-3);
+}
+/* 14px + borda de 3px = 20px por fora, como no protótipo (content-box) */
+.pn-roteiro-ponto {
+  box-sizing: content-box;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--pn-pessego);
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 1px var(--pn-pessego);
+  justify-self: center;
+}
+.pn-roteiro-texto {
+  min-width: 0;
+}
+.pn-roteiro-oque {
+  font-size: 16px;
+  color: var(--pn-verde);
+  overflow-wrap: anywhere;
+}
+.pn-roteiro-onde {
+  font-size: 13px;
+  color: var(--pn-texto-3);
+}
+.pn-roteiro-nota {
+  margin-top: 3px;
+  font-size: 13px;
+  color: var(--pn-texto-2);
+  overflow-wrap: anywhere;
+}
+.pn-roteiro-nota.espera {
+  color: var(--pn-marrom);
+}
+.pn-roteiro-nota.ok {
+  color: var(--pn-ok);
+}
+.pn-roteiro-dir {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+.pn-roteiro-chip {
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--pn-salvia);
+  color: var(--pn-verde);
+  white-space: nowrap;
+}
+.pn-roteiro-chip.ok {
+  color: var(--pn-ok);
+}
+.pn-roteiro-chip.nao {
+  background: var(--pn-trilho);
+  color: var(--pn-texto-2);
+}
+
+/* sugerir outro horário: o lápis, quieto, e o campo (molde de "Perguntas
+   do momento": fundo creme, raio 16, botão verde de raio 12) */
+.pn-roteiro .pn-roteiro-sugerir {
+  width: 44px;
+  height: 44px;
+  margin: -12px -8px -12px 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--pn-texto-3);
+  transition: background 0.2s, color 0.2s;
+}
+.pn-roteiro .pn-roteiro-sugerir:hover {
+  background: var(--pn-creme);
+  color: var(--pn-verde);
+}
+.pn-roteiro-form {
+  grid-column: 3 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  background: var(--pn-creme);
+  border-radius: 16px;
+  padding: 6px 6px 6px 16px;
+  animation: pn-rise 0.3s ease both;
+  transition: box-shadow 0.2s;
+}
+.pn-roteiro-form:focus-within,
+.pn-roteiro-pedir-form:focus-within {
+  box-shadow: 0 0 0 2px var(--pn-pessego-claro);
+}
+.pn-roteiro-form input {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 16px;
+  color: var(--pn-verde);
+  min-height: 40px;
+}
+.pn-roteiro-form-hora {
+  width: 96px;
+  flex: none;
+}
+.pn-roteiro-form-sep {
+  width: 1px;
+  height: 22px;
+  background: var(--pn-borda-2);
+  flex: none;
+}
+.pn-roteiro-form-texto {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+.pn-roteiro .pn-roteiro-enviar {
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+  font-size: 14px;
+  white-space: nowrap;
+  transition: transform 0.2s;
+}
+.pn-roteiro .pn-roteiro-enviar:hover:not(:disabled) {
+  transform: scale(1.03);
+}
+.pn-roteiro .pn-roteiro-enviar:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.pn-roteiro .pn-roteiro-fechar {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: var(--pn-texto-2);
+}
+.pn-roteiro .pn-roteiro-fechar:hover {
+  background: #fff;
+  color: var(--pn-verde);
+}
+
+/* o que o casal pediu */
+.pn-roteiro-pedidos {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--pn-trilho);
+}
+.pn-roteiro-pedidos ul {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 10px;
+}
+.pn-roteiro-pedido {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+}
+.pn-roteiro-pedido-hora {
+  font-size: 13px;
+  color: var(--pn-texto-3);
+}
+
+/* pedir um momento (o contorno de "Ver a próxima": raio 18, borda #dcd6ca) */
+.pn-roteiro .pn-roteiro-pedir {
+  margin-top: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 20px 13px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--pn-borda-2);
+  font-size: 15px;
+  color: var(--pn-verde);
+  transition: background 0.2s;
+}
+.pn-roteiro .pn-roteiro-pedir:hover {
+  background: var(--pn-creme);
+}
+.pn-roteiro-pedir-form {
+  margin-top: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--pn-creme);
+  animation: pn-rise 0.3s ease both;
+  transition: box-shadow 0.2s;
+}
+.pn-roteiro-campos {
+  display: flex;
+  gap: 10px;
+}
+.pn-roteiro-campo {
+  height: 46px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 14px;
+  background: #fff;
+  font: inherit;
+  font-size: 15px;
+  color: var(--pn-verde);
+  min-width: 0;
+  flex: 1;
+}
+.pn-roteiro-campo.hora {
+  flex: none;
+  width: 120px;
+}
+.pn-roteiro-acoes {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pn-roteiro .pn-roteiro-cancelar {
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  color: var(--pn-texto-2);
+}
+.pn-roteiro .pn-roteiro-cancelar:hover {
+  color: var(--pn-verde);
+}
+
+/* ============================================================
+   Celular (≤767px): o cartão encolhe o respiro, as colunas da hora e
+   do ponto ficam mais estreitas (a linha acompanha o centro do ponto),
+   o campo de sugestão ocupa a largura toda embaixo do momento e todo
+   toque tem 44px.
+   ============================================================ */
+@media (max-width: 767px) {
+  .pn-roteiro {
+    padding: 24px 18px;
+    border-radius: 26px;
+  }
+  .pn-roteiro-titulo {
+    font-size: 30px;
+  }
+  .pn-roteiro-lista {
+    margin-top: 18px;
+  }
+  .pn-roteiro-linha {
+    grid-template-columns: 50px 22px minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+  /* 50 + 8 + 11 (centro da coluna de 22px) − 1 */
+  .pn-roteiro-fio {
+    left: 68px;
+  }
+  .pn-roteiro-hora {
+    font-size: 17px;
+  }
+  .pn-roteiro-oque {
+    font-size: 15px;
+  }
+  .pn-roteiro .pn-roteiro-sugerir {
+    margin: -12px -6px -12px 0;
+  }
+  /* o chip "com …" não espreme o momento: corta com reticências */
+  .pn-roteiro-dir .pn-roteiro-chip {
+    max-width: 112px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pn-roteiro-form {
+    grid-column: 1 / -1;
+    padding: 6px 6px 6px 14px;
+  }
+  .pn-roteiro-form-texto {
+    flex-basis: 100%;
+    order: 3;
+  }
+  .pn-roteiro-form-sep {
+    display: none;
+  }
+  .pn-roteiro-form .pn-roteiro-form-hora {
+    flex: 1 1 auto;
+    min-height: 44px;
+  }
+  .pn-roteiro .pn-roteiro-enviar,
+  .pn-roteiro .pn-roteiro-cancelar {
+    min-height: 44px;
+  }
+  .pn-roteiro .pn-roteiro-fechar {
+    width: 44px;
+    height: 44px;
+  }
+  .pn-roteiro-form .pn-roteiro-enviar {
+    order: 4;
+    flex: 1 1 100%;
+  }
+  .pn-roteiro-campos {
+    flex-direction: column;
+  }
+  .pn-roteiro-campo.hora {
+    width: 100%;
+  }
+  .pn-roteiro-acoes .pn-roteiro-enviar {
+    flex: 1;
+  }
+  .pn-roteiro .pn-roteiro-pedir {
+    width: 100%;
+    justify-content: center;
+    min-height: 48px;
+  }
+  .pn-roteiro-pedido {
+    align-items: flex-start;
+  }
+}

@@ -8,6 +8,8 @@ import { ListaCortejo } from "@/components/portal/ListaCortejo";
 import { CorteV2 } from "@/components/portal/v2/CorteV2";
 import { getProgramaDoDia } from "@/lib/supabase/programa-do-dia";
 import { pessoaDoEvento, usaPortalV2 } from "@/lib/portal-v2";
+import { usaPortalNoivos } from "@/lib/portal-noivos";
+import { CortejoNoivos } from "@/components/portal/noivos/telas/mantidas/CortejoNoivos";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +21,9 @@ export default async function PortalCortejoPage({
   const evento = await getEventoDoPortal(params.eventoId);
   if (!evento) notFound();
   if (!tem(evento.tipo, "cortejo")) notFound();
+
+  // O portal dos noivos (desenho v4): o cortejo de sempre, com o cabeçalho novo.
+  if (usaPortalNoivos(evento.tipo)) return <CortejoNoivos eventoId={evento.id} tipo={evento.tipo} />;
 
   // Evento ligado (a colação de uma formatura): a lista da turma é UMA e
   // vive no evento principal. Gravar aqui criaria uma segunda lista que a

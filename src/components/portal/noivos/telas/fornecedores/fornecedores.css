@@ -1,0 +1,402 @@
+/* ============================================================
+   Fornecedores — Portal dos Noivos v4 (README §11; protótipo,
+   template 550–565, lógica 1069–1080). Os valores são os do desenho,
+   copiados como estão. Os botões e links levam o prefixo
+   .pn-fornecedores para vencer o `.pn button` / `.pn a` da fundação.
+   As adaptações de tablet e celular ficam nos @media do fim.
+   ============================================================ */
+
+.pn-fornecedores {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  line-height: normal;
+  animation: pn-rise 0.5s ease both;
+}
+
+/* o cabeçalho */
+.pn-fornecedores-cabeca {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+}
+.pn-fornecedores-titulo {
+  margin: 6px 0 0;
+  font-size: 40px;
+  line-height: normal;
+  color: var(--pn-verde);
+}
+.pn-fornecedores-conta {
+  font-size: 15px;
+  color: var(--pn-texto-2);
+  white-space: nowrap;
+}
+
+/* a grade de cartões */
+.pn-fornecedores-grade {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+/* O cartão. A entrada `rise` fica em `backwards` (e não `both`, como no
+   protótipo): com `both`, o `transform: none` do fim da animação vence o
+   hover e o cartão não sobe. O visual da entrada é o mesmo. */
+.pn-fornecedores-card {
+  position: relative;
+  min-width: 0;
+  background: #fff;
+  border-radius: 26px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: transform 0.3s, box-shadow 0.3s;
+  animation: pn-rise 0.5s ease backwards;
+}
+@media (hover: hover) {
+  .pn-fornecedores-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 36px -22px rgba(27, 42, 35, 0.5);
+  }
+}
+
+.pn-fornecedores-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.pn-fornecedores-icone {
+  width: 46px;
+  height: 46px;
+  border-radius: 15px;
+  background: var(--pn-salvia);
+  display: grid;
+  place-items: center;
+  color: var(--pn-verde);
+  flex: none;
+}
+
+/* a situação: Confirmado · Falta o sinal · Conversando · Escolher */
+.pn-fornecedores .pn-fornecedores-chip {
+  position: relative;
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.pn-fornecedores .pn-fornecedores-chip.ok {
+  background: #eaf0e8;
+  color: #2f6b4a;
+}
+.pn-fornecedores .pn-fornecedores-chip.sinal {
+  background: #f6dccb;
+  color: #7a3f1d;
+}
+.pn-fornecedores .pn-fornecedores-chip.neg {
+  background: #efe9df;
+  color: #56655c;
+}
+.pn-fornecedores .pn-fornecedores-chip.esc {
+  background: #1b2a23;
+  color: #f5f0e8;
+}
+/* nos da família a situação é um botão: a área de toque passa de 44px */
+.pn-fornecedores button.pn-fornecedores-chip {
+  transition: filter 0.2s;
+}
+.pn-fornecedores button.pn-fornecedores-chip::after {
+  content: "";
+  position: absolute;
+  inset: -10px -6px;
+}
+.pn-fornecedores button.pn-fornecedores-chip:hover {
+  filter: brightness(0.96);
+}
+
+.pn-fornecedores-cat {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--pn-texto-3);
+  overflow-wrap: anywhere;
+}
+.pn-fornecedores-nome {
+  font-size: 22px;
+  color: var(--pn-verde);
+  margin-top: 4px;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+/* "Escolher": o cartão inteiro leva às Escolhas do casal */
+.pn .pn-fornecedores-link,
+.pn .pn-fornecedores-link:hover {
+  color: inherit;
+}
+.pn-fornecedores-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 26px;
+}
+
+/* o que faz (check verde) */
+.pn-fornecedores-itens {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.pn-fornecedores-item {
+  display: flex;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--pn-texto-2);
+}
+.pn-fornecedores-item .pn-ic {
+  color: var(--pn-ok);
+  flex: none;
+}
+.pn-fornecedores-item > span:not(.pn-ic) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.pn-fornecedores-item.mais {
+  padding-left: 24px;
+  color: var(--pn-texto-3);
+}
+
+.pn-fornecedores-aviso {
+  font-size: 13px;
+  color: var(--pn-marrom);
+  font-weight: 700;
+  min-height: 18px;
+}
+
+/* o pé: com quem + WhatsApp */
+.pn-fornecedores-pe {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--pn-trilho);
+}
+.pn-fornecedores-com {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--pn-texto-2);
+  overflow-wrap: anywhere;
+}
+.pn .pn-fornecedores-zap {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.pn .pn-fornecedores-zap:hover {
+  color: var(--pn-creme);
+}
+.pn-fornecedores .pn-fornecedores-tirar {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: var(--pn-texto-3);
+  transition: background 0.2s, color 0.2s;
+}
+.pn-fornecedores .pn-fornecedores-tirar:hover {
+  background: var(--pn-creme);
+  color: var(--pn-verde);
+}
+.pn-fornecedores .pn-fornecedores-tirar.confirma {
+  width: auto;
+  padding: 0 12px;
+  background: var(--pn-pessego-claro);
+  color: var(--pn-marrom-escuro);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* ---------- adicionar (o bloco tracejado do desenho) ---------- */
+.pn-fornecedores .pn-fornecedores-novo {
+  min-height: 220px;
+  padding: 22px;
+  border-radius: 26px;
+  border: 1.5px dashed #d0c8b9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--pn-texto-2);
+  font-size: 14px;
+  transition: background 0.2s, border-color 0.2s;
+  animation: pn-rise 0.5s ease backwards;
+}
+.pn-fornecedores .pn-fornecedores-novo:hover {
+  background: rgba(255, 255, 255, 0.55);
+  border-color: var(--pn-pessego);
+}
+
+.pn-fornecedores-form {
+  min-width: 0;
+  background: #fff;
+  border-radius: 26px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: var(--pn-sombra-hover);
+  animation: pn-rise 0.3s ease both;
+}
+.pn-fornecedores-form-titulo {
+  font-size: 22px;
+  line-height: 1.15;
+  color: var(--pn-verde);
+  margin-bottom: 4px;
+}
+.pn-fornecedores-campo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  height: 46px;
+  border-radius: 14px;
+  background: var(--pn-creme);
+  cursor: text;
+}
+.pn-fornecedores-campo .pn-ic {
+  color: var(--pn-marrom);
+  flex: none;
+}
+.pn-fornecedores-campo input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--pn-verde);
+}
+.pn-fornecedores-campo input::placeholder {
+  color: var(--pn-texto-3);
+}
+.pn-fornecedores-ja {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 2px;
+  font-size: 14px;
+  color: var(--pn-verde);
+}
+.pn-fornecedores-acoes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.pn-fornecedores .pn-fornecedores-salvar {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+  font-size: 14px;
+  font-weight: 700;
+  transition: transform 0.2s;
+}
+.pn-fornecedores .pn-fornecedores-salvar:hover:not(:disabled) {
+  transform: scale(1.03);
+}
+.pn-fornecedores .pn-fornecedores-salvar:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.pn-fornecedores .pn-fornecedores-cancelar {
+  padding: 12px 10px;
+  font-size: 14px;
+  color: var(--pn-texto-2);
+}
+
+/* ============================================================
+   Adaptações (ditas a ele): o desenho é de 1280px, 4 colunas.
+   ============================================================ */
+
+/* tablet e computador pequeno: 3 colunas, depois 2 */
+@media (max-width: 1180px) {
+  .pn-fornecedores-grade {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 900px) {
+  .pn-fornecedores-grade {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* celular: uma coluna, título menor, toques de 44px */
+@media (max-width: 767px) {
+  .pn-fornecedores {
+    gap: 16px;
+  }
+  .pn-fornecedores-cabeca {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .pn-fornecedores-titulo {
+    font-size: 30px;
+    line-height: 1.15;
+  }
+  .pn-fornecedores-grade {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .pn-fornecedores-card,
+  .pn-fornecedores-form {
+    padding: 20px;
+  }
+  .pn .pn-fornecedores-zap {
+    min-height: 44px;
+    padding: 0 14px;
+  }
+  .pn-fornecedores .pn-fornecedores-tirar {
+    width: 44px;
+    height: 44px;
+  }
+  .pn-fornecedores .pn-fornecedores-tirar.confirma {
+    width: auto;
+    height: 44px;
+    padding: 0 14px;
+  }
+  .pn-fornecedores .pn-fornecedores-novo {
+    min-height: 120px;
+  }
+  .pn-fornecedores-campo {
+    height: 48px;
+  }
+  .pn-fornecedores-campo input {
+    font-size: 16px; /* 16px: o iPhone não dá zoom ao tocar no campo */
+  }
+  .pn-fornecedores .pn-fornecedores-salvar,
+  .pn-fornecedores .pn-fornecedores-cancelar {
+    min-height: 48px;
+  }
+}

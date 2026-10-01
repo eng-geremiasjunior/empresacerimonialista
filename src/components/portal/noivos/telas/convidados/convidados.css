@@ -1,0 +1,1426 @@
+/* ============================================================
+   Convidados (RSVP) — Portal dos Noivos v4 (README §10; protótipo,
+   template 329–548, lógica 1016–1068). Medidas copiadas do desenho.
+   O desenho é de 1280px; tablet (≤1180) e celular (≤767) no fim.
+   ============================================================ */
+
+.pn-convidados {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: pn-rise 0.5s ease both;
+  min-width: 0;
+}
+
+/* ---------- cabeçalho ---------- */
+.pn-convidados-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+}
+.pn-convidados-titulo {
+  margin: 6px 0 0;
+  font-size: 44px;
+  line-height: 1.1;
+  font-weight: 400;
+  color: var(--pn-verde);
+}
+.pn-convidados-sub {
+  font-size: 15px;
+  color: var(--pn-texto-2);
+  margin-top: 4px;
+}
+.pn-convidados-selo {
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--pn-texto-2);
+  white-space: nowrap;
+}
+.pn-convidados-vazio {
+  font-size: 14px;
+  color: var(--pn-texto-3);
+  padding: 6px 4px;
+}
+
+/* ---------- 1. painel + chegando agora ---------- */
+.pn-convidados-linha1 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 20px;
+}
+
+.pn-convidados-painel {
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+  border-radius: 34px;
+  padding: 32px;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 34px;
+  align-items: center;
+}
+.pn-convidados-anel {
+  position: relative;
+  width: 260px;
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+}
+.pn-convidados-anel svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.pn-convidados-anel .arco {
+  transition: stroke-dasharray 1.4s cubic-bezier(0.2, 0.8, 0.2, 1), stroke-dashoffset 1.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.pn-convidados-anel-centro {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.pn-convidados-anel-centro .num {
+  font-size: 72px;
+  line-height: 1;
+}
+.pn-convidados-anel-centro .de {
+  font-size: 14px;
+  color: var(--pn-salvia-escuro);
+  margin-top: 6px;
+}
+.pn-convidados-anel-centro .pct {
+  margin-top: 10px;
+  font-size: 13px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(233, 174, 136, 0.18);
+  color: var(--pn-pessego-escuro);
+}
+.pn-convidados-painel-dir {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+.pn-convidados-legenda {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.pn-convidados-legenda .rot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--pn-salvia-escuro);
+}
+.pn-convidados-legenda .bola {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+}
+.pn-convidados-legenda .num {
+  font-size: 36px;
+  margin-top: 4px;
+}
+.pn-convidados-lados {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pn-convidados-lados .topo {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--pn-salvia-escuro);
+}
+.pn-convidados-lados .barra {
+  height: 6px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  margin-top: 6px;
+}
+.pn-convidados-lados .barra > div {
+  height: 6px;
+  border-radius: 6px;
+  background: var(--pn-pessego);
+  transition: width 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.pn-convidados-envios {
+  padding-top: 18px;
+  border-top: 1px solid rgba(245, 240, 232, 0.12);
+}
+.pn-convidados-envios .cab {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+.pn-convidados-envios .rot {
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--pn-salvia-escuro);
+}
+.pn-convidados-envios .prazo {
+  font-size: 13px;
+  color: var(--pn-pessego-escuro);
+  text-align: right;
+}
+.pn-convidados-envios .nos {
+  position: relative;
+  display: grid;
+  margin-top: 14px;
+}
+.pn-convidados-envios .base {
+  position: absolute;
+  top: 9px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+}
+.pn-convidados-envios .feito {
+  position: absolute;
+  top: 9px;
+  height: 2px;
+  background: var(--pn-pessego);
+  animation: pn-bar 1.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.pn-convidados-envios .no {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+.pn-convidados-envios .bola {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--pn-verde);
+  border: 2px solid #7f978a;
+  color: var(--pn-verde);
+}
+.pn-convidados-envios .bola.ok {
+  background: var(--pn-pessego);
+  border: 0;
+}
+.pn-convidados-envios .t {
+  font-size: 13px;
+  line-height: 1.25;
+}
+.pn-convidados-envios .d {
+  font-size: 11px;
+  color: var(--pn-salvia-escuro);
+}
+
+.pn-convidados-chegando {
+  background: #fff;
+  border-radius: 34px;
+  padding: 28px;
+  box-shadow: var(--pn-sombra-card);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.pn-convidados-chegando .cab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pn-convidados-chegando .ponto {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--pn-pessego);
+  animation: pn-halo 2s infinite;
+  flex: none;
+}
+.pn-convidados-chegando .titulo {
+  font-size: 26px;
+  color: var(--pn-verde);
+}
+.pn-convidados-destaque {
+  padding: 18px;
+  border-radius: 22px;
+  background: var(--pn-pessego-claro);
+  animation: pn-rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both, pn-halo 1.6s ease 0.4s 2;
+}
+.pn-convidados-destaque .linha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.pn-convidados-destaque .avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  font-weight: 700;
+  flex: none;
+}
+.pn-convidados-destaque .meio {
+  flex: 1;
+  min-width: 0;
+}
+.pn-convidados-destaque .quem {
+  font-size: 16px;
+  color: var(--pn-verde);
+}
+.pn-convidados-destaque .det {
+  font-size: 13px;
+  color: var(--pn-marrom-escuro);
+}
+.pn-convidados-destaque .quando {
+  font-size: 12px;
+  color: var(--pn-marrom-escuro);
+  white-space: nowrap;
+}
+.pn-convidados-destaque .recado {
+  margin-top: 12px;
+  font-size: 18px;
+  line-height: 1.35;
+  color: var(--pn-verde);
+  overflow-wrap: anywhere;
+}
+.pn-convidados-resto {
+  display: flex;
+  flex-direction: column;
+}
+.pn-convidados-resto .item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--pn-trilho-2);
+}
+.pn-convidados-resto .avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--pn-salvia);
+  color: var(--pn-verde);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex: none;
+}
+.pn-convidados-resto .meio {
+  flex: 1;
+  min-width: 0;
+}
+.pn-convidados-resto .quem {
+  font-size: 14px;
+  color: var(--pn-verde);
+}
+.pn-convidados-resto .det {
+  font-size: 12px;
+  color: var(--pn-texto-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pn-convidados-resto .quando {
+  font-size: 12px;
+  color: var(--pn-texto-3);
+  white-space: nowrap;
+}
+
+/* sem lista ainda */
+.pn-convidados-comecar {
+  background: #fff;
+  border-radius: 34px;
+  padding: 32px;
+  box-shadow: var(--pn-sombra-card);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.pn-convidados-comecar .titulo {
+  font-size: 26px;
+  color: var(--pn-verde);
+}
+.pn-convidados-comecar textarea {
+  resize: vertical;
+  border: 0;
+  border-radius: 18px;
+  background: var(--pn-creme);
+  padding: 14px 16px;
+  font: 15px/1.45 var(--pn-f-corpo), "Nunito Sans", sans-serif;
+  color: var(--pn-verde);
+}
+.pn-convidados-comecar .organizar {
+  align-self: flex-start;
+  padding: 17px 24px;
+  border-radius: 18px;
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+  font-size: 16px;
+  font-weight: 700;
+  transition: transform 0.2s;
+}
+.pn-convidados-comecar .organizar:hover {
+  transform: scale(1.03);
+}
+.pn-convidados-comecar .organizar:disabled {
+  opacity: 0.6;
+  transform: none;
+  cursor: default;
+}
+
+/* ---------- 2. o convite digital ---------- */
+.pn-convidados-convite {
+  background: #fff;
+  border-radius: 34px;
+  padding: 36px;
+  box-shadow: var(--pn-sombra-card);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px minmax(0, 1fr);
+  gap: 40px;
+  align-items: center;
+}
+.pn-convidados-convite .esq {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+.pn-convidados-convite .titulo {
+  font-size: 36px;
+  line-height: 1.1;
+  color: var(--pn-verde);
+  margin-top: 6px;
+}
+.pn-convidados-convite .texto {
+  font-size: 15px;
+  color: var(--pn-texto-2);
+  margin-top: 8px;
+  line-height: 1.5;
+}
+.pn-convidados-convite .passos {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pn-convidados-convite .passo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  text-align: left;
+  transition: background 0.25s;
+  background: transparent;
+}
+.pn-convidados-convite .passo.on {
+  background: var(--pn-pessego-claro);
+}
+.pn-convidados-convite .passo .n {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  transition: background 0.25s;
+  background: var(--pn-trilho-2);
+  color: var(--pn-texto-2);
+  flex: none;
+}
+.pn-convidados-convite .passo.on .n {
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+}
+.pn-convidados-convite .passo .l {
+  font-size: 15px;
+  color: var(--pn-verde);
+}
+.pn-convidados-convite .link {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pn-convidados-convite .copiar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 16px;
+  border-radius: 16px;
+  background: var(--pn-creme);
+  min-width: 0;
+}
+.pn-convidados-convite .copiar .url {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  color: var(--pn-verde);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pn-convidados-convite .copiar button {
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+  font-size: 13px;
+  font-weight: 700;
+  flex: none;
+}
+.pn .pn-convidados-convite .zap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px;
+  border-radius: 16px;
+  border: 1px solid var(--pn-borda-2);
+  font-size: 14px;
+  color: var(--pn-verde);
+  text-decoration: none;
+  text-align: center;
+  transition: background 0.2s;
+}
+.pn .pn-convidados-convite .zap:hover {
+  background: var(--pn-creme);
+  color: var(--pn-verde);
+}
+.pn-convidados-convite .dir {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+}
+.pn-convidados-convite .titulo-2 {
+  font-size: 26px;
+  color: var(--pn-verde);
+}
+
+/* o celular (320×640) */
+.pn-convidados-celular {
+  position: relative;
+  width: 320px;
+  height: 640px;
+  border-radius: 50px;
+  background: #0e1512;
+  padding: 11px;
+  box-shadow: 0 50px 80px -40px rgba(14, 21, 18, 0.75), inset 0 0 0 2px #2c3832;
+  justify-self: center;
+}
+.pn-convidados-celular .tela {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 40px;
+  overflow: hidden;
+  background: var(--pn-creme);
+}
+.pn-convidados-celular .ilha {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  top: 10px;
+  width: 92px;
+  height: 26px;
+  margin-left: -46px;
+  border-radius: 20px;
+  background: #0e1512;
+}
+.pn-convidados-celular .barra-casa {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  bottom: 8px;
+  width: 110px;
+  height: 4px;
+  margin-left: -55px;
+  border-radius: 4px;
+  background: rgba(14, 21, 18, 0.35);
+}
+.pn-convidados-celular button {
+  font: inherit;
+}
+
+/* 0 — a capa */
+.pn-convidados-celular .t0 {
+  position: absolute;
+  inset: 0;
+  animation: pn-fadein 0.5s ease both;
+}
+.pn-convidados-celular .foto {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 60%;
+  overflow: hidden;
+  background: #26392f;
+}
+.pn-convidados-celular .foto .kb {
+  position: absolute;
+  inset: 0;
+  animation: pn-kb 20s ease-in-out infinite alternate;
+}
+.pn-convidados-celular .foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.pn-convidados-celular .foto .veu {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(245, 240, 232, 0) 45%, #f5f0e8 100%);
+}
+.pn-convidados-celular .t0 .base {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0 24px 30px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pn-convidados-celular .nomes {
+  font-size: 40px;
+  line-height: 1;
+  color: var(--pn-verde);
+  animation: pn-rise 0.8s ease 0.1s both;
+  overflow-wrap: anywhere;
+}
+.pn-convidados-celular .nomes .e {
+  color: var(--pn-pessego);
+}
+.pn-convidados-celular .data {
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  color: var(--pn-texto-2);
+}
+.pn-convidados-celular .pergunta {
+  font-size: 19px;
+  line-height: 1.3;
+  color: var(--pn-verde);
+  margin: 8px 0 6px;
+  animation: pn-rise 0.8s ease 0.3s both;
+}
+.pn-convidados-celular .t0 .sim {
+  padding: 15px;
+  border-radius: 16px;
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+  font-size: 15px;
+  font-weight: 700;
+  animation: pn-rise 0.8s ease 0.45s both;
+  transition: transform 0.2s;
+}
+.pn-convidados-celular .t0 .sim:hover {
+  transform: scale(1.03);
+}
+.pn-convidados-celular .t0 .nao {
+  padding: 13px;
+  border-radius: 16px;
+  border: 1px solid var(--pn-borda-3);
+  color: var(--pn-verde);
+  font-size: 14px;
+  animation: pn-rise 0.8s ease 0.55s both;
+}
+
+/* 1 e 2 — quem vem, quase lá */
+.pn-convidados-celular .passo-tela {
+  position: absolute;
+  inset: 0;
+  padding: 56px 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: pn-rise 0.45s ease both;
+}
+.pn-convidados-celular .passo-tela.g12 {
+  gap: 12px;
+}
+.pn-convidados-celular .prog {
+  display: flex;
+  gap: 4px;
+}
+.pn-convidados-celular .prog span {
+  flex: 1;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--pn-borda);
+}
+.pn-convidados-celular .prog span.on {
+  background: var(--pn-verde);
+}
+.pn-convidados-celular .h {
+  font-size: 26px;
+  line-height: 1.1;
+  color: var(--pn-verde);
+}
+.pn-convidados-celular .caixa {
+  padding: 14px;
+  border-radius: 18px;
+  background: #fff;
+}
+.pn-convidados-celular .mini {
+  font-size: 12px;
+  color: var(--pn-texto-3);
+}
+.pn-convidados-celular .stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+.pn-convidados-celular .voce {
+  font-size: 16px;
+  color: var(--pn-verde);
+}
+.pn-convidados-celular .botoes {
+  display: flex;
+  gap: 8px;
+}
+.pn-convidados-celular .botoes button {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+.pn-convidados-celular .botoes .menos {
+  border: 1px solid var(--pn-borda-3);
+  color: var(--pn-verde);
+}
+.pn-convidados-celular .botoes .mais {
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+}
+.pn-convidados-celular .lugares {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+.pn-convidados-celular .lugares span {
+  flex: 1;
+  height: 30px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  transition: background 0.3s;
+  background: var(--pn-trilho-2);
+  color: #c9c1b2;
+}
+.pn-convidados-celular .lugares span.on {
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+}
+.pn-convidados-celular .pergunta-2 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--pn-verde);
+  margin-top: 4px;
+}
+.pn-convidados-celular .dietas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pn-convidados-celular .dietas button {
+  padding: 9px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  transition: background 0.2s;
+  background: #fff;
+  color: var(--pn-verde);
+}
+.pn-convidados-celular .dietas button.on {
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+}
+.pn-convidados-celular .seguir {
+  margin-top: auto;
+  padding: 15px;
+  border-radius: 16px;
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+}
+.pn-convidados-celular .seguir.pessego {
+  background: var(--pn-pessego);
+  color: var(--pn-verde);
+}
+.pn-convidados-celular .rot {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--pn-verde);
+}
+.pn-convidados-celular .rot.mt4 {
+  margin-top: 4px;
+}
+.pn-convidados-celular .campo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  height: 46px;
+  border-radius: 14px;
+  background: #fff;
+}
+.pn-convidados-celular .campo input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font: 15px var(--pn-f-corpo), "Nunito Sans", sans-serif;
+  color: var(--pn-verde);
+}
+.pn-convidados-celular textarea {
+  resize: none;
+  border: 0;
+  border-radius: 14px;
+  background: #fff;
+  padding: 12px;
+  font: 15px/1.4 var(--pn-f-corpo), "Nunito Sans", sans-serif;
+  color: var(--pn-verde);
+}
+
+/* 3 — obrigado */
+.pn-convidados-celular .t3 {
+  position: absolute;
+  inset: 0;
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+  overflow: hidden;
+  animation: pn-fadein 0.4s ease both;
+}
+.pn-convidados-celular .confete {
+  position: absolute;
+  top: -20px;
+  width: 8px;
+  height: 14px;
+  border-radius: 2px;
+  animation: pn-fall 2.8s cubic-bezier(0.3, 0.6, 0.5, 1) both;
+}
+.pn-convidados-celular .t3 .conteudo {
+  position: absolute;
+  inset: 0;
+  padding: 70px 24px 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+}
+.pn-convidados-celular .t3 .ok {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: var(--pn-pessego);
+  color: var(--pn-verde);
+  display: grid;
+  place-items: center;
+  animation: pn-grow 0.6s cubic-bezier(0.3, 1.5, 0.5, 1) 0.2s both;
+}
+.pn-convidados-celular .t3 .ate {
+  font-size: 28px;
+  line-height: 1.15;
+  animation: pn-rise 0.6s ease 0.5s both;
+}
+.pn-convidados-celular .t3 .resumo {
+  font-size: 14px;
+  color: var(--pn-salvia-escuro);
+  animation: pn-rise 0.6s ease 0.7s both;
+}
+.pn-convidados-celular .t3 .acoes {
+  margin-top: auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pn-convidados-celular .t3 .agenda {
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--pn-creme);
+  color: var(--pn-verde);
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.pn-convidados-celular .t3 .chegar {
+  padding: 13px;
+  border-radius: 16px;
+  border: 1px solid rgba(245, 240, 232, 0.25);
+  font-size: 14px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.pn-convidados-celular .t3 .denovo {
+  padding: 8px;
+  font-size: 13px;
+  color: var(--pn-salvia-escuro);
+}
+
+/* 4 — não vou; 5 — recado entregue */
+.pn-convidados-celular .t4 {
+  position: absolute;
+  inset: 0;
+  padding: 70px 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: pn-rise 0.45s ease both;
+}
+.pn-convidados-celular .h28 {
+  font-size: 28px;
+  line-height: 1.15;
+  color: var(--pn-verde);
+}
+.pn-convidados-celular .t4 .txt {
+  font-size: 15px;
+  color: var(--pn-texto-2);
+  line-height: 1.45;
+}
+.pn-convidados-celular .t4 .voltar {
+  padding: 6px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--pn-texto-2);
+}
+.pn-convidados-celular .t5 {
+  position: absolute;
+  inset: 0;
+  padding: 0 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 14px;
+  animation: pn-rise 0.45s ease both;
+}
+.pn-convidados-celular .t5 .coracao {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: var(--pn-pessego-claro);
+  color: var(--pn-verde);
+  display: grid;
+  place-items: center;
+  animation: pn-grow 0.6s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+}
+.pn-convidados-celular .h26 {
+  font-size: 26px;
+  color: var(--pn-verde);
+}
+.pn-convidados-celular .t5 .txt {
+  font-size: 14px;
+  color: var(--pn-texto-2);
+}
+.pn-convidados-celular .t5 .denovo-2 {
+  margin-top: 10px;
+  padding: 12px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--pn-borda-3);
+  font-size: 14px;
+  color: var(--pn-verde);
+}
+
+/* o que as respostas já contam */
+.pn-convidados-contagens {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.pn-convidados-contagens .item {
+  display: grid;
+  grid-template-columns: 28px 1fr 34px;
+  gap: 10px;
+  align-items: center;
+}
+.pn-convidados-contagens .l {
+  font-size: 14px;
+  color: var(--pn-verde);
+}
+.pn-convidados-contagens .barra {
+  height: 5px;
+  border-radius: 5px;
+  background: var(--pn-trilho-2);
+  margin-top: 5px;
+}
+.pn-convidados-contagens .barra > div {
+  height: 5px;
+  border-radius: 5px;
+  background: var(--pn-pessego);
+  animation: pn-bar 1.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.pn-convidados-contagens .n {
+  font-size: 22px;
+  color: var(--pn-verde);
+  text-align: right;
+}
+.pn-convidados-pedidos {
+  padding: 18px;
+  border-radius: 22px;
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+}
+.pn-convidados-pedidos .cab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--pn-pessego);
+}
+.pn-convidados-pedidos .chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+.pn-convidados-pedidos .chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 13px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.pn-convidados-pedidos .conta {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--pn-pessego);
+  color: var(--pn-verde);
+}
+.pn-convidados-pedidos .levar {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--pn-creme);
+  color: var(--pn-verde);
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+}
+.pn-convidados-pedidos .levar:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.pn-convidados-pedidos .levado {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(233, 174, 136, 0.16);
+  color: var(--pn-pessego-escuro);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* ---------- 3. lista + mapa de mesas ---------- */
+.pn-convidados-linha3 {
+  display: grid;
+  grid-template-columns: 420px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.pn-convidados-linha3.so-lista {
+  grid-template-columns: minmax(0, 1fr);
+}
+.pn-convidados-lista {
+  background: #fff;
+  border-radius: 30px;
+  padding: 26px;
+  box-shadow: var(--pn-sombra-card);
+  min-width: 0;
+}
+.pn-convidados-lista .filtros {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.pn-convidados-lista .filtros button {
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  background: var(--pn-creme);
+  color: var(--pn-verde);
+}
+.pn-convidados-lista .filtros button.on {
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+}
+.pn-convidados-lista .linhas {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 14px;
+  max-height: 560px;
+  overflow: auto;
+}
+.pn-convidados-lista .linha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 14px;
+  background: transparent;
+  text-align: left;
+  width: 100%;
+}
+.pn-convidados-lista button.linha:hover {
+  background: var(--pn-creme);
+}
+.pn-convidados-lista .linha.sel,
+.pn-convidados-lista button.linha.sel:hover {
+  background: var(--pn-pessego-claro);
+}
+.pn-convidados-lista .avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--pn-salvia);
+  color: var(--pn-verde);
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  flex: none;
+}
+.pn-convidados-lista .meio {
+  flex: 1;
+  min-width: 0;
+}
+.pn-convidados-lista .nome {
+  font-size: 15px;
+  color: var(--pn-verde);
+  overflow-wrap: anywhere;
+}
+.pn-convidados-lista .sub {
+  font-size: 12px;
+  color: var(--pn-texto-3);
+}
+.pn-convidados-status {
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex: none;
+}
+.pn-convidados-status.sim {
+  background: var(--pn-salvia);
+  color: var(--pn-ok);
+}
+.pn-convidados-status.pen {
+  background: var(--pn-pessego-claro);
+  color: var(--pn-marrom-escuro);
+}
+.pn-convidados-status.nao {
+  background: var(--pn-trilho);
+  color: var(--pn-texto-2);
+}
+.pn-convidados-incluir {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--pn-trilho-2);
+}
+.pn-convidados-incluir input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--pn-creme);
+  font: 15px var(--pn-f-corpo), "Nunito Sans", sans-serif;
+  color: var(--pn-verde);
+}
+.pn-convidados-lista .pn-convidados-incluir button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 14px;
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+  font-size: 14px;
+  font-weight: 700;
+  flex: none;
+}
+.pn-convidados-lista .pn-convidados-incluir button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.pn-convidados-mapa {
+  background: #fff;
+  border-radius: 30px;
+  padding: 30px;
+  box-shadow: var(--pn-sombra-card);
+  min-width: 0;
+}
+.pn-convidados-mapa .cab {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+}
+.pn-convidados-mapa .titulo {
+  font-size: 32px;
+  color: var(--pn-verde);
+  margin-top: 6px;
+}
+.pn-convidados-mapa .dica {
+  font-size: 14px;
+  color: var(--pn-texto-2);
+  max-width: 260px;
+  text-align: right;
+}
+.pn-convidados-mapa .mesas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 22px;
+}
+.pn-convidados-mesa {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 8px;
+  border-radius: 24px;
+  background: #fff;
+  transition: background 0.25s;
+  min-width: 0;
+}
+.pn-convidados-mesa.destaque {
+  background: var(--pn-creme);
+}
+.pn-convidados-mesa .disco {
+  position: relative;
+  width: 150px;
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+}
+.pn-convidados-mesa .cadeira {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--pn-trilho);
+  transform: scale(0.75);
+  transition: background 0.35s, transform 0.35s;
+}
+.pn-convidados-mesa .cadeira.cheia {
+  background: var(--pn-pessego);
+  transform: scale(1);
+}
+.pn-convidados-mesa .centro {
+  position: absolute;
+  left: 22.667%;
+  top: 22.667%;
+  width: 54.667%;
+  height: 54.667%;
+  border-radius: 50%;
+  background: var(--pn-creme);
+  border: 1px solid var(--pn-borda);
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+.pn-convidados-mesa .centro .n {
+  font-size: 22px;
+  color: var(--pn-verde);
+  line-height: 1;
+}
+.pn-convidados-mesa .centro .conta {
+  font-size: 11px;
+  color: var(--pn-texto-3);
+}
+.pn-convidados-mesa .nome {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--pn-verde);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.pn-convidados-mesa .quem {
+  font-size: 12px;
+  color: var(--pn-texto-3);
+  text-align: center;
+  min-height: 30px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ============================================================
+   Adaptações (ditas a ele)
+   ============================================================ */
+
+/* tablet: o painel e o feed um embaixo do outro; o convite em duas
+   colunas (as contagens descem); a lista em cima do mapa */
+@media (max-width: 1180px) {
+  .pn-convidados-linha1 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pn-convidados-convite {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 32px;
+  }
+  .pn-convidados-convite .dir {
+    grid-column: 1 / -1;
+  }
+  .pn-convidados-linha3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pn-convidados-mapa .mesas {
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  }
+}
+
+/* celular: uma coluna, toque de 44px, nada estoura a largura */
+@media (max-width: 767px) {
+  .pn-convidados-topo {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .pn-convidados-titulo {
+    font-size: 32px;
+  }
+  .pn-convidados-painel {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: 26px;
+    padding: 26px 20px;
+    border-radius: 28px;
+  }
+  .pn-convidados-painel-dir {
+    width: 100%;
+  }
+  .pn-convidados-legenda .rot {
+    font-size: 12px;
+    gap: 6px;
+  }
+  .pn-convidados-legenda .num {
+    font-size: 30px;
+  }
+  .pn-convidados-chegando {
+    padding: 22px 18px;
+    border-radius: 28px;
+  }
+  .pn-convidados-comecar {
+    padding: 24px 18px;
+    border-radius: 28px;
+  }
+  .pn-convidados-comecar .organizar {
+    align-self: stretch;
+  }
+  .pn-convidados-convite {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+    padding: 26px 18px;
+    border-radius: 28px;
+  }
+  .pn-convidados-convite .titulo {
+    font-size: 30px;
+  }
+  .pn-convidados-convite .copiar button {
+    min-height: 44px;
+  }
+  .pn-convidados-celular {
+    width: 320px;
+    max-width: 100%;
+  }
+  .pn-convidados-lista {
+    padding: 20px 16px;
+    border-radius: 26px;
+  }
+  .pn-convidados-lista .filtros button {
+    min-height: 44px;
+    padding: 8px 16px;
+  }
+  .pn-convidados-lista .linha {
+    min-height: 56px;
+  }
+  .pn-convidados-lista .linhas {
+    max-height: 480px;
+  }
+  .pn-convidados-mapa {
+    padding: 24px 16px;
+    border-radius: 26px;
+  }
+  .pn-convidados-mapa .cab {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .pn-convidados-mapa .titulo {
+    font-size: 28px;
+  }
+  .pn-convidados-mapa .dica {
+    text-align: left;
+    max-width: none;
+  }
+  .pn-convidados-mapa .mesas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .pn-convidados-mesa {
+    padding: 12px 4px;
+  }
+}
+
+/* movimento reduzido: sem halo, confete e Ken Burns (README) */
+@media (prefers-reduced-motion: reduce) {
+  .pn-convidados-chegando .ponto,
+  .pn-convidados-celular .foto .kb,
+  .pn-convidados-celular .confete {
+    animation: none;
+  }
+  .pn-convidados-celular .confete {
+    display: none;
+  }
+  .pn-convidados-destaque {
+    animation: pn-rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+}

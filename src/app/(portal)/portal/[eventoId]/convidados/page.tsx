@@ -10,6 +10,8 @@ import { LembreteConvidados } from "@/components/portal/LembreteConvidados";
 import { ConvidadosV2 } from "@/components/portal/v2/ConvidadosV2";
 import { getConvidadosV2 } from "@/lib/supabase/portal-salao";
 import { pessoaDoEvento, usaPortalV2 } from "@/lib/portal-v2";
+import { usaPortalNoivos } from "@/lib/portal-noivos";
+import { ConvidadosSecao } from "@/components/portal/noivos/telas/convidados/Secao";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +31,9 @@ export default async function PortalConvidadosPage({
   // nominal para um show de 5.000 pessoas, que é justamente a escala em
   // que ela não se sustenta
   if (!tem(evento.tipo, "listaNominal")) notFound();
+
+  // portal dos noivos (desenho v4): o casamento
+  if (usaPortalNoivos(evento.tipo)) return <ConvidadosSecao eventoId={evento.id} />;
 
   // portal v2 (180): o salão vivo, o buffet por idade e as listas
   if (usaPortalV2(evento.tipo)) {

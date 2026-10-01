@@ -4,6 +4,8 @@ import { getFornecedoresDoPortal } from "@/lib/supabase/portal-fornecedores";
 import { usaPortalV2 } from "@/lib/portal-v2";
 import { FornecedoresV2 } from "@/components/portal/v2/FornecedoresV2";
 import { EmBreve } from "@/components/portal/EmBreve";
+import { usaPortalNoivos } from "@/lib/portal-noivos";
+import { FornecedoresSecao } from "@/components/portal/noivos/telas/fornecedores/Secao";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +16,9 @@ export default async function PortalFornecedoresPage({
 }) {
   const evento = await getEventoDoPortal(params.eventoId);
   if (!evento) notFound();
+
+  // O portal dos noivos (desenho v4): "Quem vai fazer o dia acontecer".
+  if (usaPortalNoivos(evento.tipo)) return <FornecedoresSecao eventoId={evento.id} />;
 
   // portal v2 (181): os da cerimonialista e os da família
   if (usaPortalV2(evento.tipo)) {

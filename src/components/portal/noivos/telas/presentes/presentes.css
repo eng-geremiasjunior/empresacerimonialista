@@ -1,0 +1,201 @@
+/* ============================================================
+   Presentes — Portal dos Noivos v4 (README §14; protótipo, template
+   627–661, lógica 1097–1100). Os valores são os do desenho, copiados
+   como estão. Botões e links levam o prefixo .pn-presentes para vencer
+   o `.pn button` / `.pn a` da fundação. As adaptações de tablet e
+   celular ficam nos @media do fim.
+   ============================================================ */
+
+/* A grade do desenho (1.1fr · 1fr). Sem "Presentes recebidos" (outra
+   fase), as listas nas lojas ocupam a coluna da direita. */
+.pn-presentes {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+  line-height: normal;
+  animation: pn-rise 0.5s ease both;
+}
+
+/* ---------- a cota da lua de mel (card escuro) ---------- */
+.pn-presentes-cota {
+  min-width: 0;
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+  border-radius: 30px;
+  padding: 32px;
+}
+.pn-presentes-cota-titulo {
+  margin: 6px 0 0;
+  font-size: 38px;
+  line-height: normal;
+  color: var(--pn-creme);
+}
+.pn-presentes-cota-sub {
+  font-size: 15px;
+  color: var(--pn-salvia-escuro);
+  margin-top: 4px;
+}
+.pn-presentes-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+.pn-presentes .pn-presentes-copiar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 18px;
+  border-radius: 14px;
+  background: var(--pn-pessego);
+  color: var(--pn-verde);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.pn-presentes .pn-presentes-copiar:hover {
+  transform: scale(1.03);
+  color: var(--pn-verde);
+}
+/* a chave Pix: no desenho é uma pílula de contorno; aqui ela copia */
+.pn-presentes .pn-presentes-pix {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 12px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(245, 240, 232, 0.25);
+  color: var(--pn-creme);
+  font-size: 14px;
+  text-align: left;
+  transition: background 0.2s;
+}
+.pn-presentes .pn-presentes-pix:hover {
+  background: rgba(245, 240, 232, 0.08);
+}
+.pn-presentes-chave {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.pn-presentes-pix .pn-ic {
+  flex: none;
+  color: var(--pn-pessego);
+}
+.pn-presentes-titular {
+  font-size: 13px;
+  color: var(--pn-salvia-escuro);
+  margin-top: 12px;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- listas nas lojas ---------- */
+.pn-presentes-lojas {
+  min-width: 0;
+  background: #fff;
+  border-radius: 30px;
+  padding: 28px;
+  box-shadow: var(--pn-sombra-card);
+}
+.pn-presentes-lojas-titulo {
+  margin: 0;
+  font-size: 26px;
+  line-height: normal;
+  color: var(--pn-verde);
+}
+.pn-presentes-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+.pn .pn-presentes-loja {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: var(--pn-creme);
+  color: var(--pn-verde);
+  transition: background 0.2s;
+}
+.pn .pn-presentes-loja:hover {
+  color: var(--pn-verde);
+  background: var(--pn-trilho);
+}
+.pn-presentes-loja > .pn-ic:first-child {
+  flex: none;
+  color: var(--pn-verde);
+}
+.pn-presentes-loja > .pn-ic:last-child {
+  flex: none;
+  color: var(--pn-marrom);
+}
+.pn-presentes-loja-textos {
+  flex: 1;
+  min-width: 0;
+}
+.pn-presentes-loja-nome {
+  display: block;
+  font-size: 15px;
+  color: var(--pn-verde);
+}
+.pn-presentes-loja-end {
+  display: block;
+  font-size: 12px;
+  color: var(--pn-texto-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ============================================================
+   Adaptações (ditas a ele): o desenho é de 1280px, duas colunas.
+   ============================================================ */
+
+/* tablet estreito: as duas colunas não cabem o título de 38px */
+@media (max-width: 900px) {
+  .pn-presentes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* celular: uma coluna, título menor, botões inteiros e toques de 44px */
+@media (max-width: 767px) {
+  .pn-presentes {
+    gap: 16px;
+  }
+  .pn-presentes-cota {
+    padding: 24px 20px;
+    border-radius: 26px;
+  }
+  .pn-presentes-cota-titulo {
+    font-size: 30px;
+    line-height: 1.15;
+  }
+  .pn-presentes-acoes {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .pn-presentes .pn-presentes-copiar,
+  .pn-presentes .pn-presentes-pix {
+    min-height: 48px;
+    justify-content: center;
+  }
+  .pn-presentes .pn-presentes-copiar:hover {
+    transform: none;
+  }
+  .pn-presentes-lojas {
+    padding: 22px 18px;
+    border-radius: 26px;
+  }
+  .pn-presentes-lojas-titulo {
+    font-size: 22px;
+  }
+  .pn .pn-presentes-loja {
+    min-height: 56px;
+  }
+}

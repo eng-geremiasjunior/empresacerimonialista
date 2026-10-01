@@ -1,0 +1,621 @@
+/* ============================================================
+   A trilha de vocês (Músicas) — Portal dos Noivos v4, README §8;
+   protótipo, template 226–291. Os valores são os do desenho, copiados
+   como estão. Os botões levam o prefixo .pn-trilha para vencer o
+   `.pn button` da fundação. As adaptações ficam nos @media do fim.
+   ============================================================ */
+
+.pn-trilha {
+  position: relative;
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+  border-radius: 34px;
+  padding: 36px 38px;
+  overflow: hidden;
+  line-height: normal;
+  animation: pn-rise 0.5s ease both;
+}
+
+/* o cabeçalho */
+.pn-trilha-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+}
+.pn-trilha-eyebrow {
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--pn-pessego);
+}
+.pn-trilha-titulo {
+  margin: 6px 0 0;
+  font-size: 40px;
+  line-height: normal;
+  color: var(--pn-creme);
+}
+.pn-trilha-sub {
+  font-size: 15px;
+  color: var(--pn-salvia-escuro);
+  margin-top: 4px;
+}
+.pn-trilha-conta {
+  font-size: 15px;
+  color: var(--pn-pessego-escuro);
+  white-space: nowrap;
+}
+
+.pn-trilha-grade {
+  display: grid;
+  grid-template-columns: 380px minmax(0, 1fr);
+  gap: 40px;
+  margin-top: 30px;
+}
+
+/* ---------- o disco e a música do momento ---------- */
+.pn-trilha-tocador {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  min-width: 0;
+}
+.pn-trilha-disco {
+  position: relative;
+  width: 300px;
+  height: 300px;
+  flex: none;
+}
+.pn-trilha-vinil {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: repeating-radial-gradient(circle, #0f1814 0 2px, #17231d 2px 4px);
+  box-shadow: 0 30px 50px -20px rgba(0, 0, 0, 0.7);
+  display: grid;
+  place-items: center;
+  animation: pn-spin 3.6s linear infinite;
+  animation-play-state: paused;
+}
+.pn-trilha-vinil.tocando {
+  animation-play-state: running;
+}
+.pn-trilha-selo {
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  background: var(--pn-pessego);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.08);
+}
+.pn-trilha-selo .pn-t {
+  font-size: 32px;
+  color: var(--pn-verde);
+}
+.pn-trilha-reflexo {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent 45%);
+  pointer-events: none;
+}
+.pn-trilha-agora {
+  width: 100%;
+  text-align: center;
+}
+.pn-trilha-eq {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 3px;
+  height: 16px;
+  margin-bottom: 10px;
+}
+.pn-trilha-eq span {
+  width: 3px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--pn-pessego);
+  transform-origin: bottom;
+  animation: pn-eq 0.8s ease-in-out infinite;
+  animation-play-state: paused;
+}
+.pn-trilha-eq.tocando span {
+  animation-play-state: running;
+}
+.pn-trilha-musica {
+  font-size: 26px;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.pn-trilha-artista {
+  font-size: 14px;
+  color: var(--pn-salvia-escuro);
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+.pn-trilha-prog {
+  height: 3px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.14);
+  margin: 18px 0;
+}
+.pn-trilha-prog > span {
+  display: block;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--pn-pessego);
+}
+.pn-trilha-botoes {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.pn-trilha .pn-trilha-ouvir {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 22px;
+  border-radius: 999px;
+  background: var(--pn-creme);
+  color: var(--pn-verde);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pn-trilha .pn-trilha-viver {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 20px;
+  border-radius: 999px;
+  border: 1px solid rgba(245, 240, 232, 0.3);
+  font-size: 15px;
+  color: var(--pn-creme);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.pn-trilha .pn-trilha-viver:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.pn-trilha .pn-trilha-ouvir:disabled,
+.pn-trilha .pn-trilha-viver:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.pn-trilha .pn-trilha-viver:disabled:hover {
+  background: transparent;
+}
+.pn-trilha-embed {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  border: 0;
+  border-radius: 12px;
+  animation: pn-rise 0.5s var(--pn-entra) both;
+}
+
+/* ---------- os momentos ---------- */
+.pn-trilha-lado {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+.pn-trilha-momentos {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pn-trilha .pn-trilha-momento {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: 18px;
+  text-align: left;
+  color: var(--pn-creme);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.pn-trilha .pn-trilha-momento:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.pn-trilha .pn-trilha-momento.on,
+.pn-trilha .pn-trilha-momento.on:hover {
+  background: var(--pn-creme);
+  color: var(--pn-verde);
+}
+.pn-trilha .pn-trilha-momentos.sem-hora .pn-trilha-momento {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.pn-trilha-momento .hora {
+  font-size: 14px;
+  color: var(--pn-salvia-escuro);
+}
+.pn-trilha-momento.on .hora {
+  font-weight: 700;
+  color: var(--pn-marrom);
+}
+.pn-trilha-momento .txt {
+  display: block;
+  min-width: 0;
+}
+.pn-trilha-momento .nome {
+  display: block;
+  font-size: 20px;
+  line-height: 1.15;
+}
+.pn-trilha-momento .linha {
+  display: block;
+  font-size: 13px;
+  color: var(--pn-salvia-escuro);
+  overflow-wrap: anywhere;
+}
+.pn-trilha-momento.on .linha {
+  color: var(--pn-texto-2);
+}
+.pn-trilha-momento > .pn-ic {
+  font-size: 22px;
+  color: var(--pn-pessego);
+}
+.pn-trilha-momento.on > .pn-ic {
+  color: var(--pn-marrom);
+}
+
+/* ---------- sugestões, busca e link ---------- */
+.pn-trilha-sug {
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pn-trilha-sug-rot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--pn-salvia-escuro);
+}
+.pn-trilha .pn-trilha-limpar {
+  width: 32px;
+  height: 32px;
+  margin: -8px -6px -8px 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--pn-salvia-escuro);
+  flex: none;
+}
+.pn-trilha .pn-trilha-limpar:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.pn-trilha-nada {
+  font-size: 13px;
+  color: var(--pn-salvia-escuro);
+}
+.pn-trilha-sug-linha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+}
+.pn-trilha-sug-icone {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(233, 174, 136, 0.18);
+  display: grid;
+  place-items: center;
+  color: var(--pn-pessego);
+  flex: none;
+  overflow: hidden;
+}
+.pn-trilha-sug-icone img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pn-trilha-sug-txt {
+  flex: 1;
+  min-width: 0;
+}
+.pn-trilha-sug-txt .t {
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.pn-trilha-sug-txt .a {
+  font-size: 13px;
+  color: var(--pn-salvia-escuro);
+  overflow-wrap: anywhere;
+}
+.pn-trilha .pn-trilha-escolher {
+  flex: none;
+  padding: 9px 14px;
+  border-radius: 12px;
+  background: var(--pn-pessego);
+  color: var(--pn-verde);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pn-trilha .pn-trilha-escolher:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+.pn-trilha-escolhida {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 9px 2px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pn-pessego);
+}
+.pn-trilha-campos {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.pn-trilha-campo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  height: 46px;
+  border-radius: 14px;
+  background: var(--pn-creme);
+  color: var(--pn-texto-2);
+  font-size: 14px;
+  cursor: text;
+}
+.pn-trilha-campo:focus-within {
+  box-shadow: 0 0 0 2px var(--pn-pessego);
+}
+.pn-trilha-campo.link {
+  background: transparent;
+  border: 1px solid rgba(245, 240, 232, 0.25);
+  color: var(--pn-salvia-escuro);
+}
+.pn-trilha .pn-trilha-lupa {
+  display: grid;
+  place-items: center;
+  color: inherit;
+  flex: none;
+}
+.pn-trilha-campo input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  color: var(--pn-verde);
+}
+.pn-trilha-campo input::placeholder {
+  color: var(--pn-texto-2);
+  opacity: 1;
+}
+.pn-trilha-campo.link input {
+  color: var(--pn-creme);
+}
+.pn-trilha-campo.link input::placeholder {
+  color: var(--pn-salvia-escuro);
+}
+
+/* "ao lado" com duas colunas; "abaixo" com uma */
+.pn-trilha-so-estreito {
+  display: none;
+}
+
+/* ---------- Viver o momento ---------- */
+.pn-trilha-cena {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: radial-gradient(24% 62% at 50% 10%, rgba(255, 240, 225, 0.4), transparent 72%),
+    radial-gradient(40% 30% at 50% 72%, rgba(233, 174, 136, 0.28), transparent 70%), #0c1410;
+  color: var(--pn-creme);
+  line-height: normal;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  text-align: center;
+  animation: pn-fadein 0.6s ease both;
+}
+/* no celular a cena sai do cartão e cobre a tela (ver o @media) */
+.pn-trilha-cena.tela {
+  position: fixed;
+  z-index: 45;
+}
+.pn-trilha-cena-rot {
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--pn-salvia-escuro);
+}
+.pn-trilha-cena-disco {
+  width: 200px;
+  height: 200px;
+  flex: none;
+  border-radius: 50%;
+  background: repeating-radial-gradient(circle, #0f1814 0 2px, #1b2a23 2px 4px);
+  display: grid;
+  place-items: center;
+  animation: pn-spin 3.6s linear infinite;
+  box-shadow: 0 0 80px rgba(233, 174, 136, 0.25);
+}
+.pn-trilha-cena-disco span {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  background: var(--pn-pessego);
+}
+.pn-trilha-cena-musica {
+  font-size: 42px;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+  animation: pn-rise 1s ease 0.3s both;
+}
+.pn-trilha-cena-artista {
+  font-size: 15px;
+  color: var(--pn-salvia-escuro);
+}
+.pn-trilha-cena-frase {
+  max-width: 520px;
+  font-size: 23px;
+  color: var(--pn-pessego-escuro);
+  animation: pn-rise 1s ease 0.8s both;
+}
+.pn-trilha-cena .pn-trilha-voltar {
+  margin-top: 8px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  border: 1px solid rgba(245, 240, 232, 0.3);
+  font-size: 14px;
+  color: var(--pn-creme);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.pn-trilha-cena .pn-trilha-voltar:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ============================================================
+   Adaptações (o desenho é de 1280px)
+   ============================================================ */
+
+/* tablet e computador pequeno: coluna do disco mais estreita */
+@media (max-width: 1180px) {
+  .pn-trilha {
+    padding: 32px 30px;
+  }
+  .pn-trilha-grade {
+    grid-template-columns: 320px minmax(0, 1fr);
+    gap: 30px;
+  }
+  .pn-trilha-disco {
+    width: 270px;
+    height: 270px;
+  }
+}
+
+/* sem largura para duas colunas: o disco em cima, os momentos embaixo */
+@media (max-width: 900px) {
+  .pn-trilha-grade {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pn-trilha-so-largo {
+    display: none;
+  }
+  .pn-trilha-so-estreito {
+    display: inline;
+  }
+}
+
+/* celular */
+@media (max-width: 767px) {
+  .pn-trilha {
+    padding: 26px 18px 22px;
+    border-radius: 28px;
+  }
+  .pn-trilha-topo {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .pn-trilha-titulo {
+    font-size: 32px;
+  }
+  .pn-trilha-conta {
+    white-space: normal;
+  }
+  .pn-trilha-grade {
+    margin-top: 24px;
+    gap: 26px;
+  }
+  .pn-trilha-disco {
+    width: 240px;
+    height: 240px;
+  }
+  .pn-trilha-selo {
+    width: 92px;
+    height: 92px;
+  }
+  .pn-trilha-selo .pn-t {
+    font-size: 26px;
+  }
+  .pn-trilha-botoes {
+    flex-wrap: wrap;
+  }
+  .pn-trilha .pn-trilha-ouvir,
+  .pn-trilha .pn-trilha-viver {
+    min-height: 48px;
+  }
+  .pn-trilha .pn-trilha-momento {
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 12px;
+    min-height: 56px;
+  }
+  .pn-trilha-sug {
+    padding: 14px;
+  }
+  .pn-trilha .pn-trilha-escolher {
+    min-height: 44px;
+  }
+  .pn-trilha .pn-trilha-limpar {
+    width: 44px;
+    height: 44px;
+    margin: -12px -10px -12px 0;
+  }
+  .pn-trilha .pn-trilha-lupa {
+    width: 44px;
+    height: 44px;
+    margin-left: -12px;
+    margin-right: -8px;
+  }
+  .pn-trilha-campos {
+    flex-direction: column;
+  }
+  .pn-trilha-campo {
+    flex: none;
+    height: 48px;
+  }
+  .pn-trilha-campo input {
+    font-size: 16px; /* 16px: o iPhone não dá zoom ao tocar no campo */
+  }
+  .pn-trilha-cena.tela {
+    padding: 24px 18px;
+  }
+  .pn-trilha-cena-disco {
+    width: 180px;
+    height: 180px;
+  }
+  .pn-trilha-cena-musica {
+    font-size: 32px;
+  }
+  .pn-trilha-cena-frase {
+    font-size: 19px;
+  }
+  .pn-trilha-cena .pn-trilha-voltar {
+    min-height: 48px;
+  }
+}

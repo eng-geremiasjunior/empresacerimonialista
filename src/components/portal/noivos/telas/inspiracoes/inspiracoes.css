@@ -1,0 +1,235 @@
+/* ============================================================
+   Inspirações — Portal dos Noivos v4 (README §13; protótipo, template
+   612–625, lógica 1095–1096). Os valores são os do desenho, copiados
+   como estão. Os botões levam o prefixo .pn-inspiracoes para vencer o
+   `.pn button` da fundação. As adaptações de tablet e celular ficam nos
+   @media do fim.
+   ============================================================ */
+
+.pn-inspiracoes {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  line-height: normal;
+  animation: pn-rise 0.5s ease both;
+}
+
+/* o cabeçalho */
+.pn-inspiracoes-cabeca {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.pn-inspiracoes-titulo {
+  margin: 6px 0 0;
+  font-size: 40px;
+  line-height: normal;
+  color: var(--pn-verde);
+}
+.pn-inspiracoes-sub {
+  font-size: 15px;
+  color: var(--pn-texto-2);
+  margin-top: 4px;
+}
+
+/* o mosaico: 4 colunas, linhas de 120px, fotos de 2 ou 3 linhas */
+.pn-inspiracoes-mural {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: 120px;
+  gap: 14px;
+}
+
+.pn-inspiracoes-foto {
+  position: relative;
+  min-width: 0;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #fff;
+}
+.pn-inspiracoes-foto img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* o comentário sobre a foto (card branco de 94%, avatar com a inicial) */
+.pn-inspiracoes-nota {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.94);
+  pointer-events: none;
+}
+.pn-inspiracoes-quem {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  flex: none;
+}
+/* a frase da própria família: a cor de "com vocês" do desenho */
+.pn-inspiracoes-quem.casal {
+  background: var(--pn-pessego-claro);
+  color: var(--pn-marrom-escuro);
+}
+.pn-inspiracoes-nota-texto {
+  min-width: 0;
+  font-size: 13px;
+  color: var(--pn-verde);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}
+
+/* tirar uma foto da família: × branco no canto, "Tirar?" para confirmar */
+.pn-inspiracoes .pn-inspiracoes-tirar {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 2;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 7px;
+  display: grid;
+  place-items: center;
+}
+.pn-inspiracoes-tirar > span {
+  min-width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--pn-verde);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 18px -10px rgba(27, 42, 35, 0.6);
+}
+.pn-inspiracoes-tirar.confirmar > span {
+  padding: 0 12px;
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+  font-size: 13px;
+  font-weight: 700;
+}
+@media (hover: hover) {
+  .pn-inspiracoes .pn-inspiracoes-tirar {
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .pn-inspiracoes-foto:hover .pn-inspiracoes-tirar,
+  .pn-inspiracoes-foto:focus-within .pn-inspiracoes-tirar,
+  .pn-inspiracoes .pn-inspiracoes-tirar.confirmar {
+    opacity: 1;
+  }
+}
+
+/* o bloco tracejado para adicionar */
+.pn-inspiracoes .pn-inspiracoes-add {
+  grid-row: span 2;
+  min-width: 0;
+  border-radius: 24px;
+  border: 1.5px dashed #d0c8b9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px;
+  color: var(--pn-texto-2);
+  font-size: 14px;
+  text-align: center;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+}
+.pn-inspiracoes-add .pn-ic {
+  font-size: 30px;
+}
+.pn-inspiracoes .pn-inspiracoes-add.arrastando {
+  border-color: var(--pn-pessego);
+  background: var(--pn-pessego-claro);
+  color: var(--pn-marrom-escuro);
+}
+.pn-inspiracoes .pn-inspiracoes-add:disabled {
+  cursor: default;
+}
+.pn-inspiracoes-add .toque {
+  display: none;
+}
+/* spinner do desenho (22px, borda 3px, spin .8s) */
+.pn-inspiracoes-giro {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 3px solid var(--pn-borda);
+  border-top-color: var(--pn-pessego);
+  animation: pn-spin 0.8s linear infinite;
+}
+
+/* no toque não há o que arrastar */
+@media (hover: none) {
+  .pn-inspiracoes-add .arraste {
+    display: none;
+  }
+  .pn-inspiracoes-add .toque {
+    display: inline;
+  }
+}
+
+/* ============================================================
+   Adaptações (o desenho é de 1280px)
+   ============================================================ */
+
+/* tablet: 3 colunas (em 4, o comentário ficava com ~85px de largura) */
+@media (max-width: 1180px) {
+  .pn-inspiracoes-mural {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* celular: 2 colunas (o mosaico continua), linhas de 100px */
+@media (max-width: 767px) {
+  .pn-inspiracoes-titulo {
+    font-size: 32px;
+  }
+  .pn-inspiracoes-mural {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 100px;
+    gap: 10px;
+  }
+  .pn-inspiracoes-foto,
+  .pn-inspiracoes .pn-inspiracoes-add {
+    border-radius: 20px;
+  }
+  .pn-inspiracoes-nota {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 14px;
+  }
+  .pn-inspiracoes-nota-texto {
+    -webkit-line-clamp: 3;
+  }
+  .pn-inspiracoes-add .arraste {
+    display: none;
+  }
+  .pn-inspiracoes-add .toque {
+    display: inline;
+  }
+}

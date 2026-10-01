@@ -21,6 +21,17 @@ import { destinosV2 } from "@/components/portal/v2/destinos";
 import { getEstiloDoPortal, getMeuAcesso } from "@/lib/supabase/portal-estilo";
 import { listaDePresentesLiberada } from "@/lib/supabase/portal-presentes";
 import { pessoaDoEvento, tituloDaFesta, usaPortalV2 } from "@/lib/portal-v2";
+import "@/components/portal/noivos/noivos.css";
+import { CascaNoivos } from "@/components/portal/noivos/CascaNoivos";
+import { marcellus, nunitoSans, simbolos } from "@/lib/fontes-noivos";
+import {
+  MAIS_NOIVOS,
+  MENU_NOIVOS,
+  TELAS_PRONTAS,
+  papelLegivel,
+  usaPortalNoivos,
+} from "@/lib/portal-noivos";
+import { dataPorExtenso, getFotoDoCasal, getNomesDoCasal, momentoDoSim } from "@/lib/supabase/portal-noivos";
 
 export const dynamic = "force-dynamic";
 
@@ -85,6 +96,51 @@ export default async function PortalEventoLayout({
       : termo.confirmou
         ? null
         : "confirmar";
+  // O portal dos noivos (desenho v4, 30/09/2026): o casamento. A entrada
+  // toca uma vez por sessão, só no Início (cookie da casca, molde da v2).
+  if (usaPortalNoivos(evento.tipo)) {
+    const nome = nomeDeExibicao(evento);
+    const [contato, eu, fotoUrl, casal] = await Promise.all([
+      getContatoCerimonialista(evento.id),
+      getMeuAcesso(evento.id),
+      getFotoDoCasal(evento.id),
+      getNomesDoCasal(evento.id, evento.nome),
+    ]);
+    const noInicio = headers().get("x-caminho") === `/portal/${evento.id}`;
+    const jaAbriu = cookies().get(`pnab_${evento.id.slice(0, 8)}`)?.value === "1";
+    const pessoaNome = eu.nome?.trim() || "Você";
+    const cerimonialista = daFamilia ? null : contato.nome?.trim().split(/\s+/)[0] || marca?.nome || null;
+    return (
+      <div className={`pn ${marcellus.variable} ${nunitoSans.variable} ${simbolos.variable}`}>
+        <CascaNoivos
+          eventoId={evento.id}
+          marcaNome={marca?.nome ?? null}
+          casal={casal}
+          eyebrow={/^exemplo\s*·/i.test(nome) ? "Exemplo · o casamento de" : "O casamento de"}
+          dataLonga={dataPorExtenso(evento.data)}
+          localLinha={[evento.local, evento.cidade].filter(Boolean).join(" · ") || null}
+          momentoIso={momentoDoSim(evento.data, evento.hora)}
+          agoraServidor={Date.now()}
+          fotoUrl={fotoUrl}
+          pessoa={{ nome: pessoaNome.split(/\s+/)[0], papel: papelLegivel(eu.papel), ini: pessoaNome.charAt(0).toUpperCase() }}
+          menu={MENU_NOIVOS.filter((d) => TELAS_PRONTAS.has(d.chave))}
+          mais={MAIS_NOIVOS.filter((d) => TELAS_PRONTAS.has(d.chave))}
+          mostrarEntrada={noInicio && !jaAbriu}
+          daFamilia={daFamilia}
+          cerimonialista={cerimonialista}
+          frase={
+            daFamilia
+              ? "“Cada detalhe conta uma história.”"
+              : "“Cada detalhe conta uma história. Estamos cuidando de tudo para que vocês vivam o inesquecível.”"
+          }
+          temHoje={TELAS_PRONTAS.has("hoje")}
+        >
+          {children}
+        </CascaNoivos>
+      </div>
+    );
+  }
+
   // O portal v2 (desenho "Portal da Família v2", 25/09/2026): hoje, a
   // debutante. A casca é outra; as telas que o desenho ainda vai trocar
   // entram nela como estão.

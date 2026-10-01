@@ -1,6 +1,9 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getEventoDoPortal, getLinhaDoTempo } from "@/lib/supabase/portal";
+import { usaPortalNoivos } from "@/lib/portal-noivos";
+import { hojeBR } from "@/lib/tempo";
+import { LinhaDoTempoSecao } from "@/components/portal/noivos/telas/linha-do-tempo/Secao";
 import { brl } from "@/components/planejamento/celebra";
 import { TopoInterno } from "@/components/portal/TopoInterno";
 import { Cartao } from "@/components/portal/Nucleo";
@@ -20,6 +23,14 @@ export default async function PortalLinhaDoTempoPage({
 }) {
   const evento = await getEventoDoPortal(params.eventoId);
   if (!evento) notFound();
+
+  // O portal dos noivos (desenho v4): "O caminho até o altar", do mês de
+  // hoje ao do casamento. Casamento que já passou não tem caminho pela
+  // frente: volta para a Visão geral.
+  if (usaPortalNoivos(evento.tipo)) {
+    if (evento.data.slice(0, 7) < hojeBR().slice(0, 7)) redirect(`/portal/${evento.id}`);
+    return <LinhaDoTempoSecao eventoId={evento.id} />;
+  }
 
   const [itens, contratos] = await Promise.all([
     getLinhaDoTempo(evento.id),

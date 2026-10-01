@@ -11,6 +11,8 @@ import {
 } from "@/lib/supabase/programa-do-dia";
 import { TopoInterno } from "@/components/portal/TopoInterno";
 import { ProgramaDoDia } from "@/components/portal/ProgramaDoDia";
+import { usaPortalNoivos } from "@/lib/portal-noivos";
+import { RoteiroSecao } from "@/components/portal/noivos/telas/roteiro/Secao";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +23,11 @@ export default async function PortalCronogramaPage({
 }) {
   const evento = await getEventoDoPortal(params.eventoId);
   if (!evento) notFound();
+
+  // O portal dos noivos (desenho v4): "20 de março, hora a hora".
+  if (usaPortalNoivos(evento.tipo)) {
+    return <RoteiroSecao eventoId={evento.id} data={evento.data} tipo={evento.tipo} />;
+  }
 
   const [momentos, sugestoes] = await Promise.all([
     getProgramaDoDia(evento.id),

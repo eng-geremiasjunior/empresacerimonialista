@@ -4,6 +4,8 @@ import { appUrl } from "@/lib/app-url";
 import { TopoInterno } from "@/components/portal/TopoInterno";
 import { ConviteParaCerimonialista } from "@/components/portal/ConviteParaCerimonialista";
 import { estadoDoConvite } from "./actions";
+import { usaPortalNoivos } from "@/lib/portal-noivos";
+import { CerimonialistaNoivos } from "@/components/portal/noivos/telas/mantidas/CerimonialistaNoivos";
 
 // A sua cerimonialista (188): só no evento da conta de família. Depois que
 // ela aceita, o evento sai da conta de família e esta tela devolve ao
@@ -14,6 +16,9 @@ export default async function CerimonialistaPage({ params }: { params: { eventoI
   const evento = await getEventoDoPortal(params.eventoId);
   if (!evento) notFound();
   if (!(await getEventoDaFamilia(evento.id))) redirect(`/portal/${evento.id}`);
+
+  // O portal dos noivos (desenho v4): o convite de sempre, com o cabeçalho novo.
+  if (usaPortalNoivos(evento.tipo)) return <CerimonialistaNoivos eventoId={evento.id} />;
 
   // só LÊ: o link que ainda vale e o pedido esperando. O link novo só
   // nasce no clique — abrir a tela (ou a pré-busca) não cria convite

@@ -16,6 +16,8 @@ import {
 } from "@/components/portal/icones";
 import { diaEMes } from "@/components/portal/datas";
 import { hojeBR } from "@/lib/tempo";
+import { usaPortalNoivos } from "@/lib/portal-noivos";
+import { FinanceiroSecao } from "@/components/portal/noivos/telas/financeiro/Secao";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +32,9 @@ export default async function PortalInvestimentoPage({
 }) {
   const evento = await getEventoDoPortal(params.eventoId);
   if (!evento) notFound();
+
+  // portal dos noivos (desenho v4): o casamento — só quem a RPC deixa ver
+  if (usaPortalNoivos(evento.tipo)) return <FinanceiroSecao eventoId={evento.id} />;
 
   // portal v2 (178): os dois lados do dinheiro, com "marcar pago"
   if (usaPortalV2(evento.tipo)) {

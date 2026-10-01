@@ -11,6 +11,8 @@ import { usaPortalV2 } from "@/lib/portal-v2";
 import { getTrilha } from "@/lib/supabase/portal-trilha";
 import { MOMENTOS_DA_TRILHA } from "@/lib/trilha";
 import { hojeBR } from "@/lib/tempo";
+import { usaPortalNoivos } from "@/lib/portal-noivos";
+import { EscolhasNoivos } from "@/components/portal/noivos/telas/mantidas/EscolhasNoivos";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +25,9 @@ export default async function PortalEscolhasPage({
 }) {
   const evento = await getEventoDoPortal(params.eventoId);
   if (!evento) notFound();
+
+  // O portal dos noivos (desenho v4): as escolhas de sempre, com o cabeçalho novo.
+  if (usaPortalNoivos(evento.tipo)) return <EscolhasNoivos eventoId={evento.id} />;
 
   // portal v2 (177): mão dupla — escolher, propor e responder aqui
   if (usaPortalV2(evento.tipo)) {

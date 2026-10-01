@@ -1,0 +1,215 @@
+/* ============================================================
+   Financeiro — Portal dos Noivos v4 (README §15; protótipo, template
+   663–688, lógica 1101–1103). Os valores são os do desenho, copiados
+   como estão. As adaptações de tablet e celular ficam nos @media do fim.
+   ============================================================ */
+
+.pn-financeiro {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  line-height: normal;
+  animation: pn-rise 0.5s ease both;
+}
+
+/* ---------- o resumo ---------- */
+.pn-financeiro-resumo {
+  min-width: 0;
+  background: #fff;
+  border-radius: 30px;
+  padding: 32px 36px;
+  box-shadow: var(--pn-sombra-card);
+}
+.pn-financeiro-numeros {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  margin-top: 18px;
+}
+.pn-financeiro-numero {
+  min-width: 0;
+}
+.pn-financeiro-rot {
+  font-size: 14px;
+  color: var(--pn-texto-2);
+}
+.pn-financeiro-valor {
+  font-size: 44px;
+  color: var(--pn-verde);
+  overflow-wrap: anywhere;
+}
+.pn-financeiro-valor.pago {
+  color: var(--pn-ok);
+}
+.pn-financeiro-valor.falta {
+  color: var(--pn-marrom);
+}
+/* a barra de 10px (raio 10, trilho #efe9df, verde, `bar 1.4s`) */
+.pn-financeiro-barra {
+  margin-top: 18px;
+}
+
+/* ---------- as parcelas ---------- */
+.pn-financeiro-parcelas {
+  min-width: 0;
+  background: #fff;
+  border-radius: 30px;
+  padding: 30px 34px;
+  box-shadow: var(--pn-sombra-card);
+}
+.pn-financeiro-cabeca {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.pn-financeiro-titulo {
+  margin: 0;
+  font-size: 28px;
+  line-height: normal;
+  color: var(--pn-verde);
+}
+.pn-financeiro-conta {
+  font-size: 14px;
+  color: var(--pn-texto-2);
+  white-space: nowrap;
+}
+.pn-financeiro-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.pn-financeiro-linha {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr) 140px 150px;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: var(--pn-creme);
+}
+.pn-financeiro-linha.prox {
+  background: var(--pn-pessego-claro);
+}
+.pn-financeiro-data {
+  font-size: 20px;
+  color: var(--pn-verde);
+}
+.pn-financeiro-texto {
+  min-width: 0;
+  font-size: 15px;
+  color: var(--pn-verde);
+  overflow-wrap: anywhere;
+}
+.pn-financeiro-quanto {
+  font-size: 15px;
+  color: var(--pn-verde);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.pn-financeiro-estado {
+  text-align: right;
+}
+.pn-financeiro-chip {
+  display: inline-block;
+  font-size: 13px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.pn-financeiro-chip.pago {
+  background: #eaf0e8;
+  color: #2f6b4a;
+}
+.pn-financeiro-chip.prox {
+  background: #1b2a23;
+  color: #f5f0e8;
+}
+.pn-financeiro-chip.fut {
+  background: #fff;
+  color: #56655c;
+}
+/* em aberto e vencida, depois da próxima: o par "aguardando" do desenho */
+.pn-financeiro-chip.atrasada {
+  background: #f6dccb;
+  color: #7a3f1d;
+}
+
+/* ============================================================
+   Adaptações (ditas a ele): o desenho é de 1280px.
+   ============================================================ */
+
+/* tablet estreito: os três números de 44px não cabem lado a lado */
+@media (max-width: 900px) {
+  .pn-financeiro-valor {
+    font-size: 36px;
+  }
+}
+
+/* celular: números em linhas (rótulo à esquerda, valor à direita) e a
+   parcela em duas linhas (o que é · quanto e o prazo) */
+@media (max-width: 767px) {
+  .pn-financeiro {
+    gap: 16px;
+  }
+  .pn-financeiro-resumo {
+    padding: 24px 20px;
+    border-radius: 26px;
+  }
+  .pn-financeiro-numeros {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .pn-financeiro-numero {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .pn-financeiro-valor {
+    font-size: 30px;
+    text-align: right;
+  }
+  .pn-financeiro-parcelas {
+    padding: 24px 16px;
+    border-radius: 26px;
+  }
+  .pn-financeiro-cabeca {
+    padding: 0 4px;
+  }
+  .pn-financeiro-titulo {
+    font-size: 24px;
+  }
+  .pn-financeiro-linha {
+    grid-template-columns: 52px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "d t t"
+      "d v s";
+    gap: 6px 12px;
+    padding: 12px 14px;
+    border-radius: 16px;
+  }
+  .pn-financeiro-data {
+    grid-area: d;
+    font-size: 18px;
+  }
+  .pn-financeiro-texto {
+    grid-area: t;
+    font-size: 14px;
+  }
+  .pn-financeiro-quanto {
+    grid-area: v;
+    font-size: 14px;
+  }
+  .pn-financeiro-estado {
+    grid-area: s;
+  }
+  .pn-financeiro-chip {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+}

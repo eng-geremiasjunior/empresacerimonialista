@@ -5,12 +5,16 @@ import { getTrilha } from "@/lib/supabase/portal-trilha";
 import { usaPortalV2 } from "@/lib/portal-v2";
 import { MOMENTOS_DA_TRILHA } from "@/lib/trilha";
 import { TrilhaV2 } from "@/components/portal/v2/TrilhaV2";
+import { usaPortalNoivos } from "@/lib/portal-noivos";
+import { TrilhaSecao } from "@/components/portal/noivos/telas/trilha/Secao";
 
 export const dynamic = "force-dynamic";
 
-// A trilha da noite (180): só no portal v2.
+// A trilha da noite (180): no portal v2 e, no casamento, "Músicas" do
+// portal dos noivos (desenho v4).
 export default async function PortalTrilhaPage({ params }: { params: { eventoId: string } }) {
   const evento = await getEventoDoPortal(params.eventoId);
+  if (evento && usaPortalNoivos(evento.tipo)) return <TrilhaSecao eventoId={evento.id} />;
   if (!evento || !usaPortalV2(evento.tipo)) notFound();
 
   const [escolhas, programa] = await Promise.all([getTrilha(evento.id), getProgramaDoDia(evento.id)]);

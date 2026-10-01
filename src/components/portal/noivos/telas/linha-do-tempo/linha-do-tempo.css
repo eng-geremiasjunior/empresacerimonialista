@@ -1,0 +1,303 @@
+/* ============================================================
+   Linha do tempo — Portal dos Noivos v4 (README §7; protótipo,
+   template 181–224, lógica 978–992). Medidas copiadas do desenho.
+   A curva é o SVG do desenho, redesenhado para a largura medida (o
+   desenho é de 1120px); os nós ficam nas mesmas posições, em %.
+   ============================================================ */
+
+.pn-linha-do-tempo {
+  position: relative;
+  background: #fff;
+  border-radius: 34px;
+  padding: 34px 38px 30px;
+  overflow: hidden;
+  box-shadow: var(--pn-sombra-card);
+  animation: pn-rise 0.5s ease both;
+}
+
+.pn-linha-do-tempo-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.pn-linha-do-tempo-titulo {
+  margin: 6px 0 0;
+  font-size: 40px;
+  font-weight: 400;
+  color: var(--pn-verde);
+}
+.pn-linha-do-tempo-sub {
+  font-size: 15px;
+  color: var(--pn-texto-2);
+  margin-top: 4px;
+}
+.pn-linha-do-tempo-legenda {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--pn-texto-2);
+}
+.pn-linha-do-tempo-legenda > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pn-linha-do-tempo-ponto {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--pn-pessego);
+}
+.pn-linha-do-tempo-ponto.equipe {
+  background: var(--pn-salvia-escuro);
+}
+
+/* a área da curva: 1120×262 no desenho */
+.pn-linha-do-tempo-area {
+  position: relative;
+  width: 1120px;
+  max-width: 100%;
+  height: 262px;
+  margin: 18px 0 0 -6px;
+}
+.pn-linha-do-tempo-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 230px;
+  overflow: visible;
+}
+.pn-linha-do-tempo-progresso {
+  transition: stroke-dashoffset 1s cubic-bezier(0.3, 0.8, 0.2, 1);
+  animation: pn-draw 1.8s cubic-bezier(0.3, 0.8, 0.2, 1) 0.4s both;
+}
+
+/* os nós */
+.pn-linha-do-tempo-no {
+  position: absolute;
+  width: 150px;
+  margin-left: -75px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.pn-linha-do-tempo-rotulo {
+  text-align: center;
+  white-space: nowrap;
+}
+.pn-linha-do-tempo-rotulo.acima {
+  height: 52px;
+}
+.pn-linha-do-tempo-nome {
+  font-size: 22px;
+  color: var(--pn-verde);
+}
+.pn-linha-do-tempo-tag {
+  font-size: 12px;
+  color: var(--pn-texto-3);
+}
+.pn-linha-do-tempo-circ {
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+/* o mês de agora: verde, coração pêssego, halo */
+.pn-linha-do-tempo-circ.agora {
+  width: 52px;
+  height: 52px;
+  background: var(--pn-verde);
+  color: var(--pn-pessego);
+  animation: pn-halo 2.2s infinite;
+  transition: transform 0.3s;
+}
+.pn-linha-do-tempo-circ.agora:hover {
+  transform: scale(1.1);
+}
+/* o escolhido */
+.pn-linha-do-tempo-circ.sel {
+  width: 52px;
+  height: 52px;
+  background: var(--pn-pessego);
+  color: var(--pn-verde);
+  box-shadow: 0 10px 24px -8px rgba(154, 90, 52, 0.6);
+  animation: pn-grow 0.45s var(--pn-mola) both;
+}
+/* entre agora e o escolhido */
+.pn-linha-do-tempo-circ.passado {
+  width: 44px;
+  height: 44px;
+  margin: 4px 0;
+  background: var(--pn-pessego-claro);
+  color: var(--pn-verde);
+  transition: transform 0.3s;
+}
+.pn-linha-do-tempo-circ.passado:hover {
+  transform: scale(1.12);
+}
+/* depois do escolhido */
+.pn-linha-do-tempo-circ.futuro {
+  width: 44px;
+  height: 44px;
+  margin: 4px 0;
+  background: #fff;
+  border: 2px solid var(--pn-borda);
+  color: #8f998f;
+  transition: transform 0.3s, border-color 0.3s;
+}
+.pn-linha-do-tempo-circ.futuro:hover {
+  transform: scale(1.12);
+  border-color: var(--pn-pessego);
+}
+
+/* o painel do mês */
+.pn-linha-do-tempo-painel {
+  margin-top: 8px;
+  padding: 26px;
+  border-radius: 26px;
+  background: var(--pn-creme);
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 30px;
+  align-items: start;
+}
+.pn-linha-do-tempo-cab {
+  animation: pn-rise 0.5s var(--pn-entra) both;
+}
+.pn-linha-do-tempo-mes {
+  font-size: 46px;
+  line-height: 1;
+  color: var(--pn-verde);
+}
+.pn-linha-do-tempo-nota {
+  font-size: 15px;
+  color: var(--pn-texto-2);
+  margin-top: 10px;
+  line-height: 1.45;
+}
+.pn-linha-do-tempo-itens {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.pn-linha-do-tempo-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 20px;
+  background: #fff;
+  animation: pn-rise 0.5s var(--pn-entra) both;
+}
+.pn-linha-do-tempo-item-ic {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: var(--pn-verde);
+  background: var(--pn-pessego-claro);
+}
+.pn-linha-do-tempo-item-ic.equipe {
+  background: var(--pn-salvia);
+}
+.pn-linha-do-tempo-item-txt {
+  flex: 1;
+  min-width: 0;
+}
+.pn-linha-do-tempo-item-t {
+  font-size: 15px;
+  line-height: 1.3;
+  color: var(--pn-verde);
+  overflow-wrap: anywhere;
+}
+.pn-linha-do-tempo-item-q {
+  font-size: 12px;
+  color: var(--pn-texto-3);
+  margin-top: 3px;
+}
+.pn-linha-do-tempo-vazio,
+.pn-linha-do-tempo-mais {
+  grid-column: 1 / -1;
+  color: var(--pn-texto-2);
+  animation: pn-rise 0.5s var(--pn-entra) both;
+}
+.pn-linha-do-tempo-vazio {
+  font-size: 15px;
+  padding: 10px 0;
+}
+.pn-linha-do-tempo-mais {
+  font-size: 13px;
+  color: var(--pn-texto-3);
+  padding: 4px 4px 0;
+}
+
+/* ============================================================
+   Adaptações (o desenho é de 1280px)
+   ============================================================ */
+
+/* tablet: o painel empilha (o mês em cima, os itens embaixo) */
+@media (max-width: 1180px) {
+  .pn-linha-do-tempo-area {
+    margin-left: 0;
+  }
+  .pn-linha-do-tempo-painel {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+}
+
+/* celular */
+@media (max-width: 767px) {
+  .pn-linha-do-tempo {
+    padding: 26px 20px 22px;
+    border-radius: 28px;
+  }
+  .pn-linha-do-tempo-topo {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .pn-linha-do-tempo-titulo {
+    font-size: 30px;
+  }
+  .pn-linha-do-tempo-legenda {
+    flex-wrap: wrap;
+    gap: 6px 16px;
+  }
+  .pn-linha-do-tempo-no {
+    width: 100px;
+    margin-left: -50px;
+  }
+  .pn-linha-do-tempo-nome {
+    font-size: 18px;
+  }
+  .pn-linha-do-tempo-tag {
+    font-size: 11px;
+  }
+  .pn-linha-do-tempo-painel {
+    padding: 18px;
+    border-radius: 22px;
+    gap: 14px;
+  }
+  .pn-linha-do-tempo-mes {
+    font-size: 36px;
+  }
+  .pn-linha-do-tempo-itens {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pn-linha-do-tempo-item {
+    padding: 14px 16px;
+    min-height: 44px;
+  }
+}
+
+/* movimento reduzido: sem o halo (README) */
+@media (prefers-reduced-motion: reduce) {
+  .pn-linha-do-tempo-circ.agora {
+    animation: none;
+  }
+}

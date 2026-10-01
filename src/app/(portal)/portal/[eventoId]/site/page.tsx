@@ -9,6 +9,8 @@ import type { SitePublico } from "@/lib/site-publico-tipos";
 import { TopoInterno } from "@/components/portal/TopoInterno";
 import { NossoSite, type EstadoDaRevisao } from "@/components/portal/NossoSite";
 import type { FotoModeracao, MusicaModeracao, RecadoModeracao } from "@/components/portal/EditorSiteCasal";
+import { usaPortalNoivos } from "@/lib/portal-noivos";
+import { TelaMantida } from "@/components/portal/noivos/telas/mantidas/TelaMantida";
 
 export const dynamic = "force-dynamic";
 
@@ -89,56 +91,72 @@ export default async function PortalSitePage({
   const urlNoAr = previa.publicado && site?.slug ? `${base}/c/${site.slug}` : null;
   const qr = urlNoAr ? await qrSvg(urlNoAr) : null;
 
+  // O conteúdo é o mesmo nos dois portais; só o cabeçalho muda. A carga
+  // acima (que cria a linha do site quando ela ainda não existe) é uma só.
+  const conteudo = (
+    <NossoSite
+      eventoId={evento.id}
+      tipoEvento={evento.tipo}
+      previa={previa}
+      revisao={{
+        status: previa.revisao.status,
+        enviada_em: previa.revisao.enviada_em,
+        motivo: previa.revisao.motivo,
+        revisado_em: previa.revisao.revisado_em,
+        retirado: previa.revisao.retirado === true,
+      }}
+      publicado={previa.publicado}
+      publicadoEm={previa.publicado_em}
+      fotosAlbum={midia.fotosAlbum}
+      fotoCasalUrl={midia.fotoCasalUrl}
+      textosIniciais={{
+        mensagem: site?.mensagem ?? "",
+        historia: site?.historia ?? "",
+        dressCode: site?.dress_code ?? "",
+      }}
+      lookInicial={{
+        historiaTitulo: site?.historia_titulo ?? "",
+        dressCodeTitulo: site?.dress_code_titulo ?? "",
+        corAcento: site?.cor_acento ?? "",
+        corTinta: site?.cor_tinta ?? "",
+        corFundo: site?.cor_fundo ?? "",
+        presentesTexto: site?.presentes_texto ?? "",
+        pixChave: site?.pix_chave ?? "",
+        pixTitular: site?.pix_titular ?? "",
+        presentesLink: site?.presentes_link ?? "",
+      }}
+      blocosDaFesta={{
+        album: site?.album_aberto === true,
+        playlist: site?.playlist_aberta === true,
+        recados: site?.recados_aberto === true,
+      }}
+      endereco={{
+        slug: site?.slug ?? null,
+        congelado: !!site?.slug_congelado_em || previa.publicado,
+        base,
+      }}
+      urlNoAr={urlNoAr}
+      qrSvg={qr}
+      fotos={fotos}
+      musicas={(musicas ?? []) as MusicaModeracao[]}
+      recados={(recados ?? []) as RecadoModeracao[]}
+    />
+  );
+
+  // O portal dos noivos (desenho v4): "Convite", o site de sempre com o
+  // cabeçalho novo.
+  if (usaPortalNoivos(evento.tipo)) {
+    return (
+      <TelaMantida eyebrow="Convite" titulo="Como o convite chega" sub="O site que os convidados abrem.">
+        {conteudo}
+      </TelaMantida>
+    );
+  }
+
   return (
     <div className="portal-tela">
       <TopoInterno eventoId={evento.id} titulo="Nosso site" apoio="O site que os convidados abrem." />
-      <NossoSite
-        eventoId={evento.id}
-        tipoEvento={evento.tipo}
-        previa={previa}
-        revisao={{
-          status: previa.revisao.status,
-          enviada_em: previa.revisao.enviada_em,
-          motivo: previa.revisao.motivo,
-          revisado_em: previa.revisao.revisado_em,
-          retirado: previa.revisao.retirado === true,
-        }}
-        publicado={previa.publicado}
-        publicadoEm={previa.publicado_em}
-        fotosAlbum={midia.fotosAlbum}
-        fotoCasalUrl={midia.fotoCasalUrl}
-        textosIniciais={{
-          mensagem: site?.mensagem ?? "",
-          historia: site?.historia ?? "",
-          dressCode: site?.dress_code ?? "",
-        }}
-        lookInicial={{
-          historiaTitulo: site?.historia_titulo ?? "",
-          dressCodeTitulo: site?.dress_code_titulo ?? "",
-          corAcento: site?.cor_acento ?? "",
-          corTinta: site?.cor_tinta ?? "",
-          corFundo: site?.cor_fundo ?? "",
-          presentesTexto: site?.presentes_texto ?? "",
-          pixChave: site?.pix_chave ?? "",
-          pixTitular: site?.pix_titular ?? "",
-          presentesLink: site?.presentes_link ?? "",
-        }}
-        blocosDaFesta={{
-          album: site?.album_aberto === true,
-          playlist: site?.playlist_aberta === true,
-          recados: site?.recados_aberto === true,
-        }}
-        endereco={{
-          slug: site?.slug ?? null,
-          congelado: !!site?.slug_congelado_em || previa.publicado,
-          base,
-        }}
-        urlNoAr={urlNoAr}
-        qrSvg={qr}
-        fotos={fotos}
-        musicas={(musicas ?? []) as MusicaModeracao[]}
-        recados={(recados ?? []) as RecadoModeracao[]}
-      />
+      {conteudo}
     </div>
   );
 }

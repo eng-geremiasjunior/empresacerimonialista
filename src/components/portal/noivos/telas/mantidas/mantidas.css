@@ -1,0 +1,57 @@
+/* ============================================================
+   Telas mantidas — Portal dos Noivos v4 (README §22). O cabeçalho segue
+   o das telas do desenho (Fornecedores, Inspirações, Convidados):
+   eyebrow 13px, título Marcellus 44px com 6px de respiro, subtítulo 15px
+   #56655c a 4px; entre o cabeçalho e o conteúdo, 20px (o gap de dentro
+   das telas). O conteúdo é o do sistema, dentro do <Legado>.
+   ============================================================ */
+
+.pn-mantida {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+  line-height: normal;
+}
+.pn-mantida-cabeca {
+  animation: pn-rise 0.5s ease both;
+}
+.pn-mantida-titulo {
+  margin: 6px 0 0;
+  font-size: 44px;
+  font-weight: 400;
+  line-height: normal;
+  color: var(--pn-verde);
+}
+.pn-mantida-sub {
+  margin: 4px 0 0;
+  max-width: 760px;
+  font-size: 15px;
+  color: var(--pn-texto-2);
+}
+
+/* O Guia de estilo tem a paleta própria (--g-*, guia.css) e ficava no
+   taupe/dourado do portal antigo: aqui as variáveis dele apontam para os
+   tokens do desenho, como o <Legado> faz com as do portal. */
+.pn .pn-mantida .guia-raiz {
+  --g-titulo: var(--pn-verde);
+  --g-corpo: var(--pn-verde);
+  --g-legenda: var(--pn-texto-2);
+  --g-rotulo: var(--pn-texto-3);
+  --g-vetado: var(--pn-texto-2);
+  --g-borda: var(--pn-borda);
+  --g-borda-veto: var(--pn-borda-2);
+  --g-card: #fff;
+  --g-card-suave: var(--pn-creme);
+  --g-ouro: var(--pn-marrom);
+  --g-ouro-borda: var(--pn-pessego);
+  --g-ouro-fundo: var(--pn-pessego-claro);
+  --g-borda-btn: var(--pn-borda-2);
+}
+
+/* celular: o título das telas cai para 32px, como o .pn-titulo-tela */
+@media (max-width: 767px) {
+  .pn-mantida-titulo {
+    font-size: 32px;
+  }
+}

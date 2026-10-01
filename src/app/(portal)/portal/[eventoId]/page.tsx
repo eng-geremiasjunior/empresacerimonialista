@@ -34,6 +34,8 @@ import { getMeuAcesso } from "@/lib/supabase/portal-estilo";
 import { pessoaDoEvento, tituloDaFesta, usaPortalV2 } from "@/lib/portal-v2";
 import { ChamadaDaCerimonialista } from "@/components/portal/ChamadaDaCerimonialista";
 import { estadoDoConvite } from "./cerimonialista/actions";
+import { usaPortalNoivos } from "@/lib/portal-noivos";
+import { VisaoGeralSecao } from "@/components/portal/noivos/telas/visao-geral/Secao";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +57,10 @@ export default async function PortalEventoPage({
 }) {
   const evento = await getEventoDoPortal(params.eventoId);
   if (!evento) notFound();
+
+  // O portal dos noivos (desenho v4): o casamento. Lá o cartão escuro da
+  // cerimonialista faz o papel da ChamadaDaCerimonialista na conta de família.
+  if (usaPortalNoivos(evento.tipo)) return <VisaoGeralSecao eventoId={evento.id} />;
 
   const [home, contato, daFamilia] = await Promise.all([
     getHomePortal(evento.id, evento.data),

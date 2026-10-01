@@ -1,0 +1,500 @@
+/* ============================================================
+   Visão geral — Portal dos Noivos v4 (README §6 e o cartão de Perguntas
+   do §9; protótipo, template 147–179, 321–325 e 868–882). Os valores são
+   os do desenho, copiados como estão. Botões e links levam o prefixo .pn
+   para vencer o `.pn button` / `.pn a` da fundação. As adaptações de
+   tablet e celular ficam nos @media do fim.
+   ============================================================ */
+
+/* ---------- Hoje, só uma coisa ---------- */
+.pn-visao-geral-hoje {
+  position: relative;
+  background: #fff;
+  border-radius: 30px;
+  padding: 34px 38px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 40px;
+  align-items: center;
+  box-shadow: 0 24px 50px -34px rgba(27, 42, 35, 0.5);
+  line-height: normal;
+}
+.pn-visao-geral-hoje.uma-coluna {
+  grid-template-columns: minmax(0, 1fr);
+}
+.pn-visao-geral-hoje-rotulo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pn-visao-geral-halo {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e9ae88;
+  animation: pn-halo 2s infinite;
+  flex: none;
+}
+.pn-visao-geral-hoje-eyebrow {
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #56655c;
+}
+.pn-visao-geral-hoje-conta {
+  font-size: 13px;
+  color: #56655c;
+  white-space: nowrap;
+}
+.pn-visao-geral-hoje-tarefa {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-top: 16px;
+}
+.pn-visao-geral-hoje-icone {
+  width: 72px;
+  height: 72px;
+  border-radius: 24px;
+  background: #eaf0e8;
+  display: grid;
+  place-items: center;
+  color: #1b2a23;
+  flex: none;
+}
+.pn-visao-geral-hoje-icone .pn-ic {
+  font-size: 36px;
+}
+.pn-visao-geral-hoje-titulo {
+  font-size: 34px;
+  line-height: 1.1;
+  color: #1b2a23;
+  overflow-wrap: anywhere;
+}
+.pn-visao-geral-hoje-sub {
+  font-size: 16px;
+  color: #56655c;
+  margin-top: 6px;
+}
+.pn-visao-geral-hoje-sub .quando {
+  color: #9a5a34;
+  font-weight: 600;
+}
+.pn-visao-geral-hoje-dica {
+  font-size: 15px;
+  color: #56655c;
+  margin-top: 16px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: #f5f0e8;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.pn-visao-geral-hoje-dica > span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.pn-visao-geral-hoje-acoes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pn .pn-visao-geral-primario {
+  padding: 17px;
+  border-radius: 18px;
+  background: #1b2a23;
+  color: #f5f0e8;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.pn .pn-visao-geral-secundario {
+  padding: 15px;
+  border-radius: 18px;
+  border: 1px solid #dcd6ca;
+  color: #1b2a23;
+  text-align: center;
+  font-size: 15px;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .pn .pn-visao-geral-primario:hover {
+    transform: scale(1.03);
+  }
+  .pn .pn-visao-geral-secundario:hover {
+    background: #f5f0e8;
+  }
+}
+.pn-visao-geral-hoje-tudo-titulo {
+  font-size: 44px;
+  color: #1b2a23;
+  line-height: 1;
+}
+.pn-visao-geral-hoje-tudo-texto {
+  font-size: 17px;
+  color: #56655c;
+  margin-top: 10px;
+}
+
+/* ---------- os atalhos ---------- */
+.pn-visao-geral-atalhos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  line-height: normal;
+}
+.pn-visao-geral-atalhos.n2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.pn-visao-geral-atalhos.n1 {
+  grid-template-columns: minmax(0, 1fr);
+}
+.pn .pn-visao-geral-atalho {
+  background: #fff;
+  border-radius: 24px;
+  padding: 22px 24px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: transform 0.3s;
+  color: #1b2a23;
+  min-width: 0;
+}
+.pn .pn-visao-geral-atalho:hover {
+  color: #1b2a23;
+}
+@media (hover: hover) {
+  .pn .pn-visao-geral-atalho:hover {
+    transform: translateY(-4px);
+  }
+}
+.pn-visao-geral-atalho-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.pn-visao-geral-atalho-rotulo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #56655c;
+}
+.pn-visao-geral-atalho-grande {
+  font-size: 30px;
+  color: #1b2a23;
+  line-height: 1;
+}
+.pn-visao-geral-atalho-barra {
+  height: 6px;
+  border-radius: 6px;
+  background: #eaf0e8;
+}
+.pn-visao-geral-atalho-barra > span {
+  display: block;
+  height: 6px;
+  border-radius: 6px;
+  background: #e9ae88;
+  animation: pn-bar 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.pn-visao-geral-atalho-sub {
+  font-size: 13px;
+  color: #56655c;
+}
+
+/* ---------- Agenda + Perguntas ---------- */
+.pn-visao-geral-agenda {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  animation: pn-rise 0.5s ease both;
+  line-height: normal;
+}
+.pn-visao-geral-agenda.com-agenda {
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+}
+.pn-visao-geral-perguntas {
+  background: #e9ae88;
+  border-radius: 30px;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 20px;
+  min-width: 0;
+}
+.pn-visao-geral-perguntas-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.pn-visao-geral-perguntas-eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #5a3520;
+}
+.pn-visao-geral-perguntas-conta {
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: #1b2a23;
+  color: #f5f0e8;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.pn-visao-geral-perguntas-texto {
+  display: block;
+  font-size: 36px;
+  line-height: 1.1;
+  color: #1b2a23;
+  overflow-wrap: anywhere;
+  animation: pn-fadein 0.4s ease both;
+}
+.pn-visao-geral-perguntas-campo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f5f0e8;
+  border-radius: 16px;
+  padding: 6px 6px 6px 16px;
+  margin: 0;
+}
+.pn-visao-geral-perguntas-cerquilha {
+  color: #9a5a34;
+  font-size: 18px;
+}
+.pn-visao-geral-perguntas-campo input,
+.pn-visao-geral-perguntas-campo select {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font: 16px var(--pn-f-corpo), "Nunito Sans", sans-serif;
+  color: #1b2a23;
+  padding: 0;
+}
+.pn-visao-geral-perguntas-campo input::placeholder {
+  color: #7d877f;
+}
+.pn-visao-geral-perguntas-campo select {
+  min-height: 36px;
+  cursor: pointer;
+}
+.pn .pn-visao-geral-perguntas-botao {
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #1b2a23;
+  color: #f5f0e8;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex: none;
+}
+.pn .pn-visao-geral-perguntas-botao:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+/* ---------- o cartão da cerimonialista ---------- */
+.pn-visao-geral-cerimonialista {
+  background: #1b2a23;
+  color: #f5f0e8;
+  border-radius: 30px;
+  padding: 34px 38px;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 40px;
+  line-height: normal;
+}
+.pn-visao-geral-cerimonialista.uma-coluna {
+  grid-template-columns: minmax(0, 1fr);
+}
+.pn-visao-geral-cerimonialista-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #e9ae88;
+  color: #1b2a23;
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+}
+.pn-visao-geral-cerimonialista-nome {
+  font-size: 23px;
+  margin-top: 16px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.pn-visao-geral-cerimonialista-linha {
+  font-size: 14px;
+  color: #b9c6bc;
+  margin-top: 6px;
+}
+.pn .pn-visao-geral-conversar {
+  margin-top: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: 999px;
+  background: #f5f0e8;
+  color: #1b2a23;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pn .pn-visao-geral-conversar:hover {
+  color: #1b2a23;
+}
+.pn-visao-geral-cerimonialista-eyebrow {
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #b9c6bc;
+}
+.pn-visao-geral-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+.pn-visao-geral-chip {
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(245, 240, 232, 0.22);
+  font-size: 14px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.pn-visao-geral-chip.feito {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: rgba(233, 174, 136, 0.16);
+  color: #f6d4be;
+}
+
+/* ============================================================
+   Adaptações (ditas a ele): o desenho é de 1280px.
+   ============================================================ */
+
+/* tablet e computador pequeno */
+@media (max-width: 1180px) {
+  .pn-visao-geral-hoje {
+    grid-template-columns: minmax(0, 1fr) 260px;
+    gap: 32px;
+  }
+  .pn-visao-geral-cerimonialista {
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 32px;
+  }
+}
+
+/* tablet em pé: o cartão de hoje empilha, os botões lado a lado */
+@media (max-width: 900px) {
+  .pn-visao-geral-hoje {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+  .pn-visao-geral-hoje-acoes {
+    flex-direction: row;
+  }
+  .pn-visao-geral-hoje-acoes > * {
+    flex: 1;
+  }
+  .pn-visao-geral-agenda.com-agenda {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* celular: uma coluna, títulos menores, toques de 44px */
+@media (max-width: 767px) {
+  .pn-visao-geral-hoje {
+    padding: 24px 20px;
+    gap: 20px;
+    border-radius: 26px;
+  }
+  .pn-visao-geral-hoje-eyebrow {
+    letter-spacing: 0.16em;
+  }
+  .pn-visao-geral-hoje-tarefa {
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .pn-visao-geral-hoje-icone {
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+  }
+  .pn-visao-geral-hoje-icone .pn-ic {
+    font-size: 28px;
+  }
+  .pn-visao-geral-hoje-titulo {
+    font-size: 26px;
+  }
+  .pn-visao-geral-hoje-sub {
+    font-size: 15px;
+  }
+  .pn-visao-geral-hoje-acoes {
+    flex-direction: column;
+  }
+  .pn-visao-geral-hoje-acoes > * {
+    flex: none;
+  }
+  .pn-visao-geral-hoje-tudo-titulo {
+    font-size: 34px;
+  }
+  .pn-visao-geral-hoje-tudo-texto {
+    font-size: 16px;
+  }
+
+  .pn-visao-geral-atalhos,
+  .pn-visao-geral-atalhos.n2 {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .pn .pn-visao-geral-atalho {
+    padding: 20px 22px;
+    gap: 12px;
+  }
+
+  .pn-visao-geral-perguntas {
+    padding: 24px 20px;
+    border-radius: 26px;
+  }
+  .pn-visao-geral-perguntas-texto {
+    font-size: 28px;
+  }
+  .pn .pn-visao-geral-perguntas-botao {
+    min-height: 44px;
+  }
+  .pn-visao-geral-perguntas-campo select {
+    min-height: 44px;
+  }
+
+  .pn-visao-geral-cerimonialista {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 28px 22px;
+    gap: 26px;
+    border-radius: 26px;
+  }
+  .pn .pn-visao-geral-conversar {
+    min-height: 44px;
+  }
+  .pn-visao-geral-chip {
+    padding: 9px 14px;
+  }
+}
+
+/* movimento reduzido: sem o halo (README) */
+@media (prefers-reduced-motion: reduce) {
+  .pn-visao-geral-halo {
+    animation: none;
+  }
+}

@@ -11,6 +11,8 @@ import { rotuloEventoDe } from "@/lib/papel";
 import { TopoInterno } from "@/components/portal/TopoInterno";
 import { GuiaDeEstilo } from "@/components/portal/GuiaDeEstilo";
 import { AdicionarReferencia } from "@/components/portal/AdicionarReferencia";
+import { usaPortalNoivos } from "@/lib/portal-noivos";
+import { GuiaEstiloNoivos } from "@/components/portal/noivos/telas/mantidas/GuiaEstiloNoivos";
 import "./guia.css";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +28,9 @@ export default async function PortalGuiaEstiloPage({
   // navegador continuam chegando aqui. Show e corporativo não têm guia —
   // a rota se defende como /site e /cortejo já se defendem.
   if (!tem(evento.tipo, "siteDoEvento")) notFound();
+
+  // O portal dos noivos (desenho v4): o guia de sempre, com o cabeçalho novo.
+  if (usaPortalNoivos(evento.tipo)) return <GuiaEstiloNoivos eventoId={evento.id} tipo={evento.tipo} />;
 
   // portal v2 (181): a família monta a paleta e manda referências
   if (usaPortalV2(evento.tipo)) {
