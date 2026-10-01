@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400&amp;family=Hanken+Grotesk:wght@400;500&amp;family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;1,6..96,400&amp;family=Figtree:wght@400;500;600&amp;family=Italiana&amp;family=EB+Garamond:ital,wght@0,400;1,400&amp;family=Pinyon+Script&amp;family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&amp;family=Monsieur+La+Doulaise&amp;family=Marcellus&amp;family=Sacramento&amp;family=Lora:ital,wght@0,400;0,500;1,400&amp;family=Poiret+One&amp;family=Josefin+Sans:wght@300;400&amp;family=Playfair+Display:ital,wght@0,400;1,400&amp;family=Libre+Baskerville:ital@0;1&amp;display=swap">
+<script src="./image-slot.js"></script>
+<style>
+html{scroll-behavior:smooth}
+body{margin:0;-webkit-font-smoothing:antialiased;background:#f6f0e6}
+a{color:inherit;text-decoration:none}
+a:hover{opacity:.8}
+input,textarea,button{font:inherit;color:inherit}
+</style>
+</helmet>
+
+<div style="background:{{ t.bg }};color:{{ t.ink }};font-family:{{ t.textFont }};font-size:{{ t.textSize }};font-weight:{{ t.textWeight }};min-height:100vh;overflow-x:clip;">
+
+<sc-if value="{{ introShown }}" hint-placeholder-val="{{ false }}">
+  <div data-intro="" data-screen-label="Abertura" onClick="{{ openIntro }}" style="position:fixed;inset:0;z-index:100;cursor:pointer;background:radial-gradient(ellipse at 50% 40%,#2c3858,#141b2c 72%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(28px,5vh,52px);padding:24px;overflow:hidden;">
+    <div data-env-top="" style="font-size:11px;font-weight:500;letter-spacing:.36em;text-transform:uppercase;color:{{ t.goldLight }};">Une lettre pour vous</div>
+    <div data-env="" style="position:relative;width:min(520px,86vw);aspect-ratio:1.5;perspective:1400px;">
+      <div style="position:absolute;inset:0;background:#e3d7c1;border-radius:6px;box-shadow:0 50px 90px -30px rgba(0,0,0,.75);"></div>
+      <div data-letter="" style="position:absolute;left:6%;right:6%;top:5%;bottom:6%;z-index:1;background:{{ t.paper }};border-radius:3px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:8px;padding:9% 16px 0;text-align:center;color:{{ t.ink }};box-sizing:border-box;">
+        <div style="font-size:10px;font-weight:500;letter-spacing:.3em;text-transform:uppercase;color:{{ t.goldText }};">Vous êtes invité</div>
+        <div style="font-family:{{ t.nameFont }};font-weight:{{ t.nameWeight }};font-style:{{ t.nameStyle }};text-transform:{{ t.nameTT }};letter-spacing:{{ t.nameLS }};font-size:{{ t.nameSizeXs }};line-height:{{ t.nameLH }};">{{ n1 }} &amp; {{ n2 }}</div>
+        <div style="font-size:11px;letter-spacing:.3em;">31 · 10 · 2026</div>
+      </div>
+      <div style="position:absolute;inset:0;z-index:2;border-radius:6px;background:linear-gradient(180deg,#efe6d4,#e6dac4);clip-path:polygon(0 0,50% 57%,100% 0,100% 100%,0 100%);"></div>
+      <div data-flap="" style="position:absolute;left:0;right:0;top:0;height:62%;z-index:3;transform-origin:top center;background:linear-gradient(180deg,#ddd0b6,#ece2cf);clip-path:polygon(0 0,100% 0,50% 100%);"></div>
+      <div data-seal="" style="position:absolute;left:50%;top:60%;z-index:4;width:clamp(78px,14vw,100px);aspect-ratio:1;transform:translate(-50%,-50%);border-radius:47% 53% 50% 50% / 52% 48% 52% 48%;background:radial-gradient(circle at 36% 30%,#c0555a,#8e2a2e 55%,#5c181c);box-shadow:0 8px 16px rgba(0,0,0,.4), inset 0 0 0 6px rgba(0,0,0,.14), inset 0 0 0 8px rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;color:#f1d8c2;font-family:{{ t.nameFont }};font-style:{{ t.nameStyle }};font-weight:{{ t.nameWeight }};font-size:{{ t.sealSize }};line-height:1;">{{ i1 }}{{ i2 }}</div>
+    </div>
+    <div data-env-hint="" style="font-family:{{ t.headFont }};font-style:italic;font-size:clamp(18px,2vw,22px);color:#f3ece0;">Toque no selo para abrir</div>
+  </div>
+</sc-if>
+
+<nav style="position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px clamp(20px,4vw,48px);background:rgba(251,247,240,.96);border-bottom:1px solid {{ t.line }};opacity:{{ navOp }};transform:{{ navTf }};pointer-events:{{ navPe }};transition:opacity .6s ease, transform .6s cubic-bezier(.2,.7,.2,1);">
+  <a href="#inicio" style="font-family:{{ t.nameFont }};font-weight:{{ t.nameWeight }};font-style:{{ t.nameStyle }};font-size:{{ t.navMono }};line-height:1;">{{ i1 }}<span style="color:{{ t.goldText }};font-size:.6em;"> &amp; </span>{{ i2 }}</a>
+  <div style="display:flex;align-items:center;gap:clamp(16px,2.6vw,32px);font-size:11px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;">
+    <a href="#historia" style="display:{{ navLinks }};">História</a>
+    <a href="#local" style="display:{{ navLinks }};">O château</a>
+    <a href="#dia" style="display:{{ navLinks }};">Programa</a>
+    <a href="#presentes" style="display:{{ navLinks }};">Presentes</a>
+    <a href="#rsvp" style="padding:11px 18px;border:1px solid {{ t.ink }};">Confirmar presença</a>
+  </div>
+</nav>
+
+<section id="inicio" data-screen-label="Hero" style="position:relative;height:100svh;min-height:620px;overflow:hidden;background:{{ t.dark }};color:#fbf5ea;">
+  <div data-hero-photo="" style="position:absolute;inset:0;">
+    <div data-hero-par="" style="position:absolute;inset:0;">
+      <image-slot id="t05-hero" src="uploads/casal-exemplo.jpg" shape="rect" placeholder="Foto do casal" style="width:100%;height:100%;"></image-slot>
+      <sc-if value="{{ capaVideo }}" hint-placeholder-val="{{ true }}">
+        <video data-hero-video="" src="uploads/203402-921381906_medium.mp4" poster="uploads/casal-exemplo.jpg" autoplay="" loop="" playsinline="" preload="metadata" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;"></video>
+      </sc-if>
+    </div>
+  </div>
+  <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(20,27,44,.3),rgba(20,27,44,0) 30%,rgba(20,27,44,.15) 55%,rgba(20,27,44,.78));"></div>
+  <div data-frame="" style="position:absolute;inset:clamp(14px,2.4vw,28px);border:1px solid rgba(217,191,140,.75);pointer-events:none;"></div>
+  <div data-frame="" style="position:absolute;inset:clamp(20px,3.2vw,38px);border:1px solid rgba(217,191,140,.35);pointer-events:none;"></div>
+  <div style="position:absolute;left:0;right:0;bottom:0;pointer-events:none;display:flex;flex-direction:column;align-items:center;text-align:center;gap:18px;padding:0 32px clamp(64px,10vh,110px);">
+    <div data-hero="0" style="font-size:12px;font-weight:500;letter-spacing:.36em;text-transform:uppercase;color:{{ t.goldLight }};">Bienvenue ao nosso casamento</div>
+    <sc-if value="{{ modeNames }}" hint-placeholder-val="{{ true }}">
+      <h1 data-hero="1" style="margin:0;font-family:{{ t.nameFont }};font-weight:{{ t.nameWeight }};font-style:{{ t.nameStyle }};text-transform:{{ t.nameTT }};letter-spacing:{{ t.nameLS }};font-size:{{ t.nameSize }};line-height:{{ t.nameLH }};text-wrap:balance;text-shadow:0 2px 30px rgba(0,0,0,.25);">{{ n1 }} <span style="color:{{ t.goldLight }};">&amp;</span> {{ n2 }}</h1>
+    </sc-if>
+    <sc-if value="{{ modeInitials }}" hint-placeholder-val="{{ false }}">
+      <div data-hero="1" style="font-family:{{ t.nameFont }};font-weight:{{ t.nameWeight }};font-style:{{ t.nameStyle }};font-size:{{ t.initSize }};line-height:1;">{{ i1 }}<span style="color:{{ t.goldLight }};font-size:.55em;"> &amp; </span>{{ i2 }}</div>
+    </sc-if>
+    <sc-if value="{{ modeBoth }}" hint-placeholder-val="{{ false }}">
+      <div data-hero="1" style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+        <div style="font-family:{{ t.nameFont }};font-weight:{{ t.nameWeight }};font-style:{{ t.nameStyle }};font-size:{{ t.initSizeSm }};line-height:1;">{{ i1 }}<span style="color:{{ t.goldLight }};font-size:.55em;"> &amp; </span>{{ i2 }}</div>
+        <div style="font-family:{{ t.nameFont }};font-weight:{{ t.nameWeight }};font-style:{{ t.nameStyle }};text-transform:{{ t.nameTT }};letter-spacing:{{ t.nameLS }};font-size:{{ t.nameSizeSm }};line-height:{{ t.nameLH }};">{{ n1 }} &amp; {{ n2 }}</div>
+      </div>
+    </sc-if>
+    <div data-hero="2" style="display:flex;align-items:center;gap:14px;">
+      <span style="width:60px;height:1px;background:{{ t.goldLight }};"></span><span style="width:7px;height:7px;background:{{ t.goldLight }};transform:rotate(45deg);"></span><span style="width:60px;height:1px;background:{{ t.goldLight }};"></span>
+    </div>
+    <div data-hero="3" style="display:flex;flex-direction:column;gap:8px;">
+      <span style="font-size:13px;font-weight:500;letter-spacing:.34em;text-transform:uppercase;">31 de outubro de 2026</span>
+      <span style="font-family:{{ t.headFont }};font-style:italic;font-size:18px;">Villa Toscana, São Paulo</span>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="Bienvenue" style="padding:clamp(100px,14vw,180px) 24px;text-align:center;">
+  <div style="max-width:680px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:28px;">
+    <div data-reveal="up" style="width:128px;height:128px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px {{ t.gold }}, inset 0 0 0 6px {{ t.bg }}, inset 0 0 0 7px {{ t.gold }};">
+      <span style="font-family:{{ t.nameFont }};font-weight:{{ t.nameWeight }};font-style:{{ t.nameStyle }};font-size:{{ t.crestSize }};line-height:1;">{{ i1 }}<span style="color:{{ t.goldText }};font-size:.55em;">&amp;</span>{{ i2 }}</span>
+    </div>
+    <div data-reveal="up" data-delay="100" style="font-size:12px;font-weight:500;letter-spacing:.34em;text-transform:uppercase;color:{{ t.goldText }};">Bienvenue</div>
+    <h2 data-reveal="up" data-delay="180" style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSize }};line-height:1.12;text-wrap:balance;">Uma história de amor merece um lugar encantado.</h2>
+    <p data-reveal="up" data-delay="260" style="margin:0;max-width:520px;line-height:1.85;color:{{ t.muted }};text-wrap:pretty;">Com a bênção de nossas famílias, temos a alegria de convidar você para celebrar o nosso casamento no dia 31 de outubro de 2026.</p>
+    <div data-reveal="up" data-delay="340" style="display:flex;align-items:center;gap:14px;">
+      <span style="width:48px;height:1px;background:{{ t.gold }};"></span><span style="width:6px;height:6px;background:{{ t.gold }};transform:rotate(45deg);"></span><span style="width:48px;height:1px;background:{{ t.gold }};"></span>
+    </div>
+  </div>
+</section>
+
+<section id="historia" data-screen-label="Nossa história" style="background:{{ t.alt }};padding:clamp(100px,14vw,170px) clamp(20px,5vw,64px);">
+  <div style="max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:clamp(48px,6vw,72px);">
+    <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:16px;">
+      <div data-reveal="up" style="font-size:12px;font-weight:500;letter-spacing:.34em;text-transform:uppercase;color:{{ t.goldText }};">Notre histoire</div>
+      <h2 data-reveal="up" data-delay="120" style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSize }};line-height:1.1;text-wrap:balance;">Tudo começou em 2019...</h2>
+      <p data-reveal="up" data-delay="200" style="margin:0;color:{{ t.muted }};">Cada cartão-postal guarda um capítulo. Toque para virar.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:clamp(24px,3vw,40px);">
+      <sc-for list="{{ cards }}" as="c" hint-placeholder-count="4">
+        <div data-reveal="up" data-delay="{{ c.delay }}">
+          <div style="transform:rotate({{ c.rot }});transition:transform .7s cubic-bezier(.2,.7,.2,1);" style-hover="transform:rotate(0deg) translateY(-8px);">
+            <button onClick="{{ c.onFlip }}" style="display:block;width:100%;aspect-ratio:3/4.3;padding:0;border:0;background:transparent;cursor:pointer;perspective:1400px;text-align:left;">
+              <div style="position:relative;width:100%;height:100%;transform-style:preserve-3d;transform:{{ c.flipTf }};transition:transform 1.1s cubic-bezier(.3,.7,.2,1);">
+                <div style="position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:{{ t.paper }};padding:12px 12px 16px;display:flex;flex-direction:column;gap:14px;box-shadow:0 30px 50px -30px rgba(31,42,68,.5), 0 2px 6px rgba(31,42,68,.08);box-sizing:border-box;">
+                  <div style="position:relative;flex:1;min-height:0;overflow:hidden;">
+                    <image-slot id="{{ c.slot }}" src="uploads/casal-exemplo.jpg" shape="rect" placeholder="Foto de {{ c.ano }}" style="width:100%;height:100%;"></image-slot>
+                    <span style="position:absolute;top:10px;right:10px;width:46px;height:56px;padding:4px;background:{{ t.paper }};box-sizing:border-box;box-shadow:0 2px 6px rgba(0,0,0,.2);">
+                      <span style="display:flex;width:100%;height:100%;align-items:center;justify-content:center;background:{{ t.stamp }};border:1px dashed rgba(255,255,255,.6);box-sizing:border-box;color:#fbf5ea;font-family:{{ t.nameFont }};font-style:{{ t.nameStyle }};font-size:{{ t.stampSize }};line-height:1;">{{ i1 }}{{ i2 }}</span>
+                    </span>
+                    <span style="position:absolute;top:26px;right:40px;width:62px;height:62px;border-radius:50%;border:1.5px solid rgba(251,245,234,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:#fbf5ea;font-size:8.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;transform:rotate(-14deg);">
+                      <span>{{ c.cidade }}</span><span>{{ c.ano }}</span>
+                    </span>
+                  </div>
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:0 4px;">
+                    <span style="font-family:{{ t.headFont }};font-style:italic;font-size:22px;line-height:1.1;">{{ c.cidade }}</span>
+                    <span style="font-size:12px;font-weight:500;letter-spacing:.2em;color:{{ t.goldText }};">{{ c.ano }}</span>
+                  </div>
+                </div>
+                <div style="position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;transform:rotateY(180deg);background:{{ t.paper }};padding:22px 20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 30px 50px -30px rgba(31,42,68,.5);box-sizing:border-box;">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+                    <span style="font-size:11px;font-weight:600;letter-spacing:.26em;text-transform:uppercase;color:{{ t.goldText }};">Capítulo {{ c.n }}</span>
+                    <span style="width:40px;height:48px;border:1px dashed {{ t.lineStrong }};"></span>
+                  </div>
+                  <div style="font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLSsoft }};font-size:{{ t.cardHead }};line-height:1.15;">{{ c.titulo }}</div>
+                  <p style="margin:0;font-family:{{ t.headFont }};font-style:italic;font-size:17px;line-height:1.6;color:{{ t.muted }};">{{ c.texto }}</p>
+                  <div style="margin-top:auto;display:flex;flex-direction:column;gap:14px;">
+                    <span style="height:1px;background:{{ t.line }};"></span><span style="height:1px;background:{{ t.line }};"></span>
+                    <span style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:{{ t.muted }};">{{ c.cidade }} · {{ c.ano }}</span>
+                  </div>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<section id="local" data-chateau="" data-screen-label="O château" style="position:relative;height:260vh;">
+  <div style="position:sticky;top:0;height:100vh;overflow:hidden;">
+    <div data-ch-mask="" style="position:absolute;inset:0;overflow:hidden;background:{{ t.dark }};clip-path:inset(26% 33% 7% 33% round 999px 999px 0 0);">
+      <div data-ch-img="" style="position:absolute;inset:0;transform:scale(1.25);"><image-slot id="t05-chateau" src="uploads/casal-exemplo.jpg" shape="rect" placeholder="Foto do espaço" style="width:100%;height:100%;"></image-slot></div>
+      <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(20,27,44,0) 40%,rgba(20,27,44,.75));"></div>
+    </div>
+    <div data-ch-intro="" style="position:absolute;top:6vh;left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:12px;padding:0 24px;text-align:center;pointer-events:none;">
+      <div style="font-size:12px;font-weight:500;letter-spacing:.34em;text-transform:uppercase;color:{{ t.goldText }};">Le château</div>
+      <h2 style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSizeSm }};line-height:1.1;">Onde vamos celebrar</h2>
+    </div>
+    <div data-ch-info="" style="position:absolute;left:0;right:0;bottom:10vh;display:flex;flex-direction:column;align-items:center;gap:14px;padding:0 24px;text-align:center;color:#fbf5ea;opacity:0;visibility:hidden;">
+      <div style="font-size:12px;font-weight:500;letter-spacing:.34em;text-transform:uppercase;color:{{ t.goldLight }};">Onde vamos celebrar</div>
+      <div style="font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSize }};line-height:1.05;">Espaço Villa Toscana</div>
+      <div style="opacity:.9;">Rua X, 123 — São Paulo/SP</div>
+      <a href="{{ mapsUrl }}" target="_blank" rel="noopener" style="margin-top:8px;display:flex;align-items:center;gap:10px;padding:16px 28px;background:#fbf5ea;color:{{ t.ink }};font-size:11px;font-weight:600;letter-spacing:.24em;text-transform:uppercase;">Como chegar <span>→</span></a>
+    </div>
+  </div>
+</section>
+
+<section id="dia" data-screen-label="Programa" style="background:{{ t.alt }};padding:clamp(100px,14vw,170px) clamp(16px,5vw,64px);display:flex;justify-content:center;">
+  <div data-reveal="up" style="position:relative;width:100%;max-width:600px;background:{{ t.paper }};padding:clamp(52px,8vw,84px) clamp(24px,6vw,64px);box-shadow:0 40px 80px -40px rgba(31,42,68,.35);box-sizing:border-box;">
+    <div style="position:absolute;inset:12px;border:1px solid {{ t.gold }};opacity:.6;pointer-events:none;"></div>
+    <div style="position:absolute;inset:17px;border:1px solid {{ t.gold }};opacity:.3;pointer-events:none;"></div>
+    <div style="position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:20px;">
+      <div style="font-size:12px;font-weight:500;letter-spacing:.34em;text-transform:uppercase;color:{{ t.goldText }};">Le programme</div>
+      <h2 style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSizeSm }};line-height:1.1;">Sábado, 31 de outubro</h2>
+      <div style="width:100%;display:flex;flex-direction:column;margin:12px 0 4px;">
+        <sc-for list="{{ programa }}" as="p" hint-placeholder-count="3">
+          <div style="display:flex;align-items:baseline;gap:14px;padding:18px 0;border-top:1px solid {{ t.line }};text-align:left;">
+            <div style="display:flex;flex-direction:column;gap:3px;">
+              <span style="font-family:{{ t.headFont }};font-style:{{ t.headStyle }};font-size:24px;line-height:1.1;">{{ p.label }}</span>
+              <span style="font-size:13px;font-style:italic;color:{{ t.muted }};">{{ p.fr }}</span>
+            </div>
+            <span style="flex:1;border-bottom:1px dotted {{ t.lineStrong }};transform:translateY(-6px);"></span>
+            <span style="font-family:{{ t.headFont }};font-size:26px;line-height:1;font-variant-numeric:tabular-nums;">{{ p.hora }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <span style="font-size:11px;font-weight:500;letter-spacing:.3em;text-transform:uppercase;color:{{ t.goldText }};">Tenue · Traje</span>
+        <span style="font-family:{{ t.headFont }};font-style:italic;font-size:22px;">Social</span>
+      </div>
+      <button onClick="{{ addCal }}" style="margin-top:8px;padding:17px 30px;border:1px solid {{ t.ink }};background:{{ t.ink }};color:{{ t.paper }};font-size:11px;font-weight:600;letter-spacing:.24em;text-transform:uppercase;cursor:pointer;transition:letter-spacing .5s ease;" style-hover="letter-spacing:.3em;">{{ calLabel }}</button>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="Contagem" style="background:{{ t.dark }};color:{{ t.darkInk }};padding:clamp(96px,13vw,160px) clamp(16px,5vw,64px);text-align:center;">
+  <div data-reveal="up" style="max-width:1000px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:40px;">
+    <div style="font-size:12px;font-weight:500;letter-spacing:.34em;text-transform:uppercase;color:{{ t.goldLight }};">Compte à rebours</div>
+    <div style="width:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));">
+      <sc-for list="{{ cdUnits }}" as="u" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:14px;border-left:{{ u.border }};">
+          <span data-cd="{{ u.key }}" style="font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-size:clamp(40px,8.5vw,112px);line-height:1;font-variant-numeric:tabular-nums;">{{ u.v }}</span>
+          <span style="font-size:11px;font-weight:500;letter-spacing:.26em;text-transform:uppercase;opacity:.75;">{{ u.label }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="font-family:{{ t.headFont }};font-style:italic;font-size:clamp(18px,2.2vw,24px);opacity:.9;">Para o nosso grande dia.</div>
+  </div>
+</section>
+
+<section id="galeria" data-screen-label="Galeria" style="padding:clamp(100px,14vw,170px) clamp(16px,4vw,56px);">
+  <div style="max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:clamp(48px,6vw,72px);">
+    <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;">
+      <div data-reveal="up" style="font-size:12px;font-weight:500;letter-spacing:.34em;text-transform:uppercase;color:{{ t.goldText }};">La galerie</div>
+      <h2 data-reveal="up" data-delay="120" style="margin:0;max-width:640px;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSize }};line-height:1.12;text-wrap:balance;">Alguns momentos merecem ser lembrados para sempre.</h2>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:clamp(20px,3vw,40px);">
+      <sc-for list="{{ frames }}" as="f" hint-placeholder-count="5">
+        <div data-reveal="up" data-delay="{{ f.delay }}" style="flex:1 1 {{ f.basis }};min-width:min(100%,240px);max-width:{{ f.max }};margin-top:{{ f.mt }};">
+          <div style="padding:clamp(8px,1vw,12px);border-radius:{{ f.r }};background:linear-gradient(135deg,#8a6a3a,#e8d3a2 28%,#a9844d 52%,#f1ddb0 74%,#8a6a3a);box-shadow:0 30px 50px -30px rgba(31,42,68,.55), inset 0 0 0 1px rgba(255,255,255,.25);">
+            <div style="padding:clamp(8px,1.2vw,14px);border-radius:{{ f.r }};background:{{ t.paper }};box-shadow:inset 0 2px 8px rgba(0,0,0,.18);">
+              <div style="position:relative;aspect-ratio:{{ f.ar }};border-radius:{{ f.r }};overflow:hidden;">
+                <div style="position:absolute;inset:0;transition:transform 1.6s cubic-bezier(.2,.7,.2,1);" style-hover="transform:scale(1.07);"><image-slot id="{{ f.slot }}" src="uploads/casal-exemplo.jpg" shape="rect" placeholder="Foto" style="width:100%;height:100%;"></image-slot></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<section id="presentes" data-screen-label="Presentes" style="background:{{ t.alt }};padding:clamp(100px,14vw,170px) clamp(20px,5vw,64px);">
+  <div style="max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:clamp(40px,5vw,64px);">
+    <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;">
+      <div data-reveal="up" style="font-size:12px;font-weight:500;letter-spacing:.34em;text-transform:uppercase;color:{{ t.goldText }};">La boutique</div>
+      <h2 data-reveal="up" data-delay="120" style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSize }};line-height:1.1;text-wrap:balance;">Sua presença já é o nosso presente.</h2>
+      <p data-reveal="up" data-delay="200" style="margin:0;color:{{ t.muted }};">Mas, se quiserem nos presentear...</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:clamp(18px,2.4vw,28px);">
+      <sc-for list="{{ gifts }}" as="g" hint-placeholder-count="6">
+        <div data-reveal="up" data-delay="{{ g.delay }}" style="display:flex;">
+          <button onClick="{{ g.onSelect }}" onMouseEnter="{{ g.onHover }}" style="flex:1;position:relative;text-align:left;border:1px solid {{ g.border }};background:{{ t.paper }};padding:12px 12px 24px;display:flex;flex-direction:column;gap:18px;cursor:pointer;opacity:{{ g.op }};transform:{{ g.tf }};box-shadow:{{ g.shadow }};transition:transform .6s cubic-bezier(.2,.7,.2,1), box-shadow .6s, opacity .5s, border-color .5s;">
+            <div style="position:relative;aspect-ratio:4/4.4;overflow:hidden;">
+              <div style="position:absolute;inset:0;transform:{{ g.imgTf }};transition:transform 1.4s cubic-bezier(.2,.7,.2,1);"><image-slot id="{{ g.slot }}" src="uploads/casal-exemplo.jpg" shape="rect" placeholder="{{ g.title }}" style="width:100%;height:100%;"></image-slot></div>
+              <div style="position:absolute;top:0;bottom:0;left:50%;width:16px;margin-left:-8px;background:linear-gradient(90deg,#74201f,#a63b3f,#74201f);transform-origin:top;transform:{{ g.ribV }};transition:transform .7s cubic-bezier(.6,0,.2,1);"></div>
+              <div style="position:absolute;left:0;right:0;top:50%;height:16px;margin-top:-8px;background:linear-gradient(180deg,#74201f,#a63b3f,#74201f);transform-origin:left;transform:{{ g.ribH }};transition:transform .7s cubic-bezier(.6,0,.2,1) .2s;"></div>
+              <div style="position:absolute;left:50%;top:50%;width:72px;height:44px;margin:-22px 0 0 -36px;opacity:{{ g.bowOp }};transform:{{ g.bowTf }};transition:opacity .4s ease .6s, transform .7s cubic-bezier(.34,1.56,.64,1) .6s;">
+                <span style="position:absolute;left:0;top:4px;width:34px;height:36px;border-radius:55% 30% 30% 55%;background:#a63b3f;box-shadow:inset -5px 0 9px rgba(0,0,0,.28);transform:rotate(-14deg);"></span>
+                <span style="position:absolute;right:0;top:4px;width:34px;height:36px;border-radius:30% 55% 55% 30%;background:#a63b3f;box-shadow:inset 5px 0 9px rgba(0,0,0,.28);transform:rotate(14deg);"></span>
+                <span style="position:absolute;left:50%;top:50%;width:16px;height:18px;margin:-9px 0 0 -8px;border-radius:5px;background:#74201f;"></span>
+              </div>
+            </div>
+            <div data-tag="" style="position:absolute;top:12px;right:26px;display:flex;flex-direction:column;align-items:center;transform-origin:top center;pointer-events:none;">
+              <span style="width:1px;height:24px;background:{{ t.goldText }};"></span>
+              <span style="padding:9px 14px 9px;background:{{ t.paper }};border:1px solid {{ t.gold }};border-radius:6px;display:flex;flex-direction:column;align-items:center;gap:5px;box-shadow:0 10px 18px -10px rgba(0,0,0,.45);">
+                <span style="width:6px;height:6px;border-radius:50%;border:1px solid {{ t.gold }};"></span>
+                <span style="font-weight:600;font-size:15px;white-space:nowrap;font-variant-numeric:tabular-nums;">{{ g.price }}</span>
+              </span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;padding:0 8px;">
+              <div style="font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLSsoft }};font-size:{{ t.cardHead }};line-height:1.2;">{{ g.title }}</div>
+              <div style="font-size:.92em;line-height:1.55;color:{{ t.muted }};">{{ g.desc }}</div>
+            </div>
+          </button>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<sc-if value="{{ showPadrinhos }}" hint-placeholder-val="{{ true }}">
+  <section data-screen-label="Padrinhos" style="padding:clamp(100px,14vw,170px) clamp(20px,5vw,64px);text-align:center;">
+    <div style="max-width:1000px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:clamp(48px,6vw,72px);">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;">
+        <div data-reveal="up" style="font-size:12px;font-weight:500;letter-spacing:.34em;text-transform:uppercase;color:{{ t.goldText }};">Nos témoins</div>
+        <h2 data-reveal="up" data-delay="120" style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSize }};line-height:1.1;">Ao nosso lado</h2>
+      </div>
+      <div style="width:100%;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:56px 32px;">
+        <sc-for list="{{ padrinhos }}" as="p" hint-placeholder-count="3">
+          <div data-reveal="up" data-delay="{{ p.delay }}" style="display:flex;flex-direction:column;align-items:center;gap:22px;">
+            <div style="padding:6px;border-radius:50%;background:linear-gradient(135deg,#8a6a3a,#e8d3a2 35%,#a9844d 60%,#f1ddb0);">
+              <div style="width:150px;height:196px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 4px {{ t.paper }};">
+                <image-slot id="{{ p.slot }}" src="uploads/casal-exemplo.jpg" shape="rect" placeholder="Foto" style="width:100%;height:100%;"></image-slot>
+              </div>
+            </div>
+            <div style="font-family:{{ t.headFont }};font-style:{{ t.headStyle }};font-size:clamp(20px,2.2vw,24px);letter-spacing:{{ t.headLSsoft }};">{{ p.nomes }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+</sc-if>
+
+<section id="rsvp" data-screen-label="RSVP" style="background:{{ t.alt }};padding:clamp(100px,14vw,170px) clamp(16px,5vw,64px);">
+  <div data-reveal="up" style="position:relative;max-width:640px;margin:0 auto;background:{{ t.paper }};padding:clamp(48px,7vw,76px) clamp(24px,6vw,64px);box-shadow:0 40px 80px -40px rgba(31,42,68,.35);box-sizing:border-box;">
+    <div style="position:absolute;inset:12px;border:1px solid {{ t.gold }};opacity:.6;pointer-events:none;"></div>
+    <div style="position:absolute;inset:17px;border:1px solid {{ t.gold }};opacity:.3;pointer-events:none;"></div>
+    <div style="position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:18px;">
+      <div style="font-size:12px;font-weight:500;letter-spacing:.34em;text-transform:uppercase;color:{{ t.goldText }};">Répondez s'il vous plaît</div>
+      <sc-if value="{{ rsvpForm }}" hint-placeholder-val="{{ true }}">
+        <h2 style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSizeSm }};line-height:1.15;text-wrap:balance;">Você vem celebrar com a gente?</h2>
+        <p style="margin:0;color:{{ t.muted }};">Confirme sua presença até 15 de outubro.</p>
+        <div style="width:100%;margin-top:14px;display:flex;flex-direction:column;gap:26px;text-align:left;">
+          <label style="display:flex;flex-direction:column;gap:8px;">
+            <span style="font-size:11px;font-weight:500;letter-spacing:.24em;text-transform:uppercase;color:{{ t.muted }};">Seu nome</span>
+            <input value="{{ rsvp.nome }}" onChange="{{ onNome }}" placeholder="Como está no convite" style="border:0;border-bottom:1px solid {{ rsvpLine }};background:transparent;padding:10px 0;font-size:18px;outline:none;">
+          </label>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">
+            <button onClick="{{ vaiSim }}" style="padding:16px 10px;border:1px solid {{ t.ink }};background:{{ simBg }};color:{{ simFg }};cursor:pointer;transition:all .35s;">Sim, estarei lá</button>
+            <button onClick="{{ vaiNao }}" style="padding:16px 10px;border:1px solid {{ t.ink }};background:{{ naoBg }};color:{{ naoFg }};cursor:pointer;transition:all .35s;">Não poderei ir</button>
+          </div>
+          <sc-if value="{{ rsvpVai }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:14px;border-bottom:1px solid {{ t.lineStrong }};">
+              <span style="font-size:11px;font-weight:500;letter-spacing:.24em;text-transform:uppercase;color:{{ t.muted }};">Acompanhantes</span>
+              <div style="display:flex;align-items:center;gap:18px;">
+                <button onClick="{{ acompMenos }}" style="width:44px;height:44px;border-radius:50%;border:1px solid {{ t.lineStrong }};background:transparent;cursor:pointer;font-size:18px;">−</button>
+                <span style="min-width:18px;text-align:center;font-family:{{ t.headFont }};font-size:24px;">{{ rsvp.acomp }}</span>
+                <button onClick="{{ acompMais }}" style="width:44px;height:44px;border-radius:50%;border:1px solid {{ t.lineStrong }};background:transparent;cursor:pointer;font-size:18px;">+</button>
+              </div>
+            </div>
+          </sc-if>
+          <label style="display:flex;flex-direction:column;gap:8px;">
+            <span style="font-size:11px;font-weight:500;letter-spacing:.24em;text-transform:uppercase;color:{{ t.muted }};">Um recado para os noivos (opcional)</span>
+            <textarea value="{{ rsvp.msg }}" onChange="{{ onMsg }}" rows="3" style="border:0;border-bottom:1px solid {{ t.lineStrong }};background:transparent;padding:10px 0;font-size:17px;outline:none;resize:none;"></textarea>
+          </label>
+          <button onClick="{{ enviarRsvp }}" style="align-self:center;padding:18px 40px;border:1px solid {{ t.ink }};background:{{ t.ink }};color:{{ t.paper }};font-size:11px;font-weight:600;letter-spacing:.24em;text-transform:uppercase;cursor:pointer;">Enviar confirmação</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{ rsvpDoneSim }}" hint-placeholder-val="{{ false }}">
+        <div data-stamp="" style="width:112px;height:112px;margin:10px 0;border-radius:47% 53% 50% 50% / 52% 48% 52% 48%;background:radial-gradient(circle at 36% 30%,#c0555a,#8e2a2e 55%,#5c181c);box-shadow:0 10px 20px rgba(0,0,0,.3), inset 0 0 0 7px rgba(0,0,0,.14), inset 0 0 0 9px rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;color:#f1d8c2;font-family:{{ t.nameFont }};font-style:{{ t.nameStyle }};font-weight:{{ t.nameWeight }};font-size:{{ t.sealSize }};line-height:1;transform:rotate(-8deg);">{{ i1 }}{{ i2 }}</div>
+        <div data-enter="" style="display:flex;flex-direction:column;align-items:center;gap:16px;">
+          <h2 style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSizeSm }};line-height:1.15;text-wrap:balance;">Que alegria ter você com a gente! ❤️</h2>
+          <p style="margin:0;color:{{ t.muted }};line-height:1.7;">{{ rsvpPrimeiroNome }}, sua presença está confirmada. Nos vemos no dia 31 de outubro.</p>
+          <button onClick="{{ refazerRsvp }}" style="background:transparent;border:0;border-bottom:1px solid {{ t.lineStrong }};padding:0 0 6px;font-size:11px;letter-spacing:.24em;text-transform:uppercase;cursor:pointer;">Alterar resposta</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{ rsvpDoneNao }}" hint-placeholder-val="{{ false }}">
+        <div data-enter="" style="display:flex;flex-direction:column;align-items:center;gap:16px;">
+          <h2 style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};font-size:{{ t.headSizeSm }};line-height:1.15;">Vamos sentir sua falta.</h2>
+          <p style="margin:0;color:{{ t.muted }};line-height:1.7;">Obrigado por nos avisar, {{ rsvpPrimeiroNome }}. Você estará no nosso coração nesse dia.</p>
+          <button onClick="{{ refazerRsvp }}" style="background:transparent;border:0;border-bottom:1px solid {{ t.lineStrong }};padding:0 0 6px;font-size:11px;letter-spacing:.24em;text-transform:uppercase;cursor:pointer;">Alterar resposta</button>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</section>
+
+<footer data-screen-label="Rodapé" style="background:{{ t.dark }};color:{{ t.darkInk }};padding:clamp(90px,12vw,140px) 24px 40px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px;">
+  <div style="font-size:12px;font-weight:500;letter-spacing:.34em;text-transform:uppercase;color:{{ t.goldLight }};">À bientôt</div>
+  <div style="font-family:{{ t.nameFont }};font-weight:{{ t.nameWeight }};font-style:{{ t.nameStyle }};text-transform:{{ t.nameTT }};letter-spacing:{{ t.nameLS }};font-size:{{ t.nameSizeMd }};line-height:{{ t.nameLH }};">{{ n1 }} <span style="color:{{ t.goldLight }};">&amp;</span> {{ n2 }}</div>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <span style="width:40px;height:1px;background:{{ t.goldLight }};"></span><span style="font-size:12px;letter-spacing:.34em;">31.10.2026</span><span style="width:40px;height:1px;background:{{ t.goldLight }};"></span>
+  </div>
+  <div style="font-family:{{ t.headFont }};font-style:italic;font-size:20px;opacity:.9;">{{ hashtag }}</div>
+  <div style="margin-top:64px;font-size:10px;letter-spacing:.24em;text-transform:uppercase;opacity:.55;">Site criado com eOrganizei</div>
+</footer>
+
+<div style="position:fixed;left:50%;bottom:clamp(14px,3vw,28px);z-index:60;width:min(560px,calc(100% - 24px));transform:{{ sheetTf }};opacity:{{ sheetOp }};pointer-events:{{ sheetPe }};transition:transform .7s cubic-bezier(.2,.8,.2,1), opacity .5s ease;">
+  <div style="display:flex;align-items:center;gap:14px;padding:12px 12px 12px 22px;background:{{ t.ink }};color:{{ t.paper }};box-shadow:0 30px 60px -20px rgba(20,27,44,.6);">
+    <sc-if value="{{ sheetChoose }}" hint-placeholder-val="{{ true }}">
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+        <span style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;opacity:.7;">Seu presente</span>
+        <span style="font-family:{{ t.headFont }};font-style:{{ t.headStyle }};font-size:20px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ sheetTitle }}</span>
+      </div>
+      <button onClick="{{ presentear }}" style="flex:none;padding:15px 20px;border:0;background:{{ t.goldLight }};color:{{ t.ink }};font-weight:600;cursor:pointer;">Presentear {{ sheetPrice }}</button>
+      <button onClick="{{ fecharSheet }}" style="flex:none;width:44px;height:44px;border-radius:50%;border:0;background:rgba(251,247,240,.1);color:{{ t.paper }};cursor:pointer;font-size:18px;">×</button>
+    </sc-if>
+    <sc-if value="{{ sheetThanks }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;display:flex;flex-direction:column;gap:2px;">
+        <span style="font-family:{{ t.headFont }};font-style:{{ t.headStyle }};font-size:20px;line-height:1.2;">Merci! Obrigado pelo carinho.</span>
+        <span style="font-size:13px;opacity:.75;">{{ sheetTitle }} · {{ sheetPrice }}</span>
+      </div>
+      <button onClick="{{ fecharSheet }}" style="flex:none;width:44px;height:44px;border-radius:50%;border:0;background:rgba(251,247,240,.1);color:{{ t.paper }};cursor:pointer;font-size:18px;">×</button>
+    </sc-if>
+  </div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;nome1&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Helena&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Casal&quot;},&quot;nome2&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Rafael&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Casal&quot;},&quot;modoNome&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Nomes&quot;,&quot;Iniciais&quot;,&quot;Iniciais + nomes&quot;],&quot;default&quot;:&quot;Nomes&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Casal&quot;},&quot;dataISO&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;2026-10-31T16:30:00&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Casal&quot;},&quot;fonte&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;01 Essencial&quot;,&quot;02 Maison&quot;,&quot;03 Atelier&quot;,&quot;04 Caligrafia&quot;,&quot;05 Riviera&quot;,&quot;06 Bilhete&quot;,&quot;07 Soirée&quot;,&quot;08 Relicário&quot;],&quot;default&quot;:&quot;05 Riviera&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Estilo&quot;},&quot;capaVideo&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Estilo&quot;},&quot;showIntro&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Seções&quot;},&quot;showPadrinhos&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Seções&quot;}}">
+class Component extends DCLogic {
+  state = { intro: 'closed', nav: false, wide: true, flips: {},
+    rsvpStep: 'form', rsvp: { nome: '', vai: 'sim', acomp: 0, msg: '' }, rsvpErr: false,
+    gift: null, giftDone: false, calAdded: false };
+
+  theme() {
+    const F = {
+      essencial: { nf: "'Jost',sans-serif", nw: 300, ntt: 'uppercase', nls: '.14em', ns: 'normal', s: .72, nlh: 1.1, hf: "'Jost',sans-serif", hw: 300, htt: 'uppercase', hls: '.14em', hs: 'normal', hz: [22, 3, 34], tf: "'Hanken Grotesk',sans-serif", tz: 16, tw: 400 },
+      maison: { nf: "'Bodoni Moda',serif", nw: 400, ntt: 'none', nls: '-.01em', ns: 'normal', s: .92, nlh: 1.05, hf: "'Bodoni Moda',serif", hw: 400, htt: 'none', hls: '-.01em', hs: 'normal', hz: [34, 5, 60], tf: "'Figtree',sans-serif", tz: 16, tw: 400 },
+      atelier: { nf: "'Italiana',serif", nw: 400, ntt: 'none', nls: '.04em', ns: 'normal', s: .94, nlh: 1.1, hf: "'Italiana',serif", hw: 400, htt: 'none', hls: '.04em', hs: 'normal', hz: [34, 5, 60], tf: "'EB Garamond',serif", tz: 19, tw: 400 },
+      caligrafia: { nf: "'Pinyon Script',cursive", nw: 400, ntt: 'none', nls: '0', ns: 'normal', s: 1.1, nlh: 1.35, hf: "'Cormorant Garamond',serif", hw: 500, htt: 'none', hls: '0', hs: 'normal', hz: [36, 5.2, 62], tf: "'Cormorant Garamond',serif", tz: 20, tw: 400 },
+      riviera: { nf: "'Monsieur La Doulaise',cursive", nw: 400, ntt: 'none', nls: '0', ns: 'normal', s: 1.3, nlh: 1.35, hf: "'Marcellus',serif", hw: 400, htt: 'none', hls: '.03em', hs: 'normal', hz: [30, 4.2, 50], tf: "'Marcellus',serif", tz: 17, tw: 400 },
+      bilhete: { nf: "'Sacramento',cursive", nw: 400, ntt: 'none', nls: '0', ns: 'normal', s: 1.15, nlh: 1.3, hf: "'Lora',serif", hw: 400, htt: 'none', hls: '0', hs: 'italic', hz: [32, 4.6, 54], tf: "'Lora',serif", tz: 17, tw: 400 },
+      soiree: { nf: "'Poiret One',sans-serif", nw: 400, ntt: 'uppercase', nls: '.12em', ns: 'normal', s: .74, nlh: 1.15, hf: "'Poiret One',sans-serif", hw: 400, htt: 'uppercase', hls: '.12em', hs: 'normal', hz: [26, 3.6, 42], tf: "'Josefin Sans',sans-serif", tz: 17, tw: 400 },
+      relicario: { nf: "'Playfair Display',serif", nw: 400, ntt: 'none', nls: '0', ns: 'italic', s: .92, nlh: 1.1, hf: "'Playfair Display',serif", hw: 400, htt: 'none', hls: '0', hs: 'normal', hz: [34, 5, 58], tf: "'Libre Baskerville',serif", tz: 16, tw: 400 }
+    };
+    const p = { bg: '#f6f0e6', alt: '#efe6d6', paper: '#fcf8f1', ink: '#1f2a44', muted: '#586074', gold: '#b08d57', goldText: '#86652f', goldLight: '#dcc393',
+      line: '#e4d9c7', lineStrong: '#c3b49c', dark: '#1b2438', darkInk: '#f3ece0', stamp: '#3d5a86' };
+    const key = String(this.props.fonte ?? '05 Riviera').split(' ').slice(1).join(' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const f = F[key] || F.riviera, s = f.s, hz = f.hz;
+    const c = (a, b, m) => `clamp(${Math.round(a * s)}px, ${(b * s).toFixed(2)}vw, ${Math.round(m * s)}px)`;
+    return { ...p, nameFont: f.nf, nameWeight: f.nw, nameTT: f.ntt, nameLS: f.nls, nameStyle: f.ns, nameLH: f.nlh,
+      nameSize: c(46, 8, 116), nameSizeSm: c(32, 4.6, 64), nameSizeMd: c(36, 5, 68), nameSizeXs: c(22, 3.2, 34),
+      initSize: c(90, 15, 190), initSizeSm: c(56, 8, 104),
+      sealSize: `${Math.round(30 * s)}px`, crestSize: `${Math.round(44 * s)}px`, navMono: `${Math.round(22 * s)}px`, stampSize: `${Math.round(14 * s)}px`,
+      headFont: f.hf, headWeight: f.hw, headTT: f.htt, headLS: f.hls, headLSsoft: f.htt === 'uppercase' ? '.06em' : f.hls, headStyle: f.hs,
+      headSize: `clamp(${hz[0]}px, ${hz[1]}vw, ${hz[2]}px)`, headSizeSm: `clamp(${Math.round(hz[0] * .82)}px, ${(hz[1] * .75).toFixed(2)}vw, ${Math.round(hz[2] * .72)}px)`,
+      cardHead: f.htt === 'uppercase' ? '17px' : '24px', textFont: f.tf, textSize: `${f.tz}px`, textWeight: f.tw };
+  }
+
+  introState() { return (this.props.showIntro ?? true) ? this.state.intro : 'gone'; }
+
+  componentDidMount() {
+    this.reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.revealMap = new Map();
+    this.setupReveals(); this.setupHero();
+    this.onScroll = () => { if (!this.raf) this.raf = requestAnimationFrame(() => { this.raf = null; this.scrollFx(); }); };
+    addEventListener('scroll', this.onScroll, { passive: true }); addEventListener('resize', this.onScroll);
+    this.scrollFx(); setTimeout(() => this.scrollFx(), 500);
+    this.tick(); this.timer = setInterval(() => this.tick(), 1000);
+    this.lock(this.introState() !== 'gone');
+  }
+  componentWillUnmount() {
+    removeEventListener('scroll', this.onScroll); removeEventListener('resize', this.onScroll);
+    clearInterval(this.timer); this.io && this.io.disconnect(); this.vio && this.vio.disconnect(); this.lock(false);
+  }
+  componentDidUpdate(pp) {
+    if ((pp.showIntro ?? true) !== (this.props.showIntro ?? true)) {
+      const on = this.props.showIntro ?? true;
+      this.setState({ intro: on ? 'closed' : 'gone' }, () => { this.lock(on); this.setupHero(); });
+    }
+    if (pp.dataISO !== this.props.dataISO) this.tick();
+    this.playVideo();
+    document.querySelectorAll('[data-enter]:not([data-entered])').forEach((el) => {
+      el.setAttribute('data-entered', '');
+      this.reduce || el.animate([{ opacity: 0, transform: 'translateY(16px)' }, { opacity: 1, transform: 'none' }], { duration: 900, delay: 350, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'both' });
+    });
+    document.querySelectorAll('[data-stamp]:not([data-entered])').forEach((el) => {
+      el.setAttribute('data-entered', '');
+      this.reduce || el.animate([{ transform: 'scale(2.4) rotate(-28deg)', opacity: 0 }, { transform: 'scale(.9) rotate(-8deg)', opacity: 1, offset: .7 }, { transform: 'scale(1) rotate(-8deg)', opacity: 1 }], { duration: 900, easing: 'cubic-bezier(.3,.7,.3,1)', fill: 'both' });
+    });
+  }
+  playVideo() {
+    const v = document.querySelector('[data-hero-video]');
+    if (!v || v.dataset.ok) return;
+    v.dataset.ok = '1'; v.muted = true; v.defaultMuted = true; v.setAttribute('muted', '');
+    const play = () => { const p = v.play(); p && p.catch(() => {}); };
+    this.vio && this.vio.disconnect();
+    this.vio = new IntersectionObserver(([e]) => (e.isIntersecting ? play() : v.pause()), { threshold: 0 });
+    this.vio.observe(v); play();
+  }
+  lock(on) {
+    this.playVideo(); document.documentElement.style.overflow = on ? 'hidden' : ''; }
+
+  tick() {
+    const p2 = (x) => String(x).padStart(2, '0');
+    const target = new Date(this.props.dataISO ?? '2026-10-31T16:30:00').getTime(), diff = Math.max(0, target - Date.now());
+    const cd = { d: String(Math.floor(diff / 864e5)), h: p2(Math.floor(diff / 36e5) % 24), m: p2(Math.floor(diff / 6e4) % 60), s: p2(Math.floor(diff / 1e3) % 60) };
+    const pv = this._pcd || {};
+    Object.keys(cd).forEach((k) => {
+      const el = document.querySelector(`[data-cd="${k}"]`); if (!el || el.textContent === cd[k]) return;
+      el.textContent = cd[k];
+      if (pv[k] !== undefined && !this.reduce) el.animate([{ opacity: 0, transform: 'translateY(-.25em)' }, { opacity: 1, transform: 'none' }], { duration: 700, easing: 'cubic-bezier(.2,.7,.2,1)' });
+    });
+    this._pcd = cd; this._cd = cd;
+  }
+
+  setupReveals() {
+    const E = 'cubic-bezier(.2,.7,.2,1)';
+    this.io = new IntersectionObserver((es) => es.forEach((e) => {
+      if (e.isIntersecting) { (this.revealMap.get(e.target) || []).forEach((a) => a.play()); this.io.unobserve(e.target); }
+    }), { rootMargin: '0px 0px -8% 0px', threshold: 0.01 });
+    if (this.reduce) return;
+    document.querySelectorAll('[data-reveal]').forEach((el) => {
+      const a = el.animate([{ opacity: 0, transform: 'translateY(32px)' }, { opacity: 1, transform: 'none' }], { duration: 1200, delay: +(el.dataset.delay || 0), easing: E, fill: 'both' });
+      a.pause(); this.revealMap.set(el, [a]); this.io.observe(el);
+    });
+  }
+
+  setupHero() {
+    (this.heroAnims || []).forEach((a) => a.cancel());
+    if (this.reduce) { this.heroAnims = []; return; }
+    const E = 'cubic-bezier(.2,.7,.2,1)', A = [];
+    const ph = document.querySelector('[data-hero-photo]');
+    const vid = this.props.capaVideo ?? true;
+    ph && A.push(ph.animate(vid ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 0, transform: 'scale(1.14)' }, { opacity: 1, offset: .35 }, { opacity: 1, transform: 'scale(1)' }], { duration: vid ? 1600 : 5000, easing: E }));
+    document.querySelectorAll('[data-frame]').forEach((el, i) => A.push(el.animate([{ opacity: 0, transform: 'scale(1.03)' }, { opacity: 1, transform: 'none' }], { duration: 1800, delay: 600 + i * 200, easing: E, fill: 'both' })));
+    document.querySelectorAll('[data-hero]').forEach((el) => {
+      const i = +el.dataset.hero;
+      A.push(el.animate([{ opacity: 0, transform: 'translateY(18px)', filter: 'blur(10px)' }, { opacity: 1, transform: 'none', filter: 'blur(0)' }], { duration: i === 1 ? 2000 : 1300, delay: [700, 1000, 1700, 1950][i], easing: E, fill: 'both' }));
+    });
+    A.forEach((a) => a.pause()); this.heroAnims = A;
+    if (this.introState() === 'gone') A.forEach((a) => a.play());
+  }
+
+  scrollFx() {
+    const vh = innerHeight, cl = (x) => Math.max(0, Math.min(1, x)), ease = (x) => x * x * (3 - 2 * x), q = (s) => document.querySelector(s);
+    if (this.revealMap) this.revealMap.forEach((A, el) => {
+      if (A[0] && A[0].playState === 'paused' && el.isConnected) { const r = el.getBoundingClientRect(); if (r.top < vh * .95 && r.bottom > 0) A.forEach((a) => a.play()); }
+    });
+    const hp = q('[data-hero-par]');
+    if (hp && !this.reduce && !(this.props.capaVideo ?? true) && scrollY < vh * 1.3) hp.style.transform = `translate3d(0,${(scrollY * .3).toFixed(1)}px,0)`;
+    const ch = q('[data-chateau]');
+    if (ch) {
+      const r = ch.getBoundingClientRect();
+      if (r.top < vh && r.bottom > 0) {
+        const p = cl(-r.top / Math.max(1, r.height - vh)), e = ease(cl(p / .7));
+        const mask = ch.querySelector('[data-ch-mask]'), img = ch.querySelector('[data-ch-img]'), it = ch.querySelector('[data-ch-intro]'), info = ch.querySelector('[data-ch-info]');
+        const side = (innerWidth < 700 ? 12 : 33) * (1 - e), tp = 26 * (1 - e), bt = 7 * (1 - e);
+        const rad = (innerWidth * (1 - 2 * side / 100)) / 2 * (1 - e);
+        mask.style.clipPath = `inset(${tp.toFixed(2)}% ${side.toFixed(2)}% ${bt.toFixed(2)}% ${side.toFixed(2)}% round ${rad.toFixed(1)}px ${rad.toFixed(1)}px 0 0)`;
+        if (!this.reduce) img.style.transform = `scale(${(1.25 - .25 * e).toFixed(4)})`;
+        const io = cl(1 - e * 2.4); it.style.opacity = io.toFixed(3); it.style.visibility = io <= 0 ? 'hidden' : 'visible'; it.style.transform = `translateY(${(-e * 40).toFixed(1)}px)`;
+        const fo = cl((p - .6) / .2); info.style.opacity = fo.toFixed(3); info.style.visibility = fo <= 0 ? 'hidden' : 'visible';
+        info.style.transform = `translateY(${((1 - fo) * 30).toFixed(1)}px)`; info.style.pointerEvents = fo > .5 ? 'auto' : 'none';
+      }
+    }
+    const nav = scrollY > vh * .9, wide = innerWidth > 820;
+    if (nav !== this.state.nav || wide !== this.state.wide) this.setState({ nav, wide });
+  }
+
+  openIntro = () => {
+    if (this.state.intro !== 'closed') return;
+    this.setState({ intro: 'opening' });
+    const q = (s) => document.querySelector(s), E = 'cubic-bezier(.2,.7,.2,1)';
+    const seal = q('[data-seal]'), flap = q('[data-flap]'), letter = q('[data-letter]'), env = q('[data-env]'), ov = q('[data-intro]');
+    const fin = () => { this.setState({ intro: 'gone' }); this.lock(false); };
+    if (this.reduce || !flap) { (this.heroAnims || []).forEach((a) => a.play()); return fin(); }
+    [q('[data-env-hint]'), q('[data-env-top]')].forEach((el) => el && el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 400, fill: 'forwards' }));
+    seal.animate([{ transform: 'translate(-50%,-50%) scale(1)', opacity: 1 }, { transform: 'translate(-50%,-50%) scale(1.14)', opacity: 1, offset: .35 }, { transform: 'translate(-50%,-25%) scale(.7) rotate(-20deg)', opacity: 0 }], { duration: 700, easing: E, fill: 'forwards' });
+    flap.animate([{ transform: 'rotateX(0deg)' }, { transform: 'rotateX(180deg)' }], { duration: 900, delay: 450, easing: 'cubic-bezier(.5,0,.3,1)', fill: 'forwards' });
+    setTimeout(() => { flap.style.zIndex = '0'; }, 900);
+    letter.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(-56%)' }], { duration: 1100, delay: 1250, easing: E, fill: 'forwards' });
+    env.animate([{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(1.35)', opacity: 0 }], { duration: 1000, delay: 2550, easing: 'cubic-bezier(.5,0,.2,1)', fill: 'forwards' });
+    ov.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 1000, delay: 2750, easing: 'ease', fill: 'forwards' });
+    setTimeout(() => (this.heroAnims || []).forEach((a) => a.play()), 2850);
+    setTimeout(fin, 3800);
+  };
+
+  addCal = () => {
+    const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//eOrganizei//Casamento//PT', 'BEGIN:VEVENT', `UID:${Date.now()}@eorganizei`,
+      'DTSTART:20261031T193000Z', 'DTEND:20261101T040000Z', `SUMMARY:Casamento ${this.n1()} & ${this.n2()}`, 'LOCATION:Espaço Villa Toscana\\, Rua X\\, 123 - São Paulo/SP', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' })); a.download = 'casamento.ics'; a.click();
+    this.setState({ calAdded: true });
+  };
+
+  n1() { return this.props.nome1 ?? 'Helena'; }
+  n2() { return this.props.nome2 ?? 'Rafael'; }
+
+  renderVals() {
+    const t = this.theme(), n1 = this.n1(), n2 = this.n2(), S = this.state, R = S.rsvp;
+    const mode = this.props.modoNome ?? 'Nomes', intro = this.introState();
+    const setR = (o) => this.setState((s) => ({ rsvp: { ...s.rsvp, ...o } }));
+    const brl = (v) => 'R$ ' + v.toLocaleString('pt-BR');
+    const cd = this._cd || { d: '', h: '', m: '', s: '' };
+    const giftsData = [
+      { title: 'Jantar em Paris', desc: 'Uma noite à luz de velas na lua de mel.', valor: 480 },
+      { title: 'Jogo de taças de cristal', desc: 'Para brindar todos os nossos começos.', valor: 320 },
+      { title: 'Passeio pelo Sena', desc: 'Um fim de tarde navegando a dois.', valor: 650 },
+      { title: 'Enxoval de linho', desc: 'Lençóis macios para o nosso lar.', valor: 540 },
+      { title: 'Aula de confeitaria', desc: 'Para aprender a fazer macarons juntos.', valor: 280 },
+      { title: 'Noite num château', desc: 'Uma diária num castelo do Vale do Loire.', valor: 1200 }];
+    const sel = S.gift, selGift = sel != null ? giftsData[sel] : null;
+    return {
+      t, n1, n2, i1: n1.charAt(0).toUpperCase(), i2: n2.charAt(0).toUpperCase(),
+      hashtag: '#' + (n1 + 'E' + n2).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ''),
+      modeInitials: mode === 'Iniciais', modeNames: mode === 'Nomes', modeBoth: mode === 'Iniciais + nomes',
+      introShown: intro !== 'gone', openIntro: this.openIntro, capaVideo: this.props.capaVideo ?? true,
+      navOp: S.nav ? 1 : 0, navTf: S.nav ? 'none' : 'translateY(-100%)', navPe: S.nav ? 'auto' : 'none', navLinks: S.wide ? 'inline' : 'none',
+      cards: [
+        { ano: '2019', cidade: 'São Paulo', titulo: 'O primeiro encontro', texto: 'Uma conversa num café que só terminou de madrugada.', rot: '-2.5deg' },
+        { ano: '2021', cidade: 'Paris', titulo: 'A primeira viagem', texto: 'Chuva fina, croissants e a certeza de que viajar a dois era melhor.', rot: '1.8deg' },
+        { ano: '2023', cidade: 'Lisboa', titulo: 'Nossa casa', texto: 'Caixas pelo chão e a sensação de, enfim, estar em casa.', rot: '-1.2deg' },
+        { ano: '2025', cidade: 'Loire', titulo: 'O pedido', texto: 'Diante de um castelo, um joelho no chão e um sim antes do fim da pergunta.', rot: '2.4deg' }
+      ].map((c, i) => ({ ...c, n: i + 1, slot: `t05-postal-${i + 1}`, delay: i * 110,
+        flipTf: S.flips[i] ? 'rotateY(180deg)' : 'rotateY(0deg)',
+        onFlip: () => this.setState((s) => ({ flips: { ...s.flips, [i]: !s.flips[i] } })) })),
+      mapsUrl: 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('Espaço Villa Toscana, São Paulo'),
+      programa: [{ label: 'Cerimônia', fr: 'La cérémonie', hora: '16h30' }, { label: 'Recepção', fr: 'Le cocktail', hora: '18h30' }, { label: 'Festa', fr: 'Le dîner & le bal', hora: '20h00' }],
+      addCal: this.addCal, calLabel: S.calAdded ? 'Salvo na sua agenda ✓' : 'Adicionar à agenda',
+      cdUnits: [['d', 'dias'], ['h', 'horas'], ['m', 'minutos'], ['s', 'segundos']].map(([key, label], i) => ({ key, label, v: cd[key], border: i ? '1px solid rgba(220,195,147,.3)' : 'none' })),
+      frames: [
+        { basis: '34%', max: '420px', ar: '4/5', r: '2px', mt: '0px' },
+        { basis: '26%', max: '320px', ar: '3/4', r: '50%', mt: '80px' },
+        { basis: '30%', max: '380px', ar: '1/1', r: '2px', mt: '0px' },
+        { basis: '52%', max: '640px', ar: '16/10', r: '2px', mt: '0px' },
+        { basis: '30%', max: '360px', ar: '3/4', r: '50%', mt: '0px' }
+      ].map((f, i) => ({ ...f, slot: `t05-galeria-${i + 1}`, delay: (i % 3) * 120 })),
+      gifts: giftsData.map((g, i) => {
+        const on = sel === i, dim = sel != null && !on;
+        return { ...g, price: brl(g.valor), slot: `t05-presente-${i + 1}`, delay: (i % 3) * 110,
+          border: on ? t.gold : t.line, op: dim ? .55 : 1, tf: on ? 'translateY(-8px)' : 'none',
+          shadow: on ? '0 34px 60px -30px rgba(31,42,68,.5)' : '0 0 0 rgba(0,0,0,0)', imgTf: on ? 'scale(1.05)' : 'scale(1)',
+          ribV: on ? 'scaleY(1)' : 'scaleY(0)', ribH: on ? 'scaleX(1)' : 'scaleX(0)', bowOp: on ? 1 : 0, bowTf: on ? 'scale(1)' : 'scale(.3)',
+          onSelect: () => this.setState({ gift: on && !S.giftDone ? null : i, giftDone: false }),
+          onHover: (e) => { if (this.reduce) return; const tg = e.currentTarget.querySelector('[data-tag]');
+            tg && tg.animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(10deg)' }, { transform: 'rotate(-6deg)' }, { transform: 'rotate(3deg)' }, { transform: 'rotate(0deg)' }], { duration: 1300, easing: 'ease-out' }); } };
+      }),
+      sheetTf: selGift ? 'translate(-50%,0)' : 'translate(-50%,140%)', sheetOp: selGift ? 1 : 0, sheetPe: selGift ? 'auto' : 'none',
+      sheetChoose: !!selGift && !S.giftDone, sheetThanks: !!selGift && S.giftDone,
+      sheetTitle: selGift ? selGift.title : '', sheetPrice: selGift ? brl(selGift.valor) : '',
+      presentear: () => this.setState({ giftDone: true }),
+      fecharSheet: () => this.setState({ gift: null, giftDone: false }),
+      showPadrinhos: this.props.showPadrinhos ?? true,
+      padrinhos: ['Ana & Pedro', 'Lucas & Mariana', 'Rafael & Julia'].map((nomes, i) => ({ nomes, slot: `t05-padrinho-${i + 1}`, delay: i * 140 })),
+      rsvp: R, rsvpLine: S.rsvpErr ? '#a63b3f' : t.lineStrong,
+      rsvpForm: S.rsvpStep === 'form', rsvpVai: R.vai === 'sim',
+      rsvpDoneSim: S.rsvpStep === 'done' && R.vai === 'sim', rsvpDoneNao: S.rsvpStep === 'done' && R.vai === 'nao',
+      rsvpPrimeiroNome: R.nome.trim().split(' ')[0] || '',
+      simBg: R.vai === 'sim' ? t.ink : 'transparent', simFg: R.vai === 'sim' ? t.paper : t.ink,
+      naoBg: R.vai === 'nao' ? t.ink : 'transparent', naoFg: R.vai === 'nao' ? t.paper : t.ink,
+      onNome: (e) => { setR({ nome: e.target.value }); if (this.state.rsvpErr) this.setState({ rsvpErr: false }); },
+      onMsg: (e) => setR({ msg: e.target.value }),
+      vaiSim: () => setR({ vai: 'sim' }), vaiNao: () => setR({ vai: 'nao' }),
+      acompMenos: () => setR({ acomp: Math.max(0, R.acomp - 1) }), acompMais: () => setR({ acomp: Math.min(6, R.acomp + 1) }),
+      enviarRsvp: () => { if (!R.nome.trim()) return this.setState({ rsvpErr: true }); this.setState({ rsvpStep: 'done' }); },
+      refazerRsvp: () => this.setState({ rsvpStep: 'form' })
+    };
+  }
+}
+</script>
+</body>
+</html>

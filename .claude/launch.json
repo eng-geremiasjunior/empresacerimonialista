@@ -4,9 +4,21 @@
     {
       "name": "vela-dev",
       "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
-      "runtimeArgs": ["node_modules/next/dist/bin/next", "dev"],
+      "runtimeArgs": [
+        "node_modules/next/dist/bin/next",
+        "dev"
+      ],
       "port": 3000,
       "autoPort": true
+    },
+    {
+      "name": "vela-prod",
+      "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+      "runtimeArgs": [
+        "node_modules/next/dist/bin/next",
+        "start"
+      ],
+      "port": 3000
     }
   ]
 }

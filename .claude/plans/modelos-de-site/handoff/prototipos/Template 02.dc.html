@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400&amp;family=Hanken+Grotesk:wght@400;500&amp;family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;1,6..96,400&amp;family=Figtree:wght@400;500&amp;family=Italiana&amp;family=EB+Garamond:ital,wght@0,400;1,400&amp;family=Pinyon+Script&amp;family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&amp;family=Monsieur+La+Doulaise&amp;family=Marcellus&amp;family=Sacramento&amp;family=Lora:ital,wght@0,400;0,500;1,400&amp;family=Poiret+One&amp;family=Josefin+Sans:wght@300;400&amp;family=Playfair+Display:ital,wght@0,400;1,400&amp;family=Libre+Baskerville:ital@0;1&amp;display=swap">
+<script src="./image-slot.js"></script>
+<style>
+html{scroll-behavior:smooth}
+body{margin:0;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+a:hover{opacity:.75}
+input,textarea,button{font:inherit;color:inherit}
+</style>
+</helmet>
+
+<div style="background:{{ t.bg }};color:{{ t.ink }};font-family:{{ t.textFont }};font-size:{{ t.textSize }};font-weight:{{ t.textWeight }};min-height:100vh;overflow-x:clip;">
+
+<sc-if value="{{ introShown }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ openIntro }}" data-screen-label="Abertura" style="position:fixed;inset:0;z-index:100;cursor:pointer;background:{{ t.dark }};color:{{ t.darkInk }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(24px,5vh,48px);padding:24px;text-align:center;opacity:{{ introOp }};transform:{{ introTf }};transition:opacity 1.1s ease, transform 1.4s cubic-bezier(.2,.7,.2,1);">
+    <div style="font-size:11px;letter-spacing:.34em;text-transform:uppercase;opacity:.75;">O casamento de</div>
+    <div style="font-family:{{ t.nameFont }};font-weight:{{ t.nameWeight }};font-style:{{ t.nameStyle }};text-transform:{{ t.nameTT }};letter-spacing:{{ t.nameLS }};font-size:{{ t.nameSizeSm }};line-height:{{ t.nameLH }};">{{ n1 }} &amp; {{ n2 }}</div>
+    <div style="position:relative;width:min(560px,88vw);aspect-ratio:2/1;">
+      {{ introRings }}
+      <sc-if value="{{ introBurst }}" hint-placeholder-val="{{ false }}">{{ burstA }}</sc-if>
+    </div>
+    <div style="font-size:11px;letter-spacing:.34em;text-transform:uppercase;opacity:{{ introHintOp }};transition:opacity .5s;">Toque nas alianças</div>
+  </div>
+</sc-if>
+
+<div style="position:fixed;right:clamp(16px,3vw,32px);bottom:clamp(16px,3vw,32px);z-index:50;display:flex;align-items:center;gap:12px;opacity:{{ navOp }};transform:{{ navTf }};pointer-events:{{ navPe }};transition:opacity .6s ease, transform .6s cubic-bezier(.2,.7,.2,1);">
+  <a href="#rsvp" style="padding:14px 22px;border-radius:999px;background:{{ t.ink }};color:{{ t.bg }};font-size:11px;letter-spacing:.22em;text-transform:uppercase;box-shadow:0 14px 30px -14px rgba(0,0,0,.45);">Confirmar presença</a>
+  <button onClick="{{ toTop }}" style="position:relative;width:54px;height:54px;border-radius:50%;border:0;padding:0;background:{{ t.paper }};cursor:pointer;box-shadow:0 14px 30px -14px rgba(0,0,0,.4);">
+    <div style="position:absolute;inset:0;">{{ progRing }}</div>
+    <span style="position:relative;font-family:{{ t.nameFont }};font-style:{{ t.nameStyle }};font-size:{{ t.monoSize }};line-height:1;">{{ i1 }}{{ i2 }}</span>
+  </button>
+</div>
+
+<section id="inicio" data-screen-label="Hero" style="position:relative;min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(20px,3.6vh,36px);padding:clamp(72px,10vh,120px) 24px clamp(56px,8vh,88px);text-align:center;overflow:hidden;box-sizing:border-box;">
+  <div style="position:absolute;inset:0;pointer-events:none;">{{ dust }}</div>
+  <div data-hero="0" style="position:relative;font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:{{ t.accent }};text-wrap:balance;">Com todo o amor, convidamos você para o nosso casamento</div>
+  <div style="position:relative;height:min(48vh,100vw);aspect-ratio:3/4;">
+    <div data-hero-line="" style="position:absolute;inset:-12px;border:1px solid {{ t.accent }};border-bottom:0;border-radius:999px 999px 0 0;opacity:.55;"></div>
+    <div data-hero-photo="" style="position:absolute;inset:0;border-radius:999px 999px 0 0;overflow:hidden;">
+      <div data-hero-zoom="" style="position:absolute;inset:0;">
+        <image-slot id="t02-hero" src="uploads/casal-exemplo.jpg" shape="rect" placeholder="Foto do casal" style="width:100%;height:100%;"></image-slot>
+      </div>
+    </div>
+  </div>
+  <div data-hero="1" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;">
+    <sc-if value="{{ modeNames }}" hint-placeholder-val="{{ true }}">
+      <h1 style="margin:0;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:.1em .32em;font-weight:{{ t.nameWeight }};font-family:{{ t.nameFont }};font-style:{{ t.nameStyle }};text-transform:{{ t.nameTT }};letter-spacing:{{ t.nameLS }};font-size:{{ t.nameSize }};line-height:{{ t.nameLH }};">
+        <span>{{ n1 }}</span><span style="display:inline-block;width:.95em;height:.64em;">{{ ringsSmall }}</span><span>{{ n2 }}</span>
+      </h1>
+    </sc-if>
+    <sc-if value="{{ modeInitials }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:.22em;font-family:{{ t.nameFont }};font-weight:{{ t.nameWeight }};font-style:{{ t.nameStyle }};font-size:{{ t.initSize }};line-height:{{ t.nameLH }};">
+        <span>{{ i1 }}</span><span style="display:inline-block;width:.8em;height:.54em;">{{ ringsSmall }}</span><span>{{ i2 }}</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{ modeBoth }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:.22em;font-family:{{ t.nameFont }};font-weight:{{ t.nameWeight }};font-style:{{ t.nameStyle }};font-size:{{ t.initSizeSm }};line-height:{{ t.nameLH }};">
+        <span>{{ i1 }}</span><span style="display:inline-block;width:.8em;height:.54em;">{{ ringsSmall }}</span><span>{{ i2 }}</span>
+      </div>
+      <div style="font-family:{{ t.nameFont }};font-weight:{{ t.nameWeight }};font-style:{{ t.nameStyle }};text-transform:{{ t.nameTT }};letter-spacing:{{ t.nameLS }};font-size:{{ t.nameSizeXs }};line-height:{{ t.nameLH }};">{{ n1 }} &amp; {{ n2 }}</div>
+    </sc-if>
+  </div>
+  <div data-hero="2" style="position:relative;display:flex;flex-direction:column;gap:8px;">
+    <span style="font-size:13px;letter-spacing:.34em;">31 · 10 · 2026</span>
+    <span style="font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:{{ t.muted }};">Villa Toscana — São Paulo</span>
+  </div>
+  <a data-hero="3" href="#sim" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:12px;font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:{{ t.muted }};">Role devagar<span data-cue="" style="width:1px;height:36px;background:{{ t.accent }};transform-origin:top;"></span></a>
+</section>
+
+<section id="sim" data-rings-sec="" data-screen-label="Alianças" style="position:relative;height:320vh;background:{{ t.dark }};color:{{ t.darkInk }};">
+  <div style="position:sticky;top:0;height:100vh;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(24px,5vh,56px);padding:0 24px;box-sizing:border-box;">
+    <div style="width:min(720px,94vw);aspect-ratio:2/1;">{{ scrollRings }}</div>
+    <div style="position:relative;width:100%;height:clamp(64px,10vw,120px);">
+      <sc-for list="{{ phrases }}" as="ph" hint-placeholder-count="3">
+        <div data-ph="{{ $index }}" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;opacity:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:italic;text-transform:{{ t.headTT }};letter-spacing:{{ t.headLSsoft }};font-size:{{ t.headSize }};line-height:1.1;">{{ ph }}</div>
+      </sc-for>
+    </div>
+    <div data-ph-date="" style="opacity:0;font-size:12px;letter-spacing:.36em;text-transform:uppercase;">31 de outubro de 2026</div>
+  </div>
+</section>
+
+<section data-hs="" data-screen-label="Nossa história" style="position:relative;">
+  <div style="position:sticky;top:0;height:100vh;overflow:hidden;">
+    <div data-hs-track="" style="height:100%;width:max-content;display:flex;align-items:center;gap:clamp(40px,6vw,96px);padding:0 clamp(24px,9vw,140px);box-sizing:border-box;will-change:transform;">
+      <div style="flex:none;width:min(420px,78vw);display:flex;flex-direction:column;gap:24px;">
+        <div style="font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:{{ t.accent }};">Nossa história</div>
+        <h2 style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSize }};line-height:1.1;text-wrap:balance;">Tudo começou em 2019...</h2>
+        <p style="margin:0;line-height:1.8;color:{{ t.muted }};text-wrap:pretty;">Um encontro inesperado, algumas conversas que se estenderam pela madrugada e, quando percebemos, já não fazia sentido imaginar a vida separados.</p>
+        <div style="display:flex;align-items:center;gap:14px;font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:{{ t.muted }};">Continue rolando<span style="width:48px;height:1px;background:{{ t.accent }};"></span></div>
+      </div>
+      <sc-for list="{{ timeline }}" as="m" hint-placeholder-count="4">
+        <div style="flex:none;width:clamp(220px,24vw,330px);background:{{ t.paper }};padding:12px 12px 22px;display:flex;flex-direction:column;gap:18px;box-shadow:0 30px 50px -28px rgba(60,40,20,.45), 0 2px 6px rgba(60,40,20,.08);transform:rotate({{ m.rot }}) translateY({{ m.dy }});transition:transform .8s cubic-bezier(.2,.7,.2,1);" style-hover="transform:rotate(0deg) translateY(-6px);">
+          <div data-reveal="dev" style="position:relative;aspect-ratio:4/5;overflow:hidden;">
+            <div data-zoom="" style="position:absolute;inset:0;"><image-slot id="{{ m.slot }}" src="uploads/casal-exemplo.jpg" shape="rect" placeholder="Foto de {{ m.ano }}" style="width:100%;height:100%;"></image-slot></div>
+          </div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:0 6px;">
+            <span style="font-size:15px;line-height:1.4;">{{ m.titulo }}</span>
+            <span style="font-family:{{ t.headFont }};font-style:italic;font-size:22px;color:{{ t.accent }};">{{ m.ano }}</span>
+          </div>
+        </div>
+      </sc-for>
+      <div style="flex:none;width:min(360px,70vw);font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:italic;font-size:{{ t.headSizeSm }};line-height:1.25;text-wrap:balance;">E o resto, a gente escreve juntos.</div>
+    </div>
+  </div>
+</section>
+
+<section id="dia" data-screen-label="O grande dia" style="background:{{ t.alt }};padding:clamp(96px,14vw,176px) clamp(16px,5vw,64px);display:flex;justify-content:center;">
+  <div data-reveal="up" style="width:100%;max-width:620px;">
+    <div onMouseMove="{{ tilt }}" onMouseLeave="{{ untilt }}" style="position:relative;background:{{ t.paper }};padding:clamp(48px,8vw,80px) clamp(24px,6vw,64px);text-align:center;display:flex;flex-direction:column;align-items:center;gap:22px;box-shadow:0 40px 80px -40px rgba(60,40,20,.45);transition:transform .6s cubic-bezier(.2,.7,.2,1);">
+      <div style="position:absolute;inset:14px;border:1px solid {{ t.accent }};opacity:.45;pointer-events:none;"></div>
+      <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at var(--mx,50%) var(--my,0%), rgba(255,236,190,.45), transparent 45%);"></div>
+      <div style="position:relative;width:64px;height:44px;">{{ ringsSmall }}</div>
+      <div style="position:relative;font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:{{ t.accent }};">Nosso casamento</div>
+      <h2 style="position:relative;margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSizeSm }};line-height:1.15;">31 de outubro de 2026</h2>
+      <div style="position:relative;font-size:12px;letter-spacing:.26em;text-transform:uppercase;color:{{ t.muted }};">Espaço Villa Toscana</div>
+      <div style="position:relative;width:100%;max-width:380px;display:flex;flex-direction:column;margin:14px 0;">
+        <sc-for list="{{ agenda }}" as="a" hint-placeholder-count="3">
+          <div style="display:flex;align-items:baseline;gap:14px;padding:16px 0;border-top:1px solid {{ t.line }};">
+            <span style="font-size:12px;letter-spacing:.24em;text-transform:uppercase;">{{ a.label }}</span>
+            <span style="flex:1;border-bottom:1px dotted {{ t.lineStrong }};transform:translateY(-4px);"></span>
+            <span style="font-family:{{ t.headFont }};font-style:{{ t.headStyle }};font-size:26px;line-height:1;">{{ a.hora }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="position:relative;display:flex;flex-wrap:wrap;justify-content:center;gap:12px;">
+        <a href="#local" style="padding:16px 26px;border-radius:999px;border:1px solid {{ t.ink }};font-size:11px;letter-spacing:.22em;text-transform:uppercase;">Ver localização</a>
+        <button onClick="{{ addCal }}" style="padding:16px 26px;border-radius:999px;border:1px solid {{ t.ink }};background:{{ t.ink }};color:{{ t.bg }};font-size:11px;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;">{{ calLabel }}</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="Contagem" style="padding:clamp(96px,14vw,176px) 24px;display:flex;flex-direction:column;align-items:center;gap:40px;text-align:center;">
+  <div data-reveal="up" style="position:relative;width:min(500px,86vw);aspect-ratio:1;">
+    <div style="position:absolute;inset:0;">{{ countRing }}</div>
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
+      <sc-if value="{{ cdActive }}" hint-placeholder-val="{{ true }}">
+        <div style="font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:{{ t.accent }};">Faltam</div>
+        <div data-cd="d" style="font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-size:clamp(72px,16vw,150px);line-height:1;font-variant-numeric:tabular-nums;">{{ cd.d }}</div>
+        <div style="font-size:11px;letter-spacing:.3em;text-transform:uppercase;">dias</div>
+        <div style="display:flex;gap:clamp(14px,3vw,28px);margin-top:14px;">
+          <sc-for list="{{ cdSmall }}" as="u" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;gap:6px;align-items:center;">
+              <span data-cd="{{ u.key }}" style="font-family:{{ t.headFont }};font-size:clamp(22px,4vw,32px);line-height:1;font-variant-numeric:tabular-nums;">{{ u.v }}</span>
+              <span style="font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:{{ t.muted }};">{{ u.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ cdToday }}" hint-placeholder-val="{{ false }}">
+        <div style="font-family:{{ t.headFont }};font-style:{{ t.headStyle }};font-size:{{ t.headSizeSm }};">Hoje é o dia! ❤️</div>
+      </sc-if>
+      <sc-if value="{{ cdAfter }}" hint-placeholder-val="{{ false }}">
+        <div style="font-family:{{ t.headFont }};font-style:{{ t.headStyle }};font-size:{{ t.headSizeSm }};max-width:70%;">Obrigado por celebrar com a gente.</div>
+      </sc-if>
+    </div>
+  </div>
+  <div data-reveal="up" style="font-family:{{ t.headFont }};font-style:italic;font-size:clamp(20px,2.4vw,26px);">Para o nosso grande dia.</div>
+</section>
+
+<section id="local" data-screen-label="Localização" style="background:{{ t.alt }};padding:clamp(96px,14vw,176px) clamp(20px,5vw,64px);">
+  <div style="max-width:1100px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:clamp(40px,7vw,96px);align-items:center;">
+    <div data-reveal="img" style="position:relative;aspect-ratio:1;border-radius:50%;overflow:hidden;">
+      <div data-zoom="" style="position:absolute;inset:0;"><div data-parallax="" style="position:absolute;left:0;right:0;top:-8%;height:116%;"><image-slot id="t02-local" src="uploads/casal-exemplo.jpg" shape="rect" placeholder="Foto do espaço" style="width:100%;height:100%;"></image-slot></div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:22px;">
+      <div data-reveal="up" style="font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:{{ t.accent }};">Onde vamos celebrar</div>
+      <h2 data-reveal="up" data-delay="120" style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSize }};line-height:1.1;">Espaço Villa Toscana</h2>
+      <p data-reveal="up" data-delay="200" style="margin:0;color:{{ t.muted }};line-height:1.7;">Rua X, 123 — São Paulo/SP</p>
+      <a data-reveal="up" data-delay="280" href="{{ mapsUrl }}" target="_blank" rel="noopener" style="align-self:flex-start;display:inline-flex;gap:10px;align-items:center;padding:16px 26px;border-radius:999px;border:1px solid {{ t.ink }};font-size:11px;letter-spacing:.22em;text-transform:uppercase;">Como chegar <span>→</span></a>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="Dress code" style="padding:clamp(96px,14vw,176px) clamp(20px,5vw,64px);text-align:center;">
+  <div style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:24px;">
+    <div data-reveal="up" style="font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:{{ t.accent }};">Como se vestir</div>
+    <h2 data-reveal="up" data-delay="120" style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSize }};line-height:1.1;">Traje: Social</h2>
+    <p data-reveal="up" data-delay="200" style="margin:0;max-width:440px;line-height:1.8;color:{{ t.muted }};text-wrap:pretty;">Queremos que você se sinta confortável e elegante para celebrar esse dia com a gente.</p>
+    <div style="width:100%;max-width:640px;margin-top:32px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(10px,2vw,20px);align-items:end;">
+      <div data-reveal="img" style="position:relative;aspect-ratio:3/4.4;border-radius:999px 999px 0 0;overflow:hidden;"><div data-zoom="" style="position:absolute;inset:0;"><image-slot id="t02-traje-1" src="uploads/casal-exemplo.jpg" shape="rect" placeholder="Referência" style="width:100%;height:100%;"></image-slot></div></div>
+      <div data-reveal="img" data-delay="150" style="position:relative;aspect-ratio:3/5;border-radius:999px 999px 0 0;overflow:hidden;"><div data-zoom="" style="position:absolute;inset:0;"><image-slot id="t02-traje-2" src="uploads/casal-exemplo.jpg" shape="rect" placeholder="Referência" style="width:100%;height:100%;"></image-slot></div></div>
+      <div data-reveal="img" data-delay="300" style="position:relative;aspect-ratio:3/4.4;border-radius:999px 999px 0 0;overflow:hidden;"><div data-zoom="" style="position:absolute;inset:0;"><image-slot id="t02-traje-3" src="uploads/casal-exemplo.jpg" shape="rect" placeholder="Referência" style="width:100%;height:100%;"></image-slot></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="rsvp" data-screen-label="RSVP" style="background:{{ t.dark }};color:{{ t.darkInk }};padding:clamp(96px,14vw,176px) clamp(16px,5vw,64px);">
+  <div style="position:relative;max-width:640px;margin:0 auto;display:flex;flex-direction:column;align-items:center;text-align:center;gap:26px;">
+    <sc-if value="{{ rsvpShowIntro }}" hint-placeholder-val="{{ true }}">
+      <h2 data-reveal="up" style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSize }};line-height:1.1;text-wrap:balance;">Você vem celebrar com a gente?</h2>
+      <p data-reveal="up" data-delay="120" style="margin:0;line-height:1.7;opacity:.8;">Confirme sua presença até <span style="white-space:nowrap;">15 de setembro</span></p>
+    </sc-if>
+    <sc-if value="{{ rsvpShowButton }}" hint-placeholder-val="{{ true }}">
+      <button data-reveal="up" data-delay="220" onClick="{{ openRsvp }}" style="margin-top:10px;padding:18px 36px;border-radius:999px;border:1px solid {{ t.darkInk }};background:{{ t.darkInk }};color:{{ t.dark }};font-size:11px;letter-spacing:.24em;text-transform:uppercase;cursor:pointer;">Confirmar presença</button>
+    </sc-if>
+    <sc-if value="{{ rsvpForm }}" hint-placeholder-val="{{ false }}">
+      <div data-enter="" style="width:100%;margin-top:12px;display:flex;flex-direction:column;gap:30px;text-align:left;">
+        <label style="display:flex;flex-direction:column;gap:10px;">
+          <span style="font-size:11px;letter-spacing:.24em;text-transform:uppercase;opacity:.7;">Seu nome</span>
+          <input value="{{ rsvp.nome }}" onChange="{{ onNome }}" placeholder="Como está no convite" style="border:0;border-bottom:1px solid {{ t.darkLine }};background:transparent;padding:10px 0;font-size:18px;outline:none;">
+          <sc-if value="{{ rsvpErr }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:{{ t.gold }};">Conte para a gente quem você é.</span></sc-if>
+        </label>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">
+          <button onClick="{{ vaiSim }}" style="padding:16px 12px;border-radius:999px;border:1px solid {{ t.darkInk }};background:{{ simBg }};color:{{ simFg }};cursor:pointer;transition:all .4s ease;">Sim, estarei lá</button>
+          <button onClick="{{ vaiNao }}" style="padding:16px 12px;border-radius:999px;border:1px solid {{ t.darkInk }};background:{{ naoBg }};color:{{ naoFg }};cursor:pointer;transition:all .4s ease;">Não poderei ir</button>
+        </div>
+        <sc-if value="{{ rsvpVai }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:16px;border-bottom:1px solid {{ t.darkLine }};">
+            <span style="font-size:11px;letter-spacing:.24em;text-transform:uppercase;opacity:.7;">Acompanhantes</span>
+            <div style="display:flex;align-items:center;gap:20px;">
+              <button onClick="{{ acompMenos }}" style="width:44px;height:44px;border-radius:50%;border:1px solid {{ t.darkLine }};background:transparent;cursor:pointer;font-size:18px;">−</button>
+              <span style="min-width:20px;text-align:center;font-family:{{ t.headFont }};font-size:26px;">{{ rsvp.acomp }}</span>
+              <button onClick="{{ acompMais }}" style="width:44px;height:44px;border-radius:50%;border:1px solid {{ t.darkLine }};background:transparent;cursor:pointer;font-size:18px;">+</button>
+            </div>
+          </div>
+        </sc-if>
+        <label style="display:flex;flex-direction:column;gap:10px;">
+          <span style="font-size:11px;letter-spacing:.24em;text-transform:uppercase;opacity:.7;">Um recado para os noivos (opcional)</span>
+          <textarea value="{{ rsvp.msg }}" onChange="{{ onMsg }}" rows="3" style="border:0;border-bottom:1px solid {{ t.darkLine }};background:transparent;padding:10px 0;font-size:17px;outline:none;resize:none;"></textarea>
+        </label>
+        <button onClick="{{ enviarRsvp }}" style="align-self:center;padding:18px 40px;border-radius:999px;border:1px solid {{ t.darkInk }};background:{{ t.darkInk }};color:{{ t.dark }};font-size:11px;letter-spacing:.24em;text-transform:uppercase;cursor:pointer;">Enviar confirmação</button>
+      </div>
+    </sc-if>
+    <sc-if value="{{ rsvpDoneSim }}" hint-placeholder-val="{{ false }}">
+      <div data-enter="" style="display:flex;flex-direction:column;align-items:center;gap:22px;">
+        <div style="position:relative;width:min(360px,80vw);aspect-ratio:2/1;">{{ rsvpRings }}{{ burstB }}</div>
+        <h2 style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSizeSm }};line-height:1.2;text-wrap:balance;">Que alegria ter você com a gente! ❤️</h2>
+        <p style="margin:0;line-height:1.7;opacity:.8;">{{ rsvpPrimeiroNome }}, sua presença está confirmada. Nos vemos no dia 31 de outubro.</p>
+        <button onClick="{{ refazerRsvp }}" style="background:transparent;border:0;border-bottom:1px solid {{ t.darkLine }};padding:0 0 6px;font-size:11px;letter-spacing:.24em;text-transform:uppercase;cursor:pointer;">Alterar resposta</button>
+      </div>
+    </sc-if>
+    <sc-if value="{{ rsvpDoneNao }}" hint-placeholder-val="{{ false }}">
+      <div data-enter="" style="display:flex;flex-direction:column;align-items:center;gap:20px;">
+        <h2 style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};font-size:{{ t.headSizeSm }};line-height:1.2;">Vamos sentir sua falta.</h2>
+        <p style="margin:0;line-height:1.7;opacity:.8;">Obrigado por nos avisar, {{ rsvpPrimeiroNome }}. Você estará no nosso coração nesse dia.</p>
+        <button onClick="{{ refazerRsvp }}" style="background:transparent;border:0;border-bottom:1px solid {{ t.darkLine }};padding:0 0 6px;font-size:11px;letter-spacing:.24em;text-transform:uppercase;cursor:pointer;">Alterar resposta</button>
+      </div>
+    </sc-if>
+  </div>
+</section>
+
+<section id="presentes" data-screen-label="Presentes" style="padding:clamp(96px,14vw,176px) clamp(20px,5vw,64px);">
+  <div style="max-width:1160px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:22px;text-align:center;">
+    <h2 data-reveal="up" style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSize }};line-height:1.1;text-wrap:balance;">Sua presença já é o nosso presente.</h2>
+    <p data-reveal="up" data-delay="120" style="margin:0;color:{{ t.muted }};line-height:1.7;">Mas, se quiserem nos presentear...</p>
+    <div data-reveal="up" data-delay="200" style="margin-top:20px;font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:{{ t.accent }};">Nossa lista de presentes</div>
+    <div style="width:100%;margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:20px;text-align:left;">
+      <sc-for list="{{ gifts }}" as="g" hint-placeholder-count="4">
+        <div data-reveal="up" data-delay="{{ g.delay }}" style="display:flex;"><button onClick="{{ g.onSelect }}" style="flex:1;position:relative;display:flex;flex-direction:column;gap:18px;padding:10px 10px 26px;border-radius:20px;border:1.5px solid transparent;background:{{ g.bgBorder }};cursor:pointer;text-align:left;overflow:hidden;opacity:{{ g.op }};transform:{{ g.tf }};box-shadow:{{ g.shadow }};transition:opacity .6s ease, transform .7s cubic-bezier(.2,.7,.2,1), box-shadow .7s ease;">
+          <div style="position:relative;width:100%;aspect-ratio:1;border-radius:12px;overflow:hidden;">
+            <div style="position:absolute;inset:0;transform:{{ g.imgTf }};transition:transform 1.4s cubic-bezier(.2,.7,.2,1);"><image-slot id="{{ g.slot }}" src="uploads/casal-exemplo.jpg" shape="rect" placeholder="{{ g.title }}" style="width:100%;height:100%;"></image-slot></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;padding:0 10px;">
+            <div style="font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLSsoft }};font-size:{{ t.cardHead }};line-height:1.2;">{{ g.title }}</div>
+            <div style="font-size:.92em;line-height:1.6;color:{{ t.muted }};">{{ g.desc }}</div>
+            <div style="margin-top:8px;font-family:{{ t.headFont }};font-style:{{ t.headStyle }};font-size:22px;color:{{ t.accent }};font-variant-numeric:tabular-nums;">{{ g.price }}</div>
+          </div>
+          <div style="position:absolute;top:20px;right:20px;width:52px;height:36px;padding:6px 8px;border-radius:999px;background:{{ t.paper }};box-sizing:border-box;opacity:{{ g.badgeOp }};transform:{{ g.badgeTf }};transition:opacity .5s ease, transform .7s cubic-bezier(.34,1.56,.64,1);">{{ g.badge }}</div>
+          <div style="position:absolute;top:0;bottom:0;left:0;width:60%;pointer-events:none;background:linear-gradient(100deg,transparent,rgba(255,240,205,.55),transparent);transform:{{ g.sheenTf }};transition:{{ g.sheenTr }};"></div>
+        </button></div>
+      </sc-for>
+    </div>
+    <sc-if value="{{ giftPanel }}" hint-placeholder-val="{{ false }}">
+      <div data-enter="" style="width:100%;max-width:640px;margin-top:28px;display:flex;flex-direction:column;align-items:center;gap:22px;">
+        <p style="margin:0;font-family:{{ t.headFont }};font-style:italic;font-size:clamp(20px,2.4vw,26px);line-height:1.4;">Você escolheu {{ giftTitleLower }}.</p>
+        <button onClick="{{ presentear }}" style="padding:18px 40px;border-radius:999px;border:1px solid {{ t.ink }};background:{{ t.ink }};color:{{ t.bg }};font-size:11px;letter-spacing:.24em;text-transform:uppercase;cursor:pointer;">{{ presentearLabel }}</button>
+      </div>
+    </sc-if>
+    <sc-if value="{{ giftDone }}" hint-placeholder-val="{{ false }}">
+      <div data-enter="" style="max-width:560px;margin-top:28px;display:flex;flex-direction:column;align-items:center;gap:14px;">
+        <p style="margin:0;font-family:{{ t.headFont }};font-style:{{ t.headStyle }};font-size:{{ t.headSizeSm }};line-height:1.2;">Obrigado pelo carinho.</p>
+        <p style="margin:0;color:{{ t.muted }};line-height:1.7;">Seu presente para {{ giftTitleLower }} chegou até nós.</p>
+        <button onClick="{{ outroPresente }}" style="margin-top:6px;background:transparent;border:0;border-bottom:1px solid {{ t.lineStrong }};padding:0 0 6px;font-size:11px;letter-spacing:.24em;text-transform:uppercase;cursor:pointer;">Escolher outro presente</button>
+      </div>
+    </sc-if>
+  </div>
+</section>
+
+<section data-screen-label="Nosso jeito" style="background:{{ t.alt }};padding:clamp(96px,14vw,176px) clamp(20px,5vw,64px);">
+  <div style="max-width:1100px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:clamp(48px,7vw,80px);text-align:center;">
+    <h2 data-reveal="up" style="margin:0;max-width:640px;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSize }};line-height:1.1;text-wrap:balance;">Pequenas coisas que fazem a gente ser a gente</h2>
+    <div style="width:100%;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:28px;">
+      <sc-for list="{{ jeito }}" as="j" hint-placeholder-count="4">
+        <div data-reveal="up" data-delay="{{ j.delay }}">
+          <div style="background:{{ t.paper }};padding:36px 24px;display:flex;flex-direction:column;align-items:center;gap:16px;box-shadow:0 24px 40px -26px rgba(60,40,20,.4);transform:rotate({{ j.rot }});transition:transform .7s cubic-bezier(.2,.7,.2,1);" style-hover="transform:rotate(0deg) translateY(-8px) scale(1.03);">
+            <span style="font-size:11px;letter-spacing:.24em;color:{{ t.accent }};">{{ j.n }}</span>
+            <span style="font-family:{{ t.headFont }};font-style:italic;font-size:clamp(20px,2.2vw,26px);line-height:1.3;text-wrap:balance;">{{ j.txt }}</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="Galeria" style="padding:clamp(96px,14vw,176px) clamp(16px,4vw,56px);">
+  <div style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:clamp(10px,2vw,24px);align-items:start;">
+    <div data-reveal="dev" style="grid-column:span 7;position:relative;aspect-ratio:4/5;border-radius:999px 999px 0 0;overflow:hidden;"><div data-zoom="" style="position:absolute;inset:0;"><div style="position:absolute;inset:0;transition:transform 1.8s cubic-bezier(.2,.7,.2,1);" style-hover="transform:scale(1.06);"><image-slot id="t02-galeria-1" src="uploads/casal-exemplo.jpg" shape="rect" placeholder="Foto" style="width:100%;height:100%;"></image-slot></div></div></div>
+    <div style="grid-column:span 5;display:flex;flex-direction:column;gap:clamp(10px,2vw,24px);margin-top:clamp(40px,10vw,140px);">
+      <div data-reveal="dev" style="position:relative;aspect-ratio:1;border-radius:50%;overflow:hidden;"><div data-zoom="" style="position:absolute;inset:0;"><div style="position:absolute;inset:0;transition:transform 1.8s cubic-bezier(.2,.7,.2,1);" style-hover="transform:scale(1.06);"><image-slot id="t02-galeria-2" src="uploads/casal-exemplo.jpg" shape="rect" placeholder="Foto" style="width:100%;height:100%;"></image-slot></div></div></div>
+      <div data-reveal="dev" data-delay="160" style="position:relative;aspect-ratio:4/3;border-radius:16px;overflow:hidden;"><div data-zoom="" style="position:absolute;inset:0;"><div style="position:absolute;inset:0;transition:transform 1.8s cubic-bezier(.2,.7,.2,1);" style-hover="transform:scale(1.06);"><image-slot id="t02-galeria-3" src="uploads/casal-exemplo.jpg" shape="rect" placeholder="Foto" style="width:100%;height:100%;"></image-slot></div></div></div>
+    </div>
+    <p data-reveal="up" style="grid-column:1 / -1;margin:clamp(56px,9vw,120px) auto;max-width:640px;text-align:center;font-family:{{ t.headFont }};font-style:italic;font-weight:{{ t.headWeight }};font-size:clamp(26px,3.6vw,44px);line-height:1.3;text-wrap:balance;">Alguns momentos merecem ser lembrados para sempre.</p>
+    <div data-reveal="dev" style="grid-column:1 / -1;position:relative;aspect-ratio:16/8;border-radius:16px;overflow:hidden;"><div data-zoom="" style="position:absolute;inset:0;"><div style="position:absolute;inset:0;transition:transform 1.8s cubic-bezier(.2,.7,.2,1);" style-hover="transform:scale(1.04);"><image-slot id="t02-galeria-4" src="uploads/casal-exemplo.jpg" shape="rect" placeholder="Foto grande" style="width:100%;height:100%;"></image-slot></div></div></div>
+  </div>
+</section>
+
+<sc-if value="{{ showPadrinhos }}" hint-placeholder-val="{{ true }}">
+  <section data-screen-label="Padrinhos" style="background:{{ t.alt }};padding:clamp(96px,14vw,176px) clamp(20px,5vw,64px);text-align:center;">
+    <div style="max-width:1000px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:clamp(48px,7vw,80px);">
+      <h2 data-reveal="up" style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSize }};line-height:1.1;">Ao nosso lado</h2>
+      <div style="width:100%;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:56px 32px;">
+        <sc-for list="{{ padrinhos }}" as="p" hint-placeholder-count="3">
+          <div data-reveal="up" data-delay="{{ p.delay }}" style="display:flex;flex-direction:column;align-items:center;gap:22px;">
+            <div style="position:relative;width:150px;height:200px;border-radius:999px;overflow:hidden;box-shadow:0 0 0 1px {{ t.accent }}, 0 0 0 8px {{ t.alt }}, 0 0 0 9px {{ t.line }};">
+              <image-slot id="{{ p.slot }}" src="uploads/casal-exemplo.jpg" shape="rect" placeholder="Foto" style="width:100%;height:100%;"></image-slot>
+            </div>
+            <div style="font-family:{{ t.headFont }};font-style:{{ t.headStyle }};font-size:clamp(20px,2.2vw,24px);letter-spacing:{{ t.headLSsoft }};">{{ p.nomes }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+</sc-if>
+
+<section data-screen-label="Recado" style="padding:clamp(112px,16vw,200px) clamp(20px,5vw,64px);text-align:center;">
+  <div style="max-width:640px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:30px;">
+    <h2 data-reveal="up" style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSize }};line-height:1.1;">Esperamos você</h2>
+    <p data-reveal="up" data-delay="120" style="margin:0;line-height:1.85;color:{{ t.muted }};text-wrap:pretty;">Estamos preparando tudo com muito carinho e mal podemos esperar para viver esse dia ao lado de quem amamos.</p>
+    <div data-reveal="up" data-delay="260" style="font-family:{{ t.nameFont }};font-weight:{{ t.nameWeight }};font-style:{{ t.nameStyle }};text-transform:{{ t.nameTT }};letter-spacing:{{ t.nameLS }};font-size:{{ t.nameSizeMd }};line-height:{{ t.nameLH }};color:{{ t.accent }};">{{ n1 }} &amp; {{ n2 }}</div>
+    <div data-reveal="up" data-delay="360" style="margin-top:24px;display:flex;flex-direction:column;align-items:center;gap:10px;">
+      <span style="font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:{{ t.muted }};">Compartilhe esse momento com a gente</span>
+      <span style="font-family:{{ t.headFont }};font-style:{{ t.headStyle }};font-size:clamp(26px,4vw,44px);overflow-wrap:anywhere;">{{ hashtag }}</span>
+    </div>
+  </div>
+</section>
+
+<footer data-screen-label="Rodapé" style="background:{{ t.dark }};color:{{ t.darkInk }};padding:clamp(80px,11vw,128px) 24px 40px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px;">
+  <div style="width:80px;height:54px;">{{ ringsSmall }}</div>
+  <div style="font-family:{{ t.nameFont }};font-weight:{{ t.nameWeight }};font-style:{{ t.nameStyle }};text-transform:{{ t.nameTT }};letter-spacing:{{ t.nameLS }};font-size:{{ t.nameSizeMd }};line-height:{{ t.nameLH }};">{{ n1 }} &amp; {{ n2 }}</div>
+  <div style="font-size:12px;letter-spacing:.34em;">31.10.2026</div>
+  <div style="font-family:{{ t.headFont }};font-style:italic;opacity:.8;">Feito com carinho.</div>
+  <div style="margin-top:64px;font-size:10px;letter-spacing:.24em;text-transform:uppercase;opacity:.5;">Site criado com eOrganizei</div>
+</footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;nome1&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Marina&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Casal&quot;},&quot;nome2&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;João&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Casal&quot;},&quot;modoNome&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Nomes&quot;,&quot;Iniciais&quot;,&quot;Iniciais + nomes&quot;],&quot;default&quot;:&quot;Nomes&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Casal&quot;},&quot;dataISO&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;2026-10-31T16:30:00&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Casal&quot;},&quot;fonte&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;01 Essencial&quot;,&quot;02 Maison&quot;,&quot;03 Atelier&quot;,&quot;04 Caligrafia&quot;,&quot;05 Riviera&quot;,&quot;06 Bilhete&quot;,&quot;07 Soirée&quot;,&quot;08 Relicário&quot;],&quot;default&quot;:&quot;04 Caligrafia&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Estilo&quot;},&quot;showIntro&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Seções&quot;},&quot;showPadrinhos&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Seções&quot;}}">
+class Component extends DCLogic {
+  state = { intro: 'closed', nav: false, now: Date.now(),
+    rsvpStep: 'idle', rsvp: { nome: '', vai: 'sim', acomp: 0, msg: '' }, rsvpErr: false,
+    gift: null, amount: null, giftDone: false, calAdded: false };
+  ringSep = 1;
+
+  Rings = (p) => {
+    const h = React.createElement, ref = React.useRef(), pr = React.useRef(p); pr.current = p;
+    const uid = React.useRef('r' + Math.random().toString(36).slice(2, 8)).current;
+    React.useEffect(() => {
+      const svg = ref.current; if (!svg) return;
+      const A = svg.querySelectorAll('[data-a]'), B = svg.querySelectorAll('[data-b]'), G = svg.querySelector('#' + uid + 'g'),
+        glow = svg.querySelector('[data-glow]'), sp = svg.querySelectorAll('[data-sp]');
+      let cur = pr.current.from ?? pr.current.get(), raf;
+      const loop = (t) => {
+        const tg = pr.current.get(); cur += (tg - cur) * (pr.current.lerp || .06); if (Math.abs(tg - cur) < .0005) cur = tg;
+        const off = 29 + cur * 95, sx = 1;
+        A.forEach((e) => e.setAttribute('transform', `translate(${-off} 0) scale(${sx} 1)`));
+        B.forEach((e) => e.setAttribute('transform', `translate(${off} 0) scale(${sx} 1)`));
+        G.setAttribute('gradientTransform', `rotate(${(t / 28) % 360} .5 .5)`);
+        const j = Math.max(0, 1 - cur * 6);
+        glow && glow.setAttribute('opacity', (j * (.45 + .2 * Math.sin(t / 700))).toFixed(3));
+        sp.forEach((s, i) => { const v = j * Math.max(0, Math.sin(t / 460 + i * 1.9)); s.setAttribute('opacity', v.toFixed(3)); s.setAttribute('transform', `translate(${s.dataset.x} ${s.dataset.y}) scale(${(.3 + v * .9).toFixed(3)})`); });
+        raf = requestAnimationFrame(loop);
+      };
+      raf = requestAnimationFrame(loop);
+      return () => cancelAnimationFrame(raf);
+    }, []);
+    const ring = (k, extra) => h('g', { key: k, ...extra },
+      h('circle', { r: 57, fill: 'none', stroke: 'rgba(70,45,10,.35)', strokeWidth: .8 }),
+      h('circle', { r: 52, fill: 'none', stroke: `url(#${uid}g)`, strokeWidth: 10 }),
+      h('circle', { r: 47, fill: 'none', stroke: 'rgba(70,45,10,.35)', strokeWidth: .8 }),
+      h('circle', { r: 54.5, fill: 'none', stroke: 'rgba(255,248,225,.6)', strokeWidth: 1.1 }));
+    const stops = [[0, '#7a5620'], [.22, '#d6b062'], [.42, '#fff2c9'], [.58, '#e3c178'], [.8, '#9b7430'], [1, '#6d4b1a']];
+    return h('svg', { ref, viewBox: p.compact ? '-92 -62 184 124' : '-190 -95 380 190', style: { width: '100%', height: '100%', overflow: 'visible', display: 'block' } },
+      h('defs', null,
+        h('linearGradient', { id: uid + 'g', x1: 0, y1: 0, x2: 1, y2: 1 }, stops.map(([o, c], i) => h('stop', { key: i, offset: o, stopColor: c }))),
+        h('radialGradient', { id: uid + 'r' }, h('stop', { offset: 0, stopColor: '#ffdf9a', stopOpacity: .85 }), h('stop', { offset: 1, stopColor: '#ffdf9a', stopOpacity: 0 })),
+        h('clipPath', { id: uid + 'c' }, h('rect', { x: 0, y: -72, width: 72, height: 70 }))),
+      p.glow === false ? null : h('circle', { 'data-glow': '', r: 130, fill: `url(#${uid}r)`, opacity: 0 }),
+      ring('a', { 'data-a': '' }), ring('b', { 'data-b': '' }),
+      h('g', { 'data-a': '' }, h('g', { clipPath: `url(#${uid}c)` }, ring('a2', {}))),
+      p.sparkle === false ? null : [[-8, -74], [84, -44], [-84, 36], [44, 62]].map(([x, y], i) => h('path', { key: 's' + i, 'data-sp': '', 'data-x': x, 'data-y': y, opacity: 0, fill: '#fff4d2',
+        d: 'M0 -8 L1.8 -1.8 L8 0 L1.8 1.8 L0 8 L-1.8 1.8 L-8 0 L-1.8 -1.8 Z' })));
+  };
+
+  Burst = (p) => {
+    const h = React.createElement, ref = React.useRef();
+    React.useEffect(() => {
+      [...ref.current.children].forEach((k) => {
+        const a = Math.random() * Math.PI * 2, d = 60 + Math.random() * (p.spread || 240);
+        k.animate([{ transform: 'translate(-50%,-50%) scale(0)', opacity: 1 },
+          { transform: `translate(calc(-50% + ${Math.cos(a) * d}px), calc(-50% + ${Math.sin(a) * d + 50}px)) scale(1)`, opacity: 0 }],
+          { duration: 1400 + Math.random() * 1400, delay: (p.delay || 0) + Math.random() * 250, easing: 'cubic-bezier(.1,.8,.3,1)', fill: 'both' });
+      });
+    }, []);
+    return h('div', { ref, style: { position: 'absolute', inset: 0, pointerEvents: 'none' } },
+      Array.from({ length: p.count || 44 }, (_, i) => h('span', { key: i, style: { position: 'absolute', left: '50%', top: '50%',
+        width: i % 3 ? 4 : 7, height: i % 3 ? 4 : 7, borderRadius: i % 4 ? '50%' : '1px', background: i % 2 ? '#f3d990' : '#c9a052',
+        boxShadow: '0 0 8px rgba(255,220,140,.9)', opacity: 0 } })));
+  };
+
+  Dust = () => {
+    const h = React.createElement, ref = React.useRef();
+    React.useEffect(() => {
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      [...ref.current.children].forEach((k) => {
+        k.animate([{ transform: 'translateY(0)', opacity: 0 }, { opacity: .9, offset: .4 }, { transform: `translate(${Math.random() * 40 - 20}px,-${60 + Math.random() * 90}px)`, opacity: 0 }],
+          { duration: 6000 + Math.random() * 7000, delay: Math.random() * 6000, iterations: Infinity, easing: 'ease-in-out' });
+      });
+    }, []);
+    return h('div', { ref, style: { position: 'absolute', inset: 0, overflow: 'hidden' } },
+      Array.from({ length: 34 }, (_, i) => { const s = 2 + (i % 3); return h('span', { key: i, style: { position: 'absolute', left: `${(i * 29 + 11) % 100}%`, top: `${(i * 47 + 23) % 100}%`,
+        width: s, height: s, borderRadius: '50%', background: '#e7c77f', boxShadow: '0 0 10px 2px rgba(231,199,127,.55)', opacity: 0 } }); }));
+  };
+
+  Arc = (p) => {
+    const h = React.createElement, uid = React.useRef('a' + Math.random().toString(36).slice(2, 8)).current;
+    const vb = p.small ? 60 : 200, r = p.small ? 27 : 94, c = vb / 2, L = 2 * Math.PI * r, f = Math.max(0, Math.min(1, p.frac || 0));
+    const ang = f * 2 * Math.PI - Math.PI / 2;
+    return h('svg', { viewBox: `0 0 ${vb} ${vb}`, style: { width: '100%', height: '100%', display: 'block', overflow: 'visible' } },
+      h('defs', null, h('linearGradient', { id: uid, x1: 0, y1: 0, x2: 1, y2: 1 },
+        h('stop', { offset: 0, stopColor: '#8a6526' }), h('stop', { offset: .45, stopColor: '#f4dc9c' }), h('stop', { offset: 1, stopColor: '#9b7430' }))),
+      h('circle', { cx: c, cy: c, r, fill: 'none', stroke: p.track, strokeWidth: p.small ? 1.5 : 1 }),
+      h('circle', { 'data-prog': p.small ? '' : undefined, cx: c, cy: c, r, fill: 'none', stroke: `url(#${uid})`, strokeWidth: p.small ? 2.5 : 3, strokeLinecap: 'round',
+        strokeDasharray: L, strokeDashoffset: p.small ? L : L * (1 - f), transform: `rotate(-90 ${c} ${c})`, style: { transition: 'stroke-dashoffset 1.2s cubic-bezier(.2,.7,.2,1)' } }),
+      p.small ? null : h('circle', { cx: c + r * Math.cos(ang), cy: c + r * Math.sin(ang), r: 5, fill: '#e9cd87', style: { filter: 'drop-shadow(0 0 6px rgba(233,205,135,.9))' } }));
+  };
+
+  theme() {
+    const F = {
+      essencial: { nf: "'Jost',sans-serif", nw: 300, ntt: 'uppercase', nls: '.14em', ns: 'normal', s: .72, nlh: 1.1, hf: "'Jost',sans-serif", hw: 300, htt: 'uppercase', hls: '.16em', hs: 'normal', hz: [22, 3, 34], tf: "'Hanken Grotesk',sans-serif", tz: 16, tw: 400 },
+      maison: { nf: "'Bodoni Moda',serif", nw: 400, ntt: 'none', nls: '-.01em', ns: 'normal', s: .92, nlh: 1.05, hf: "'Bodoni Moda',serif", hw: 400, htt: 'none', hls: '-.01em', hs: 'normal', hz: [34, 5, 62], tf: "'Figtree',sans-serif", tz: 16, tw: 400 },
+      atelier: { nf: "'Italiana',serif", nw: 400, ntt: 'none', nls: '.04em', ns: 'normal', s: .94, nlh: 1.1, hf: "'Italiana',serif", hw: 400, htt: 'none', hls: '.04em', hs: 'normal', hz: [34, 5, 60], tf: "'EB Garamond',serif", tz: 19, tw: 400 },
+      caligrafia: { nf: "'Pinyon Script',cursive", nw: 400, ntt: 'none', nls: '0', ns: 'normal', s: 1.1, nlh: 1.35, hf: "'Cormorant Garamond',serif", hw: 400, htt: 'none', hls: '0', hs: 'normal', hz: [36, 5.2, 64], tf: "'Cormorant Garamond',serif", tz: 20, tw: 400 },
+      riviera: { nf: "'Monsieur La Doulaise',cursive", nw: 400, ntt: 'none', nls: '0', ns: 'normal', s: 1.3, nlh: 1.35, hf: "'Marcellus',serif", hw: 400, htt: 'none', hls: '.03em', hs: 'normal', hz: [30, 4.2, 50], tf: "'Marcellus',serif", tz: 17, tw: 400 },
+      bilhete: { nf: "'Sacramento',cursive", nw: 400, ntt: 'none', nls: '0', ns: 'normal', s: 1.15, nlh: 1.3, hf: "'Lora',serif", hw: 400, htt: 'none', hls: '0', hs: 'italic', hz: [32, 4.6, 56], tf: "'Lora',serif", tz: 17, tw: 400 },
+      soiree: { nf: "'Poiret One',sans-serif", nw: 400, ntt: 'uppercase', nls: '.12em', ns: 'normal', s: .74, nlh: 1.15, hf: "'Poiret One',sans-serif", hw: 400, htt: 'uppercase', hls: '.14em', hs: 'normal', hz: [26, 3.6, 42], tf: "'Josefin Sans',sans-serif", tz: 17, tw: 300 },
+      relicario: { nf: "'Playfair Display',serif", nw: 400, ntt: 'none', nls: '0', ns: 'italic', s: .92, nlh: 1.1, hf: "'Playfair Display',serif", hw: 400, htt: 'none', hls: '0', hs: 'italic', hz: [34, 5, 60], tf: "'Libre Baskerville',serif", tz: 16, tw: 400 }
+    };
+    const p = { bg: '#f8f1e7', alt: '#f1e6d6', paper: '#fffcf6', ink: '#3a2a20', muted: '#6e5a4a', accent: '#9a6b3c', line: '#e6d8c4', lineStrong: '#bfa88c',
+      dark: '#2a1d16', darkInk: '#f5eadb', darkLine: 'rgba(245,234,219,.3)', gold: '#e3c178' };
+    const key = String(this.props.fonte ?? '04 Caligrafia').split(' ').slice(1).join(' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const f = F[key] || F.caligrafia, s = f.s, hz = f.hz;
+    const c = (a, b, m) => `clamp(${Math.round(a * s)}px, ${(b * s).toFixed(2)}vw, ${Math.round(m * s)}px)`;
+    return { ...p, nameFont: f.nf, nameWeight: f.nw, nameTT: f.ntt, nameLS: f.nls, nameStyle: f.ns, nameLH: f.nlh,
+      nameSize: c(42, 7.4, 108), nameSizeSm: c(34, 5.4, 72), nameSizeMd: c(34, 5, 64), nameSizeXs: c(26, 3.6, 46), initSize: c(80, 13, 170), initSizeSm: c(56, 8, 104),
+      monoSize: `${Math.round(17 * s)}px`,
+      headFont: f.hf, headWeight: f.hw, headTT: f.htt, headLS: f.hls, headLSsoft: f.htt === 'uppercase' ? '.08em' : f.hls, headStyle: f.hs,
+      headSize: `clamp(${hz[0]}px, ${hz[1]}vw, ${hz[2]}px)`, headSizeSm: `clamp(${Math.round(hz[0] * .8)}px, ${(hz[1] * .7).toFixed(2)}vw, ${Math.round(hz[2] * .66)}px)`,
+      cardHead: f.htt === 'uppercase' ? '16px' : '23px', textFont: f.tf, textSize: `${f.tz}px`, textWeight: f.tw };
+  }
+
+  introState() { return (this.props.showIntro ?? true) ? this.state.intro : 'gone'; }
+
+  componentDidMount() {
+    this.reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.revealMap = new Map();
+    this.setupReveals(); this.setupHero();
+    this.onScroll = () => { if (!this.raf) this.raf = requestAnimationFrame(() => { this.raf = null; this.scrollFx(); }); };
+    addEventListener('scroll', this.onScroll, { passive: true }); addEventListener('resize', this.onScroll);
+    this.scrollFx(); setTimeout(() => this.scrollFx(), 600);
+    this.timer = setInterval(() => this.setState({ now: Date.now() }), 1000);
+    this.lock(this.introState() !== 'gone');
+  }
+  componentWillUnmount() {
+    removeEventListener('scroll', this.onScroll); removeEventListener('resize', this.onScroll);
+    clearInterval(this.timer); this.io && this.io.disconnect(); this.lock(false);
+  }
+  componentDidUpdate(pp) {
+    if ((pp.showIntro ?? true) !== (this.props.showIntro ?? true)) {
+      const on = this.props.showIntro ?? true;
+      this.setState({ intro: on ? 'closed' : 'gone' }, () => { this.lock(on); this.setupHero(); });
+    }
+    const cd = this._cd, pv = this._pcd || {};
+    if (cd && !this.reduce) Object.keys(cd).forEach((k) => {
+      if (pv[k] !== undefined && pv[k] !== cd[k]) {
+        const el = document.querySelector(`[data-cd="${k}"]`);
+        el && el.animate([{ opacity: 0, transform: 'translateY(.35em)', filter: 'blur(6px)' }, { opacity: 1, transform: 'none', filter: 'blur(0)' }], { duration: 800, easing: 'cubic-bezier(.2,.7,.2,1)' });
+      }
+    });
+    this._pcd = cd ? { ...cd } : null;
+    document.querySelectorAll('[data-enter]:not([data-entered])').forEach((el) => {
+      el.setAttribute('data-entered', '');
+      this.reduce || el.animate([{ opacity: 0, transform: 'translateY(18px)', filter: 'blur(5px)' }, { opacity: 1, transform: 'none', filter: 'blur(0)' }], { duration: 1000, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'both' });
+    });
+  }
+  lock(on) { document.documentElement.style.overflow = on ? 'hidden' : ''; }
+
+  setupReveals() {
+    const E = 'cubic-bezier(.2,.7,.2,1)';
+    this.io = new IntersectionObserver((es) => es.forEach((e) => {
+      if (e.isIntersecting) { (this.revealMap.get(e.target) || []).forEach((a) => a.play()); this.io.unobserve(e.target); }
+    }), { rootMargin: '0px 0px -8% 0px', threshold: 0.01 });
+    if (this.reduce) return;
+    document.querySelectorAll('[data-reveal]').forEach((el) => {
+      const d = +(el.dataset.delay || 0), A = [], z = el.querySelector('[data-zoom]'), type = el.dataset.reveal;
+      if (type === 'img' && z) A.push(z.animate([{ clipPath: 'inset(100% 0 0 0)', transform: 'scale(1.25)' }, { clipPath: 'inset(0% 0 0 0)', offset: .6 }, { clipPath: 'inset(0% 0 0 0)', transform: 'scale(1)' }], { duration: 2600, delay: d, easing: E, fill: 'both' }));
+      else if (type === 'dev' && z) A.push(z.animate([{ filter: 'sepia(.9) blur(10px) brightness(1.25)', opacity: .2, transform: 'scale(1.08)' }, { filter: 'sepia(0) blur(0) brightness(1)', opacity: 1, transform: 'scale(1)' }], { duration: 2400, delay: d, easing: E, fill: 'both' }));
+      else A.push(el.animate([{ opacity: 0, transform: 'translateY(28px)', filter: 'blur(6px)' }, { opacity: 1, transform: 'none', filter: 'blur(0)' }], { duration: 1300, delay: d, easing: E, fill: 'both' }));
+      A.forEach((a) => a.pause()); this.revealMap.set(el, A); this.io.observe(el);
+    });
+  }
+
+  setupHero() {
+    (this.heroAnims || []).forEach((a) => a.cancel());
+    if (this.reduce) return;
+    const E = 'cubic-bezier(.2,.7,.2,1)', A = [], q = (s) => document.querySelector(s);
+    const ph = q('[data-hero-photo]'), z = q('[data-hero-zoom]'), ln = q('[data-hero-line]'), cue = q('[data-cue]');
+    ph && A.push(ph.animate([{ clipPath: 'inset(100% 0 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { duration: 1800, easing: 'cubic-bezier(.77,0,.18,1)', fill: 'both' }));
+    z && A.push(z.animate([{ transform: 'scale(1.3)' }, { transform: 'scale(1)' }], { duration: 4200, easing: E, fill: 'both' }));
+    ln && A.push(ln.animate([{ opacity: 0, transform: 'translateY(20px)' }, { opacity: .55, transform: 'none' }], { duration: 1800, delay: 900, easing: E, fill: 'both' }));
+    document.querySelectorAll('[data-hero]').forEach((el) => {
+      const i = +el.dataset.hero;
+      A.push(el.animate([{ opacity: 0, filter: 'blur(14px)', transform: 'translateY(16px)' }, { opacity: 1, filter: 'blur(0)', transform: 'none' }],
+        { duration: i === 1 ? 2200 : 1300, delay: [300, 1100, 1900, 2400][i], easing: E, fill: 'both' }));
+    });
+    cue && A.push(cue.animate([{ transform: 'scaleY(0)', transformOrigin: 'top' }, { transform: 'scaleY(1)', transformOrigin: 'top', offset: .5 }, { transform: 'scaleY(1)', transformOrigin: 'bottom', offset: .51 }, { transform: 'scaleY(0)', transformOrigin: 'bottom' }], { duration: 2400, delay: 2800, iterations: Infinity, easing: 'ease-in-out' }));
+    A.forEach((a) => a.pause()); this.heroAnims = A;
+    if (this.introState() === 'gone') A.forEach((a) => a.play());
+  }
+
+  scrollFx() {
+    const vh = innerHeight, cl = (x) => Math.max(0, Math.min(1, x)), q = (s) => document.querySelector(s);
+    const rs = q('[data-rings-sec]');
+    if (rs) {
+      const r = rs.getBoundingClientRect(), p = cl(-r.top / (r.height - vh));
+      const e = cl((p - .05) / .6); this.ringSep = 1 - e * e * (3 - 2 * e);
+      document.querySelectorAll('[data-ph]').forEach((el) => {
+        const i = +el.dataset.ph, c = .12 + i * .27, last = i === 2;
+        let o = 1 - Math.abs(p - c) / .13; if (last && p > c) o = 1;
+        el.style.opacity = cl(o); el.style.transform = `translateY(${(c - p) * 60}px)`; el.style.filter = `blur(${(1 - cl(o)) * 6}px)`;
+      });
+      const d = q('[data-ph-date]'); if (d) d.style.opacity = cl((p - .78) / .12);
+    }
+    const hs = q('[data-hs]'), tr = q('[data-hs-track]');
+    if (hs && tr) {
+      const dist = Math.max(0, tr.scrollWidth - innerWidth), want = dist + vh;
+      if (Math.abs(hs.offsetHeight - want) > 2) hs.style.height = want + 'px';
+      const p = dist ? cl(-hs.getBoundingClientRect().top / dist) : 0;
+      tr.style.transform = `translate3d(${-p * dist}px,0,0)`;
+    }
+    if (!this.reduce) document.querySelectorAll('[data-parallax]').forEach((el) => {
+      const r = el.parentElement.getBoundingClientRect();
+      el.style.transform = `translate3d(0,${((r.top + r.height / 2) - vh / 2) * -0.07}px,0)`;
+    });
+    if (this.revealMap) this.revealMap.forEach((A, el) => {
+      if (A[0] && A[0].playState === 'paused' && el.isConnected) { const r = el.getBoundingClientRect(); if (r.top < vh * .95 && r.bottom > 0) A.forEach((a) => a.play()); }
+    });
+    const pg = q('[data-prog]');
+    if (pg) { const L = 2 * Math.PI * 27, m = document.documentElement.scrollHeight - vh; pg.setAttribute('stroke-dashoffset', L * (1 - cl(m > 0 ? scrollY / m : 0))); }
+    const nav = scrollY > vh * .8;
+    if (nav !== this.state.nav) this.setState({ nav });
+  }
+
+  openIntro = () => {
+    if (this.state.intro !== 'closed') return;
+    this.setState({ intro: 'joining' });
+    setTimeout(() => this.setState({ intro: 'fading' }), 1900);
+    setTimeout(() => (this.heroAnims || []).forEach((a) => a.play()), 2300);
+    setTimeout(() => { this.setState({ intro: 'gone' }); this.lock(false); }, 3100);
+  };
+
+  addCal = () => {
+    const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//eOrganizei//Casamento//PT', 'BEGIN:VEVENT', `UID:${Date.now()}@eorganizei`,
+      'DTSTART:20261031T193000Z', 'DTEND:20261101T040000Z', `SUMMARY:Casamento ${this.n1()} & ${this.n2()}`, 'LOCATION:Espaço Villa Toscana\\, Rua X\\, 123 - São Paulo/SP', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' })); a.download = 'casamento.ics'; a.click();
+    this.setState({ calAdded: true });
+  };
+  tilt = (e) => {
+    if (this.reduce) return;
+    const el = e.currentTarget, r = el.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+    el.style.transform = `perspective(1100px) rotateX(${(.5 - y) * 7}deg) rotateY(${(x - .5) * 9}deg)`;
+    el.style.setProperty('--mx', x * 100 + '%'); el.style.setProperty('--my', y * 100 + '%');
+  };
+  untilt = (e) => { e.currentTarget.style.transform = ''; };
+
+  n1() { return this.props.nome1 ?? 'Marina'; }
+  n2() { return this.props.nome2 ?? 'João'; }
+
+  renderVals() {
+    const h = React.createElement, t = this.theme(), n1 = this.n1(), n2 = this.n2(), S = this.state, R = S.rsvp;
+    const mode = this.props.modoNome ?? 'Nomes', intro = this.introState();
+    const setR = (o) => this.setState((s) => ({ rsvp: { ...s.rsvp, ...o } }));
+    const target = new Date(this.props.dataISO ?? '2026-10-31T16:30:00').getTime(), diff = target - S.now;
+    const sameDay = new Date(target).toDateString() === new Date(S.now).toDateString(), p2 = (x) => String(x).padStart(2, '0');
+    const cd = diff > 0 ? { d: String(Math.floor(diff / 864e5)), h: p2(Math.floor(diff / 36e5) % 24), m: p2(Math.floor(diff / 6e4) % 60), s: p2(Math.floor(diff / 1e3) % 60) } : null;
+    this._cd = cd;
+    const strip = (x) => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '');
+    const giftsData = [
+      { title: 'Nossa casa', desc: 'Para os primeiros detalhes do nosso lar.', valor: 250 },
+      { title: 'Nossa lua de mel', desc: 'Um jantar, um passeio, um pôr do sol a dois.', valor: 480 },
+      { title: 'Novos momentos', desc: 'Para as primeiras aventuras como casados.', valor: 320 },
+      { title: 'Presentes especiais', desc: 'Algo escolhido com o seu carinho.', valor: 150 }];
+    const brl = (v) => 'R$ ' + v.toLocaleString('pt-BR');
+    const sel = S.gift, gift = sel != null ? giftsData[sel] : null;
+    const Rg = this.Rings;
+    const ringsSmall = h(Rg, { compact: true, glow: false, sparkle: false, from: 0, get: () => 0 });
+    return {
+      t, n1, n2, i1: n1.charAt(0).toUpperCase(), i2: n2.charAt(0).toUpperCase(), hashtag: `#${strip(n1)}E${strip(n2)}`,
+      modeInitials: mode === 'Iniciais', modeNames: mode === 'Nomes', modeBoth: mode === 'Iniciais + nomes',
+      ringsSmall,
+      introShown: intro !== 'gone', openIntro: this.openIntro, introBurst: intro === 'joining' || intro === 'fading',
+      introOp: intro === 'fading' ? 0 : 1, introTf: intro === 'fading' ? 'scale(1.08)' : 'none', introHintOp: intro === 'closed' ? .75 : 0,
+      introRings: h(Rg, { from: 1, lerp: .045, get: () => (this.state.intro === 'closed' ? 1 : 0) }),
+      burstA: h(this.Burst, { delay: 900, count: 50, spread: 300 }),
+      scrollRings: h(Rg, { from: 1, lerp: .12, get: () => this.ringSep }),
+      phrases: ['Duas histórias,', 'um encontro,', 'um sim.'],
+      dust: h(this.Dust),
+      progRing: h(this.Arc, { small: true, track: t.line }),
+      navOp: S.nav ? 1 : 0, navTf: S.nav ? 'none' : 'translateY(24px)', navPe: S.nav ? 'auto' : 'none',
+      toTop: () => scrollTo({ top: 0, behavior: 'smooth' }),
+      timeline: [['2019', 'O primeiro encontro'], ['2021', 'Nosso primeiro apartamento'], ['2024', 'O pedido'], ['2026', 'O nosso sim']]
+        .map(([ano, titulo], i) => ({ ano, titulo, slot: `t02-hist-${i + 1}`, rot: ['-3deg', '2.5deg', '-1.5deg', '3deg'][i], dy: ['-10px', '24px', '-20px', '12px'][i] })),
+      agenda: [{ label: 'Cerimônia', hora: '16h30' }, { label: 'Recepção', hora: '18h30' }, { label: 'Festa', hora: '20h00' }],
+      tilt: this.tilt, untilt: this.untilt,
+      addCal: this.addCal, calLabel: S.calAdded ? 'Salvo na agenda ✓' : 'Adicionar à agenda',
+      mapsUrl: 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('Espaço Villa Toscana, São Paulo'),
+      cdActive: !!cd, cdToday: !cd && sameDay, cdAfter: !cd && !sameDay, cd: cd || {},
+      cdSmall: cd ? [{ key: 'h', v: cd.h, label: 'horas' }, { key: 'm', v: cd.m, label: 'min' }, { key: 's', v: cd.s, label: 'seg' }] : [],
+      countRing: h(this.Arc, { frac: cd ? 1 - Math.min(1, diff / (365 * 864e5)) : 1, track: t.lineStrong }),
+      rsvp: R, rsvpErr: S.rsvpErr,
+      rsvpShowIntro: S.rsvpStep !== 'done', rsvpShowButton: S.rsvpStep === 'idle', rsvpForm: S.rsvpStep === 'form',
+      rsvpVai: R.vai === 'sim', rsvpDoneSim: S.rsvpStep === 'done' && R.vai === 'sim', rsvpDoneNao: S.rsvpStep === 'done' && R.vai === 'nao',
+      rsvpPrimeiroNome: R.nome.trim().split(' ')[0] || '',
+      simBg: R.vai === 'sim' ? t.darkInk : 'transparent', simFg: R.vai === 'sim' ? t.dark : t.darkInk,
+      naoBg: R.vai === 'nao' ? t.darkInk : 'transparent', naoFg: R.vai === 'nao' ? t.dark : t.darkInk,
+      openRsvp: () => this.setState({ rsvpStep: 'form' }),
+      onNome: (e) => { setR({ nome: e.target.value }); if (this.state.rsvpErr) this.setState({ rsvpErr: false }); },
+      onMsg: (e) => setR({ msg: e.target.value }),
+      vaiSim: () => setR({ vai: 'sim' }), vaiNao: () => setR({ vai: 'nao' }),
+      acompMenos: () => setR({ acomp: Math.max(0, R.acomp - 1) }), acompMais: () => setR({ acomp: Math.min(6, R.acomp + 1) }),
+      enviarRsvp: () => { if (!R.nome.trim()) return this.setState({ rsvpErr: true }); this.setState({ rsvpStep: 'done' }); },
+      refazerRsvp: () => this.setState({ rsvpStep: 'form' }),
+      rsvpRings: h(Rg, { from: 1, lerp: .035, get: () => 0 }),
+      burstB: h(this.Burst, { delay: 1100, count: 40, spread: 220 }),
+      gifts: giftsData.map((g, i) => {
+        const on = sel === i, dim = sel != null && !on;
+        return { ...g, price: brl(g.valor), slot: `t02-presente-${i + 1}`, delay: i * 120,
+          bgBorder: on ? `linear-gradient(${t.paper},${t.paper}) padding-box, linear-gradient(135deg,#8a6526,#f4dc9c,#b8904a,#f4dc9c,#8a6526) border-box` : `linear-gradient(${t.paper},${t.paper}) padding-box, linear-gradient(${t.line},${t.line}) border-box`,
+          op: dim ? .5 : 1, tf: on ? 'translateY(-10px)' : 'none', shadow: on ? '0 34px 60px -30px rgba(120,80,20,.5)' : '0 0 0 rgba(0,0,0,0)',
+          imgTf: on ? 'scale(1.07)' : 'scale(1)', badge: h(Rg, { compact: true, glow: false, sparkle: false, from: 1, lerp: .05, get: () => (this.state.gift === i ? 0 : 1) }),
+          badgeOp: on ? 1 : 0, badgeTf: on ? 'scale(1)' : 'scale(.5)',
+          sheenTf: on ? 'translateX(260%) skewX(-12deg)' : 'translateX(-120%) skewX(-12deg)', sheenTr: on ? 'transform 1.3s cubic-bezier(.4,0,.2,1) .15s' : 'none',
+          onSelect: () => this.setState({ gift: on ? null : i, giftDone: false }) };
+      }),
+      giftPanel: !!gift && !S.giftDone, giftDone: !!gift && S.giftDone,
+      giftTitleLower: gift ? gift.title.charAt(0).toLowerCase() + gift.title.slice(1) : '',
+            presentearLabel: gift ? `Presentear com ${brl(gift.valor)}` : '',
+      presentear: () => this.setState({ giftDone: true }),
+      outroPresente: () => this.setState({ gift: null, giftDone: false }),
+      jeito: ['Café depois do almoço', 'Viajar sem roteiro', 'Filme ruim no domingo', 'Massa toda sexta-feira'].map((txt, i) => ({ txt, n: p2(i + 1), delay: i * 110, rot: ['-2deg', '1.5deg', '-1deg', '2deg'][i] })),
+      showPadrinhos: this.props.showPadrinhos ?? true,
+      padrinhos: ['Ana & Pedro', 'Lucas & Mariana', 'Rafael & Julia'].map((nomes, i) => ({ nomes, slot: `t02-padrinho-${i + 1}`, delay: i * 140 }))
+    };
+  }
+}
+</script>
+</body>
+</html>

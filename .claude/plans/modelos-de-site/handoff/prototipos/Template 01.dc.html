@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400&amp;family=Hanken+Grotesk:wght@400;500&amp;family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;1,6..96,400&amp;family=Figtree:wght@400;500&amp;family=Italiana&amp;family=EB+Garamond:ital,wght@0,400;1,400&amp;family=Pinyon+Script&amp;family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&amp;family=Monsieur+La+Doulaise&amp;family=Marcellus&amp;family=Sacramento&amp;family=Lora:ital,wght@0,400;0,500;1,400&amp;family=Poiret+One&amp;family=Josefin+Sans:wght@300;400&amp;family=Playfair+Display:ital,wght@0,400;1,400&amp;family=Libre+Baskerville:ital@0;1&amp;display=swap">
+<script src="./image-slot.js"></script>
+<style>
+html{scroll-behavior:smooth}
+body{margin:0;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+a:hover{opacity:.7}
+input,textarea,button{font:inherit;color:inherit}
+</style>
+</helmet>
+
+<div style="background:{{ t.bg }};color:{{ t.ink }};font-family:{{ t.textFont }};font-size:{{ t.textSize }};font-weight:{{ t.textWeight }};min-height:100vh;overflow-x:hidden;">
+
+<sc-if value="{{ introShown }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ openIntro }}" data-screen-label="Abertura" style="position:fixed;inset:0;z-index:100;cursor:pointer;">
+    <div style="position:absolute;top:0;bottom:0;left:0;width:50.5%;background:{{ t.alt }};transform:{{ doorL }};transition:transform 1.7s cubic-bezier(.77,0,.18,1);"></div>
+    <div style="position:absolute;top:0;bottom:0;right:0;width:50.5%;background:{{ t.alt }};transform:{{ doorR }};transition:transform 1.7s cubic-bezier(.77,0,.18,1);border-left:1px solid {{ t.line }};"></div>
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;text-align:center;padding:24px;opacity:{{ introOp }};transform:{{ introTf }};transition:opacity .7s ease, transform 1s cubic-bezier(.2,.7,.2,1);">
+      <div style="font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:{{ t.accent }};">Você está convidado para o casamento de</div>
+      <div style="width:132px;height:132px;border-radius:50%;background:{{ t.accent }};color:{{ t.bg }};display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 6px {{ t.alt }}, 0 0 0 7px {{ t.accent }}, 0 18px 40px rgba(0,0,0,.18);">
+        <div style="display:flex;align-items:center;gap:10px;font-family:{{ t.nameFont }};font-weight:{{ t.nameWeight }};font-style:{{ t.nameStyle }};font-size:{{ t.sealSize }};line-height:1;"><span>{{ i1 }}</span><span style="width:1px;height:34px;background:currentColor;opacity:.6;"></span><span>{{ i2 }}</span></div>
+      </div>
+      <div style="font-family:{{ t.nameFont }};font-weight:{{ t.nameWeight }};font-style:{{ t.nameStyle }};text-transform:{{ t.nameTT }};letter-spacing:{{ t.nameLS }};font-size:{{ t.nameSizeSm }};line-height:{{ t.nameLH }};">{{ n1 }} &amp; {{ n2 }}</div>
+      <div style="font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:{{ t.muted }};">Toque para abrir</div>
+    </div>
+  </div>
+</sc-if>
+
+<nav style="position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:14px clamp(20px,4vw,48px);background:{{ t.navBg }};backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid {{ t.line }};opacity:{{ navOp }};transform:{{ navTf }};pointer-events:{{ navPe }};transition:opacity .6s ease, transform .6s cubic-bezier(.2,.7,.2,1);">
+  <a href="#inicio" style="display:flex;align-items:center;gap:8px;font-family:{{ t.nameFont }};font-weight:{{ t.nameWeight }};font-style:{{ t.nameStyle }};font-size:{{ t.navMono }};line-height:1;"><span>{{ i1 }}</span><span style="width:1px;height:18px;background:currentColor;opacity:.5;"></span><span>{{ i2 }}</span></a>
+  <div style="display:flex;align-items:center;gap:clamp(16px,3vw,36px);font-size:11px;letter-spacing:.22em;text-transform:uppercase;">
+    <a href="#historia" style="display:{{ navLinksDisplay }};">História</a>
+    <a href="#dia" style="display:{{ navLinksDisplay }};">O grande dia</a>
+    <a href="#presentes" style="display:{{ navLinksDisplay }};">Presentes</a>
+    <a href="#rsvp" style="padding:10px 18px;border:1px solid {{ t.ink }};">Confirmar presença</a>
+  </div>
+</nav>
+
+<section id="inicio" data-screen-label="Hero" style="position:relative;height:100svh;min-height:600px;overflow:hidden;background:#2a2622;">
+  <div data-hero-photo="" style="position:absolute;inset:0;">
+    <image-slot src="uploads/casal-exemplo.jpg" id="t01-hero" shape="rect" placeholder="Foto principal do casal" style="width:100%;height:100%;"></image-slot>
+  </div>
+  <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(18,14,11,.35) 0%,rgba(18,14,11,.2) 45%,rgba(18,14,11,.6) 100%);"></div>
+  <div style="position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:96px 24px;gap:28px;color:#fff;">
+    <div data-hero="0" style="display:flex;flex-direction:column;align-items:center;gap:8px;text-shadow:0 2px 30px rgba(0,0,0,.25);">
+      <sc-if value="{{ modeInitials }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:.28em;font-family:{{ t.nameFont }};font-weight:{{ t.nameWeight }};font-style:{{ t.nameStyle }};font-size:{{ t.initSize }};line-height:{{ t.nameLH }};"><span>{{ i1 }}</span><span style="width:1px;height:.8em;background:currentColor;opacity:.7;"></span><span>{{ i2 }}</span></div>
+      </sc-if>
+      <sc-if value="{{ modeNames }}" hint-placeholder-val="{{ true }}">
+        <h1 style="margin:0;font-weight:{{ t.nameWeight }};font-family:{{ t.nameFont }};font-style:{{ t.nameStyle }};text-transform:{{ t.nameTT }};letter-spacing:{{ t.nameLS }};font-size:{{ t.nameSize }};line-height:{{ t.nameLH }};text-wrap:balance;">{{ n1 }} <span style="font-style:{{ t.ampStyle }};">&amp;</span> {{ n2 }}</h1>
+      </sc-if>
+      <sc-if value="{{ modeBoth }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:.28em;font-family:{{ t.nameFont }};font-weight:{{ t.nameWeight }};font-style:{{ t.nameStyle }};font-size:{{ t.initSizeSm }};line-height:{{ t.nameLH }};"><span>{{ i1 }}</span><span style="width:1px;height:.8em;background:currentColor;opacity:.7;"></span><span>{{ i2 }}</span></div>
+        <h1 style="margin:0;font-weight:{{ t.nameWeight }};font-family:{{ t.nameFont }};font-style:{{ t.nameStyle }};text-transform:{{ t.nameTT }};letter-spacing:{{ t.nameLS }};font-size:{{ t.nameSizeSm }};line-height:{{ t.nameLH }};">{{ n1 }} <span style="font-style:{{ t.ampStyle }};">&amp;</span> {{ n2 }}</h1>
+      </sc-if>
+    </div>
+    <div data-hero-line="" style="width:72px;height:1px;background:rgba(255,255,255,.75);"></div>
+    <p data-hero="1" style="margin:0;max-width:520px;font-family:{{ t.headFont }};font-style:italic;font-size:clamp(18px,2.2vw,24px);line-height:1.5;text-wrap:balance;">Escolhemos viver juntos todos os dias que ainda estão por vir.</p>
+    <div data-hero="2" style="display:flex;flex-direction:column;gap:10px;font-size:13px;letter-spacing:.34em;text-transform:uppercase;">
+      <span>31 · 10 · 2026</span>
+      <span style="font-size:11px;letter-spacing:.28em;opacity:.85;">Villa Toscana — São Paulo</span>
+    </div>
+    <a data-hero="3" href="#historia" style="pointer-events:auto;margin-top:16px;display:flex;flex-direction:column;align-items:center;gap:10px;font-size:11px;letter-spacing:.3em;text-transform:uppercase;">Nossa história<span style="font-size:16px;letter-spacing:0;">↓</span></a>
+  </div>
+</section>
+
+<section id="historia" data-screen-label="Nossa história" style="padding:clamp(96px,14vw,176px) clamp(20px,5vw,64px);">
+  <div style="max-width:1160px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:clamp(48px,7vw,112px);align-items:center;">
+    <div data-reveal="img" style="position:relative;aspect-ratio:4/5;overflow:hidden;">
+      <div data-zoom="" style="position:absolute;inset:0;">
+        <div data-parallax="" style="position:absolute;left:0;right:0;top:-8%;height:116%;">
+          <image-slot src="uploads/casal-exemplo.jpg" id="t01-historia" shape="rect" placeholder="Foto do casal" style="width:100%;height:100%;"></image-slot>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:28px;">
+      <div data-reveal="up" style="font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:{{ t.accent }};">Nossa história</div>
+      <h2 data-reveal="up" data-delay="120" style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSize }};line-height:1.1;text-wrap:balance;">Tudo começou em 2019...</h2>
+      <p data-reveal="up" data-delay="240" style="margin:0;line-height:1.8;color:{{ t.muted }};max-width:460px;text-wrap:pretty;">Um encontro inesperado, algumas conversas que se estenderam pela madrugada e, quando percebemos, já não fazia sentido imaginar a vida separados.</p>
+    </div>
+  </div>
+
+  <div data-tl="" style="position:relative;max-width:760px;margin:clamp(96px,12vw,160px) auto 0;display:flex;flex-direction:column;gap:clamp(56px,8vw,96px);">
+    <div style="position:absolute;top:8px;bottom:8px;left:50%;width:1px;background:{{ t.line }};"></div>
+    <div data-tl-line="" style="position:absolute;top:8px;bottom:8px;left:50%;width:1px;background:{{ t.accent }};transform-origin:top;"></div>
+    <sc-for list="{{ timeline }}" as="m" hint-placeholder-count="4">
+      <div data-reveal="up" style="position:relative;display:grid;grid-template-columns:1fr 64px 1fr;align-items:center;">
+        <div style="text-align:right;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};font-size:clamp(28px,4vw,48px);line-height:1;letter-spacing:{{ t.headLSsoft }};">{{ m.ano }}</div>
+        <div style="display:flex;justify-content:center;"><span data-tl-dot="" style="width:11px;height:11px;border-radius:50%;border:1px solid {{ t.accent }};background:{{ t.bg }};transition:background .6s ease;"></span></div>
+        <div style="font-size:clamp(15px,1.6vw,18px);line-height:1.5;text-wrap:balance;">{{ m.titulo }}</div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<section id="dia" data-screen-label="O grande dia" style="background:{{ t.alt }};padding:clamp(96px,14vw,176px) clamp(20px,5vw,64px);text-align:center;">
+  <div style="max-width:960px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:32px;">
+    <div data-reveal="up" style="font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:{{ t.accent }};">Nosso casamento</div>
+    <h2 data-reveal="up" data-delay="120" style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSize }};line-height:1.1;">31 de outubro de 2026</h2>
+    <div data-reveal="up" data-delay="200" style="font-size:13px;letter-spacing:.26em;text-transform:uppercase;color:{{ t.muted }};">Espaço Villa Toscana</div>
+    <div data-reveal="up" data-delay="280" style="width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:40px 0 24px;border-top:1px solid {{ t.line }};border-bottom:1px solid {{ t.line }};">
+      <sc-for list="{{ agenda }}" as="a" hint-placeholder-count="3">
+        <div style="display:flex;flex-direction:column;gap:14px;padding:36px 8px;border-left:{{ a.border }};">
+          <div style="font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:{{ t.muted }};">{{ a.label }}</div>
+          <div style="font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};font-size:clamp(28px,4.4vw,48px);line-height:1;">{{ a.hora }}</div>
+        </div>
+      </sc-for>
+    </div>
+    <div data-reveal="up" data-delay="360" style="display:flex;flex-wrap:wrap;justify-content:center;gap:14px;">
+      <a href="#local" style="display:inline-flex;align-items:center;padding:17px 30px;border:1px solid {{ t.ink }};font-size:11px;letter-spacing:.24em;text-transform:uppercase;transition:letter-spacing .5s ease;" style-hover="letter-spacing:.3em;opacity:1;">Ver localização</a>
+      <button onClick="{{ addCal }}" style="display:inline-flex;align-items:center;gap:10px;padding:17px 30px;border:1px solid {{ t.ink }};background:{{ t.ink }};color:{{ t.bg }};font-size:11px;letter-spacing:.24em;text-transform:uppercase;cursor:pointer;transition:letter-spacing .5s ease;" style-hover="letter-spacing:.3em;">{{ calLabel }}</button>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="Contagem" style="background:{{ t.dark }};color:{{ t.darkInk }};padding:clamp(96px,13vw,160px) clamp(20px,5vw,64px);text-align:center;">
+  <div data-reveal="up" style="max-width:1000px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:40px;">
+    <sc-if value="{{ cdActive }}" hint-placeholder-val="{{ true }}">
+      <div style="font-size:12px;letter-spacing:.34em;text-transform:uppercase;opacity:.75;">Faltam</div>
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(8px,3vw,48px);width:100%;">
+        <sc-for list="{{ cdUnits }}" as="u" hint-placeholder-count="4">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:16px;">
+            <div data-cd="{{ u.key }}" style="font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-size:clamp(44px,9vw,120px);line-height:1;font-variant-numeric:tabular-nums;">{{ u.v }}</div>
+            <div style="font-size:11px;letter-spacing:.26em;text-transform:uppercase;opacity:.7;">{{ u.label }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="font-family:{{ t.headFont }};font-style:italic;font-size:clamp(18px,2.2vw,24px);opacity:.9;">Para o nosso grande dia.</div>
+    </sc-if>
+    <sc-if value="{{ cdToday }}" hint-placeholder-val="{{ false }}">
+      <div style="font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};font-size:{{ t.headSize }};">Hoje é o dia! ❤️</div>
+    </sc-if>
+    <sc-if value="{{ cdAfter }}" hint-placeholder-val="{{ false }}">
+      <div style="font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};font-size:{{ t.headSize }};">Obrigado por celebrar com a gente.</div>
+    </sc-if>
+  </div>
+</section>
+
+<section id="local" data-screen-label="Localização" style="padding:clamp(96px,14vw,176px) clamp(20px,5vw,64px);">
+  <div style="max-width:1200px;margin:0 auto;display:flex;flex-direction:column;align-items:center;">
+    <div data-reveal="img" style="position:relative;width:100%;aspect-ratio:16/8;min-height:320px;overflow:hidden;">
+      <div data-zoom="" style="position:absolute;inset:0;">
+        <image-slot src="uploads/casal-exemplo.jpg" id="t01-local" shape="rect" placeholder="Foto do espaço" style="width:100%;height:100%;"></image-slot>
+      </div>
+    </div>
+    <div data-reveal="up" style="position:relative;margin-top:-96px;width:min(520px,calc(100% - 32px));background:{{ t.bg }};padding:clamp(36px,5vw,56px);text-align:center;display:flex;flex-direction:column;align-items:center;gap:20px;box-shadow:0 30px 60px -30px rgba(0,0,0,.25);">
+      <div style="font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:{{ t.accent }};">Onde vamos celebrar</div>
+      <h2 style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSizeSm }};line-height:1.15;">Espaço Villa Toscana</h2>
+      <p style="margin:0;color:{{ t.muted }};line-height:1.7;">Rua X, 123 — São Paulo/SP</p>
+      <a href="{{ mapsUrl }}" target="_blank" rel="noopener" style="display:inline-flex;gap:10px;align-items:center;padding-bottom:6px;border-bottom:1px solid {{ t.ink }};font-size:11px;letter-spacing:.26em;text-transform:uppercase;">Como chegar <span>→</span></a>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="Dress code" style="background:{{ t.alt }};padding:clamp(96px,14vw,176px) clamp(20px,5vw,64px);">
+  <div style="max-width:1160px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:clamp(48px,7vw,96px);align-items:center;">
+    <div style="display:flex;flex-direction:column;gap:24px;">
+      <div data-reveal="up" style="font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:{{ t.accent }};">Como se vestir</div>
+      <h2 data-reveal="up" data-delay="120" style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSize }};line-height:1.1;">Traje: Social</h2>
+      <p data-reveal="up" data-delay="240" style="margin:0;line-height:1.8;color:{{ t.muted }};max-width:420px;text-wrap:pretty;">Queremos que você se sinta confortável e elegante para celebrar esse dia com a gente.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:end;">
+      <div data-reveal="img" style="position:relative;aspect-ratio:3/4;overflow:hidden;"><div data-zoom="" style="position:absolute;inset:0;"><image-slot src="uploads/casal-exemplo.jpg" id="t01-traje-1" shape="rect" placeholder="Referência de traje" style="width:100%;height:100%;"></image-slot></div></div>
+      <div data-reveal="img" data-delay="150" style="position:relative;aspect-ratio:3/4.6;overflow:hidden;"><div data-zoom="" style="position:absolute;inset:0;"><image-slot src="uploads/casal-exemplo.jpg" id="t01-traje-2" shape="rect" placeholder="Referência de traje" style="width:100%;height:100%;"></image-slot></div></div>
+      <div data-reveal="img" data-delay="300" style="position:relative;aspect-ratio:3/4;overflow:hidden;"><div data-zoom="" style="position:absolute;inset:0;"><image-slot src="uploads/casal-exemplo.jpg" id="t01-traje-3" shape="rect" placeholder="Referência de traje" style="width:100%;height:100%;"></image-slot></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="rsvp" data-screen-label="RSVP" style="padding:clamp(96px,14vw,176px) clamp(20px,5vw,64px);">
+  <div style="position:relative;max-width:680px;margin:0 auto;display:flex;flex-direction:column;align-items:center;text-align:center;gap:28px;">
+    <sc-if value="{{ rsvpShowIntro }}" hint-placeholder-val="{{ true }}">
+      <h2 data-reveal="up" style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSize }};line-height:1.1;text-wrap:balance;">Você vem celebrar com a gente?</h2>
+      <p data-reveal="up" data-delay="120" style="margin:0;color:{{ t.muted }};line-height:1.7;">Confirme sua presença até<br><span style="font-size:13px;letter-spacing:.26em;text-transform:uppercase;color:{{ t.ink }};">15 de setembro</span></p>
+    </sc-if>
+    <sc-if value="{{ rsvpShowButton }}" hint-placeholder-val="{{ true }}">
+      <button data-reveal="up" data-delay="240" onClick="{{ openRsvp }}" style="margin-top:12px;padding:19px 40px;border:1px solid {{ t.ink }};background:{{ t.ink }};color:{{ t.bg }};font-size:11px;letter-spacing:.26em;text-transform:uppercase;cursor:pointer;transition:letter-spacing .5s ease;" style-hover="letter-spacing:.32em;">Confirmar presença</button>
+    </sc-if>
+    <sc-if value="{{ rsvpForm }}" hint-placeholder-val="{{ false }}">
+      <div data-enter="" style="width:100%;margin-top:16px;display:flex;flex-direction:column;gap:32px;text-align:left;">
+        <label style="display:flex;flex-direction:column;gap:10px;">
+          <span style="font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:{{ t.muted }};">Seu nome</span>
+          <input value="{{ rsvp.nome }}" onChange="{{ onNome }}" placeholder="Como está no convite" style="border:0;border-bottom:1px solid {{ t.lineStrong }};background:transparent;padding:10px 0;font-size:18px;outline:none;">
+          <sc-if value="{{ rsvpErr }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:{{ t.accent }};">Conte para a gente quem você é.</span></sc-if>
+        </label>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <span style="font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:{{ t.muted }};">Você vai comparecer?</span>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">
+            <button onClick="{{ vaiSim }}" style="padding:16px 12px;border:1px solid {{ t.ink }};background:{{ simBg }};color:{{ simFg }};cursor:pointer;transition:all .4s ease;">Sim, estarei lá</button>
+            <button onClick="{{ vaiNao }}" style="padding:16px 12px;border:1px solid {{ t.ink }};background:{{ naoBg }};color:{{ naoFg }};cursor:pointer;transition:all .4s ease;">Infelizmente não poderei</button>
+          </div>
+        </div>
+        <sc-if value="{{ rsvpVai }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:16px;border-bottom:1px solid {{ t.lineStrong }};">
+            <span style="font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:{{ t.muted }};">Acompanhantes</span>
+            <div style="display:flex;align-items:center;gap:20px;">
+              <button onClick="{{ acompMenos }}" style="width:40px;height:40px;border-radius:50%;border:1px solid {{ t.lineStrong }};background:transparent;cursor:pointer;font-size:18px;">−</button>
+              <span style="min-width:20px;text-align:center;font-family:{{ t.headFont }};font-size:26px;font-variant-numeric:tabular-nums;">{{ rsvp.acomp }}</span>
+              <button onClick="{{ acompMais }}" style="width:40px;height:40px;border-radius:50%;border:1px solid {{ t.lineStrong }};background:transparent;cursor:pointer;font-size:18px;">+</button>
+            </div>
+          </div>
+          <label style="display:flex;flex-direction:column;gap:10px;">
+            <span style="font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:{{ t.muted }};">Restrição alimentar (opcional)</span>
+            <input value="{{ rsvp.restricao }}" onChange="{{ onRestricao }}" placeholder="Vegetariano, alergias..." style="border:0;border-bottom:1px solid {{ t.lineStrong }};background:transparent;padding:10px 0;font-size:17px;outline:none;">
+          </label>
+        </sc-if>
+        <label style="display:flex;flex-direction:column;gap:10px;">
+          <span style="font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:{{ t.muted }};">Um recado para os noivos (opcional)</span>
+          <textarea value="{{ rsvp.msg }}" onChange="{{ onMsg }}" rows="3" style="border:0;border-bottom:1px solid {{ t.lineStrong }};background:transparent;padding:10px 0;font-size:17px;outline:none;resize:none;"></textarea>
+        </label>
+        <button onClick="{{ enviarRsvp }}" style="align-self:center;padding:19px 44px;border:1px solid {{ t.ink }};background:{{ t.ink }};color:{{ t.bg }};font-size:11px;letter-spacing:.26em;text-transform:uppercase;cursor:pointer;transition:letter-spacing .5s ease;" style-hover="letter-spacing:.32em;">Enviar confirmação</button>
+      </div>
+    </sc-if>
+    <sc-if value="{{ rsvpDoneSim }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:-80px -40px;pointer-events:none;">{{ petals }}</div>
+      <div data-enter="" style="display:flex;flex-direction:column;align-items:center;gap:20px;">
+        <h2 style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSize }};line-height:1.15;text-wrap:balance;">Que alegria ter você com a gente! ❤️</h2>
+        <p style="margin:0;color:{{ t.muted }};line-height:1.7;">{{ rsvpPrimeiroNome }}, sua presença está confirmada. Nos vemos no dia 31 de outubro.</p>
+        <button onClick="{{ refazerRsvp }}" style="margin-top:8px;background:transparent;border:0;border-bottom:1px solid {{ t.lineStrong }};padding:0 0 6px;font-size:11px;letter-spacing:.24em;text-transform:uppercase;cursor:pointer;">Alterar resposta</button>
+      </div>
+    </sc-if>
+    <sc-if value="{{ rsvpDoneNao }}" hint-placeholder-val="{{ false }}">
+      <div data-enter="" style="display:flex;flex-direction:column;align-items:center;gap:20px;">
+        <h2 style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSize }};line-height:1.15;">Vamos sentir sua falta.</h2>
+        <p style="margin:0;color:{{ t.muted }};line-height:1.7;">Obrigado por nos avisar, {{ rsvpPrimeiroNome }}. Você estará no nosso coração nesse dia.</p>
+        <button onClick="{{ refazerRsvp }}" style="margin-top:8px;background:transparent;border:0;border-bottom:1px solid {{ t.lineStrong }};padding:0 0 6px;font-size:11px;letter-spacing:.24em;text-transform:uppercase;cursor:pointer;">Alterar resposta</button>
+      </div>
+    </sc-if>
+  </div>
+</section>
+
+<section id="presentes" data-screen-label="Presentes" style="background:{{ t.alt }};padding:clamp(96px,14vw,176px) clamp(20px,5vw,64px);">
+  <div style="max-width:1200px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:24px;text-align:center;">
+    <h2 data-reveal="up" style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSize }};line-height:1.1;text-wrap:balance;">Sua presença já é o nosso presente.</h2>
+    <p data-reveal="up" data-delay="120" style="margin:0;color:{{ t.muted }};line-height:1.7;">Mas, se quiserem nos presentear...</p>
+    <div data-reveal="up" data-delay="200" style="margin-top:24px;font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:{{ t.accent }};">Nossa lista de presentes</div>
+    <div style="width:100%;margin-top:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:20px;text-align:left;">
+      <sc-for list="{{ gifts }}" as="g" hint-placeholder-count="4">
+        <button data-reveal="up" data-delay="{{ g.delay }}" onClick="{{ g.onSelect }}" style="position:relative;display:flex;flex-direction:column;gap:20px;padding:0 0 28px;background:{{ t.bg }};border:1px solid {{ g.border }};cursor:pointer;text-align:left;opacity:{{ g.op }};transform:{{ g.tf }};box-shadow:{{ g.shadow }};transition:opacity .6s ease, transform .7s cubic-bezier(.2,.7,.2,1), box-shadow .7s ease, border-color .6s ease;">
+          <div style="position:relative;width:100%;aspect-ratio:4/3;overflow:hidden;">
+            <div style="position:absolute;inset:0;transform:{{ g.imgTf }};transition:transform 1.4s cubic-bezier(.2,.7,.2,1);">
+              <image-slot src="uploads/casal-exemplo.jpg" id="{{ g.slot }}" shape="rect" placeholder="{{ g.ph }}" style="width:100%;height:100%;"></image-slot>
+            </div>
+            <div style="position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:50%;background:{{ t.ink }};color:{{ t.bg }};display:flex;align-items:center;justify-content:center;font-size:15px;opacity:{{ g.checkOp }};transform:{{ g.checkTf }};transition:opacity .5s ease, transform .6s cubic-bezier(.34,1.56,.64,1);">✓</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;padding:0 24px;">
+            <div style="font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLSsoft }};font-size:{{ t.cardHead }};line-height:1.2;">{{ g.title }}</div>
+            <div style="font-size:.92em;line-height:1.6;color:{{ t.muted }};">{{ g.desc }}</div>
+          </div>
+        </button>
+      </sc-for>
+    </div>
+    <sc-if value="{{ giftPanel }}" hint-placeholder-val="{{ false }}">
+      <div data-enter="" style="width:100%;max-width:640px;margin-top:32px;display:flex;flex-direction:column;align-items:center;gap:24px;">
+        <p style="margin:0;font-family:{{ t.headFont }};font-style:italic;font-size:clamp(20px,2.4vw,26px);line-height:1.4;">Quanto você gostaria de dedicar a {{ giftTitleLower }}?</p>
+        <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;">
+          <sc-for list="{{ amounts }}" as="v" hint-placeholder-count="4">
+            <button onClick="{{ v.onPick }}" style="min-width:96px;padding:14px 20px;border:1px solid {{ t.ink }};background:{{ v.bg }};color:{{ v.fg }};cursor:pointer;font-variant-numeric:tabular-nums;transition:all .4s ease;">{{ v.label }}</button>
+          </sc-for>
+        </div>
+        <button onClick="{{ presentear }}" style="padding:19px 44px;border:1px solid {{ t.ink }};background:{{ t.ink }};color:{{ t.bg }};font-size:11px;letter-spacing:.26em;text-transform:uppercase;cursor:pointer;opacity:{{ presentearOp }};transition:letter-spacing .5s ease, opacity .4s;" style-hover="letter-spacing:.32em;">{{ presentearLabel }}</button>
+      </div>
+    </sc-if>
+    <sc-if value="{{ giftDone }}" hint-placeholder-val="{{ false }}">
+      <div data-enter="" style="max-width:560px;margin-top:32px;display:flex;flex-direction:column;align-items:center;gap:16px;">
+        <p style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};font-size:{{ t.headSizeSm }};line-height:1.2;">Obrigado pelo carinho.</p>
+        <p style="margin:0;color:{{ t.muted }};line-height:1.7;">Seu presente para {{ giftTitleLower }} chegou até nós. Vamos lembrar de você em cada momento.</p>
+        <button onClick="{{ outroPresente }}" style="margin-top:8px;background:transparent;border:0;border-bottom:1px solid {{ t.lineStrong }};padding:0 0 6px;font-size:11px;letter-spacing:.24em;text-transform:uppercase;cursor:pointer;">Escolher outro presente</button>
+      </div>
+    </sc-if>
+  </div>
+</section>
+
+<section data-screen-label="Nosso jeito" style="padding:clamp(96px,14vw,176px) clamp(20px,5vw,64px);">
+  <div style="max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:clamp(48px,7vw,80px);">
+    <h2 data-reveal="up" style="margin:0;max-width:640px;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSize }};line-height:1.1;text-wrap:balance;">Pequenas coisas que fazem a gente ser a gente</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));column-gap:clamp(40px,6vw,96px);">
+      <sc-for list="{{ jeito }}" as="j" hint-placeholder-count="4">
+        <div data-reveal="up" data-delay="{{ j.delay }}" style="display:flex;align-items:baseline;gap:24px;padding:28px 0;border-top:1px solid {{ t.line }};">
+          <span style="font-size:12px;letter-spacing:.2em;color:{{ t.accent }};font-variant-numeric:tabular-nums;">{{ j.n }}</span>
+          <span style="font-family:{{ t.headFont }};font-style:italic;font-size:clamp(22px,2.8vw,32px);line-height:1.3;">{{ j.txt }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="Galeria" style="padding:0 clamp(20px,5vw,64px) clamp(96px,14vw,176px);">
+  <div style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(12px,2vw,24px);">
+    <div data-reveal="img" style="grid-column:1 / -1;position:relative;aspect-ratio:16/9;overflow:hidden;"><div data-zoom="" style="position:absolute;inset:0;"><div style="position:absolute;inset:0;transition:transform 1.8s cubic-bezier(.2,.7,.2,1);" style-hover="transform:scale(1.05);"><image-slot src="uploads/casal-exemplo.jpg" id="t01-galeria-1" shape="rect" placeholder="Foto grande" style="width:100%;height:100%;"></image-slot></div></div></div>
+    <div data-reveal="img" style="position:relative;aspect-ratio:4/5;overflow:hidden;"><div data-zoom="" style="position:absolute;inset:0;"><div style="position:absolute;inset:0;transition:transform 1.8s cubic-bezier(.2,.7,.2,1);" style-hover="transform:scale(1.05);"><image-slot src="uploads/casal-exemplo.jpg" id="t01-galeria-2" shape="rect" placeholder="Foto" style="width:100%;height:100%;"></image-slot></div></div></div>
+    <div data-reveal="img" data-delay="180" style="position:relative;aspect-ratio:4/5;overflow:hidden;margin-top:clamp(40px,8vw,120px);"><div data-zoom="" style="position:absolute;inset:0;"><div style="position:absolute;inset:0;transition:transform 1.8s cubic-bezier(.2,.7,.2,1);" style-hover="transform:scale(1.05);"><image-slot src="uploads/casal-exemplo.jpg" id="t01-galeria-3" shape="rect" placeholder="Foto" style="width:100%;height:100%;"></image-slot></div></div></div>
+    <p data-reveal="up" style="grid-column:1 / -1;margin:clamp(56px,9vw,120px) auto;max-width:640px;text-align:center;font-family:{{ t.headFont }};font-style:italic;font-weight:{{ t.headWeight }};font-size:clamp(26px,3.6vw,44px);line-height:1.3;text-wrap:balance;">Alguns momentos merecem ser lembrados para sempre.</p>
+    <div data-reveal="img" style="grid-column:1 / -1;position:relative;aspect-ratio:16/9;overflow:hidden;"><div data-zoom="" style="position:absolute;inset:0;"><div style="position:absolute;inset:0;transition:transform 1.8s cubic-bezier(.2,.7,.2,1);" style-hover="transform:scale(1.05);"><image-slot src="uploads/casal-exemplo.jpg" id="t01-galeria-4" shape="rect" placeholder="Foto grande" style="width:100%;height:100%;"></image-slot></div></div></div>
+  </div>
+</section>
+
+<sc-if value="{{ showPadrinhos }}" hint-placeholder-val="{{ true }}">
+  <section data-screen-label="Padrinhos" style="background:{{ t.alt }};padding:clamp(96px,14vw,176px) clamp(20px,5vw,64px);text-align:center;">
+    <div style="max-width:1000px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:clamp(48px,7vw,80px);">
+      <h2 data-reveal="up" style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSize }};line-height:1.1;">Ao nosso lado</h2>
+      <div style="width:100%;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:56px 32px;">
+        <sc-for list="{{ padrinhos }}" as="p" hint-placeholder-count="3">
+          <div data-reveal="up" data-delay="{{ p.delay }}" style="display:flex;flex-direction:column;align-items:center;gap:24px;">
+            <div style="display:flex;">
+              <image-slot src="uploads/casal-exemplo.jpg" id="{{ p.slotA }}" shape="circle" placeholder="Foto" style="width:112px;height:112px;box-shadow:0 0 0 4px {{ t.alt }};"></image-slot>
+              <image-slot src="uploads/casal-exemplo.jpg" id="{{ p.slotB }}" shape="circle" placeholder="Foto" style="width:112px;height:112px;margin-left:-24px;box-shadow:0 0 0 4px {{ t.alt }};"></image-slot>
+            </div>
+            <div style="font-family:{{ t.headFont }};font-style:{{ t.headStyle }};font-size:clamp(20px,2.2vw,24px);letter-spacing:{{ t.headLSsoft }};">{{ p.nomes }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+</sc-if>
+
+<section data-screen-label="Recado" style="padding:clamp(112px,16vw,200px) clamp(20px,5vw,64px);text-align:center;">
+  <div style="max-width:640px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:32px;">
+    <h2 data-reveal="up" style="margin:0;font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};text-transform:{{ t.headTT }};letter-spacing:{{ t.headLS }};font-size:{{ t.headSize }};line-height:1.1;">Esperamos você</h2>
+    <p data-reveal="up" data-delay="120" style="margin:0;line-height:1.85;color:{{ t.muted }};text-wrap:pretty;">Estamos preparando tudo com muito carinho e mal podemos esperar para viver esse dia ao lado de quem amamos.</p>
+    <div data-reveal="up" data-delay="260" style="font-family:{{ t.nameFont }};font-weight:{{ t.nameWeight }};font-style:{{ t.nameStyle }};text-transform:{{ t.nameTT }};letter-spacing:{{ t.nameLS }};font-size:{{ t.nameSizeMd }};line-height:{{ t.nameLH }};color:{{ t.accent }};">{{ n1 }} &amp; {{ n2 }}</div>
+  </div>
+</section>
+
+<section data-screen-label="Hashtag" style="background:{{ t.alt }};padding:clamp(80px,11vw,140px) clamp(20px,5vw,64px);text-align:center;">
+  <div data-reveal="up" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:20px;">
+    <div style="font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:{{ t.accent }};">Compartilhe esse momento com a gente</div>
+    <div style="font-family:{{ t.headFont }};font-weight:{{ t.headWeight }};font-style:{{ t.headStyle }};letter-spacing:{{ t.headLSsoft }};font-size:clamp(32px,6vw,72px);line-height:1.1;overflow-wrap:anywhere;">{{ hashtag }}</div>
+  </div>
+</section>
+
+<footer data-screen-label="Rodapé" style="background:{{ t.dark }};color:{{ t.darkInk }};padding:clamp(80px,11vw,128px) 24px 40px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:20px;">
+  <div style="font-family:{{ t.nameFont }};font-weight:{{ t.nameWeight }};font-style:{{ t.nameStyle }};text-transform:{{ t.nameTT }};letter-spacing:{{ t.nameLS }};font-size:{{ t.nameSizeMd }};line-height:{{ t.nameLH }};">{{ n1 }} &amp; {{ n2 }}</div>
+  <div style="font-size:12px;letter-spacing:.34em;">31.10.2026</div>
+  <div style="font-family:{{ t.headFont }};font-style:italic;opacity:.8;">Feito com carinho.</div>
+  <div style="margin-top:72px;font-size:10px;letter-spacing:.24em;text-transform:uppercase;opacity:.5;">Site criado com eOrganizei</div>
+</footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;nome1&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Marina&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Casal&quot;},&quot;nome2&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;João&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Casal&quot;},&quot;modoNome&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Nomes&quot;,&quot;Iniciais&quot;,&quot;Iniciais + nomes&quot;],&quot;default&quot;:&quot;Nomes&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Casal&quot;},&quot;dataISO&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;2026-10-31T16:30:00&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Casal&quot;},&quot;fonte&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;01 Essencial&quot;,&quot;02 Maison&quot;,&quot;03 Atelier&quot;,&quot;04 Caligrafia&quot;,&quot;05 Riviera&quot;,&quot;06 Bilhete&quot;,&quot;07 Soirée&quot;,&quot;08 Relicário&quot;],&quot;default&quot;:&quot;04 Caligrafia&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Estilo&quot;},&quot;paleta&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Marfim&quot;,&quot;Sálvia&quot;,&quot;Rosé&quot;,&quot;Azul&quot;,&quot;Noite&quot;],&quot;default&quot;:&quot;Marfim&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Estilo&quot;},&quot;showIntro&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Seções&quot;},&quot;showPadrinhos&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Seções&quot;}}">
+class Component extends DCLogic {
+  state = { intro: 'closed', nav: false, now: Date.now(), wide: true,
+    rsvpStep: 'idle', rsvp: { nome: '', vai: 'sim', acomp: 0, restricao: '', msg: '' }, rsvpErr: false,
+    gift: null, amount: null, giftDone: false, calAdded: false };
+
+  Petals = (p) => {
+    const ref = React.useRef();
+    React.useEffect(() => {
+      [...ref.current.children].forEach((k) => {
+        const x = (Math.random() * 2 - 1) * 60, r = Math.random() * 540 - 270;
+        k.animate([{ transform: 'translate(0,-20px) rotate(0deg)', opacity: 0 }, { opacity: .85, offset: .15 }, { transform: `translate(${x}px,520px) rotate(${r}deg)`, opacity: 0 }],
+          { duration: 3600 + Math.random() * 2400, delay: Math.random() * 1400, easing: 'cubic-bezier(.3,.1,.4,1)', fill: 'both' });
+      });
+    }, []);
+    return React.createElement('div', { ref, style: { position: 'absolute', inset: 0, overflow: 'hidden' } },
+      Array.from({ length: 26 }, (_, i) => React.createElement('span', { key: i, style: {
+        position: 'absolute', top: 0, left: `${(i * 37 + 7) % 100}%`, width: 7 + (i % 3) * 3, height: 11 + (i % 3) * 4,
+        borderRadius: '80% 0 80% 0', background: p.color, opacity: 0 } })));
+  };
+
+  theme() {
+    const F = {
+      essencial: { nf: "'Jost',sans-serif", nw: 300, ntt: 'uppercase', nls: '.14em', ns: 'normal', s: .72, amp: 'normal', nlh: 1.1, hf: "'Jost',sans-serif", hw: 300, htt: 'uppercase', hls: '.18em', hs: 'normal', hz: [22, 3, 34], tf: "'Hanken Grotesk',sans-serif", tz: 16, tw: 400 },
+      maison: { nf: "'Bodoni Moda',serif", nw: 400, ntt: 'none', nls: '-.01em', ns: 'normal', s: .92, amp: 'italic', nlh: 1.05, hf: "'Bodoni Moda',serif", hw: 400, htt: 'none', hls: '-.01em', hs: 'normal', hz: [36, 5.2, 64], tf: "'Figtree',sans-serif", tz: 16, tw: 400 },
+      atelier: { nf: "'Italiana',serif", nw: 400, ntt: 'none', nls: '.04em', ns: 'normal', s: .94, amp: 'normal', nlh: 1.1, hf: "'Italiana',serif", hw: 400, htt: 'none', hls: '.04em', hs: 'normal', hz: [36, 5.2, 62], tf: "'EB Garamond',serif", tz: 19, tw: 400 },
+      caligrafia: { nf: "'Pinyon Script',cursive", nw: 400, ntt: 'none', nls: '0', ns: 'normal', s: 1.1, amp: 'normal', nlh: 1.35, hf: "'Cormorant Garamond',serif", hw: 400, htt: 'none', hls: '0', hs: 'normal', hz: [36, 5.2, 64], tf: "'Cormorant Garamond',serif", tz: 20, tw: 400 },
+      riviera: { nf: "'Monsieur La Doulaise',cursive", nw: 400, ntt: 'none', nls: '0', ns: 'normal', s: 1.3, amp: 'normal', nlh: 1.35, hf: "'Marcellus',serif", hw: 400, htt: 'none', hls: '.03em', hs: 'normal', hz: [30, 4.2, 50], tf: "'Marcellus',serif", tz: 17, tw: 400 },
+      bilhete: { nf: "'Sacramento',cursive", nw: 400, ntt: 'none', nls: '0', ns: 'normal', s: 1.15, amp: 'normal', nlh: 1.3, hf: "'Lora',serif", hw: 400, htt: 'none', hls: '0', hs: 'italic', hz: [32, 4.6, 56], tf: "'Lora',serif", tz: 17, tw: 400 },
+      soiree: { nf: "'Poiret One',sans-serif", nw: 400, ntt: 'uppercase', nls: '.12em', ns: 'normal', s: .74, amp: 'normal', nlh: 1.15, hf: "'Poiret One',sans-serif", hw: 400, htt: 'uppercase', hls: '.14em', hs: 'normal', hz: [26, 3.6, 42], tf: "'Josefin Sans',sans-serif", tz: 17, tw: 300 },
+      relicario: { nf: "'Playfair Display',serif", nw: 400, ntt: 'none', nls: '0', ns: 'italic', s: .92, amp: 'italic', nlh: 1.1, hf: "'Playfair Display',serif", hw: 400, htt: 'none', hls: '0', hs: 'italic', hz: [36, 5.2, 62], tf: "'Libre Baskerville',serif", tz: 16, tw: 400 }
+    };
+    const P = {
+      'Marfim': { bg: '#f7f2ea', alt: '#efe7db', ink: '#2b241d', muted: '#65594c', accent: '#7d5f40', line: '#e0d5c6', lineStrong: '#b9aa96', dark: '#2b241d', darkInk: '#f3ece1', nav: 'rgba(247,242,234,.82)' },
+      'Sálvia': { bg: '#f1f2ec', alt: '#e4e8dd', ink: '#1f2a22', muted: '#566258', accent: '#536a4b', line: '#d3dacd', lineStrong: '#a6b2a2', dark: '#1f2a22', darkInk: '#eef1ea', nav: 'rgba(241,242,236,.82)' },
+      'Rosé': { bg: '#f8efec', alt: '#f0e1dc', ink: '#33232a', muted: '#6f5660', accent: '#94545d', line: '#e8d4cf', lineStrong: '#c4a9a7', dark: '#3a2830', darkInk: '#f8efec', nav: 'rgba(248,239,236,.82)' },
+      'Azul': { bg: '#f0f3f6', alt: '#e2e8ee', ink: '#1c2633', muted: '#566172', accent: '#466183', line: '#d2dae3', lineStrong: '#a3afbd', dark: '#1c2633', darkInk: '#eef2f6', nav: 'rgba(240,243,246,.82)' },
+      'Noite': { bg: '#16181e', alt: '#1e2129', ink: '#efe7d6', muted: '#aaa293', accent: '#d4b97f', line: '#2f323b', lineStrong: '#4a4d57', dark: '#0e1014', darkInk: '#efe7d6', nav: 'rgba(22,24,30,.82)' }
+    };
+    const key = String(this.props.fonte ?? '04 Caligrafia').split(' ').slice(1).join(' ').toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const f = F[key] || F.caligrafia, p = P[this.props.paleta ?? 'Marfim'] || P['Marfim'], s = f.s;
+    const c = (a, b, m) => `clamp(${Math.round(a * s)}px, ${(b * s).toFixed(2)}vw, ${Math.round(m * s)}px)`;
+    const hz = f.hz;
+    return { ...p, navBg: p.nav,
+      nameFont: f.nf, nameWeight: f.nw, nameTT: f.ntt, nameLS: f.nls, nameStyle: f.ns, ampStyle: f.amp, nameLH: f.nlh,
+      nameSize: c(46, 9, 124), nameSizeSm: c(34, 5.6, 76), nameSizeMd: c(34, 5, 64), initSize: c(96, 16, 200), initSizeSm: c(60, 9, 116),
+      sealSize: `${Math.round(40 * s)}px`, navMono: `${Math.round(24 * s)}px`,
+      headFont: f.hf, headWeight: f.hw, headTT: f.htt, headLS: f.hls, headLSsoft: f.htt === 'uppercase' ? '.08em' : f.hls, headStyle: f.hs,
+      headSize: `clamp(${hz[0]}px, ${hz[1]}vw, ${hz[2]}px)`, headSizeSm: `clamp(${Math.round(hz[0] * .8)}px, ${(hz[1] * .7).toFixed(2)}vw, ${Math.round(hz[2] * .66)}px)`,
+      cardHead: f.htt === 'uppercase' ? '17px' : '24px',
+      textFont: f.tf, textSize: `${f.tz}px`, textWeight: f.tw };
+  }
+
+  introState() { return (this.props.showIntro ?? true) ? this.state.intro : 'gone'; }
+
+  componentDidMount() {
+    this.reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.revealMap = new Map();
+    this.setupReveals();
+    this.setupHero();
+    this.onScroll = () => { if (!this.raf) this.raf = requestAnimationFrame(() => { this.raf = null; this.scrollFx(); }); };
+    addEventListener('scroll', this.onScroll, { passive: true });
+    addEventListener('resize', this.onScroll);
+    this.scrollFx();
+    this.timer = setInterval(() => this.setState({ now: Date.now() }), 1000);
+    this.lock(this.introState() !== 'gone');
+    this.runEnter();
+  }
+  componentWillUnmount() {
+    removeEventListener('scroll', this.onScroll); removeEventListener('resize', this.onScroll);
+    clearInterval(this.timer); this.io && this.io.disconnect(); this.lock(false);
+  }
+  componentDidUpdate(pp) {
+    if ((pp.showIntro ?? true) !== (this.props.showIntro ?? true)) {
+      const on = this.props.showIntro ?? true;
+      this.setState({ intro: on ? 'closed' : 'gone' }, () => { this.lock(on); this.setupHero(); });
+    }
+    const cd = this._cd, pv = this._pcd || {};
+    if (cd && !this.reduce) Object.keys(cd).forEach((k) => {
+      if (pv[k] !== undefined && pv[k] !== cd[k]) {
+        const el = document.querySelector(`[data-cd="${k}"]`);
+        el && el.animate([{ opacity: 0, transform: 'translateY(-.22em)', filter: 'blur(8px)' }, { opacity: 1, transform: 'none', filter: 'blur(0)' }], { duration: 850, easing: 'cubic-bezier(.2,.7,.2,1)' });
+      }
+    });
+    this._pcd = cd ? { ...cd } : null;
+    this.runEnter();
+  }
+  lock(on) { document.documentElement.style.overflow = on ? 'hidden' : ''; }
+
+  setupReveals() {
+    const E = 'cubic-bezier(.2,.7,.2,1)';
+    this.io = new IntersectionObserver((es) => es.forEach((e) => {
+      if (e.isIntersecting) { (this.revealMap.get(e.target) || []).forEach((a) => a.play()); this.io.unobserve(e.target); }
+    }), { rootMargin: '0px 0px -10% 0px', threshold: 0.01 });
+    document.querySelectorAll('[data-reveal]').forEach((el) => {
+      if (this.reduce) return;
+      const d = +(el.dataset.delay || 0), A = [];
+      if (el.dataset.reveal === 'img') {
+        const z = el.querySelector('[data-zoom]');
+        if (z) {
+          A.push(z.animate([{ clipPath: 'inset(100% 0 0 0)', transform: 'scale(1.28)' }, { clipPath: 'inset(0% 0 0 0)', offset: .62 }, { clipPath: 'inset(0% 0 0 0)', transform: 'scale(1)' }], { duration: 2600, delay: d, easing: E, fill: 'both' }));
+        }
+      } else {
+        A.push(el.animate([{ opacity: 0, transform: 'translateY(30px)', filter: 'blur(6px)' }, { opacity: 1, transform: 'none', filter: 'blur(0)' }], { duration: 1300, delay: d, easing: E, fill: 'both' }));
+      }
+      A.forEach((a) => a.pause());
+      this.revealMap.set(el, A); this.io.observe(el);
+    });
+  }
+
+  setupHero() {
+    (this.heroAnims || []).forEach((a) => a.cancel());
+    if (this.reduce) return;
+    const E = 'cubic-bezier(.2,.7,.2,1)', A = [];
+    const ph = document.querySelector('[data-hero-photo]');
+    ph && A.push(ph.animate([{ opacity: 0, transform: 'scale(1.16)' }, { opacity: 1, offset: .3 }, { opacity: 1, transform: 'scale(1)' }], { duration: 7000, easing: E, fill: 'both' }));
+    document.querySelectorAll('[data-hero]').forEach((el) => {
+      const i = +el.dataset.hero;
+      A.push(el.animate([{ opacity: 0, filter: 'blur(18px)', transform: 'translateY(14px) scale(1.02)' }, { opacity: 1, filter: 'blur(0)', transform: 'none' }],
+        { duration: i === 0 ? 2400 : 1400, delay: i === 0 ? 900 : 1900 + i * 380, easing: E, fill: 'both' }));
+    });
+    const ln = document.querySelector('[data-hero-line]');
+    ln && A.push(ln.animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: 1600, delay: 1800, easing: E, fill: 'both' }));
+    A.forEach((a) => a.pause());
+    this.heroAnims = A;
+    if (this.introState() === 'gone') A.forEach((a) => a.play());
+  }
+
+  scrollFx() {
+    const vh = innerHeight;
+    const tl = document.querySelector('[data-tl]'), line = document.querySelector('[data-tl-line]');
+    if (tl && line) {
+      const r = tl.getBoundingClientRect();
+      line.style.transform = `scaleY(${Math.min(1, Math.max(0, (vh * .62 - r.top) / r.height))})`;
+      const acc = this._t && this._t.accent, bg = this._t && this._t.bg;
+      document.querySelectorAll('[data-tl-dot]').forEach((d) => { d.style.background = d.getBoundingClientRect().top < vh * .62 ? acc : bg; });
+    }
+    if (!this.reduce) document.querySelectorAll('[data-parallax]').forEach((el) => {
+      const r = el.parentElement.getBoundingClientRect();
+      el.style.transform = `translate3d(0,${((r.top + r.height / 2) - vh / 2) * -0.07}px,0)`;
+    });
+    const nav = scrollY > vh * .85, wide = innerWidth > 760;
+    if (nav !== this.state.nav || wide !== this.state.wide) this.setState({ nav, wide });
+  }
+
+  runEnter() {
+    document.querySelectorAll('[data-enter]:not([data-entered])').forEach((el) => {
+      el.setAttribute('data-entered', '');
+      if (!this.reduce) el.animate([{ opacity: 0, transform: 'translateY(18px)', filter: 'blur(5px)' }, { opacity: 1, transform: 'none', filter: 'blur(0)' }], { duration: 1000, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'both' });
+    });
+  }
+
+  openIntro = () => {
+    if (this.state.intro !== 'closed') return;
+    this.setState({ intro: 'opening' });
+    setTimeout(() => (this.heroAnims || []).forEach((a) => a.play()), 450);
+    setTimeout(() => { this.setState({ intro: 'gone' }); this.lock(false); }, 1800);
+  };
+
+  addCal = () => {
+    const n = `${this.n1()} & ${this.n2()}`;
+    const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//eOrganizei//Casamento//PT', 'BEGIN:VEVENT', `UID:${Date.now()}@eorganizei`,
+      'DTSTART:20261031T193000Z', 'DTEND:20261101T040000Z', `SUMMARY:Casamento ${n}`, 'LOCATION:Espaço Villa Toscana\\, Rua X\\, 123 - São Paulo/SP', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
+    a.download = 'casamento.ics'; a.click();
+    this.setState({ calAdded: true });
+  };
+
+  n1() { return this.props.nome1 ?? 'Marina'; }
+  n2() { return this.props.nome2 ?? 'João'; }
+
+  renderVals() {
+    const t = this.theme(); this._t = t;
+    const n1 = this.n1(), n2 = this.n2();
+    const mode = this.props.modoNome ?? 'Nomes';
+    const intro = this.introState();
+    const S = this.state, R = S.rsvp;
+    const setR = (o) => this.setState((s) => ({ rsvp: { ...s.rsvp, ...o } }));
+
+    const target = new Date(this.props.dataISO ?? '2026-10-31T16:30:00').getTime();
+    const diff = target - S.now;
+    const sameDay = new Date(target).toDateString() === new Date(S.now).toDateString();
+    const p2 = (x) => String(x).padStart(2, '0');
+    let cd = null;
+    if (diff > 0) cd = { d: p2(Math.floor(diff / 864e5)), h: p2(Math.floor(diff / 36e5) % 24), m: p2(Math.floor(diff / 6e4) % 60), s: p2(Math.floor(diff / 1e3) % 60) };
+    this._cd = cd;
+
+    const strip = (x) => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '');
+    const giftsData = [
+      { title: 'Nossa casa', desc: 'Para os primeiros detalhes do nosso lar.' },
+      { title: 'Nossa lua de mel', desc: 'Um jantar, um passeio, um pôr do sol a dois.' },
+      { title: 'Novos momentos', desc: 'Para as primeiras aventuras como casados.' },
+      { title: 'Presentes especiais', desc: 'Algo escolhido com o seu carinho.' }
+    ];
+    const sel = S.gift;
+    const gift = sel != null ? giftsData[sel] : null;
+
+    return {
+      t, n1, n2, i1: n1.charAt(0).toUpperCase(), i2: n2.charAt(0).toUpperCase(),
+      hashtag: `#${strip(n1)}E${strip(n2)}`,
+      modeInitials: mode === 'Iniciais', modeNames: mode === 'Nomes', modeBoth: mode === 'Iniciais + nomes',
+      introShown: intro !== 'gone', openIntro: this.openIntro,
+      doorL: intro === 'opening' ? 'translateX(-101%)' : 'none', doorR: intro === 'opening' ? 'translateX(101%)' : 'none',
+      introOp: intro === 'opening' ? 0 : 1, introTf: intro === 'opening' ? 'scale(1.06)' : 'none',
+      navOp: S.nav ? 1 : 0, navTf: S.nav ? 'none' : 'translateY(-100%)', navPe: S.nav ? 'auto' : 'none', navLinksDisplay: S.wide ? 'inline' : 'none',
+      timeline: [
+        { ano: '2019', titulo: 'O primeiro encontro' }, { ano: '2021', titulo: 'Nosso primeiro apartamento' },
+        { ano: '2024', titulo: 'O pedido' }, { ano: '2026', titulo: 'O nosso sim' }
+      ],
+      agenda: [
+        { label: 'Cerimônia', hora: '16h30', border: 'none' },
+        { label: 'Recepção', hora: '18h30', border: `1px solid ${t.line}` },
+        { label: 'Festa', hora: '20h00', border: `1px solid ${t.line}` }
+      ],
+      addCal: this.addCal, calLabel: S.calAdded ? 'Salvo na sua agenda ✓' : 'Adicionar à minha agenda',
+      mapsUrl: 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('Espaço Villa Toscana, São Paulo'),
+      cdActive: !!cd, cdToday: !cd && sameDay, cdAfter: !cd && !sameDay,
+      cdUnits: cd ? [{ key: 'd', v: cd.d, label: 'dias' }, { key: 'h', v: cd.h, label: 'horas' }, { key: 'm', v: cd.m, label: 'minutos' }, { key: 's', v: cd.s, label: 'segundos' }] : [],
+      rsvp: R, rsvpErr: S.rsvpErr,
+      rsvpShowIntro: S.rsvpStep !== 'done', rsvpShowButton: S.rsvpStep === 'idle', rsvpForm: S.rsvpStep === 'form',
+      rsvpVai: R.vai === 'sim', rsvpDoneSim: S.rsvpStep === 'done' && R.vai === 'sim', rsvpDoneNao: S.rsvpStep === 'done' && R.vai === 'nao',
+      rsvpPrimeiroNome: (R.nome.trim().split(' ')[0] || ''),
+      simBg: R.vai === 'sim' ? t.ink : 'transparent', simFg: R.vai === 'sim' ? t.bg : t.ink,
+      naoBg: R.vai === 'nao' ? t.ink : 'transparent', naoFg: R.vai === 'nao' ? t.bg : t.ink,
+      openRsvp: () => this.setState({ rsvpStep: 'form' }),
+      onNome: (e) => { setR({ nome: e.target.value }); if (this.state.rsvpErr) this.setState({ rsvpErr: false }); },
+      onRestricao: (e) => setR({ restricao: e.target.value }), onMsg: (e) => setR({ msg: e.target.value }),
+      vaiSim: () => setR({ vai: 'sim' }), vaiNao: () => setR({ vai: 'nao' }),
+      acompMenos: () => setR({ acomp: Math.max(0, R.acomp - 1) }), acompMais: () => setR({ acomp: Math.min(6, R.acomp + 1) }),
+      enviarRsvp: () => { if (!R.nome.trim()) return this.setState({ rsvpErr: true }); this.setState({ rsvpStep: 'done' }); },
+      refazerRsvp: () => this.setState({ rsvpStep: 'form' }),
+      petals: React.createElement(this.Petals, { color: t.accent }),
+      gifts: giftsData.map((g, i) => {
+        const on = sel === i, dim = sel != null && !on;
+        return { ...g, slot: `t01-presente-${i + 1}`, ph: g.title, delay: i * 120,
+          border: on ? t.ink : t.line, op: dim ? .5 : 1, tf: on ? 'translateY(-8px)' : 'none',
+          shadow: on ? '0 30px 50px -28px rgba(0,0,0,.35)' : '0 0 0 rgba(0,0,0,0)',
+          imgTf: on ? 'scale(1.06)' : 'scale(1)', checkOp: on ? 1 : 0, checkTf: on ? 'scale(1)' : 'scale(.4)',
+          onSelect: () => this.setState({ gift: on ? null : i, amount: null, giftDone: false }) };
+      }),
+      giftPanel: !!gift && !S.giftDone, giftDone: !!gift && S.giftDone,
+      giftTitleLower: gift ? gift.title.charAt(0).toLowerCase() + gift.title.slice(1) : '',
+      amounts: [150, 300, 500, 1000].map((v) => ({ label: 'R$ ' + v.toLocaleString('pt-BR'),
+        bg: S.amount === v ? t.ink : 'transparent', fg: S.amount === v ? t.bg : t.ink, onPick: () => this.setState({ amount: v }) })),
+      presentearOp: S.amount ? 1 : .4,
+      presentearLabel: S.amount ? `Presentear com R$ ${S.amount.toLocaleString('pt-BR')}` : 'Escolha um valor',
+      presentear: () => { if (this.state.amount) this.setState({ giftDone: true }); },
+      outroPresente: () => this.setState({ gift: null, amount: null, giftDone: false }),
+      jeito: ['Café depois do almoço', 'Viajar sem roteiro', 'Filme ruim no domingo', 'Massa toda sexta-feira'].map((txt, i) => ({ txt, n: p2(i + 1), delay: i * 110 })),
+      showPadrinhos: this.props.showPadrinhos ?? true,
+      padrinhos: ['Ana & Pedro', 'Lucas & Mariana', 'Rafael & Julia'].map((nomes, i) => ({ nomes, slotA: `t01-padrinho-${i}a`, slotB: `t01-padrinho-${i}b`, delay: i * 140 }))
+    };
+  }
+}
+</script>
+</body>
+</html>

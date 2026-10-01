@@ -108,6 +108,27 @@ prova de fidelidade roda EM FILA (máquina de 8 GB: um servidor, um Chrome).
 - Sino: feed próprio do portal (a policy de notifications é só de equipe
   e os links apontam para o painel) — entra com Lembretes.
 
+## A 190 — o que a revisão cética da 189 achou (30/09, decidido)
+A 189 foi aplicada antes dos céticos. A revisão (4 frentes, 30 agentes)
+confirmou: hoje nada quebra nem vaza (os 12 acessos são 'casal'), mas 9
+brechas abrem no primeiro acesso de outro nível. A 190 entra ANTES da
+tela Família e acessos. Decisões dele:
+- Chave Pix, titular, link e texto da lista (Convite): só o casal.
+- Alergia e medicamento: só o casal (área 'saude').
+- Preço da opção nas Escolhas (decisao_opcao.valor): só quem vê o
+  Financeiro (RPC mascarada; a tela tira o preço para os outros).
+- Acesso dado pelo app a mãe/pai no casamento: nível pelo papel
+  (formulário pré-marca; a cerimonialista pode trocar).
+- Padrão (sem pergunta): recebedor da lista só o casal;
+  pagamentos_fornecedor_por_mes só a equipe; padrinho não lê recados nem
+  pedidos de música; 'leitura' não escreve em álbum/músicas/recados.
+- evento_campo_valor: moeda, verba, orçamentos e saúde fecham por área.
+- App: menu, rotas e ações da v4 pelo nível; Convite sem 404 para
+  'leitura'; papelLegivel pelo nível.
+- Processo: as 27 RPCs embrulhadas não podem ser recriadas por migração
+  antiga (memória "revisar migração").
+Rascunho da síntese: scratchpad/190-rascunho.sql (revisar + 2 céticos).
+
 ## Verificação (toda fase)
 tsc, lint, `next build` com o servidor parado; capturas 1280 e 390 lado a
 lado com o protótipo; sem erro no console; conta de teste só-família criada e
