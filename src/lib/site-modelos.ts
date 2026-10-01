@@ -15,9 +15,9 @@ import type { ParDeFonte } from "@/lib/site-pares";
 export type ModeloNovo = "classico" | "aliancas" | "cartoes" | "monograma" | "franca" | "violino";
 export type ModeloId = "convite" | ModeloNovo;
 
-/** Os tipos que entram com a migração 191 ainda não estão em
- *  TIPOS_DE_BLOCO; até lá, ficam como strings ao lado. */
-export type TipoDeBlocoDoModelo = TipoBloco | "cenas" | "jeito";
+/** Os tipos que o modelo desenha ('cenas' e 'jeito' entraram em
+ *  TIPOS_DE_BLOCO com a migração 191). */
+export type TipoDeBlocoDoModelo = TipoBloco;
 
 export type FormaDoEspaco = "retangulo" | "arco" | "circulo" | "oval";
 

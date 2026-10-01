@@ -2,13 +2,18 @@
 //
 // O site deixa de ter ordem fixa: é uma lista de blocos (evento_site.
 // estrutura, migração 185) que a família reordena, esconde e mostra no
-// portal. Os cinco modelos do dono são desenhos diferentes sobre ESTA
-// lista — trocar de modelo nunca perde conteúdo.
+// portal. Os modelos do dono (src/lib/site-modelos.ts) são desenhos
+// diferentes sobre ESTA lista — trocar de modelo nunca perde conteúdo.
 //
 // Módulo puro: serve o site público, a prévia da família, a revisão do
 // dono e a demonstração da página de vendas. O banco confere a mesma
-// lista de tipos (portal_salvar_estrutura_site) — se um tipo entrar aqui,
-// entra lá também.
+// lista de tipos e o tema (site_erro_da_estrutura, migração 191, chamada
+// pela portal_salvar_estrutura_site_base) — se um tipo entrar aqui, entra
+// lá também.
+
+import type { FormaDoNome } from "@/lib/site-conteudo";
+import type { ModeloId } from "@/lib/site-modelos";
+import type { ParDeFonte } from "@/lib/site-pares";
 
 export const TIPOS_DE_BLOCO = [
   "capa",
@@ -16,6 +21,8 @@ export const TIPOS_DE_BLOCO = [
   "mensagem",
   "historia",
   "momentos",
+  /** "Nossos momentos" do T04: frase e foto (191) */
+  "cenas",
   "local",
   "dress_code",
   "rsvp",
@@ -23,6 +30,8 @@ export const TIPOS_DE_BLOCO = [
   "hospedagem",
   "galeria",
   "especiais",
+  /** "Nosso jeito": frases curtas do casal (191) */
+  "jeito",
   "video",
   "enquete",
   "perguntas",
@@ -41,7 +50,9 @@ export type BlocoDoSite = {
   variante?: string;
   /** ausente = visível */
   visivel?: boolean;
-  /** só nos blocos novos (galeria, momentos…); os antigos leem as colunas */
+  /** o que o bloco guarda na estrutura (regras e limites em
+   *  site-conteudo.ts e na 191); os textos de antes (mensagem, história,
+   *  traje, Pix) continuam nas colunas */
   conteudo?: Record<string, unknown>;
 };
 
@@ -49,10 +60,17 @@ export const PAPEIS_DE_COR = ["fundo", "superficie", "tinta", "suave", "acento"]
 export type PapelDeCor = (typeof PAPEIS_DE_COR)[number];
 
 export type TemaDoSite = {
-  /** um dos modelos; ausente = o primeiro */
-  modelo?: string;
+  /** um dos modelos; ausente = 'convite' (o site de antes, modeloDoTema) */
+  modelo?: ModeloId;
   cores?: Partial<Record<PapelDeCor, string>>;
-  fontes?: string;
+  /** o par de fontes (site-pares.ts); desconhecido = o padrão do modelo */
+  fontes?: ParDeFonte;
+  /** a forma do nome do casal; ausente = "nomes" */
+  nome?: FormaDoNome;
+  /** a abertura (envelope, cortina…) antes do site */
+  abertura?: boolean;
+  /** slug da paleta do modelo (site-paletas.ts); desconhecida = a padrão */
+  paleta?: string;
 };
 
 /** Presos nas pontas: a capa abre, o rodapé fecha. Não sobem nem descem. */
@@ -108,6 +126,8 @@ export function nomeDoBloco(tipo: TipoBloco, tipoEvento?: string | null): string
       return casal ? "Nossa história" : "A história";
     case "momentos":
       return "Momentos do dia";
+    case "cenas":
+      return "Nossos momentos";
     case "local":
       return "O local";
     case "dress_code":
@@ -122,6 +142,8 @@ export function nomeDoBloco(tipo: TipoBloco, tipoEvento?: string | null): string
       return casal ? "Galeria do casal" : "Galeria";
     case "especiais":
       return "Convidados especiais";
+    case "jeito":
+      return "Nosso jeito";
     case "video":
       return "Vídeo";
     case "enquete":

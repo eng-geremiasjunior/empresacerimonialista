@@ -7,13 +7,16 @@ import "server-only";
 
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { lerRsvp } from "@/lib/site-conteudo";
 
 export type DatasDoConvite = {
   /** "Enviar o save the date" · Data de envio (método, 084) */
   saveTheDate: string | null;
   /** "Enviar os convites" · Data de envio (método, 084) */
   convites: string | null;
-  /** "responder até" do convite (evento_site.rsvp_prazo, 129) */
+  /** "responder até" do convite: o mesmo que o site no ar mostra — o
+   *  prazo do bloco rsvp da versão publicada e, sem ele, a coluna
+   *  evento_site.rsvp_prazo (129), a regra do site_montado (191) */
   prazo: string | null;
 };
 
@@ -27,20 +30,35 @@ export const getDatasDoConvite = cache(async (eventId: string): Promise<DatasDoC
       .select("codigo, valor_data")
       .eq("event_id", eventId)
       .in("codigo", ["data_envio_std", "data_envio_convites"]),
-    supabase.from("evento_site").select("rsvp_prazo").eq("event_id", eventId).maybeSingle(),
+    supabase.from("evento_site").select("rsvp_prazo, publicado_conteudo").eq("event_id", eventId).maybeSingle(),
   ]);
   const linhas = (campos.error ? [] : campos.data ?? []) as { codigo: string; valor_data: string | null }[];
   const data = (codigo: string) => {
     const v = linhas.find((l) => l.codigo === codigo && l.valor_data && ISO.test(l.valor_data))?.valor_data;
     return v ? v.slice(0, 10) : null;
   };
-  const prazo = (site.error ? null : (site.data as { rsvp_prazo: string | null } | null))?.rsvp_prazo ?? null;
+  const linha = site.error
+    ? null
+    : (site.data as { rsvp_prazo: string | null; publicado_conteudo: unknown } | null);
+  const prazo = prazoDoBloco(linha?.publicado_conteudo) ?? linha?.rsvp_prazo ?? null;
   return {
     saveTheDate: data("data_envio_std"),
     convites: data("data_envio_convites"),
     prazo: prazo && ISO.test(prazo) ? prazo.slice(0, 10) : null,
   };
 });
+
+/** O prazo do primeiro bloco rsvp da fotografia publicada (como o
+ *  site_montado escolhe o bloco). */
+function prazoDoBloco(conteudo: unknown): string | null {
+  const estrutura = (conteudo as { estrutura?: unknown } | null)?.estrutura;
+  if (!Array.isArray(estrutura)) return null;
+  const bloco = estrutura.find(
+    (b): b is { conteudo?: unknown } =>
+      !!b && typeof b === "object" && (b as { tipo?: unknown }).tipo === "rsvp",
+  );
+  return bloco ? lerRsvp(bloco.conteudo).prazo : null;
+}
 
 export type PedidosDeMusica = {
   /** título e quantas vezes foi pedido, dos mais pedidos para os menos */

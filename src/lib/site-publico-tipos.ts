@@ -12,6 +12,8 @@ export type SitePublico = {
     hora: string | null;
     local: string | null;
     cidade: string | null;
+    /** o endereço do espaço, ao vivo (191); ausente antes dela */
+    endereco?: string | null;
     capa_url: string | null;
   };
   empresa: { nome: string; logo_url: string | null } | null;

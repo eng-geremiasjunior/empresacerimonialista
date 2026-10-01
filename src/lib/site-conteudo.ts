@@ -1,8 +1,9 @@
 // O conteúdo de cada bloco do site (estrutura[].conteudo), lido sem
 // confiar em nada.
 //
-// O banco confere o mesmo na portal_salvar_estrutura_site_base (migração
-// 191), com os MESMOS limites de LIMITES — se um mudar, muda lá também.
+// O banco confere o mesmo na site_erro_da_estrutura (migração 191,
+// chamada pela portal_salvar_estrutura_site_base), com os MESMOS limites
+// de LIMITES — se um mudar, muda lá também.
 // Aqui a leitura é tolerante: entra unknown, sai tipado; texto longo é
 // cortado, item sem o essencial é descartado, e nada quebra a página do
 // convidado.
@@ -56,8 +57,8 @@ export type IconeDoMarco = (typeof ICONES_DO_MARCO)[number];
 
 export type FormaDoNome = "nomes" | "iniciais" | "iniciais-nomes";
 
-/** Caminho no balde 'site': {evento}/{uuid}.jpg|webp. O banco ainda
- *  confere que o evento é o dono; aqui basta o formato. */
+/** Caminho no balde 'site': {evento}/{uuid}.jpg|webp. O banco (191)
+ *  confere também que o evento é o dono; aqui basta o formato. */
 export type CaminhoDeFoto = string;
 
 export type ConteudoCapa = { nome1: string; nome2: string; frase: string; foto: CaminhoDeFoto | null };
@@ -165,15 +166,20 @@ export function lerHistoria(c: unknown): ConteudoHistoria {
   return { marcos };
 }
 
-/** A programação do dia. Sem rótulo ou com hora fora de HH:MM, sai. */
+/** A hora da programação: a MESMA régua do banco (191, v_hora). */
+const RE_HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/** A programação do dia. Sem rótulo ou sem hora válida, sai. O banco
+ *  aceita item com hora ausente, nula ou vazia (o rascunho de quem ainda
+ *  não sabe o horário); aqui ele só não aparece. */
 export function lerMomentos(c: unknown): ConteudoMomentos {
   const itens = lista(obj(c).itens)
     .map((m): Momento => {
       const o = obj(m);
-      const hora = typeof o.hora === "string" && /^\d{2}:\d{2}$/.test(o.hora) ? o.hora : "";
+      const hora = typeof o.hora === "string" && RE_HORA.test(o.hora) ? o.hora : "";
       return { rotulo: texto(o.rotulo, LIMITES.momentoRotulo), hora, nota: texto(o.nota, LIMITES.momentoNota) };
     })
-    .filter((m) => m.rotulo && m.hora && Number(m.hora.slice(0, 2)) < 24 && Number(m.hora.slice(3)) < 60)
+    .filter((m) => m.rotulo && m.hora)
     .slice(0, LIMITES.momentos);
   return { itens };
 }
@@ -217,10 +223,12 @@ export function lerEspeciais(c: unknown): ConteudoEspeciais {
 
 /** Os itens de presente. Todo presente tem valor: sem valor inteiro entre
  *  R$ 50 e R$ 50.000, ou sem título, o item sai. O id é o que a fatia C
- *  usa para achar o preço na fotografia publicada — nunca repete. O SQL
- *  não garante ids únicos (só o formato), então um repetido é renomeado
- *  aqui: o servidor da fatia C precisa passar a fotografia por ESTE leitor
- *  antes de buscar o preço, ou o id renomeado não existe lá. */
+ *  usa para achar o preço na fotografia publicada — nunca repete. Desde a
+ *  191 o banco exige o id e recusa repetido na estrutura inteira (não
+ *  só dentro do bloco); o valor ele só confere quando vem (o rascunho
+ *  pode ter item sem valor, que aqui sai). A renomeação abaixo fica de
+ *  reserva (o leitor não confia no banco): o servidor da fatia C passa a
+ *  fotografia por ESTE leitor antes de buscar o preço. */
 export function lerPresentes(c: unknown): ConteudoPresentes {
   const vistos = new Set<string>();
   const itens: ItemDePresente[] = [];
@@ -279,7 +287,7 @@ export function fotosDaEstrutura(estrutura: BlocoDoSite[]): CaminhoDeFoto[] {
   for (const b of estrutura) {
     const c = b.conteudo;
     if (!c) continue;
-    switch (b.tipo as string) {
+    switch (b.tipo) {
       case "capa":
         todas.push(...[lerCapa(c).foto].filter((f): f is string => !!f));
         break;
