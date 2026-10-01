@@ -3,8 +3,9 @@
 // A lista de presentes, etapa 1 (182): o responsável do evento vira
 // recebedor na Pagar.me. Os dados pessoais e a conta vão direto para a
 // Pagar.me; aqui só fica o código do recebedor, o estado e um resumo.
-// Quem confere se é o responsável é o servidor (evento_acesso), e quem
-// escreve é a chave de serviço — a tabela não tem policy de escrita.
+// Quem confere se é o responsável é o servidor (evento_acesso: papel E
+// nível), e quem escreve é a chave de serviço — a tabela não tem policy
+// de escrita.
 
 import { revalidatePath } from "next/cache";
 import { createClient as criarSupabase } from "@supabase/supabase-js";
@@ -22,7 +23,14 @@ function servico() {
   });
 }
 
-/** O responsável do evento (não a debutante), pela sessão de quem pede. */
+/**
+ * O responsável do evento (não a debutante), pela sessão de quem pede.
+ * A conta que recebe o dinheiro é do casal (190): o acesso precisa ser
+ * de nível 'casal' — mãe, padrinho e quem só acompanha não cadastram nem
+ * fazem a prova de vida. O user.id vem da sessão, então ler a própria
+ * linha pela chave de serviço é seguro (portal_pode_fazer, ao contrário,
+ * não serve aqui: com a chave de serviço ela sempre diz sim).
+ */
 async function responsavel(eventoId: string): Promise<{ userId: string; email: string; nome: string | null } | null> {
   const {
     data: { user },
@@ -30,13 +38,13 @@ async function responsavel(eventoId: string): Promise<{ userId: string; email: s
   if (!user?.email) return null;
   const { data } = await servico()
     .from("evento_acesso")
-    .select("nome, papel")
+    .select("nome, papel, nivel")
     .eq("event_id", eventoId)
     .eq("user_id", user.id)
     .eq("status", "ativo")
     .maybeSingle();
-  const a = data as { nome: string | null; papel: string } | null;
-  if (!a || a.papel === "debutante") return null;
+  const a = data as { nome: string | null; papel: string; nivel: string | null } | null;
+  if (!a || a.papel === "debutante" || a.nivel !== "casal") return null;
   if (!(await listaDePresentesLiberada(eventoId))) return null;
   return { userId: user.id, email: user.email, nome: a.nome };
 }
@@ -106,5 +114,14 @@ export async function provaDeVida(eventoId: string): Promise<{ url: string } | {
   const id = (data as { pagarme_recipient_id?: string } | null)?.pagarme_recipient_id;
   if (!id) return { error: "Cadastre a conta primeiro." };
   const r = await linkDaProvaDeVida(id);
-  return r.ok ? { url: r.url } : { error: "A Pagar.me ainda não liberou a prova de vida. Tente em alguns minutos." };
+  if (r.ok) return { url: r.url };
+  // 401 da Pagar.me = o pedido veio de um IP que a conta não autorizou
+  // (o link da prova de vida exige lista de IPs na produção): esperar não
+  // resolve, então a tela não manda esperar
+  return {
+    error:
+      r.status === 401 || r.status === 403
+        ? "A prova de vida não está disponível agora. Fale com a cerimonialista."
+        : "Não foi possível falar com a Pagar.me agora. Tente de novo em instantes.",
+  };
 }

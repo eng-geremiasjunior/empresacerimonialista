@@ -261,9 +261,12 @@ export function PainelEscolhaV2({
                     ["Inclui", (o: (typeof cur.opcoes)[number]) => o.inclui.join(" · ") || "—"],
                     ["Nota", (o: (typeof cur.opcoes)[number]) => o.nota ?? "—"],
                   ] as const
-                ).map(([rot, val]) => (
-                  <Linha key={rot} rotulo={rot} celulas={cur.opcoes.map((o) => ({ id: o.id, texto: val(o), sel: escolhida === o.id }))} />
-                ))}
+                )
+                  // sem o Financeiro, o preço não chega (190): a linha sai
+                  .filter(([rot]) => rot !== "Valor" || cur.opcoes.some((o) => o.valor !== null))
+                  .map(([rot, val]) => (
+                    <Linha key={rot} rotulo={rot} celulas={cur.opcoes.map((o) => ({ id: o.id, texto: val(o), sel: escolhida === o.id }))} />
+                  ))}
                 <div style={{ padding: 12, borderTop: "1px solid #f2ece3" }} />
                 {cur.opcoes.map((o) => (
                   <div key={o.id} style={{ padding: "10px 12px 14px", borderTop: "1px solid #f2ece3", background: escolhida === o.id ? "var(--destaque-fundo)" : "transparent" }}>

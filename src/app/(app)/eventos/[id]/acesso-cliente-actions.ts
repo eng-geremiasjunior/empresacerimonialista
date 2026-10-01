@@ -12,8 +12,11 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getMeuCargo } from "@/lib/supabase/equipe";
 import {
+  NIVEIS_PORTAL,
+  NIVEL_PORTAL_LABELS,
   criarAcessoPortal,
   regerarSenhaProvisoria,
+  type NivelPortal,
   type PapelPortal,
 } from "@/lib/portal-admin";
 
@@ -29,6 +32,31 @@ const PAPEIS: PapelPortal[] = [
   "pai",
   "outro",
 ];
+
+/** Nível vindo do formulário: só um dos cinco; fora disso, o padrão do banco. */
+function nivelDoForm(v: string | undefined): NivelPortal | undefined {
+  return v && (NIVEIS_PORTAL as string[]).includes(v) ? (v as NivelPortal) : undefined;
+}
+
+/**
+ * Um nível diferente de 'casal' só é gravado com a 190 no banco: sem ela,
+ * a mãe ou o padrinho ainda leriam valores e alergias direto pela API, e o
+ * rótulo do formulário prometeria o que o banco não cumpre. A RPC
+ * portal_opcoes_das_escolhas é a última coisa que a 190 cria; se ela não
+ * responde, o acesso não é criado.
+ */
+async function nivelNoAr(eventId: string, nivel: NivelPortal | undefined): Promise<string | null> {
+  if (!nivel || nivel === "casal") return null;
+  const supabase = createClient();
+  const { error } = await supabase.rpc("portal_opcoes_das_escolhas", { p_event_id: eventId });
+  if (!error) return null;
+  return `“${NIVEL_PORTAL_LABELS[nivel]}” ainda não está disponível. Por enquanto, use “${NIVEL_PORTAL_LABELS.casal}”.`;
+}
+
+/** O aviso de quando a pessoa já entrava no evento e o nível ficou. */
+function avisoNivelMantido(n: NivelPortal | undefined): string {
+  return n ? ` Essa pessoa já tinha acesso: o que vê no portal continua “${NIVEL_PORTAL_LABELS[n]}”.` : "";
+}
 
 /** Confirma pela sessão que quem chama pode editar este evento. */
 async function podeEditar(eventId: string): Promise<{ empresaId?: string; membroId?: string; error?: string }> {
@@ -52,7 +80,7 @@ async function podeEditar(eventId: string): Promise<{ empresaId?: string; membro
 
 export async function criarAcessoDaCliente(
   eventId: string,
-  form: { nome: string; email: string; papel: string; clientId?: string | null }
+  form: { nome: string; email: string; papel: string; nivel?: string; clientId?: string | null }
 ): Promise<AcessoResult> {
   const guarda = await podeEditar(eventId);
   if (guarda.error) return { error: guarda.error };
@@ -66,6 +94,9 @@ export async function criarAcessoDaCliente(
   const papel = (PAPEIS as string[]).includes(form.papel)
     ? (form.papel as PapelPortal)
     : "outro";
+  const nivel = nivelDoForm(form.nivel);
+  const semNivel = await nivelNoAr(eventId, nivel);
+  if (semNivel) return { error: semNivel };
 
   const r = await criarAcessoPortal({
     eventId,
@@ -73,6 +104,7 @@ export async function criarAcessoDaCliente(
     nome,
     email,
     papel,
+    nivel,
     clientId: form.clientId ?? null,
     criadoPor: guarda.membroId ?? null,
   });
@@ -83,11 +115,12 @@ export async function criarAcessoDaCliente(
   return {
     success: true,
     senhaProvisoria: r.senhaProvisoria,
-    mensagem: r.ehEquipe
-      ? "Acesso vinculado. Como este e-mail já é do sistema, a senha continua a mesma — é só abrir /portal."
-      : r.jaTinhaLogin
-        ? "Acesso vinculado. A senha provisória foi renovada."
-        : "Acesso criado.",
+    mensagem:
+      (r.ehEquipe
+        ? "Acesso vinculado. Como este e-mail já é do sistema, a senha continua a mesma — é só abrir /portal."
+        : r.jaTinhaLogin
+          ? "Acesso vinculado. A senha provisória foi renovada."
+          : "Acesso criado.") + avisoNivelMantido(r.nivelMantido),
   };
 }
 
@@ -178,20 +211,28 @@ export async function novaSenhaProvisoria(
  */
 export async function convidarParaOPortal(
   eventId: string,
-  form: { nome: string; email: string; papel: string }
+  form: { nome: string; email: string; papel: string; nivel?: string }
 ): Promise<{ error: string } | { success: true; mensagem: string; textoWhatsapp: string }> {
   const guarda = await podeEditar(eventId);
   if (guarda.error) return { error: guarda.error };
   const papel = (PAPEIS as string[]).includes(form.papel) ? (form.papel as PapelPortal) : "outro";
+  const nivel = nivelDoForm(form.nivel);
+  const semNivel = await nivelNoAr(eventId, nivel);
+  if (semNivel) return { error: semNivel };
   const r = await convidarClienteDoEvento(eventId, {
     automatico: false,
     email: form.email,
     nome: form.nome,
     papel,
+    nivel,
     criadoPor: guarda.membroId ?? null,
   });
   if (!r.ok) return { error: r.motivo };
   revalidatePath(`/eventos/${eventId}/editar`);
   revalidatePath(`/eventos/${eventId}/area-do-cliente`);
-  return { success: true, mensagem: `Convite enviado para ${r.para}.`, textoWhatsapp: r.textoWhatsapp };
+  return {
+    success: true,
+    mensagem: `Convite enviado para ${r.para}.${avisoNivelMantido(r.nivelMantido)}`,
+    textoWhatsapp: r.textoWhatsapp,
+  };
 }

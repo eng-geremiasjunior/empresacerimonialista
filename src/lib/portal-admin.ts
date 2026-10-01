@@ -28,6 +28,32 @@ export const PAPEL_PORTAL_LABELS: Record<PapelPortal, string> = {
   outro: "Outro",
 };
 
+/**
+ * O que a pessoa vê e faz no portal (189, evento_acesso.nivel). As regras
+ * moram no banco (nivel_permite); aqui só o nome que a equipe lê. O
+ * padrão do banco é 'casal' — e é o que vale quando o nível não vem.
+ */
+export type NivelPortal = "casal" | "familia" | "aprova" | "leitura" | "padrinho";
+
+export const NIVEL_PORTAL_LABELS: Record<NivelPortal, string> = {
+  casal: "Tudo, como o casal",
+  familia: "Família: sem financeiro e documentos",
+  aprova: "Família que também aprova",
+  leitura: "Só acompanha",
+  padrinho: "Padrinho ou madrinha",
+};
+
+export const NIVEIS_PORTAL = Object.keys(NIVEL_PORTAL_LABELS) as NivelPortal[];
+
+/**
+ * O nível que o formulário do casamento pré-marca pelo papel (decisão de
+ * 30/09: só mãe e pai). O resto fica 'casal', como sempre foi — inclusive
+ * "Outro", o papel que o aceite dá a quem contratou.
+ */
+export function nivelDoPapel(papel: PapelPortal): NivelPortal {
+  return papel === "mae" || papel === "pai" ? "familia" : "casal";
+}
+
 function adminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -68,6 +94,11 @@ export type ResultadoAcesso =
       jaTinhaLogin: boolean;
       /** O login também é de alguém da equipe (ex.: a própria dona testando). */
       ehEquipe: boolean;
+      /**
+       * A pessoa já entrava neste evento com outro nível, e ele ficou: trocar
+       * o que alguém vê não é efeito de reenviar o acesso.
+       */
+      nivelMantido?: NivelPortal;
     };
 
 /**
@@ -84,6 +115,12 @@ export async function criarAcessoPortal(params: {
   nome: string;
   email: string;
   papel: PapelPortal;
+  /**
+   * Só vale no vínculo NOVO. Ausente = o padrão do banco ('casal', como o
+   * aceite e a conta da família sempre foram). No vínculo que já existe o
+   * nível fica como está, venha o que vier.
+   */
+  nivel?: NivelPortal;
   clientId?: string | null;
   criadoPor?: string | null;
 }): Promise<ResultadoAcesso> {
@@ -168,6 +205,7 @@ export async function criarAcessoPortal(params: {
     status: "ativo",
     criado_por: params.criadoPor ?? null,
   };
+  const nivelNovo = params.nivel ? { nivel: params.nivel } : {};
 
   // ------------------------------------------------------------------
   // Caminho A — login novo: o CONVITE VEM ANTES DO LOGIN.
@@ -182,7 +220,7 @@ export async function criarAcessoPortal(params: {
   if (!existente) {
     const { error: conviteError } = await admin
       .from("evento_acesso")
-      .insert({ ...vinculo, user_id: null });
+      .insert({ ...vinculo, ...nivelNovo, user_id: null });
 
     if (conviteError) {
       return {
@@ -281,10 +319,25 @@ export async function criarAcessoPortal(params: {
     }
   }
 
+  // Quem já entra neste evento mantém o nível: reenviar o acesso (para
+  // mandar a senha de novo, ou trocar o papel) não rebaixa a contratante
+  // nem a mãe que hoje é 'casal'. Trocar o que alguém vê é da tela
+  // Família e acessos. Só o vínculo novo nasce com o nível do formulário.
+  const { data: atual, error: atualError } = await admin
+    .from("evento_acesso")
+    .select("nivel")
+    .eq("event_id", params.eventId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (atualError) {
+    return { error: "Não foi possível verificar o acesso agora. Tente de novo." };
+  }
+  const nivelAtual = (atual as { nivel: NivelPortal | null } | null)?.nivel ?? null;
+
   const { error: vinculoError } = await admin
     .from("evento_acesso")
     .upsert(
-      { ...vinculo, user_id: userId, updated_at: new Date().toISOString() },
+      { ...vinculo, ...(atual ? {} : nivelNovo), user_id: userId, updated_at: new Date().toISOString() },
       { onConflict: "event_id,user_id" }
     );
 
@@ -299,6 +352,7 @@ export async function criarAcessoPortal(params: {
     senhaProvisoria: ehEquipe ? undefined : senha,
     jaTinhaLogin: true,
     ehEquipe,
+    ...(nivelAtual && params.nivel && nivelAtual !== params.nivel ? { nivelMantido: nivelAtual } : {}),
   };
 }
 

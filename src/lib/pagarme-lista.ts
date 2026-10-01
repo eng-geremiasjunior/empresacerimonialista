@@ -110,19 +110,19 @@ export async function lerRecebedor(id: string) {
 }
 
 /** O link da prova de vida (selfie + documento), feita no celular de quem vai receber. */
-export async function linkDaProvaDeVida(id: string): Promise<{ ok: true; url: string } | { ok: false; erro: string }> {
-  if (process.env.NODE_ENV !== "production" && !emTeste()) return { ok: false, erro: "sem chave de teste" };
+export async function linkDaProvaDeVida(id: string): Promise<{ ok: true; url: string } | { ok: false; status: number; erro: string }> {
+  if (process.env.NODE_ENV !== "production" && !emTeste()) return { ok: false, status: 0, erro: "sem chave de teste" };
   if (emTeste()) {
     // no ambiente de teste a Pagar.me oferece uma rota simulada
     try {
       const r = await fetch(`https://api.mundipagg.com/lifecycle/v1/kycs-mock/qr-code?customId=${encodeURIComponent(id)}&status=approved&statusReason=ok`, { method: "POST", cache: "no-store" });
       const j = (await r.json()) as { url?: string };
-      return j.url ? { ok: true, url: j.url } : { ok: false, erro: "sem link" };
+      return j.url ? { ok: true, url: j.url } : { ok: false, status: r.status, erro: "sem link" };
     } catch {
-      return { ok: false, erro: "rede" };
+      return { ok: false, status: 0, erro: "rede" };
     }
   }
   const r = await chamar<{ url?: string }>("POST", `/recipients/${encodeURIComponent(id)}/kyc_link`);
-  if (!r.ok) return { ok: false, erro: r.erro };
-  return r.dados.url ? { ok: true, url: r.dados.url } : { ok: false, erro: "sem link" };
+  if (!r.ok) return { ok: false, status: r.status, erro: r.erro };
+  return r.dados.url ? { ok: true, url: r.dados.url } : { ok: false, status: 0, erro: "sem link" };
 }

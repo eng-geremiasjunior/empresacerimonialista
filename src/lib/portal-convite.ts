@@ -10,7 +10,7 @@ import "server-only";
 // o link leva a cliente a CRIAR a própria senha.
 
 import { createClient } from "@supabase/supabase-js";
-import { criarAcessoPortal, linkParaCriarSenha, type PapelPortal } from "@/lib/portal-admin";
+import { criarAcessoPortal, linkParaCriarSenha, type NivelPortal, type PapelPortal } from "@/lib/portal-admin";
 import { enviarViaResend } from "@/lib/email";
 import { portalBase } from "@/lib/app-url";
 import { rotuloEventoPossessivo } from "@/lib/papel";
@@ -30,7 +30,7 @@ function escapar(s: string) {
 }
 
 export type ResultadoConvite =
-  | { ok: true; para: string; textoWhatsapp: string }
+  | { ok: true; para: string; textoWhatsapp: string; nivelMantido?: NivelPortal }
   | { ok: false; motivo: string };
 
 /**
@@ -39,7 +39,15 @@ export type ResultadoConvite =
  */
 export async function convidarClienteDoEvento(
   eventId: string,
-  opcoes: { automatico: boolean; email?: string | null; nome?: string | null; papel?: PapelPortal; criadoPor?: string | null }
+  opcoes: {
+    automatico: boolean;
+    email?: string | null;
+    nome?: string | null;
+    papel?: PapelPortal;
+    /** ausente (o aceite) = o padrão do banco, 'casal' */
+    nivel?: NivelPortal;
+    criadoPor?: string | null;
+  }
 ): Promise<ResultadoConvite> {
   const db = servico();
   if (!db) return { ok: false, motivo: "configuração do servidor incompleta" };
@@ -88,6 +96,7 @@ export async function convidarClienteDoEvento(
     nome,
     email,
     papel: opcoes.papel ?? "outro",
+    nivel: opcoes.nivel,
     clientId: evento.client_id,
     criadoPor: opcoes.criadoPor ?? null,
   });
@@ -150,6 +159,7 @@ export async function convidarClienteDoEvento(
   return {
     ok: true,
     para: email,
+    ...(acesso.nivelMantido ? { nivelMantido: acesso.nivelMantido } : {}),
     textoWhatsapp:
       `Oi, ${primeiro}! Mandei no seu e-mail (${email}) o acesso ao portal do ${doEvento}: ` +
       `é só criar a sua senha pelo botão. Qualquer coisa, me chama aqui.`,

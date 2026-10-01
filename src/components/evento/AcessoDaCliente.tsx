@@ -8,7 +8,14 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { PAPEL_PORTAL_LABELS, type PapelPortal } from "@/lib/portal-admin";
+import {
+  NIVEIS_PORTAL,
+  NIVEL_PORTAL_LABELS,
+  PAPEL_PORTAL_LABELS,
+  nivelDoPapel,
+  type NivelPortal,
+  type PapelPortal,
+} from "@/lib/portal-admin";
 import { papeisPortalDoTipo } from "@/lib/papel";
 import { linkCompartilharWhatsapp } from "@/lib/whatsapp-link";
 import {
@@ -48,6 +55,12 @@ export function AcessoDaCliente({
   const [email, setEmail] = useState(clienteSugerido?.email ?? "");
   const papeis = tipo === undefined ? PAPEIS : papeisPortalDoTipo(tipo);
   const [papel, setPapel] = useState<PapelPortal>(papeis[0]);
+  // o nível só vale no portal do casamento (189/190): mãe e pai nascem
+  // 'familia', o resto 'casal'; a equipe pode trocar. Vale só para quem
+  // ainda não entra no evento (quem já entra mantém o nível). Nos outros
+  // tipos nada vai, e vale o padrão do banco ('casal').
+  const comNivel = tipo === "casamento";
+  const [nivel, setNivel] = useState<NivelPortal>(nivelDoPapel(papeis[0]));
   const [erro, setErro] = useState<string | null>(null);
   const [senha, setSenha] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -164,21 +177,45 @@ export function AcessoDaCliente({
               />
             </label>
           </div>
-          {papeis.length > 1 && (
-            <label className="block">
-              <span className="text-xs text-gray-500">Papel no evento</span>
-              <select
-                value={papel}
-                onChange={(e) => setPapel(e.target.value as PapelPortal)}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              >
-                {papeis.map((p) => (
-                  <option key={p} value={p}>
-                    {PAPEL_PORTAL_LABELS[p]}
-                  </option>
-                ))}
-              </select>
-            </label>
+          {(papeis.length > 1 || comNivel) && (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {papeis.length > 1 && (
+                <label className="block">
+                  <span className="text-xs text-gray-500">Papel no evento</span>
+                  <select
+                    value={papel}
+                    onChange={(e) => {
+                      const p = e.target.value as PapelPortal;
+                      setPapel(p);
+                      setNivel(nivelDoPapel(p));
+                    }}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                  >
+                    {papeis.map((p) => (
+                      <option key={p} value={p}>
+                        {PAPEL_PORTAL_LABELS[p]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              {comNivel && (
+                <label className="block">
+                  <span className="text-xs text-gray-500">O que vê no portal</span>
+                  <select
+                    value={nivel}
+                    onChange={(e) => setNivel(e.target.value as NivelPortal)}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                  >
+                    {NIVEIS_PORTAL.map((n) => (
+                      <option key={n} value={n}>
+                        {NIVEL_PORTAL_LABELS[n]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+            </div>
           )}
           <div className="flex flex-wrap items-center gap-2 pt-1">
             <button
@@ -186,7 +223,12 @@ export function AcessoDaCliente({
               disabled={pendente}
               onClick={() =>
                 startTransition(async () => {
-                  const r = await convidarParaOPortal(eventId, { nome, email: email ?? "", papel });
+                  const r = await convidarParaOPortal(eventId, {
+                    nome,
+                    email: email ?? "",
+                    papel,
+                    nivel: comNivel ? nivel : undefined,
+                  });
                   if ("error" in r) {
                     setErro(r.error);
                     return;
@@ -212,6 +254,7 @@ export function AcessoDaCliente({
                     nome,
                     email: email ?? "",
                     papel,
+                    nivel: comNivel ? nivel : undefined,
                     clientId: clienteSugerido?.id ?? null,
                   });
                   tratar(r);
