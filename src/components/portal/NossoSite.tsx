@@ -1,7 +1,8 @@
 "use client";
 
 // "Nosso site" — a tela em que a família monta o site (30/09/2026, plano
-// "Site e lista"; o desenho é o do app da Wedy que o dono mostrou).
+// "Site e lista"; o desenho é o do app da Wedy que o dono mostrou). No
+// portal dos noivos, a mesma tela é o "Convite".
 //
 // No alto, a prévia com o endereço e o estado da publicação. Depois os
 // seis atalhos (Adicionar bloco, Aparência, Detalhes, Ver o site,
@@ -9,6 +10,17 @@
 // ↑ ↓ mudam a ordem (no celular nada de arrastar — a lição das Mesas) e o
 // olho esconde. A prévia é o site DE VERDADE (SiteDoEvento) com o que
 // está escrito agora, inclusive o que ainda não foi salvo.
+//
+// Os modelos (191): em Aparência, o modelo (casamento e bodas: os 6 e o
+// Convite; os outros tipos, só o Convite), o par de fontes, a forma do
+// nome, a abertura e a paleta; as cores livres só no Convite. Num modelo
+// novo, a lista mostra só os blocos que ele desenha, cada um com o seu
+// editor (portal/site/editores), e os nomes do casal ficam em Detalhes
+// (gravados na capa). No Convite, tudo como antes.
+//
+// Casamento ou bodas que abre esta tela pela primeira vez (nada salvo,
+// nada enviado, nada escrito) nasce no Clássico, gravado na hora. Nenhum
+// site que já existe muda de modelo sozinho.
 //
 // Publicar manda a versão para a revisão do dono do sistema; a versão
 // aprovada antes continua no ar até a nova passar (migração 185). A
@@ -31,26 +43,38 @@ import {
   X,
 } from "lucide-react";
 import { PreviaDoSite } from "@/components/convite/PreviaDoSite";
-import { SiteDoEvento } from "@/components/site/SiteDoEvento";
 import type { SitePublico } from "@/lib/site-publico-tipos";
 import { dataLonga, quandoLegivel } from "@/lib/rsvp-convite";
 import {
   BLOCOS_FIXOS,
   BLOCOS_PRONTOS,
   estruturaEfetiva,
-  moverBloco,
+  lerEstrutura,
   nomeDoBloco,
   type BlocoDoSite,
-  type PapelDeCor,
   type TemaDoSite,
+  type TipoBloco,
 } from "@/lib/site-blocos";
+import { modeloDesenha, modeloDoTema, type ModeloId } from "@/lib/site-modelos";
 import {
+  lerCenas,
+  lerEspeciais,
+  lerGaleria,
+  lerJeito,
+  lerMomentos,
+  lerPresentes,
+  lerRsvp,
+  partirNomes,
+} from "@/lib/site-conteudo";
+import {
+  assinarFotosDoRascunho,
   decidirMusica,
   definirBlocos,
   definirEnderecoDoSite,
   ligarSite,
   ocultarFoto,
   ocultarRecado,
+  pedirEnvioDeFoto,
   publicarSiteDaFamilia,
   salvarConviteCasal,
   salvarEstruturaSite,
@@ -59,6 +83,21 @@ import {
 import type { FotoModeracao, MusicaModeracao, RecadoModeracao } from "./EditorSiteCasal";
 import { Cartao, Rotulo } from "./Nucleo";
 import { TRACO } from "./icones";
+import { CabemFotos, EDITORES, useFotosEnviadas, type ExtraDoEditor, type PedirEnvio } from "./site/editores";
+import { SiteEmEscala } from "./site/SiteEmEscala";
+import { Aparencia } from "./site/Aparencia";
+import { Detalhes } from "./site/Detalhes";
+import { podeMexerNosPresentes } from "./site/acoes";
+import {
+  TETO_DE_FOTOS_DA_ESTRUTURA,
+  comPresentesSalvos,
+  estruturaDoModelo,
+  fotosCruas,
+  idsDePresenteFora,
+  mensagemCurta,
+  nomesDaCapa,
+  paraGravar,
+} from "./site/estrutura";
 
 export type EstadoDaRevisao = {
   status: "rascunho" | "em_analise" | "aprovado" | "recusado";
@@ -128,20 +167,19 @@ const iconeBotao: CSSProperties = {
   flex: "none",
 };
 
-const CORES_DO_MODELO: Record<PapelDeCor, string> = {
-  fundo: "#faf6f0",
-  superficie: "#f1eae0",
-  tinta: "#3a342c",
-  suave: "#6b645b",
-  acento: "#b06b4a",
+const HEX = /^#[0-9a-f]{6}$/i;
+
+/** A server action do envio, no formato que os editores esperam. */
+const pedirEnvio: PedirEnvio = async (id) => {
+  const r = await pedirEnvioDeFoto(id);
+  if (r.ok === true) return { ok: true, caminho: r.caminho, token: r.token };
+  return { ok: false, erro: r.error || "Não foi possível enviar agora." };
 };
-const NOME_DA_COR: Record<PapelDeCor, string> = {
-  fundo: "Fundo",
-  superficie: "Cartões",
-  tinta: "Texto",
-  suave: "Texto de apoio",
-  acento: "Detalhes",
-};
+
+/** "3 fotos", "1 par" — e "Vazio · não aparece" quando não há nenhum. */
+function contagem(n: number, um: string, varios: string): string {
+  return n > 0 ? `${n} ${n === 1 ? um : varios}` : "Vazio · não aparece";
+}
 
 /** "há 3 horas", só depois de montar (relógio no 1º render quebra a hidratação) */
 function useHaQuanto(iso: string | null): string | null {
@@ -155,66 +193,6 @@ function useHaQuanto(iso: string | null): string | null {
   if (h < 24) return `há ${h} ${h === 1 ? "hora" : "horas"}`;
   const d = Math.floor(h / 24);
   return d === 1 ? "desde ontem" : `há ${d} dias`;
-}
-
-/** O site em escala, sem clique nem foco (é só para ver). `largura` é a
- *  do celular em que ele é desenhado; `alturaDoSite`, quanto dele aparece
- *  (640 = a capa inteira no celular: foto, nomes e o cartão da data). */
-function SiteEmEscala({
-  dados,
-  fotosAlbum,
-  fotoCasalUrl,
-  largura,
-  alturaDoSite,
-}: {
-  dados: SitePublico;
-  fotosAlbum: { url: string; autor: string | null }[];
-  fotoCasalUrl: string | null;
-  largura: number;
-  alturaDoSite: number;
-}) {
-  const caixa = useRef<HTMLDivElement>(null);
-  const miolo = useRef<HTMLDivElement>(null);
-  const [escala, setEscala] = useState(0);
-  useEffect(() => {
-    const el = caixa.current;
-    if (!el) return;
-    const medir = () => setEscala(el.clientWidth / largura);
-    medir();
-    const ro = new ResizeObserver(medir);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [largura]);
-  useEffect(() => {
-    miolo.current?.setAttribute("inert", "");
-  }, []);
-  return (
-    <div
-      ref={caixa}
-      aria-hidden
-      style={{
-        position: "relative",
-        width: "100%",
-        aspectRatio: `${largura} / ${alturaDoSite}`,
-        overflow: "hidden",
-        borderRadius: 10,
-        background: "#faf6f0",
-      }}
-    >
-      <div
-        ref={miolo}
-        style={{
-          width: largura,
-          transform: `scale(${escala})`,
-          transformOrigin: "top left",
-          pointerEvents: "none",
-          opacity: escala ? 1 : 0,
-        }}
-      >
-        <SiteDoEvento dados={dados} midia={{ fotosAlbum, fotoCasalUrl, urls: {} }} modo="previa" semEnvelope />
-      </div>
-    </div>
-  );
 }
 
 export function NossoSite({
@@ -235,6 +213,8 @@ export function NossoSite({
   fotos,
   musicas,
   recados,
+  urlsDoSite,
+  podeGerir,
 }: {
   eventoId: string;
   tipoEvento: string;
@@ -254,30 +234,142 @@ export function NossoSite({
   fotos: FotoModeracao[];
   musicas: MusicaModeracao[];
   recados: RecadoModeracao[];
+  /** as fotos do balde 'site' já assinadas no servidor (assinarMidiaDoSite);
+   *  ausente = a tela pede as que faltam (assinarFotosDoRascunho) */
+  urlsDoSite?: Record<string, string>;
+  /** o nível de quem está logado é 'gestao' (muda os itens de presente);
+   *  ausente = a tela pergunta ao servidor */
+  podeGerir?: boolean;
 }) {
   const router = useRouter();
   const [pendente, iniciar] = useTransition();
   const [erro, setErro] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
 
-  const [estrutura, setEstrutura] = useState<BlocoDoSite[]>(() => estruturaEfetiva(previa.site?.estrutura));
-  const [tema, setTema] = useState<TemaDoSite>(() => {
-    const t = (previa.site?.tema ?? {}) as TemaDoSite;
-    if (t.cores && Object.keys(t.cores).length > 0) return t;
-    // sem tema salvo, as três cores de antes entram como ponto de partida
-    const cores: TemaDoSite["cores"] = {};
-    if (/^#[0-9a-f]{6}$/i.test(lookInicial.corFundo)) cores.fundo = lookInicial.corFundo;
-    if (/^#[0-9a-f]{6}$/i.test(lookInicial.corTinta)) cores.tinta = lookInicial.corTinta;
-    if (/^#[0-9a-f]{6}$/i.test(lookInicial.corAcento)) cores.acento = lookInicial.corAcento;
-    return { ...t, cores };
+  // o ponto de partida, calculado uma vez
+  const [inicio] = useState(() => {
+    const casal = tipoEvento === "casamento" || tipoEvento === "bodas";
+    const bruto = previa.site?.tema && typeof previa.site.tema === "object" ? previa.site.tema : {};
+    // casamento NOVO: nada salvo, nada enviado, nada escrito. Só esse
+    // nasce no Clássico; site que já existe fica como está.
+    const novo =
+      casal &&
+      !!previa.site &&
+      lerEstrutura(previa.site.estrutura).length === 0 &&
+      Object.keys(bruto).length === 0 &&
+      revisao.status === "rascunho" &&
+      !revisao.enviada_em &&
+      !publicado &&
+      !publicadoEm &&
+      Object.values(textosIniciais).every((v) => !v.trim()) &&
+      Object.values(lookInicial).every((v) => !v.trim());
+
+    // o que está no banco, como a tela mostra
+    const t = bruto as TemaDoSite;
+    let temaDoBanco: TemaDoSite;
+    if (modeloDoTema(t) !== "convite" || (t.cores && Object.keys(t.cores).length > 0)) {
+      temaDoBanco = t;
+    } else {
+      // Convite sem cor no tema: as três cores de antes entram como ponto de partida
+      const cores: TemaDoSite["cores"] = {};
+      if (HEX.test(lookInicial.corFundo)) cores.fundo = lookInicial.corFundo;
+      if (HEX.test(lookInicial.corTinta)) cores.tinta = lookInicial.corTinta;
+      if (HEX.test(lookInicial.corAcento)) cores.acento = lookInicial.corAcento;
+      temaDoBanco = { ...t, cores };
+    }
+    const doBanco = {
+      tema: temaDoBanco,
+      estrutura: estruturaDoModelo(estruturaEfetiva(previa.site?.estrutura), modeloDoTema(temaDoBanco)),
+    };
+    if (!novo) return { novo, ...doBanco, doBanco };
+    // a abertura gravada explícita: o site e a revisão leem a mesma coisa
+    const tema: TemaDoSite = { modelo: "classico", abertura: true };
+    const estrutura = estruturaDoModelo(estruturaEfetiva(previa.site?.estrutura), "classico");
+    return { novo, tema, estrutura, doBanco };
   });
+
+  const [estrutura, setEstrutura] = useState<BlocoDoSite[]>(inicio.estrutura);
+  const [tema, setTema] = useState<TemaDoSite>(inicio.tema);
+  // no nascimento, o salvo é o do banco até a gravação dar certo
+  const [temaSalvo, setTemaSalvo] = useState(() => JSON.stringify(inicio.doBanco.tema));
   const [textos, setTextos] = useState<Textos>(textosIniciais);
   const [look, setLook] = useState<Look>(lookInicial);
   const [painel, setPainel] = useState<Painel>(null);
   const [aberto, setAberto] = useState<string | null>(null);
   const [verSite, setVerSite] = useState(false);
-  const [slug, setSlug] = useState(endereco.slug ?? "");
   const [copiado, setCopiado] = useState(false);
+
+  const modelo: ModeloId = modeloDoTema(tema);
+  const modeloNovo = modelo !== "convite";
+
+  // o casamento novo nasce com o modelo gravado (uma vez). Se o banco
+  // recusar (sem nível para escrever), a tela volta ao que está salvo —
+  // a não ser que ela já tenha mexido em algo
+  const nasceu = useRef(false);
+  useEffect(() => {
+    if (!inicio.novo || nasceu.current) return;
+    nasceu.current = true;
+    const naHora = JSON.stringify(inicio.estrutura);
+    void salvarEstruturaSite(eventoId, paraGravar(inicio.estrutura), inicio.tema).then((r) => {
+      if (!r.error) {
+        setTemaSalvo(JSON.stringify(inicio.tema));
+        return;
+      }
+      setTema((t) => (t === inicio.tema ? inicio.doBanco.tema : t));
+      setEstrutura((e) => (JSON.stringify(e) === naHora ? inicio.doBanco.estrutura : e));
+    });
+  }, [eventoId, inicio]);
+
+  // os itens de presente só mudam com 'gestao' (a 191 recusa os outros)
+  const [podePresentes, setPodePresentes] = useState(podeGerir === true);
+  useEffect(() => {
+    if (podeGerir !== undefined) {
+      setPodePresentes(podeGerir);
+      return;
+    }
+    let vivo = true;
+    void podeMexerNosPresentes(eventoId).then((v) => {
+      if (vivo) setPodePresentes(v);
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [eventoId, podeGerir]);
+
+  // sem 'gestao', os itens de presente são sempre os salvos: depois de
+  // cada router.refresh, a lista que outra aba mudou entra aqui também
+  // (a action troca de novo na gravação, para a trava da 191 nunca pegar)
+  useEffect(() => {
+    if (podePresentes) return;
+    const salva = lerEstrutura(previa.site?.estrutura);
+    setEstrutura((a) => {
+      const nova = comPresentesSalvos(a, salva);
+      return JSON.stringify(nova) === JSON.stringify(a) ? a : nova;
+    });
+  }, [previa, podePresentes]);
+
+  // as fotos do balde 'site': as assinadas pelo servidor, as que a tela
+  // pede (rascunho que ainda não chegou assinado) e as recém-enviadas
+  // nesta aba (URL local, até a assinada chegar)
+  const enviadas = useFotosEnviadas();
+  const [assinadas, setAssinadas] = useState<Record<string, string>>({});
+  const tentadas = useRef(new Set<string>());
+  // todas as fotos da estrutura, também a de item incompleto (presente
+  // sem valor, par sem nomes): ela precisa vê-la para decidir
+  const todasAsFotos = fotosCruas(paraGravar(estrutura));
+  const cabem = Math.max(0, TETO_DE_FOTOS_DA_ESTRUTURA - todasAsFotos.length);
+  const faltando = Array.from(new Set(todasAsFotos))
+    .filter((c) => c.startsWith(`${eventoId}/`) && !urlsDoSite?.[c] && !assinadas[c] && !enviadas[c] && !tentadas.current.has(c))
+    .join("|");
+  useEffect(() => {
+    if (!faltando) return;
+    const lista = faltando.split("|");
+    lista.forEach((c) => tentadas.current.add(c));
+    void assinarFotosDoRascunho(eventoId, lista).then((novas) => {
+      if (Object.keys(novas).length > 0) setAssinadas((a) => ({ ...a, ...novas }));
+    });
+  }, [faltando, eventoId]);
+  const urls = useMemo(() => ({ ...(urlsDoSite ?? {}), ...assinadas, ...enviadas }), [urlsDoSite, assinadas, enviadas]);
 
   const desde = useHaQuanto(revisao.enviada_em);
 
@@ -322,7 +414,7 @@ export function NossoSite({
     iniciar(async () => {
       const r = await fn();
       if (r.error) {
-        setErro(r.error);
+        setErro(mensagemCurta(r.error));
         return;
       }
       if (ok) setAviso(ok);
@@ -330,10 +422,17 @@ export function NossoSite({
     });
   }
 
+  /** A estrutura e o tema no banco, só com o que a 191 aceita. */
+  async function gravar(estr: BlocoDoSite[], t: TemaDoSite): Promise<{ error?: string }> {
+    const r = await salvarEstruturaSite(eventoId, paraGravar(estr), t);
+    if (!r.error) setTemaSalvo(JSON.stringify(t));
+    return r;
+  }
+
   function gravarEstrutura(nova: BlocoDoSite[], novoTema: TemaDoSite = tema) {
     setEstrutura(nova);
     setTema(novoTema);
-    rodar(() => salvarEstruturaSite(eventoId, nova, novoTema));
+    rodar(() => gravar(nova, novoTema));
   }
 
   async function salvarTudo(): Promise<{ error?: string }> {
@@ -341,7 +440,40 @@ export function NossoSite({
     if (a.error) return a;
     const b = await salvarConviteCasal(eventoId, look);
     if (b.error) return b;
-    return salvarEstruturaSite(eventoId, estrutura, tema);
+    return gravar(estrutura, tema);
+  }
+
+  /* ---------- o modelo, os nomes e os blocos que aparecem ---------- */
+
+  function trocarModelo(m: ModeloId) {
+    // a abertura sai gravada (ausente = ligada, como a caixa mostra)
+    setTema((t) => (m !== "convite" && typeof t.abertura !== "boolean" ? { ...t, modelo: m, abertura: true } : { ...t, modelo: m }));
+    if (m !== "convite") setEstrutura((e) => estruturaDoModelo(e, m));
+  }
+
+  const nomes = nomesDaCapa(estrutura, previa.evento.anfitrioes);
+  function mudarNomes(n: { nome1: string; nome2: string }) {
+    setEstrutura((atual) =>
+      atual.map((b) => (b.tipo === "capa" ? { ...b, conteudo: { ...(b.conteudo ?? {}), nome1: n.nome1, nome2: n.nome2 } } : b))
+    );
+  }
+
+  /** O bloco aparece na lista: no Convite, os de sempre; num modelo novo,
+   *  os que ele desenha. */
+  const naLista = (t: TipoBloco) => (modeloNovo ? modeloDesenha(modelo, t) : BLOCOS_PRONTOS.has(t));
+
+  /** ↑ ↓ entre os blocos da lista (os que o modelo não desenha não contam). */
+  function mover(id: string, passo: -1 | 1): BlocoDoSite[] {
+    const vis = estrutura.filter((b) => naLista(b.tipo));
+    const i = vis.findIndex((b) => b.id === id);
+    const j = i + passo;
+    if (i < 0 || j < 0 || j >= vis.length) return estrutura;
+    if (BLOCOS_FIXOS.has(vis[i].tipo) || BLOCOS_FIXOS.has(vis[j].tipo)) return estrutura;
+    const a = estrutura.findIndex((b) => b.id === vis[i].id);
+    const c = estrutura.findIndex((b) => b.id === vis[j].id);
+    const nova = [...estrutura];
+    [nova[a], nova[c]] = [nova[c], nova[a]];
+    return nova;
   }
 
   /* ---------- o estado da publicação, em palavras ---------- */
@@ -367,8 +499,12 @@ export function NossoSite({
   function resumo(b: BlocoDoSite): string {
     const corta = (t: string, n = 56) => (t.length > n ? `${t.slice(0, n).trimEnd()}…` : t);
     switch (b.tipo) {
-      case "capa":
-        return [previa.evento.anfitrioes, dataLonga(previa.evento.data)].filter(Boolean).join(" · ");
+      case "capa": {
+        const quem = modeloNovo
+          ? [nomes.nome1.trim(), nomes.nome2.trim()].filter(Boolean).join(" & ")
+          : previa.evento.anfitrioes;
+        return [quem, dataLonga(previa.evento.data)].filter(Boolean).join(" · ");
+      }
       case "contagem":
         return "Dias, horas, minutos e segundos até a festa";
       case "mensagem":
@@ -381,16 +517,33 @@ export function NossoSite({
           : "Vem do evento · ainda sem local";
       case "dress_code":
         return look.dressCodeTitulo.trim() || (textos.dressCode.trim() ? corta(textos.dressCode.trim()) : "Vazio · não aparece");
-      case "rsvp":
+      case "rsvp": {
+        const prazo = (modeloNovo ? lerRsvp(b.conteudo).prazo : null) ?? previa.rsvp.prazo;
         return previa.rsvp.aberto
-          ? previa.rsvp.prazo
-            ? `Aberta até ${previa.rsvp.prazo.slice(8, 10)}/${previa.rsvp.prazo.slice(5, 7)}`
+          ? prazo
+            ? `Aberta até ${prazo.slice(8, 10)}/${prazo.slice(5, 7)}`
             : "Aberta"
           : "Fechada";
+      }
       case "presentes": {
-        const partes = [look.pixChave.trim() && "Pix", look.presentesLink.trim() && "link da lista"].filter(Boolean);
+        const itens = modeloNovo ? lerPresentes(b.conteudo).itens.length : 0;
+        const partes = [
+          itens > 0 && `${itens} ${itens === 1 ? "presente" : "presentes"}`,
+          look.pixChave.trim() && "Pix",
+          look.presentesLink.trim() && "link da lista",
+        ].filter(Boolean);
         return partes.length ? partes.join(" · ") : look.presentesTexto.trim() ? "Só o texto" : "Vazio · não aparece";
       }
+      case "momentos":
+        return contagem(lerMomentos(b.conteudo).itens.length, "momento", "momentos");
+      case "cenas":
+        return contagem(lerCenas(b.conteudo).itens.length, "cena", "cenas");
+      case "galeria":
+        return contagem(lerGaleria(b.conteudo).fotos.length, "foto", "fotos");
+      case "especiais":
+        return contagem(lerEspeciais(b.conteudo).pares.length, "par", "pares");
+      case "jeito":
+        return contagem(lerJeito(b.conteudo).frases.length, "frase", "frases");
       case "hospedagem":
         return hospedagens > 0
           ? `${hospedagens} ${hospedagens === 1 ? "lugar para ficar" : "lugares para ficar"} · vem do espaço`
@@ -415,12 +568,72 @@ export function NossoSite({
 
   /* ---------- o editor de cada bloco ---------- */
 
+  /** O que o editor do bloco precisa saber além do conteúdo. */
+  function extraDo(b: BlocoDoSite): ExtraDoEditor {
+    return {
+      nomesDoEvento: partirNomes(previa.evento.anfitrioes),
+      // os nomes ficam em Detalhes
+      semNomes: true,
+      local: { nome: previa.evento.local, endereco: previa.evento.endereco ?? null, cidade: previa.evento.cidade },
+      temPix: !!look.pixChave.trim(),
+      podeEditarPresentes: podePresentes,
+      idsDePresenteFora: idsDePresenteFora(estrutura, b.id),
+    };
+  }
+
+  /** O conteúdo novo do bloco no rascunho. Na capa, os nomes (de
+   *  Detalhes) ficam como estão. */
+  function mudarConteudo(b: BlocoDoSite, c: Record<string, unknown>) {
+    setEstrutura((atual) =>
+      atual.map((x) => {
+        if (x.id !== b.id) return x;
+        if (x.tipo !== "capa") return { ...x, conteudo: c };
+        const antes = x.conteudo ?? {};
+        const nomesSalvos: Record<string, unknown> = {};
+        if (typeof antes.nome1 === "string") nomesSalvos.nome1 = antes.nome1;
+        if (typeof antes.nome2 === "string") nomesSalvos.nome2 = antes.nome2;
+        return { ...x, conteudo: { ...c, ...nomesSalvos } };
+      })
+    );
+  }
+
   function editor(b: BlocoDoSite): ReactNode {
     const salvarTextos = (
       <button type="button" style={botao} disabled={pendente} onClick={() => rodar(salvarTudo, "Salvo.")}>
         {pendente ? "Salvando…" : "Salvar"}
       </button>
     );
+    const salvarBloco = (
+      <div>
+        <button type="button" style={botao} disabled={pendente} onClick={() => rodar(() => gravar(estrutura, tema), "Salvo.")}>
+          {pendente ? "Salvando…" : "Salvar"}
+        </button>
+      </div>
+    );
+    // num modelo novo, o editor do tipo (fotos, marcos, itens…)
+    const Ed = modeloNovo ? EDITORES[b.tipo] : undefined;
+    const doModelo = Ed ? (
+      <CabemFotos.Provider value={cabem}>
+        <Ed
+          conteudo={b.conteudo}
+          onChange={(c) => mudarConteudo(b, c)}
+          modelo={modelo}
+          eventoId={eventoId}
+          urls={urls}
+          desabilitado={pendente}
+          pedirEnvio={pedirEnvio}
+          extra={extraDo(b)}
+        />
+      </CabemFotos.Provider>
+    ) : null;
+    if (doModelo && (b.tipo === "capa" || b.tipo === "local" || b.tipo === "rsvp")) {
+      return (
+        <>
+          {doModelo}
+          {salvarBloco}
+        </>
+      );
+    }
     switch (b.tipo) {
       case "mensagem":
         return (
@@ -454,6 +667,7 @@ export function NossoSite({
               onChange={(e) => setTextos({ ...textos, historia: e.target.value })}
               placeholder="Como tudo começou, do jeito de vocês."
             />
+            {doModelo}
             <div>{salvarTextos}</div>
           </>
         );
@@ -475,6 +689,7 @@ export function NossoSite({
               onChange={(e) => setTextos({ ...textos, dressCode: e.target.value })}
               placeholder="O detalhe (ex.: cerimônia na grama — evitem salto fino)."
             />
+            {doModelo}
             <div>{salvarTextos}</div>
           </>
         );
@@ -509,6 +724,7 @@ export function NossoSite({
               onChange={(e) => setLook({ ...look, presentesLink: e.target.value })}
               placeholder="Link da lista de presentes na loja (opcional)"
             />
+            {doModelo}
             <div>{salvarTextos}</div>
           </>
         );
@@ -541,7 +757,7 @@ export function NossoSite({
                 type="button"
                 style={botao}
                 disabled={pendente}
-                onClick={() => rodar(() => salvarEstruturaSite(eventoId, estrutura, tema), "Salvo.")}
+                onClick={() => rodar(() => gravar(estrutura, tema), "Salvo.")}
               >
                 {pendente ? "Salvando…" : "Salvar"}
               </button>
@@ -596,7 +812,13 @@ export function NossoSite({
       case "rodape":
         return <p style={nota}>A data e o logo da sua cerimonialista.</p>;
       default:
-        return null;
+        // momentos, cenas, galeria, padrinhos, nosso jeito
+        return doModelo ? (
+          <>
+            {doModelo}
+            {salvarBloco}
+          </>
+        ) : null;
     }
   }
 
@@ -616,7 +838,7 @@ export function NossoSite({
     },
   ];
 
-  const escondidos = estrutura.filter((b) => b.visivel === false);
+  const escondidos = estrutura.filter((b) => b.visivel === false && naLista(b.tipo));
   const linkSite = urlNoAr;
 
   return (
@@ -630,6 +852,7 @@ export function NossoSite({
             dados={dadosDaPrevia}
             fotosAlbum={fotosAlbum}
             fotoCasalUrl={fotoCasalUrl}
+            urls={urls}
             largura={430}
             alturaDoSite={640}
           />
@@ -791,80 +1014,33 @@ export function NossoSite({
           )}
 
           {painel === "aparencia" && (
-            <>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
-                {(Object.keys(NOME_DA_COR) as PapelDeCor[]).map((papel) => (
-                  <label key={papel} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <input
-                      type="color"
-                      value={tema.cores?.[papel] ?? CORES_DO_MODELO[papel]}
-                      onChange={(e) => setTema({ ...tema, cores: { ...(tema.cores ?? {}), [papel]: e.target.value } })}
-                      style={{ width: 42, height: 34, border: "none", background: "none", cursor: "pointer" }}
-                    />
-                    <span style={{ fontSize: "var(--ts-item-desc)", color: "var(--cor-texto-secundario)" }}>
-                      {NOME_DA_COR[papel]}
-                    </span>
-                  </label>
-                ))}
-              </div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button
-                  type="button"
-                  style={botao}
-                  disabled={pendente}
-                  onClick={() => rodar(() => salvarEstruturaSite(eventoId, estrutura, tema), "Salvo.")}
-                >
-                  {pendente ? "Salvando…" : "Salvar cores"}
-                </button>
-                <button
-                  type="button"
-                  style={{ ...botao, border: "none" }}
-                  disabled={pendente}
-                  onClick={() => gravarEstrutura(estrutura, { ...tema, cores: {} })}
-                >
-                  Voltar às cores do modelo
-                </button>
-              </div>
-            </>
+            <Aparencia
+              tipoEvento={tipoEvento}
+              tema={tema}
+              onTema={setTema}
+              onModelo={trocarModelo}
+              dados={dadosDaPrevia}
+              fotosAlbum={fotosAlbum}
+              fotoCasalUrl={fotoCasalUrl}
+              urls={urls}
+              nomes={nomes}
+              pendente={pendente}
+              mudou={JSON.stringify(tema) !== temaSalvo}
+              onSalvar={() => rodar(() => gravar(estrutura, tema), "Salvo.")}
+            />
           )}
 
           {painel === "detalhes" && (
-            <>
-              <Rotulo>O endereço do site</Rotulo>
-              {revisao.status === "em_analise" && !endereco.congelado ? (
-                <p style={nota}>
-                  {endereco.base}/c/{endereco.slug} · o site está em análise; o endereço muda depois da resposta.
-                </p>
-              ) : endereco.congelado ? (
-                <p style={nota}>
-                  {endereco.base}/c/{endereco.slug} · já foi publicado e não muda mais (o convite impresso usa este).
-                </p>
-              ) : (
-                <>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <span style={{ ...nota, wordBreak: "break-all" }}>{endereco.base}/c/</span>
-                    <input
-                      style={{ ...campo, flex: "1 1 160px", width: "auto" }}
-                      value={slug}
-                      maxLength={40}
-                      onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
-                      placeholder="marina-e-teo"
-                    />
-                  </div>
-                  <div>
-                    <button
-                      type="button"
-                      style={botao}
-                      disabled={pendente || !slug.trim()}
-                      onClick={() => rodar(() => definirEnderecoDoSite(eventoId, slug.replace(/^-+|-+$/g, "")), "Endereço salvo.")}
-                    >
-                      Salvar endereço
-                    </button>
-                  </div>
-                  <p style={nota}>Letras, números e hífens. Depois da primeira publicação ele fica fixo.</p>
-                </>
-              )}
-            </>
+            <Detalhes
+              mostrarNomes={modeloNovo}
+              nomes={nomes}
+              onNomes={mudarNomes}
+              onSalvarNomes={() => rodar(() => gravar(estrutura, tema), "Nomes salvos.")}
+              endereco={endereco}
+              emAnalise={revisao.status === "em_analise"}
+              pendente={pendente}
+              onSalvarEndereco={(slug) => rodar(() => definirEnderecoDoSite(eventoId, slug), "Endereço salvo.")}
+            />
           )}
 
           {painel === "divulgar" && (
@@ -926,7 +1102,7 @@ export function NossoSite({
       <Cartao padding="var(--esp-3) var(--esp-4)">
         <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
           {estrutura
-            .filter((b) => BLOCOS_PRONTOS.has(b.tipo))
+            .filter((b) => naLista(b.tipo))
             .map((b, i, lista) => {
               const fixo = BLOCOS_FIXOS.has(b.tipo);
               const oculto = b.visivel === false;
@@ -974,7 +1150,7 @@ export function NossoSite({
                           style={iconeBotao}
                           aria-label={`Subir ${nomeDoBloco(b.tipo, tipoEvento)}`}
                           disabled={pendente || vizinhoFixo(i - 1)}
-                          onClick={() => gravarEstrutura(moverBloco(estrutura, b.id, -1))}
+                          onClick={() => gravarEstrutura(mover(b.id, -1))}
                         >
                           <ChevronUp size={18} strokeWidth={TRACO} />
                         </button>
@@ -983,7 +1159,7 @@ export function NossoSite({
                           style={iconeBotao}
                           aria-label={`Descer ${nomeDoBloco(b.tipo, tipoEvento)}`}
                           disabled={pendente || vizinhoFixo(i + 1)}
-                          onClick={() => gravarEstrutura(moverBloco(estrutura, b.id, 1))}
+                          onClick={() => gravarEstrutura(mover(b.id, 1))}
                         >
                           <ChevronDown size={18} strokeWidth={TRACO} />
                         </button>
@@ -1038,7 +1214,7 @@ export function NossoSite({
             </button>
           </div>
           <div style={{ flex: 1, overflowY: "auto" }}>
-            <PreviaDoSite dados={dadosDaPrevia} fotosAlbum={fotosAlbum} fotoCasalUrl={fotoCasalUrl} />
+            <PreviaDoSite dados={dadosDaPrevia} fotosAlbum={fotosAlbum} fotoCasalUrl={fotoCasalUrl} urls={urls} />
           </div>
         </div>
       )}

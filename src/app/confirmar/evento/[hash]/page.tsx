@@ -2,7 +2,7 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import { AutocadastroConvidado } from "@/components/rsvp/AutocadastroConvidado";
 import { SiteDoEvento } from "@/components/site/SiteDoEvento";
-import { assinarMidiaDoConvite } from "@/lib/supabase/assinar-midia-convite";
+import { assinarMidiaDoConvite, assinarMidiaDoSite } from "@/lib/supabase/assinar-midia-convite";
 import { clienteAnonimoPublico } from "@/lib/supabase/anon-publico";
 import { anfitrioesDoConvite } from "@/lib/anfitrioes-do-convite";
 import { conviteCom, convitePara, nomeOuConvite, quandoLegivel } from "@/lib/rsvp-convite";
@@ -77,11 +77,11 @@ export default async function ConfirmarEventoPage({
   if (site) {
     // as fotos vivem em bucket privado: o servidor assina antes de
     // entregar, e só os caminhos que a RPC autorizou
-    const midia = await assinarMidiaDoConvite(site);
+    const [midia, urls] = await Promise.all([assinarMidiaDoConvite(site), assinarMidiaDoSite(site, { soVisiveis: true })]);
     return (
       <SiteDoEvento
         dados={site}
-        midia={{ fotosAlbum: midia.fotosAlbum, fotoCasalUrl: midia.fotoCasalUrl, urls: {} }}
+        midia={{ fotosAlbum: midia.fotosAlbum, fotoCasalUrl: midia.fotoCasalUrl, urls }}
         modo="publico"
       />
     );

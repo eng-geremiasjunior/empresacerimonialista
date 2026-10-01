@@ -2,7 +2,7 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import { permanentRedirect } from "next/navigation";
 import { SiteDoEvento } from "@/components/site/SiteDoEvento";
-import { assinarMidiaDoConvite } from "@/lib/supabase/assinar-midia-convite";
+import { assinarMidiaDoConvite, assinarMidiaDoSite } from "@/lib/supabase/assinar-midia-convite";
 import { clienteAnonimoPublico } from "@/lib/supabase/anon-publico";
 import { anfitrioesDoConvite } from "@/lib/anfitrioes-do-convite";
 import { conviteCom, convitePara, nomeOuConvite, quandoLegivel } from "@/lib/rsvp-convite";
@@ -72,11 +72,11 @@ export default async function ConviteSlugPage({
     permanentRedirect(`/c/${site.slug_atual}`);
   }
 
-  const midia = await assinarMidiaDoConvite(site);
+  const [midia, urls] = await Promise.all([assinarMidiaDoConvite(site), assinarMidiaDoSite(site, { soVisiveis: true })]);
   return (
     <SiteDoEvento
       dados={site}
-      midia={{ fotosAlbum: midia.fotosAlbum, fotoCasalUrl: midia.fotoCasalUrl, urls: {} }}
+      midia={{ fotosAlbum: midia.fotosAlbum, fotoCasalUrl: midia.fotoCasalUrl, urls }}
       modo="publico"
     />
   );
