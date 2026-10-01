@@ -16,6 +16,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { escolherLembrar } from "@/lib/lembrar-sessao";
 import {
   IconeAlerta,
   IconeCheck,
@@ -79,6 +80,9 @@ export function PortalLoginForm({
       setErro("E-mail ou senha inválidos.");
       return;
     }
+
+    // "Manter o acesso" desmarcado: a sessão vale até o navegador fechar
+    escolherLembrar(manter);
 
     // Quem decide o destino é o servidor: o middleware manda para
     // /portal/primeiro-acesso enquanto a senha for a provisória.

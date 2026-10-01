@@ -19,6 +19,7 @@ import { type EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { PREFIXOS_DO_PORTAL } from "@/lib/app-url";
+import { COOKIE_NAO_LEMBRAR, COOKIE_SESSAO } from "@/lib/lembrar-sessao";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,19 @@ function origemDoPedido(request: NextRequest): string {
     return `${url.protocol}//${host}`;
   }
   return url.origin;
+}
+
+/**
+ * Entrada nova: com o "Lembrar de mim" desmarcado neste navegador, a
+ * sessão que nasce aqui vale até ele fechar (lembrar-sessao.ts). Sem
+ * isto, o middleware encerraria na hora a sessão do link recém-aberto.
+ */
+function entrou(request: NextRequest, destino: string): NextResponse {
+  const resposta = NextResponse.redirect(destino);
+  if (request.cookies.get(COOKIE_NAO_LEMBRAR)?.value === "1") {
+    resposta.cookies.set(COOKIE_SESSAO, "1", { path: "/", sameSite: "lax" });
+  }
+  return resposta;
 }
 
 export async function GET(request: NextRequest) {
@@ -72,7 +86,7 @@ export async function GET(request: NextRequest) {
       // (o code_verifier do PKCE mora no cookie de quem pediu o link).
       return NextResponse.redirect(`${origin}${portaDeErro}`);
     }
-    return NextResponse.redirect(`${origin}${destino}`);
+    return entrou(request, `${origin}${destino}`);
   }
 
   if (token_hash && type) {
@@ -83,7 +97,7 @@ export async function GET(request: NextRequest) {
       // o erro que o comentário acima já descrevia como corrigido.
       return NextResponse.redirect(`${origin}${portaDeErro}`);
     }
-    return NextResponse.redirect(`${origin}${destino}`);
+    return entrou(request, `${origin}${destino}`);
   }
 
   return NextResponse.redirect(`${origin}${portaDeErro}`);

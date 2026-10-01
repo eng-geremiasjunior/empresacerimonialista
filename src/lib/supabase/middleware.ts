@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { sessaoVencidaPorNaoLembrar } from "@/lib/lembrar-sessao";
 
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
@@ -172,6 +173,26 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname;
+
+  // "Lembrar de mim" desmarcado e o navegador foi fechado: a sessão
+  // acaba aqui (lembrar-sessao.ts). Os cookies que o signOut apaga vão
+  // junto no redirect — sem eles, a sessão velha voltaria no próximo
+  // pedido. /auth/confirm fica de fora: é lá que a entrada nova nasce.
+  if (
+    user &&
+    !pathname.startsWith("/auth/confirm") &&
+    sessaoVencidaPorNaoLembrar((nome) => request.cookies.get(nome)?.value)
+  ) {
+    await supabase.auth.signOut({ scope: "local" });
+    const url = request.nextUrl.clone();
+    url.search = "";
+    url.pathname =
+      pathname.startsWith("/portal") || user.app_metadata?.portal === true ? "/portal/entrar" : "/login";
+    const resposta = NextResponse.redirect(url);
+    supabaseResponse.cookies.getAll().forEach((c) => resposta.cookies.set(c));
+    return resposta;
+  }
+
   if (!user && !ehPublica(pathname)) {
     const url = request.nextUrl.clone();
     // A cliente que abre um link do portal sem sessão volta para a porta
