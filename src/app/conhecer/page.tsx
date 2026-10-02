@@ -6,7 +6,7 @@ import { Medicao } from "@/components/marketing/Medicao";
 import { Origem } from "@/components/marketing/Origem";
 import { MedirCliques } from "@/components/marketing/MedirCliques";
 import { eventosDoCatalogo } from "@/lib/catalogo-vivo";
-import { MODELOS, MODELOS_NOVOS } from "@/lib/site-modelos";
+import { MODELOS_NOVOS, nomeDoModelo } from "@/lib/site-modelos";
 
 // O catálogo vivo (02/10/2026, pedido do dono): o link da bio do
 // Instagram. Quem chega entra nos portais de exemplo como o cliente da
@@ -135,7 +135,7 @@ export default async function ConhecerPage() {
               </p>
               <div className="cv-grade">
                 {modelos.map((m) => {
-                  const nome = m === "convite" ? "Convite" : MODELOS[m].nome;
+                  const nome = nomeDoModelo(m, "casamento");
                   return (
                     <a key={m} href={`/c/${siteDoCasamento.slug}?modelo=${m}`} className="cv-modelo" target="_blank" rel="noopener">
                       <img src={`/site/catalogo/modelo-${m}.webp`} alt={`O modelo ${nome}`} loading="lazy" />

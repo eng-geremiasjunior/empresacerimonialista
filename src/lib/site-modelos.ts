@@ -315,8 +315,20 @@ export function modeloDoTema(tema: unknown): ModeloId {
   return eModeloNovo(m) ? m : "convite";
 }
 
+/**
+ * O nome do modelo para quem escolhe e para a revisão. O de sempre (o id
+ * 'convite', ConviteCompleto, gravado no tema — não muda) chama "Site do
+ * casamento" desde 02/10/2026, decisão do dono: "Convite" agora é o
+ * convite animado que chega no WhatsApp (196). Fora de casamento e bodas,
+ * "Site do evento" (nada estreita para noiva).
+ */
+export function nomeDoModelo(m: ModeloId, tipoDeEvento?: string | null): string {
+  if (m !== "convite") return MODELOS[m].nome;
+  return !tipoDeEvento || CASAL.includes(tipoDeEvento) ? "Site do casamento" : "Site do evento";
+}
+
 /** Os modelos que a família pode escolher. Fora de casamento e bodas, só
- *  o Convite; quem já está no Convite continua vendo essa opção. */
+ *  o de sempre ('convite'); quem já está nele continua vendo essa opção. */
 export function modelosParaTipo(tipoDeEvento: string): ModeloId[] {
   const novos = MODELOS_NOVOS.filter((id) => MODELOS[id].tiposDeEvento.includes(tipoDeEvento));
   return ["convite", ...novos];

@@ -12,7 +12,7 @@ import { Rotulo } from "@/components/portal/Nucleo";
 import { FAMILIAS } from "@/lib/fontes-site";
 import { PAPEIS_DE_COR, type PapelDeCor, type TemaDoSite } from "@/lib/site-blocos";
 import type { FormaDoNome } from "@/lib/site-conteudo";
-import { MODELOS, modeloDoTema, modelosParaTipo, type ModeloId } from "@/lib/site-modelos";
+import { MODELOS, modeloDoTema, modelosParaTipo, nomeDoModelo, type ModeloId } from "@/lib/site-modelos";
 import { PALETAS } from "@/lib/site-paletas";
 import { ORDEM_DOS_PARES, PARES_DE_FONTE, PAR_PADRAO, ehParDeFonte, valoresDoPar } from "@/lib/site-pares";
 import type { SitePublico } from "@/lib/site-publico-tipos";
@@ -40,10 +40,6 @@ const FORMAS: { forma: FormaDoNome; rotulo: string }[] = [
 ];
 
 const secao: CSSProperties = { display: "flex", flexDirection: "column", gap: 8 };
-
-function nomeDoModelo(m: ModeloId): string {
-  return m === "convite" ? "Convite" : MODELOS[m].nome;
-}
 
 /** Botão de escolha (forma do nome, paleta): marcado = borda forte. */
 function escolha(marcado: boolean): CSSProperties {
@@ -146,13 +142,13 @@ export function Aparencia({
                       color: marcado ? "var(--cor-texto-forte)" : "var(--cor-texto-secundario)",
                     }}
                   >
-                    {nomeDoModelo(m)}
+                    {nomeDoModelo(m, tipoEvento)}
                   </span>
                   {/* o site tem botões dentro: o toque vai numa camada por cima */}
                   <button
                     type="button"
                     aria-pressed={marcado}
-                    aria-label={`Modelo ${nomeDoModelo(m)}`}
+                    aria-label={`Modelo ${nomeDoModelo(m, tipoEvento)}`}
                     onClick={() => onModelo(m)}
                     style={{ position: "absolute", inset: 0, padding: 0, border: "none", background: "none", cursor: "pointer" }}
                   />

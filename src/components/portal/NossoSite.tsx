@@ -2,7 +2,8 @@
 
 // "Nosso site" — a tela em que a família monta o site (30/09/2026, plano
 // "Site e lista"; o desenho é o do app da Wedy que o dono mostrou). No
-// portal dos noivos, a mesma tela é o "Convite".
+// portal dos noivos, a mesma tela é o "Site do casamento" (o "Convite" de
+// lá é o convite animado, outra tela).
 //
 // No alto, a prévia com o endereço e o estado da publicação. Depois os
 // seis atalhos (Adicionar bloco, Aparência, Detalhes, Ver o site,

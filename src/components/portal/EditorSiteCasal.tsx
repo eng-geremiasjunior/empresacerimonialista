@@ -213,7 +213,7 @@ export function EditorSiteCasal({
 
       {/* 2. como fica */}
       <Cartao padding="var(--esp-6)">
-        <Rotulo>As cores do convite</Rotulo>
+        <Rotulo>As cores do site</Rotulo>
         <div style={{ display: "flex", gap: "var(--esp-4)", flexWrap: "wrap", marginTop: 8 }}>
           {[
             { k: "corAcento" as const, r: "Detalhes" },

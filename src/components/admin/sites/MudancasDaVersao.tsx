@@ -19,7 +19,7 @@ export function TrocaDeAparencia({
   pendente: SitePublico;
   noAr: SitePublico | null;
 }) {
-  const linhas = trocasDeAparencia(pendente.site?.tema, noAr?.site?.tema, !!noAr);
+  const linhas = trocasDeAparencia(pendente.site?.tema, noAr?.site?.tema, !!noAr, pendente.evento?.tipo);
   if (!linhas.length) return null;
   return (
     <section className="flex flex-col gap-1">
