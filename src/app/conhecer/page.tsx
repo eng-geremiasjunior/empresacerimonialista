@@ -53,7 +53,9 @@ const CSS = `
 .cv-nota{font-size:14px;line-height:1.6;color:#6B6259}
 .cv-modelos{background:#F2EEE9}
 .cv-modelos .ps-g{padding-top:80px;padding-bottom:90px;display:flex;flex-direction:column;gap:30px}
-.cv-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:22px}
+.cv-grade{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:20px}
+@media (max-width:1000px){.cv-grade{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:560px){.cv-grade{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}}
 .cv-modelo{color:inherit;text-decoration:none;display:flex;flex-direction:column;gap:10px}
 .cv-modelo img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;background:#E4DDD4;transition:transform .2s,box-shadow .2s}
 .cv-modelo:hover img{transform:translateY(-3px);box-shadow:0 14px 30px rgba(34,30,27,.16)}
