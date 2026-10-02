@@ -8,7 +8,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, ClipboardList, Music, Pencil, Printer, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ClipboardList, FileUp, Music, Pencil, Printer, Trash2, X } from "lucide-react";
 import type { PessoaCortejo } from "@/lib/portal-pessoas-shared";
 import {
   PAPEIS_DO_CORTEJO,
@@ -26,6 +26,7 @@ import {
   reordenarCortejo,
 } from "@/app/(app)/eventos/[id]/cortejo/casamento-actions";
 import { removerPessoaEquipe } from "@/app/(app)/eventos/[id]/cortejo/actions";
+import { ImportarCortejo } from "./ImportarCortejo";
 
 const inputCls =
   "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm focus:border-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-200";
@@ -76,6 +77,7 @@ export function CortejoCasamento({
   const [pendente, iniciar] = useTransition();
   const [erro, setErro] = useState<string | null>(null);
   const [editando, setEditando] = useState<string | null>(null);
+  const [importando, setImportando] = useState(false);
 
   // o formulário de entrada nova
   const [papel, setPapel] = useState("padrinho");
@@ -165,29 +167,45 @@ export function CortejoCasamento({
                 }${aDefinir ? ` · ${aDefinir} a definir` : ""}`}
           </p>
         </div>
-        {sequencia.length > 0 && (
-          <a href={`/imprimir/chamada/${printEventId ?? eventId}`} target="_blank" rel="noopener noreferrer" className={botaoClaro}>
-            <Printer size={15} />
-            Imprimir a ordem de entrada
-          </a>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" onClick={() => setImportando(true)} className={botaoClaro}>
+            <FileUp size={15} />
+            Importar de um arquivo
+          </button>
+          {sequencia.length > 0 && (
+            <a href={`/imprimir/chamada/${printEventId ?? eventId}`} target="_blank" rel="noopener noreferrer" className={botaoClaro}>
+              <Printer size={15} />
+              Imprimir a ordem do cortejo
+            </a>
+          )}
+        </div>
       </div>
 
-      {sequencia.length === 0 && (
+      {importando && (
+        <ImportarCortejo eventId={eventId} temEntradas={sequencia.length > 0} fechar={() => setImportando(false)} />
+      )}
+
+      {sequencia.length === 0 && !importando && (
         <div className="rounded-xl border border-stone-200 bg-[#FAF8F5] p-5">
           <p className="text-sm font-semibold text-gray-900">Comece pelo cortejo tradicional</p>
           <p className="mt-1 text-sm text-gray-600">
             Celebrante, noivo, pais, padrinhos, daminhas, alianças e a noiva, nessa ordem. Você preenche os nomes, tira o
             que não tiver e muda a ordem.
           </p>
-          <button
-            type="button"
-            onClick={() => rodar(() => montarCortejoTradicional(eventId))}
-            disabled={pendente}
-            className={`${botaoEscuro} mt-3`}
-          >
-            {pendente ? "Montando…" : "Montar o cortejo tradicional"}
-          </button>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => rodar(() => montarCortejoTradicional(eventId))}
+              disabled={pendente}
+              className={botaoEscuro}
+            >
+              {pendente ? "Montando…" : "Montar o cortejo tradicional"}
+            </button>
+            <button type="button" onClick={() => setImportando(true)} className={botaoClaro}>
+              <FileUp size={15} />
+              Já tenho a lista (Word, PDF…)
+            </button>
+          </div>
         </div>
       )}
 
@@ -311,7 +329,7 @@ export function CortejoCasamento({
                         a definir — toque para preencher
                       </button>
                     )}
-                    {(e.musica || e.oQueLeva) && (
+                    {(e.musica || e.oQueLeva || e.observacao) && (
                       <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-gray-500">
                         {e.musica && (
                           <span className="inline-flex items-center gap-1">
@@ -319,6 +337,7 @@ export function CortejoCasamento({
                           </span>
                         )}
                         {e.oQueLeva && <span>leva: {e.oQueLeva}</span>}
+                        {e.observacao && <span className="text-stone-600">obs.: {e.observacao}</span>}
                       </p>
                     )}
                   </div>
@@ -386,6 +405,7 @@ function EdicaoDaEntrada({
     lado: (entrada.lado ?? null) as LadoDoCortejo | null,
     musica: entrada.musica ?? "",
     oQueLeva: entrada.oQueLeva ?? "",
+    observacao: entrada.observacao ?? "",
   });
   const p = papelDoCortejo(form.papel);
   const papeis = PAPEIS_DO_CORTEJO.some((x) => x.papel === form.papel)
@@ -457,6 +477,14 @@ function EdicaoDaEntrada({
             onKeyDown={(e) => e.key === "Enter" && salvar()}
             placeholder="Leva (alianças, buquê, plaquinha…)"
             className={inputCls}
+          />
+          <input
+            value={form.observacao}
+            onChange={(e) => setForm({ ...form, observacao: e.target.value })}
+            onKeyDown={(e) => e.key === "Enter" && salvar()}
+            maxLength={300}
+            placeholder="Obs. só da equipe (ex.: aguardar o sinal da assessoria)"
+            className={`${inputCls} sm:col-span-2`}
           />
         </div>
         {erro && <p className="text-sm text-rose-600">{erro}</p>}

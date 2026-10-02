@@ -61,15 +61,18 @@ export const getConvidados = cache(
 // lado, musica) ou sem a 125 (pronuncia), a leitura degrada em vez de
 // derrubar a lista inteira.
 const COLUNAS_DO_CORTEJO = [
+  // a observação (193) é da equipe: só esta primeira lista a pede, e só
+  // para getCortejoDaEquipe
+  "id, papel, nome, contato, o_que_leva, responsavel, chegada, pronuncia, ordem, par, lado, musica, observacao",
   "id, papel, nome, contato, o_que_leva, responsavel, chegada, pronuncia, ordem, par, lado, musica",
   "id, papel, nome, contato, o_que_leva, responsavel, chegada, pronuncia, ordem",
   "id, papel, nome, contato, o_que_leva, responsavel, chegada, ordem",
 ];
 
-async function lerCortejo(eventId: string): Promise<PessoaCortejo[]> {
+async function lerCortejo(eventId: string, daEquipe = false): Promise<PessoaCortejo[]> {
   const supabase = createClient();
   let data: Record<string, unknown>[] | null = null;
-  for (const colunas of COLUNAS_DO_CORTEJO) {
+  for (const colunas of daEquipe ? COLUNAS_DO_CORTEJO : COLUNAS_DO_CORTEJO.slice(1)) {
     const res = await supabase
       .from("evento_cortejo_pessoa")
       .select(colunas)
@@ -95,6 +98,7 @@ async function lerCortejo(eventId: string): Promise<PessoaCortejo[]> {
     par: (p.par as string | null) ?? null,
     lado: (p.lado as "noivo" | "noiva" | null) ?? null,
     musica: (p.musica as string | null) ?? null,
+    observacao: daEquipe ? ((p.observacao as string | null) ?? null) : null,
   })) as PessoaCortejo[];
 }
 
@@ -107,4 +111,4 @@ export const getCortejo = cache(async (eventId: string): Promise<PessoaCortejo[]
 );
 
 /** O cortejo da equipe: tudo, as entradas "a definir" incluídas. */
-export const getCortejoDaEquipe = cache(lerCortejo);
+export const getCortejoDaEquipe = cache((eventId: string) => lerCortejo(eventId, true));

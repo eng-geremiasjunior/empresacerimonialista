@@ -65,6 +65,7 @@ export type EntradaDoCortejo = {
   lado: LadoDoCortejo | null;
   musica: string | null;
   oQueLeva: string | null;
+  observacao: string | null;
   ordem: number;
 };
 
@@ -105,4 +106,47 @@ export function cortejoTradicional(noiva: string, noivo: string) {
     { papel: "porta_alianca", nome: "", par: null, lado: null },
     { papel: "noiva", nome: noiva, par: "", lado: null },
   ] as { papel: string; nome: string; par: string | null; lado: LadoDoCortejo | null }[];
+}
+
+export type EntradaLida = {
+  papel: string;
+  nome: string;
+  par: string | null;
+  lado: LadoDoCortejo | null;
+  musica: string | null;
+  observacao: string | null;
+};
+
+const texto = (v: unknown, max: number): string | null => {
+  if (typeof v !== "string") return null;
+  const t = v.replace(/\s+/g, " ").trim();
+  return t ? t.slice(0, max) : null;
+};
+
+/**
+ * A allowlist do que a leitura (IA) devolve: a resposta do modelo é dado
+ * não confiável. Papel fora da lista vira "outro", lado só noivo/noiva,
+ * textos aparados e com teto; entrada sem nome nenhum some.
+ */
+export function normalizarEntradasLidas(cru: unknown): EntradaLida[] {
+  if (!Array.isArray(cru)) return [];
+  const saida: EntradaLida[] = [];
+  for (const item of cru.slice(0, 120)) {
+    if (!item || typeof item !== "object") continue;
+    const o = item as Record<string, unknown>;
+    const nome = texto(o.nome, 120) ?? "";
+    const par = texto(o.par, 120);
+    if (!nome && !par) continue;
+    const papel = typeof o.papel === "string" && ehPapelDoCortejo(o.papel) ? o.papel : "outro";
+    saida.push({
+      papel,
+      nome: nome || (par as string),
+      par: nome ? par : null,
+      // noivo e noiva não têm "lado": o lado é dos que entram antes deles
+      lado: papelDoCortejo(papel).comLado && (o.lado === "noivo" || o.lado === "noiva") ? o.lado : null,
+      musica: texto(o.musica, 160),
+      observacao: texto(o.observacao, 300),
+    });
+  }
+  return saida;
 }

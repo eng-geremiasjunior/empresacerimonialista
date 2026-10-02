@@ -51,6 +51,8 @@ export type PessoaCortejo = {
   lado?: "noivo" | "noiva" | null;
   /** a música da entrada (192, casamento) */
   musica?: string | null;
+  /** anotação da equipe (193) — só a equipe e a folha; o portal não lê */
+  observacao?: string | null;
 };
 
 export const PAPEL_ROTULO: Record<string, string> = {

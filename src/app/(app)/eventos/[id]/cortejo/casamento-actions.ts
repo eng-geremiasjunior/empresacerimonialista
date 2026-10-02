@@ -1,40 +1,60 @@
 "use server";
 
 // O cortejo do casamento pelo lado da equipe (192): uma sequência só, com
-// par, lado e música. A ordem é do evento inteiro (10, 20, 30…), e toda
-// gravação reescreve a sequência — o que também conserta a numeração
-// antiga, que era por grupo.
+// par, lado e música (e a observação da equipe, 193). A ordem é do evento
+// inteiro (10, 20, 30…), e toda gravação reescreve a sequência — o que
+// também conserta a numeração antiga, que era por grupo.
+//
+// Sem as migrações aplicadas, as gravações não travam: sem a 193 a
+// observação espera; sem a 192 o par vai junto no nome ("Ana e Pedro").
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { cortejoTradicional, ehPapelDoCortejo, emSequencia, posicaoDoPapel } from "@/lib/cortejo-casamento";
+import {
+  cortejoTradicional,
+  ehPapelDoCortejo,
+  emSequencia,
+  normalizarEntradasLidas,
+  posicaoDoPapel,
+} from "@/lib/cortejo-casamento";
 import { separarCasal } from "@/components/wizard/nomesDoCasal";
 
 type Retorno = { ok?: true; error?: string };
 type Supa = ReturnType<typeof createClient>;
 type Linha = { id: string; papel: string; nome: string; ordem: number };
+type ErroDb = { code?: string; message?: string } | null;
 
 const limpo = (v: string | null | undefined, max = 120) => (v && v.trim() ? v.trim().slice(0, max) : null);
 const ladoValido = (l: string | null | undefined) => (l === "noivo" || l === "noiva" ? l : null);
 
-/** A migração 192 ainda não foi aplicada (coluna nova ausente)? */
-const semA192 = (e: { code?: string; message?: string } | null) =>
-  Boolean(e && (e.code === "PGRST204" || e.code === "42703" || /\b(par|lado|musica)\b/.test(e.message ?? "")));
+/** Coluna nova ausente (a 192 ou a 193 ainda não aplicada)? */
+const colunaAusente = (e: ErroDb) => Boolean(e && (e.code === "PGRST204" || e.code === "42703"));
+const soFaltaA193 = (e: ErroDb) => colunaAusente(e) && /observacao/.test(e?.message ?? "");
 
-/**
- * Insere; sem a 192 aplicada, tenta de novo sem as colunas novas — o par
- * vai junto no nome ("Ana e Pedro") e lado e música esperam a migração.
- * A cerimonialista não fica travada esperando o banco.
- */
+/** Os campos de uma linha conforme as migrações que existem. */
+function semObservacao(l: Record<string, unknown>) {
+  const { observacao, ...resto } = l;
+  void observacao;
+  return resto;
+}
+function semA192(l: Record<string, unknown>) {
+  const { par, lado, musica, observacao, ...resto } = l;
+  void lado;
+  void musica;
+  void observacao;
+  if (!("nome" in resto)) return resto;
+  return { ...resto, nome: [String(resto.nome ?? ""), String(par ?? "")].filter((x) => x.trim()).join(" e ") };
+}
+
 async function inserir(supabase: Supa, linhas: Record<string, unknown>[], colunas: string) {
-  const r1 = await supabase.from("evento_cortejo_pessoa").insert(linhas).select(colunas);
-  if (!r1.error || !semA192(r1.error)) return r1;
-  const sem = linhas.map(({ par, lado, musica, ...resto }) => {
-    void lado;
-    void musica;
-    return { ...resto, nome: [String(resto.nome ?? ""), String(par ?? "")].filter((x) => x.trim()).join(" e ") };
-  });
-  return supabase.from("evento_cortejo_pessoa").insert(sem).select(colunas);
+  const tabela = () => supabase.from("evento_cortejo_pessoa");
+  const r1 = await tabela().insert(linhas).select(colunas);
+  if (!r1.error || !colunaAusente(r1.error)) return r1;
+  if (soFaltaA193(r1.error)) {
+    const r2 = await tabela().insert(linhas.map(semObservacao)).select(colunas);
+    if (!r2.error || !colunaAusente(r2.error)) return r2;
+  }
+  return tabela().insert(linhas.map(semA192)).select(colunas);
 }
 
 function revalidar(eventId: string) {
@@ -87,6 +107,7 @@ export async function adicionarEntradas(
     lado?: string | null;
     musica?: string | null;
     oQueLeva?: string | null;
+    observacao?: string | null;
     entradas: { nome: string; par?: string | null }[];
   }
 ): Promise<Retorno> {
@@ -115,8 +136,9 @@ export async function adicionarEntradas(
     lado,
     musica: limpo(dados.musica, 160),
     o_que_leva: limpo(dados.oQueLeva),
+    observacao: limpo(dados.observacao, 300),
     ordem: (depois + 2 + i) * 10,
-    origem: "equipe" as const,
+    origem: "equipe",
   }));
 
   const { data, error } = await inserir(supabase, linhas, "id, ordem");
@@ -136,7 +158,15 @@ export async function adicionarEntradas(
 export async function atualizarEntrada(
   eventId: string,
   id: string,
-  dados: { papel: string; nome: string; par?: string | null; lado?: string | null; musica?: string | null; oQueLeva?: string | null }
+  dados: {
+    papel: string;
+    nome: string;
+    par?: string | null;
+    lado?: string | null;
+    musica?: string | null;
+    oQueLeva?: string | null;
+    observacao?: string | null;
+  }
 ): Promise<Retorno> {
   const supabase = createClient();
   const { data: atual } = await supabase
@@ -149,27 +179,21 @@ export async function atualizarEntrada(
   // papel novo precisa ser do cortejo; o que a linha já tem passa (legado)
   if (dados.papel !== atual.papel && !ehPapelDoCortejo(dados.papel)) return { error: "Escolha a entrada." };
 
-  const base = {
+  const campos: Record<string, unknown> = {
     papel: dados.papel,
-    o_que_leva: limpo(dados.oQueLeva),
-    updated_at: new Date().toISOString(),
-  };
-  const gravar = (campos: Record<string, unknown>) =>
-    supabase.from("evento_cortejo_pessoa").update(campos).eq("id", id).eq("event_id", eventId).select("id");
-  let { data, error } = await gravar({
-    ...base,
     nome: limpo(dados.nome) ?? "",
     par: limpo(dados.par),
     lado: ladoValido(dados.lado),
     musica: limpo(dados.musica, 160),
-  });
-  // sem a 192: o par vai no nome, como na entrada nova
-  if (error && semA192(error)) {
-    ({ data, error } = await gravar({
-      ...base,
-      nome: [limpo(dados.nome), limpo(dados.par)].filter(Boolean).join(" e "),
-    }));
-  }
+    o_que_leva: limpo(dados.oQueLeva),
+    observacao: limpo(dados.observacao, 300),
+    updated_at: new Date().toISOString(),
+  };
+  const gravar = (c: Record<string, unknown>) =>
+    supabase.from("evento_cortejo_pessoa").update(c).eq("id", id).eq("event_id", eventId).select("id");
+  let { data, error } = await gravar(campos);
+  if (error && soFaltaA193(error)) ({ data, error } = await gravar(semObservacao(campos)));
+  if (error && colunaAusente(error)) ({ data, error } = await gravar(semA192(campos)));
   if (error) {
     console.error("[eorganizei:cortejo] atualizar entrada:", error.code, error.message);
     return { error: "Não foi possível salvar." };
@@ -216,7 +240,7 @@ export async function montarCortejoTradicional(eventId: string): Promise<Retorno
     par: e.par || null,
     lado: e.lado,
     ordem: (i + 1) * 10,
-    origem: "equipe" as const,
+    origem: "equipe",
   }));
   const { data, error } = await inserir(supabase, linhas, "id");
   if (error) {
@@ -224,6 +248,65 @@ export async function montarCortejoTradicional(eventId: string): Promise<Retorno
     return { error: "Não foi possível montar o cortejo." };
   }
   if (!data || data.length === 0) return { error: "Você não tem permissão para editar este evento." };
+  revalidar(eventId);
+  return { ok: true };
+}
+
+/**
+ * Lança o cortejo lido do arquivo (a leitura da IA, já conferida por ela).
+ * "acrescentar" põe tudo no fim, na ordem lida; "substituir" troca o
+ * cortejo inteiro pelo lido. A lista passa de novo pela allowlist: o que
+ * vem da tela não é confiável.
+ */
+export async function lancarCortejoLido(
+  eventId: string,
+  cru: unknown,
+  modo: "acrescentar" | "substituir"
+): Promise<Retorno> {
+  const entradas = normalizarEntradasLidas(cru);
+  if (entradas.length === 0) return { error: "Nenhuma entrada para lançar." };
+
+  const supabase = createClient();
+  if (!(await eventoDeCasamento(supabase, eventId))) return { error: "Evento não encontrado." };
+  const atuais = await lerSequencia(supabase, eventId);
+
+  if (modo === "substituir" && atuais.length) {
+    const { error } = await supabase
+      .from("evento_cortejo_pessoa")
+      .delete()
+      .eq("event_id", eventId)
+      .in(
+        "id",
+        atuais.map((l) => l.id)
+      );
+    if (error) {
+      console.error("[eorganizei:cortejo] substituir:", error.code, error.message);
+      return { error: "Não foi possível trocar o cortejo." };
+    }
+  }
+
+  const inicio = modo === "substituir" ? 0 : atuais.length;
+  const linhas = entradas.map((e, i) => ({
+    event_id: eventId,
+    papel: e.papel,
+    nome: e.nome,
+    par: e.par,
+    lado: e.lado,
+    musica: e.musica,
+    observacao: e.observacao,
+    ordem: (inicio + i + 1) * 10,
+    origem: "equipe",
+  }));
+  const { data, error } = await inserir(supabase, linhas, "id");
+  if (error) {
+    console.error("[eorganizei:cortejo] lançar leitura:", error.code, error.message);
+    return { error: "Não foi possível lançar o cortejo." };
+  }
+  if (!data || data.length === 0) return { error: "Você não tem permissão para editar este evento." };
+  // no "acrescentar", a sequência antiga pode ter ordem fora do padrão
+  if (modo === "acrescentar" && atuais.length) {
+    await gravarOrdem(supabase, eventId, atuais);
+  }
   revalidar(eventId);
   return { ok: true };
 }

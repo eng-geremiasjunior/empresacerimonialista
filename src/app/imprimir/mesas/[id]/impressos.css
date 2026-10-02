@@ -125,3 +125,13 @@
 @page paisagem {
   size: A4 landscape;
 }
+
+/* a caixinha de marcar à caneta (folha do cortejo, 01/10/2026) */
+.imp-caixinha {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border: 1.5px solid #57534e;
+  border-radius: 2px;
+  margin-top: 2px;
+}

@@ -57,22 +57,24 @@ export default async function ImprimirChamadaPage({
     ((eventData as { evento_pai_id?: string | null }).evento_pai_id as
       | string
       | null) ?? (eventData as { id: string }).id;
-  // as colunas da 192 (par, lado, musica) com plano B, se ela não foi aplicada
-  const primeira = await supabase
-    .from("evento_cortejo_pessoa")
-    .select("id, papel, nome, contato, o_que_leva, responsavel, chegada, pronuncia, ordem, par, lado, musica")
-    .eq("event_id", alvoCortejo)
-    .order("ordem")
-    .order("nome");
-  let cortejoData = primeira.data as Record<string, unknown>[] | null;
-  if (primeira.error) {
-    const alt = await supabase
+  // as colunas novas (193 observacao; 192 par, lado, musica) com plano B,
+  // da mais nova para a mais antiga, se alguma migração não foi aplicada
+  let cortejoData: Record<string, unknown>[] | null = null;
+  for (const colunas of [
+    "id, papel, nome, contato, o_que_leva, responsavel, chegada, pronuncia, ordem, par, lado, musica, observacao",
+    "id, papel, nome, contato, o_que_leva, responsavel, chegada, pronuncia, ordem, par, lado, musica",
+    "id, papel, nome, contato, o_que_leva, responsavel, chegada, pronuncia, ordem",
+  ]) {
+    const r = await supabase
       .from("evento_cortejo_pessoa")
-      .select("id, papel, nome, contato, o_que_leva, responsavel, chegada, pronuncia, ordem")
+      .select(colunas)
       .eq("event_id", alvoCortejo)
       .order("ordem")
       .order("nome");
-    cortejoData = alt.data as Record<string, unknown>[] | null;
+    if (!r.error) {
+      cortejoData = r.data as unknown as Record<string, unknown>[];
+      break;
+    }
   }
 
   const ev = eventData as unknown as {
@@ -99,6 +101,7 @@ export default async function ImprimirChamadaPage({
         par: (p.par as string | null) ?? null,
         lado: (p.lado as "noivo" | "noiva" | null) ?? null,
         musica: (p.musica as string | null) ?? null,
+        observacao: (p.observacao as string | null) ?? null,
       }) as PessoaCortejo
   );
 
@@ -130,13 +133,13 @@ export default async function ImprimirChamadaPage({
       <div className="imp-acoes">
         <BotaoImprimir />
         <span style={{ fontSize: 12, color: "#78716c" }}>
-          A folha do mestre de cerimônias — pronúncia só sai aqui.
+          {ehFormatura ? "A folha do mestre de cerimônias — pronúncia só sai aqui." : "A folha do mestre de cerimônias."}
         </span>
       </div>
 
       <div className="imp-cabecalho">
         <div className="imp-titulo">
-          {ehFormatura ? "Chamada nominal" : "Ordem de entrada"} — {titulo}
+          {ehFormatura ? "Chamada nominal" : ehCasamento ? "Ordem do cortejo" : "Ordem de entrada"} — {titulo}
         </div>
         <div className="imp-sub">
           {formatDate(ev.date)}
@@ -185,11 +188,12 @@ export default async function ImprimirChamadaPage({
           <thead>
             <tr>
               <th style={{ width: 34 }}>Nº</th>
-              <th style={{ width: 190 }}>Entrada</th>
+              <th style={{ width: 130 }}>Entrada</th>
               <th>Quem entra</th>
-              <th style={{ width: 210 }}>Música</th>
-              {/* para riscar à caneta conforme entram */}
-              <th style={{ width: 26 }}>OK</th>
+              <th style={{ width: 160 }}>Música</th>
+              <th style={{ width: 170 }}>Obs.</th>
+              {/* a caixinha para marcar à caneta conforme entram */}
+              <th style={{ width: 30, textAlign: "center" }}>✓</th>
             </tr>
           </thead>
           <tbody>
@@ -211,7 +215,10 @@ export default async function ImprimirChamadaPage({
                     ) : null}
                   </td>
                   <td style={{ fontSize: 12.5 }}>{p.musica ?? ""}</td>
-                  <td style={{ borderLeft: "1px solid #e7e5e4" }}> </td>
+                  <td style={{ fontSize: 12, color: "#44403c" }}>{p.observacao ?? ""}</td>
+                  <td style={{ textAlign: "center" }}>
+                    <span className="imp-caixinha" aria-hidden />
+                  </td>
                 </tr>
               );
             })}
