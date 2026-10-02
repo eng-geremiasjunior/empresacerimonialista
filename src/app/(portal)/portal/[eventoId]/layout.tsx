@@ -23,6 +23,8 @@ import { listaDePresentesLiberada } from "@/lib/supabase/portal-presentes";
 import { pessoaDoEvento, tituloDaFesta, usaPortalV2 } from "@/lib/portal-v2";
 import "@/components/portal/noivos/noivos.css";
 import { CascaNoivos } from "@/components/portal/noivos/CascaNoivos";
+import { FaixaDoCatalogo } from "@/components/portal/FaixaDoCatalogo";
+import { createClient } from "@/lib/supabase/server";
 import { marcellus, nunitoSans, simbolos } from "@/lib/fontes-noivos";
 import {
   MAIS_NOIVOS,
@@ -83,6 +85,11 @@ export default async function PortalEventoLayout({
   const daFamilia = await getEventoDaFamilia(evento.id);
   const marca = daFamilia ? null : evento.marca;
 
+  // o visitante do catálogo vivo (195): vê o exemplo e não grava nada.
+  // Sem a 195 aplicada a função não existe e ninguém é visitante.
+  const { data: ehVisitante } = await createClient().rpc("sou_login_vitrine");
+  const faixa = ehVisitante === true ? <FaixaDoCatalogo /> : null;
+
   // O termo do responsável (175): num evento de debutante, o pai, a mãe
   // ou o responsável confirma antes de tudo, e a debutante só entra
   // depois de algum deles. Sem a 175 aplicada, não há o que pedir.
@@ -112,6 +119,7 @@ export default async function PortalEventoLayout({
     const cerimonialista = daFamilia ? null : contato.nome?.trim().split(/\s+/)[0] || marca?.nome || null;
     return (
       <div className={`pn ${marcellus.variable} ${nunitoSans.variable} ${simbolos.variable}`}>
+        {faixa}
         <CascaNoivos
           eventoId={evento.id}
           marcaNome={marca?.nome ?? null}
@@ -175,6 +183,7 @@ export default async function PortalEventoLayout({
     const jaAbriu = cookies().get(`pv2ab_${evento.id.slice(0, 8)}`)?.value === "1";
     return (
       <>
+        {faixa}
         <CascaV2
           eventoId={evento.id}
           tipo={evento.tipo}

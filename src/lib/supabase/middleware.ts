@@ -46,6 +46,9 @@ const ROTAS_PUBLICAS: ((p: string) => boolean)[] = [
   // parcerias (183): a página de candidatura e o link próprio de cada parceira
   (p) => p === "/parceiras",
   (p) => p.startsWith("/p/"),
+  // o catálogo vivo (195): os portais e os modelos de exemplo, para quem
+  // chega do Instagram; /conhecer/entrar/<tipo> leva ao portal do exemplo
+  (p) => p === "/conhecer" || p.startsWith("/conhecer/"),
   // o teste de sete dias (154): quatro campos, sem cartão e sem conta
   (p) => p === "/criar-conta",
   // a página de preços, com o menu que leva a ela

@@ -74,7 +74,7 @@ export async function VisaoGeralSecao({ eventoId }: { eventoId: string }) {
   // Agenda + Perguntas (como no desenho); "só leitura" não escreve. Sem a
   // 189 (null), como o casal.
   const padrinho = nivel === "padrinho";
-  const podeEscrever = nivel !== "leitura";
+  const podeEscrever = nivel !== "leitura" && nivel !== "vitrine";
   const base = `/portal/${evento.id}`;
   const hoje = hojeBR();
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { eventoEDoCatalogo } from "@/lib/catalogo-vivo";
 
 export const dynamic = "force-dynamic";
 
@@ -60,6 +61,10 @@ export async function POST(
   if (!eventId) {
     return NextResponse.json({ ok: false, erro: "fechado" }, { status: 403 });
   }
+  // o catálogo vivo (195): no site de exemplo, foto de visitante não sobe
+  if (await eventoEDoCatalogo(eventId)) {
+    return NextResponse.json({ ok: false, erro: "exemplo" }, { status: 403 });
+  }
 
   const supabase = servico();
 
@@ -95,6 +100,9 @@ export async function PUT(
   };
   if (!corpo.caminho) {
     return NextResponse.json({ ok: false, erro: "caminho" }, { status: 400 });
+  }
+  if (await eventoEDoCatalogo(await eventoDoAlbum(params.hash))) {
+    return NextResponse.json({ ok: false, erro: "exemplo" }, { status: 403 });
   }
 
   // a função confere de novo o hash, o bloco aberto, o teto e se o

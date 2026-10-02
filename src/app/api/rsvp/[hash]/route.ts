@@ -15,6 +15,7 @@ import { anfitrioesDoConvite } from "@/lib/anfitrioes-do-convite";
 import { qrSvg } from "@/lib/qr";
 import { publicBase } from "@/lib/app-url";
 import { linkDaCredencial } from "@/lib/recepcao";
+import { eventoEDoCatalogo } from "@/lib/catalogo-vivo";
 
 export const dynamic = "force-dynamic";
 
@@ -95,6 +96,14 @@ export async function POST(
       fetch: (i, x) => fetch(i, { ...x, cache: "no-store" }),
     },
   });
+
+  // o catálogo vivo (195): no evento de exemplo a confirmação "dá certo"
+  // na tela e não grava nada — nem convidado, nem e-mail para o endereço
+  // que alguém digitou no site aberto do Instagram
+  const { data: doHash } = await supabase.from("events").select("id").eq("rsvp_hash", params.hash).maybeSingle();
+  if (await eventoEDoCatalogo((doHash as { id: string } | null)?.id)) {
+    return NextResponse.json({ ok: true, emailEnviado: false, exemplo: true });
+  }
 
   const { data, error } = await supabase.rpc("autocadastrar_convidado", {
     p_hash: params.hash,

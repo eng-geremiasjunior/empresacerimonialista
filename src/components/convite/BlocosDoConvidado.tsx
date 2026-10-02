@@ -66,7 +66,9 @@ export function useAlbumDoConvite(hash: string) {
               ? "O álbum está cheio — mostre a foto ao casal por outro caminho."
               : permissao?.erro === "muitas_tentativas"
                 ? "Muitas fotos seguidas. Aguarde um minuto."
-                : "Não deu para enviar agora."
+                : permissao?.erro === "exemplo"
+                  ? "Este é um site de exemplo: aqui as fotos não são enviadas."
+                  : "Não deu para enviar agora."
           );
           break;
         }

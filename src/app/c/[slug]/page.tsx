@@ -8,6 +8,8 @@ import { anfitrioesDoConvite } from "@/lib/anfitrioes-do-convite";
 import { conviteCom, convitePara, nomeOuConvite, quandoLegivel } from "@/lib/rsvp-convite";
 import { soOQueAparece } from "@/lib/site-conteudo";
 import type { SitePublico } from "@/lib/site-publico-tipos";
+import { siteEDoCatalogo } from "@/lib/catalogo-vivo";
+import { eModeloNovo, type ModeloId } from "@/lib/site-modelos";
 
 export const dynamic = "force-dynamic";
 
@@ -49,10 +51,20 @@ export async function generateMetadata({
 
 export default async function ConviteSlugPage({
   params,
+  searchParams,
 }: {
   params: { slug: string };
+  searchParams?: { modelo?: string };
 }) {
-  const site = await carregarSite(params.slug);
+  const carregado = await carregarSite(params.slug);
+  // o catálogo vivo (195): no evento de exemplo, ?modelo=… mostra o mesmo
+  // site em outro modelo. Em evento de cliente, o parâmetro não faz nada.
+  const pedido = searchParams?.modelo;
+  const modelo: ModeloId | null = pedido === "convite" || eModeloNovo(pedido) ? pedido : null;
+  const site: SitePublico | null =
+    carregado?.site && modelo && (await siteEDoCatalogo(params.slug))
+      ? { ...carregado, site: { ...carregado.site, tema: { ...(carregado.site.tema ?? {}), modelo } } }
+      : carregado;
 
   if (!site) {
     return (

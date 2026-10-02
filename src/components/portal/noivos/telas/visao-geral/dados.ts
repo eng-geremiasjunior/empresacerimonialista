@@ -8,9 +8,10 @@ import "server-only";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 
-export type NivelNoPortal = "casal" | "familia" | "aprova" | "leitura" | "padrinho";
+// 'vitrine' (195): o visitante do catálogo vivo — vê o que o casal vê e não grava
+export type NivelNoPortal = "casal" | "familia" | "aprova" | "leitura" | "padrinho" | "vitrine";
 
-const NIVEIS: readonly string[] = ["casal", "familia", "aprova", "leitura", "padrinho"];
+const NIVEIS: readonly string[] = ["casal", "familia", "aprova", "leitura", "padrinho", "vitrine"];
 
 export const getNivelNoPortal = cache(async (eventId: string): Promise<NivelNoPortal | null> => {
   const supabase = createClient();
