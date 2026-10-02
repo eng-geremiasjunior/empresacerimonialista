@@ -14,7 +14,8 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-export type ItemDoMenu = { rotulo: string; href: string; nota?: string; destaque?: boolean };
+/** soLargo: some no computador estreito (761–1239 px), onde os itens não cabem numa linha */
+export type ItemDoMenu = { rotulo: string; href: string; nota?: string; destaque?: boolean; soLargo?: boolean };
 export type GrupoDoMenu = { rotulo: string; itens: ItemDoMenu[] };
 export type EntradaDoMenu = ItemDoMenu | GrupoDoMenu;
 
@@ -36,7 +37,7 @@ export const MENU_DO_SITE: EntradaDoMenu[] = [
       { rotulo: "Financeiro", href: "/funcionalidades/financeiro", nota: "o dinheiro de cada evento" },
     ],
   },
-  { rotulo: "Como funciona", href: "/planos#apresentacao" },
+  { rotulo: "Como funciona", href: "/planos#apresentacao", soLargo: true },
   // o catálogo vivo (195): os portais e os modelos de site de exemplo
   { rotulo: "Conheça por dentro", href: "/conhecer", destaque: true },
   { rotulo: "Planos", href: "/planos#a-planos" },
@@ -46,7 +47,7 @@ export const MENU_DO_SITE: EntradaDoMenu[] = [
 const eGrupo = (e: EntradaDoMenu): e is GrupoDoMenu => "itens" in e;
 
 const CSS = `
-.ms{display:flex;align-items:center;gap:30px;font-size:14px;letter-spacing:.02em}
+.ms{display:flex;align-items:center;gap:20px;font-size:14px;letter-spacing:.02em}
 .ms-grupo{position:relative}
 .ms-grupo>button{background:none;border:0;padding:0;font:inherit;letter-spacing:inherit;color:inherit;cursor:pointer;display:flex;align-items:center;gap:6px}
 .ms-grupo>button span{font-size:10px;transition:transform .2s}
@@ -76,6 +77,7 @@ const CSS = `
 .ms-links a.ms-destaque{color:#6E2E34;font-weight:600;display:inline-flex;align-items:center;gap:7px}
 .ms-links a.ms-destaque::before{content:"";width:7px;height:7px;border-radius:99px;background:#6E2E34}
 .ms-tela a.ms-grande.ms-destaque{color:#6E2E34}
+@media (max-width:1239px){.ms-links a.ms-so-largo{display:none}}
 @media (max-width:760px){.ms-links{display:none!important}.ms-botao{display:block}}
 `;
 
@@ -150,7 +152,7 @@ export function MenuDoSite({ entradas = MENU_DO_SITE, hrefConta }: { entradas?: 
           eGrupo(e) ? (
             <Grupo key={e.rotulo} g={e} />
           ) : (
-            <a key={e.href} href={e.href} className={e.destaque ? "ms-destaque" : undefined}>
+            <a key={e.href} href={e.href} className={[e.destaque && "ms-destaque", e.soLargo && "ms-so-largo"].filter(Boolean).join(" ") || undefined}>
               {e.rotulo}
             </a>
           )
