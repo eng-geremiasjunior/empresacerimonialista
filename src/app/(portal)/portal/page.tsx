@@ -15,7 +15,11 @@ export const dynamic = "force-dynamic";
 // Porta de dentro. Com um evento só, entra direto — a escolha só existe
 // quando ela de fato tem mais de um (uma cliente pode ter um casamento
 // hoje e outro tipo de evento depois).
-export default async function PortalHomePage() {
+export default async function PortalHomePage({
+  searchParams,
+}: {
+  searchParams?: { falhou?: string };
+}) {
   const supabase = createClient();
   const {
     data: { user },
@@ -28,9 +32,17 @@ export default async function PortalHomePage() {
     redirect(`/portal/${eventos[0].id}`);
   }
 
+  // A conta da festa confirmou o e-mail mas ainda não nasceu: veio pelo
+  // "link de acesso, sem senha" (que também confirma o e-mail) em vez do
+  // link da confirmação. Termina por lá, UMA vez: se o banco falhar, a
+  // volta traz ?falhou e a tela mostra o recado, sem ciclo.
+  const pendente = eventos.length === 0 && user.app_metadata?.familia_pendente != null;
+  if (pendente && !searchParams?.falhou) redirect("/portal/confirmar-conta");
+  const dataPassou = searchParams?.falhou === "data";
+
   // Sem vínculo nenhum: quem é da equipe volta para a área dela (chegou
   // aqui por engano ou digitando o endereço); quem não é vê o recado.
-  if (eventos.length === 0) {
+  if (eventos.length === 0 && !pendente) {
     // o dono do sistema escolhe um evento das contas da casa para testar
     if (await emailDoSuperAdmin()) return <EscolhaDoDono />;
     const { cargo } = await getMeuCargo();
@@ -49,7 +61,33 @@ export default async function PortalHomePage() {
             gap: "var(--esp-5)",
           }}
         >
-          {eventos.length === 0 ? (
+          {pendente ? (
+            <Cartao padding="var(--esp-8)">
+              <h1
+                style={{
+                  fontFamily: "var(--fonte-titulo)",
+                  fontWeight: 400,
+                  fontSize: "var(--ts-h2)",
+                  color: "var(--cor-texto-forte)",
+                }}
+              >
+                {dataPassou ? "A data da festa já passou." : "Não conseguimos abrir a conta da sua festa agora."}
+              </h1>
+              <p style={{ fontSize: "var(--ts-desc)", color: "var(--cor-texto-suave)" }}>
+                {dataPassou
+                  ? "O seu e-mail está confirmado, mas a data informada no cadastro ficou para trás. Responda o e-mail de confirmação com a data certa e a gente ajeita."
+                  : "O seu e-mail está confirmado. Tente de novo em alguns instantes."}
+              </p>
+              {!dataPassou && (
+                <a
+                  href="/portal/confirmar-conta"
+                  style={{ alignSelf: "flex-start", fontWeight: 600, color: "var(--cor-texto-forte)", textDecoration: "underline" }}
+                >
+                  Tentar de novo
+                </a>
+              )}
+            </Cartao>
+          ) : eventos.length === 0 ? (
             <Cartao padding="var(--esp-8)">
               <h1
                 style={{

@@ -106,6 +106,9 @@ const ROTINAS = [
   "uso-antigo",
   // o tamanho do banco e dos arquivos, uma foto por dia (painel do dono)
   "medida-do-banco",
+  // o cadastro de festa que ninguém confirmou em 3 dias some: um e-mail
+  // digitado errado não segura o endereço do dono de verdade
+  "contas-pendentes",
 ] as const;
 
 export async function GET(request: NextRequest) {

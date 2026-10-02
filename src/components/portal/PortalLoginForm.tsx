@@ -17,6 +17,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { escolherLembrar } from "@/lib/lembrar-sessao";
+import { reenviarLinkDaConta } from "@/app/(portal)/portal/criar-conta/actions";
 import {
   IconeAlerta,
   IconeCheck,
@@ -55,6 +56,18 @@ export function PortalLoginForm({
       : ""
   );
   const [enviadoAs, setEnviadoAs] = useState("");
+  /** a senha conferiu, mas a conta da festa ainda espera o link do e-mail */
+  const [naoConfirmado, setNaoConfirmado] = useState(false);
+  const [reenviando, setReenviando] = useState(false);
+
+  async function reenviarLink() {
+    if (reenviando) return;
+    setReenviando(true);
+    const r = await reenviarLinkDaConta(email, senha).catch(() => ({ error: "Não foi possível reenviar o link agora." }));
+    setReenviando(false);
+    setNaoConfirmado(false);
+    setErro("ok" in r ? "Enviamos o link de novo. Use o do e-mail mais recente." : r.error);
+  }
 
   function irPara(v: Vista) {
     setVista(v);
@@ -67,6 +80,7 @@ export function PortalLoginForm({
     if (carregando) return;
     setCarregando(true);
     setErro("");
+    setNaoConfirmado(false);
 
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({
@@ -76,6 +90,13 @@ export function PortalLoginForm({
 
     if (error) {
       setCarregando(false);
+      // A conta da festa só abre pelo link do e-mail; o Supabase só diz
+      // isto depois de a senha conferir, então não revela quem existe.
+      if (error.code === "email_not_confirmed") {
+        setErro("Falta confirmar o seu e-mail: abra o link que enviamos para ele.");
+        setNaoConfirmado(true);
+        return;
+      }
       // Mensagem genérica de propósito: não confirma se o e-mail existe.
       setErro("E-mail ou senha inválidos.");
       return;
@@ -155,7 +176,17 @@ export function PortalLoginForm({
             {erro && (
               <p className="acesso-alert" role="alert">
                 <IconeAlerta />
-                <span>{erro}</span>
+                <span>
+                  {erro}
+                  {naoConfirmado && (
+                    <>
+                      {" "}
+                      <button type="button" className="acesso-link" onClick={reenviarLink} disabled={reenviando}>
+                        {reenviando ? "Reenviando" : "Reenviar o link"}
+                      </button>
+                    </>
+                  )}
+                </span>
               </p>
             )}
             {/* O navegador guarda uma sessão por domínio: entrar aqui

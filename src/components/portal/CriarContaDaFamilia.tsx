@@ -8,11 +8,16 @@
 // Só o que a conta precisa para nascer: a festa, quem é você, o nome da
 // festa, a data e o login. A cidade é opcional; o resto ela conta depois,
 // lá dentro.
+//
+// Desde 01/10/2026 a senha é digitada duas vezes e a conta só abre pelo
+// link do e-mail: depois de enviar, a tela mostra o endereço por extenso
+// (é aí que se vê o erro de digitação), "Reenviar" e "Errei o e-mail".
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import {
   criarContaDaFamilia,
+  desfazerCadastroPendente,
   type PapelDaFamilia,
   type TipoDaFesta,
 } from "@/app/(portal)/portal/criar-conta/actions";
@@ -48,12 +53,24 @@ export function CriarContaDaFamilia({
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [confirmacao, setConfirmacao] = useState("");
   const [revelar, setRevelar] = useState(false);
   const [responsavel, setResponsavel] = useState(false);
   const [termos, setTermos] = useState(false);
   const [site, setSite] = useState("");
   const [erro, setErro] = useState("");
   const [jaTemConta, setJaTemConta] = useState(false);
+  /** o endereço para onde o link foi: a tela de "confirme o seu e-mail" */
+  const [enviadoPara, setEnviadoPara] = useState<string | null>(null);
+  const [reenviado, setReenviado] = useState(false);
+  /** depois do "Errei o e-mail", o campo volta com o foco (quando existir) */
+  const focarEmail = useRef(false);
+  useEffect(() => {
+    if (!enviadoPara && focarEmail.current) {
+      focarEmail.current = false;
+      document.getElementById("email")?.focus();
+    }
+  }, [enviadoPara]);
   const [enviando, iniciar] = useTransition();
 
   function escolherTipo(t: TipoDaFesta) {
@@ -62,20 +79,56 @@ export function CriarContaDaFamilia({
     setErro("");
   }
 
-  function enviar(e: React.FormEvent) {
-    e.preventDefault();
-    if (enviando) return;
+  function mandar(depois: (para: string) => void) {
     setErro("");
     setJaTemConta(false);
     iniciar(async () => {
       const r = await criarContaDaFamilia({
-        tipo, papel, festa, data, cidade, nome, email, senha, responsavel, termos, site,
+        tipo, papel, festa, data, cidade, nome, email, senha, confirmacao, responsavel, termos, site,
       });
-      // sucesso é redirect: só volta aqui quando deu errado
-      if (r?.error) {
-        setErro(r.error);
-        setJaTemConta(Boolean(r.jaTemConta));
+      // o robô (campo escondido) recebe um redirect e não volta aqui
+      if (!r) return;
+      if ("enviado" in r) {
+        depois(r.email);
+        return;
       }
+      setErro(r.error);
+      setJaTemConta(Boolean(r.jaTemConta));
+    });
+  }
+
+  function enviar(e: React.FormEvent) {
+    e.preventDefault();
+    if (enviando) return;
+    if (senha !== confirmacao) {
+      setErro("As duas senhas não são iguais.");
+      setJaTemConta(false);
+      return;
+    }
+    mandar((para) => {
+      setReenviado(false);
+      setEnviadoPara(para);
+    });
+  }
+
+  function reenviar() {
+    if (enviando) return;
+    setReenviado(false);
+    mandar(() => setReenviado(true));
+  }
+
+  function erreiOEmail() {
+    if (enviando) return;
+    const errado = enviadoPara;
+    iniciar(async () => {
+      // o cadastro do endereço errado sai: o link que foi para lá não pode
+      // abrir a festa na caixa de outra pessoa (com a senha digitada aqui)
+      if (errado) await desfazerCadastroPendente(errado, senha).catch(() => null);
+      // o campo do e-mail volta pronto para corrigir
+      focarEmail.current = true;
+      setEnviadoPara(null);
+      setErro("");
+      setReenviado(false);
     });
   }
 
@@ -104,6 +157,43 @@ export function CriarContaDaFamilia({
 
       <section className="acesso-painel">
         <div className="acesso-col">
+          {enviadoPara ? (
+            <>
+              <p className="acesso-titulo">Confirme o seu e-mail</p>
+              <p className="acesso-sub">
+                Enviamos um link para <strong style={{ color: "var(--tinta)", wordBreak: "break-all" }}>{enviadoPara}</strong>.
+                Abra o e-mail e toque em &ldquo;Confirmar o e-mail&rdquo; para abrir a conta da festa.
+              </p>
+              {erro && (
+                <p className="acesso-alert" role="alert">
+                  <IconeAlerta />
+                  <span>{erro}</span>
+                </p>
+              )}
+              {reenviado && (
+                <p className="acesso-help" role="status">
+                  Enviamos de novo. Use o link do e-mail mais recente.
+                </p>
+              )}
+              <button type="button" className="acesso-btn quiet" onClick={reenviar} disabled={enviando} aria-busy={enviando || undefined}>
+                {enviando ? (
+                  <>
+                    <span className="acesso-spin" />
+                    Enviando
+                  </>
+                ) : (
+                  "Reenviar o e-mail"
+                )}
+              </button>
+              <div className="acesso-center">
+                <button type="button" className="acesso-link" onClick={erreiOEmail} disabled={enviando}>
+                  Errei o e-mail
+                </button>
+              </div>
+              <p className="acesso-help">Não chegou? Veja também a caixa de spam.</p>
+            </>
+          ) : (
+          <>
           <p className="acesso-titulo">Criar a conta da sua festa</p>
 
           {erro && (
@@ -244,6 +334,19 @@ export function CriarContaDaFamilia({
               </div>
             </div>
 
+            <div className="acesso-field">
+              <label htmlFor="confirmacao">Repita a senha</label>
+              <input
+                id="confirmacao"
+                type={revelar ? "text" : "password"}
+                value={confirmacao}
+                onChange={(e) => setConfirmacao(e.target.value)}
+                autoComplete="new-password"
+                minLength={8}
+                required
+              />
+            </div>
+
             {/* robô preenche; gente não vê */}
             <div className="acesso-escondido" aria-hidden="true">
               <label htmlFor="site">Site</label>
@@ -299,6 +402,8 @@ export function CriarContaDaFamilia({
               )}
             </button>
           </form>
+          </>
+          )}
         </div>
 
         <div className="acesso-rodape">

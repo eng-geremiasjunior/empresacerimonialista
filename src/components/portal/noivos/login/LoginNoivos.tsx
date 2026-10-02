@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { escolherLembrar } from "@/lib/lembrar-sessao";
 import { FOTO_CASAL_EXEMPLO } from "@/lib/portal-fotos";
+import { reenviarLinkDaConta } from "@/app/(portal)/portal/criar-conta/actions";
 import "../noivos.css";
 import "./login-noivos.css";
 
@@ -63,6 +64,9 @@ export function LoginNoivos({
     erroInicial === "link" ? "Este link não funcionou. Peça outro, ou entre com a senha." : ""
   );
   const [treme, setTreme] = useState(0);
+  /** a senha conferiu, mas a conta da festa ainda espera o link do e-mail */
+  const [naoConfirmado, setNaoConfirmado] = useState(false);
+  const [reenviando, setReenviando] = useState(false);
   const [quem, setQuem] = useState<QuemEntrou>(null);
   const espera = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -72,7 +76,21 @@ export function LoginNoivos({
 
   function errar(msg: string) {
     setErro(msg);
+    setNaoConfirmado(false);
     setTreme((t) => t + 1);
+  }
+
+  async function reenviarLink() {
+    if (reenviando) return;
+    setReenviando(true);
+    const r = await reenviarLinkDaConta(email, senha).catch(() => ({ error: "Não foi possível reenviar o link agora." }));
+    setReenviando(false);
+    if ("ok" in r) {
+      setNaoConfirmado(false);
+      setErro("Enviamos o link de novo. Use o do e-mail mais recente.");
+    } else {
+      errar(r.error);
+    }
   }
 
   async function entrar(e: React.FormEvent) {
@@ -87,6 +105,13 @@ export function LoginNoivos({
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: senha });
     if (error) {
       setPasso("form");
+      // a conta da festa só abre pelo link do e-mail; o Supabase só diz
+      // isto depois de a senha conferir, então não revela quem existe
+      if (error.code === "email_not_confirmed") {
+        errar("Falta confirmar o seu e-mail: abra o link que enviamos para ele.");
+        setNaoConfirmado(true);
+        return;
+      }
       // genérico de propósito: não confirma se o e-mail existe
       errar("E-mail ou senha não conferem.");
       return;
@@ -243,7 +268,17 @@ export function LoginNoivos({
                       <span className="pn-ic" aria-hidden>
                         info
                       </span>
-                      {erro}
+                      <span>
+                        {erro}
+                        {naoConfirmado && (
+                          <>
+                            {" "}
+                            <button type="button" className="pnl-esqueci" onClick={reenviarLink} disabled={reenviando}>
+                              {reenviando ? "Reenviando" : "Reenviar o link"}
+                            </button>
+                          </>
+                        )}
+                      </span>
                     </div>
                   )}
                   {/* o navegador guarda uma sessão por endereço: entrar
