@@ -200,6 +200,7 @@ export type AcaoDoPainel =
   | "site_tirado_do_ar"
   | "logins_buscados"
   | "login_email_trocado"
+  | "login_copias_refeitas"
   | "login_link_de_senha"
   | "login_email_confirmado"
   | "login_confirmacao_reenviada"

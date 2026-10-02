@@ -553,9 +553,10 @@ export async function agirNoLogin(_prev: ResultadoDoLogin, formData: FormData): 
       if (r.conflito) {
         return { error: "Esse e-mail já é o login de outra conta. Troque aquele primeiro.", conflito: r.conflito };
       }
-      feito =
-        `E-mail trocado para ${r.novo}. Quem estava dentro precisa entrar de novo, com o e-mail novo; a senha não mudou.` +
-        (r.aviso ? ` ${r.aviso}` : "");
+      feito = r.refeitas
+        ? `O login já usa ${r.novo}: as cópias do e-mail foram refeitas.` + (r.aviso ? ` ${r.aviso}` : "")
+        : `E-mail trocado para ${r.novo}. Quem estava dentro precisa entrar de novo, com o e-mail novo; a senha não mudou.` +
+          (r.aviso ? ` ${r.aviso}` : "");
     } else if (acao === "link_de_senha") {
       await mandarLinkDeSenhaDb(userId, motivo);
       feito = "Link para criar senha nova enviado para o e-mail do login.";

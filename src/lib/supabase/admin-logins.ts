@@ -249,7 +249,7 @@ export async function trocarEmailDoLoginDb(
   novoEmail: string,
   confirmacao: string,
   motivo: string
-): Promise<{ conflito?: { id: string; email: string }; novo?: string; aviso?: string }> {
+): Promise<{ conflito?: { id: string; email: string }; novo?: string; aviso?: string; refeitas?: boolean }> {
   const quem = await exigirSuperAdmin();
   const porque = motivoValido(motivo);
   const novo = (novoEmail ?? "").trim().toLowerCase();
@@ -260,10 +260,34 @@ export async function trocarEmailDoLoginDb(
   const db = servico();
   const u = await loginPorId(db, userId);
   const atual = (u.email ?? "").toLowerCase();
-  if (atual === novo) throw new Error("Esse já é o e-mail deste login.");
   const donos = emailsDoDono();
   if (donos.includes(atual)) throw new Error("O login do dono do sistema não muda por aqui.");
   if (donos.includes(novo)) throw new Error("Esse e-mail é do dono do sistema: nenhum outro login pode usá-lo.");
+
+  // o mesmo e-mail de novo: refaz as cópias da última troca deste login (se
+  // alguma falhou), a partir do e-mail anterior que a auditoria guardou
+  if (atual === novo) {
+    const { data: ultima } = await db
+      .from("admin_registro")
+      .select("antes")
+      .eq("acao", "login_email_trocado")
+      .eq("depois->>login", userId)
+      .eq("depois->>email", novo)
+      .order("em", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const anterior = ((ultima?.antes as { email?: string } | null)?.email ?? "").toLowerCase();
+    if (!anterior || anterior === novo) throw new Error("Esse já é o e-mail deste login.");
+    const { copias, falhas } = await atualizarCopias(db, userId, anterior, novo);
+    await registrarAcaoAdmin(db, quem, {
+      acao: "login_copias_refeitas",
+      empresaId: await empresaDoDono(db, userId),
+      antes: { email: anterior },
+      depois: { email: novo, login: userId, copias },
+      motivo: porque,
+    });
+    return { novo, refeitas: true, aviso: falhas.length ? `Ainda não deu para atualizar: ${falhas.join(", ")}.` : undefined };
+  }
 
   const outro = (await todosOsLogins(db)).find((x) => (x.email ?? "").toLowerCase() === novo && x.id !== userId);
   if (outro) return { conflito: { id: outro.id, email: outro.email ?? novo } };
@@ -275,7 +299,48 @@ export async function trocarEmailDoLoginDb(
   }
 
   // as cópias: o que falhar aqui não desfaz o login (ele já mudou); fica
-  // dito na tela e na auditoria
+  // dito na tela e na auditoria, e trocar de novo para o mesmo e-mail refaz
+  const { copias, falhas } = await atualizarCopias(db, userId, atual, novo);
+
+  // quem entrou pelo endereço errado sai (a pessoa certa entra de novo)
+  let sessoes: number | string;
+  try {
+    sessoes = await encerrarSessoes(db, userId);
+  } catch {
+    sessoes = "erro";
+    falhas.push("sessões");
+  }
+  copias.sessoes_encerradas = sessoes;
+
+  await registrarAcaoAdmin(db, quem, {
+    acao: "login_email_trocado",
+    empresaId: await empresaDoDono(db, userId),
+    antes: { email: atual },
+    depois: { email: novo, login: userId, copias },
+    motivo: porque,
+  });
+  const aviso = [
+    falhas.length ? `Não deu para atualizar: ${falhas.join(", ")} (troque de novo para o mesmo e-mail para refazer).` : "",
+    sessoes === "sem a 194" ? "As sessões abertas continuam: aplique a migração 194." : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return { novo, aviso: aviso || undefined };
+}
+
+/**
+ * As cópias do e-mail do login que o sistema guarda: a equipe e o acesso
+ * do portal (pelo login); a ficha de cliente que É esta pessoa (a da
+ * própria família e a que o acesso do portal aponta), só onde o e-mail
+ * ainda é o antigo; a candidatura de Parceira com o e-mail antigo.
+ * Idempotente: rodar de novo não estraga nada.
+ */
+async function atualizarCopias(
+  db: Servico,
+  userId: string,
+  antigo: string,
+  novo: string
+): Promise<{ copias: Record<string, number | string>; falhas: string[] }> {
   const copias: Record<string, number | string> = {};
   const falhas: string[] = [];
   const contar = (rotulo: string, r: { data: unknown[] | null; error: { code?: string } | null }) => {
@@ -295,43 +360,19 @@ export async function trocarEmailDoLoginDb(
     ? await db.from("clients").select("id, email").in("id", idsFicha)
     : { data: [] as { id: string; email: string | null }[] };
   const fichas = Array.from(
-    new Set([...(proprias ?? []), ...(ligadas ?? [])].filter((c) => (c.email ?? "").toLowerCase() === atual).map((c) => c.id as string))
+    new Set([...(proprias ?? []), ...(ligadas ?? [])].filter((c) => (c.email ?? "").toLowerCase() === antigo).map((c) => c.id as string))
   );
   contar(
     "ficha_de_cliente",
     fichas.length ? await db.from("clients").update({ email: novo }).in("id", fichas).select("id") : { data: [], error: null }
   );
   const { data: parceiras } = await db.from("parceiras").select("id, email");
-  const idsParceira = (parceiras ?? []).filter((p) => (p.email ?? "").toLowerCase() === atual).map((p) => p.id as string);
+  const idsParceira = (parceiras ?? []).filter((p) => (p.email ?? "").toLowerCase() === antigo).map((p) => p.id as string);
   contar(
     "parceira",
     idsParceira.length ? await db.from("parceiras").update({ email: novo }).in("id", idsParceira).select("id") : { data: [], error: null }
   );
-
-  // quem entrou pelo endereço errado sai (a pessoa certa entra de novo)
-  let sessoes: number | string;
-  try {
-    sessoes = await encerrarSessoes(db, userId);
-  } catch {
-    sessoes = "erro";
-    falhas.push("sessões");
-  }
-  copias.sessoes_encerradas = sessoes;
-
-  await registrarAcaoAdmin(db, quem, {
-    acao: "login_email_trocado",
-    empresaId: await empresaDoDono(db, userId),
-    antes: { email: atual },
-    depois: { email: novo, copias },
-    motivo: porque,
-  });
-  const aviso = [
-    falhas.length ? `Não deu para atualizar: ${falhas.join(", ")}.` : "",
-    sessoes === "sem a 194" ? "As sessões abertas continuam: aplique a migração 194." : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
-  return { novo, aviso: aviso || undefined };
+  return { copias, falhas };
 }
 
 /**
@@ -407,6 +448,12 @@ export async function confirmarEmailDoLoginDb(userId: string, motivo: string): P
   const db = servico();
   const u = await loginPorId(db, userId);
   if (u.email_confirmed_at) throw new Error("Este e-mail já está confirmado.");
+  // a mesma trava da troca: confirmar à mão um e-mail de dono do sistema (ou
+  // da casa) entregaria o painel a quem escolheu a senha daquele login
+  const email = (u.email ?? "").toLowerCase();
+  if (emailsDoDono().includes(email) || email.endsWith("@eorganizei.com.br")) {
+    throw new Error("Este e-mail não se confirma por aqui: só pelo link, na caixa do próprio endereço.");
+  }
   const { error } = await db.auth.admin.updateUserById(userId, { email_confirm: true });
   if (error) throw new Error("O Supabase não aceitou a confirmação agora. Nada mudou.");
   await registrarAcaoAdmin(db, quem, {

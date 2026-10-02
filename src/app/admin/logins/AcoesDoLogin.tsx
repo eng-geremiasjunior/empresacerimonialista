@@ -162,7 +162,8 @@ export function AcoesDoLogin({
   const acoes: Acao[] = [
     ...(doDono ? [] : (["trocar_email"] as Acao[])),
     "link_de_senha",
-    ...(confirmado ? [] : (["reenviar_confirmacao", "confirmar"] as Acao[])),
+    // o login do dono nunca se confirma à mão (só pelo link)
+    ...(confirmado ? [] : (["reenviar_confirmacao", ...(doDono ? [] : ["confirmar"])] as Acao[])),
     "encerrar_sessoes",
     ...(pendente ? (["apagar_pendente"] as Acao[]) : []),
   ];
