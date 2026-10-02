@@ -153,7 +153,7 @@ export default class Convite08 extends DCLogic {
     inc.style.opacity = 0;
     const t0 = performance.now(), dur = 1700; let played = false;
     const step = (now) => {
-      const u = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - u, 3);
+      const u = Math.max(0, Math.min(1, (now - t0) / dur)), e = 1 - Math.pow(1 - u, 3);
       this.dIn.setAttribute('scale', (90 * Math.pow(1 - e, 1.6)).toFixed(1));
       this.dOut.setAttribute('scale', (70 * Math.min(1, u * 1.8)).toFixed(1));
       const bf = `0.006 ${(0.05 + 0.02 * Math.sin(now / 160)).toFixed(4)}`;

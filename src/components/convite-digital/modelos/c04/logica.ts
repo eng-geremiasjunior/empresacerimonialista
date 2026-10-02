@@ -175,7 +175,7 @@ export default class Convite04 extends DCLogic {
     const t0 = performance.now(), dur = 1400; let played = false;
     const ease = (u) => (u < .5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2);
     const step = (now) => {
-      const u = Math.min(1, (now - t0) / dur), e = ease(u);
+      const u = Math.max(0, Math.min(1, (now - t0) / dur)), e = ease(u);
       this.peel(page, [P0[0] + (P1[0] - P0[0]) * e, P0[1] + (P1[1] - P0[1]) * e - Math.sin(Math.PI * e) * H * .16]);
       if (!played && e > .4) { played = true; this.playScene(i + 1); }
       if (u < 1) { this._raf = requestAnimationFrame(step); return; }
@@ -203,7 +203,7 @@ export default class Convite04 extends DCLogic {
     const t0 = performance.now(), dur = 1300;
     const ease = (u) => (u < .5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2);
     const step = (now) => {
-      const u = Math.min(1, (now - t0) / dur), e = 1 - ease(u);
+      const u = Math.max(0, Math.min(1, (now - t0) / dur)), e = 1 - ease(u);
       this.peel(prev, [P0[0] + (P1[0] - P0[0]) * e, P0[1] + (P1[1] - P0[1]) * e - Math.sin(Math.PI * e) * H * .16]);
       if (u < 1) { this._raf = requestAnimationFrame(step); return; }
       finish();

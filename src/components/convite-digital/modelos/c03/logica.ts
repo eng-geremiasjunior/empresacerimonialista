@@ -168,7 +168,7 @@ export default class Convite03 extends DCLogic {
     const t0 = performance.now(), dur = o ? 1700 : 1500; let played = false;
     const ease = (u) => (u < .5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2);
     const loop = (now) => {
-      const u = Math.min(1, (now - t0) / dur), e = ease(u);
+      const u = Math.max(0, Math.min(1, (now - t0) / dur)), e = ease(u);
       const a = dir > 0 ? a0 + (aMax - a0) * Math.pow(e, 1.35) : aMax * Math.pow(1 - e, 1.35);
       const d = this.archPath(cx, cy, Math.max(.1, a), hr);
       top.style.clipPath = `path('${d}')`;

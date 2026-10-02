@@ -107,7 +107,7 @@ export default class Convite02 extends DCLogic {
   photoTide(el) {
     const W = el.offsetWidth, H = el.offsetHeight, A = Math.max(8, H * .03), t0 = performance.now(), dur = 1900;
     const loop = (now) => {
-      const u = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - u, 3), y = H + A * 2 - e * (H + A * 4), pts = this.wave(W, y, A, (now - t0) * .005);
+      const u = Math.max(0, Math.min(1, (now - t0) / dur)), e = 1 - Math.pow(1 - u, 3), y = H + A * 2 - e * (H + A * 4), pts = this.wave(W, y, A, (now - t0) * .005);
       el.style.clipPath = `path('${this.pd(pts)} L${W} ${H + 40} L0 ${H + 40} Z')`;
       if (u < 1) this._praf = requestAnimationFrame(loop); else el.style.clipPath = 'none';
     };
@@ -131,7 +131,7 @@ export default class Convite02 extends DCLogic {
     const t0 = performance.now(), dur = 1600; let played = false;
     const ease = (u) => (u < .5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2);
     const loop = (now) => {
-      const u = Math.min(1, (now - t0) / dur), e = ease(u), ph = (now - t0) * .0055;
+      const u = Math.max(0, Math.min(1, (now - t0) / dur)), e = ease(u), ph = (now - t0) * .0055;
       const y = dir > 0 ? H + A * 2 + band - e * (H + A * 4 + band * 2) : -A * 2 - band + e * (H + A * 4 + band * 2);
       const edge = this.wave(W, y, A, ph), ahead = this.wave(W, y - dir * band * (1 - e * .4), A * .8, ph + .9);
       const foam2 = this.wave(W, y + dir * 12, A * .9, ph - .5);
