@@ -7,6 +7,7 @@ import { Origem } from "@/components/marketing/Origem";
 import { MedirCliques } from "@/components/marketing/MedirCliques";
 import { eventosDoCatalogo } from "@/lib/catalogo-vivo";
 import { MODELOS_NOVOS, nomeDoModelo } from "@/lib/site-modelos";
+import { CONVITES, ORDEM_DOS_CONVITES } from "@/components/convite-digital/catalogo";
 
 // O catálogo vivo (02/10/2026, pedido do dono): o link da bio do
 // Instagram. Quem chega entra nos portais de exemplo como o cliente da
@@ -61,6 +62,14 @@ const CSS = `
 .cv-modelo:hover img{transform:translateY(-3px);box-shadow:0 14px 30px rgba(34,30,27,.16)}
 .cv-modelo b{font:400 22px/1.1 var(--eo-serif)}
 .cv-modelo small{font-size:13px;color:#6B6259}
+.cv-rotulo{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#6E2E34}
+.cv-convites{border-top:1px solid rgba(34,30,27,.1)}
+.cv-convites .ps-g{padding-top:80px;padding-bottom:90px;display:flex;flex-direction:column;gap:30px}
+.cv-convites h2{font:400 clamp(32px,4vw,46px)/1.08 var(--eo-serif)}
+.cv-grade-convites{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:22px}
+.cv-convite small{font-size:13px;line-height:1.45;color:#6B6259}
+@media (max-width:1000px){.cv-grade-convites{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:560px){.cv-grade-convites{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}}
 @media (max-width:560px){.cv-cartao{grid-template-columns:120px 1fr;gap:16px;padding:16px}.cv-cartao b{font-size:24px}.cv-cartao p{font-size:14px}}
 `;
 
@@ -88,7 +97,7 @@ export default async function ConhecerPage() {
                 Entrar num portal
               </a>
               <a href="#modelos" className="ps-sec">
-                Ver os modelos de site
+                Ver o site e o convite
               </a>
             </div>
           </div>
@@ -128,9 +137,10 @@ export default async function ConhecerPage() {
         {siteDoCasamento ? (
           <section className="cv-modelos" id="modelos">
             <div className="ps-g">
-              <h2>O site do evento, em 7 modelos</h2>
+              <p className="cv-rotulo">O site do casamento</p>
+              <h2>Onde os convidados confirmam, em 7 modelos</h2>
               <p className="cv-sub">
-                O cliente monta o site, e os convidados confirmam presença, deixam recado, sugerem música e escolhem o presente ali
+                O casal monta o site, e os convidados confirmam presença, deixam recado, sugerem música e escolhem o presente ali
                 mesmo. Abra o mesmo casamento de exemplo em cada modelo.
               </p>
               <div className="cv-grade">
@@ -148,6 +158,29 @@ export default async function ConhecerPage() {
             </div>
           </section>
         ) : null}
+
+        <section className="cv-convites" id="convites">
+          <div className="ps-g">
+            <p className="cv-rotulo">O convite do casamento</p>
+            <h2>O que chega no WhatsApp, em 9 modelos</h2>
+            <p className="cv-sub">
+              O convite animado que o convidado recebe e abre no celular, com um botão que leva ao site do casal. Toque em cada um
+              para ver abrir.
+            </p>
+            <div className="cv-grade-convites">
+              {ORDEM_DOS_CONVITES.map((id) => {
+                const c = CONVITES[id];
+                return (
+                  <a key={id} href={`/convites/${id}`} className="cv-modelo cv-convite" target="_blank" rel="noopener">
+                    <img src={`/site/catalogo/convite-${id}.webp`} alt={`O convite ${c.nome}`} loading="lazy" />
+                    <b>{c.nome}</b>
+                    <small>{c.resumo}</small>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        </section>
 
         <section className="ps-chamada">
           <h2>
