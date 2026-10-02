@@ -23,18 +23,22 @@ export const maxDuration = 30;
 // mesma corrida, recebe "alguém acabou de escolher".
 //
 // Os freios valem no banco, não na memória de uma instância:
-//   · por pessoa (a origem: um código do IP embaralhado com uma chave do
-//     servidor e o dia — o IP em si nunca é gravado): 2 Pix abertos e 6
-//     pedidos por hora em cada lista;
+//   · por origem (um código do IP embaralhado com uma chave do servidor e
+//     o dia — o IP em si nunca é gravado): 4 Pix abertos e 20 pedidos por
+//     hora em cada lista. Folgado de propósito: na festa, convidados no 4G
+//     costumam sair pelo MESMO IP da operadora;
+//   · por pessoa (o e-mail): 2 Pix abertos na lista;
 //   · por lista, um disjuntor alto (Pix abertos ao mesmo tempo), que só
 //     conta o que pode virar dinheiro — tentativa que falhou não trava
 //     ninguém.
 // O mesmo convidado (e-mail) pedindo de novo o mesmo presente recebe o
-// mesmo Pix, enquanto ele vale.
+// mesmo Pix, enquanto ele vale. Na frente de tudo, o firewall da Vercel
+// segura rajada nesta rota (10 por minuto por IP).
 
 const PIX_VALE_SEGUNDOS = 20 * 60;
-const ABERTOS_POR_ORIGEM = 2;
-const PEDIDOS_POR_ORIGEM_HORA = 6;
+const ABERTOS_POR_ORIGEM = 4;
+const PEDIDOS_POR_ORIGEM_HORA = 20;
+const ABERTOS_POR_EMAIL = 2;
 const ABERTOS_POR_LISTA = 80;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -153,28 +157,36 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
   }
 
   // os freios
-  const [{ count: daOrigemAbertos }, { count: daOrigemNaHora }, { count: abertosNaLista }] = await Promise.all([
-    db
-      .from("presente_pagamento")
-      .select("id", { count: "exact", head: true })
-      .eq("event_id", eventId)
-      .eq("origem", origem)
-      .eq("status", "aguardando")
-      .gt("expira_em", agoraIso),
-    db
-      .from("presente_pagamento")
-      .select("id", { count: "exact", head: true })
-      .eq("event_id", eventId)
-      .eq("origem", origem)
-      .gt("created_at", new Date(Date.now() - 3600_000).toISOString()),
-    db
-      .from("presente_pagamento")
-      .select("id", { count: "exact", head: true })
-      .eq("event_id", eventId)
-      .eq("status", "aguardando")
-      .gt("expira_em", agoraIso),
-  ]);
-  if ((daOrigemAbertos ?? 0) >= ABERTOS_POR_ORIGEM) {
+  const [{ count: daOrigemAbertos }, { count: daOrigemNaHora }, { count: doEmailAbertos }, { count: abertosNaLista }] =
+    await Promise.all([
+      db
+        .from("presente_pagamento")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", eventId)
+        .eq("origem", origem)
+        .eq("status", "aguardando")
+        .gt("expira_em", agoraIso),
+      db
+        .from("presente_pagamento")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", eventId)
+        .eq("origem", origem)
+        .gt("created_at", new Date(Date.now() - 3600_000).toISOString()),
+      db
+        .from("presente_pagamento")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", eventId)
+        .eq("email", email)
+        .eq("status", "aguardando")
+        .gt("expira_em", agoraIso),
+      db
+        .from("presente_pagamento")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", eventId)
+        .eq("status", "aguardando")
+        .gt("expira_em", agoraIso),
+    ]);
+  if ((doEmailAbertos ?? 0) >= ABERTOS_POR_EMAIL || (daOrigemAbertos ?? 0) >= ABERTOS_POR_ORIGEM) {
     return erro("Você já tem Pix esperando pagamento nesta lista. Pague um deles ou espere alguns minutos.", 429);
   }
   if ((daOrigemNaHora ?? 0) >= PEDIDOS_POR_ORIGEM_HORA || (abertosNaLista ?? 0) >= ABERTOS_POR_LISTA) {
