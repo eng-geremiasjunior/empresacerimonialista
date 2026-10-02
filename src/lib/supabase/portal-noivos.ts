@@ -70,7 +70,12 @@ export const getNomesDoCasal = cache(
     const clientId = (ev as { client_id: string | null } | null)?.client_id;
     if (clientId) {
       const { data: cli } = await db.from("clients").select("name").eq("id", clientId).maybeSingle();
-      const n = primeiro((cli as { name: string | null } | null)?.name);
+      const nomeDaCliente = (cli as { name: string | null } | null)?.name ?? null;
+      // a cliente costuma ser o casal ("Isabelly e Jonas"): os dois nomes
+      // saem dali antes de cair no primeiro nome só
+      const doCliente = casalDoNome(nomeDaCliente);
+      if (doCliente?.b) return doCliente;
+      const n = primeiro(nomeDaCliente);
       if (n) return { a: n, b: noiva && noiva !== n ? noiva : noivo || null };
     }
     if (noiva || noivo) return { a: noiva || noivo, b: null };
