@@ -430,7 +430,11 @@ html:not(.sm-js) .sm-classico .c-abertura {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(18, 14, 11, .35) 0%, rgba(18, 14, 11, .2) 45%, rgba(18, 14, 11, .6) 100%);
+  /* a máscara da noiva (--sm-mascara, 0 a .8, no style do véu) por cima
+     do véu do desenho; sem ela, só o véu */
+  background:
+    linear-gradient(rgba(18, 14, 11, var(--sm-mascara, 0)), rgba(18, 14, 11, var(--sm-mascara, 0))),
+    linear-gradient(180deg, rgba(18, 14, 11, .35) 0%, rgba(18, 14, 11, .2) 45%, rgba(18, 14, 11, .6) 100%);
 }
 
 .sm-classico .c-hero-miolo {

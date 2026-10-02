@@ -41,7 +41,10 @@ html:not(.sm-js) .sm-cartoes .k-abertura {
 .sm-cartoes .k-abertura-veu {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(15, 18, 15, .25), rgba(15, 18, 15, .35) 55%, rgba(15, 18, 15, .7));
+  /* a máscara da capa: a abertura mostra a mesma foto (ver .k-hero-veu) */
+  background:
+    linear-gradient(rgba(15, 18, 15, var(--sm-mascara, 0)), rgba(15, 18, 15, var(--sm-mascara, 0))),
+    linear-gradient(180deg, rgba(15, 18, 15, .25), rgba(15, 18, 15, .35) 55%, rgba(15, 18, 15, .7));
 }
 
 .sm-cartoes .k-abertura-miolo {
@@ -191,7 +194,11 @@ html.sm-js .sm-cartoes .k-abertura:not([data-pronto]) [data-intro-i] {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(15, 18, 15, 0) 35%, rgba(15, 18, 15, .72));
+  /* a máscara da noiva (--sm-mascara, 0 a .8, no style do véu) por cima
+     do véu do desenho; sem ela, só o véu */
+  background:
+    linear-gradient(rgba(15, 18, 15, var(--sm-mascara, 0)), rgba(15, 18, 15, var(--sm-mascara, 0))),
+    linear-gradient(180deg, rgba(15, 18, 15, 0) 35%, rgba(15, 18, 15, .72));
 }
 
 .sm-cartoes .k-hero-miolo {

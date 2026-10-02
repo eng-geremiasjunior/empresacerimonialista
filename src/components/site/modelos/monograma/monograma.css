@@ -125,7 +125,11 @@ html.sm-js .sm-monograma .m-abertura:not([data-pronto]) .m-mono {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(15, 18, 15, .4) 0%, rgba(15, 18, 15, 0) 22%, rgba(15, 18, 15, 0) 42%, rgba(15, 18, 15, .75));
+  /* a máscara da noiva (--sm-mascara, 0 a .8, no style do véu) por cima
+     do véu do desenho; sem ela, só o véu */
+  background:
+    linear-gradient(rgba(15, 18, 15, var(--sm-mascara, 0)), rgba(15, 18, 15, var(--sm-mascara, 0))),
+    linear-gradient(180deg, rgba(15, 18, 15, .4) 0%, rgba(15, 18, 15, 0) 22%, rgba(15, 18, 15, 0) 42%, rgba(15, 18, 15, .75));
 }
 
 .sm-monograma .m-hero-topo {

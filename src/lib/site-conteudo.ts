@@ -11,6 +11,7 @@
 // Módulo puro: serve o site público, a prévia da família, a revisão do
 // dono e o editor do portal.
 
+import type { CSSProperties } from "react";
 import { estruturaEfetiva, type BlocoDoSite } from "@/lib/site-blocos";
 import { modeloDoTema, type ModeloId } from "@/lib/site-modelos";
 import type { SitePublico } from "@/lib/site-publico-tipos";
@@ -19,6 +20,8 @@ import { temNome } from "@/lib/rsvp-convite";
 export const LIMITES = {
   nome: 40,
   fraseCapa: 200,
+  /** a máscara da capa: o quanto a noiva escurece a foto, em % */
+  mascara: 80,
   marcos: 10,
   marcoAno: 10,
   marcoCidade: 40,
@@ -62,7 +65,14 @@ export type FormaDoNome = "nomes" | "iniciais" | "iniciais-nomes";
  *  confere também que o evento é o dono; aqui basta o formato. */
 export type CaminhoDeFoto = string;
 
-export type ConteudoCapa = { nome1: string; nome2: string; frase: string; foto: CaminhoDeFoto | null };
+export type ConteudoCapa = {
+  nome1: string;
+  nome2: string;
+  frase: string;
+  foto: CaminhoDeFoto | null;
+  /** 0 a 80 (%): a camada escura que a noiva põe sobre a foto, além do véu do desenho */
+  mascara: number;
+};
 export type Marco = {
   ano: string;
   cidade: string;
@@ -128,6 +138,20 @@ function fotos(v: unknown, max: number): CaminhoDeFoto[] {
     .slice(0, max);
 }
 
+function mascara(v: unknown): number {
+  return typeof v === "number" && Number.isFinite(v) ? Math.min(LIMITES.mascara, Math.max(0, Math.round(v))) : 0;
+}
+
+/** Os modelos que escrevem sobre a foto da capa, com um véu por cima
+ *  dela: só neles a máscara aparece (no Alianças a foto fica num arco). */
+export const MODELOS_COM_MASCARA: readonly ModeloId[] = ["classico", "cartoes", "monograma", "franca", "violino"];
+
+/** A máscara como variável de CSS na capa: o véu de cada modelo soma uma
+ *  camada uniforme com essa opacidade (0 = só o véu do desenho). */
+export function estiloDaMascara(m: number): CSSProperties {
+  return { "--sm-mascara": String(Math.min(LIMITES.mascara, Math.max(0, m)) / 100) } as CSSProperties;
+}
+
 function dataValida(v: unknown): string | null {
   if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return null;
   const [a, m, d] = v.split("-").map(Number);
@@ -144,6 +168,7 @@ export function lerCapa(c: unknown): ConteudoCapa {
     nome2: texto(o.nome2, LIMITES.nome),
     frase: texto(o.frase, LIMITES.fraseCapa),
     foto: foto(o.foto),
+    mascara: mascara(o.mascara),
   };
 }
 

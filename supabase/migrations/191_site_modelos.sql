@@ -53,6 +53,9 @@
 --          casal de antes (balde 'inspiracoes', que aceita troca) não vai
 --          ao anônimo nos modelos novos nem com a história escondida; o
 --          álbum e o mural escondidos não mandam fotos nem recados.
+--   5) Depois de no ar (01/10, pedido do dono): a capa aceita 'mascara',
+--      o quanto a noiva escurece a foto (inteiro de 0 a 80). Muda só
+--      site_erro_da_estrutura; o anônimo já recebia o conteúdo da capa.
 --      Reaplicar a 191 inteira por cima é seguro (tudo create or replace).
 --
 -- ORDEM: aplicar a 191 ANTES de o ramo modelos-de-site ir ao ar (o
@@ -278,13 +281,24 @@ begin
       end if;
 
     elsif v_tipo = 'capa' then
-      if not public.site_so_chaves(v_c, array['nome1', 'nome2', 'frase', 'foto']) then
+      if not public.site_so_chaves(v_c, array['nome1', 'nome2', 'frase', 'foto', 'mascara']) then
         return 'capa: conteúdo inválido';
       end if;
       if not public.site_texto_ok(v_c->'nome1', 40)
          or not public.site_texto_ok(v_c->'nome2', 40)
          or not public.site_texto_ok(v_c->'frase', 200) then
         return 'capa: nomes até 40 letras e frase até 200';
+      end if;
+      -- a máscara: o quanto a noiva escurece a foto da capa, de 0 a 80
+      -- (por cento), inteira
+      if v_c ? 'mascara' then
+        if jsonb_typeof(v_c->'mascara') <> 'number' then
+          return 'capa: a máscara vai de 0 a 80';
+        end if;
+        if (v_c->>'mascara')::numeric <> trunc((v_c->>'mascara')::numeric)
+           or (v_c->>'mascara')::numeric not between 0 and 80 then
+          return 'capa: a máscara vai de 0 a 80';
+        end if;
       end if;
       if not public.site_foto_ok(v_c->'foto', p_event_id) then
         return 'foto inválida';
@@ -921,7 +935,7 @@ with ex as (
 ),
 completo as (
   select replace($j$[
-    {"id": "capa", "tipo": "capa", "conteudo": {"nome1": "Ana", "nome2": "Bia", "frase": "Vamos casar", "foto": "@F"}},
+    {"id": "capa", "tipo": "capa", "conteudo": {"nome1": "Ana", "nome2": "Bia", "frase": "Vamos casar", "foto": "@F", "mascara": 35}},
     {"id": "historia", "tipo": "historia", "conteudo": {"foto": "@F", "marcos": [
       {"ano": "2019", "cidade": "Rio", "curto": "O café", "titulo": "Onde tudo começou", "texto": "…", "icone": "cafe", "foto": "@F"},
       {"titulo": "O pedido", "icone": null, "foto": null}]}},
@@ -952,6 +966,10 @@ recusados(caso, estrutura, tema) as (
       ('número no lugar de texto', '[{"tipo": "capa", "conteudo": {"nome1": 5}}]', '{}'),
       ('nome com 41 letras',       '[{"tipo": "capa", "conteudo": {"nome1": "' || repeat('a', 41) || '"}}]', '{}'),
       ('conteúdo em lista',        '[{"tipo": "capa", "conteudo": ["x"]}]', '{}'),
+      ('máscara acima de 80',      '[{"tipo": "capa", "conteudo": {"mascara": 81}}]', '{}'),
+      ('máscara negativa',         '[{"tipo": "capa", "conteudo": {"mascara": -5}}]', '{}'),
+      ('máscara quebrada',         '[{"tipo": "capa", "conteudo": {"mascara": 35.5}}]', '{}'),
+      ('máscara em texto',         '[{"tipo": "capa", "conteudo": {"mascara": "35"}}]', '{}'),
       ('11 marcos',                '[{"tipo": "historia", "conteudo": {"marcos": [' || rtrim(repeat('{"titulo": "x"},', 11), ',') || ']}}]', '{}'),
       ('ícone fora da lista',      '[{"tipo": "historia", "conteudo": {"marcos": [{"icone": "estrela"}]}}]', '{}'),
       ('marco que não é objeto',   '[{"tipo": "historia", "conteudo": {"marcos": ["x"]}}]', '{}'),

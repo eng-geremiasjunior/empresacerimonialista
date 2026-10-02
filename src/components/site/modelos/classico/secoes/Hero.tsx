@@ -15,7 +15,7 @@
 // oculto (classe sm-js, ver classico.css); sem JS, aparece direto.
 
 import { useEffect, useRef } from "react";
-import { lerCapa } from "@/lib/site-conteudo";
+import { estiloDaMascara, lerCapa } from "@/lib/site-conteudo";
 import { EspacoDeFoto } from "@/components/site/pecas/EspacoDeFoto";
 import { CURVA_E, movimentoReduzido } from "@/components/site/pecas/useRevelar";
 import { dataCurta, Monograma, NomesDoCasal, useUrlDaFoto, type PropsDaSecao } from "../comum";
@@ -99,7 +99,7 @@ export function Hero({
           <EspacoDeFoto url={foto} forma="retangulo" proporcao="tela" carregar="eager" className="c-hero-img" />
         )}
       </div>
-      <div className="c-hero-veu" />
+      <div className="c-hero-veu" style={estiloDaMascara(capa.mascara)} />
       <div className="c-hero-miolo">
         <div data-hero="0" className="c-hero-nomes">
           {casal.mostraIniciais && (

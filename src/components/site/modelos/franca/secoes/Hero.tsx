@@ -17,7 +17,7 @@
 // Parallax da foto: scrollY × .3 enquanto a rolagem não passa de 1.3 tela.
 
 import { useEffect, useRef, type ReactNode } from "react";
-import { lerCapa } from "@/lib/site-conteudo";
+import { estiloDaMascara, lerCapa } from "@/lib/site-conteudo";
 import { dataLonga } from "@/lib/rsvp-convite";
 import { EspacoDeFoto } from "@/components/site/pecas/EspacoDeFoto";
 import { useCena } from "@/components/site/pecas/useCena";
@@ -111,7 +111,7 @@ export function Hero({
           {foto && <EspacoDeFoto url={foto} forma="retangulo" proporcao="tela" carregar="eager" />}
         </div>
       </div>
-      <div className="f-hero-veu" />
+      <div className="f-hero-veu" style={estiloDaMascara(capa.mascara)} />
       <div className="f-hero-moldura f-hero-moldura--1" data-moldura="" />
       <div className="f-hero-moldura f-hero-moldura--2" data-moldura="" />
       <div className="f-hero-miolo">

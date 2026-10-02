@@ -12,6 +12,7 @@
 
 import { useEffect, useLayoutEffect, useRef, type KeyboardEvent } from "react";
 import { dataLonga } from "@/lib/rsvp-convite";
+import { estiloDaMascara } from "@/lib/site-conteudo";
 import type { EstadoDaAbertura } from "@/components/site/pecas/useAbertura";
 import { CURVA_E } from "@/components/site/pecas/useRevelar";
 import { FotoDoCartao, type CasalDoSite } from "../comum";
@@ -22,6 +23,7 @@ export function Abertura({
   casal,
   data,
   foto,
+  mascara,
   estado,
   abrir,
   animar,
@@ -30,6 +32,8 @@ export function Abertura({
   data: string;
   /** a foto da capa (caminho ou URL pronta) */
   foto: { caminho?: string | null; url?: string | null };
+  /** a máscara da capa (0 a 80): a mesma foto, o mesmo escuro do hero */
+  mascara: number;
   estado: EstadoDaAbertura;
   abrir: () => void;
   animar: boolean;
@@ -82,7 +86,7 @@ export function Abertura({
       <div className="k-abertura-foto">
         <FotoDoCartao caminho={foto.caminho} url={foto.url} carregar="eager" />
       </div>
-      <div className="k-abertura-veu" />
+      <div className="k-abertura-veu" style={estiloDaMascara(mascara)} />
       <div className="k-abertura-miolo">
         <div data-intro-i="0" className="k-abertura-iniciais" aria-hidden>
           {casal.i1 && <span>{casal.i1}</span>}

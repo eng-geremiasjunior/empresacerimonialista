@@ -15,7 +15,7 @@
 
 import { useEffect, useRef } from "react";
 import { convitePara, dataLonga } from "@/lib/rsvp-convite";
-import { lerCapa } from "@/lib/site-conteudo";
+import { estiloDaMascara, lerCapa } from "@/lib/site-conteudo";
 import { CURVA_E, movimentoReduzido } from "@/components/site/pecas/useRevelar";
 import { FotoDoCartao, NomesDoCasal, useTemFoto, type PropsDaSecao } from "../comum";
 import { CaixasDaContagem } from "./CaixasDaContagem";
@@ -88,7 +88,7 @@ export function Hero({
       <div className="k-hero-foto" data-hero-foto="">
         {temFoto && <FotoDoCartao caminho={capa.caminho} url={capa.url} carregar="eager" />}
       </div>
-      <div className="k-hero-veu" />
+      <div className="k-hero-veu" style={estiloDaMascara(lerCapa(bloco.conteudo).mascara)} />
       <div className="k-hero-miolo">
         <div className="k-hero-esq">
           <div data-hero="0" className="k-hero-rotulo">

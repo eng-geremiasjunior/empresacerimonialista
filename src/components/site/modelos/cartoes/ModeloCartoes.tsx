@@ -19,7 +19,7 @@
 
 import { useRef, type MouseEvent } from "react";
 import type { PropsDoModelo } from "@/components/site/SiteDoEvento";
-import { nomesDoSite } from "@/lib/site-conteudo";
+import { lerCapa, nomesDoSite } from "@/lib/site-conteudo";
 import { valoresDoPar } from "@/lib/site-pares";
 import { FAMILIAS } from "@/lib/fontes-site";
 import { partesDoNome } from "@/components/site/pecas/Nomes";
@@ -102,6 +102,7 @@ export function ModeloCartoes({ dados, midia, modo }: PropsDoModelo) {
         casal={casal}
         data={dados.evento.data}
         foto={capa}
+        mascara={lerCapa(plano.capa.conteudo).mascara}
         estado={abertura.estado}
         abrir={abertura.abrir}
         animar={abertura.animar}

@@ -1,8 +1,9 @@
 "use client";
 
-// Capa: a foto principal, os nomes do casal e a frase.
-// 191: { nome1 ≤40, nome2 ≤40, frase ≤200, foto }.
+// Capa: a foto principal, a máscara sobre ela, os nomes do casal e a frase.
+// 191: { nome1 ≤40, nome2 ≤40, frase ≤200, foto, mascara 0–80 }.
 
+import { lerCapa, MODELOS_COM_MASCARA } from "@/lib/site-conteudo";
 import { CampoFoto, espacoDoModelo } from "./CampoFoto";
 import { Campo, campo, coluna } from "./pecas";
 import { compacto, fotoDoEvento, LIMITES, obj, txt } from "./rascunho";
@@ -16,14 +17,16 @@ export function EditorCapa({ conteudo, onChange, modelo, eventoId, urls, desabil
   const nome2 = "nome2" in o ? txt(o.nome2, LIMITES.nome) : extra?.nomesDoEvento?.nome2 ?? "";
   const frase = txt(o.frase, LIMITES.fraseCapa);
   const foto = fotoDoEvento(o.foto, eventoId);
+  const mascara = lerCapa(o).mascara;
   const espaco = espacoDoModelo(modelo, "capa");
 
-  const gravar = (mudou: Partial<{ nome1: string; nome2: string; frase: string; foto: string | null }>) => {
-    const n = { nome1, nome2, frase, foto, ...mudou };
+  const gravar = (mudou: Partial<{ nome1: string; nome2: string; frase: string; foto: string | null; mascara: number }>) => {
+    const n = { nome1, nome2, frase, foto, mascara, ...mudou };
     // nome vazio fica como "" (a escolha de não ter o nome 2 é dela)
     onChange({
       ...(extra?.semNomes ? compacto({ nome1: txt(o.nome1, LIMITES.nome), nome2: txt(o.nome2, LIMITES.nome) }) : { nome1: n.nome1, nome2: n.nome2 }),
-      ...compacto({ frase: n.frase, foto: n.foto }),
+      // sem máscara, a chave nem vai (o véu do desenho basta)
+      ...compacto({ frase: n.frase, foto: n.foto, mascara: n.mascara > 0 ? n.mascara : null }),
     });
   };
 
@@ -41,6 +44,26 @@ export function EditorCapa({ conteudo, onChange, modelo, eventoId, urls, desabil
         desabilitado={desabilitado}
         rotulo="a foto da capa"
       />
+      {MODELOS_COM_MASCARA.includes(modelo) && (
+        <Campo nome="Máscara">
+          <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <input
+              type="range"
+              min={0}
+              max={LIMITES.mascara}
+              step={5}
+              value={mascara}
+              disabled={desabilitado}
+              onChange={(e) => gravar({ mascara: Number(e.target.value) })}
+              aria-valuetext={mascara ? `${mascara}%` : "sem máscara"}
+              style={{ flex: 1, minWidth: 0, minHeight: "var(--toque-min)", accentColor: "var(--cor-texto-forte)" }}
+            />
+            <span style={{ minWidth: 88, textAlign: "right", fontSize: "var(--ts-nota)", color: "var(--cor-texto-suave)", fontVariantNumeric: "tabular-nums" }}>
+              {mascara ? `${mascara}%` : "sem máscara"}
+            </span>
+          </span>
+        </Campo>
+      )}
       {!extra?.semNomes && (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <div style={{ flex: "1 1 140px" }}>

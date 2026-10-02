@@ -527,7 +527,11 @@ html:not(.sm-js) .sm-franca .f-envelope {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(20, 27, 44, .3), rgba(20, 27, 44, 0) 30%, rgba(20, 27, 44, .15) 55%, rgba(20, 27, 44, .78));
+  /* a máscara da noiva (--sm-mascara, 0 a .8, no style do véu) por cima
+     do véu do desenho; sem ela, só o véu */
+  background:
+    linear-gradient(rgba(20, 27, 44, var(--sm-mascara, 0)), rgba(20, 27, 44, var(--sm-mascara, 0))),
+    linear-gradient(180deg, rgba(20, 27, 44, .3), rgba(20, 27, 44, 0) 30%, rgba(20, 27, 44, .15) 55%, rgba(20, 27, 44, .78));
 }
 
 .sm-franca .f-hero-moldura {
