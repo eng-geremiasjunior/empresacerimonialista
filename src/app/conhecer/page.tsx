@@ -54,8 +54,8 @@ const CSS = `
 .cv-nota{font-size:14px;line-height:1.6;color:#6B6259}
 .cv-modelos{background:#F2EEE9}
 .cv-modelos .ps-g{padding-top:80px;padding-bottom:90px;display:flex;flex-direction:column;gap:30px}
-.cv-grade{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:20px}
-@media (max-width:1000px){.cv-grade{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.cv-grade{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:20px}
+@media (max-width:1000px){.cv-grade{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:560px){.cv-grade{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}}
 .cv-modelo{color:inherit;text-decoration:none;display:flex;flex-direction:column;gap:10px}
 .cv-modelo img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;background:#E4DDD4;transition:transform .2s,box-shadow .2s}
@@ -77,7 +77,8 @@ export default async function ConhecerPage() {
   const eventos = await eventosDoCatalogo();
   const portais = eventos.filter((e) => PORTAIS[e.tipo]);
   const siteDoCasamento = eventos.find((e) => e.tipo === "casamento" && e.slug);
-  const modelos = ["convite" as const, ...MODELOS_NOVOS];
+  // o "Site do casamento" (o modelo de antes) fica fora da vitrine (dono, 02/10/2026)
+  const modelos = MODELOS_NOVOS;
 
   return (
     <div className={newsreader.variable}>
@@ -138,7 +139,7 @@ export default async function ConhecerPage() {
           <section className="cv-modelos" id="modelos">
             <div className="ps-g">
               <p className="cv-rotulo">O site do casamento</p>
-              <h2>Onde os convidados confirmam, em 7 modelos</h2>
+              <h2>Onde os convidados confirmam, em 6 modelos</h2>
               <p className="cv-sub">
                 O casal monta o site, e os convidados confirmam presença, deixam recado, sugerem música e escolhem o presente ali
                 mesmo. Abra o mesmo casamento de exemplo em cada modelo.
