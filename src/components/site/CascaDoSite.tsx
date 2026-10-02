@@ -116,6 +116,7 @@ export function CascaDoSite({ children, hrefConta = "/criar-conta" }: { children
         </div>
         <div>
           <b>eOrganizei</b>
+          <a href="/conhecer">Conheça por dentro</a>
           <a href="/planos#a-planos">Planos</a>
           <a href="/parceiras">Parcerias</a>
         </div>

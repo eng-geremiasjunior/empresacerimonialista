@@ -14,7 +14,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-export type ItemDoMenu = { rotulo: string; href: string; nota?: string };
+export type ItemDoMenu = { rotulo: string; href: string; nota?: string; destaque?: boolean };
 export type GrupoDoMenu = { rotulo: string; itens: ItemDoMenu[] };
 export type EntradaDoMenu = ItemDoMenu | GrupoDoMenu;
 
@@ -37,6 +37,8 @@ export const MENU_DO_SITE: EntradaDoMenu[] = [
     ],
   },
   { rotulo: "Como funciona", href: "/planos#apresentacao" },
+  // o catálogo vivo (195): os portais e os modelos de site de exemplo
+  { rotulo: "Conheça por dentro", href: "/conhecer", destaque: true },
   { rotulo: "Planos", href: "/planos#a-planos" },
   { rotulo: "Parcerias", href: "/parceiras" },
 ];
@@ -71,6 +73,9 @@ const CSS = `
 .ms-tela .ms-acoes{display:flex;flex-direction:column;gap:10px;margin-top:26px}
 .ms-tela .ms-acoes a{text-align:center;padding:15px;font-size:15px;border:1px solid #221E1B}
 .ms-tela .ms-acoes a.ms-cta{background:#6E2E34;border-color:#6E2E34;color:#FAF8F5}
+.ms-links a.ms-destaque{color:#6E2E34;font-weight:600;display:inline-flex;align-items:center;gap:7px}
+.ms-links a.ms-destaque::before{content:"";width:7px;height:7px;border-radius:99px;background:#6E2E34}
+.ms-tela a.ms-grande.ms-destaque{color:#6E2E34}
 @media (max-width:760px){.ms-links{display:none!important}.ms-botao{display:block}}
 `;
 
@@ -141,7 +146,15 @@ export function MenuDoSite({ entradas = MENU_DO_SITE, hrefConta }: { entradas?: 
     <div className="ms">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <nav className="ms ms-links" aria-label="Site">
-        {entradas.map((e) => (eGrupo(e) ? <Grupo key={e.rotulo} g={e} /> : <a key={e.href} href={e.href}>{e.rotulo}</a>))}
+        {entradas.map((e) =>
+          eGrupo(e) ? (
+            <Grupo key={e.rotulo} g={e} />
+          ) : (
+            <a key={e.href} href={e.href} className={e.destaque ? "ms-destaque" : undefined}>
+              {e.rotulo}
+            </a>
+          )
+        )}
       </nav>
       <button type="button" className="ms-botao" onClick={() => setTela(true)} aria-expanded={tela}>
         Menu
@@ -167,7 +180,7 @@ export function MenuDoSite({ entradas = MENU_DO_SITE, hrefConta }: { entradas?: 
                 ))}
               </div>
             ) : (
-              <a key={e.href} className="ms-grande" href={e.href} onClick={() => setTela(false)}>
+              <a key={e.href} className={e.destaque ? "ms-grande ms-destaque" : "ms-grande"} href={e.href} onClick={() => setTela(false)}>
                 {e.rotulo}
               </a>
             )
