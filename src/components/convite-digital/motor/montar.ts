@@ -157,7 +157,11 @@ function ligarTexto(no: Text, escopo: Escopo, ligs: Ligacao[]) {
 function ligarLista(el: Element, escopo: Escopo, ligs: Ligacao[], ctx: Contexto) {
   const lista = compilarAtributo(el.getAttribute("list") || "");
   const como = el.getAttribute("as") || "item";
-  const molde = document.createDocumentFragment();
+  // o molde fica no documento inerte do <template> (o de `el`): no documento
+  // da página, cada clone faria o navegador ler x="{{ m.x }}" como medida
+  // de SVG e reclamar no console ("Expected length") antes de o valor
+  // entrar. O item só vai para a página já com os atributos trocados.
+  const molde = el.ownerDocument.createDocumentFragment();
   while (el.firstChild) molde.appendChild(el.firstChild);
   const fimDaLista = document.createComment("/sc-for");
   el.replaceWith(fimDaLista);
