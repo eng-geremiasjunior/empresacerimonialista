@@ -6,16 +6,22 @@ import { usaPortalV2 } from "@/lib/portal-v2";
 import { PresentesV2 } from "@/components/portal/v2/PresentesV2";
 import { usaPortalNoivos } from "@/lib/portal-noivos";
 import { PresentesSecao } from "@/components/portal/noivos/telas/presentes/Secao";
+import { getListaDoCasal } from "@/components/portal/noivos/telas/presentes/lista/dados";
+import { TelaLista } from "@/components/portal/noivos/telas/presentes/lista/TelaLista";
 
 export const dynamic = "force-dynamic";
 
-// A lista de presentes (182+): hoje no portal v2.
+// A lista de presentes (182+): no portal dos noivos, a lista com o botão
+// de comprar (197) — por enquanto só nas contas da casa; nas outras, a
+// chave Pix e as lojas do site, como antes. No portal v2, a conta que recebe.
 export default async function PortalPresentesPage({ params }: { params: { eventoId: string } }) {
   const evento = await getEventoDoPortal(params.eventoId);
   if (!evento) notFound();
 
-  // portal dos noivos (desenho v4): o casamento — a chave Pix e a lista do site
-  if (usaPortalNoivos(evento.tipo)) return <PresentesSecao eventoId={evento.id} />;
+  if (usaPortalNoivos(evento.tipo)) {
+    if (await listaDePresentesLiberada(evento.id)) return <TelaLista dados={await getListaDoCasal(evento.id)} />;
+    return <PresentesSecao eventoId={evento.id} />;
+  }
 
   if (!usaPortalV2(evento.tipo) || !(await listaDePresentesLiberada(evento.id))) notFound();
 

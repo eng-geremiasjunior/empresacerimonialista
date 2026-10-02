@@ -35,6 +35,7 @@ const COTA_CENTAVOS = 25_000;
 export function temPresentes({ dados, bloco }: Pick<PropsDaSecao, "dados" | "bloco">): boolean {
   const s = dados.site;
   return !!(
+    dados.lista ||
     lerPresentes(bloco.conteudo).itens.length ||
     s?.pix_chave ||
     linkSeguro(s?.presentes_link) ||
@@ -53,6 +54,30 @@ export function Presentes({ dados, bloco, ancora }: PropsDaSecao) {
     pix: { chave: site?.pix_chave ?? null, titular: site?.pix_titular ?? null, cidade: dados.evento.cidade },
   });
   const cotaEscolhida = p.escolha?.tipo === "valor";
+
+  // a lista com o botão de comprar no ar (197): o cartão leva até ela, e o
+  // Pix avulso do site sai de cena — o convidado não fica entre dois caminhos
+  if (dados.lista) {
+    return (
+      <section id={ancora} data-sec={ancora} className="k-presentes">
+        <div data-revelar="up" className="k-cartao k-presentes-topo">
+          <div className="k-presentes-textos">
+            <Rotulo className="k-rotulo--acento">Lista de presentes</Rotulo>
+            <h2 className="k-h2 k-h2--balance">Sua presença já é o nosso presente.</h2>
+            <div className="k-mudo">{site?.presentes_texto || "Mas, se quiserem nos presentear..."}</div>
+          </div>
+          <a href={dados.lista.url} className="k-botao">
+            Ver a lista de presentes
+          </a>
+          {loja && (
+            <a href={loja} target="_blank" rel="noopener noreferrer" className="k-botao k-botao--contorno k-presentes-loja">
+              Ver a lista na loja
+            </a>
+          )}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id={ancora} data-sec={ancora} className="k-presentes">

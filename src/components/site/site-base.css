@@ -36,3 +36,13 @@
   --sm-vw: 1cqi;
   --sm-vh: 8px;
 }
+
+/* A lista de presentes com o botão de comprar (197): no bloco de
+   presentes de cada modelo, o caminho para /c/<endereço>/presentes. */
+.sm-lista-de-presentes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-top: 28px;
+}

@@ -9,7 +9,11 @@ const nextConfig = {
   // continua mostrando o /c/…).
   async rewrites() {
     return {
-      beforeFiles: [{ source: "/c/:slug/convite", destination: "/convites/publico/:slug" }],
+      beforeFiles: [
+        { source: "/c/:slug/convite", destination: "/convites/publico/:slug" },
+        // a lista de presentes (197), do mesmo jeito: outra página, longe do CSS do site
+        { source: "/c/:slug/presentes", destination: "/presentes/:slug" },
+      ],
     };
   },
 };

@@ -63,4 +63,8 @@ export type SitePublico = {
   slug_atual: string | null;
   ref_e_slug_antigo: boolean;
   indexavel: boolean;
+  /** a lista de presentes no ar (197). Não vem da site_publico: a página
+   *  do site pergunta à lista_publica e põe aqui só o endereço. Ausente na
+   *  prévia e na revisão. */
+  lista?: { url: string } | null;
 };

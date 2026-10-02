@@ -101,6 +101,9 @@ const ROTINAS = [
   // a fila do Google Agenda (168): o que o aviso na hora não conseguiu
   // (Google fora, pg_net desligado, recuo depois de falha) sai aqui
   "google-agenda",
+  // a lista de presentes (197): o Pix que ficou "aguardando" sem aviso
+  // nem página aberta é relido na Pagar.me
+  "presentes-pendentes",
   // o uso do sistema (painel do dono) some depois de 13 meses, e os
   // registros de rotina, e-mail, erro e IA também têm prazo
   "uso-antigo",

@@ -31,7 +31,13 @@ function linkDaLoja(link: string | null | undefined): string | null {
 
 export function temPresentes({ dados, bloco }: Pick<PropsDaSecao, "dados" | "bloco">): boolean {
   const s = dados.site;
-  return !!(lerPresentes(bloco.conteudo).itens.length || s?.pix_chave || linkDaLoja(s?.presentes_link) || s?.presentes_texto);
+  return !!(
+    dados.lista ||
+    lerPresentes(bloco.conteudo).itens.length ||
+    s?.pix_chave ||
+    linkDaLoja(s?.presentes_link) ||
+    s?.presentes_texto
+  );
 }
 
 export function Presentes({ dados, bloco, ancora, modo }: PropsDaSecao) {
@@ -46,6 +52,33 @@ export function Presentes({ dados, bloco, ancora, modo }: PropsDaSecao) {
 
   const escolhaLivre = p.escolha?.tipo === "valor" ? p.escolha.valorCentavos : null;
   const colunas = itens.length > 0 && itens.length < 4 ? itens.length : null;
+
+  // a lista com o botão de comprar no ar (197): o bloco leva até ela, e o
+  // Pix avulso do site sai de cena — o convidado não fica entre dois caminhos
+  if (dados.lista) {
+    return (
+      <section id={ancora} className="c-secao c-alt c-presentes">
+        <div className="c-presentes-miolo">
+          <h2 data-revelar="up" className="c-h2 c-h2--balance">
+            Sua presença já é o nosso presente.
+          </h2>
+          <p data-revelar="up" data-atraso="120" className="c-presentes-frase">
+            {site?.presentes_texto || "Mas, se quiserem nos presentear..."}
+          </p>
+          <div data-revelar="up" data-atraso="200" className="sm-lista-de-presentes">
+            <a href={dados.lista.url} className="c-btn c-btn--cheio c-btn--grande">
+              Ver a lista de presentes
+            </a>
+            {loja && (
+              <a href={loja} target="_blank" rel="noopener noreferrer" className="c-sublinhado c-presentes-loja">
+                Ver a lista na loja <span aria-hidden>→</span>
+              </a>
+            )}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id={ancora} className="c-secao c-alt c-presentes">

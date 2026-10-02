@@ -20,14 +20,23 @@ export const dynamic = "force-dynamic";
  * dela.
  */
 const carregarSite = cache(async (slug: string): Promise<SitePublico | null> => {
-  const { data } = await clienteAnonimoPublico().rpc("site_publico", {
-    p_ref: slug,
-  });
+  const db = clienteAnonimoPublico();
+  // a lista de presentes no ar (197) vira o botão do bloco de presentes;
+  // sem a 197, a RPC falha e o site segue como antes
+  const [{ data }, { data: lista }] = await Promise.all([
+    db.rpc("site_publico", { p_ref: slug }),
+    db.rpc("lista_publica", { p_ref: slug }),
+  ]);
   const site = (data as SitePublico | null) ?? null;
   if (!site) return null;
   // sem nome no evento, o da cliente (ou nenhum): nunca "de os anfitriões"
   const anfitrioes = await anfitrioesDoConvite(site.evento.anfitrioes, { siteRef: slug });
-  return { ...site, evento: { ...site.evento, anfitrioes } };
+  const endereco = site.slug_atual ?? slug;
+  return {
+    ...site,
+    evento: { ...site.evento, anfitrioes },
+    lista: lista ? { url: `/c/${endereco}/presentes` } : null,
+  };
 });
 
 export async function generateMetadata({

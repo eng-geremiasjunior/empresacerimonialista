@@ -100,6 +100,9 @@ const ROTAS_PUBLICAS: ((p: string) => boolean)[] = [
   // o convite animado: o exemplo de cada modelo e a prévia que o portal
   // abre num iframe (os dados da noiva chegam por postMessage, nunca na URL)
   (p) => p.startsWith("/convites/"),
+  // a lista de presentes: o convidado gera o Pix e espera ele cair, sem
+  // sessão; o preço e o recebedor saem do banco, nunca do navegador
+  (p) => p.startsWith("/api/presentes/"),
   // o manifesto do aplicativo (só marca e ícones): toda página pede, e o
   // convidado sem sessão recebia a tela de login no lugar dele
   (p) => p === "/manifest.webmanifest",
@@ -232,6 +235,7 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/confirmar/") ||
     pathname.startsWith("/c/") ||
     pathname.startsWith("/convites/") ||
+    pathname.startsWith("/api/presentes/") ||
     pathname.startsWith("/api/documento/") ||
     pathname.startsWith("/api/trilha");
 

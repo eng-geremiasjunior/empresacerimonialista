@@ -1,0 +1,639 @@
+/* ============================================================
+   Lista de presentes — Portal dos Noivos v4 (197). Tokens do
+   noivos.css; botões, links e campos levam o prefixo .pn-lista para
+   vencer o `.pn button` / `.pn a` da fundação. A lista à esquerda; o
+   resto (recebidos, conta, no ar, taxa, frase) à direita. No celular,
+   uma coluna só.
+   ============================================================ */
+
+.pn-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+  line-height: normal;
+  animation: pn-rise 0.5s ease both;
+}
+.pn-lista-titulo {
+  margin: 6px 0 0;
+  font-size: 44px;
+  font-weight: 400;
+  line-height: normal;
+  color: var(--pn-verde);
+}
+.pn-lista-sub {
+  margin: 4px 0 0;
+  font-size: 15px;
+  color: var(--pn-texto-2);
+}
+.pn-lista-aviso {
+  margin: 0;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: var(--pn-pessego-claro);
+  color: var(--pn-marrom-escuro);
+  font-size: 14px;
+}
+
+.pn-lista-grade {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
+  gap: 24px;
+  align-items: start;
+}
+.pn-lista-principal,
+.pn-lista-lado {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.pn-lista-bloco {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 20px 22px;
+  border-radius: 22px;
+  background: #fff;
+  border: 1px solid var(--pn-borda);
+}
+.pn-lista-bloco-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.pn-lista-rotulo {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--pn-texto-3);
+}
+.pn-lista-nota {
+  margin: 0;
+  font-size: 14px;
+  color: var(--pn-texto-2);
+}
+.pn-lista .pn-lista-nota a {
+  color: var(--pn-marrom);
+  font-weight: 600;
+}
+.pn-lista-erro {
+  margin: 0;
+  font-size: 14px;
+  color: var(--pn-marrom-escuro);
+}
+
+/* ---------- botões ---------- */
+.pn-lista-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pn-lista .pn-lista-botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+.pn-lista .pn-lista-botao:hover {
+  color: var(--pn-creme);
+  opacity: 0.92;
+}
+.pn-lista .pn-lista-botao:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.pn-lista .pn-lista-botao.claro {
+  background: #fff;
+  color: var(--pn-verde);
+  box-shadow: inset 0 0 0 1px var(--pn-borda-2);
+}
+.pn-lista .pn-lista-botao.claro:hover {
+  color: var(--pn-verde);
+  background: var(--pn-creme);
+}
+.pn-lista .pn-lista-botao.pequeno {
+  padding: 8px 14px;
+  font-size: 14px;
+}
+.pn-lista .pn-lista-botao .pn-ic {
+  font-size: 18px;
+}
+
+/* ---------- campos ---------- */
+.pn-lista .pn-lista-entrada,
+.pn-lista-campo input,
+.pn-lista-campo select {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--pn-borda-2);
+  background: var(--pn-creme);
+  font: inherit;
+  font-size: 15px;
+  color: var(--pn-verde);
+  resize: vertical;
+}
+.pn-lista .pn-lista-entrada:focus,
+.pn-lista-campo input:focus,
+.pn-lista-campo select:focus {
+  border-color: var(--pn-verde);
+  background: #fff;
+}
+.pn-lista .pn-lista-entrada[aria-invalid="true"] {
+  border-color: var(--pn-marrom);
+  background: var(--pn-pessego-claro);
+}
+.pn-lista .pn-lista-entrada::placeholder {
+  color: var(--pn-texto-3);
+}
+.pn-lista-reais {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--pn-texto-2);
+}
+.pn-lista-reais .pn-lista-entrada {
+  width: 96px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pn-lista-segmento {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pn-lista .pn-lista-segmento button {
+  padding: 9px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--pn-borda);
+  background: var(--pn-creme);
+  font-size: 14px;
+  color: var(--pn-verde);
+  cursor: pointer;
+}
+.pn-lista .pn-lista-segmento button.on {
+  border-color: var(--pn-verde);
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+  font-weight: 700;
+}
+
+/* ---------- lista vazia e catálogo ---------- */
+.pn-lista-vazia {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0 4px;
+}
+.pn-lista-vazia p {
+  margin: 0;
+  font-size: 15px;
+  color: var(--pn-texto-2);
+}
+.pn-lista-catalogo {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--pn-trilho-2);
+}
+.pn-lista .pn-lista-busca {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--pn-borda-2);
+  background: #fff;
+  font: inherit;
+  font-size: 15px;
+  color: var(--pn-verde);
+}
+.pn-lista-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pn-lista .pn-lista-chips button {
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--pn-borda);
+  background: #fff;
+  font-size: 13.5px;
+  color: var(--pn-verde);
+  cursor: pointer;
+}
+.pn-lista .pn-lista-chips button.on {
+  border-color: var(--pn-verde);
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+  font-weight: 700;
+}
+.pn-lista-opcoes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pn-lista .pn-lista-opcao {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--pn-borda);
+  background: #fff;
+  text-align: left;
+  color: var(--pn-verde);
+  cursor: pointer;
+}
+.pn-lista .pn-lista-opcao:hover {
+  border-color: var(--pn-salvia-escuro);
+}
+.pn-lista .pn-lista-opcao.on {
+  border-color: var(--pn-verde);
+  cursor: default;
+}
+.pn-lista-opcao-nome {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+}
+.pn-lista-opcao-valor {
+  font-size: 13px;
+  color: var(--pn-texto-2);
+  font-variant-numeric: tabular-nums;
+}
+.pn-lista-opcao .pn-ic {
+  font-size: 20px;
+  color: var(--pn-texto-3);
+}
+.pn-lista-opcao.on .pn-ic {
+  color: var(--pn-ok);
+}
+.pn-lista-outro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--pn-borda);
+}
+.pn-lista-outro-campos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.pn-lista-outro-campos > .pn-lista-entrada:first-child {
+  flex: 1 1 200px;
+}
+.pn-lista-outro-campos > select.pn-lista-entrada {
+  flex: 0 1 180px;
+  width: auto;
+}
+
+/* ---------- os presentes ---------- */
+.pn-lista-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 6px;
+}
+.pn-lista-grupo-nome {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--pn-verde);
+}
+.pn-lista-grupo-nome span {
+  margin-left: 4px;
+  font-weight: 400;
+  color: var(--pn-texto-3);
+}
+.pn-lista-itens {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pn-lista-item {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--pn-trilho);
+}
+.pn-lista-item:last-child {
+  border-bottom: 0;
+}
+.pn-lista-miniatura {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: var(--pn-trilho);
+  font-family: var(--pn-f-titulo, serif);
+  font-size: 20px;
+  color: var(--pn-texto-3);
+}
+.pn-lista-miniatura img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pn-lista-item-nome {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 15px;
+}
+.pn-lista-comprados {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--pn-ok);
+}
+.pn-lista-item-valor {
+  grid-column: span 3;
+  justify-self: end;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  color: var(--pn-texto-2);
+}
+.pn-lista-qtd {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 999px;
+  border: 1px solid var(--pn-borda-2);
+}
+.pn-lista .pn-lista-qtd button {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--pn-verde);
+  cursor: pointer;
+}
+.pn-lista .pn-lista-qtd button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.pn-lista-qtd .pn-ic {
+  font-size: 18px;
+}
+.pn-lista-qtd > span {
+  min-width: 18px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.pn-lista .pn-lista-tirar {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--pn-texto-3);
+  cursor: pointer;
+}
+.pn-lista .pn-lista-tirar:hover {
+  background: var(--pn-trilho);
+  color: var(--pn-marrom-escuro);
+}
+.pn-lista-tirar .pn-ic {
+  font-size: 20px;
+}
+
+/* ---------- salvar ---------- */
+.pn-lista-salvar {
+  position: sticky;
+  bottom: 12px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: var(--pn-creme);
+  border: 1px solid var(--pn-borda);
+  box-shadow: var(--pn-sombra-card);
+}
+.pn-lista-estado-salvo {
+  font-size: 13px;
+  color: var(--pn-texto-2);
+}
+
+/* ---------- ao lado ---------- */
+.pn-lista-estado {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--pn-verde);
+}
+.pn-lista-estado > span {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--pn-salvia-escuro);
+}
+.pn-lista-estado.ok > span {
+  background: var(--pn-ok);
+}
+.pn-lista-link {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--pn-trilho-2);
+  font-size: 14px;
+  color: var(--pn-verde);
+  word-break: break-all;
+}
+.pn-lista-total {
+  margin: 0;
+  font-family: var(--pn-f-titulo, serif);
+  font-size: 34px;
+  color: var(--pn-verde);
+  font-variant-numeric: tabular-nums;
+}
+.pn-lista-recebidos {
+  display: flex;
+  flex-direction: column;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.pn-lista-recebidos li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 0;
+  border-top: 1px solid var(--pn-trilho);
+}
+.pn-lista-recebido-linha {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--pn-verde);
+}
+.pn-lista-recebido-valor {
+  flex: none;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.pn-lista-recado {
+  margin: 2px 0 0;
+  font-size: 14px;
+  font-style: italic;
+  color: var(--pn-texto-2);
+}
+.pn-lista-quando {
+  font-size: 12.5px;
+  color: var(--pn-texto-3);
+}
+.pn-lista-conta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pn-lista-conta-nome {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--pn-verde);
+}
+
+/* ---------- o cadastro da conta ---------- */
+.pn-lista-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.pn-lista-form fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.pn-lista-form legend {
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--pn-texto-3);
+}
+.pn-lista-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.pn-lista-campo > span {
+  font-size: 13px;
+  color: var(--pn-texto-2);
+}
+.pn-lista-dupla {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.pn-lista-dupla-uf {
+  grid-template-columns: 1fr 72px;
+}
+.pn-lista-dupla-digito {
+  grid-template-columns: 1fr 88px;
+}
+
+/* ---------- tablet e celular ---------- */
+@media (max-width: 1100px) {
+  .pn-lista-grade {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .pn-lista-titulo {
+    font-size: 34px;
+  }
+  .pn-lista-bloco {
+    padding: 16px;
+    border-radius: 18px;
+  }
+  /* o nome em cima, inteiro; valor, quantidade e tirar embaixo */
+  .pn-lista-item {
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "foto nome nome"
+      "foto valor qtd";
+    row-gap: 8px;
+  }
+  .pn-lista-miniatura {
+    grid-area: foto;
+    align-self: start;
+    width: 40px;
+    height: 40px;
+  }
+  .pn-lista-item > .pn-lista-item-nome {
+    grid-area: nome;
+  }
+  .pn-lista-item > .pn-lista-reais {
+    grid-area: valor;
+  }
+  .pn-lista-item > .pn-lista-qtd {
+    grid-area: qtd;
+    justify-self: end;
+  }
+  .pn-lista-item > .pn-lista-tirar {
+    position: absolute;
+    right: 0;
+    top: 6px;
+  }
+  .pn-lista-item {
+    position: relative;
+    padding-right: 38px;
+  }
+  .pn-lista-item-valor {
+    grid-area: valor;
+    justify-self: start;
+  }
+  .pn-lista-dupla-uf,
+  .pn-lista-dupla-digito {
+    grid-template-columns: 1fr 80px;
+  }
+}
+@media (max-width: 380px) {
+  .pn-lista-dupla {
+    grid-template-columns: 1fr;
+  }
+}

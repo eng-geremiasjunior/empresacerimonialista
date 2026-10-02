@@ -442,7 +442,9 @@ export default async function AdminReceitaPage({
   // ---------- cobrança ----------
   const avisosDoMes = operadora.avisos.filter((a) => a.dia.slice(0, 7) === mes);
   const aprovados = operadora.pagamentos.filter((p) => p.dia.slice(0, 7) === mes).length;
-  const recusados = avisosDoMes.filter((a) => a.tipo.endsWith("payment_failed")).length;
+  // só aviso de conta: o Pix de presente que falha (lista de presentes, 197)
+  // também chega como *.payment_failed, mas não tem empresa — não é cobrança do SaaS
+  const recusados = avisosDoMes.filter((a) => a.empresaId && a.tipo.endsWith("payment_failed")).length;
   const canceladasPelaOperadora = avisosDoMes.filter((a) => a.tipo === "subscription.canceled").length;
   const comCobrancaPendente = contas.filter((c) => cobrancaPendente(c));
   const cartoesVencendo = contas.filter((c) => motivosDeAtencao(c, new Date()).some((x) => x.chave === "cartao_vencendo"));

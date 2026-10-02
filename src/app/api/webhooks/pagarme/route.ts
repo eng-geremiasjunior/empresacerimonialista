@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { lerAssinatura } from "@/lib/pagarme";
-import { lerRecebedor } from "@/lib/pagarme-lista";
+import { lerPedido, lerRecebedor } from "@/lib/pagarme-lista";
+import { gravarEstadoDoPresente } from "@/lib/supabase/presente-pagamento";
 import { hojeBR } from "@/lib/tempo";
 import { registrarErroDoServidor } from "@/lib/registro-do-sistema";
 import { conversaoDaAssinatura } from "@/lib/conversao-da-assinatura";
@@ -76,6 +77,41 @@ type Corpo = {
   data?: Record<string, unknown>;
 };
 
+/**
+ * O presente da lista (197): o aviso diz que o pedido mudou, a API diz como
+ * está, e gravarEstadoDoPresente decide as passagens (o pago confirmado
+ * depois do prazo entra; o pago só sai para "estornado"). Falha de leitura
+ * = 503: o gateway reenvia o mesmo aviso e ele passa de novo (o registro
+ * fica sem processado_em). O que escapar daqui, a rotina diária
+ * presentes-pendentes relê.
+ */
+async function processarPresente(
+  db: ReturnType<typeof servico>,
+  tipo: string,
+  d: Record<string, any>,
+  idDoRegistro: string
+): Promise<NextResponse> {
+  const pedidoId: string | null = tipo.startsWith("order.") ? (d.id ?? null) : (d.order?.id ?? null);
+  const { data: pg } = pedidoId
+    ? await db.from("presente_pagamento").select("id, status, expira_em").eq("pagarme_order_id", pedidoId).maybeSingle()
+    : { data: null };
+  const erro: string | null = pg ? null : "presente desconhecido";
+  if (pg && pedidoId && pg.status !== "estornado") {
+    const atual = await lerPedido(pedidoId);
+    if (!atual.ok) {
+      await db.from("gateway_evento").update({ erro: "leitura do pedido" }).eq("id", idDoRegistro);
+      // falha de leitura nossa: vale o gateway tentar de novo
+      return NextResponse.json({ ok: false }, { status: 503 });
+    }
+    await gravarEstadoDoPresente(db, pg as { id: string; status: string; expira_em: string | null }, atual.dados);
+  }
+  await db
+    .from("gateway_evento")
+    .update({ processado_em: new Date().toISOString(), erro })
+    .eq("id", idDoRegistro);
+  return NextResponse.json({ ok: true });
+}
+
 /** O id da assinatura, venha o evento de invoice, charge ou subscription. */
 function idDaAssinatura(corpo: Corpo): string | null {
   const d = (corpo.data ?? {}) as Record<string, any>;
@@ -103,9 +139,29 @@ export async function POST(request: NextRequest) {
   // O aviso de recebedor (lista de presentes, 182) traz CPF e conta
   // bancária da família: no log fica só o id e o estado.
   const ehRecebedor = corpo.type.startsWith("recipient.");
-  const payload = ehRecebedor
-    ? { id: corpo.id, type: corpo.type, created_at: corpo.created_at, data: { id: corpo.data?.id, status: corpo.data?.status } }
-    : (corpo as unknown as Record<string, unknown>);
+  // O presente da lista (197): a assinatura não usa pedido (orders), então
+  // todo order.* é presente; e a cobrança de presente não tem fatura. O
+  // corpo traz nome, e-mail, CPF e celular do convidado: no log, só os ids
+  // e o estado.
+  const d = (corpo.data ?? {}) as Record<string, any>;
+  const ehPresente =
+    corpo.type.startsWith("order.") || (corpo.type.startsWith("charge.") && !d.invoice && !d.subscription);
+  // O corpo inteiro só fica no log quando é da ASSINATURA (o painel do dono
+  // lê dele o valor pago). Todo o resto — recebedor, presente, cliente
+  // (customer.*, que cada presente cria na Pagar.me com o CPF do convidado)
+  // e o que vier de novo — fica só com id, tipo e estado.
+  const ehDaAssinatura =
+    corpo.type.startsWith("subscription.") ||
+    corpo.type.startsWith("invoice.") ||
+    (corpo.type.startsWith("charge.") && (!!d.invoice || !!d.subscription));
+  const payload = ehDaAssinatura
+    ? (corpo as unknown as Record<string, unknown>)
+    : {
+        id: corpo.id,
+        type: corpo.type,
+        created_at: corpo.created_at,
+        data: { id: d.id ?? null, status: d.status ?? null, ...(ehPresente ? { order: d.order?.id ?? null } : {}) },
+      };
 
   // idempotência: a mesma notificação não é processada duas vezes
   const registro = await db
@@ -123,6 +179,17 @@ export async function POST(request: NextRequest) {
     // 23505 = já processamos este evento; responder 200 para o gateway
     // parar de reenviar
     if (registro.error.code === "23505") {
+      // o presente cuja leitura falhou (o 503 lá embaixo) volta: o gateway
+      // reenvia o MESMO aviso, e só o que ainda não foi processado passa
+      if (ehPresente) {
+        const { data: antes } = await db
+          .from("gateway_evento")
+          .select("id, processado_em")
+          .eq("gateway", "pagarme")
+          .eq("evento_id", corpo.id)
+          .maybeSingle();
+        if (antes && !antes.processado_em) return processarPresente(db, corpo.type, d, antes.id);
+      }
       return NextResponse.json({ ok: true, repetido: true });
     }
     console.error("[vela:pagarme] registro:", registro.error.message);
@@ -157,6 +224,8 @@ export async function POST(request: NextRequest) {
       .eq("id", registro.data.id);
     return NextResponse.json({ ok: true });
   }
+
+  if (ehPresente) return processarPresente(db, corpo.type, d, registro.data.id);
 
   const assinaturaId = idDaAssinatura(corpo);
   if (!assinaturaId) {

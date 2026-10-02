@@ -256,6 +256,28 @@ export function ConviteCompleto({
         );
 
       case "presentes":
+        // a lista com o botão de comprar no ar (197): o bloco leva até ela,
+        // e a chave Pix avulsa sai de cena (um caminho só para o convidado)
+        if (dados.lista) {
+          return (
+            <section className="cv-presentes">
+              <div className="cv-eyebrow">Presentes</div>
+              {site?.presentes_texto && <p className="cv-presentes-frase">{site.presentes_texto}</p>}
+              <p style={{ marginTop: 26 }}>
+                <a className="cv-botao" style={{ display: "inline-block", textDecoration: "none" }} href={dados.lista.url}>
+                  Ver a lista de presentes
+                </a>
+              </p>
+              {site?.presentes_link && /^https?:\/\//i.test(site.presentes_link) && (
+                <p style={{ marginTop: 14 }}>
+                  <a className="cv-botao-leve" href={site.presentes_link} target="_blank" rel="noopener noreferrer">
+                    Ver a lista na loja
+                  </a>
+                </p>
+              )}
+            </section>
+          );
+        }
         if (!(site?.pix_chave || site?.presentes_texto || site?.presentes_link)) return null;
         return (
           <section className="cv-presentes">

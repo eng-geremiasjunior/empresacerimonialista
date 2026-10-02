@@ -103,3 +103,53 @@ export function resumoDoBanco(banco: string, conta: string): string {
   const nome = BANCOS.find(([c]) => c === banco)?.[1] ?? `Banco ${banco}`;
   return `${nome} · conta ···${so(conta).slice(-3)}`;
 }
+
+// ------------------------------------------------------------ o presente dado
+
+/**
+ * Quanto o convidado paga e como o valor se divide no split (centavos).
+ * Taxa repassada (padrão): o convidado paga o preço + 3,89% e a família
+ * recebe o preço inteiro. Taxa do casal: o convidado paga o preço e a
+ * família recebe o preço menos a taxa. A parte da plataforma é sempre a
+ * taxa; a tarifa da Pagar.me sai dela (charge_processing_fee no
+ * recebedor do eOrganizei), e metade do que sobra é da cerimonialista.
+ */
+export function valoresDoPresente(
+  precoCentavos: number,
+  taxaDoCasal: boolean
+): { total: number; taxa: number; familia: number; plataforma: number } {
+  const preco = Math.round(precoCentavos);
+  // em décimos de milésimo, com inteiros: 5000 × 0,0389 em ponto flutuante
+  // dá 194,4999… e arredondaria para baixo; 5000 × 389 / 10000 dá 194,5
+  // exato e o meio centavo sobe, como na conta de papel
+  const taxa = Math.round((preco * Math.round(TAXA_DA_LISTA * 10_000)) / 10_000);
+  return taxaDoCasal
+    ? { total: preco, taxa, familia: preco - taxa, plataforma: taxa }
+    : { total: preco + taxa, taxa, familia: preco, plataforma: taxa };
+}
+
+/** O preço que a lista mostra ao convidado (o que ele vai pagar). */
+export const precoNaLista = (precoCentavos: number, taxaDoCasal: boolean) =>
+  valoresDoPresente(precoCentavos, taxaDoCasal).total;
+
+/** E-mail com cara de e-mail (o resto a Pagar.me confere). */
+export const emailValido = (v: string) => /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/.test(v.trim()) && v.trim().length <= 120;
+
+/** Celular brasileiro com DDD: 10 ou 11 dígitos, DDD de 11 a 99. */
+export function celularValido(v: string): boolean {
+  const c = so(v);
+  return (c.length === 10 || c.length === 11) && Number(c.slice(0, 2)) >= 11;
+}
+
+/** O primeiro problema do convidado, em português, ou null. */
+export function problemaNoConvidado(d: { quem: string; email: string; cpf: string; celular: string; recado?: string }): string | null {
+  const quem = d.quem.trim();
+  if (quem.length < 2 || quem.length > 80) return "Escreva o seu nome.";
+  if (!emailValido(d.email)) return "Confira o e-mail.";
+  // o limite da Pagar.me para o e-mail do cliente
+  if (d.email.trim().length > 64) return "Use um e-mail de até 64 letras.";
+  if (!cpfValido(d.cpf)) return "Confira o CPF.";
+  if (!celularValido(d.celular)) return "Confira o celular com DDD.";
+  if ((d.recado ?? "").length > 500) return "O recado passa de 500 letras.";
+  return null;
+}

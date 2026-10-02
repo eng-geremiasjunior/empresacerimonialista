@@ -32,7 +32,13 @@ import { Entrada, linkSeguro, useUrlDaFoto, type PropsDaSecao } from "../comum";
 
 export function temPresentes({ dados, bloco }: Pick<PropsDaSecao, "dados" | "bloco">): boolean {
   const s = dados.site;
-  return !!(lerPresentes(bloco.conteudo).itens.length || s?.pix_chave || linkSeguro(s?.presentes_link) || s?.presentes_texto);
+  return !!(
+    dados.lista ||
+    lerPresentes(bloco.conteudo).itens.length ||
+    s?.pix_chave ||
+    linkSeguro(s?.presentes_link) ||
+    s?.presentes_texto
+  );
 }
 
 export function Presentes({ dados, bloco, ancora, modo }: PropsDaSecao) {
@@ -47,6 +53,33 @@ export function Presentes({ dados, bloco, ancora, modo }: PropsDaSecao) {
   // poucos itens não se esticam pela largura toda
   const colunas = itens.length > 0 && itens.length < 4 ? itens.length : null;
   const escolhido = p.escolha?.tipo === "item" ? p.escolha.item : null;
+
+  // a lista com o botão de comprar no ar (197): o bloco leva até ela, e o
+  // Pix avulso do site sai de cena — o convidado não fica entre dois caminhos
+  if (dados.lista) {
+    return (
+      <section id={ancora} className="a-secao a-presentes">
+        <div className="a-presentes-miolo">
+          <h2 data-revelar="up" className="a-h2 a-h2--balance">
+            Sua presença já é o nosso presente.
+          </h2>
+          <p data-revelar="up" data-atraso="120" className="a-presentes-frase">
+            {site?.presentes_texto || "Mas, se quiserem nos presentear..."}
+          </p>
+          <div data-revelar="up" data-atraso="200" className="sm-lista-de-presentes">
+            <a href={dados.lista.url} className="a-pilula a-pilula--cheia a-pilula--grande">
+              Ver a lista de presentes
+            </a>
+            {loja && (
+              <a href={loja} target="_blank" rel="noopener noreferrer" className="a-pilula a-presentes-loja">
+                Ver a lista na loja <span aria-hidden>→</span>
+              </a>
+            )}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id={ancora} className="a-secao a-presentes">

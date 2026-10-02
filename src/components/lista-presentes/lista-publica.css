@@ -1,0 +1,561 @@
+/* ============================================================
+   A lista de presentes do convidado (/c/<endereço>/presentes).
+   As cores e as letras são as do site do casal (tema.ts, variáveis
+   --lp-*). Uma coluna central no computador; no celular, dois presentes
+   por linha e a janela do Pix sobe de baixo.
+   ============================================================ */
+
+.lp {
+  --lp-papel: color-mix(in srgb, var(--lp-tinta) 3%, var(--lp-fundo));
+  --lp-foto: color-mix(in srgb, var(--lp-acento) 12%, var(--lp-fundo));
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--lp-fundo);
+  color: var(--lp-tinta);
+  font-family: var(--lp-texto-fam);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+.lp *,
+.lp *::before,
+.lp *::after {
+  box-sizing: border-box;
+}
+.lp :focus-visible {
+  outline: 2px solid var(--lp-acento-texto);
+  outline-offset: 2px;
+}
+
+.lp-coluna {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 20px 16px 120px;
+}
+
+/* ---------- cabeça ---------- */
+.lp-cabeca {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-bottom: 28px;
+}
+.lp .lp-voltar {
+  align-self: flex-start;
+  display: inline-flex;
+  gap: 6px;
+  margin-bottom: 28px;
+  font-size: 14px;
+  color: var(--lp-suave);
+  text-decoration: none;
+}
+.lp .lp-voltar:hover {
+  color: var(--lp-tinta);
+}
+.lp-sobre {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--lp-acento-texto);
+}
+.lp-nomes {
+  margin: 10px 0 0;
+  font-family: var(--lp-nome-fam);
+  font-weight: var(--lp-nome-peso);
+  font-style: var(--lp-nome-estilo);
+  text-transform: var(--lp-nome-caixa);
+  letter-spacing: var(--lp-nome-ls);
+  font-size: clamp(38px, 9vw, 68px);
+  line-height: 1.1;
+  text-wrap: balance;
+}
+.lp-data {
+  margin: 10px 0 0;
+  font-size: 15px;
+  color: var(--lp-suave);
+}
+.lp-mensagem {
+  max-width: 34em;
+  margin: 18px 0 0;
+  font-family: var(--lp-tit-fam);
+  font-style: italic;
+  font-size: 18px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+.lp-como {
+  max-width: 36em;
+  margin: 18px 0 0;
+  font-size: 14px;
+  color: var(--lp-suave);
+}
+
+/* ---------- filtros e ordem ---------- */
+.lp-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding: 16px 0;
+  border-top: 1px solid var(--lp-linha);
+  margin-bottom: 18px;
+}
+.lp-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+.lp .lp-filtro {
+  padding: 7px 14px;
+  border: 1px solid var(--lp-linha);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--lp-tinta);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.lp .lp-filtro:hover {
+  border-color: var(--lp-tinta);
+}
+.lp .lp-filtro.on {
+  background: var(--lp-tinta);
+  border-color: var(--lp-tinta);
+  color: var(--lp-fundo);
+}
+.lp-ordem {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--lp-suave);
+}
+.lp-ordem select {
+  padding: 6px 10px;
+  border: 1px solid var(--lp-linha);
+  border-radius: 10px;
+  background: var(--lp-fundo);
+  color: var(--lp-tinta);
+  font: inherit;
+  font-size: 14px;
+}
+
+/* ---------- presentes ---------- */
+.lp-secao + .lp-secao {
+  margin-top: 34px;
+}
+.lp-secao-nome {
+  margin: 0 0 14px;
+  font-family: var(--lp-tit-fam);
+  font-weight: var(--lp-tit-peso);
+  font-style: var(--lp-tit-estilo);
+  text-transform: var(--lp-tit-caixa);
+  letter-spacing: var(--lp-tit-ls);
+  font-size: 24px;
+  line-height: 1.2;
+}
+.lp-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lp-item {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--lp-linha);
+  border-radius: 14px;
+  background: var(--lp-papel);
+  overflow: hidden;
+}
+.lp-foto {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  background: var(--lp-foto);
+}
+.lp-foto img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.lp-sem-foto {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--lp-nome-fam);
+  font-style: var(--lp-nome-estilo);
+  font-size: clamp(48px, 14vw, 72px);
+  line-height: 1;
+  color: color-mix(in srgb, var(--lp-acento) 70%, var(--lp-fundo));
+}
+.lp-selo {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--lp-tinta);
+  color: var(--lp-fundo);
+  font-size: 12px;
+  font-weight: 600;
+}
+.lp-item.esgotado .lp-foto img,
+.lp-item.esgotado .lp-sem-foto {
+  opacity: 0.45;
+}
+.lp-item.esgotado .lp-item-texto {
+  color: var(--lp-suave);
+}
+.lp-item-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  padding: 12px 14px 0;
+}
+.lp-item-titulo {
+  margin: 0;
+  font-family: var(--lp-texto-fam);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.lp-item-preco {
+  margin: 4px 0 0;
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.lp-item-restam {
+  margin: 0;
+  font-size: 13px;
+  color: var(--lp-suave);
+}
+.lp-item > .lp-botao {
+  margin: 12px 14px 14px;
+}
+.lp-item.esgotado .lp-item-texto {
+  padding-bottom: 14px;
+}
+.lp-vazio {
+  margin: 24px 0;
+  text-align: center;
+  color: var(--lp-suave);
+}
+
+/* ---------- botões ---------- */
+.lp .lp-botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--lp-tinta);
+  color: var(--lp-fundo);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.lp .lp-botao:hover {
+  opacity: 0.88;
+}
+.lp .lp-botao:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.lp .lp-botao-grande {
+  width: 100%;
+  padding: 14px 18px;
+  font-size: 15px;
+}
+
+/* ---------- o Pix que ficou para trás ---------- */
+.lp-aviso {
+  position: fixed;
+  left: 50%;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 40;
+  transform: translateX(-50%);
+  width: min(560px, calc(100% - 32px));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 12px 12px 16px;
+  border-radius: 16px;
+  background: var(--lp-tinta);
+  color: var(--lp-fundo);
+  font-size: 14px;
+  line-height: 1.35;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+}
+.lp .lp-aviso-botao {
+  flex: none;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--lp-fundo);
+  color: var(--lp-tinta);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ---------- a janela do presente ---------- */
+.lp-fundo-janela {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(15, 12, 10, 0.5);
+  animation: lp-aparecer 0.2s ease both;
+}
+.lp-janela {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  max-height: 92vh;
+  max-height: 92dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 26px 20px calc(22px + env(safe-area-inset-bottom));
+  border-radius: 20px 20px 0 0;
+  background: var(--lp-fundo);
+  color: var(--lp-tinta);
+  animation: lp-subir 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.lp .lp-fechar {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--lp-suave);
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+.lp .lp-fechar:hover {
+  color: var(--lp-tinta);
+}
+.lp-janela-cabeca {
+  padding-right: 32px;
+  margin-bottom: 18px;
+}
+.lp-janela-titulo {
+  margin: 6px 0 0;
+  font-family: var(--lp-tit-fam);
+  font-weight: var(--lp-tit-peso);
+  font-style: var(--lp-tit-estilo);
+  text-transform: var(--lp-tit-caixa);
+  letter-spacing: var(--lp-tit-ls);
+  font-size: 26px;
+  line-height: 1.2;
+}
+.lp-janela-total {
+  margin: 8px 0 0;
+  font-size: 26px;
+  font-weight: 600;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.lp-janela-taxa {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--lp-suave);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.lp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.lp-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.lp-campo > span {
+  font-size: 13px;
+  color: var(--lp-suave);
+}
+.lp-campo input,
+.lp-campo textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--lp-linha);
+  border-radius: 12px;
+  background: var(--lp-papel);
+  color: var(--lp-tinta);
+  font: inherit;
+  /* 16px: o celular não amplia a tela ao tocar no campo */
+  font-size: 16px;
+  resize: vertical;
+}
+.lp-campo input:focus,
+.lp-campo textarea:focus {
+  border-color: var(--lp-tinta);
+  outline: none;
+}
+.lp-campo input::placeholder {
+  color: color-mix(in srgb, var(--lp-suave) 60%, var(--lp-fundo));
+}
+.lp-dupla {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.lp-miudo {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--lp-suave);
+}
+.lp-erro {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 3px solid #c0392b;
+  border-radius: 6px;
+  background: color-mix(in srgb, #c0392b 10%, var(--lp-fundo));
+  font-size: 14px;
+}
+
+.lp-pix {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+.lp-qr {
+  width: 220px;
+  max-width: 70%;
+  height: auto;
+  padding: 10px;
+  border-radius: 14px;
+  background: #fff;
+}
+.lp-codigo {
+  width: 100%;
+  max-height: 4.6em;
+  margin: 0;
+  padding: 8px 10px;
+  overflow-y: auto;
+  border: 1px dashed var(--lp-linha);
+  border-radius: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--lp-suave);
+  word-break: break-all;
+  user-select: all;
+  text-align: left;
+}
+.lp-esperando {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0;
+  font-size: 14px;
+}
+.lp-pulso {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--lp-acento);
+  animation: lp-pulsar 1.6s ease-in-out infinite;
+}
+.lp-fim {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.lp-fim-texto {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+@keyframes lp-aparecer {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes lp-subir {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+@keyframes lp-pulsar {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* ---------- telas maiores ---------- */
+@media (min-width: 640px) {
+  .lp-coluna {
+    padding: 32px 24px 120px;
+  }
+  .lp-fundo-janela {
+    align-items: center;
+    padding: 24px;
+  }
+  .lp-janela {
+    border-radius: 20px;
+    padding: 30px 28px 26px;
+  }
+}
+@media (min-width: 900px) {
+  .lp-grade {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+  }
+}
+@media (max-width: 340px) {
+  .lp-dupla {
+    grid-template-columns: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-fundo-janela,
+  .lp-janela,
+  .lp-pulso {
+    animation: none;
+  }
+}
+
+/* números de dinheiro e de documento em algarismos alinhados: as letras de
+   alguns sites (Cormorant, EB Garamond) desenham o 3 e o 9 descendo da linha */
+.lp .lp-botao,
+.lp-campo input,
+.lp-aviso {
+  font-variant-numeric: lining-nums;
+}

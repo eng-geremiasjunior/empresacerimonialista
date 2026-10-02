@@ -34,7 +34,13 @@ function linkDaLoja(link: string | null | undefined): string | null {
 
 export function temPresentes({ dados, bloco }: Pick<PropsDaSecao, "dados" | "bloco">): boolean {
   const s = dados.site;
-  return !!(lerPresentes(bloco.conteudo).itens.length || s?.pix_chave || linkDaLoja(s?.presentes_link) || s?.presentes_texto);
+  return !!(
+    dados.lista ||
+    lerPresentes(bloco.conteudo).itens.length ||
+    s?.pix_chave ||
+    linkDaLoja(s?.presentes_link) ||
+    s?.presentes_texto
+  );
 }
 
 const BALANCO: Keyframe[] = [
@@ -68,6 +74,38 @@ export function Boutique({ dados, bloco, ancora, modo }: PropsDaSecao) {
     if (modo !== "publico" || movimentoReduzido()) return;
     const tag = e.currentTarget.querySelector<HTMLElement>("[data-etiqueta]");
     if (tag && typeof tag.animate === "function") tag.animate(BALANCO, { duration: 1300, easing: "ease-out" });
+  }
+
+  // a lista com o botão de comprar no ar (197): a boutique leva até ela, e
+  // o Pix avulso do site sai de cena — o convidado não fica entre dois caminhos
+  if (dados.lista) {
+    return (
+      <section id={ancora} className="f-secao f-alt f-boutique">
+        <div className="f-boutique-miolo">
+          <div className="f-cabeca">
+            <div data-revelar="up" className="f-eyebrow">
+              La boutique
+            </div>
+            <h2 data-revelar="up" data-atraso="120" className="f-h2 f-h2--balance">
+              Sua presença já é o nosso presente.
+            </h2>
+            <p data-revelar="up" data-atraso="200" className="f-cabeca-p">
+              {site?.presentes_texto || "Mas, se quiserem nos presentear..."}
+            </p>
+          </div>
+          <div data-revelar="up" data-atraso="260" className="sm-lista-de-presentes">
+            <a href={dados.lista.url} className="f-btn f-btn--cheio f-btn--grande">
+              Ver a lista de presentes
+            </a>
+            {loja && (
+              <a href={loja} target="_blank" rel="noopener noreferrer" className="f-sublinhado f-boutique-loja">
+                Ver a lista na loja <span aria-hidden>→</span>
+              </a>
+            )}
+          </div>
+        </div>
+      </section>
+    );
   }
 
   return (

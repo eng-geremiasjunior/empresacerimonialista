@@ -88,6 +88,85 @@ export async function cadastrarRecebedor(eventoId: string, dados: DadosDoRecebed
 
 const ESTADOS: Record<string, true> = { registration: true, affiliation: true, active: true, refused: true, suspended: true, blocked: true, inactive: true };
 
+// ---------------------------------------------------------------- a lista
+
+export type PresenteParaSalvar = {
+  id: string;
+  codigo: string | null;
+  categoria: string;
+  titulo: string;
+  valor_centavos: number;
+  quantidade: number;
+};
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const CODIGO = /^[a-z0-9-]{1,60}$/;
+const CATEGORIA = /^[a-z0-9-]{1,40}$/;
+
+/**
+ * Grava a lista inteira (197): as escolhas e os presentes, na ordem. Quem
+ * pode é o banco que decide (só o casal); aqui só a forma do envio, as
+ * mensagens em português e uma regra: a lista só vai ao ar com a conta
+ * que recebe aprovada — sem ela, o convidado veria presentes que não
+ * consegue dar.
+ */
+export async function salvarLista(
+  eventoId: string,
+  lista: { taxa_do_casal: boolean; mensagem: string | null; publicada: boolean },
+  itens: PresenteParaSalvar[]
+): Promise<Retorno> {
+  if (typeof eventoId !== "string" || !UUID.test(eventoId)) return { error: "Lista inválida." };
+  if (!lista || typeof lista !== "object" || !Array.isArray(itens)) return { error: "Lista inválida." };
+  if (itens.length > 300) return { error: "A lista passa de 300 presentes." };
+  const mensagem = typeof lista.mensagem === "string" ? lista.mensagem.trim() : "";
+  if (mensagem.length > 300) return { error: "A frase para os convidados passa de 300 letras." };
+
+  const limpos: PresenteParaSalvar[] = [];
+  for (const i of itens) {
+    const titulo = typeof i?.titulo === "string" ? i.titulo.trim().replace(/\s+/g, " ") : "";
+    const valor = Number(i?.valor_centavos);
+    const quantidade = Number(i?.quantidade);
+    if (typeof i?.id !== "string" || !UUID.test(i.id)) return { error: "Lista inválida." };
+    if (typeof i.categoria !== "string" || !CATEGORIA.test(i.categoria)) return { error: "Lista inválida." };
+    if (i.codigo !== null && (typeof i.codigo !== "string" || !CODIGO.test(i.codigo))) return { error: "Lista inválida." };
+    if (titulo.length < 2 || titulo.length > 80) return { error: "Todo presente precisa de um nome (até 80 letras)." };
+    if (!Number.isInteger(valor) || valor < 5000 || valor > 5_000_000) {
+      return { error: `O valor de "${titulo}" precisa ficar entre R$ 50 e R$ 50.000.` };
+    }
+    if (!Number.isInteger(quantidade) || quantidade < 1 || quantidade > 50) {
+      return { error: `A quantidade de "${titulo}" vai de 1 a 50.` };
+    }
+    limpos.push({ id: i.id, codigo: i.codigo, categoria: i.categoria, titulo, valor_centavos: valor, quantidade });
+  }
+
+  if (!(await listaDePresentesLiberada(eventoId))) return { error: "A lista de presentes ainda não está disponível." };
+  if (lista.publicada === true) {
+    const { data } = await servico().from("evento_recebedor").select("status").eq("event_id", eventoId).maybeSingle();
+    if ((data as { status?: string } | null)?.status !== "active") {
+      return { error: "A lista vai ao ar quando a conta que recebe estiver aprovada." };
+    }
+  }
+
+  const { error } = await createClient().rpc("portal_salvar_lista", {
+    p_event_id: eventoId,
+    p_lista: { taxa_do_casal: lista.taxa_do_casal === true, mensagem: mensagem || null, publicada: lista.publicada === true },
+    p_itens: limpos,
+  });
+  if (error) {
+    const m = error.message ?? "";
+    if (/sem permissão/.test(m)) return { error: "Só o casal pode mudar a lista." };
+    if (/conta que recebe/.test(m)) return { error: "A lista vai ao ar quando a conta que recebe estiver aprovada." };
+    if (/repetido/.test(m)) return { error: "Há um presente repetido na lista. Recarregue a página." };
+    if (/outro evento/.test(m)) return { error: "Lista inválida. Recarregue a página." };
+    if (/valores_check/.test(m)) return { error: "Algum presente não foi aceito. Confira os nomes e os valores (de R$ 50 a R$ 50.000)." };
+    if (/portal_salvar_lista/.test(m)) return { error: "A lista ainda não pode ser salva neste sistema." };
+    console.error("[eorganizei:lista] salvar: falhou");
+    return { error: "Não foi possível salvar agora." };
+  }
+  revalidatePath(`/portal/${eventoId}/presentes`);
+  return { ok: true };
+}
+
 /** Relê o estado na Pagar.me (o aviso por webhook também faz isso). */
 export async function atualizarRecebedor(eventoId: string): Promise<Retorno> {
   const db = servico();
