@@ -19,6 +19,17 @@
         "start"
       ],
       "port": 3000
+    },
+    {
+      "name": "vela-prod-3100",
+      "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+      "runtimeArgs": [
+        "node_modules/next/dist/bin/next",
+        "start",
+        "-p",
+        "3100"
+      ],
+      "port": 3100
     }
   ]
 }

@@ -24,6 +24,13 @@ export const ACOES_DA_AUDITORIA: Record<string, string> = {
   plano_promocao_insert: "criou um degrau de promoção",
   plano_promocao_update: "mudou um degrau de promoção",
   plano_promocao_delete: "apagou um degrau de promoção",
+  logins_buscados: "buscou logins (e-mails à vista)",
+  login_email_trocado: "trocou o e-mail de um login",
+  login_link_de_senha: "mandou o link de nova senha",
+  login_email_confirmado: "confirmou o e-mail de um login (sem o link)",
+  login_confirmacao_reenviada: "reenviou o link de confirmação",
+  login_sessoes_encerradas: "encerrou as sessões de um login",
+  login_pendente_apagado: "apagou um cadastro de festa pendente",
 };
 
 export function acaoEmPalavras(acao: string): string {

@@ -197,7 +197,14 @@ export type AcaoDoPainel =
   | "email_enviado"
   | "site_aprovado"
   | "site_recusado"
-  | "site_tirado_do_ar";
+  | "site_tirado_do_ar"
+  | "logins_buscados"
+  | "login_email_trocado"
+  | "login_link_de_senha"
+  | "login_email_confirmado"
+  | "login_confirmacao_reenviada"
+  | "login_sessoes_encerradas"
+  | "login_pendente_apagado";
 
 export async function registrarAcaoAdmin(
   db: Servico,
@@ -954,7 +961,10 @@ export async function definirBanimentoDb(
     });
     if (!error) {
       afetados++;
-      if (banir) await db.auth.admin.signOut(id, "global");
+      // as sessões abertas caem agora (194). O auth.admin.signOut daqui
+      // recebia o id do login, mas espera o TOKEN da sessão: era recusado
+      // em silêncio. Sem a 194, o bloqueio segura quem tentar renovar.
+      if (banir) await db.rpc("encerrar_sessoes_do_login", { p_user: id });
     }
   }
   await registrarAcaoAdmin(db, quem, {

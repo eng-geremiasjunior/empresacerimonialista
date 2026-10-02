@@ -35,6 +35,14 @@ import {
 } from "@/lib/supabase/admin-receita";
 import { desmascararDinheiro } from "@/lib/format";
 import { decidirSiteDb, tirarSiteDoArDb } from "@/lib/supabase/admin-sites";
+import {
+  apagarCadastroPendenteDb,
+  confirmarEmailDoLoginDb,
+  encerrarSessoesDb,
+  mandarLinkDeSenhaDb,
+  reenviarConfirmacaoDb,
+  trocarEmailDoLoginDb,
+} from "@/lib/supabase/admin-logins";
 import { ehCodigoDoPlano } from "@/lib/planos";
 
 export type ResultadoAdmin = { ok?: boolean; error?: string };
@@ -514,4 +522,63 @@ export async function tirarSiteDoAr(eventId: string, motivo: string): Promise<Re
   revalidatePath("/admin/sites");
   revalidatePath(`/admin/sites/${eventId}`);
   return { ok: true };
+}
+
+// ------------------------------------------------------------------
+// Logins (02/10/2026): trocar o e-mail, link de nova senha, confirmar o
+// e-mail, apagar cadastro de festa pendente. Uma action só, pelo campo
+// "acao" do formulário; o gate e a auditoria moram em admin-logins.
+// ------------------------------------------------------------------
+
+export type ResultadoDoLogin = ResultadoAdmin & {
+  feito?: string;
+  /** o e-mail novo já é de outro login: a tela leva até ele */
+  conflito?: { id: string; email: string };
+};
+
+export async function agirNoLogin(_prev: ResultadoDoLogin, formData: FormData): Promise<ResultadoDoLogin> {
+  const acao = String(formData.get("acao") ?? "");
+  const userId = String(formData.get("user_id") ?? "");
+  const motivo = String(formData.get("motivo") ?? "");
+  if (!/^[0-9a-f-]{36}$/.test(userId)) return { error: "Login inválido." };
+  try {
+    let feito = "";
+    if (acao === "trocar_email") {
+      const r = await trocarEmailDoLoginDb(
+        userId,
+        String(formData.get("email") ?? ""),
+        String(formData.get("confirmacao") ?? ""),
+        motivo
+      );
+      if (r.conflito) {
+        return { error: "Esse e-mail já é o login de outra conta. Troque aquele primeiro.", conflito: r.conflito };
+      }
+      feito =
+        `E-mail trocado para ${r.novo}. Quem estava dentro precisa entrar de novo, com o e-mail novo; a senha não mudou.` +
+        (r.aviso ? ` ${r.aviso}` : "");
+    } else if (acao === "link_de_senha") {
+      await mandarLinkDeSenhaDb(userId, motivo);
+      feito = "Link para criar senha nova enviado para o e-mail do login.";
+    } else if (acao === "reenviar_confirmacao") {
+      await reenviarConfirmacaoDb(userId, motivo);
+      feito = "Link de confirmação enviado para o e-mail do login.";
+    } else if (acao === "confirmar") {
+      await confirmarEmailDoLoginDb(userId, motivo);
+      feito = "E-mail confirmado sem o link.";
+    } else if (acao === "encerrar_sessoes") {
+      const n = await encerrarSessoesDb(userId, motivo);
+      feito = n === 1 ? "1 sessão encerrada." : `${n} sessões encerradas.`;
+    } else if (acao === "apagar_pendente") {
+      await apagarCadastroPendenteDb(userId, motivo);
+      feito = "Cadastro pendente apagado.";
+    } else {
+      return { error: "Ação desconhecida." };
+    }
+    // sem revalidatePath: a lista recarregada trocaria (ou sumiria com) o
+    // cartão e levaria a mensagem junto; a tela recarrega no "fechar"
+    return { ok: true, feito };
+  } catch (e) {
+    console.error("[eorganizei:admin] login:", acao, e instanceof Error ? e.message.slice(0, 120) : "erro");
+    return { error: e instanceof Error ? e.message : "Não foi possível agora." };
+  }
 }

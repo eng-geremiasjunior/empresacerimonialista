@@ -20,6 +20,7 @@ import {
   Activity,
   Globe,
   Handshake,
+  KeyRound,
   LayoutDashboard,
   MessageSquare,
   ScrollText,
@@ -45,6 +46,7 @@ type Item = { chave: string; href: string; rotulo: string; Icone: LucideIcon };
 const ITENS: Item[] = [
   { chave: "visao", href: "/admin", rotulo: "Visão geral", Icone: LayoutDashboard },
   { chave: "contas", href: "/admin/contas", rotulo: "Contas", Icone: Users },
+  { chave: "logins", href: "/admin/logins", rotulo: "Logins", Icone: KeyRound },
   { chave: "ativacao", href: "/admin/ativacao", rotulo: "Ativação e uso", Icone: Activity },
   { chave: "receita", href: "/admin/receita", rotulo: "Receita", Icone: Wallet },
   { chave: "suporte", href: "/admin/suporte", rotulo: "Suporte", Icone: MessageSquare },
