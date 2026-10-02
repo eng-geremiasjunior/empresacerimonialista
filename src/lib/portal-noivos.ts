@@ -94,7 +94,8 @@ export const MENU_NOIVOS: DestinoNoivos[] = [
 export const MAIS_NOIVOS: DestinoNoivos[] = [
   { chave: "guia", rotulo: "Guia de estilo", icone: "palette", seg: "guia-estilo", sub: "Cores, flores e clima" },
   { chave: "escolhas", rotulo: "Escolhas do casal", icone: "favorite", seg: "escolhas", sub: "O que vocês já decidiram" },
-  { chave: "convite", rotulo: "Convite", icone: "mail", seg: "site", sub: "Como o convite chega" },
+  { chave: "site", rotulo: "Site do casamento", icone: "link", seg: "site", sub: "Onde os convidados confirmam" },
+  { chave: "convite", rotulo: "Convite", icone: "mail", seg: "convite", sub: "O que chega no WhatsApp" },
   { chave: "cortejo", rotulo: "Cortejo", icone: "diversity_1", seg: "cortejo", sub: "Quem entra e em que ordem" },
   { chave: "familia", rotulo: "Família e acessos", icone: "family_restroom", seg: "familia", sub: "Quem entra no portal" },
   { chave: "lembretes", rotulo: "Lembretes", icone: "notifications_active", seg: "lembretes", sub: "E-mail e agenda" },
@@ -120,6 +121,7 @@ export const TELAS_PRONTAS = new Set<string>([
   "financeiro",
   "guia",
   "escolhas",
+  "site",
   "convite",
   "cortejo",
 ]);

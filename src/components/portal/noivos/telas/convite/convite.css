@@ -1,0 +1,423 @@
+/* ============================================================
+   Convite — Portal dos Noivos v4. A tela do convite animado (o que chega
+   no WhatsApp). Tokens do noivos.css; botões e links levam o prefixo
+   .pn-convite para vencer o `.pn button` / `.pn a` da fundação.
+   Os ajustes à esquerda, o celular à direita (preso ao rolar); no
+   celular, o celular vem primeiro e os ajustes embaixo.
+   ============================================================ */
+
+.pn-convite {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+  line-height: normal;
+  animation: pn-rise 0.5s ease both;
+}
+.pn-convite-titulo {
+  margin: 6px 0 0;
+  font-size: 44px;
+  font-weight: 400;
+  line-height: normal;
+  color: var(--pn-verde);
+}
+.pn-convite-sub {
+  margin: 4px 0 0;
+  font-size: 15px;
+  color: var(--pn-texto-2);
+}
+.pn-convite-aviso {
+  margin: 0;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: var(--pn-pessego-claro);
+  color: var(--pn-marrom-escuro);
+  font-size: 14px;
+}
+
+.pn-convite-grade {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 28px;
+  align-items: start;
+}
+.pn-convite-ajustes {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.pn-convite-bloco {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 20px 22px;
+  border-radius: 22px;
+  background: #fff;
+  border: 1px solid var(--pn-borda);
+}
+.pn-convite-rotulo {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--pn-texto-3);
+}
+.pn-convite-nota {
+  margin: 0;
+  font-size: 14px;
+  color: var(--pn-texto-2);
+}
+.pn-convite-nota a {
+  color: var(--pn-marrom);
+  font-weight: 600;
+}
+
+/* ---------- escolhas (modelo, cores, letras) ---------- */
+.pn-convite-amostra {
+  display: inline-flex;
+  flex: none;
+}
+.pn-convite-amostra > span {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px var(--pn-borda-2);
+  margin-left: -5px;
+}
+.pn-convite-amostra > span:first-child {
+  margin-left: 0;
+}
+
+.pn-convite-modelos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+.pn-convite .pn-convite-modelo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 12px 12px 13px;
+  border-radius: 14px;
+  border: 1px solid var(--pn-borda);
+  background: var(--pn-creme);
+  text-align: left;
+  transition: border-color 0.2s, background 0.2s;
+}
+.pn-convite .pn-convite-modelo:hover {
+  border-color: var(--pn-salvia-escuro);
+}
+.pn-convite .pn-convite-modelo.on {
+  border-color: var(--pn-verde);
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--pn-verde);
+}
+.pn-convite-modelo-nome {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--pn-verde);
+}
+.pn-convite-modelo-resumo {
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--pn-texto-2);
+}
+
+.pn-convite-opcoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pn-convite .pn-convite-opcao {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 14px 8px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--pn-borda);
+  background: var(--pn-creme);
+  font-size: 14px;
+  color: var(--pn-verde);
+}
+.pn-convite .pn-convite-opcao.on {
+  border-color: var(--pn-verde);
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--pn-verde);
+  font-weight: 700;
+}
+
+.pn-convite-letras {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+}
+.pn-convite .pn-convite-letra {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 8px 10px;
+  border-radius: 14px;
+  border: 1px solid var(--pn-borda);
+  background: var(--pn-creme);
+  color: var(--pn-verde);
+  overflow: hidden;
+}
+.pn-convite .pn-convite-letra.on {
+  border-color: var(--pn-verde);
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--pn-verde);
+}
+.pn-convite-letra-nome {
+  max-width: 100%;
+  font-size: 26px;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pn-convite-letra-par {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--pn-texto-3);
+}
+
+.pn-convite-segmento {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pn-convite .pn-convite-segmento button {
+  padding: 9px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--pn-borda);
+  background: var(--pn-creme);
+  font-size: 14px;
+  color: var(--pn-verde);
+}
+.pn-convite .pn-convite-segmento button.on {
+  border-color: var(--pn-verde);
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+  font-weight: 700;
+}
+
+/* ---------- foto ---------- */
+/* uma faixa que rola de lado: o site pode ter dezenas de fotos */
+.pn-convite-fotos {
+  position: relative;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding: 3px 3px 6px;
+  margin: -3px;
+  overscroll-behavior-x: contain;
+}
+.pn-convite .pn-convite-foto {
+  position: relative;
+  flex: none;
+  width: 88px;
+  aspect-ratio: 3 / 4;
+  scroll-snap-align: start;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--pn-trilho);
+  box-shadow: 0 0 0 1px var(--pn-borda);
+}
+.pn-convite .pn-convite-foto img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pn-convite .pn-convite-foto.on {
+  box-shadow: 0 0 0 3px var(--pn-verde);
+}
+.pn-convite .pn-convite-foto .pn-ic {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+}
+
+/* ---------- campos ---------- */
+.pn-convite-campo {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--pn-borda-2);
+  background: var(--pn-creme);
+  font: inherit;
+  font-size: 15px;
+  color: var(--pn-verde);
+  resize: vertical;
+}
+.pn-convite-campo:focus {
+  border-color: var(--pn-verde);
+  background: #fff;
+}
+.pn-convite-campo::placeholder {
+  color: var(--pn-texto-3);
+}
+.pn-convite-linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+.pn-convite-data {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--pn-verde);
+}
+.pn-convite-hora {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  color: var(--pn-texto-2);
+}
+.pn-convite-hora .pn-convite-campo {
+  width: auto;
+  padding: 8px 10px;
+}
+.pn-convite-hora .pn-convite-campo[aria-invalid="true"] {
+  border-color: var(--pn-marrom);
+  background: var(--pn-pessego-claro);
+}
+
+/* ---------- salvar e enviar ---------- */
+.pn-convite-salvar {
+  position: sticky;
+  bottom: 12px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: var(--pn-creme);
+  border: 1px solid var(--pn-borda);
+  box-shadow: var(--pn-sombra-card);
+}
+.pn-convite-estado {
+  font-size: 13px;
+  color: var(--pn-texto-2);
+}
+.pn-convite .pn-convite-botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.pn-convite .pn-convite-botao:hover {
+  color: var(--pn-creme);
+  opacity: 0.92;
+}
+.pn-convite .pn-convite-botao:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.pn-convite .pn-convite-botao.claro {
+  background: #fff;
+  color: var(--pn-verde);
+  box-shadow: inset 0 0 0 1px var(--pn-borda-2);
+}
+.pn-convite .pn-convite-botao .pn-ic {
+  font-size: 19px;
+}
+.pn-convite-link {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--pn-salvia);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--pn-verde);
+  overflow-wrap: anywhere;
+}
+.pn-convite-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ---------- o celular ---------- */
+.pn-convite-previa {
+  --s: 0.8;
+  position: sticky;
+  top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.pn-convite-celular {
+  width: calc(390px * var(--s));
+  height: calc(844px * var(--s));
+  border-radius: calc(46px * var(--s));
+  overflow: hidden;
+  background: #111;
+  box-shadow: 0 0 0 calc(10px * var(--s)) #1d1d1f, var(--pn-sombra-folha);
+}
+.pn-convite-iframe {
+  display: block;
+  width: 390px;
+  height: 844px;
+  border: 0;
+  transform: scale(var(--s));
+  transform-origin: 0 0;
+}
+.pn-convite .pn-convite-de-novo {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pn-marrom);
+}
+
+@media (max-width: 1080px) {
+  .pn-convite-previa {
+    --s: 0.7;
+  }
+}
+@media (max-width: 900px) {
+  .pn-convite-grade {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pn-convite-previa {
+    position: static;
+    order: -1;
+    --s: 0.74;
+  }
+  .pn-convite-titulo {
+    font-size: 32px;
+  }
+}
+@media (max-width: 420px) {
+  .pn-convite-previa {
+    --s: 0.68;
+  }
+  .pn-convite-bloco {
+    padding: 16px;
+  }
+}

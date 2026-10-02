@@ -143,11 +143,11 @@ export default async function PortalSitePage({
     />
   );
 
-  // O portal dos noivos (desenho v4): "Convite", o site de sempre com o
-  // cabeçalho novo.
+  // O portal dos noivos (desenho v4): o site de sempre com o cabeçalho
+  // novo. O convite animado (o que chega no WhatsApp) é outra tela: /convite.
   if (usaPortalNoivos(evento.tipo)) {
     return (
-      <TelaMantida eyebrow="Convite" titulo="Como o convite chega" sub="O site que os convidados abrem.">
+      <TelaMantida eyebrow="Site" titulo="Site do casamento" sub="Onde os convidados confirmam presença.">
         {conteudo}
       </TelaMantida>
     );

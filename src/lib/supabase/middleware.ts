@@ -97,6 +97,9 @@ const ROTAS_PUBLICAS: ((p: string) => boolean)[] = [
   (p) => p.startsWith("/api/pagina/"),
   // o site do casamento pelo endereço bonito (/c/ana-e-bruno)
   (p) => p.startsWith("/c/"),
+  // o convite animado: o exemplo de cada modelo e a prévia que o portal
+  // abre num iframe (os dados da noiva chegam por postMessage, nunca na URL)
+  (p) => p.startsWith("/convites/"),
   // o manifesto do aplicativo (só marca e ícones): toda página pede, e o
   // convidado sem sessão recebia a tela de login no lugar dele
   (p) => p === "/manifest.webmanifest",
@@ -228,6 +231,7 @@ export async function updateSession(request: NextRequest) {
   const isPublicConfirmar =
     pathname.startsWith("/confirmar/") ||
     pathname.startsWith("/c/") ||
+    pathname.startsWith("/convites/") ||
     pathname.startsWith("/api/documento/") ||
     pathname.startsWith("/api/trilha");
 

@@ -11,6 +11,8 @@ const DO_PORTAL = [
   "/nova-senha",
   "/api/",
   "/c/",
+  // o convite animado (exemplo e prévia no iframe do portal)
+  "/convites/",
   "/confirmar/",
   "/entrada/",
   "/guia/",
