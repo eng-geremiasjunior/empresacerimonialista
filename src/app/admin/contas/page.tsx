@@ -1,13 +1,16 @@
 // Contas: quem são, em que situação estão, e o caminho para a ficha.
 //
-// Dois grupos que nunca se misturam (regra dele, 17/09/2026): Clientes e
-// Contas da casa. Os filtros valem dentro do grupo escolhido. Sem a 123
-// reaplicada, a tela volta para a tabela de antes, com o aviso.
+// Três grupos que nunca se misturam: Sistema cerimonialista (quem abriu a
+// conta no sistema), Portal da noiva (quem abriu a conta pelo portal —
+// pedido dele em 03/10/2026) e Contas da casa (regra de 17/09/2026). Os
+// filtros valem dentro do grupo escolhido; o portal tem lista própria,
+// sem o funil do SaaS. Sem a 123 reaplicada, a tela volta para a tabela
+// de antes, com o aviso.
 
 import Link from "next/link";
-import { Building2, FlaskConical } from "lucide-react";
+import { Building2, FlaskConical, Heart } from "lucide-react";
 import { getAgoraDasContas, getContas } from "@/lib/supabase/admin-painel";
-import { getResumoDasContas } from "@/lib/supabase/admin-contas";
+import { getContasDoPortal, getResumoDasContas } from "@/lib/supabase/admin-contas";
 import { getCatalogoDePlanos, reais as reaisDoCatalogo, tetoEmTexto } from "@/lib/planos";
 import {
   GRUPOS_DE_ATENCAO,
@@ -31,6 +34,7 @@ import { Abas, Aviso, Cabecalho, Filtros, Vazio } from "@/components/admin/pecas
 import { TabelaContas } from "./TabelaContas";
 import type { OpcaoDePlano } from "./EditorAssinatura";
 import { ListaDeContas } from "./ListaDeContas";
+import { ListaDoPortal } from "./ListaDoPortal";
 
 export const dynamic = "force-dynamic";
 
@@ -214,7 +218,11 @@ export default async function AdminContasPage({
 }) {
   const agora = new Date();
   const f = lerFiltros(searchParams ?? {});
-  const [leitura, catalogo] = await Promise.all([getResumoDasContas(), getCatalogoDePlanos()]);
+  const [leitura, catalogo, portal] = await Promise.all([
+    getResumoDasContas(),
+    getCatalogoDePlanos(),
+    getContasDoPortal(),
+  ]);
 
   // O rótulo é montado AQUI, no servidor: o editor é client e não pode
   // puxar @/lib/planos (ele lê cookies via next/headers).
@@ -243,6 +251,65 @@ export default async function AdminContasPage({
   const todas = leitura.dados;
   const clientes = todas.filter((c) => !c.da_casa);
   const casa = todas.filter((c) => c.da_casa);
+  const doPortal = portal.ok ? portal.dados : [];
+
+  const abas = (
+    <Abas
+      rotulo="Grupo de contas"
+      atual={f.grupo}
+      abas={[
+        {
+          chave: "clientes",
+          rotulo: "Sistema cerimonialista",
+          href: hrefDaLista(f, { grupo: "clientes", plano: null, origem: null, campanha: null, criada: null }),
+          Icone: Building2,
+          contagem: clientes.length,
+        },
+        {
+          chave: "portal",
+          rotulo: "Portal da noiva",
+          // o portal não tem os filtros do SaaS: entra limpo
+          href: "/admin/contas?grupo=portal",
+          Icone: Heart,
+          contagem: portal.ok ? doPortal.length : undefined,
+        },
+        {
+          chave: "casa",
+          rotulo: "Contas da casa",
+          href: hrefDaLista(f, { grupo: "casa", plano: null, origem: null, campanha: null, criada: null }),
+          Icone: FlaskConical,
+          contagem: casa.length,
+        },
+      ]}
+    />
+  );
+
+  if (f.grupo === "portal") {
+    const esperando = doPortal.filter((c) => c.situacao === "esperando_email").length;
+    return (
+      <div data-adm-secao="contas" className="flex flex-col gap-4">
+        <Cabecalho
+          titulo="Contas"
+          linha="Quem abriu a conta pelo portal: a noiva, ou a família da debutante. Fica fora de todos os números do painel."
+        />
+        {abas}
+        {!portal.ok ? (
+          <Aviso>{portal.mensagem}</Aviso>
+        ) : doPortal.length === 0 ? (
+          <Vazio>Ninguém abriu conta pelo portal ainda.</Vazio>
+        ) : (
+          <>
+            <p className="text-[12.5px] text-[#5c5d63]">
+              {doPortal.length} {doPortal.length === 1 ? "cadastro pelo portal" : "cadastros pelo portal"}
+              {esperando > 0 && ` · ${esperando} esperando o link do e-mail`}
+            </p>
+            <ListaDoPortal contas={doPortal} agora={agora} />
+          </>
+        )}
+      </div>
+    );
+  }
+
   const doGrupo = f.grupo === "casa" ? casa : clientes;
   const filtradas = ordenarContas(filtrarContas(todas, f, agora), f.ordem, agora);
   const agoraPor = await getAgoraDasContas();
@@ -254,30 +321,11 @@ export default async function AdminContasPage({
         linha={
           f.grupo === "casa"
             ? "As suas contas: administrador, testes e vídeo. Ficam fora de todos os números do painel."
-            : "Só contas de clientes. As contas da casa ficam na outra aba e fora de todos os números."
+            : "Cerimonialistas que abriram conta no sistema. Portal da noiva e contas da casa ficam nas outras abas, fora de todos os números."
         }
       />
 
-      <Abas
-        rotulo="Grupo de contas"
-        atual={f.grupo}
-        abas={[
-          {
-            chave: "clientes",
-            rotulo: "Clientes",
-            href: hrefDaLista(f, { grupo: "clientes", plano: null, origem: null, campanha: null, criada: null }),
-            Icone: Building2,
-            contagem: clientes.length,
-          },
-          {
-            chave: "casa",
-            rotulo: "Contas da casa",
-            href: hrefDaLista(f, { grupo: "casa", plano: null, origem: null, campanha: null, criada: null }),
-            Icone: FlaskConical,
-            contagem: casa.length,
-          },
-        ]}
-      />
+      {abas}
 
       <BarraDeFiltros f={f} doGrupo={doGrupo} agora={agora} />
 
@@ -302,7 +350,7 @@ export default async function AdminContasPage({
           {doGrupo.length === 0
             ? f.grupo === "casa"
               ? "Nenhuma conta marcada como da casa."
-              : "Nenhuma conta de cliente ainda."
+              : "Nenhuma conta de cerimonialista ainda."
             : "Nenhuma conta com esses filtros."}
         </Vazio>
       ) : (

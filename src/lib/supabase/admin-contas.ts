@@ -14,6 +14,7 @@ import {
   servico,
   tabelaAusente,
 } from "@/lib/supabase/admin-painel";
+import { todosOsLogins } from "@/lib/supabase/admin-logins";
 import type { ResumoDaConta } from "@/lib/admin/saude-da-conta";
 import { checkoutDasLinhas } from "@/lib/etapas-da-assinatura";
 import { hojeBR, somarDias } from "@/lib/tempo";
@@ -115,6 +116,119 @@ export async function getResumoDaConta(empresaId: string): Promise<LeituraDoPain
   const lista = (Array.isArray(data) ? data : []) as ResumoDaConta[];
   const [conta] = await anexarCheckout(lista.slice(0, 1), empresaId);
   return { ok: true, dados: conta ?? null };
+}
+
+// ------------------------------------------------------------------
+// O portal da noiva (03/10/2026)
+// ------------------------------------------------------------------
+// Pedido dele: "Sistema cerimonialista (quem cria conta lá), conta portal
+// da noiva (quem cria conta por lá), só isso por enquanto". Aqui entra só
+// quem ABRIU a conta pelo portal (187): a noiva, ou a família da
+// debutante — com a conta pronta ou com o cadastro esperando o link do
+// e-mail. Família convidada pela cerimonialista não abriu conta nenhuma:
+// fica de fora. Nada daqui entra nos números do painel.
+
+export type SituacaoNoPortal = "aberta" | "suspensa" | "esperando_email" | "nasce_no_primeiro_login";
+
+export type ContaDoPortal = {
+  /** o login de quem abriu: é por ele que o Logins corrige o acesso */
+  userId: string;
+  empresaId: string | null;
+  festa: string;
+  tipoDoEvento: string | null;
+  /** yyyy-mm-dd */
+  dataDoEvento: string | null;
+  cidade: string | null;
+  quem: string | null;
+  papel: string | null;
+  email: string | null;
+  criadaEm: string;
+  ultimoLogin: string | null;
+  situacao: SituacaoNoPortal;
+};
+
+type FestaPendente = { festa?: unknown; data?: unknown; tipo?: unknown; cidade?: unknown; nome?: unknown; papel?: unknown };
+
+const texto = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
+
+export async function getContasDoPortal(): Promise<LeituraDoPainel<ContaDoPortal[]>> {
+  await exigirSuperAdmin();
+  const db = servico();
+  try {
+    const [empresas, logins] = await Promise.all([
+      lerTudo<{ id: string; nome: string | null; owner_user_id: string; created_at: string }>(
+        (de, ate) =>
+          db.from("empresas").select("id, nome, owner_user_id, created_at").eq("tipo", "familia").order("id").range(de, ate),
+        "as contas do portal"
+      ),
+      todosOsLogins(db),
+    ]);
+    const ids = empresas.map((e) => e.id);
+    const [{ data: eventos, error: e1 }, { data: acessos, error: e2 }] = ids.length
+      ? await Promise.all([
+          db.from("events").select("empresa_id, type, date, city").in("empresa_id", ids).eq("exemplo", false).order("date"),
+          db.from("evento_acesso").select("empresa_id, user_id, nome, papel").in("empresa_id", ids),
+        ])
+      : [{ data: [], error: null }, { data: [], error: null }];
+    if (e1 || e2) throw new Error((e1 ?? e2)?.message ?? "leitura");
+
+    type Evento = { empresa_id: string; type: string | null; date: string | null; city: string | null };
+    type Acesso = { empresa_id: string; user_id: string | null; nome: string | null; papel: string | null };
+    const eventoPor = new Map<string, Evento>();
+    for (const ev of (eventos ?? []) as Evento[]) if (!eventoPor.has(ev.empresa_id)) eventoPor.set(ev.empresa_id, ev);
+    const loginPor = new Map(logins.map((u) => [u.id, u]));
+    const agora = Date.now();
+
+    const contas: ContaDoPortal[] = empresas.map((e) => {
+      const u = loginPor.get(e.owner_user_id);
+      const ev = eventoPor.get(e.id);
+      const a = ((acessos ?? []) as Acesso[]).find((x) => x.empresa_id === e.id && x.user_id === e.owner_user_id);
+      const banidoAte = (u as { banned_until?: string | null } | undefined)?.banned_until ?? null;
+      return {
+        userId: e.owner_user_id,
+        empresaId: e.id,
+        festa: texto(e.nome) ?? "Sem nome",
+        tipoDoEvento: ev?.type ?? null,
+        dataDoEvento: ev?.date?.slice(0, 10) ?? null,
+        cidade: texto(ev?.city),
+        quem: texto(a?.nome),
+        papel: texto(a?.papel),
+        email: u?.email ?? null,
+        criadaEm: e.created_at,
+        ultimoLogin: u?.last_sign_in_at ?? null,
+        situacao: banidoAte && new Date(banidoAte).getTime() > agora ? "suspensa" : "aberta",
+      };
+    });
+
+    // o cadastro que ainda não virou conta: a festa mora no login
+    // (app_metadata.familia_pendente) até o clique no link do e-mail
+    const comConta = new Set(empresas.map((e) => e.owner_user_id));
+    for (const u of logins) {
+      const p = (u.app_metadata as { familia_pendente?: FestaPendente | null } | undefined)?.familia_pendente;
+      if (!p || typeof p !== "object" || comConta.has(u.id)) continue;
+      const data = texto(p.data);
+      contas.push({
+        userId: u.id,
+        empresaId: null,
+        festa: texto(p.festa) ?? "Sem nome",
+        tipoDoEvento: texto(p.tipo),
+        dataDoEvento: data && /^\d{4}-\d{2}-\d{2}/.test(data) ? data.slice(0, 10) : null,
+        cidade: texto(p.cidade),
+        quem: texto(p.nome),
+        papel: texto(p.papel),
+        email: u.email ?? null,
+        criadaEm: u.created_at,
+        ultimoLogin: u.last_sign_in_at ?? null,
+        situacao: u.email_confirmed_at ? "nasce_no_primeiro_login" : "esperando_email",
+      });
+    }
+
+    contas.sort((x, y) => y.criadaEm.localeCompare(x.criadaEm));
+    return { ok: true, dados: contas };
+  } catch (e) {
+    console.error("[eorganizei:admin] contas do portal:", (e as Error).message.slice(0, 120));
+    return { ok: false, motivo: "erro", mensagem: "Não foi possível ler as contas do portal agora." };
+  }
 }
 
 // ------------------------------------------------------------------

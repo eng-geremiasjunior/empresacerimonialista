@@ -4,6 +4,10 @@
 // As contas da casa formam um grupo à parte e NUNCA aparecem na lista de
 // clientes (regra dele, 17/09/2026: "ela não pode aparecer na tela dos
 // clientes reais"). O filtro de grupo vem antes de qualquer outro.
+//
+// O grupo "portal" (03/10/2026: "Sistema cerimonialista" e "Portal da
+// noiva", cada um no seu lugar) não passa por aqui: as contas abertas
+// pelo portal têm lista própria (getContasDoPortal), sem o funil do SaaS.
 
 import {
   aparelhoDoAgente,
@@ -29,7 +33,7 @@ import {
 } from "@/lib/admin/saude-da-conta";
 import { dataBR, diaMesBR, minutosEmTexto, plural, reais } from "@/lib/admin/formatos";
 
-export type Grupo = "clientes" | "casa";
+export type Grupo = "clientes" | "portal" | "casa";
 
 export type Situacoes =
   | "todas"
@@ -74,8 +78,9 @@ export function lerFiltros(p: Params): FiltrosDeContas {
   const ordem = um(p, "ordem");
   const semUso = Number(um(p, "sem_uso"));
   const criada = um(p, "criada");
+  const grupo = um(p, "grupo");
   return {
-    grupo: um(p, "grupo") === "casa" ? "casa" : "clientes",
+    grupo: grupo === "casa" || grupo === "portal" ? grupo : "clientes",
     situacao: SITUACOES.includes(situacao as Situacoes) ? (situacao as Situacoes) : "todas",
     semUso: Number.isFinite(semUso) && semUso > 0 ? semUso : null,
     atencao: (um(p, "atencao") as ChaveDoMotivo | null) ?? null,
@@ -160,7 +165,9 @@ export function filtrarContas(
 ): ResumoDaConta[] {
   const busca = semAcento(f.busca);
   return contas.filter((c) => {
-    // o grupo primeiro: conta da casa nunca entra na lista de clientes
+    // o grupo primeiro: conta da casa nunca entra na lista de clientes, e
+    // nenhuma conta do SaaS entra na lista do portal
+    if (f.grupo === "portal") return false;
     if (f.grupo === "casa" ? !c.da_casa : c.da_casa) return false;
     if (!passouNaSituacao(c, f.situacao, agora)) return false;
     if (f.semUso && diasSemAcesso(c, agora) < f.semUso) return false;

@@ -53,8 +53,11 @@ function emailsDoDono(): string[] {
     .filter(Boolean);
 }
 
-/** Todos os logins (o Supabase não busca por pedaço de e-mail). */
-async function todosOsLogins(db: Servico): Promise<User[]> {
+/**
+ * Todos os logins (o Supabase não busca por pedaço de e-mail). Sem gate
+ * próprio: quem chama já passou por exigirSuperAdmin.
+ */
+export async function todosOsLogins(db: Servico): Promise<User[]> {
   const todos: User[] = [];
   for (let pagina = 1; pagina <= PAGINAS_NO_MAXIMO; pagina++) {
     const { data, error } = await db.auth.admin.listUsers({ page: pagina, perPage: 1000 });
