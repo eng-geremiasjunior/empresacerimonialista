@@ -9,8 +9,10 @@
 // ajustar. Nenhum item é de marca: a foto é de um objeto genérico, e o
 // casal compra o modelo que quiser com o dinheiro.
 //
-// Foto: /presentes/<codigo>.webp (public/presentes). Código sem foto
-// (FOTOS_DO_CATALOGO) aparece com o fundo da categoria.
+// Foto: /presentes-catalogo/<codigo>.webp (public/presentes-catalogo,
+// 600×600 — fora de /presentes, que é a rota da lista). Código sem foto
+// (FOTOS_DO_CATALOGO) aparece com a inicial do nome. As primeiras 29 (02/10)
+// ele mesmo escolheu; os logos de marca que apareciam foram desfocados.
 
 export type GrupoDoCatalogo = "casa" | "viagem" | "divertidos";
 
@@ -60,11 +62,11 @@ const p = (categoria: string, codigo: string, titulo: string, valor: number): Pr
 
 export const CATALOGO: PresenteDoCatalogo[] = [
   // cozinha
-  p("cozinha", "jogo-de-panelas", "Jogo de panelas antiaderente", 600),
+  p("cozinha", "jogo-de-panelas", "Jogo de panelas antiaderente", 700),
   p("cozinha", "panelas-de-ceramica", "Jogo de panelas de cerâmica", 1200),
-  p("cozinha", "panela-de-pressao", "Panela de pressão", 350),
+  p("cozinha", "panela-de-pressao", "Panela de pressão", 400),
   p("cozinha", "frigideiras", "Jogo de frigideiras", 350),
-  p("cozinha", "jogo-de-facas", "Jogo de facas", 300),
+  p("cozinha", "jogo-de-facas", "Jogo de facas", 450),
   p("cozinha", "tabuas-de-corte", "Tábuas de corte", 150),
   p("cozinha", "utensilios-de-silicone", "Utensílios de silicone", 150),
   p("cozinha", "assadeiras", "Conjunto de assadeiras", 250),
@@ -74,9 +76,9 @@ export const CATALOGO: PresenteDoCatalogo[] = [
   p("cozinha", "lixeira-automatica", "Lixeira automática", 250),
 
   // eletroportáteis
-  p("eletroportateis", "airfryer", "Airfryer", 600),
-  p("eletroportateis", "liquidificador", "Liquidificador", 350),
-  p("eletroportateis", "batedeira-planetaria", "Batedeira planetária", 700),
+  p("eletroportateis", "airfryer", "Airfryer", 700),
+  p("eletroportateis", "liquidificador", "Liquidificador", 400),
+  p("eletroportateis", "batedeira-planetaria", "Batedeira planetária", 900),
   p("eletroportateis", "cafeteira-de-capsulas", "Cafeteira de cápsulas", 600),
   p("eletroportateis", "cafeteira-eletrica", "Cafeteira elétrica", 250),
   p("eletroportateis", "chaleira-eletrica", "Chaleira elétrica", 250),
@@ -88,7 +90,9 @@ export const CATALOGO: PresenteDoCatalogo[] = [
   p("eletroportateis", "forno-eletrico", "Forno elétrico", 900),
 
   // eletrodomésticos
-  p("eletrodomesticos", "geladeira", "Geladeira", 4000),
+  p("eletrodomesticos", "geladeira", "Geladeira inox", 3500),
+  p("eletrodomesticos", "geladeira-branca", "Geladeira branca", 3000),
+  p("eletrodomesticos", "geladeira-side-by-side", "Geladeira side by side", 7000),
   p("eletrodomesticos", "fogao", "Fogão", 2000),
   p("eletrodomesticos", "cooktop", "Cooktop", 1200),
   p("eletrodomesticos", "micro-ondas", "Micro-ondas", 900),
@@ -99,12 +103,12 @@ export const CATALOGO: PresenteDoCatalogo[] = [
   p("eletrodomesticos", "aspirador-robo", "Aspirador robô", 1500),
 
   // mesa posta
-  p("mesa", "aparelho-de-jantar", "Aparelho de jantar", 700),
+  p("mesa", "aparelho-de-jantar", "Aparelho de jantar", 800),
   p("mesa", "jogo-de-pratos", "Jogo de pratos", 400),
-  p("mesa", "faqueiro", "Faqueiro", 500),
+  p("mesa", "faqueiro", "Faqueiro", 600),
   p("mesa", "tacas-de-vinho", "Taças de vinho", 300),
   p("mesa", "tacas-de-champanhe", "Taças de champanhe", 300),
-  p("mesa", "jogo-de-copos", "Jogo de copos", 200),
+  p("mesa", "jogo-de-copos", "Jogo de copos", 250),
   p("mesa", "jogo-de-xicaras", "Jogo de xícaras", 250),
   p("mesa", "sousplats", "Sousplats", 250),
   p("mesa", "jogo-americano", "Jogo americano", 200),
@@ -136,7 +140,7 @@ export const CATALOGO: PresenteDoCatalogo[] = [
   // lavanderia e limpeza
   p("lavanderia", "ferro-a-vapor", "Ferro a vapor", 250),
   p("lavanderia", "tabua-de-passar", "Tábua de passar", 250),
-  p("lavanderia", "aspirador-vertical", "Aspirador vertical", 800),
+  p("lavanderia", "aspirador-vertical", "Aspirador vertical", 500),
   p("lavanderia", "varal", "Varal de chão", 200),
   p("lavanderia", "cestos-de-roupa", "Cestos de roupa", 150),
   p("lavanderia", "kit-de-limpeza", "Mop e kit de limpeza", 200),
@@ -145,10 +149,13 @@ export const CATALOGO: PresenteDoCatalogo[] = [
   // sala e decoração
   p("sala", "sofa", "Sofá", 4000),
   p("sala", "poltrona", "Poltrona", 1200),
-  p("sala", "rack", "Rack", 800),
+  p("sala", "rack", "Rack", 1200),
   p("sala", "mesa-de-centro", "Mesa de centro", 600),
   p("sala", "tapete-da-sala", "Tapete para a sala", 900),
-  p("sala", "smart-tv", "Smart TV", 3000),
+  p("sala", "smart-tv-32", "Smart TV 32 polegadas", 1200),
+  p("sala", "smart-tv-43", "Smart TV 43 polegadas", 1800),
+  p("sala", "smart-tv", "Smart TV 50 polegadas", 2500),
+  p("sala", "smart-tv-65", "Smart TV 65 polegadas", 4500),
   p("sala", "mesa-de-jantar", "Mesa de jantar", 2500),
   p("sala", "cadeiras-de-jantar", "Cadeiras de jantar", 1500),
   p("sala", "quadros", "Quadros decorativos", 400),
@@ -222,8 +229,14 @@ export const CATALOGO: PresenteDoCatalogo[] = [
   p("divertidos", "os-50-reais", "Toma aqui os 50 reais", 50),
 ];
 
-/** Os códigos que já têm foto em public/presentes (preenchido quando as fotos entram). */
-export const FOTOS_DO_CATALOGO: ReadonlySet<string> = new Set<string>([]);
+/** Os códigos que já têm foto em public/presentes-catalogo. */
+export const FOTOS_DO_CATALOGO: ReadonlySet<string> = new Set<string>([
+  "airfryer", "aparelho-de-jantar", "aspirador-vertical", "batedeira-planetaria", "cafeteira-de-capsulas",
+  "churrasqueira", "edredom", "faqueiro", "geladeira", "geladeira-branca", "geladeira-side-by-side",
+  "jogo-de-cama", "jogo-de-copos", "jogo-de-facas", "jogo-de-panelas", "jogo-de-toalhas", "kit-de-drinks",
+  "liquidificador", "maquina-lava-e-seca", "micro-ondas", "panela-de-pressao", "purificador-de-agua", "rack",
+  "roupoes", "sofa", "tacas-de-vinho", "tapete-da-sala", "travesseiros", "utensilios-de-silicone",
+]);
 
 const POR_CODIGO = new Map(CATALOGO.map((x) => [x.codigo, x]));
 const CATEGORIA_POR_ID = new Map(CATEGORIAS.map((c) => [c.id, c]));
@@ -242,7 +255,7 @@ export function ehCategoria(x: unknown): x is string {
 
 /** A foto do item do catálogo, ou null (sem foto ainda: fundo da categoria). */
 export function fotoDoCatalogo(codigo: string | null | undefined): string | null {
-  return codigo && FOTOS_DO_CATALOGO.has(codigo) ? `/presentes/${codigo}.webp` : null;
+  return codigo && FOTOS_DO_CATALOGO.has(codigo) ? `/presentes-catalogo/${codigo}.webp` : null;
 }
 
 /** A lista que já nasce montada: um punhado de cada categoria da casa e da viagem. */

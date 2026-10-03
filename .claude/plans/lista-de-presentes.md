@@ -68,9 +68,9 @@ do split do Pagar.me, então teremos também".
 
 ## O que foi construído (02/10/2026)
 
-- **Catálogo** `src/lib/catalogo-de-presentes.ts`: 14 categorias, 134
-  presentes com preço redondo, 44 na sugestão inicial. Fotos: pendente
-  (hoje a inicial do nome no lugar da foto).
+- **Catálogo** `src/lib/catalogo-de-presentes.ts`: 14 categorias, 139
+  presentes com preço redondo, 44 na sugestão inicial. Fotos: 29 (as que
+  ele escolheu, em public/presentes-catalogo; o resto mostra a inicial).
 - **Portal (v4)** `telas/presentes/lista/`: começar com a sugestão, catálogo
   com busca e categorias, "outro presente", nome/valor/quantidade
   editáveis, quem paga a taxa (com o exemplo em reais), frase, pôr no ar,
@@ -95,7 +95,8 @@ do split do Pagar.me, então teremos também".
 ## O que falta
 
 - Ele reaplicar a 197 revisada; depois, a prova do Pix na loja de teste.
-- Fotos do catálogo (precisa do ok dele para baixar).
+- Fotos do catálogo: 29 de 139 entraram (02/10). Faltam versões sem marca
+  do ferro, da parafusadeira e das 4 TVs, e os demais itens (lotes de 30).
 - Na Pagar.me de produção: marcar no webhook os avisos order.paid,
   order.canceled, order.payment_failed, charge.paid e charge.refunded.
 - A prova real em produção: um presente de R$ 50 com a conta que recebe
