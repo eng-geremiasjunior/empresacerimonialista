@@ -77,11 +77,15 @@ export type DadosDoRecebedor = {
   conta: string;
   contaDigito: string;
   tipoConta: "checking" | "savings";
+  /** o e-mail que vai para a Pagar.me (sem ele, o do login de quem cadastra).
+   *  A Pagar.me não deixa corrigir depois: e-mail errado = refazer o cadastro. */
+  email?: string;
 };
 
 /** O primeiro problema do formulário, em português, ou null. */
 export function problemaNoCadastro(d: DadosDoRecebedor): string | null {
   if (d.nome.trim().split(/\s+/).length < 2) return "Escreva o nome completo.";
+  if (d.email !== undefined && (!emailValido(d.email) || d.email.trim().length > 64)) return "Confira o e-mail.";
   if (!cpfValido(d.cpf)) return "Confira o CPF.";
   if (!nascimentoValido(d.nascimento)) return "Confira a data de nascimento (dd/mm/aaaa, maior de 18).";
   if (d.nomeDaMae.trim().length < 3) return "Escreva o nome da mãe.";

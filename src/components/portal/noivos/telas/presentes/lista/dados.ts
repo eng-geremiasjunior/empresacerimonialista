@@ -43,6 +43,8 @@ export type DadosDaTelaLista = {
   /** quem cadastra a conta que recebe (o casal; nunca a debutante) */
   souResponsavel: boolean;
   meuNome: string | null;
+  /** o e-mail do login, que o cadastro da conta propõe (e deixa corrigir) */
+  meuEmail: string | null;
   cerimonialista: string;
   lista: { taxaDoCasal: boolean; mensagem: string; publicada: boolean; salvaAlgumaVez: boolean };
   itens: PresenteDaLista[];
@@ -83,7 +85,7 @@ function quandoFoi(iso: string | null): string {
 
 export async function getListaDoCasal(eventoId: string): Promise<DadosDaTelaLista> {
   const supabase = createClient();
-  const [listaR, pagosR, { data: nivel }, { data: siteBruto }, recebedor, eu, contato] = await Promise.all([
+  const [listaR, pagosR, { data: nivel }, { data: siteBruto }, recebedor, eu, contato, { data: sessao }] = await Promise.all([
     supabase.rpc("portal_lista", { p_event_id: eventoId }),
     supabase
       .from("presente_pagamento")
@@ -97,6 +99,7 @@ export async function getListaDoCasal(eventoId: string): Promise<DadosDaTelaList
     getRecebedor(eventoId),
     getMeuAcesso(eventoId),
     getContatoCerimonialista(eventoId),
+    supabase.auth.getUser(),
   ]);
 
   const semMigracao = !!listaR.error && /portal_lista/.test(listaR.error.message ?? "");
@@ -125,6 +128,7 @@ export async function getListaDoCasal(eventoId: string): Promise<DadosDaTelaList
     podeEditar: ehCasal,
     souResponsavel: ehCasal && eu.papel !== null && eu.papel !== "debutante",
     meuNome: eu.nome,
+    meuEmail: sessao.user?.email ?? null,
     cerimonialista: contato.nome?.split(" ")[0] ?? "a cerimonialista",
     lista: {
       taxaDoCasal: salvo?.lista?.taxa_do_casal === true,

@@ -49,17 +49,28 @@ async function responsavel(eventoId: string): Promise<{ userId: string; email: s
   return { userId: user.id, email: user.email, nome: a.nome };
 }
 
+/**
+ * Cadastra a conta que recebe — ou REFAZ o cadastro, enquanto ela não foi
+ * aprovada. A Pagar.me não deixa editar campo já preenchido de um
+ * recebedor (e-mail, conta…): o conserto de um dado errado é um recebedor
+ * novo, que toma o lugar do antigo aqui (o antigo fica sem uso lá) e pede
+ * a prova de vida de novo. Conta aprovada não se troca por aqui.
+ */
 export async function cadastrarRecebedor(eventoId: string, dados: DadosDoRecebedor): Promise<Retorno> {
   const quem = await responsavel(eventoId);
   if (!quem) return { error: "Quem cadastra a conta é o responsável pelo evento." };
   const problema = problemaNoCadastro(dados);
   if (problema) return { error: problema };
+  const email = (dados.email?.trim() || quem.email).toLowerCase();
 
   const db = servico();
-  const { data: ja } = await db.from("evento_recebedor").select("event_id").eq("event_id", eventoId).maybeSingle();
-  if (ja) return { error: "A conta deste evento já foi cadastrada." };
+  const { data: ja } = await db.from("evento_recebedor").select("status").eq("event_id", eventoId).maybeSingle();
+  const atual = ja as { status?: string } | null;
+  if (atual?.status === "active") return { error: "A conta deste evento já está aprovada." };
 
-  const r = await criarRecebedor({ ...dados, email: quem.email, codigo: `evento-${eventoId}` });
+  // o código do recebedor na Pagar.me: o do evento; no refazer, com um sufixo
+  const codigo = atual ? `evento-${eventoId}-${Date.now().toString(36)}` : `evento-${eventoId}`;
+  const r = await criarRecebedor({ ...dados, email, codigo });
   if (!r.ok) {
     return {
       error:
@@ -71,8 +82,7 @@ export async function cadastrarRecebedor(eventoId: string, dados: DadosDoRecebed
     };
   }
   const partes = dados.nome.trim().split(/\s+/);
-  const { error } = await db.from("evento_recebedor").insert({
-    event_id: eventoId,
+  const linha = {
     pagarme_recipient_id: r.dados.id,
     status: r.dados.status in ESTADOS ? r.dados.status : "registration",
     kyc_status: r.dados.kyc_details?.status ?? null,
@@ -80,7 +90,15 @@ export async function cadastrarRecebedor(eventoId: string, dados: DadosDoRecebed
     banco_resumo: resumoDoBanco(dados.banco, dados.conta),
     criado_por: quem.userId,
     criado_por_nome: quem.nome,
-  });
+  };
+  const { error } = atual
+    ? await db
+        .from("evento_recebedor")
+        .update({ ...linha, updated_at: new Date().toISOString() })
+        .eq("event_id", eventoId)
+        // aprovada no meio do caminho (o aviso chegou): não troca
+        .neq("status", "active")
+    : await db.from("evento_recebedor").insert({ event_id: eventoId, ...linha });
   if (error) return { error: "O cadastro foi feito na Pagar.me, mas não ficou salvo aqui. Fale com a cerimonialista." };
   revalidatePath(`/portal/${eventoId}/presentes`);
   return { ok: true };

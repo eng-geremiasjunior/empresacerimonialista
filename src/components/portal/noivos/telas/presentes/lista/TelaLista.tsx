@@ -262,6 +262,7 @@ export function TelaLista({ dados }: { dados: DadosDaTelaLista }) {
       recebedor={dados.recebedor}
       souResponsavel={dados.souResponsavel}
       meuNome={dados.meuNome}
+      meuEmail={dados.meuEmail}
       cerimonialista={dados.cerimonialista}
     />
   );

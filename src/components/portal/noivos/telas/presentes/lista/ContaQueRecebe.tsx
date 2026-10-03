@@ -41,21 +41,27 @@ export function ContaQueRecebe({
   recebedor,
   souResponsavel,
   meuNome,
+  meuEmail,
   cerimonialista,
 }: {
   eventoId: string;
   recebedor: RecebedorDoEvento | null;
   souResponsavel: boolean;
   meuNome: string | null;
+  meuEmail: string | null;
   cerimonialista: string;
 }) {
   const router = useRouter();
   const [enviando, iniciar] = useTransition();
-  const [d, setD] = useState<DadosDoRecebedor>({ ...VAZIO, nome: meuNome ?? "" });
+  const novo = (): DadosDoRecebedor => ({ ...VAZIO, nome: meuNome ?? "", email: meuEmail ?? "" });
+  const [d, setD] = useState<DadosDoRecebedor>(novo);
   const [erro, setErro] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [abrirForm, setAbrirForm] = useState(false);
   const muda = (c: Partial<DadosDoRecebedor>) => setD((x) => ({ ...x, ...c }));
+  // conta cadastrada e ainda não aprovada: dá para refazer (a Pagar.me não
+  // deixa corrigir um dado depois — e-mail ou conta errada = cadastro novo)
+  const podeRefazer = !!recebedor && recebedor.status !== "active" && souResponsavel;
 
   async function buscarCep(cep: string) {
     if (so(cep).length !== 8) return;
@@ -74,7 +80,8 @@ export function ContaQueRecebe({
       const r = await cadastrarRecebedor(eventoId, d);
       if ("error" in r) setErro(r.error);
       else {
-        setD(VAZIO);
+        setD(novo());
+        setAbrirForm(false);
         router.refresh();
       }
     });
@@ -108,7 +115,7 @@ export function ContaQueRecebe({
     <div className="pn-lista-bloco">
       <h2 className="pn-lista-rotulo">A conta que recebe</h2>
 
-      {recebedor ? (
+      {recebedor && !abrirForm ? (
         <>
           <div className="pn-lista-conta">
             <span className="pn-lista-conta-nome">{recebedor.titular ?? "Responsável"}</span>
@@ -128,6 +135,21 @@ export function ContaQueRecebe({
               <button type="button" className="pn-lista-botao claro" disabled={enviando} onClick={atualizar}>
                 Ver se já foi aprovada
               </button>
+              {podeRefazer && (
+                <button
+                  type="button"
+                  className="pn-lista-botao claro"
+                  disabled={enviando}
+                  onClick={() => {
+                    setErro(null);
+                    setAviso(null);
+                    setD(novo());
+                    setAbrirForm(true);
+                  }}
+                >
+                  Refazer o cadastro
+                </button>
+              )}
             </div>
           )}
         </>
@@ -150,6 +172,7 @@ export function ContaQueRecebe({
           <fieldset>
             <legend>Quem recebe</legend>
             <Campo rotulo="Nome completo" valor={d.nome} muda={(v) => muda({ nome: v })} max={80} />
+            <Campo rotulo="E-mail" valor={d.email ?? ""} muda={(v) => muda({ email: v })} modo="email" max={64} />
             <div className="pn-lista-dupla">
               <Campo rotulo="CPF" valor={d.cpf} muda={(v) => muda({ cpf: v })} modo="numeric" max={14} />
               <Campo
@@ -237,6 +260,9 @@ export function ContaQueRecebe({
             </div>
           </fieldset>
 
+          {recebedor && (
+            <p className="pn-lista-nota">O cadastro novo substitui o atual e pede a prova de vida de novo.</p>
+          )}
           <div className="pn-lista-acoes">
             <button type="button" className="pn-lista-botao" disabled={enviando} onClick={enviar}>
               {enviando ? "Enviando…" : "Enviar para a Pagar.me"}
@@ -275,7 +301,7 @@ function Campo({
   muda: (v: string) => void;
   max: number;
   ph?: string;
-  modo?: "numeric" | "tel";
+  modo?: "numeric" | "tel" | "email";
 }) {
   return (
     <label className="pn-lista-campo">
