@@ -5,6 +5,7 @@ import "server-only";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { servico } from "@/lib/supabase/admin-painel";
+import { usaPortalNoivos } from "@/lib/portal-noivos";
 
 export type RecebedorDoEvento = {
   status: "registration" | "affiliation" | "active" | "refused" | "suspended" | "blocked" | "inactive";
@@ -26,16 +27,19 @@ export const getRecebedor = cache(async (eventId: string): Promise<RecebedorDoEv
 });
 
 /**
- * A lista ainda está em construção (etapa 1 de 4): só aparece nos eventos
- * das contas da casa. Sem isto, uma família de verdade cadastraria CPF e
- * conta na Pagar.me de produção para uma lista que ainda não recebe
- * presente. Quando a etapa 2 subir, esta função passa a devolver true.
+ * Onde a lista de presentes existe. LIBERADA para todos os casamentos em
+ * 02/10/2026 ("pode liberar"): o portal dos noivos tem a lista inteira
+ * (montar, receber, pôr no ar, recebidos — 197). No portal v2 (a
+ * debutante) só existe o cadastro da conta que recebe, sem a lista: lá
+ * continua só nas contas da casa, até a lista da debutante existir.
  */
 export const listaDePresentesLiberada = cache(async (eventId: string): Promise<boolean> => {
   const db = servico();
-  const { data: ev } = await db.from("events").select("empresa_id").eq("id", eventId).maybeSingle();
-  const empresa = (ev as { empresa_id?: string } | null)?.empresa_id;
-  if (!empresa) return false;
-  const { data } = await db.from("contas_da_casa").select("empresa_id").eq("empresa_id", empresa).maybeSingle();
+  const { data: ev } = await db.from("events").select("empresa_id, type").eq("id", eventId).maybeSingle();
+  const e = ev as { empresa_id?: string; type?: string } | null;
+  if (!e) return false;
+  if (usaPortalNoivos(e.type)) return true;
+  if (!e.empresa_id) return false;
+  const { data } = await db.from("contas_da_casa").select("empresa_id").eq("empresa_id", e.empresa_id).maybeSingle();
   return !!data;
 });

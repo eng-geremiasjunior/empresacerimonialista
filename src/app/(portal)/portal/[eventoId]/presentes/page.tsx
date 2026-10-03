@@ -12,8 +12,9 @@ import { TelaLista } from "@/components/portal/noivos/telas/presentes/lista/Tela
 export const dynamic = "force-dynamic";
 
 // A lista de presentes (182+): no portal dos noivos, a lista com o botão
-// de comprar (197) — por enquanto só nas contas da casa; nas outras, a
-// chave Pix e as lojas do site, como antes. No portal v2, a conta que recebe.
+// de comprar (197), liberada para todos os casamentos em 02/10/2026. No
+// portal v2 (a debutante), só a conta que recebe, e só nas contas da casa
+// (listaDePresentesLiberada decide).
 export default async function PortalPresentesPage({ params }: { params: { eventoId: string } }) {
   const evento = await getEventoDoPortal(params.eventoId);
   if (!evento) notFound();
