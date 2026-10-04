@@ -54,7 +54,7 @@ export default async function RoteiroPage({
     supabase.rpc("cronograma_evento", { p_event_id: params.id }),
       supabase
         .from("roteiro_links")
-        .select("supplier_id, hash, suppliers(id, name)")
+        .select("supplier_id, hash, confirmed, suppliers(id, name, whatsapp, phone)")
         .eq("event_id", params.id),
       getSugestoesDoEvento(params.id),
       alergiaCompartilhavel(params.id),
@@ -148,7 +148,8 @@ export default async function RoteiroPage({
   const linkRows = (linksResult.data ?? []) as unknown as {
     supplier_id: string;
     hash: string;
-    suppliers: { id: string; name: string } | null;
+    confirmed: boolean;
+    suppliers: { id: string; name: string; whatsapp: string | null; phone: string | null } | null;
   }[];
 
   // Só os fornecedores vinculados aparecem no select do item de roteiro.
@@ -198,6 +199,17 @@ export default async function RoteiroPage({
         items={items}
         suppliers={suppliers}
         equipe={equipe.map((p) => ({ id: p.id, nome: p.nome, posto: p.posto }))}
+        fornecedoresDoDia={linkRows
+          .filter((l) => l.suppliers)
+          .map((l) => ({
+            supplierId: l.supplier_id,
+            nome: l.suppliers!.name,
+            hash: l.hash,
+            telefone: l.suppliers!.whatsapp ?? l.suppliers!.phone,
+            confirmado: l.confirmed,
+          }))}
+        base={publicBase()}
+        eventoNome={nomeDoEvento}
         liberacaoEspaco={
           (() => {
             const esp = (eventData as unknown as {
@@ -255,11 +267,6 @@ export default async function RoteiroPage({
       {suppliers.length > 0 && (
         <section data-guia="links-fornecedores" className="mt-10 print:hidden">
           <h2 className="text-base font-semibold">Links para fornecedores</h2>
-          <p className="mt-1 text-sm text-stone-500">
-            Envie o link para cada fornecedor: ele vê só os itens dele, sem
-            precisar de login, atualiza o status em tempo real e a página se
-            atualiza sozinha.
-          </p>
           <ul className="mt-3 space-y-2">
             {linkRows
               .filter((l) => l.suppliers)

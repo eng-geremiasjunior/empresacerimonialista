@@ -6,7 +6,7 @@
 // fornecedores (Etapa 2) via polling leve.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Info, Plus, Printer } from "lucide-react";
+import { Plus, Printer } from "lucide-react";
 import {
   createRoteiroItem,
   updateRoteiroItem,
@@ -19,9 +19,19 @@ import { AtualizarStatusModal } from "@/components/cronograma/AtualizarStatusMod
 import { PainelLateralCronograma } from "@/components/cronograma/PainelLateralCronograma";
 import { VisaoRaias } from "@/components/cronograma/VisaoRaias";
 import { ModalAtraso } from "@/components/cronograma/ModalAtraso";
+import { LinhaDoRoteiro } from "@/components/cronograma/LinhaDoRoteiro";
+import {
+  FornecedoresDoRoteiro,
+  type FornecedorDoRoteiro,
+} from "@/components/cronograma/FornecedoresDoRoteiro";
 import { createClient } from "@/lib/supabase/client";
 import { formatTime, hojeLocalISO } from "@/lib/format";
-import { proximosItens, timeToMinutes, type CronogramaItem } from "@/lib/cronograma";
+import {
+  alertasCronograma,
+  proximosItens,
+  timeToMinutes,
+  type CronogramaItem,
+} from "@/lib/cronograma";
 
 const REFRESH_INTERVAL_MS = 20_000;
 
@@ -38,6 +48,10 @@ type Props = {
   liberacaoEspaco?: string | null;
   /** Equipe do dia (171), para o "quem cuida" do item */
   equipe?: { id: string; nome: string; posto: string | null }[];
+  /** os fornecedores vinculados, com o link e a confirmação */
+  fornecedoresDoDia?: Omit<FornecedorDoRoteiro, "itens">[];
+  base?: string;
+  eventoNome?: string;
 };
 
 export function RoteiroList({
@@ -47,6 +61,9 @@ export function RoteiroList({
   suppliers,
   liberacaoEspaco = null,
   equipe = [],
+  fornecedoresDoDia = [],
+  base = "",
+  eventoNome = "evento",
 }: Props) {
   const [items, setItems] = useState(initialItems);
   const [adding, setAdding] = useState(false);
@@ -93,6 +110,9 @@ export function RoteiroList({
   // modo dia-do-evento desligava no meio da recepção
   const hoje = hojeLocalISO();
   const eventoHoje = eventDate === hoje;
+  // Antes do dia, sem nada andando: uma linha por item e, ao lado, os
+  // fornecedores. O status (e o painel de progresso) só vale no dia.
+  const compacto = !eventoHoje && items.every((i) => i.status_novo === "planejado");
 
   // Item "atual": em andamento agora, senão problema aberto, senão o
   // próximo planejado mais próximo.
@@ -120,6 +140,9 @@ export function RoteiroList({
   }
 
   const nowMinutes = mounted ? agoraEmMinutos() : -1;
+  // antes do dia, o único aviso que vale é o dia que não fecha (item antes
+  // de o espaço liberar); atraso e problema só existem no dia
+  const conflitos = compacto ? alertasCronograma(items, -1, liberacaoEspaco) : [];
 
   return (
     <div className="grid grid-cols-1 gap-[22px] lg:grid-cols-[minmax(0,1fr),300px]">
@@ -222,7 +245,10 @@ export function RoteiroList({
             </button>
           </div>
         ) : (
-          <div ref={listRef}>
+          <div
+            ref={listRef}
+            className={compacto ? "rounded-[14px] border border-[#E9E8F1] bg-white px-4" : undefined}
+          >
             {ordered.map((item, idx) => {
               if (editingId === item.id) {
                 return (
@@ -251,6 +277,26 @@ export function RoteiroList({
                       onClose={() => {
                         setEditingId(null);
                         refresh();
+                      }}
+                    />
+                  </div>
+                );
+              }
+
+              if (compacto) {
+                return (
+                  <div key={item.id} id={`crono-item-${item.id}`} className={focusId === item.id ? "rounded-lg ring-2 ring-sky-400" : ""}>
+                    <LinhaDoRoteiro
+                      item={item}
+                      equipe={equipe}
+                      onEditar={() => {
+                        setEditingId(item.id);
+                        setAdding(false);
+                      }}
+                      onExcluir={() => {
+                        if (confirm(`Excluir "${item.title}"?`)) {
+                          deleteRoteiroItem(eventId, item.id).then(refresh);
+                        }
                       }}
                     />
                   </div>
@@ -287,8 +333,8 @@ export function RoteiroList({
           </div>
         )}
 
-        {/* Legenda */}
-        {ordered.length > 0 && (
+        {/* Legenda: só quando há status para ler */}
+        {ordered.length > 0 && !compacto && (
           <div className="mt-5 flex flex-wrap items-center gap-[22px] border-t border-[#E9E8F1] pt-4 text-[12.5px] text-[#6B6884]">
             <span className="flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-[#17A34A]" /> Concluído
@@ -305,20 +351,41 @@ export function RoteiroList({
             <span className="flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-[#DC2626]" /> Atrasado/Problema
             </span>
-            <span className="flex-1" />
-            <span className="flex items-center gap-2">
-              <Info size={14} className="shrink-0 text-[#6C5DD3]" aria-hidden />
-              <span>
-                <strong className="text-[#17162A]">Dica do Copiloto:</strong>{" "}
-                itens obrigatórios impactam diretamente o andamento do evento.
-              </span>
-            </span>
           </div>
         )}
       </div>
 
       {/* Painel lateral */}
       <aside className="lg:sticky lg:top-4 lg:self-start print:hidden">
+        {compacto ? (
+          <div className="flex flex-col gap-4">
+            {conflitos.length > 0 && (
+              <section className="rounded-[14px] border border-[#F3E2B8] bg-[#FFFBEF] p-4">
+                {conflitos.slice(0, 4).map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => focarItem(a.itemId)}
+                    className="block w-full py-1 text-left"
+                  >
+                    <span className="block text-[13px] font-semibold text-[#7A5410]">{a.titulo}</span>
+                    <span className="block text-[12px] text-[#9A7A3A]">{a.detalhe}</span>
+                  </button>
+                ))}
+              </section>
+            )}
+            <FornecedoresDoRoteiro
+              eventId={eventId}
+              base={base}
+              eventoNome={eventoNome}
+              data={eventDate}
+              fornecedores={fornecedoresDoDia.map((f) => ({
+                ...f,
+                itens: items.filter((i) => i.supplier_id === f.supplierId).length,
+              }))}
+            />
+          </div>
+        ) : (
         <PainelLateralCronograma
           items={items}
           eventId={eventId}
@@ -327,6 +394,7 @@ export function RoteiroList({
           onAtualizarStatus={() => setStatusModal({ open: true })}
           onFocarItem={focarItem}
         />
+        )}
       </aside>
 
       {atrasando && (
