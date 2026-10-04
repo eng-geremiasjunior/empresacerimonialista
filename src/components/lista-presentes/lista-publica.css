@@ -426,35 +426,270 @@
   outline: none;
 }
 
-/* Pix ou cartão: duas metades do mesmo trilho, como os filtros da vitrine */
-.lp-meios {
+/* ---------- o checkout em duas etapas (04/10/2026) ---------- */
+
+/* as etapas: dois traços no topo, o da vez cheio */
+.lp-etapas {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 4px;
-  padding: 4px;
-  border: 1px solid var(--lp-linha);
-  border-radius: 14px;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--lp-suave);
 }
-.lp .lp-meio {
-  padding: 10px 12px;
+.lp-etapas li {
+  padding-top: 8px;
+  border-top: 3px solid var(--lp-linha);
+}
+.lp-etapas li.on {
+  border-top-color: var(--lp-tinta);
+  color: var(--lp-tinta);
+  font-weight: 600;
+}
+.lp-etapas li.feita {
+  border-top-color: color-mix(in srgb, var(--lp-tinta) 45%, var(--lp-fundo));
+}
+
+/* quem presenteia, numa linha, com "Alterar" */
+.lp-quem {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  font-size: 14px;
+  color: var(--lp-suave);
+  overflow-wrap: anywhere;
+}
+.lp-quem strong {
+  color: var(--lp-tinta);
+  font-weight: 600;
+}
+.lp .lp-link {
+  flex: none;
+  padding: 0;
   border: 0;
-  border-radius: 10px;
-  background: transparent;
+  background: none;
   color: var(--lp-tinta);
   font: inherit;
-  font-size: 15px;
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
   cursor: pointer;
 }
+
+/* Pix ou cartão: duas linhas grandes para tocar, cada uma com o seu valor */
+.lp-meios {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.lp .lp-meio {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--lp-linha);
+  border-radius: 16px;
+  background: var(--lp-papel);
+  color: var(--lp-tinta);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
 .lp .lp-meio:hover {
-  background: color-mix(in srgb, var(--lp-tinta) 6%, transparent);
+  border-color: color-mix(in srgb, var(--lp-tinta) 40%, var(--lp-fundo));
 }
 .lp .lp-meio.on {
-  background: var(--lp-tinta);
-  color: var(--lp-fundo);
+  border-color: var(--lp-tinta);
+  box-shadow: 0 0 0 1px var(--lp-tinta);
 }
 .lp .lp-meio:focus-visible {
   outline: 2px solid var(--lp-tinta);
   outline-offset: 2px;
+}
+.lp-meio-ponto {
+  width: 18px;
+  height: 18px;
+  border: 2px solid color-mix(in srgb, var(--lp-tinta) 35%, var(--lp-fundo));
+  border-radius: 50%;
+}
+.lp-meio.on .lp-meio-ponto {
+  border: 5px solid var(--lp-tinta);
+}
+.lp-meio-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.lp-meio-texto strong {
+  font-size: 16px;
+  font-weight: 600;
+}
+.lp-meio-texto span {
+  font-size: 13px;
+  color: var(--lp-suave);
+}
+.lp-meio-valor {
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: lining-nums tabular-nums;
+  white-space: nowrap;
+}
+
+/* o cartão: número, validade e código num bloco só, como um cartão */
+.lp-cartao {
+  border: 1px solid var(--lp-linha);
+  border-radius: 14px;
+  background: var(--lp-papel);
+  overflow: hidden;
+}
+.lp-cartao:focus-within {
+  border-color: var(--lp-tinta);
+}
+.lp-cartao-linha {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid var(--lp-linha);
+}
+.lp-cartao-linha .lp-cartao-campo + .lp-cartao-campo {
+  border-left: 1px solid var(--lp-linha);
+}
+.lp-cartao-campo {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px 8px;
+  min-width: 0;
+}
+.lp-cartao-campo > span {
+  font-size: 12px;
+  color: var(--lp-suave);
+}
+.lp-cartao-campo input {
+  width: 100%;
+  min-width: 0;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: var(--lp-tinta);
+  font: inherit;
+  font-size: 17px;
+  letter-spacing: 0.02em;
+  font-variant-numeric: lining-nums tabular-nums;
+  outline: none;
+}
+.lp-cartao-numero input {
+  padding-right: 92px;
+}
+.lp-bandeira {
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  padding: 2px 8px;
+  border: 1px solid var(--lp-linha);
+  border-radius: 6px;
+  background: var(--lp-fundo);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* as parcelas: botões curtos numa linha e a conta logo embaixo */
+.lp-parcelas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lp-parcelas-rotulo {
+  font-size: 13px;
+  color: var(--lp-suave);
+}
+.lp-parcelas-opcoes {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+.lp .lp-parcela {
+  padding: 10px 0;
+  border: 1px solid var(--lp-linha);
+  border-radius: 10px;
+  background: var(--lp-papel);
+  color: var(--lp-tinta);
+  font: inherit;
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.lp .lp-parcela.on {
+  border-color: var(--lp-tinta);
+  background: var(--lp-tinta);
+  color: var(--lp-fundo);
+  font-weight: 600;
+}
+.lp .lp-parcela:focus-visible {
+  outline: 2px solid var(--lp-tinta);
+  outline-offset: 2px;
+}
+.lp-parcelas-resumo {
+  margin: 0;
+  font-size: 14px;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+/* o endereço que o CEP achou, numa linha */
+.lp-endereco {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--lp-papel);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+/* o botão de pagar sempre à vista, preso ao pé da janela. O sticky para
+   no respiro de baixo da janela: o bottom negativo (o mesmo respiro)
+   encosta o rodapé na borda de verdade */
+.lp-rodape {
+  position: sticky;
+  bottom: calc(-22px - env(safe-area-inset-bottom));
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 4px -20px calc(-22px - env(safe-area-inset-bottom));
+  padding: 14px 20px calc(16px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--lp-linha);
+  background: var(--lp-fundo);
+}
+.lp-seguro {
+  text-align: center;
+}
+@media (min-width: 640px) {
+  /* a janela do computador tem outro respiro: o rodapé acompanha */
+  .lp-rodape {
+    bottom: -26px;
+    margin: 4px -28px -26px;
+    padding: 14px 28px 18px;
+    border-radius: 0 0 20px 20px;
+  }
+}
+@media (max-width: 360px) {
+  .lp-parcelas-opcoes {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 /* o cartão e o endereço da fatura: grupos sem caixa, só o título */

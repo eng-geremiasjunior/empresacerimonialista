@@ -66,7 +66,9 @@ type Props = {
 
 type Ordem = "lista" | "menor" | "maior";
 type Meio = "pix" | "cartao";
-type Passo = "dados" | "pix" | "cartao" | "pago" | "venceu" | "falhou";
+// dados (quem presenteia) → pagamento (Pix ou cartão) → pix | cartao (em
+// análise) → pago | venceu | falhou. Lista só com Pix pula o "pagamento".
+type Passo = "dados" | "pagamento" | "pix" | "cartao" | "pago" | "venceu" | "falhou";
 
 type PagamentoAberto = {
   id: string;
@@ -141,6 +143,19 @@ function numeroDeCartaoValido(numero: string): boolean {
   return soma % 10 === 0;
 }
 
+/** A bandeira pelo começo do número: o convidado vê que digitou o cartão certo. */
+function bandeiraDoCartao(numero: string): string | null {
+  const d = so(numero);
+  if (d.length < 4) return null;
+  // a Elo começa com números que também parecem Visa ou Master: vem antes
+  if (/^(401178|401179|431274|438935|451416|457393|457631|457632|504175|506699|5067|509|627780|636297|636368|650|6516|6550)/.test(d)) return "Elo";
+  if (/^(606282|3841)/.test(d)) return "Hipercard";
+  if (/^3[47]/.test(d)) return "Amex";
+  if (/^4/.test(d)) return "Visa";
+  if (/^(5[1-5]|2(2[2-9]|[3-6]\d|7[01]|720))/.test(d)) return "Mastercard";
+  return null;
+}
+
 function problemaNoCartao(c: Cartao): string | null {
   if (!numeroDeCartaoValido(c.numero)) return "Confira o número do cartão.";
   if (c.nome.trim().length < 2) return "Escreva o nome como está no cartão.";
@@ -209,6 +224,10 @@ export function ListaPublica(props: Props) {
   const [cartao, setCartao] = useState<Cartao>(SEM_CARTAO);
   const [parcelas, setParcelas] = useState(1);
   const [endereco, setEndereco] = useState<EnderecoDeCobranca>(SEM_ENDERECO);
+  // o CEP: ainda não buscado, buscando, achou a rua, achou só a cidade, não achou
+  const [cepEstado, setCepEstado] = useState<"nada" | "buscando" | "achou" | "incompleto" | "nao">("nada");
+  // os campos do endereço abertos à mão ("corrigir")
+  const [enderecoAberto, setEnderecoAberto] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [pagamento, setPagamento] = useState<PagamentoAberto | null>(null);
@@ -457,26 +476,50 @@ export function ListaPublica(props: Props) {
     setPagamento(null);
     setEstado("aguardando");
     guardar(null);
-    setPasso("dados");
+    // os dados de quem presenteia continuam valendo: volta direto ao pagamento
+    setPasso(aceitaCartao && problemaNoConvidado(convidado) === null ? "pagamento" : "dados");
   }
 
-  // o CEP preenche o resto do endereço (ViaCEP); sem resposta, digita-se
+  // etapa 1 → etapa 2: os dados de quem presenteia valem antes de escolher
+  // como pagar. Lista só com Pix não tem escolha: o botão já gera o Pix.
+  function continuar() {
+    const problema = problemaNoConvidado(convidado);
+    if (problema) {
+      setErro(problema);
+      return;
+    }
+    setErro(null);
+    if (!aceitaCartao) {
+      void gerarPix();
+      return;
+    }
+    setPasso("pagamento");
+    janela.current?.scrollTo({ top: 0 });
+  }
+
+  // o CEP preenche o resto do endereço (ViaCEP): achou, a tela mostra o
+  // endereço numa linha e pede só o número; não achou, abre os campos
   async function buscarCep(cep: string) {
     if (so(cep).length !== 8) return;
+    setCepEstado("buscando");
     try {
       const r = await fetch(`https://viacep.com.br/ws/${so(cep)}/json/`);
       const j = (await r.json()) as { logradouro?: string; bairro?: string; localidade?: string; uf?: string; erro?: boolean };
-      if (!j.erro) {
+      if (!j.erro && j.localidade && j.uf) {
         setEndereco((e) => ({
           ...e,
-          rua: j.logradouro || e.rua,
-          bairro: j.bairro || e.bairro,
-          cidade: j.localidade || e.cidade,
-          uf: j.uf || e.uf,
+          rua: j.logradouro || "",
+          bairro: j.bairro || "",
+          cidade: j.localidade || "",
+          uf: j.uf || "",
         }));
+        // CEP de cidade inteira (sem rua): os campos abrem para completar
+        setCepEstado(j.logradouro && j.bairro ? "achou" : "incompleto");
+      } else {
+        setCepEstado("nao");
       }
     } catch {
-      /* sem o CEP, o endereço é digitado */
+      setCepEstado("nao");
     }
   }
 
@@ -524,12 +567,14 @@ export function ListaPublica(props: Props) {
   const valores = aberto ? valoresDoPresente(aberto.valorCentavos, taxaDoCasal) : null;
   const noCartao = aberto ? valoresNoCartao(aberto.valorCentavos, taxaDoCasal, parcelas) : null;
   const pagandoNoCartao = aceitaCartao && meio === "cartao";
+  // no topo: o preço da lista na etapa 1; o do meio escolhido na etapa 2;
+  // depois de pedir, o que o servidor cobrou
   const totalDaJanela =
-    passo !== "dados" && pagamento && aberto && pagamento.itemId === aberto.id
-      ? pagamento.totalCentavos
-      : pagandoNoCartao
+    (passo === "dados" || passo === "pagamento") || !(pagamento && aberto && pagamento.itemId === aberto.id)
+      ? passo === "pagamento" && pagandoNoCartao
         ? noCartao?.total
-        : valores?.total;
+        : valores?.total
+      : pagamento.totalCentavos;
   // a conta que o convidado vê antes de pagar: o presente e cada taxa dele
   const partesDoTotal =
     aberto && valores && noCartao
@@ -539,6 +584,9 @@ export function ListaPublica(props: Props) {
           ...(pagandoNoCartao ? [`taxa do cartão ${formatarReais(noCartao.taxaCartao)}`] : []),
         ]
       : [];
+  const bandeira = bandeiraDoCartao(cartao.numero);
+  // o endereço numa linha, quando o CEP achou a rua e ninguém pediu para corrigir
+  const enderecoResumido = cepEstado === "achou" && !enderecoAberto;
   const pendente = pagamento && !aberto && estado === "aguardando" ? pagamento : null;
   const pagoComJanelaFechada = pagamento && !aberto && estado === "pago" ? pagamento : null;
   const ehCartao = pagamento?.meio === "cartao";
@@ -679,15 +727,25 @@ export function ListaPublica(props: Props) {
             </button>
 
             <div className="lp-janela-cabeca">
+              {aceitaCartao && (passo === "dados" || passo === "pagamento") && (
+                <ol className="lp-etapas" aria-label="Etapas do presente">
+                  <li className={passo === "dados" ? "on" : "feita"} aria-current={passo === "dados" ? "step" : undefined}>
+                    Seus dados
+                  </li>
+                  <li className={passo === "pagamento" ? "on" : ""} aria-current={passo === "pagamento" ? "step" : undefined}>
+                    Pagamento
+                  </li>
+                </ol>
+              )}
               <p className="lp-sobre">{passo === "pago" ? "Presente enviado" : "Presente"}</p>
               <h2 id="lp-janela-titulo" className="lp-janela-titulo">
                 {aberto.titulo}
               </h2>
               {passo !== "pago" && totalDaJanela !== undefined && (
                 <>
-                  {/* depois de pedir, o valor que o servidor cobrou; antes, a conta desta página */}
+                  {/* antes de pedir, a conta desta página; depois, o valor que o servidor cobrou */}
                   <p className="lp-janela-total">{formatarReais(totalDaJanela)}</p>
-                  {passo === "dados" && partesDoTotal.length > 1 && (
+                  {(passo === "pagamento" || (passo === "dados" && !aceitaCartao)) && partesDoTotal.length > 1 && (
                     <p className="lp-janela-taxa">{partesDoTotal.join(" · ")}</p>
                   )}
                 </>
@@ -699,34 +757,10 @@ export function ListaPublica(props: Props) {
                 className="lp-form"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  void (pagandoNoCartao ? pagarNoCartao() : gerarPix());
+                  continuar();
                 }}
                 noValidate
               >
-                {aceitaCartao && (
-                  <div className="lp-meios" role="radiogroup" aria-label="Como pagar">
-                    {(
-                      [
-                        ["pix", "Pix"],
-                        ["cartao", "Cartão de crédito"],
-                      ] as const
-                    ).map(([m, rotulo]) => (
-                      <button
-                        key={m}
-                        type="button"
-                        role="radio"
-                        aria-checked={meio === m}
-                        className={`lp-meio${meio === m ? " on" : ""}`}
-                        onClick={() => {
-                          setMeio(m);
-                          setErro(null);
-                        }}
-                      >
-                        {rotulo}
-                      </button>
-                    ))}
-                  </div>
-                )}
                 <label className="lp-campo">
                   <span>Seu nome</span>
                   <input
@@ -769,21 +803,121 @@ export function ListaPublica(props: Props) {
                     />
                   </label>
                 </div>
+                <label className="lp-campo">
+                  <span>Recado para {quemRecebe} (opcional)</span>
+                  <textarea
+                    value={convidado.recado}
+                    onChange={(e) => mudar("recado", e.target.value)}
+                    maxLength={500}
+                    rows={3}
+                  />
+                </label>
+                <p className="lp-miudo">
+                  O banco pede CPF e celular para o pagamento. {QuemRecebe} {plural ? "veem" : "vê"} só o seu nome e o recado.
+                </p>
+                {erro && (
+                  <p className="lp-erro" role="alert">
+                    {erro}
+                  </p>
+                )}
+                <button type="submit" className="lp-botao lp-botao-grande" disabled={enviando}>
+                  {aceitaCartao ? "Continuar" : enviando ? "Gerando o Pix…" : `Gerar o Pix · ${formatarReais(valores.total)}`}
+                </button>
+              </form>
+            )}
+
+            {passo === "pagamento" && (
+              <form
+                className="lp-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void (pagandoNoCartao ? pagarNoCartao() : gerarPix());
+                }}
+                noValidate
+              >
+                <p className="lp-quem">
+                  <span>
+                    De <strong>{convidado.quem.trim()}</strong> · {convidado.email.trim()}
+                  </span>
+                  <button
+                    type="button"
+                    className="lp-link"
+                    onClick={() => {
+                      setPasso("dados");
+                      setErro(null);
+                    }}
+                  >
+                    Alterar
+                  </button>
+                </p>
+
+                <div className="lp-meios" role="radiogroup" aria-label="Como pagar">
+                  {(
+                    [
+                      ["pix", "Pix", "Aprovado na hora", valores.total],
+                      ["cartao", "Cartão de crédito", "À vista ou em até 6x", valoresNoCartao(aberto.valorCentavos, taxaDoCasal, 1).total],
+                    ] as const
+                  ).map(([m, rotulo, sub, total]) => (
+                    <button
+                      key={m}
+                      type="button"
+                      role="radio"
+                      aria-checked={meio === m}
+                      className={`lp-meio${meio === m ? " on" : ""}`}
+                      onClick={() => {
+                        setMeio(m);
+                        setErro(null);
+                      }}
+                    >
+                      <span className="lp-meio-ponto" aria-hidden="true" />
+                      <span className="lp-meio-texto">
+                        <strong>{rotulo}</strong>
+                        <span>{sub}</span>
+                      </span>
+                      <span className="lp-meio-valor">{m === "cartao" ? `a partir de ${formatarReais(total)}` : formatarReais(total)}</span>
+                    </button>
+                  ))}
+                </div>
 
                 {pagandoNoCartao && (
                   <>
                     <fieldset className="lp-grupo">
                       <legend>Cartão</legend>
-                      <label className="lp-campo">
-                        <span>Número do cartão</span>
-                        <input
-                          value={cartao.numero}
-                          onChange={(e) => mudarCartao("numero", mascaraNumeroDoCartao(e.target.value))}
-                          inputMode="numeric"
-                          autoComplete="cc-number"
-                          placeholder="0000 0000 0000 0000"
-                        />
-                      </label>
+                      <div className="lp-cartao">
+                        <label className="lp-cartao-campo lp-cartao-numero">
+                          <span>Número do cartão</span>
+                          <input
+                            value={cartao.numero}
+                            onChange={(e) => mudarCartao("numero", mascaraNumeroDoCartao(e.target.value))}
+                            inputMode="numeric"
+                            autoComplete="cc-number"
+                            placeholder="0000 0000 0000 0000"
+                          />
+                          {bandeira && <em className="lp-bandeira">{bandeira}</em>}
+                        </label>
+                        <div className="lp-cartao-linha">
+                          <label className="lp-cartao-campo">
+                            <span>Validade</span>
+                            <input
+                              value={cartao.validade}
+                              onChange={(e) => mudarCartao("validade", mascaraValidade(e.target.value))}
+                              inputMode="numeric"
+                              autoComplete="cc-exp"
+                              placeholder="MM/AA"
+                            />
+                          </label>
+                          <label className="lp-cartao-campo">
+                            <span>Código de segurança</span>
+                            <input
+                              value={cartao.cvv}
+                              onChange={(e) => mudarCartao("cvv", so(e.target.value).slice(0, 4))}
+                              inputMode="numeric"
+                              autoComplete="cc-csc"
+                              placeholder={bandeira === "Amex" ? "4 dígitos" : "3 dígitos"}
+                            />
+                          </label>
+                        </div>
+                      </div>
                       <label className="lp-campo">
                         <span>Nome impresso no cartão</span>
                         <input
@@ -793,47 +927,34 @@ export function ListaPublica(props: Props) {
                           autoComplete="cc-name"
                         />
                       </label>
-                      <div className="lp-dupla">
-                        <label className="lp-campo">
-                          <span>Validade</span>
-                          <input
-                            value={cartao.validade}
-                            onChange={(e) => mudarCartao("validade", mascaraValidade(e.target.value))}
-                            inputMode="numeric"
-                            autoComplete="cc-exp"
-                            placeholder="MM/AA"
-                          />
-                        </label>
-                        <label className="lp-campo">
-                          <span>Código de segurança</span>
-                          <input
-                            value={cartao.cvv}
-                            onChange={(e) => mudarCartao("cvv", so(e.target.value).slice(0, 4))}
-                            inputMode="numeric"
-                            autoComplete="cc-csc"
-                            placeholder="CVV"
-                          />
-                        </label>
+                      <div className="lp-parcelas">
+                        <span className="lp-parcelas-rotulo" id="lp-parcelas-rotulo">
+                          Parcelas
+                        </span>
+                        <div className="lp-parcelas-opcoes" role="radiogroup" aria-labelledby="lp-parcelas-rotulo">
+                          {Array.from({ length: PARCELAS_NO_CARTAO }, (_, i) => i + 1).map((n) => (
+                            <button
+                              key={n}
+                              type="button"
+                              role="radio"
+                              aria-checked={parcelas === n}
+                              className={`lp-parcela${parcelas === n ? " on" : ""}`}
+                              onClick={() => setParcelas(n)}
+                            >
+                              {n === 1 ? "À vista" : `${n}x`}
+                            </button>
+                          ))}
+                        </div>
+                        <p className="lp-parcelas-resumo" aria-live="polite">
+                          {parcelas === 1
+                            ? `À vista · ${formatarReais(noCartao.total)}`
+                            : `${parcelas}x de ${formatarReais(noCartao.valorDaParcela)} · total ${formatarReais(noCartao.total)}`}
+                        </p>
                       </div>
-                      <label className="lp-campo">
-                        <span>Parcelas</span>
-                        <select value={parcelas} onChange={(e) => setParcelas(Number(e.target.value))}>
-                          {Array.from({ length: PARCELAS_NO_CARTAO }, (_, i) => i + 1).map((n) => {
-                            const c = valoresNoCartao(aberto.valorCentavos, taxaDoCasal, n);
-                            return (
-                              <option key={n} value={n}>
-                                {n === 1
-                                  ? `À vista · ${formatarReais(c.total)}`
-                                  : `${n}x de ${formatarReais(c.valorDaParcela)} · total ${formatarReais(c.total)}`}
-                              </option>
-                            );
-                          })}
-                        </select>
-                      </label>
                     </fieldset>
 
                     <fieldset className="lp-grupo">
-                      <legend>Endereço da fatura do cartão</legend>
+                      <legend>Endereço da fatura</legend>
                       <div className="lp-dupla">
                         <label className="lp-campo">
                           <span>CEP</span>
@@ -843,6 +964,7 @@ export function ListaPublica(props: Props) {
                               const v = mascararCep(e.target.value);
                               mudarEndereco("cep", v);
                               if (so(v).length === 8) void buscarCep(v);
+                              else setCepEstado("nada");
                             }}
                             inputMode="numeric"
                             autoComplete="postal-code"
@@ -859,24 +981,62 @@ export function ListaPublica(props: Props) {
                           />
                         </label>
                       </div>
-                      <label className="lp-campo">
-                        <span>Rua</span>
-                        <input
-                          value={endereco.rua}
-                          onChange={(e) => mudarEndereco("rua", e.target.value)}
-                          maxLength={120}
-                          autoComplete="address-line1"
-                        />
-                      </label>
-                      <div className="lp-dupla">
-                        <label className="lp-campo">
-                          <span>Bairro</span>
-                          <input
-                            value={endereco.bairro}
-                            onChange={(e) => mudarEndereco("bairro", e.target.value)}
-                            maxLength={60}
-                          />
-                        </label>
+                      {cepEstado === "buscando" && <p className="lp-miudo">Buscando o endereço…</p>}
+                      {enderecoResumido && (
+                        <p className="lp-endereco">
+                          <span>
+                            {endereco.rua}, {endereco.bairro} · {endereco.cidade}/{endereco.uf}
+                          </span>
+                          <button type="button" className="lp-link" onClick={() => setEnderecoAberto(true)}>
+                            Corrigir
+                          </button>
+                        </p>
+                      )}
+                      {!enderecoResumido && (cepEstado === "incompleto" || cepEstado === "nao" || enderecoAberto) && (
+                        <>
+                          {cepEstado === "nao" && <p className="lp-miudo">Não achamos esse CEP. Complete o endereço:</p>}
+                          <label className="lp-campo">
+                            <span>Rua</span>
+                            <input
+                              value={endereco.rua}
+                              onChange={(e) => mudarEndereco("rua", e.target.value)}
+                              maxLength={120}
+                              autoComplete="address-line1"
+                            />
+                          </label>
+                          <div className="lp-dupla">
+                            <label className="lp-campo">
+                              <span>Bairro</span>
+                              <input
+                                value={endereco.bairro}
+                                onChange={(e) => mudarEndereco("bairro", e.target.value)}
+                                maxLength={60}
+                              />
+                            </label>
+                            <label className="lp-campo">
+                              <span>Cidade</span>
+                              <input
+                                value={endereco.cidade}
+                                onChange={(e) => mudarEndereco("cidade", e.target.value)}
+                                maxLength={60}
+                                autoComplete="address-level2"
+                              />
+                            </label>
+                          </div>
+                          <label className="lp-campo">
+                            <span>Estado</span>
+                            <select value={endereco.uf} onChange={(e) => mudarEndereco("uf", e.target.value)}>
+                              <option value="">—</option>
+                              {UFS.map((uf) => (
+                                <option key={uf} value={uf}>
+                                  {uf}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        </>
+                      )}
+                      {(enderecoResumido || cepEstado === "incompleto" || cepEstado === "nao" || enderecoAberto) && (
                         <label className="lp-campo">
                           <span>Complemento (opcional)</span>
                           <input
@@ -886,61 +1046,28 @@ export function ListaPublica(props: Props) {
                             autoComplete="address-line2"
                           />
                         </label>
-                      </div>
-                      <div className="lp-dupla">
-                        <label className="lp-campo">
-                          <span>Cidade</span>
-                          <input
-                            value={endereco.cidade}
-                            onChange={(e) => mudarEndereco("cidade", e.target.value)}
-                            maxLength={60}
-                            autoComplete="address-level2"
-                          />
-                        </label>
-                        <label className="lp-campo">
-                          <span>Estado</span>
-                          <select value={endereco.uf} onChange={(e) => mudarEndereco("uf", e.target.value)}>
-                            <option value="">—</option>
-                            {UFS.map((uf) => (
-                              <option key={uf} value={uf}>
-                                {uf}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      </div>
+                      )}
                     </fieldset>
                   </>
                 )}
 
-                <label className="lp-campo">
-                  <span>Recado para {quemRecebe} (opcional)</span>
-                  <textarea
-                    value={convidado.recado}
-                    onChange={(e) => mudar("recado", e.target.value)}
-                    maxLength={500}
-                    rows={3}
-                  />
-                </label>
-                <p className="lp-miudo">
-                  {pagandoNoCartao
-                    ? `${QuemRecebe} ${plural ? "veem" : "vê"} só o seu nome e o recado. Os dados do cartão vão direto para a operadora de pagamento.`
-                    : `O banco pede CPF e celular para o Pix. ${QuemRecebe} ${plural ? "veem" : "vê"} só o seu nome e o recado.`}
-                </p>
-                {erro && (
-                  <p className="lp-erro" role="alert">
-                    {erro}
-                  </p>
-                )}
-                <button type="submit" className="lp-botao lp-botao-grande" disabled={enviando}>
-                  {pagandoNoCartao
-                    ? enviando
-                      ? "Pagando…"
-                      : `Pagar ${formatarReais(noCartao.total)}${parcelas > 1 ? ` em ${parcelas}x` : ""}`
-                    : enviando
-                      ? "Gerando o Pix…"
-                      : `Gerar o Pix · ${formatarReais(valores.total)}`}
-                </button>
+                <div className="lp-rodape">
+                  {erro && (
+                    <p className="lp-erro" role="alert">
+                      {erro}
+                    </p>
+                  )}
+                  <button type="submit" className="lp-botao lp-botao-grande" disabled={enviando}>
+                    {pagandoNoCartao
+                      ? enviando
+                        ? "Pagando…"
+                        : `Pagar ${formatarReais(noCartao.total)}${parcelas > 1 ? ` em ${parcelas}x` : ""}`
+                      : enviando
+                        ? "Gerando o Pix…"
+                        : `Gerar o Pix · ${formatarReais(valores.total)}`}
+                  </button>
+                  {pagandoNoCartao && <p className="lp-miudo lp-seguro">Os dados do cartão vão direto para a operadora de pagamento.</p>}
+                </div>
               </form>
             )}
 
