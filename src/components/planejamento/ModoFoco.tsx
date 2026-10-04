@@ -158,7 +158,11 @@ function LinhaDecisao({
     : daCliente > 0
       ? `${daCliente} ${daCliente === 1 ? "resposta da cliente" : "respostas da cliente"}`
       : resumo ??
-        (decisao.campos.length > 0
+        // decidida sem nada anotado: está fechada, só não guardou o quê
+        // ("falta preencher 3 de 3" ao lado de "decidida" se contradizia)
+        (ev === "decidida"
+          ? "sem anotação"
+          : decisao.campos.length > 0
           ? vazios > 0
             ? `falta preencher ${vazios} de ${decisao.campos.length}`
             : "tudo preenchido"

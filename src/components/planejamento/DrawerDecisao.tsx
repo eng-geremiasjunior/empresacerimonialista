@@ -23,7 +23,6 @@ import {
   F_MONO,
   F_TITLE,
   F_UI,
-  idCurto,
   monoLabel,
   prazoRelativo,
   tempoAtras,
@@ -781,12 +780,13 @@ export function DrawerDecisao({
     return () => window.removeEventListener("keydown", onKey);
   }, [onFechar]);
 
-  const metaPartes = [
-    idCurto(decisao.id),
-    respLabel(decisao.responsavel, tipoEvento),
-  ];
+  // sem o código curto (#0729): número interno não ajuda a cerimonialista
+  const metaPartes = [respLabel(decisao.responsavel, tipoEvento)];
   if (na) {
     metaPartes.push("marcada como não se aplica");
+  } else if (decisao.estado === "decidida") {
+    // fechada: sem prazo ("venceu há 23 dias") nem contagem de campos vazios
+    metaPartes.push("decidida");
   } else {
     const prazo = prazoRelativo(decisao.prazoPrevisto);
     if (prazo) metaPartes.push(prazo);

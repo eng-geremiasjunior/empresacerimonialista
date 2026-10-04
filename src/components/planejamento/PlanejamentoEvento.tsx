@@ -56,6 +56,8 @@ import { ModoFoco } from "./ModoFoco";
 import { MapaMental } from "./MapaMental";
 import { SalvarModelo } from "./SalvarModelo";
 import { AnotacoesDaDecisao, ModoCaderno } from "./ModoCaderno";
+import { ModoFechado } from "./ModoFechado";
+import type { FornecedorVinculado } from "@/lib/fechado";
 import type { NotaDoCaderno, ReuniaoDoCaderno } from "@/app/(app)/eventos/[id]/planejamento/caderno-actions";
 import {
   DrawerDecisao,
@@ -118,6 +120,7 @@ export function PlanejamentoEvento({
   localEvento,
   podeSalvarModelo = false,
   caderno = { notas: [], reunioes: [] },
+  vinculados = [],
 }: {
   eventId: string;
   inicial: Planejamento;
@@ -134,6 +137,8 @@ export function PlanejamentoEvento({
   podeSalvarModelo?: boolean;
   /** Caderno do evento (172): as anotações dela e as reuniões */
   caderno?: { notas: NotaDoCaderno[]; reunioes: ReuniaoDoCaderno[] };
+  /** fornecedores vinculados ao evento (o Fechado usa na contratação sem anotação) */
+  vinculados?: FornecedorVinculado[];
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -141,7 +146,7 @@ export function PlanejamentoEvento({
   const plano = inicial;
 
   // ---- estado de visualização (handoff §12) ----
-  const [modo, setModo] = useState<"foco" | "caderno">("foco");
+  const [modo, setModo] = useState<"foco" | "fechado" | "caderno">("foco");
   const [mapaAberto, setMapaAberto] = useState(false);
   const [modeloAberto, setModeloAberto] = useState(false);
   const [drawerId, setDrawerId] = useState<string | null>(decisaoInicial);
@@ -155,13 +160,19 @@ export function PlanejamentoEvento({
   // Caderno em 24/09/2026) volta no Caderno, que é a mesma visão por mês.
   useEffect(() => {
     try {
+      // ?modo=fechado vem da Visão geral ("ver tudo o que está fechado")
+      if (new URLSearchParams(window.location.search).get("modo") === "fechado") {
+        setModo("fechado");
+        return;
+      }
       const salvo = window.localStorage.getItem(`plano-modo-${eventId}`);
       if (salvo === "amplo" || salvo === "caderno") setModo("caderno");
+      else if (salvo === "fechado") setModo("fechado");
     } catch {
       /* sem armazenamento: começa no Agora */
     }
   }, [eventId]);
-  const trocarModo = (m: "foco" | "caderno") => {
+  const trocarModo = (m: "foco" | "fechado" | "caderno") => {
     setModo(m);
     try {
       window.localStorage.setItem(`plano-modo-${eventId}`, m);
@@ -491,7 +502,7 @@ export function PlanejamentoEvento({
             gap: 3,
           }}
         >
-          {(["foco", "caderno"] as const).map((m) => (
+          {(["foco", "fechado", "caderno"] as const).map((m) => (
             <button
               key={m}
               type="button"
@@ -516,7 +527,7 @@ export function PlanejamentoEvento({
                 transition: "background 150ms ease, color 150ms ease",
               }}
             >
-              {m === "foco" ? "Agora" : "Caderno"}
+              {m === "foco" ? "Agora" : m === "fechado" ? "Fechado" : "Caderno"}
             </button>
           ))}
         </div>
@@ -647,6 +658,8 @@ export function PlanejamentoEvento({
             })
           }
         />
+      ) : modo === "fechado" ? (
+        <ModoFechado objetivos={plano.objetivos} suppliers={suppliers} vinculados={vinculados} onAbrirDecisao={abrirDrawer} />
       ) : modo === "caderno" ? (
         <ModoCaderno
           eventId={eventId}

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getPlanejamento } from "@/lib/supabase/planejamento";
+import { getVinculadosDoEvento } from "@/lib/supabase/fechado-evento";
 import { PlanejamentoEvento } from "@/components/planejamento/PlanejamentoEvento";
 import { TemaNeutro } from "@/components/planejamento/TemaNeutro";
 import type { Arquetipos } from "@/components/planejamento/celebra";
@@ -29,7 +30,7 @@ export default async function EventoPlanejamentoPage({
 
   const tipoEvento = (ev?.type as string) ?? "casamento";
 
-  const [planejamento, { data: arqs }, { data: cargo }] = await Promise.all([
+  const [planejamento, { data: arqs }, { data: cargo }, vinculados] = await Promise.all([
     getPlanejamento(eventId, ev?.date ?? null),
     // opções dos chips escala/cenário: as do método deste tipo, na ordem
     // do seed — a debutante deixa de ver "Mini wedding"
@@ -41,6 +42,8 @@ export default async function EventoPlanejamentoPage({
     // só a proprietária vê "Salvar como meu modelo" (a função do banco
     // confere de novo)
     supabase.rpc("meu_cargo").maybeSingle(),
+    // o fornecedor vinculado ao evento responde pela contratação sem anotação (Fechado)
+    getVinculadosDoEvento(eventId),
   ]);
 
   const arquetipos: Arquetipos = { escala: [], cenario: [] };
@@ -105,6 +108,7 @@ export default async function EventoPlanejamentoPage({
         eventId={eventId}
         inicial={planejamento}
         suppliers={sups ?? []}
+        vinculados={vinculados}
         decisaoInicial={searchParams?.decisao ?? null}
         escala={ev?.escala ?? null}
         cenario={ev?.cenario ?? null}

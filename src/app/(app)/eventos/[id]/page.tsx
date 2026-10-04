@@ -35,6 +35,10 @@ import { CARGO_LABELS, type Cargo } from "@/lib/equipe-shared";
 import { EVENT_TYPE_LABELS } from "@/lib/types";
 import { formatCurrency } from "@/lib/format";
 import type { NotaEvento } from "./notas-actions";
+import { getPlanejamento } from "@/lib/supabase/planejamento";
+import { oQueEstaFechado } from "@/lib/fechado";
+import { FechadoDoEvento } from "@/components/eventos/FechadoDoEvento";
+import { getVinculadosDoEvento } from "@/lib/supabase/fechado-evento";
 
 type LinhaFornecedor = {
   id: string;
@@ -104,6 +108,30 @@ export default async function ResumoPage({
     supabase.rpc("minha_conexao_google"),
   ]);
   const veValor = cargo !== null && VE_VALOR.includes(cargo);
+
+  // "O que já está fechado" (04/10/2026): as decisões tomadas, com o que
+  // foi anotado nelas. Os nomes dos fornecedores vêm só dos que aparecem.
+  const plano = await getPlanejamento(eventId, resumo.event.date ?? null);
+  const idsFornecedor = [
+    ...new Set(
+      plano.objetivos.flatMap((o) =>
+        o.decisoes.flatMap((d) =>
+          d.estado === "decidida" ? d.campos.filter((c) => c.tipo === "fornecedor" && c.valorSupplierId).map((c) => c.valorSupplierId as string) : []
+        )
+      )
+    ),
+  ];
+  const [{ data: fornecedoresFechados }, vinculados] = await Promise.all([
+    idsFornecedor.length
+      ? supabase.from("suppliers").select("id, name").in("id", idsFornecedor)
+      : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+    getVinculadosDoEvento(eventId),
+  ]);
+  const fechado = oQueEstaFechado(
+    plano.objetivos,
+    (fornecedoresFechados ?? []) as { id: string; name: string }[],
+    vinculados
+  );
   const googleDisponivel = googleConfigurado() && !conexaoGoogle.error;
   const google =
     ((conexaoGoogle.data as ConexaoGoogleNaTela[] | null) ?? [])[0] ?? null;
@@ -412,6 +440,14 @@ export default async function ResumoPage({
             currentUserId={user?.id ?? null}
           />
         </section>
+
+        <FechadoDoEvento
+          eventId={eventId}
+          grupos={fechado.grupos}
+          decididas={fechado.decididas}
+          contratado={fechado.contratado}
+          veValor={veValor}
+        />
 
         {briefing && (
           <BriefingExtracaoCaixa

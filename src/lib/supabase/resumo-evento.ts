@@ -60,7 +60,7 @@ export async function getCabecalhoEvento(
   const hoje = hojeBR();
   const em7 = emDiasBR(7);
 
-  const [tasksRes, linksRes, itemsRes, txRes, msgRes, confRes, contratoRes] = await Promise.all([
+  const [tasksRes, linksRes, itemsRes, txRes, msgRes, confRes, contratoRes, decRes] = await Promise.all([
     // due_date entra para o Copiloto saber o que está vencido.
     supabase.from("tasks").select("status, due_date").eq("event_id", eventId),
     // suppliers(id) junto de propósito: um vínculo cujo cadastro a
@@ -102,6 +102,12 @@ export async function getCabecalhoEvento(
       .eq("event_id", eventId)
       .eq("tipo", "contrato")
       .eq("status", "respondida"),
+    // o Planejamento são as DECISÕES (04/10/2026): o cartão contava as
+    // tarefas e dizia 91% com a tela de Planejamento dizendo 99%
+    supabase
+      .from("evento_decisao")
+      .select("estado, prioridade, evento_objetivo(ativo)")
+      .eq("event_id", eventId),
   ]);
 
   const tasks = (tasksRes.data ?? []) as {
@@ -161,9 +167,24 @@ export async function getCabecalhoEvento(
   // dizer 100% ali seria afirmar que está pronta quando nem começou — e
   // gerava a contradição de marcar 100% junto de um alerta de pendência.
 
-  // PLANEJAMENTO — o checklist do evento.
-  const planejamentoPct =
-    tarefasTotal > 0 ? Math.round((tarefasConcluidas / tarefasTotal) * 100) : 0;
+  // PLANEJAMENTO — as decisões, com o MESMO peso da tela de Planejamento
+  // (prioridade; "não se aplica" e objetivo desligado ficam fora). Sem
+  // decisões (evento sem método), o checklist de tarefas, como antes.
+  const decisoes = ((decRes.data ?? []) as unknown as {
+    estado: string;
+    prioridade: number | null;
+    evento_objetivo: { ativo: boolean | null } | { ativo: boolean | null }[] | null;
+  }[]).filter((d) => {
+    const o = Array.isArray(d.evento_objetivo) ? d.evento_objetivo[0] : d.evento_objetivo;
+    return d.estado !== "nao_se_aplica" && o?.ativo !== false;
+  });
+  const pesoTotal = decisoes.reduce((s, d) => s + (d.prioridade ?? 1), 0);
+  const pesoFeito = decisoes.filter((d) => d.estado === "decidida").reduce((s, d) => s + (d.prioridade ?? 1), 0);
+  const decisoesAbertas = decisoes.filter((d) => d.estado !== "decidida").length;
+  const temDecisoes = decisoes.length > 0;
+  const planejamentoPct = temDecisoes
+    ? pesoTotal > 0 ? Math.round((pesoFeito / pesoTotal) * 100) : 0
+    : tarefasTotal > 0 ? Math.round((tarefasConcluidas / tarefasTotal) * 100) : 0;
   const tarefasRestantes = tarefasTotal - tarefasConcluidas;
 
   // ORGANIZAÇÃO — fechar fornecedores e receber as parcelas do contrato.
@@ -294,8 +315,11 @@ export async function getCabecalhoEvento(
       id: "planejamento",
       rotulo: "Planejamento",
       pct: planejamentoPct,
-      contagem:
-        tarefasTotal === 0
+      contagem: temDecisoes
+        ? decisoesAbertas > 0
+          ? `${plural(decisoesAbertas, "decisão aberta", "decisões abertas")}`
+          : "Tudo decidido"
+        : tarefasTotal === 0
           ? "Nenhuma tarefa cadastrada"
           : tarefasRestantes > 0
             ? `${plural(tarefasRestantes, "tarefa restante", "tarefas restantes")}`
