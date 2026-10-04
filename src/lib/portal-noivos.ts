@@ -78,6 +78,8 @@ export type DestinoNoivos = {
 /** O menu de ícones, na ordem do desenho. */
 export const MENU_NOIVOS: DestinoNoivos[] = [
   { chave: "visao", rotulo: "Visão geral", icone: "space_dashboard", seg: "" },
+  // só na conta da noiva que abriu sozinha (o layout tira dos outros)
+  { chave: "planejamento", rotulo: "Planejamento", icone: "check_circle", seg: "planejamento" },
   { chave: "convidados", rotulo: "Convidados", icone: "group", seg: "convidados" },
   { chave: "fornecedores", rotulo: "Fornecedores", icone: "storefront", seg: "fornecedores" },
   { chave: "documentos", rotulo: "Documentos", icone: "description", seg: "documentos" },
@@ -110,6 +112,7 @@ export const MAIS_NOIVOS: DestinoNoivos[] = [
  */
 export const TELAS_PRONTAS = new Set<string>([
   "visao",
+  "planejamento",
   "convidados",
   "fornecedores",
   "documentos",

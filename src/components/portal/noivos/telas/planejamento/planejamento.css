@@ -1,0 +1,478 @@
+/* O planejamento da noiva que abriu a conta sozinha (04/10/2026): os 9
+   capítulos em cartões com foto e a lista de decisões de cada um. As
+   cores e as letras são as do portal (noivos.css): verde, creme,
+   pêssego; Marcellus nos títulos. Cada capítulo tem um tom próprio
+   (--tom) que fica no lugar da foto enquanto ela não chega. */
+
+.pn-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  /* quem chega por #planejamento / #capitulo não cola na borda */
+  scroll-margin-top: 16px;
+}
+.pn-plan .pn-sub-tela {
+  margin-top: -8px;
+}
+.pn-plan-rotulo {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--pn-marrom);
+}
+
+/* ---------- Agora ---------- */
+.pn-plan-agora {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 18px 8px;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: var(--pn-sombra-card);
+}
+.pn-plan-agora ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pn-plan-agora li + li {
+  border-top: 1px solid var(--pn-trilho);
+}
+.pn-plan-agora a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  color: var(--pn-verde);
+  text-decoration: none;
+}
+.pn-plan-agora-texto {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.pn-plan-agora-texto .tit {
+  font-size: 15.5px;
+  line-height: 1.3;
+}
+.pn-plan-agora-texto .sub {
+  font-size: 13px;
+  color: var(--pn-texto-3);
+}
+.pn-plan-agora .pn-ic {
+  color: var(--pn-texto-3);
+  font-size: 22px;
+}
+.pn-plan-quando {
+  flex: none;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--pn-pessego-claro);
+  color: var(--pn-marrom-escuro);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+.pn-plan-quando.ok {
+  background: var(--pn-salvia);
+  color: var(--pn-ok);
+}
+/* longe (ou fora do planejamento): só o texto, em cinza */
+.pn-plan-quando.longe {
+  padding-inline: 0;
+  background: none;
+  color: var(--pn-texto-3);
+}
+
+/* ---------- os capítulos ---------- */
+.pn-plan-capitulos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 900px) {
+  .pn-plan-capitulos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+  }
+}
+.pn-plan-cap {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: var(--pn-sombra-card);
+  color: var(--pn-verde);
+  text-decoration: none;
+  transition: transform 0.2s var(--pn-entra), box-shadow 0.2s;
+}
+.pn-plan-cap:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--pn-sombra-hover);
+}
+.pn-plan-cap:focus-visible {
+  outline: 2px solid var(--pn-verde);
+  outline-offset: 3px;
+}
+.pn-plan-cap-foto {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  background:
+    radial-gradient(120% 90% at 85% 10%, color-mix(in srgb, #fff 45%, var(--tom)) 0%, transparent 60%),
+    var(--tom);
+}
+.pn-plan-cap-foto img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pn-plan-cap-foto .pn-ic {
+  font-size: 46px;
+  color: color-mix(in srgb, var(--pn-verde) 55%, var(--tom));
+}
+.pn-plan-cap-texto {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px 14px;
+}
+.pn-plan-cap-texto .nome {
+  font-size: 21px;
+  line-height: 1.15;
+}
+.pn-plan-cap-texto .sub {
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--pn-texto-2);
+}
+.pn-plan-cap-texto .estado {
+  margin-top: auto;
+  padding-top: 6px;
+  font-size: 12.5px;
+  color: var(--pn-texto-3);
+}
+.pn-plan-cap-texto .estado.feito {
+  color: var(--pn-ok);
+}
+
+/* ---------- um capítulo ---------- */
+.pn-plan-voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  color: var(--pn-texto-2);
+  font-size: 14px;
+  text-decoration: none;
+}
+.pn-plan-voltar .pn-ic {
+  font-size: 20px;
+}
+.pn-plan-capa {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-height: 200px;
+  overflow: hidden;
+  padding: 22px;
+  border-radius: 28px;
+  background:
+    radial-gradient(120% 120% at 90% 0%, color-mix(in srgb, #fff 45%, var(--tom)) 0%, transparent 55%),
+    var(--tom);
+  color: var(--pn-verde);
+}
+.pn-plan-capa img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pn-plan-capa:has(img)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 35%, rgba(27, 42, 35, 0.62));
+}
+.pn-plan-capa:has(img) .pn-plan-capa-texto {
+  color: var(--pn-creme);
+}
+.pn-plan-capa-icone {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  font-size: 110px;
+  color: color-mix(in srgb, var(--pn-verde) 22%, var(--tom));
+}
+.pn-plan-capa-texto {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pn-plan-capa-texto h1 {
+  margin: 0;
+  font-size: 36px;
+  line-height: 1.1;
+}
+.pn-plan-capa-texto p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.pn-plan-capa-texto .conta {
+  margin-top: 4px;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.pn-plan-assunto {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pn-plan-decisoes {
+  margin: 0;
+  padding: 4px 16px;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: var(--pn-sombra-card);
+  list-style: none;
+}
+.pn-plan-dec {
+  scroll-margin-top: 16px;
+}
+.pn-plan-dec + .pn-plan-dec {
+  border-top: 1px solid var(--pn-trilho);
+}
+.pn-plan-dec-linha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.pn-plan-marca {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid var(--pn-salvia-escuro);
+  border-radius: 50%;
+  background: #fff;
+  color: #fff;
+  cursor: pointer;
+}
+.pn-plan-marca.so-leitura {
+  cursor: default;
+}
+.pn-plan-marca .pn-ic {
+  font-size: 18px;
+}
+.pn-plan-dec.feita .pn-plan-marca {
+  border-color: var(--pn-ok);
+  background: var(--pn-ok);
+}
+button.pn-plan-marca:hover {
+  border-color: var(--pn-ok);
+}
+button.pn-plan-marca:focus-visible,
+.pn-plan-dec-abrir:focus-visible {
+  outline: 2px solid var(--pn-verde);
+  outline-offset: 2px;
+}
+.pn-plan-dec-abrir {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px 0;
+  border: 0;
+  background: none;
+  color: var(--pn-verde);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.pn-plan-dec-abrir .tit {
+  flex: 1;
+  min-width: 0;
+  font-size: 15.5px;
+  line-height: 1.35;
+}
+.pn-plan-dec.feita .tit,
+.pn-plan-dec.fora .tit {
+  color: var(--pn-texto-3);
+}
+.pn-plan-dec.fora .tit {
+  text-decoration: line-through;
+}
+.pn-plan-dec-abrir .seta {
+  color: var(--pn-texto-3);
+  font-size: 22px;
+  transition: transform 0.2s;
+}
+.pn-plan-dec.aberta .seta {
+  transform: rotate(180deg);
+}
+.pn-plan-dec-corpo {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 0 0 18px 40px;
+}
+.pn-plan-desc {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--pn-texto-2);
+}
+
+/* as perguntas */
+.pn-plan-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pn-plan-campo-rotulo {
+  font-size: 13.5px;
+  color: var(--pn-texto-2);
+}
+.pn-plan-campo-rotulo span {
+  color: var(--pn-texto-3);
+}
+.pn-plan-campo-valor {
+  margin: 0;
+  font-size: 15px;
+  color: var(--pn-verde);
+}
+.pn-plan-campo input,
+.pn-plan-campo textarea,
+.pn-plan-campo select {
+  width: 100%;
+  min-width: 0;
+  padding: 11px 14px;
+  border: 1px solid var(--pn-borda);
+  border-radius: 14px;
+  background: #fffdf9;
+  color: var(--pn-verde);
+  font: inherit;
+  /* 16px: o celular não amplia a tela ao tocar no campo */
+  font-size: 16px;
+  resize: vertical;
+}
+.pn-plan-campo input:focus,
+.pn-plan-campo textarea:focus,
+.pn-plan-campo select:focus {
+  border-color: var(--pn-verde);
+  outline: none;
+}
+.pn-plan-moeda {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pn-plan-moeda > span {
+  color: var(--pn-texto-3);
+  font-size: 15px;
+}
+.pn-plan-opcoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pn-plan-opcao {
+  padding: 9px 15px;
+  border: 1px solid var(--pn-borda);
+  border-radius: 999px;
+  background: #fffdf9;
+  color: var(--pn-verde);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.pn-plan-opcao.on {
+  border-color: var(--pn-verde);
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+}
+.pn-plan-opcao:focus-visible,
+.pn-plan-salvar:focus-visible,
+.pn-plan-link:focus-visible {
+  outline: 2px solid var(--pn-verde);
+  outline-offset: 2px;
+}
+.pn-plan-salvar {
+  align-self: flex-start;
+  padding: 8px 18px;
+  border: 1px solid var(--pn-verde);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--pn-verde);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pn-plan-aviso {
+  margin: 0;
+  font-size: 13px;
+  color: var(--pn-marrom-escuro);
+}
+.pn-plan-ok {
+  margin: 0;
+  font-size: 13px;
+  color: var(--pn-ok);
+}
+.pn-plan-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  padding-top: 4px;
+}
+.pn-plan-acoes .pn-btn {
+  padding: 12px 28px;
+}
+.pn-plan-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pn-texto-2);
+  font: inherit;
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+@media (max-width: 380px) {
+  .pn-plan-cap-texto .nome {
+    font-size: 19px;
+  }
+  .pn-plan-dec-corpo {
+    padding-left: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pn-plan-cap,
+  .pn-plan-dec-abrir .seta {
+    transition: none;
+  }
+}
