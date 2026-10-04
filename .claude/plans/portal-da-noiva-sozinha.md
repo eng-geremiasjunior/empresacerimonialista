@@ -104,7 +104,13 @@ com o ok dele:
    novo entra no cadastro e aparece no planejamento), "Paguei" e "Desfazer"
    em um toque, apagar, e "Por capítulo" (a divisão do método, mostrada e
    não gravada). Falta editar um gasto: hoje é apagar e lançar de novo.
-3. Roteiro do dia.
+3. Roteiro do dia — feito: a conta de família nascia sem roteiro e sem a hora
+   da cerimônia. Agora ela diz a hora e o roteiro nasce do modelo da conta
+   (metodo_roteiro_item, sem a "chegada do cerimonialista"; a pista entra),
+   em horário estimado. Mudar a hora da cerimônia move só o estimado (o
+   gatilho da 112). O lápis muda a hora, o nome e o detalhe (a hora mudada
+   vira firme), e ela também acrescenta e tira momentos. Quem ela convida
+   vê a tela de leitura de sempre.
 4. Mesas.
 5. Contratos e documentos.
 6. Calendário e Agenda do Google.

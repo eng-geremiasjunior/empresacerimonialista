@@ -1,0 +1,100 @@
+/* O Roteiro do dia da noiva que abriu a conta sozinha (04/10/2026): o
+   cartão, a linha do tempo e os formulários são os do roteiro.css; aqui
+   só o que a tela dela acrescenta — a hora da cerimônia, o "estimado"
+   embaixo da hora e o "tirar do roteiro". */
+
+.pn-rn-cerimonia {
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 18px;
+  background: var(--pn-creme);
+}
+.pn-rn-pergunta {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 22px;
+  line-height: 1.25;
+  color: var(--pn-verde);
+}
+.pn-rn-linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.pn-rn-linha .pn-roteiro-campo.hora {
+  flex: none;
+  width: 140px;
+}
+.pn-roteiro .pn-rn-linha .pn-roteiro-enviar {
+  min-height: 46px;
+  padding: 10px 18px;
+}
+.pn-rn-ancora {
+  margin: 10px 0 0;
+  font-size: 15px;
+  color: var(--pn-texto-2);
+}
+.pn-roteiro .pn-rn-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pn-texto-2);
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.pn-roteiro .pn-rn-link.perigo {
+  color: var(--pn-marrom-escuro);
+}
+.pn-roteiro .pn-rn-link:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.pn-roteiro .pn-rn-link:focus-visible {
+  outline: 2px solid var(--pn-verde);
+  outline-offset: 2px;
+}
+
+/* "estimado" embaixo da hora: o horário ainda segue a hora da cerimônia */
+.pn-rn-estimado {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--pn-f-corpo), "Nunito Sans", system-ui, sans-serif;
+  font-size: 11px;
+  color: var(--pn-texto-3);
+}
+
+/* mudar um momento: o detalhe e o "tirar" em linhas próprias */
+.pn-rn-form .pn-rn-detalhe {
+  order: 2;
+  flex-basis: 100%;
+}
+.pn-rn-tirar {
+  order: 3;
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0 6px;
+  font-size: 14px;
+  color: var(--pn-marrom-escuro);
+}
+
+@media (max-width: 767px) {
+  .pn-rn-pergunta {
+    font-size: 20px;
+  }
+  .pn-rn-linha .pn-roteiro-campo.hora {
+    flex: 1 1 140px;
+  }
+  /* no celular o roteiro.css põe os textos na ordem 3 e o Salvar na 4 */
+  .pn-rn-form .pn-rn-detalhe {
+    order: 3;
+  }
+  .pn-rn-tirar {
+    order: 5;
+  }
+}

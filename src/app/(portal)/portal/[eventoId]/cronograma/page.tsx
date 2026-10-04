@@ -13,6 +13,10 @@ import { TopoInterno } from "@/components/portal/TopoInterno";
 import { ProgramaDoDia } from "@/components/portal/ProgramaDoDia";
 import { usaPortalNoivos } from "@/lib/portal-noivos";
 import { RoteiroSecao } from "@/components/portal/noivos/telas/roteiro/Secao";
+import { TelaRoteiroDaNoiva } from "@/components/portal/noivos/telas/roteiro/TelaRoteiroDaNoiva";
+import { diaEMes } from "@/components/portal/noivos/telas/roteiro/montar";
+import { exemploMomentoDoDia } from "@/lib/papel";
+import { getRoteiroDaNoiva } from "@/lib/supabase/portal-roteiro";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +29,13 @@ export default async function PortalCronogramaPage({
   if (!evento) notFound();
 
   // O portal dos noivos (desenho v4): "20 de março, hora a hora".
+  // A noiva que abriu a conta sozinha (04/10/2026) monta o próprio
+  // roteiro; com cerimonialista, o casal vê e sugere.
   if (usaPortalNoivos(evento.tipo)) {
+    const daNoiva = await getRoteiroDaNoiva(evento.id);
+    if (daNoiva) {
+      return <TelaRoteiroDaNoiva roteiro={daNoiva} dia={diaEMes(evento.data)} exemplo={exemploMomentoDoDia(evento.tipo)} />;
+    }
     return <RoteiroSecao eventoId={evento.id} data={evento.data} tipo={evento.tipo} />;
   }
 
