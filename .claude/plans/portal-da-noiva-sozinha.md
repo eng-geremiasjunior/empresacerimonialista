@@ -118,7 +118,15 @@ com o ok dele:
    /imprimir, fora do portal) ficam de fora. "Mesas" no Mais e os atalhos
    em Convidados ("Sentar nas mesas" / "Mudar as mesas") só para a dona.
    Quem ela convida volta para Convidados (o mapa só leitura de sempre).
-5. Contratos e documentos.
+5. Contratos e documentos — feito: a tela Documentos da dona mostra os
+   contratos (um por fornecedor dos gastos, mais "Anexar outro contrato" de
+   quem ainda não tem gasto: o nome novo entra no cadastro dela) e os
+   comprovantes dos pagamentos feitos. O contrato sobe pela porta da
+   cerimonialista (prepararAnexoContrato / confirmarAnexoContrato: balde
+   contratos, solicitacao_fornecedor); o comprovante, pela do Financeiro
+   (balde comprovantes, salvarComprovante). O arquivo abre por
+   /portal/<id>/documentos/arquivo, que confere a dona e busca o caminho no
+   banco: a /api/contrato fica fora do /portal, que o middleware barra.
 6. Calendário e Agenda do Google.
 
 Migração só se uma ação do sistema da cerimonialista travar para a

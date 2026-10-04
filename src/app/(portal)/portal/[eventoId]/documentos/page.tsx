@@ -2,6 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import { getEventoDoPortal } from "@/lib/supabase/portal";
 import { usaPortalNoivos } from "@/lib/portal-noivos";
 import { DocumentosSecao } from "@/components/portal/noivos/telas/documentos/Secao";
+import { TelaDocumentosDaNoiva } from "@/components/portal/noivos/telas/documentos/TelaDocumentosDaNoiva";
+import { getDocumentosDaNoiva } from "@/lib/supabase/portal-documentos-da-noiva";
 
 export const dynamic = "force-dynamic";
 
@@ -17,5 +19,9 @@ export default async function PortalDocumentosPage({
   if (!evento) notFound();
   if (!usaPortalNoivos(evento.tipo)) redirect(`/portal/${evento.id}`);
 
+  // a noiva que abriu a conta sozinha (04/10/2026) anexa os contratos e os
+  // comprovantes dela; com cerimonialista, a tela de sempre
+  const daNoiva = await getDocumentosDaNoiva(evento.id);
+  if (daNoiva) return <TelaDocumentosDaNoiva documentos={daNoiva} />;
   return <DocumentosSecao eventoId={evento.id} />;
 }

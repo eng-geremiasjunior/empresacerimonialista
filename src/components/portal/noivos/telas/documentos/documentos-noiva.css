@@ -1,0 +1,94 @@
+/* Os documentos da noiva que abriu a conta sozinha (04/10/2026): os
+   cartões e a linha creme são os do documentos.css; aqui só o botão de
+   anexar (o par do "Ver"), o "Anexar outro contrato" e o campo de quem é. */
+
+.pn-docn .pn-docn-anexar {
+  flex: none;
+  padding: 9px 14px;
+  border: 1px solid var(--pn-borda-2);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--pn-verde);
+  font-size: 13px;
+  cursor: pointer;
+}
+.pn-docn .pn-docn-anexar:hover:not(:disabled) {
+  background: #fff;
+}
+.pn-docn .pn-docn-anexar:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.pn-docn-vazio {
+  margin: 16px 0 0;
+  font-size: 15px;
+  color: var(--pn-texto-2);
+}
+.pn-docn .pn-docn-mais {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 12px 18px 12px 14px;
+  border: 1px solid var(--pn-borda-2);
+  border-radius: 18px;
+  background: transparent;
+  color: var(--pn-verde);
+  font-size: 15px;
+  cursor: pointer;
+}
+.pn-docn .pn-docn-mais:hover {
+  background: var(--pn-creme);
+}
+.pn-docn-outro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--pn-creme);
+}
+.pn-docn-rotulo {
+  font-size: 13.5px;
+  color: var(--pn-texto-2);
+}
+.pn-docn .pn-docn-campo {
+  width: 100%;
+  min-width: 0;
+  padding: 11px 14px;
+  border: 1px solid var(--pn-borda);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--pn-verde);
+  font: inherit;
+  /* 16px: o celular não amplia a tela ao tocar no campo */
+  font-size: 16px;
+}
+.pn-docn .pn-docn-campo:focus {
+  border-color: var(--pn-verde);
+  outline: none;
+}
+.pn-docn-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: 4px;
+}
+.pn-docn .pn-docn-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pn-texto-2);
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.pn-docn .pn-docn-anexar:focus-visible,
+.pn-docn .pn-docn-mais:focus-visible,
+.pn-docn .pn-docn-link:focus-visible {
+  outline: 2px solid var(--pn-verde);
+  outline-offset: 2px;
+}

@@ -25,6 +25,10 @@ export type PagamentoDaNoiva = {
   quando: string;
   perto: boolean;
   atrasada: boolean;
+  /** o nome do comprovante anexado (o arquivo abre pela rota do portal) */
+  comprovante: string | null;
+  /** "Sabor & Arte"; null no gasto sem fornecedor */
+  fornecedor: string | null;
 };
 
 export type GastoDaNoiva = {
@@ -84,6 +88,8 @@ function pagamento(i: ItemFinanceiro, hoje: string, comFornecedor: boolean): Pag
     quando: q.texto,
     perto: q.perto,
     atrasada: q.atrasada,
+    comprovante: i.comprovante?.nome ?? null,
+    fornecedor: i.supplierId ? i.fornecedor : null,
   };
 }
 
