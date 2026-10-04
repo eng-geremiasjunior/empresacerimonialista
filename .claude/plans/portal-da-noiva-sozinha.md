@@ -96,7 +96,14 @@ login de família temporário apagado no fim), commit só dela e subida só
 com o ok dele:
 
 1. Planejamento visual (com a cor no lugar da foto até as fotos chegarem) — feito.
-2. Orçamento.
+2. Orçamento — feito: na aba Financeiro, só para a dona da conta. Usa o motor
+   do Financeiro da cerimonialista (getFinanceiroDoEvento, numerosDaVerba,
+   linhasDeFornecedor) e as ações dele (salvarVerbaTotal,
+   salvarContratoFornecedor, lancarNaVerba, gerarParcelasDoFornecedor). Tem o
+   orçamento, "Novo gasto" (à vista ou parcelado, com entrada; o fornecedor
+   novo entra no cadastro e aparece no planejamento), "Paguei" e "Desfazer"
+   em um toque, apagar, e "Por capítulo" (a divisão do método, mostrada e
+   não gravada). Falta editar um gasto: hoje é apagar e lançar de novo.
 3. Roteiro do dia.
 4. Mesas.
 5. Contratos e documentos.

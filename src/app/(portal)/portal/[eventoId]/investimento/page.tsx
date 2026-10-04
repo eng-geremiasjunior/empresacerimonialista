@@ -18,6 +18,8 @@ import { diaEMes } from "@/components/portal/datas";
 import { hojeBR } from "@/lib/tempo";
 import { usaPortalNoivos } from "@/lib/portal-noivos";
 import { FinanceiroSecao } from "@/components/portal/noivos/telas/financeiro/Secao";
+import { TelaOrcamento } from "@/components/portal/noivos/telas/orcamento/TelaOrcamento";
+import { getOrcamentoDaNoiva } from "@/lib/supabase/portal-orcamento";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +36,13 @@ export default async function PortalInvestimentoPage({
   if (!evento) notFound();
 
   // portal dos noivos (desenho v4): o casamento — só quem a RPC deixa ver
-  if (usaPortalNoivos(evento.tipo)) return <FinanceiroSecao eventoId={evento.id} />;
+  // A noiva que abriu a conta sozinha (04/10/2026) cuida do próprio
+  // orçamento aqui: lança os gastos e marca o que pagou.
+  if (usaPortalNoivos(evento.tipo)) {
+    const orcamento = await getOrcamentoDaNoiva(evento.id);
+    if (orcamento) return <TelaOrcamento orcamento={orcamento} />;
+    return <FinanceiroSecao eventoId={evento.id} />;
+  }
 
   // portal v2 (178): os dois lados do dinheiro, com "marcar pago"
   if (usaPortalV2(evento.tipo)) {

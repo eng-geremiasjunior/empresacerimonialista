@@ -1,0 +1,414 @@
+/* O Orçamento da noiva que abriu a conta sozinha (04/10/2026). Os cartões
+   (resumo e listas) são os do Financeiro do portal (financeiro.css); aqui
+   só o que a tela dela acrescenta: o orçamento editável, os pagamentos
+   com "Paguei", os gastos que abrem e o formulário do gasto novo. Cinza e
+   uma cor de destaque: o pêssego só no que vence perto. */
+
+.pn-orc {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  line-height: normal;
+}
+
+/* ---------- o orçamento ---------- */
+.pn-orc-verba {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 10px;
+}
+.pn-orc-verba-valor {
+  font-size: 48px;
+  line-height: 1.1;
+  color: var(--pn-verde);
+  overflow-wrap: anywhere;
+}
+.pn-orc-verba-rot {
+  font-size: 14px;
+  color: var(--pn-texto-2);
+}
+.pn-orc-pergunta {
+  display: block;
+  margin: 12px 0 10px;
+  font-size: 22px;
+  line-height: 1.25;
+  color: var(--pn-verde);
+}
+.pn-orc-dinheiro {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pn-orc-dinheiro > span {
+  color: var(--pn-texto-3);
+  font-size: 16px;
+}
+.pn-orc-livre {
+  margin: 14px 0 0;
+  font-size: 15px;
+  color: var(--pn-texto-2);
+}
+.pn-orc-livre.passou {
+  color: var(--pn-marrom-escuro);
+}
+
+/* ---------- campos ---------- */
+.pn-orc input,
+.pn-orc select {
+  width: 100%;
+  min-width: 0;
+  padding: 11px 14px;
+  border: 1px solid var(--pn-borda);
+  border-radius: 14px;
+  background: #fffdf9;
+  color: var(--pn-verde);
+  font: inherit;
+  /* 16px: o celular não amplia a tela ao tocar no campo */
+  font-size: 16px;
+}
+.pn-orc input:focus,
+.pn-orc select:focus {
+  border-color: var(--pn-verde);
+  outline: none;
+}
+.pn-orc input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  accent-color: var(--pn-verde);
+}
+
+.pn-orc-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-top: 14px;
+}
+.pn-orc-acoes .pn-btn {
+  padding: 12px 26px;
+}
+.pn-orc-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pn-texto-2);
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.pn-orc-link.perigo {
+  color: var(--pn-marrom-escuro);
+}
+/* enquanto a ação anterior termina: apagado, para o toque não parecer perdido */
+.pn-orc-link:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.pn-orc-link:focus-visible,
+.pn-orc-paguei:focus-visible,
+.pn-orc-gasto-linha:focus-visible,
+.pn-orc-modo button:focus-visible {
+  outline: 2px solid var(--pn-verde);
+  outline-offset: 2px;
+}
+
+/* ---------- pagamentos ---------- */
+.pn-orc-pagamentos {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.pn-orc-pag {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr) auto;
+  grid-template-areas:
+    "d t b"
+    "d v b";
+  gap: 4px 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--pn-creme);
+}
+.pn-orc-pag.atrasada {
+  background: var(--pn-pessego-claro);
+}
+.pn-orc-pag-data {
+  grid-area: d;
+  font-size: 18px;
+  color: var(--pn-verde);
+}
+.pn-orc-pag-texto {
+  grid-area: t;
+  min-width: 0;
+  font-size: 14.5px;
+  color: var(--pn-verde);
+  overflow-wrap: anywhere;
+}
+.pn-orc-pag.pago .pn-orc-pag-texto {
+  color: var(--pn-texto-3);
+}
+.pn-orc-pag-quanto {
+  grid-area: v;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  font-size: 14.5px;
+  color: var(--pn-verde);
+}
+.pn-orc-pag-quanto strong {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.pn-orc-pag-acao {
+  grid-area: b;
+}
+.pn-orc-quando {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--pn-pessego-claro);
+  color: var(--pn-marrom-escuro);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+.pn-orc-pag.atrasada .pn-orc-quando {
+  background: #fff;
+}
+.pn-orc-quando.longe {
+  padding-inline: 0;
+  background: none;
+  color: var(--pn-texto-3);
+}
+.pn-orc-quando.ok {
+  background: var(--pn-salvia);
+  color: var(--pn-ok);
+}
+.pn-orc-paguei {
+  padding: 9px 16px;
+  border: 1px solid var(--pn-verde);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--pn-verde);
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.pn-orc-paguei:hover {
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+}
+.pn-orc-paguei:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ---------- gastos ---------- */
+.pn-orc-cabeca-gastos {
+  align-items: center;
+}
+.pn-orc-cabeca-gastos .pn-btn {
+  padding: 11px 20px;
+  font-size: 15px;
+}
+.pn-orc-vazio {
+  margin: 14px 0 0;
+  font-size: 15px;
+  color: var(--pn-texto-2);
+}
+.pn-orc-lista {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.pn-orc-gasto + .pn-orc-gasto {
+  border-top: 1px solid var(--pn-trilho);
+}
+.pn-orc-gasto-linha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 4px;
+  border: 0;
+  background: none;
+  color: var(--pn-verde);
+  text-align: left;
+  cursor: pointer;
+}
+.pn-orc-gasto-texto {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.pn-orc-gasto-texto .nome {
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+.pn-orc-gasto-texto .sub {
+  font-size: 13px;
+  color: var(--pn-texto-3);
+}
+.pn-orc-gasto-valor {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.pn-orc-gasto-linha .seta {
+  color: var(--pn-texto-3);
+  font-size: 22px;
+  transition: transform 0.2s;
+}
+.pn-orc-gasto.aberto .seta {
+  transform: rotate(180deg);
+}
+.pn-orc-gasto-corpo {
+  padding: 0 4px 18px;
+}
+.pn-orc-gasto-corpo .pn-orc-pagamentos {
+  margin-top: 0;
+}
+.pn-orc-confirma {
+  font-size: 14px;
+  color: var(--pn-marrom-escuro);
+}
+
+/* ---------- o gasto novo ---------- */
+.pn-orc-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 18px;
+  border-radius: 20px;
+  background: var(--pn-creme);
+}
+.pn-orc-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.pn-orc-campo > label,
+.pn-orc-campo > .rot {
+  font-size: 13.5px;
+  color: var(--pn-texto-2);
+}
+.pn-orc-campo .opcional {
+  color: var(--pn-texto-3);
+}
+.pn-orc-dupla {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.pn-orc-modo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pn-orc-modo button {
+  padding: 9px 16px;
+  border: 1px solid var(--pn-borda);
+  border-radius: 999px;
+  background: #fffdf9;
+  color: var(--pn-verde);
+  font-size: 14px;
+  cursor: pointer;
+}
+.pn-orc-modo button[aria-pressed="true"] {
+  border-color: var(--pn-verde);
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+}
+.pn-orc-marca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  color: var(--pn-verde);
+  cursor: pointer;
+}
+.pn-orc-conta {
+  margin: 0;
+  font-size: 14px;
+  color: var(--pn-texto-2);
+}
+
+/* ---------- por capítulo ---------- */
+.pn-orc-caps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.pn-orc-cap-linha {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.pn-orc-cap-linha .nome {
+  font-size: 15.5px;
+  color: var(--pn-verde);
+}
+.pn-orc-cap-linha .quanto {
+  font-size: 14px;
+  color: var(--pn-texto-2);
+  white-space: nowrap;
+}
+.pn-orc-cap-passou {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--pn-marrom-escuro);
+}
+
+/* computador: o pagamento numa linha só */
+@media (min-width: 768px) {
+  .pn-orc-pag {
+    grid-template-columns: 80px minmax(0, 1fr) auto auto;
+    grid-template-areas: "d t v b";
+    gap: 16px;
+    padding: 14px 18px;
+    border-radius: 18px;
+  }
+  .pn-orc-pag-data {
+    font-size: 20px;
+  }
+  .pn-orc-form {
+    padding: 22px 24px;
+  }
+}
+@media (max-width: 767px) {
+  .pn-orc {
+    gap: 16px;
+  }
+  .pn-orc-verba-valor {
+    font-size: 38px;
+  }
+  .pn-orc-pergunta {
+    font-size: 20px;
+  }
+}
+@media (max-width: 380px) {
+  .pn-orc-dupla {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pn-orc-gasto-linha .seta {
+    transition: none;
+  }
+}
