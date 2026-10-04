@@ -18,6 +18,18 @@ import { alergiaCompartilhavel } from "./alergia-actions";
 import type { CronogramaItem } from "@/lib/cronograma";
 import type { Supplier } from "@/lib/types";
 
+// Os links dos fornecedores. roteiro_enviado_em é da 199: sem ela aplicada,
+// a leitura vai sem a coluna — senão os fornecedores sumiriam da tela.
+async function lerLinks(supabase: ReturnType<typeof createClient>, eventId: string) {
+  const base = "supplier_id, hash, confirmed, suppliers(id, name, whatsapp, phone)";
+  const r = await supabase
+    .from("roteiro_links")
+    .select(`${base}, roteiro_enviado_em`)
+    .eq("event_id", eventId);
+  if (!r.error || (r.error.code !== "42703" && r.error.code !== "PGRST204")) return r;
+  return supabase.from("roteiro_links").select(base).eq("event_id", eventId);
+}
+
 export default async function RoteiroPage({
   params,
 }: {
@@ -52,10 +64,7 @@ export default async function RoteiroPage({
     // Leitura rica dos itens (status_novo, horários reais, responsável,
     // fornecedor + categoria) — mesma fonte usada no polling do client.
     supabase.rpc("cronograma_evento", { p_event_id: params.id }),
-      supabase
-        .from("roteiro_links")
-        .select("supplier_id, hash, confirmed, suppliers(id, name, whatsapp, phone)")
-        .eq("event_id", params.id),
+      lerLinks(supabase, params.id),
       getSugestoesDoEvento(params.id),
       alergiaCompartilhavel(params.id),
       supabase
@@ -149,6 +158,7 @@ export default async function RoteiroPage({
     supplier_id: string;
     hash: string;
     confirmed: boolean;
+    roteiro_enviado_em?: string | null;
     suppliers: { id: string; name: string; whatsapp: string | null; phone: string | null } | null;
   }[];
 
@@ -207,6 +217,7 @@ export default async function RoteiroPage({
             hash: l.hash,
             telefone: l.suppliers!.whatsapp ?? l.suppliers!.phone,
             confirmado: l.confirmed,
+            enviadoEm: l.roteiro_enviado_em ?? null,
           }))}
         base={publicBase()}
         eventoNome={nomeDoEvento}

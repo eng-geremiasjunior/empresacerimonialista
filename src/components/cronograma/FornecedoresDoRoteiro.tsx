@@ -10,13 +10,15 @@
 // "Mandar o roteiro para todos": cada fornecedor com o seu link (ele vê
 // só os itens dele) já escrito na mensagem do WhatsApp. O navegador não
 // abre cinco conversas de uma vez, então é um toque por fornecedor, na
-// mesma lista, e a linha marca "enviado". O "enviado" fica neste
-// aparelho (localStorage): é lembrete de quem já foi, não registro.
+// mesma lista, e a linha marca "enviado". O "enviado" vai para o banco
+// (199, roteiro_links.roteiro_enviado_em) e vale em qualquer aparelho; sem
+// a 199, fica neste aparelho (localStorage), como lembrete.
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Copy, Send } from "lucide-react";
 import { setSupplierConfirmed } from "@/app/(app)/eventos/[id]/fornecedores/actions";
+import { marcarRoteiroEnviado } from "@/app/(app)/eventos/[id]/roteiro/envio-actions";
 import { linkCompartilharWhatsapp, linkWhatsapp } from "@/lib/whatsapp-link";
 
 export type FornecedorDoRoteiro = {
@@ -25,6 +27,8 @@ export type FornecedorDoRoteiro = {
   hash: string;
   telefone: string | null;
   confirmado: boolean;
+  /** quando o roteiro foi mandado (199); null = ainda não, ou sem a coluna */
+  enviadoEm: string | null;
   /** quantos horários do roteiro são dele */
   itens: number;
 };
@@ -67,7 +71,22 @@ export function FornecedoresDoRoteiro({
   );
   const [copiado, setCopiado] = useState<string | null>(null);
 
-  useEffect(() => setEnviados(lerEnviados(eventId)), [eventId]);
+  // o do banco e o deste aparelho (marcas de antes da 199): vale o mais novo
+  // (somando ao que já está na tela: a lista se renova a cada 20 s e não
+  // pode apagar a marca que acabou de ser feita)
+  useEffect(() => {
+    setEnviados((atuais) => {
+      const juntos: Record<string, string> = { ...atuais };
+      const candidatos: [string, string | null][] = [
+        ...Object.entries(lerEnviados(eventId)),
+        ...fornecedores.map((f) => [f.supplierId, f.enviadoEm] as [string, string | null]),
+      ];
+      for (const [id, em] of candidatos) {
+        if (em && (!juntos[id] || juntos[id] < em)) juntos[id] = em;
+      }
+      return juntos;
+    });
+  }, [eventId, fornecedores]);
   useEffect(
     () => setConfirmados(new Set(fornecedores.filter((f) => f.confirmado).map((f) => f.supplierId))),
     [fornecedores]
@@ -82,13 +101,18 @@ export function FornecedoresDoRoteiro({
 
   function marcarEnviado(f: FornecedorDoRoteiro) {
     const hoje = new Date().toISOString();
-    const novos = { ...lerEnviados(eventId), [f.supplierId]: hoje };
-    setEnviados(novos);
-    try {
-      window.localStorage.setItem(CHAVE(eventId), JSON.stringify(novos));
-    } catch {
-      /* sem armazenamento: o "enviado" só vale nesta visita */
-    }
+    setEnviados((e) => ({ ...e, [f.supplierId]: hoje }));
+    // o banco primeiro; sem a 199 (ou se falhar), o aparelho guarda
+    iniciar(async () => {
+      const r = await marcarRoteiroEnviado(eventId, f.supplierId);
+      if ("ok" in r) return;
+      try {
+        const novos = { ...lerEnviados(eventId), [f.supplierId]: hoje };
+        window.localStorage.setItem(CHAVE(eventId), JSON.stringify(novos));
+      } catch {
+        /* sem armazenamento: o "enviado" só vale nesta visita */
+      }
+    });
   }
 
   async function copiar(f: FornecedorDoRoteiro) {
