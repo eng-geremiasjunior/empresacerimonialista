@@ -30,6 +30,7 @@ import { linhasParaConciliar } from "./lancamento-actions";
 import { linkWhatsapp } from "@/lib/whatsapp-link";
 import { hojeBR } from "@/lib/tempo";
 import { MESES } from "@/lib/financeiro-tela";
+import { comAssunto, tituloDoEmbed } from "@/lib/assunto-da-tarefa";
 
 const CONTAS: Conta[] = ["verba", "assessoria", "encerramento"];
 
@@ -83,7 +84,7 @@ export default async function EventoFinanceiroPage({
     // o que a automação deixou pendente (074): vira item de "Precisa de ação"
     supabase
       .from("financeiro_pendencia")
-      .select("id, titulo, valor_sugerido")
+      .select("id, titulo, valor_sugerido, tasks(evento_decisao(titulo))")
       .eq("event_id", eventId)
       .eq("status", "aberta")
       .order("created_at", { ascending: true }),
@@ -110,7 +111,11 @@ export default async function EventoFinanceiroPage({
 
   const pendencias = (pendRes ?? []).map((p) => ({
     id: p.id as string,
-    titulo: p.titulo as string,
+    // "Buffet · Registrar o valor no financeiro (1ª parcela)": a contratação de origem
+    titulo: comAssunto(
+      p.titulo as string,
+      tituloDoEmbed((Array.isArray(p.tasks) ? p.tasks[0] : p.tasks)?.evento_decisao)
+    ),
     valorSugerido: p.valor_sugerido == null ? null : Number(p.valor_sugerido),
   }));
 

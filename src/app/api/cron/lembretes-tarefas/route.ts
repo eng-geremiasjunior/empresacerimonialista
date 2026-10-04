@@ -27,6 +27,7 @@ import {
 } from "@/lib/avisos-core";
 import { entregarLembrete } from "@/lib/avisos-transporte";
 import { appUrl } from "@/lib/email";
+import { comAssunto, tituloDoEmbed } from "@/lib/assunto-da-tarefa";
 
 export const dynamic = "force-dynamic";
 // Sem isto cai no padrão do plano (10s no Hobby) e um 504 mata a rotina
@@ -85,7 +86,7 @@ export async function GET(request: NextRequest) {
   const { data: linhas, error: erroLeitura } = await supabase
     .from("tasks")
     .select(
-      "id, title, due_date, status, priority, event_id, events!inner(name, status, empresa_id, cerimonialista_id, cerimonialista_responsavel_id, clients(name))"
+      "id, title, due_date, status, priority, event_id, evento_decisao(titulo), events!inner(name, status, empresa_id, cerimonialista_id, cerimonialista_responsavel_id, clients(name))"
     )
     // o evento de exemplo (174) não lembra ninguém de nada
     .eq("events.exemplo", false)
@@ -211,7 +212,8 @@ export async function GET(request: NextRequest) {
 
     tarefas.push({
       id: l.id,
-      titulo: l.title,
+      // "Buffet · Assinar e arquivar o contrato": seis contratações geram seis títulos iguais
+      titulo: comAssunto(l.title, tituloDoEmbed((l as { evento_decisao?: unknown }).evento_decisao)),
       dueDate: l.due_date as string,
       status: l.status,
       priority: l.priority ?? null,

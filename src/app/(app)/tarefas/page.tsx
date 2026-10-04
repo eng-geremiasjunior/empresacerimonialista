@@ -1,6 +1,7 @@
 import { addDays, format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { ConsolidatedTasks } from "@/components/tasks/ConsolidatedTasks";
+import { comAssunto, tituloDoEmbed } from "@/lib/assunto-da-tarefa";
 import { EVENT_TYPE_LABELS, type EventType, type TaskItem } from "@/lib/types";
 
 export default async function TarefasPage() {
@@ -9,7 +10,7 @@ export default async function TarefasPage() {
   const { data, error } = await supabase
     .from("tasks")
     .select(
-      "id, event_id, title, description, due_date, due_time, status, priority, category, events(id, type, date, location, clients(name))"
+      "id, event_id, title, description, due_date, due_time, status, priority, category, evento_decisao(titulo), events(id, type, date, location, clients(name))"
     )
     .order("due_date", { ascending: true })
     .order("due_time", { ascending: true });
@@ -21,6 +22,8 @@ export default async function TarefasPage() {
     } | null;
     return {
       ...task,
+      // seis contratações geram seis "Assinar e arquivar o contrato": o assunto vai na frente
+      title: comAssunto(task.title, tituloDoEmbed((task as unknown as { evento_decisao?: unknown }).evento_decisao)),
       eventLabel: ev
         ? `${EVENT_TYPE_LABELS[ev.type]} — ${ev.clients?.name ?? "Sem cliente"}`
         : null,
