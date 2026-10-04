@@ -118,8 +118,9 @@ export default async function PortalEventoLayout({
     const jaAbriu = cookies().get(`pnab_${evento.id.slice(0, 8)}`)?.value === "1";
     const pessoaNome = eu.nome?.trim() || "Você";
     const cerimonialista = daFamilia ? null : contato.nome?.trim().split(/\s+/)[0] || marca?.nome || null;
-    // o Planejamento é de quem abriu a conta sozinha (quem ela convida ainda não)
-    const planejaAqui = daFamilia && (await donaDaFesta(evento.id)) !== null;
+    // o Planejamento e as Mesas são de quem abriu a conta sozinha (quem ela
+    // convida ainda não)
+    const ehDona = daFamilia && (await donaDaFesta(evento.id)) !== null;
     return (
       <div className={`pn ${marcellus.variable} ${nunitoSans.variable} ${simbolos.variable}`}>
         {faixa}
@@ -134,8 +135,8 @@ export default async function PortalEventoLayout({
           agoraServidor={Date.now()}
           fotoUrl={fotoUrl}
           pessoa={{ nome: pessoaNome.split(/\s+/)[0], papel: papelLegivel(eu.papel), ini: pessoaNome.charAt(0).toUpperCase() }}
-          menu={MENU_NOIVOS.filter((d) => TELAS_PRONTAS.has(d.chave) && (planejaAqui || d.chave !== "planejamento"))}
-          mais={MAIS_NOIVOS.filter((d) => TELAS_PRONTAS.has(d.chave))}
+          menu={MENU_NOIVOS.filter((d) => TELAS_PRONTAS.has(d.chave) && (ehDona || d.chave !== "planejamento"))}
+          mais={MAIS_NOIVOS.filter((d) => TELAS_PRONTAS.has(d.chave) && (ehDona || d.chave !== "mesas"))}
           mostrarEntrada={noInicio && !jaAbriu}
           daFamilia={daFamilia}
           cerimonialista={cerimonialista}

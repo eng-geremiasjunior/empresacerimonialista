@@ -112,6 +112,7 @@ export function MesasDoEvento({
   convidados: convidadosProp,
   relacoes,
   presentes,
+  noPortal,
 }: {
   eventId: string;
   /** tipo do evento — como esta festa chama a mesa 'noivos' */
@@ -125,6 +126,12 @@ export function MesasDoEvento({
   relacoes: Relacao[];
   /** quantos chegaram, contados pelo banco (148) — nulo se a migração não rodou */
   presentes: number | null;
+  /**
+   * No portal da noiva que abriu a conta sozinha (04/10/2026): quem está
+   * logada só navega pelo /portal — a lista de convidados é a do portal, e
+   * as folhas impressas (rota do app) ficam de fora.
+   */
+  noPortal?: { convidados: string };
 }) {
   const router = useRouter();
   const [pendente, iniciar] = useTransition();
@@ -334,6 +341,7 @@ export function MesasDoEvento({
       <InicioDasMesas
         eventId={eventId}
         convidados={convidados.length}
+        linkConvidados={noPortal?.convidados ?? `/eventos/${eventId}/rsvp`}
         aviso={aviso}
         rodar={rodar}
         pendente={pendente}
@@ -364,9 +372,11 @@ export function MesasDoEvento({
             <span className="text-gray-400"> · {cont.aguardando} sem resposta</span>
           )}
         </p>
-        <div className="ml-auto flex items-center gap-1.5">
-          <MenuImprimir eventId={eventId} />
-        </div>
+        {!noPortal && (
+          <div className="ml-auto flex items-center gap-1.5">
+            <MenuImprimir eventId={eventId} />
+          </div>
+        )}
       </div>
 
       {aviso && (
@@ -593,12 +603,15 @@ function FormSalao({
 function InicioDasMesas({
   eventId,
   convidados,
+  linkConvidados,
   aviso,
   rodar,
   pendente,
 }: {
   eventId: string;
   convidados: number;
+  /** a lista de convidados: a do app ou a do portal */
+  linkConvidados: string;
   aviso: string | null;
   rodar: (a: () => Promise<{ error?: string } | { success: true }>) => void;
   pendente: boolean;
@@ -631,7 +644,7 @@ function InicioDasMesas({
           Informar as medidas do salão
         </button>
         {convidados === 0 && (
-          <Link href={`/eventos/${eventId}/rsvp`} className="text-sm font-medium text-gray-700 underline underline-offset-4 hover:text-gray-900">
+          <Link href={linkConvidados} className="text-sm font-medium text-gray-700 underline underline-offset-4 hover:text-gray-900">
             Adicionar convidados
           </Link>
         )}

@@ -15,6 +15,7 @@
 
 import { useEffect, useMemo, useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { adicionarConvidado, adicionarVarios } from "@/app/(portal)/portal/[eventoId]/convidados/actions";
 import { Eyebrow, Icone } from "../../primitivas";
 import { usePortalNoivos } from "../../contexto";
@@ -29,7 +30,7 @@ import type {
 import { ConviteDigital } from "./ConviteDigital";
 import "./convidados.css";
 
-export function TelaConvidados({ dados }: { dados: DadosConvidados }) {
+export function TelaConvidados({ dados, linkMesas = null }: { dados: DadosConvidados; linkMesas?: string | null }) {
   const temLista = dados.convites > 0;
   const sub = temLista
     ? `${dados.convites} ${dados.convites === 1 ? "convite" : "convites"} na lista${
@@ -65,7 +66,7 @@ export function TelaConvidados({ dados }: { dados: DadosConvidados }) {
         confirmados={dados.anel.sim}
       />
 
-      {temLista && <ListaEMesas eventoId={dados.eventoId} lista={dados.lista} mesas={dados.mesas} />}
+      {temLista && <ListaEMesas eventoId={dados.eventoId} lista={dados.lista} mesas={dados.mesas} linkMesas={linkMesas} />}
     </div>
   );
 }
@@ -352,7 +353,18 @@ const CHIP: Record<StatusConvidado, string> = {
   nao: "Não vai",
 };
 
-function ListaEMesas({ eventoId, lista, mesas }: { eventoId: string; lista: ConvidadoDaLista[]; mesas: MesaDoMapa[] }) {
+function ListaEMesas({
+  eventoId,
+  lista,
+  mesas,
+  linkMesas,
+}: {
+  eventoId: string;
+  lista: ConvidadoDaLista[];
+  mesas: MesaDoMapa[];
+  /** só na conta da noiva que abriu sozinha: quem senta é ela */
+  linkMesas: string | null;
+}) {
   const [filtro, setFiltro] = useState<StatusConvidado | null>(null);
   const [sel, setSel] = useState<string | null>(null);
   const temMesas = mesas.length > 0;
@@ -419,6 +431,12 @@ function ListaEMesas({ eventoId, lista, mesas }: { eventoId: string; lista: Conv
           })}
         </div>
         <IncluirConvidado eventoId={eventoId} />
+        {linkMesas && !temMesas && (
+          <Link href={linkMesas} className="pn-convidados-sentar">
+            <Icone nome="restaurant" tamanho={18} />
+            Sentar nas mesas
+          </Link>
+        )}
       </div>
 
       {temMesas && (
@@ -428,7 +446,14 @@ function ListaEMesas({ eventoId, lista, mesas }: { eventoId: string; lista: Conv
               <Eyebrow>Mapa de mesas</Eyebrow>
               <div className="pn-t titulo">Onde cada um senta</div>
             </div>
-            {dica && <div className="dica">{dica}</div>}
+            <div className="cab-dir">
+              {dica && <div className="dica">{dica}</div>}
+              {linkMesas && (
+                <Link href={linkMesas} className="pn-convidados-mudar">
+                  Mudar as mesas
+                </Link>
+              )}
+            </div>
           </div>
           <div className="mesas">
             {mesas.map((m) => (

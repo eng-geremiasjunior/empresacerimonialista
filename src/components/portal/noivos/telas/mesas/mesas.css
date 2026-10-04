@@ -1,0 +1,34 @@
+/* As mesas da noiva que abriu a conta sozinha (04/10/2026): o cartão do
+   portal em volta do editor de mesas do sistema. O editor traz o próprio
+   desenho (cinzas, que conversam com o portal); aqui só a moldura. */
+
+.pn-mesas {
+  background: #fff;
+  border-radius: 30px;
+  padding: 32px 36px;
+  box-shadow: var(--pn-sombra-card);
+  line-height: normal;
+  min-width: 0;
+  animation: pn-rise 0.5s ease both;
+}
+.pn-mesas-titulo {
+  margin: 6px 0 0;
+  font-size: 40px;
+  font-weight: 400;
+  line-height: normal;
+  color: var(--pn-verde);
+}
+.pn-mesas-editor {
+  margin-top: 22px;
+  min-width: 0;
+}
+
+@media (max-width: 767px) {
+  .pn-mesas {
+    padding: 24px 14px;
+    border-radius: 26px;
+  }
+  .pn-mesas-titulo {
+    font-size: 30px;
+  }
+}

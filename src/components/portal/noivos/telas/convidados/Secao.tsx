@@ -10,6 +10,7 @@ import { getEventoDoPortal } from "@/lib/supabase/portal";
 import { getConvidados } from "@/lib/supabase/portal-pessoas";
 import { getConvidadosV2 } from "@/lib/supabase/portal-salao";
 import { getFotoDoCasal, getNomesDoCasal } from "@/lib/supabase/portal-noivos";
+import { donaDaFesta } from "@/lib/supabase/portal-planejamento";
 import { hojeBR } from "@/lib/tempo";
 import { getDatasDoConvite, getPedidosDeMusica, getRecadosDoMural } from "./dados";
 import { montarConvidados } from "./montar";
@@ -19,7 +20,7 @@ export async function ConvidadosSecao({ eventoId }: { eventoId: string }) {
   const evento = await getEventoDoPortal(eventoId);
   if (!evento) return null;
 
-  const [lista, salao, datas, musicas, recadosDoMural, casal, fotoUrl] = await Promise.all([
+  const [lista, salao, datas, musicas, recadosDoMural, casal, fotoUrl, dona] = await Promise.all([
     getConvidados(evento.id),
     getConvidadosV2(evento.id),
     getDatasDoConvite(evento.id),
@@ -27,6 +28,7 @@ export async function ConvidadosSecao({ eventoId }: { eventoId: string }) {
     getRecadosDoMural(evento.id),
     getNomesDoCasal(evento.id, evento.nome),
     getFotoDoCasal(evento.id),
+    donaDaFesta(evento.id),
   ]);
 
   // a lista por pessoa (180) é a base; se ela não vier e a de sempre vier,
@@ -71,5 +73,6 @@ export async function ConvidadosSecao({ eventoId }: { eventoId: string }) {
     link: evento.rsvp.hash ? `${publicBase()}/confirmar/evento/${evento.rsvp.hash}` : null,
   });
 
-  return <TelaConvidados dados={dados} />;
+  // a noiva que abriu a conta sozinha senta os convidados (as Mesas)
+  return <TelaConvidados dados={dados} linkMesas={dona ? `/portal/${evento.id}/mesas` : null} />;
 }

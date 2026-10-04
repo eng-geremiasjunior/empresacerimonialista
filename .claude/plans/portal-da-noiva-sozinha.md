@@ -111,7 +111,13 @@ com o ok dele:
    gatilho da 112). O lápis muda a hora, o nome e o detalhe (a hora mudada
    vira firme), e ela também acrescenta e tira momentos. Quem ela convida
    vê a tela de leitura de sempre.
-4. Mesas.
+4. Mesas — feito: o MESMO editor da cerimonialista (MesasDoEvento: croqui,
+   sentar pela mesa ou pelo convidado, regras de quem senta com quem) em
+   /portal/<id>/mesas, num cartão do portal. O editor ganhou `noPortal`: o
+   "Adicionar convidados" leva à lista do portal e as folhas impressas (rota
+   /imprimir, fora do portal) ficam de fora. "Mesas" no Mais e os atalhos
+   em Convidados ("Sentar nas mesas" / "Mudar as mesas") só para a dona.
+   Quem ela convida volta para Convidados (o mapa só leitura de sempre).
 5. Contratos e documentos.
 6. Calendário e Agenda do Google.
 

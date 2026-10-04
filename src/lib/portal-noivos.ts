@@ -99,6 +99,9 @@ export const MAIS_NOIVOS: DestinoNoivos[] = [
   { chave: "site", rotulo: "Site do casamento", icone: "link", seg: "site", sub: "Onde os convidados confirmam" },
   { chave: "convite", rotulo: "Convite", icone: "mail", seg: "convite", sub: "O que chega no WhatsApp" },
   { chave: "cortejo", rotulo: "Cortejo", icone: "diversity_1", seg: "cortejo", sub: "Quem entra e em que ordem" },
+  // só na conta da noiva que abriu sozinha (o layout tira dos outros); a
+  // fonte de ícones do portal é um recorte: sem mesa nem cadeira, o garfo e a faca
+  { chave: "mesas", rotulo: "Mesas", icone: "restaurant", seg: "mesas", sub: "Quem senta onde" },
   { chave: "familia", rotulo: "Família e acessos", icone: "family_restroom", seg: "familia", sub: "Quem entra no portal" },
   { chave: "lembretes", rotulo: "Lembretes", icone: "notifications_active", seg: "lembretes", sub: "E-mail e agenda" },
   { chave: "privacidade", rotulo: "Privacidade e dados", icone: "shield_lock", seg: "privacidade", sub: "LGPD e sem internet" },
@@ -127,6 +130,7 @@ export const TELAS_PRONTAS = new Set<string>([
   "site",
   "convite",
   "cortejo",
+  "mesas",
 ]);
 
 /** A chave da tela a partir do caminho (/portal/<id>/convidados → "convidados"). */
