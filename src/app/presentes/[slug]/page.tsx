@@ -9,6 +9,7 @@ import { nomesDoSite } from "@/lib/site-conteudo";
 import type { SitePublico } from "@/lib/site-publico-tipos";
 import { ListaPublica, type ItemDaVitrine } from "@/components/lista-presentes/ListaPublica";
 import { temaDaLista } from "@/components/lista-presentes/tema";
+import { chavePublicaDaLista } from "@/lib/pagarme-lista";
 
 export const dynamic = "force-dynamic";
 
@@ -116,6 +117,7 @@ export default async function ListaDePresentesPage({ params }: { params: { slug:
         mensagem={lista.mensagem?.trim() || null}
         taxaDoCasal={!!lista.taxa_do_casal}
         podePagar={!!lista.pode_pagar}
+        chaveDoCartao={chavePublicaDaLista()}
         itens={itens}
         estilo={tema}
       />

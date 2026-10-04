@@ -10,6 +10,9 @@ import "server-only";
 //                               o dinheiro está com a família)
 //   pago → estornado           (a Pagar.me devolveu ou houve contestação)
 //
+// O cartão (198) não vence: recusado é "falhou" e o que está em análise
+// no antifraude segue "aguardando" até a Pagar.me decidir.
+//
 // "pago" nunca volta para trás por outro caminho, e cada gravação confere
 // o estado de antes (duas gravações ao mesmo tempo não se atropelam).
 
@@ -20,7 +23,7 @@ export type EstadoDoPresente = "aguardando" | "pago" | "expirado" | "falhou" | "
 
 export async function gravarEstadoDoPresente(
   db: SupabaseClient,
-  pagamento: { id: string; status: string; expira_em: string | null },
+  pagamento: { id: string; status: string; expira_em: string | null; meio?: string | null },
   pedido: PedidoGateway
 ): Promise<EstadoDoPresente> {
   const agora = new Date().toISOString();
@@ -33,7 +36,7 @@ export async function gravarEstadoDoPresente(
   } else if (antes === "estornado") {
     return "estornado";
   } else {
-    novo = estadoDoPedido(pedido, pagamento.expira_em);
+    novo = estadoDoPedido(pedido, pagamento.expira_em, pagamento.meio === "cartao" ? "cartao" : "pix");
     const vale = antes === "aguardando" ? novo !== "aguardando" : novo === "pago";
     if (!vale) return antes;
   }

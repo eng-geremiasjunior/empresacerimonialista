@@ -32,6 +32,8 @@ export type PresenteRecebido = {
   familiaCentavos: number;
   /** "hoje", "ontem", "há 3 dias", "12/10" — calculado aqui, sem relógio no navegador */
   quando: string;
+  /** "cartão à vista", "cartão em 3x" — o dinheiro do cartão cai em outro prazo; null no Pix */
+  noCartao: string | null;
 };
 
 export type DadosDaTelaLista = {
@@ -83,17 +85,31 @@ function quandoFoi(iso: string | null): string {
   return `${dd}/${m}`;
 }
 
+/**
+ * Os presentes pagos (a RLS só devolve ao casal). O meio e as parcelas
+ * vieram com a 198: sem ela — ou sem o GRANT dela, que a 197 apaga se
+ * rodar de novo — a leitura cai para as colunas de antes e a tela só deixa
+ * de dizer "cartão em 3x".
+ */
+async function lerPagos(supabase: ReturnType<typeof createClient>, eventoId: string) {
+  const base = "id, titulo, quem, recado, valor_presente_centavos, taxa_centavos, taxa_do_casal, pago_em";
+  const consulta = (campos: string) =>
+    supabase
+      .from("presente_pagamento")
+      .select(campos)
+      .eq("event_id", eventoId)
+      .eq("status", "pago")
+      .order("pago_em", { ascending: false })
+      .limit(500);
+  const r = await consulta(`${base}, meio, parcelas`);
+  return r.error ? consulta(base) : r;
+}
+
 export async function getListaDoCasal(eventoId: string): Promise<DadosDaTelaLista> {
   const supabase = createClient();
   const [listaR, pagosR, { data: nivel }, { data: siteBruto }, recebedor, eu, contato, { data: sessao }] = await Promise.all([
     supabase.rpc("portal_lista", { p_event_id: eventoId }),
-    supabase
-      .from("presente_pagamento")
-      .select("id, titulo, quem, recado, valor_presente_centavos, taxa_centavos, taxa_do_casal, pago_em")
-      .eq("event_id", eventoId)
-      .eq("status", "pago")
-      .order("pago_em", { ascending: false })
-      .limit(500),
+    lerPagos(supabase, eventoId),
     supabase.rpc("portal_meu_nivel", { p_event_id: eventoId }),
     supabase.from("evento_site").select("slug, publicado").eq("event_id", eventoId).maybeSingle(),
     getRecebedor(eventoId),
@@ -116,6 +132,8 @@ export async function getListaDoCasal(eventoId: string): Promise<DadosDaTelaList
         taxa_centavos: number;
         taxa_do_casal: boolean;
         pago_em: string | null;
+        meio?: string | null;
+        parcelas?: number | null;
       }[]
     | null;
 
@@ -155,6 +173,7 @@ export async function getListaDoCasal(eventoId: string): Promise<DadosDaTelaList
           // o que foi dividido de verdade: a taxa gravada no pagamento
           familiaCentavos: p.taxa_do_casal ? p.valor_presente_centavos - p.taxa_centavos : p.valor_presente_centavos,
           quando: quandoFoi(p.pago_em),
+          noCartao: p.meio === "cartao" ? (Number(p.parcelas) > 1 ? `cartão em ${p.parcelas}x` : "cartão à vista") : null,
         }))
       : null,
     recebedor,

@@ -41,7 +41,7 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
     .eq("status", "aguardando")
     .not("pagarme_order_id", "is", null)
     .or(`conferido_em.is.null,conferido_em.lt."${new Date(Date.now() - RELER_A_CADA_MS).toISOString()}"`)
-    .select("id, status, pagarme_order_id, expira_em")
+    .select("id, status, pagarme_order_id, expira_em, meio")
     .maybeSingle();
 
   if (!vez) {
@@ -50,7 +50,7 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
     return p ? resposta(p.status) : resposta("desconhecido", 404);
   }
 
-  const v = vez as { id: string; status: string; pagarme_order_id: string; expira_em: string | null };
+  const v = vez as { id: string; status: string; pagarme_order_id: string; expira_em: string | null; meio: string | null };
   const r = await lerPedido(v.pagarme_order_id);
   if (!r.ok) return resposta(v.status);
   return resposta(await gravarEstadoDoPresente(db, v, r.dados));

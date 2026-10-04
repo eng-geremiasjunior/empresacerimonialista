@@ -533,7 +533,10 @@ export function TelaLista({ dados }: { dados: DadosDaTelaLista }) {
                       <span className="pn-lista-recebido-valor">{formatarReais(r.familiaCentavos)}</span>
                     </div>
                     {r.recado && <p className="pn-lista-recado">“{r.recado}”</p>}
-                    <span className="pn-lista-quando">{r.quando}</span>
+                    <span className="pn-lista-quando">
+                      {r.quando}
+                      {r.noCartao ? ` · ${r.noCartao}` : ""}
+                    </span>
                   </li>
                 ))}
               </ul>

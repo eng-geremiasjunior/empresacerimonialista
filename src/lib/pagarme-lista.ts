@@ -6,7 +6,7 @@ import "server-only";
 // nada daqui passa pelo gateway_log — o corpo tem CPF, renda e conta
 // bancária de gente, e não fica em lugar nenhum nosso.
 
-import { so, type DadosDoRecebedor } from "@/lib/lista-presentes";
+import { so, type DadosDoRecebedor, type EnderecoDeCobranca } from "@/lib/lista-presentes";
 
 const BASE = "https://api.pagar.me/core/v5";
 
@@ -35,10 +35,19 @@ export const emTeste = () => {
 };
 
 async function chamar<T>(metodo: "GET" | "POST", caminho: string, corpo?: unknown): Promise<{ ok: true; dados: T } | { ok: false; status: number; erro: string }> {
+  // sem chave nada sai daqui — e isso não é "rede": quem chama sabe que
+  // nenhum pedido chegou à Pagar.me (no cartão, a diferença importa)
+  let k: string;
+  try {
+    k = chave();
+  } catch (e) {
+    console.error("[eorganizei:lista] pagarme sem chave", (e as Error).message);
+    return { ok: false, status: 0, erro: "sem chave" };
+  }
   try {
     const r = await fetch(BASE + caminho, {
       method: metodo,
-      headers: { Authorization: "Basic " + Buffer.from(`${chave()}:`).toString("base64"), "Content-Type": "application/json" },
+      headers: { Authorization: "Basic " + Buffer.from(`${k}:`).toString("base64"), "Content-Type": "application/json" },
       body: corpo ? JSON.stringify(corpo) : undefined,
       cache: "no-store",
     });
@@ -158,17 +167,13 @@ export type TransacaoPix = {
 };
 export type PedidoGateway = {
   id: string;
+  /** o id do nosso pagamento (o code que mandamos ao criar o pedido) */
+  code?: string;
   status: string;
   charges?: { id: string; status: string; paid_at?: string; last_transaction?: TransacaoPix }[];
 };
 
-/**
- * O pedido do presente: Pix, um item, e o split — a família recebe a parte
- * dela (sem a tarifa), a plataforma fica com a taxa e paga a tarifa do Pix
- * e os centavos que sobrarem. O CPF e o celular do convidado vão SÓ para a
- * Pagar.me (nada disso fica aqui; o erro não ecoa o corpo).
- */
-export async function criarPedidoPix(p: {
+export type DadosDoPedido = {
   pagamentoId: string;
   eventoId: string;
   titulo: string;
@@ -178,34 +183,48 @@ export async function criarPedidoPix(p: {
   plataforma: number;
   recebedorDaFamilia: string;
   convidado: { nome: string; email: string; cpf: string; celular: string };
-  expiraEmSegundos: number;
-}) {
+};
+
+/**
+ * O split, igual no Pix e no cartão: a família recebe a parte dela (sem
+ * tarifa nenhuma); a plataforma fica com as taxas e paga a tarifa da
+ * Pagar.me e os centavos que sobrarem. Os dois respondem por contestação,
+ * cada um pela sua parte (decisão dele, 03/10/2026).
+ */
+function divisaoDoPresente(p: DadosDoPedido):
+  | { ok: true; divisao: Record<string, unknown>[] | null }
+  | { ok: false; status: 0; erro: string } {
   const plataforma = recebedorDaPlataforma();
   // A loja de TESTE da Pagar.me não cria recebedor (412 "not allowed to
   // create a recipient", medido em 02/10/2026): lá o pedido sai sem a
-  // divisão, só para provar o caminho do Pix (gerar, esperar, confirmar).
-  // Na produção a divisão é obrigatória: sem ela, nenhum pedido sai.
+  // divisão, só para provar o caminho (gerar, esperar, confirmar). Na
+  // produção a divisão é obrigatória: sem ela, nenhum pedido sai.
   const semDivisao = !plataforma && emTeste() && process.env.VERCEL_ENV !== "production";
-  if (!plataforma && !semDivisao) return { ok: false as const, status: 0, erro: "sem recebedor da plataforma" };
-  if (p.familia + p.plataforma !== p.total) return { ok: false as const, status: 0, erro: "divisão não fecha" };
-  const divisao = plataforma
-    ? [
-        {
-          amount: p.familia,
-          recipient_id: p.recebedorDaFamilia,
-          type: "flat",
-          options: { liable: true, charge_processing_fee: false, charge_remainder_fee: false },
-        },
-        {
-          amount: p.plataforma,
-          recipient_id: plataforma,
-          type: "flat",
-          options: { liable: true, charge_processing_fee: true, charge_remainder_fee: true },
-        },
-      ]
-    : null;
+  if (!plataforma && !semDivisao) return { ok: false, status: 0, erro: "sem recebedor da plataforma" };
+  if (p.familia + p.plataforma !== p.total) return { ok: false, status: 0, erro: "divisão não fecha" };
+  if (!plataforma) return { ok: true, divisao: null };
+  return {
+    ok: true,
+    divisao: [
+      {
+        amount: p.familia,
+        recipient_id: p.recebedorDaFamilia,
+        type: "flat",
+        options: { liable: true, charge_processing_fee: false, charge_remainder_fee: false },
+      },
+      {
+        amount: p.plataforma,
+        recipient_id: plataforma,
+        type: "flat",
+        options: { liable: true, charge_processing_fee: true, charge_remainder_fee: true },
+      },
+    ],
+  };
+}
+
+function corpoDoPedido(p: DadosDoPedido, pagamento: Record<string, unknown>, extra: Record<string, unknown> = {}) {
   const cel = so(p.convidado.celular);
-  return chamar<PedidoGateway>("POST", "/orders", {
+  return {
     code: p.pagamentoId,
     items: [{ amount: p.total, description: p.titulo.slice(0, 250), quantity: 1, code: (p.presenteId ?? "presente").slice(0, 52) }],
     customer: {
@@ -214,16 +233,96 @@ export async function criarPedidoPix(p: {
       document: so(p.convidado.cpf),
       type: "individual",
       phones: { mobile_phone: { country_code: "55", area_code: cel.slice(0, 2), number: cel.slice(2) } },
+      ...extra,
     },
-    payments: [
-      {
-        payment_method: "pix",
-        pix: { expires_in: p.expiraEmSegundos, additional_information: [{ name: "Presente", value: p.titulo.slice(0, 60) }] },
-        ...(divisao ? { split: divisao } : {}),
-      },
-    ],
+    payments: [pagamento],
     metadata: { pagamento: p.pagamentoId, evento: p.eventoId },
+  };
+}
+
+/**
+ * O pedido do presente no Pix: um item e o split. O CPF e o celular do
+ * convidado vão SÓ para a Pagar.me (nada disso fica aqui; o erro não ecoa
+ * o corpo).
+ */
+export async function criarPedidoPix(p: DadosDoPedido & { expiraEmSegundos: number }) {
+  const d = divisaoDoPresente(p);
+  if (!d.ok) return d;
+  return chamar<PedidoGateway>(
+    "POST",
+    "/orders",
+    corpoDoPedido(p, {
+      payment_method: "pix",
+      pix: { expires_in: p.expiraEmSegundos, additional_information: [{ name: "Presente", value: p.titulo.slice(0, 60) }] },
+      ...(d.divisao ? { split: d.divisao } : {}),
+    })
+  );
+}
+
+/**
+ * O pedido do presente no cartão (03/10/2026): o token de uso único que o
+ * navegador trocou direto com a Pagar.me (o número do cartão nunca passa
+ * por aqui), as parcelas e o endereço da fatura, que o antifraude e a
+ * validação da Pagar.me exigem. Cobra na hora (auth_and_capture): a
+ * resposta já diz pago, recusado ou em análise. O IP do convidado vai só
+ * para o antifraude da Pagar.me — aqui ele nunca é gravado.
+ */
+export async function criarPedidoCartao(
+  p: DadosDoPedido & {
+    cartao: { token: string; parcelas: number; endereco: EnderecoDeCobranca };
+    ip: string | null;
+  }
+) {
+  const d = divisaoDoPresente(p);
+  if (!d.ok) return d;
+  const e = p.cartao.endereco;
+  const endereco = {
+    line_1: [e.numero.trim(), e.rua.trim(), e.bairro.trim()].filter(Boolean).join(", ").slice(0, 256),
+    line_2: e.complemento.trim().slice(0, 128),
+    zip_code: so(e.cep),
+    city: e.cidade.trim().slice(0, 64),
+    state: e.uf.trim().toUpperCase(),
+    country: "BR",
+  };
+  return chamar<PedidoGateway>("POST", "/orders", {
+    ...corpoDoPedido(
+      p,
+      {
+        payment_method: "credit_card",
+        credit_card: {
+          installments: p.cartao.parcelas,
+          statement_descriptor: "EORGANIZEI",
+          operation_type: "auth_and_capture",
+          card_token: p.cartao.token,
+          card: { billing_address: endereco },
+        },
+        ...(d.divisao ? { split: d.divisao } : {}),
+      },
+      { address: endereco }
+    ),
+    ...(p.ip ? { ip: p.ip } : {}),
   });
+}
+
+/**
+ * A chave PÚBLICA com que o navegador troca o cartão por token: a de teste
+ * quando a lista roda na loja de teste (PAGARME_LISTA_PUBLIC_KEY, só no
+ * .env.local), a de produção (a mesma da assinatura) no site de verdade.
+ * Só sai o que começa com pk_ e é do mesmo ambiente da chave secreta; sem
+ * isso, a lista fica só no Pix.
+ */
+export function chavePublicaDaLista(): string | null {
+  // sem a secreta que vale aqui, o cartão nem aparece (o servidor não cobraria)
+  let secreta: string;
+  try {
+    secreta = chave();
+  } catch {
+    return null;
+  }
+  const teste = secreta.startsWith("sk_test_");
+  const k = ((teste ? process.env.PAGARME_LISTA_PUBLIC_KEY : process.env.NEXT_PUBLIC_PAGARME_PUBLIC_KEY) ?? "").trim();
+  if (!k.startsWith("pk_")) return null;
+  return k.startsWith("pk_test_") === teste ? k : null;
 }
 
 export async function lerPedido(id: string) {
@@ -239,8 +338,19 @@ export function foiEstornado(pedido: Pick<PedidoGateway, "charges">): boolean {
  * O estado do pedido na nossa língua. Pix vencido que ainda diz "pending"
  * lá também é vencido aqui — mas "expirado" e "falhou" não são finais: se
  * a Pagar.me confirmar depois, quem grava aceita a volta para "pago".
+ * Cartão não vence: recusado ou cancelado (o antifraude) é "falhou", e o
+ * que está em análise espera a Pagar.me decidir.
  */
-export function estadoDoPedido(pedido: Pick<PedidoGateway, "status">, expiraEm: string | null): "aguardando" | "pago" | "expirado" | "falhou" {
+export function estadoDoPedido(
+  pedido: Pick<PedidoGateway, "status">,
+  expiraEm: string | null,
+  meio: "pix" | "cartao" = "pix"
+): "aguardando" | "pago" | "expirado" | "falhou" {
+  if (meio === "cartao") {
+    if (pedido.status === "paid") return "pago";
+    if (pedido.status === "failed" || pedido.status === "canceled") return "falhou";
+    return "aguardando";
+  }
   const vencido = !!expiraEm && Date.now() > new Date(expiraEm).getTime() + 5 * 60_000;
   if (pedido.status === "paid") return "pago";
   if (pedido.status === "canceled" || pedido.status === "failed") return vencido || pedido.status === "canceled" ? "expirado" : "falhou";

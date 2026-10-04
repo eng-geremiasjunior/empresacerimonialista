@@ -2,8 +2,18 @@ import { createHmac } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { eventoEDoCatalogo } from "@/lib/catalogo-vivo";
-import { problemaNoConvidado, so, valoresDoPresente } from "@/lib/lista-presentes";
-import { criarPedidoPix, emTeste, lerPedido } from "@/lib/pagarme-lista";
+import {
+  PARCELAS_NO_CARTAO,
+  TOKEN_DO_CARTAO,
+  problemaNoConvidado,
+  problemaNoEnderecoDeCobranca,
+  so,
+  valoresDoPresente,
+  valoresNoCartao,
+  type EnderecoDeCobranca,
+} from "@/lib/lista-presentes";
+import { criarPedidoCartao, criarPedidoPix, emTeste, estadoDoPedido, lerPedido, type DadosDoPedido } from "@/lib/pagarme-lista";
+import { gravarEstadoDoPresente } from "@/lib/supabase/presente-pagamento";
 import { qrSvg } from "@/lib/qr";
 import { hojeBR } from "@/lib/tempo";
 
@@ -34,12 +44,26 @@ export const maxDuration = 30;
 // O mesmo convidado (e-mail) pedindo de novo o mesmo presente recebe o
 // mesmo Pix, enquanto ele vale. Na frente de tudo, o firewall da Vercel
 // segura rajada nesta rota (10 por minuto por IP).
+//
+// O cartão (198, 03/10/2026) passa pelo mesmo caminho: o navegador troca
+// o cartão por um token direto com a Pagar.me, e aqui chega só o token,
+// as parcelas e o endereço da fatura. A cobrança sai na hora: pago,
+// recusado ou em análise. Lista pública que aceita cartão atrai quem testa
+// cartão roubado, então o cartão tem freios a mais, contando as recusas:
+// por origem, por e-mail e por lista (o disjuntor).
 
 const PIX_VALE_SEGUNDOS = 20 * 60;
 const ABERTOS_POR_ORIGEM = 4;
 const PEDIDOS_POR_ORIGEM_HORA = 20;
 const ABERTOS_POR_EMAIL = 2;
 const ABERTOS_POR_LISTA = 80;
+// o cartão em análise segura o presente por este tempo (depois, quem
+// decide é a Pagar.me: o pago entra mesmo assim)
+const CARTAO_RESERVA_SEGUNDOS = 30 * 60;
+const CARTAO_TENTATIVAS_POR_ORIGEM_HORA = 6;
+const CARTAO_RECUSAS_POR_ORIGEM_DIA = 5;
+const CARTAO_RECUSAS_POR_EMAIL_DIA = 3;
+const CARTAO_RECUSAS_POR_LISTA_HORA = 15;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SLUG = /^[a-z0-9-]{1,80}$/;
@@ -64,6 +88,66 @@ const erro = (mensagem: string, status: number) =>
   NextResponse.json({ ok: false, erro: mensagem }, { status, headers: { "Cache-Control": "no-store" } });
 
 const txt = (v: unknown) => (typeof v === "string" ? v : "");
+
+/** O IP do convidado, só para o antifraude da Pagar.me (aqui ele nunca é gravado). */
+function ipDo(request: NextRequest): string | null {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "";
+  return /^[0-9a-fA-F:.]{3,45}$/.test(ip) ? ip : null;
+}
+
+const marcarFalhou = (db: ReturnType<typeof servico>, id: string) =>
+  db.from("presente_pagamento").update({ status: "falhou", updated_at: new Date().toISOString() }).eq("id", id);
+
+const respostaDoCartao = (id: string, status: "pago" | "aguardando", expiraEm: string, totalCentavos: number) =>
+  NextResponse.json({ ok: true, id, meio: "cartao", status, expiraEm, totalCentavos }, { headers: { "Cache-Control": "no-store" } });
+
+/**
+ * A cobrança no cartão. A resposta da Pagar.me é a verdade que o convidado
+ * vê (o banco pode falhar logo depois de cobrar: aí o aviso da Pagar.me
+ * liga o pedido pelo código). Sem resposta (rede, erro 5xx dela) não dá
+ * para saber se cobrou: o pagamento fica "aguardando" e a página espera a
+ * confirmação, em vez de convidar a pagar de novo.
+ */
+async function pagarNoCartao(
+  db: ReturnType<typeof servico>,
+  dados: DadosDoPedido,
+  cartao: { token: string; parcelas: number; endereco: EnderecoDeCobranca },
+  ip: string | null,
+  expiraEm: string
+): Promise<NextResponse> {
+  const r = await criarPedidoCartao({ ...dados, cartao, ip });
+  if (!r.ok) {
+    if (r.status === 0 && r.erro === "rede") return respostaDoCartao(dados.pagamentoId, "aguardando", expiraEm, dados.total);
+    if (r.status >= 500) {
+      console.error("[eorganizei:lista] cartão: Pagar.me fora", r.status);
+      return respostaDoCartao(dados.pagamentoId, "aguardando", expiraEm, dados.total);
+    }
+    // recusado antes de cobrar (dado inválido, token vencido): só o status
+    // e as chaves do erro, nunca o corpo
+    console.error("[eorganizei:lista] cartão: pedido recusado", r.status, (r.erro ?? "").slice(0, 160));
+    await marcarFalhou(db, dados.pagamentoId);
+    return r.status === 400 || r.status === 422
+      ? erro("Confira os dados do cartão e o endereço e tente de novo.", 400)
+      : erro("Não foi possível pagar no cartão agora. Tente de novo em instantes.", 502);
+  }
+
+  const cobranca = r.dados.charges?.[0];
+  const { error: erroLigar } = await db
+    .from("presente_pagamento")
+    .update({ pagarme_order_id: r.dados.id, pagarme_charge_id: cobranca?.id ?? null, updated_at: new Date().toISOString() })
+    .eq("id", dados.pagamentoId);
+  if (erroLigar) console.error("[eorganizei:lista] cartão: pedido não ligado", erroLigar.code ?? "");
+  else await gravarEstadoDoPresente(db, { id: dados.pagamentoId, status: "aguardando", expira_em: expiraEm, meio: "cartao" }, r.dados);
+
+  const estado = estadoDoPedido(r.dados, expiraEm, "cartao");
+  if (estado === "pago") return respostaDoCartao(dados.pagamentoId, "pago", expiraEm, dados.total);
+  if (estado === "falhou") {
+    // cartão recusado é rotina: no log, só os estados
+    console.info("[eorganizei:lista] cartão não aprovado", r.dados.status, cobranca?.status ?? "", cobranca?.last_transaction?.status ?? "");
+    return erro("O cartão não foi aprovado. Confira os dados, use outro cartão ou pague por Pix.", 402);
+  }
+  return respostaDoCartao(dados.pagamentoId, "aguardando", expiraEm, dados.total);
+}
 
 async function respostaDoPix(id: string, qrCode: string, expiraEm: string, totalCentavos: number) {
   const svg = await qrSvg(qrCode);
@@ -105,6 +189,31 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
   if (problema) return erro(problema, 400);
   const email = convidado.email.toLowerCase();
 
+  const meio: "pix" | "cartao" = corpo.meio === "cartao" ? "cartao" : "pix";
+  let cartao: { token: string; parcelas: number; endereco: EnderecoDeCobranca } | null = null;
+  if (meio === "cartao") {
+    const c = (corpo.cartao && typeof corpo.cartao === "object" ? corpo.cartao : {}) as Record<string, unknown>;
+    const parcelas = Number(c.parcelas);
+    const endereco: EnderecoDeCobranca = {
+      cep: txt(c.cep),
+      rua: txt(c.rua),
+      numero: txt(c.numero),
+      complemento: txt(c.complemento),
+      bairro: txt(c.bairro),
+      cidade: txt(c.cidade),
+      uf: txt(c.uf),
+    };
+    if (!TOKEN_DO_CARTAO.test(txt(c.token))) return erro("Confira os dados do cartão e tente de novo.", 400);
+    if (!Number.isInteger(parcelas) || parcelas < 1 || parcelas > PARCELAS_NO_CARTAO) return erro("Escolha em quantas vezes.", 400);
+    const semEndereco = problemaNoEnderecoDeCobranca(endereco);
+    if (semEndereco) return erro(semEndereco, 400);
+    cartao = { token: txt(c.token), parcelas, endereco };
+  }
+  const naoDeu =
+    meio === "cartao"
+      ? "Não foi possível pagar no cartão agora. Tente de novo em instantes."
+      : "Não foi possível gerar o Pix agora. Tente de novo em instantes.";
+
   const db = servico();
 
   // a lista: o site no ar, a lista publicada, o presente dela
@@ -138,22 +247,25 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
   const origem = origemDo(request);
 
   // o mesmo convidado pedindo de novo o mesmo presente: o mesmo Pix, se ainda vale
-  const { data: aberto } = await db
-    .from("presente_pagamento")
-    .select("id, pagarme_order_id, expira_em, total_centavos")
-    .eq("presente_id", pr.id)
-    .eq("status", "aguardando")
-    .eq("email", email)
-    .gt("expira_em", new Date(Date.now() + 2 * 60_000).toISOString())
-    .not("pagarme_order_id", "is", null)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  const a = aberto as { id: string; pagarme_order_id: string; expira_em: string; total_centavos: number } | null;
-  if (a) {
-    const r = await lerPedido(a.pagarme_order_id);
-    const qr = r.ok && r.dados.status === "pending" ? r.dados.charges?.[0]?.last_transaction?.qr_code : null;
-    if (qr) return respostaDoPix(a.id, qr, a.expira_em, a.total_centavos);
+  if (meio === "pix") {
+    const { data: aberto } = await db
+      .from("presente_pagamento")
+      .select("id, pagarme_order_id, expira_em, total_centavos")
+      .eq("presente_id", pr.id)
+      .eq("status", "aguardando")
+      .eq("meio", "pix")
+      .eq("email", email)
+      .gt("expira_em", new Date(Date.now() + 2 * 60_000).toISOString())
+      .not("pagarme_order_id", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const a = aberto as { id: string; pagarme_order_id: string; expira_em: string; total_centavos: number } | null;
+    if (a) {
+      const r = await lerPedido(a.pagarme_order_id);
+      const qr = r.ok && r.dados.status === "pending" ? r.dados.charges?.[0]?.last_transaction?.qr_code : null;
+      if (qr) return respostaDoPix(a.id, qr, a.expira_em, a.total_centavos);
+    }
   }
 
   // os freios
@@ -192,9 +304,33 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
   if ((daOrigemNaHora ?? 0) >= PEDIDOS_POR_ORIGEM_HORA || (abertosNaLista ?? 0) >= ABERTOS_POR_LISTA) {
     return erro("Muitos pedidos agora. Tente de novo em alguns minutos.", 429);
   }
+  if (cartao) {
+    const umDiaAtras = new Date(Date.now() - 24 * 3600_000).toISOString();
+    const umaHoraAtras = new Date(Date.now() - 3600_000).toISOString();
+    const doCartao = () => db.from("presente_pagamento").select("id", { count: "exact", head: true }).eq("event_id", eventId).eq("meio", "cartao");
+    const [{ count: tentativasDaOrigem }, { count: recusasDaOrigem }, { count: recusasDoEmail }, { count: recusasDaLista }] =
+      await Promise.all([
+        doCartao().eq("origem", origem).gt("created_at", umaHoraAtras),
+        doCartao().eq("origem", origem).eq("status", "falhou").gt("created_at", umDiaAtras),
+        doCartao().eq("email", email).eq("status", "falhou").gt("created_at", umDiaAtras),
+        doCartao().eq("status", "falhou").gt("created_at", umaHoraAtras),
+      ]);
+    if (
+      (tentativasDaOrigem ?? 0) >= CARTAO_TENTATIVAS_POR_ORIGEM_HORA ||
+      (recusasDaOrigem ?? 0) >= CARTAO_RECUSAS_POR_ORIGEM_DIA ||
+      (recusasDoEmail ?? 0) >= CARTAO_RECUSAS_POR_EMAIL_DIA
+    ) {
+      return erro("Muitas tentativas no cartão. Pague por Pix ou tente de novo amanhã.", 429);
+    }
+    if ((recusasDaLista ?? 0) >= CARTAO_RECUSAS_POR_LISTA_HORA) {
+      return erro("O cartão está indisponível nesta lista agora. Pague por Pix ou tente mais tarde.", 429);
+    }
+  }
 
-  const v = valoresDoPresente(pr.valor_centavos, !!l.taxa_do_casal);
-  const expiraEm = new Date(Date.now() + PIX_VALE_SEGUNDOS * 1000).toISOString();
+  const v = cartao
+    ? valoresNoCartao(pr.valor_centavos, !!l.taxa_do_casal, cartao.parcelas)
+    : { ...valoresDoPresente(pr.valor_centavos, !!l.taxa_do_casal), taxaCartao: 0, parcelas: 1 };
+  const expiraEm = new Date(Date.now() + (cartao ? CARTAO_RESERVA_SEGUNDOS : PIX_VALE_SEGUNDOS) * 1000).toISOString();
   const { data: novo, error: erroNovo } = await db
     .from("presente_pagamento")
     .insert({
@@ -205,6 +341,9 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
       taxa_centavos: v.taxa,
       total_centavos: v.total,
       taxa_do_casal: !!l.taxa_do_casal,
+      meio,
+      parcelas: v.parcelas,
+      taxa_cartao_centavos: v.taxaCartao,
       quem: convidado.quem.slice(0, 80),
       recado: convidado.recado ? convidado.recado.slice(0, 500) : null,
       email,
@@ -216,7 +355,7 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
     .single();
   if (erroNovo || !novo) {
     console.error("[eorganizei:lista] pagamento: não gravou", erroNovo?.code ?? "");
-    return erro("Não foi possível gerar o Pix agora. Tente de novo em instantes.", 500);
+    return erro(naoDeu, 500);
   }
   const pagamentoId = (novo as { id: string }).id;
 
@@ -241,7 +380,7 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
     return erro("Alguém acabou de escolher este presente. Escolha outro.", 409);
   }
 
-  const r = await criarPedidoPix({
+  const dadosDoPedido = {
     pagamentoId,
     eventoId: eventId,
     titulo: pr.titulo,
@@ -251,8 +390,10 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
     plataforma: v.plataforma,
     recebedorDaFamilia: rc.pagarme_recipient_id,
     convidado: { nome: convidado.quem, email, cpf: so(convidado.cpf), celular: so(convidado.celular) },
-    expiraEmSegundos: PIX_VALE_SEGUNDOS,
-  });
+  };
+  if (cartao) return pagarNoCartao(db, dadosDoPedido, cartao, ipDo(request), expiraEm);
+
+  const r = await criarPedidoPix({ ...dadosDoPedido, expiraEmSegundos: PIX_VALE_SEGUNDOS });
   const cobranca = r.ok ? r.dados.charges?.[0] : undefined;
   const pix = cobranca?.last_transaction;
   if (!r.ok || !pix?.qr_code) {

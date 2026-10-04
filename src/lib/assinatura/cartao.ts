@@ -21,12 +21,17 @@ export type FormularioDoCartao = {
   cvv: string;
 };
 
-/** Troca o cartão por um token, direto com o gateway. */
+/**
+ * Troca o cartão por um token, direto com o gateway. A lista de presentes
+ * passa a chave dela (a de teste, fora da produção); a assinatura usa a
+ * do ambiente. Só chave pública (pk_) sai daqui para o gateway.
+ */
 export async function tokenizar(
-  cartao: FormularioDoCartao
+  cartao: FormularioDoCartao,
+  chavePublica?: string | null
 ): Promise<{ token?: string; erro?: string }> {
-  const pk = process.env.NEXT_PUBLIC_PAGARME_PUBLIC_KEY;
-  if (!pk) return { erro: "Pagamento não configurado. Fale com o suporte." };
+  const pk = chavePublica ?? process.env.NEXT_PUBLIC_PAGARME_PUBLIC_KEY;
+  if (!pk || !pk.startsWith("pk_")) return { erro: "Pagamento não configurado. Fale com o suporte." };
   try {
     const r = await fetch(`https://api.pagar.me/core/v5/tokens?appId=${pk}`, {
       method: "POST",

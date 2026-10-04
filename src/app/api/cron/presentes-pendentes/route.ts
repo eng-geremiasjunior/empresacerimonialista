@@ -38,7 +38,7 @@ function serviceClient() {
   });
 }
 
-type Linha = { id: string; status: string; pagarme_order_id: string; expira_em: string | null };
+type Linha = { id: string; status: string; pagarme_order_id: string; expira_em: string | null; meio: string | null };
 
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
   if (!db) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY não configurada" }, { status: 500 });
 
   const minutosAtras = (m: number) => new Date(Date.now() - m * 60_000).toISOString();
-  const campos = "id, status, pagarme_order_id, expira_em";
+  const campos = "id, status, pagarme_order_id, expira_em, meio";
 
   // aguardando, vencido há mais de 10 min (o Pix pago no último minuto já caiu)
   const vencidos = await db

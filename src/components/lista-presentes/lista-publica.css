@@ -405,7 +405,8 @@
   color: var(--lp-suave);
 }
 .lp-campo input,
-.lp-campo textarea {
+.lp-campo textarea,
+.lp-campo select {
   width: 100%;
   min-width: 0;
   padding: 12px 14px;
@@ -419,9 +420,61 @@
   resize: vertical;
 }
 .lp-campo input:focus,
-.lp-campo textarea:focus {
+.lp-campo textarea:focus,
+.lp-campo select:focus {
   border-color: var(--lp-tinta);
   outline: none;
+}
+
+/* Pix ou cartão: duas metades do mesmo trilho, como os filtros da vitrine */
+.lp-meios {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--lp-linha);
+  border-radius: 14px;
+}
+.lp .lp-meio {
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--lp-tinta);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+.lp .lp-meio:hover {
+  background: color-mix(in srgb, var(--lp-tinta) 6%, transparent);
+}
+.lp .lp-meio.on {
+  background: var(--lp-tinta);
+  color: var(--lp-fundo);
+}
+.lp .lp-meio:focus-visible {
+  outline: 2px solid var(--lp-tinta);
+  outline-offset: 2px;
+}
+
+/* o cartão e o endereço da fatura: grupos sem caixa, só o título */
+.lp-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 4px 0 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.lp-grupo > legend {
+  margin-bottom: 8px;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--lp-suave);
 }
 .lp-campo input::placeholder {
   color: color-mix(in srgb, var(--lp-suave) 60%, var(--lp-fundo));
@@ -556,6 +609,7 @@
    alguns sites (Cormorant, EB Garamond) desenham o 3 e o 9 descendo da linha */
 .lp .lp-botao,
 .lp-campo input,
+.lp-campo select,
 .lp-aviso {
   font-variant-numeric: lining-nums;
 }

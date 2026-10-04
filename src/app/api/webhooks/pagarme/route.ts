@@ -84,18 +84,40 @@ type Corpo = {
  * = 503: o gateway reenvia o mesmo aviso e ele passa de novo (o registro
  * fica sem processado_em). O que escapar daqui, a rotina diária
  * presentes-pendentes relê.
+ *
+ * O código do pedido é o id do nosso pagamento (criarPedidoPix/Cartao): se
+ * a gravação do id do pedido falhou logo depois de a Pagar.me cobrar (no
+ * cartão, o dinheiro já saiu), o aviso acha o presente pelo código — e só
+ * liga os dois depois de a API confirmar que o pedido tem mesmo esse código.
  */
+const UUID_DO_PAGAMENTO = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 async function processarPresente(
   db: ReturnType<typeof servico>,
   tipo: string,
   d: Record<string, any>,
   idDoRegistro: string
 ): Promise<NextResponse> {
+  type Pagamento = { id: string; status: string; expira_em: string | null; meio: string | null; pagarme_order_id?: string | null };
   const pedidoId: string | null = tipo.startsWith("order.") ? (d.id ?? null) : (d.order?.id ?? null);
-  const { data: pg } = pedidoId
-    ? await db.from("presente_pagamento").select("id, status, expira_em").eq("pagarme_order_id", pedidoId).maybeSingle()
+  const codigo: unknown = tipo.startsWith("order.") ? d.code : d.order?.code;
+  let { data: pg } = pedidoId
+    ? await db.from("presente_pagamento").select("id, status, expira_em, meio").eq("pagarme_order_id", pedidoId).maybeSingle()
     : { data: null };
-  const erro: string | null = pg ? null : "presente desconhecido";
+  let ligarPeloCodigo = false;
+  if (!pg && pedidoId && typeof codigo === "string" && UUID_DO_PAGAMENTO.test(codigo)) {
+    const { data: semPedido } = await db
+      .from("presente_pagamento")
+      .select("id, status, expira_em, meio, pagarme_order_id")
+      .eq("id", codigo)
+      .is("pagarme_order_id", null)
+      .maybeSingle();
+    if (semPedido) {
+      pg = semPedido;
+      ligarPeloCodigo = true;
+    }
+  }
+  let erro: string | null = pg ? null : "presente desconhecido";
   if (pg && pedidoId && pg.status !== "estornado") {
     const atual = await lerPedido(pedidoId);
     if (!atual.ok) {
@@ -103,7 +125,19 @@ async function processarPresente(
       // falha de leitura nossa: vale o gateway tentar de novo
       return NextResponse.json({ ok: false }, { status: 503 });
     }
-    await gravarEstadoDoPresente(db, pg as { id: string; status: string; expira_em: string | null }, atual.dados);
+    if (ligarPeloCodigo) {
+      if (atual.dados.code !== (pg as Pagamento).id) {
+        erro = "código do pedido não confere";
+        pg = null;
+      } else {
+        await db
+          .from("presente_pagamento")
+          .update({ pagarme_order_id: pedidoId, pagarme_charge_id: atual.dados.charges?.[0]?.id ?? null, updated_at: new Date().toISOString() })
+          .eq("id", (pg as Pagamento).id)
+          .is("pagarme_order_id", null);
+      }
+    }
+    if (pg) await gravarEstadoDoPresente(db, pg as Pagamento, atual.dados);
   }
   await db
     .from("gateway_evento")

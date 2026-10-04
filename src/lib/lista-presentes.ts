@@ -136,6 +136,78 @@ export function valoresDoPresente(
 export const precoNaLista = (precoCentavos: number, taxaDoCasal: boolean) =>
   valoresDoPresente(precoCentavos, taxaDoCasal).total;
 
+// ------------------------------------------------------------ o cartão
+
+/**
+ * A taxa do cartão por número de parcelas (1x a 6x), em centésimos de
+ * ponto percentual (538 = 5,38%): a tabela "Depois" que o gerente da conta
+ * na Pagar.me mandou em 03/10/2026, o custo efetivo com recebimento em
+ * D+15. Mudou o contrato, muda aqui — e só aqui.
+ */
+export const TAXAS_DO_CARTAO = [538, 771, 909, 1047, 1185, 1323] as const;
+/** O antifraude da Pagar.me, por transação de crédito (centavos). */
+export const ANTIFRAUDE_CENTAVOS = 44;
+export const PARCELAS_NO_CARTAO = TAXAS_DO_CARTAO.length;
+
+/**
+ * Quanto o convidado paga no cartão e como o valor se divide (centavos).
+ * A taxa do cartão é de quem presenteia (decisão dele, 26/09 e 03/10): a
+ * Pagar.me cobra o percentual sobre o TOTAL e o antifraude, os dois da
+ * parte da plataforma. O acréscimo resolve
+ *   acréscimo = taxa × (total do Pix + acréscimo) + antifraude,
+ * com inteiros e arredondado para cima: a plataforma fica com o mesmo que
+ * fica no Pix (a taxa de serviço) e o casal recebe o mesmo que no Pix.
+ */
+export function valoresNoCartao(
+  precoCentavos: number,
+  taxaDoCasal: boolean,
+  parcelas: number
+): { total: number; taxa: number; taxaCartao: number; familia: number; plataforma: number; parcelas: number; valorDaParcela: number } {
+  const pix = valoresDoPresente(precoCentavos, taxaDoCasal);
+  const n = Math.min(Math.max(Math.trunc(parcelas) || 1, 1), PARCELAS_NO_CARTAO);
+  const bp = TAXAS_DO_CARTAO[n - 1];
+  const taxaCartao = Math.ceil((bp * pix.total + ANTIFRAUDE_CENTAVOS * 10_000) / (10_000 - bp));
+  const total = pix.total + taxaCartao;
+  return {
+    total,
+    taxa: pix.taxa,
+    taxaCartao,
+    familia: pix.familia,
+    plataforma: pix.plataforma + taxaCartao,
+    parcelas: n,
+    valorDaParcela: Math.ceil(total / n),
+  };
+}
+
+export type EnderecoDeCobranca = {
+  cep: string;
+  rua: string;
+  numero: string;
+  complemento: string;
+  bairro: string;
+  cidade: string;
+  uf: string;
+};
+
+const UFS_DO_BRASIL = new Set(
+  "AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO".split(" ")
+);
+
+/** O primeiro problema do endereço da fatura do cartão, ou null. */
+export function problemaNoEnderecoDeCobranca(e: EnderecoDeCobranca): string | null {
+  if (so(e.cep).length !== 8) return "Confira o CEP.";
+  if (!e.rua.trim() || e.rua.trim().length > 120) return "Informe a rua.";
+  if (!e.numero.trim() || e.numero.trim().length > 10) return "Informe o número.";
+  if (e.complemento.trim().length > 60) return "Use um complemento de até 60 letras.";
+  if (!e.bairro.trim() || e.bairro.trim().length > 60) return "Informe o bairro.";
+  if (!e.cidade.trim() || e.cidade.trim().length > 60) return "Informe a cidade.";
+  if (!UFS_DO_BRASIL.has(e.uf.trim().toUpperCase())) return "Escolha o estado.";
+  return null;
+}
+
+/** O token de uso único que a Pagar.me devolve para o cartão. */
+export const TOKEN_DO_CARTAO = /^token_[A-Za-z0-9]{8,64}$/;
+
 /** E-mail com cara de e-mail (o resto a Pagar.me confere). */
 export const emailValido = (v: string) => /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/.test(v.trim()) && v.trim().length <= 120;
 

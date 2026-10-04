@@ -92,6 +92,38 @@ do split do Pagar.me, então teremos também".
   grave; os médios e baixos foram corrigidos (197 revisada para ele
   reaplicar).
 
+## O cartão (04/10/2026)
+
+Decisões dele: até 6x; a taxa do cartão é de quem presenteia; contestação
+como no Pix (o casal e a plataforma, cada um pela sua parte); a mesma taxa
+para todas as bandeiras. A taxa é a tabela "Depois" que o gerente da conta
+mandou (custo efetivo com recebimento em D+15): 5,38% · 7,71% · 9,09% ·
+10,47% · 11,85% · 13,23% (1x a 6x), mais o antifraude de R$ 0,44. Mudou o
+contrato, muda só `TAXAS_DO_CARTAO` (`lib/lista-presentes.ts`).
+
+- **A conta**: o acréscimo resolve acréscimo = taxa × (total do Pix +
+  acréscimo) + antifraude, com inteiros e para cima. O casal recebe o
+  mesmo que no Pix; a plataforma não fica abaixo do Pix. Provado em 4.956
+  casos (`ferramentas/sim/cartao-taxas-puro.mjs`).
+- **198**: `meio`, `parcelas` e `taxa_cartao_centavos` em
+  presente_pagamento; o casal lê meio e parcelas ("cartão em 3x").
+- **O caminho**: o navegador troca o cartão por token direto com a
+  Pagar.me (a chave pública vem do servidor: a de teste só com a secreta
+  de teste); a rota recebe token, parcelas e o endereço da fatura e cobra
+  na hora (pago, recusado ou em análise). Sem resposta da Pagar.me (rede,
+  5xx) o pagamento fica "aguardando" em vez de convidar a pagar de novo; o
+  webhook acha o pagamento pelo código do pedido se a ligação não foi
+  gravada. Freios do cartão: 6 tentativas por origem por hora, 5 recusas
+  por origem e 3 por e-mail por dia, disjuntor de 15 recusas por lista por
+  hora.
+- **A loja de teste aprova QUALQUER cartão de teste** (o "de falha" 0028 e
+  o "em análise" 0036 voltaram pagos): a recusa e o "em análise" foram
+  provados trocando só a resposta da rota no navegador
+  (`ferramentas/sim/lista-cartao-e2e.mjs`). O endereço público é
+  `/c/<endereço>/presentes` (o `/presentes/<endereço>` direto pede login).
+- **Falta**: a prova real em produção (a divisão no cartão, como a do
+  Pix, só se prova lá) — depende de uma conta que recebe aprovada.
+
 ## O que falta
 
 - Ele reaplicar a 197 revisada; depois, a prova do Pix na loja de teste.
@@ -101,5 +133,5 @@ do split do Pagar.me, então teremos também".
   order.canceled, order.payment_failed, charge.paid e charge.refunded.
 - A prova real em produção: um presente de R$ 50 com a conta que recebe
   aprovada (a da esposa dele parou na prova de vida).
-- Depois: foto própria com revisão, cartão, cotas, agradecer por e-mail,
+- Depois: foto própria com revisão, cotas, agradecer por e-mail,
   relatório da cerimonialista, produto por link de loja.
