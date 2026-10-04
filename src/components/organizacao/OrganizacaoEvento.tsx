@@ -1304,7 +1304,7 @@ function TarefaDrawer({
                 options={[
                   { value: "cerimonialista", label: "Cerimonial" },
                   { value: "noivos", label: useRotuloCliente() },
-                  { value: "ambos", label: "Ambos" },
+                  { value: "ambos", label: "Juntos" },
                 ]}
               />
             </div>
@@ -1978,7 +1978,7 @@ function NovoCompromisso({
           value={responsavel}
           onChange={(e) => setResponsavel(e.target.value)}
         >
-          <option value="ambos">Ambos</option>
+          <option value="ambos">Juntos</option>
           <option value="noivos">{useRotuloCliente()}</option>
           <option value="cerimonialista">Cerimonialista</option>
         </Select>

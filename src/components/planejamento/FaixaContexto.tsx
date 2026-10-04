@@ -735,15 +735,14 @@ export function FaixaContexto({
       >
         {cenario ? (
           <>
-            O cenário mudou para{" "}
+            Mudou para{" "}
             <strong>
               {rotuloArquetipo(cenario, arquetipos.cenario)?.toLowerCase()}
             </strong>{" "}
-            — a
-            distribuição ficou desatualizada.
+            — a divisão da verba ainda é a de antes.
           </>
         ) : (
-          <>O arquétipo mudou — a distribuição ficou desatualizada.</>
+          <>O formato mudou — a divisão da verba ainda é a de antes.</>
         )}
       </span>
       <button
@@ -764,7 +763,7 @@ export function FaixaContexto({
           opacity: sugerindo ? 0.6 : 1,
         }}
       >
-        {sugerindo ? "Sugerindo…" : "Re-sugerir"}
+        {sugerindo ? "Refazendo…" : "Refazer a divisão"}
       </button>
       <button
         type="button"
@@ -949,7 +948,7 @@ export function FaixaContexto({
             <>
               {/* o tipo junto do título: sem ele, a lista de um evento
                   corporativo parecia a lista inteira do sistema */}
-              <span style={monoLabel}>arquétipo do evento · {tipoRotulo}</span>
+              <span style={monoLabel}>o evento · {tipoRotulo}</span>
               <div style={{ display: "flex", gap: 8 }}>{chips}</div>
             </>
           )}
@@ -974,7 +973,7 @@ export function FaixaContexto({
               transition: "background 150ms ease",
             }}
           >
-            {sugerindo ? "Sugerindo…" : "Sugerir distribuição"}
+            {sugerindo ? "Dividindo…" : "Dividir a verba"}
           </button>
           )}
           {erroSugerir && (

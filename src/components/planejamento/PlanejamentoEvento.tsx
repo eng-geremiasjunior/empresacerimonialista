@@ -45,6 +45,7 @@ import {
   F_TITLE,
   F_UI,
   monoLabel,
+  rotuloDoCampo,
   tituloStyle,
   type Arquetipos,
 } from "./celebra";
@@ -543,8 +544,8 @@ export function PlanejamentoEvento({
         cenario={cenario}
         arquetipos={arquetipos}
         placeholders={{
-          escala: campoPorCodigo("escala")?.label ?? "Escala",
-          cenario: campoPorCodigo("cenario")?.label ?? "Cenário",
+          escala: rotuloDoCampo({ label: campoPorCodigo("escala")?.label ?? "Formato" }),
+          cenario: rotuloDoCampo({ label: campoPorCodigo("cenario")?.label ?? "Local" }),
         }}
         compacta
         avisoVisivel={avisoVisivel}

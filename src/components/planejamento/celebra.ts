@@ -172,6 +172,16 @@ export function idCurto(uuid: string): string {
   return `#${uuid.slice(-4)}`;
 }
 
+// O nome do campo como ela fala (04/10/2026). Os métodos antigos gravaram
+// "Escala" e "Cenário" — vocabulário de quem desenhou o método, não de
+// quem atende: as opções são "tradicional, mini wedding" e "igreja,
+// praia". O banco fica como está; a tela diz Formato e Local.
+const ROTULO_FALADO: Record<string, string> = { Escala: "Formato", Cenário: "Local" };
+
+export function rotuloDoCampo(c: { label: string }): string {
+  return ROTULO_FALADO[c.label.trim()] ?? c.label;
+}
+
 // Rótulo do tipo de campo, para o formato `NOME · TIPO` do handoff.
 export const TIPO_ROTULO: Record<string, string> = {
   texto: "texto",

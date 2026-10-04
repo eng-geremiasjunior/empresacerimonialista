@@ -26,7 +26,7 @@ import {
   monoLabel,
   prazoRelativo,
   tempoAtras,
-  TIPO_ROTULO,
+  rotuloDoCampo,
   tituloStyle,
   type Arquetipos,
 } from "./celebra";
@@ -35,7 +35,7 @@ import { BlocoPropostasDaFamilia } from "./BlocoPropostasDaFamilia";
 import { BlocoGuiaEstilo, type AcoesGuia } from "./BlocoGuiaEstilo";
 import type { Curadoria } from "@/lib/supabase/curadoria";
 import type { GuiaDeEstilo } from "@/lib/guia-shared";
-import { rotuloConversaCom, rotuloResponsavel } from "@/lib/papel";
+import { rotuloResponsavel } from "@/lib/papel";
 import { rotuloDaOpcao } from "@/lib/rotulo-da-opcao";
 
 /**
@@ -419,7 +419,7 @@ function CampoFornecedor({
         }}
       >
         <option value="">
-          {vazio ? "nenhum fornecedor cadastrado" : "selecionar no CRM"}
+          {vazio ? "nenhum fornecedor cadastrado" : "escolher o fornecedor"}
         </option>
         {lista.map((s) => (
           <option key={s.id} value={s.id}>
@@ -889,23 +889,6 @@ export function DrawerDecisao({
           </p>
         </div>
 
-        {/* faixa de roteiro — só quando há campo vazio (e não n-a) */}
-        {!na && vazios > 0 && (
-          <div
-            style={{
-              background: C.tint,
-              padding: "12px 16px",
-              fontFamily: F_UI,
-              fontSize: 13,
-              lineHeight: "18px",
-              color: C.corpo,
-            }}
-          >
-            Estes campos são o roteiro da conversa {rotuloConversaCom(tipoEvento)}.
-            Preencha durante a reunião.
-          </div>
-        )}
-
         {/* campos */}
         <div
           style={{
@@ -1057,7 +1040,7 @@ export function DrawerDecisao({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {campo.label} · {TIPO_ROTULO[campo.tipo] ?? campo.tipo}
+                    {rotuloDoCampo(campo)}
                   </span>
                   {/* o chamariz da 091: resposta dela, ainda sua de conferir.
                       Some no "Conferir bloco" — o rastro fica no Ver o que mudou */}
@@ -1105,8 +1088,8 @@ export function DrawerDecisao({
                   type="button"
                   title={
                     campo.visivelPortal === false
-                      ? "Oculto do portal — clique para mostrar"
-                      : "Visível no portal — clique para ocultar"
+                      ? "Só a equipe vê — clique para mostrar no portal do cliente"
+                      : "Aparece no portal do cliente — clique para esconder"
                   }
                   onClick={() =>
                     onAlternarVisivel(campo.id, campo.visivelPortal === false)
@@ -1123,7 +1106,7 @@ export function DrawerDecisao({
                     padding: "2px 4px",
                   }}
                 >
-                  {campo.visivelPortal === false ? "oculto do portal" : "portal"}
+                  {campo.visivelPortal === false ? "só a equipe" : "cliente vê"}
                 </button>
               </div>
               <Controle
