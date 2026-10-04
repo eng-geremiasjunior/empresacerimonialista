@@ -117,7 +117,9 @@ export function TelaFinanceiro({
 
   async function concluir(mensagem: string) {
     const pendenciaId =
-      operacao && operacao.tipo === "despesa" ? operacao.pendenciaId : undefined;
+      operacao && (operacao.tipo === "despesa" || operacao.tipo === "contrato")
+        ? operacao.pendenciaId
+        : undefined;
     setOperacao(null);
     avisar(mensagem);
     // a pendência que a automação abriu se fecha com o lançamento que a

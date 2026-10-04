@@ -124,9 +124,9 @@ export function AbaVerba({
       router.refresh();
     });
   }
-  function descartarPendencia(id: string) {
+  function descartarPendencia(id: string, status: "resolvida" | "descartada" = "descartada") {
     transicao(async () => {
-      await fecharPendencia(eventId, id, "descartada");
+      await fecharPendencia(eventId, id, status);
       router.refresh();
     });
   }
@@ -592,7 +592,20 @@ export function AbaVerba({
                       objetivoId: a.destino.objetivoId,
                     });
                   }
-                  if (a.destino.tipo === "pendencia") {
+                  if (a.destino.tipo === "pendencia" && a.destino.fornecedorId) {
+                    setExpandido(a.destino.fornecedorId);
+                    setTimeout(() => rolarAte(refFornecedores), 40);
+                  } else if (a.destino.tipo === "pendencia" && a.destino.contrato) {
+                    const c = a.destino.contrato;
+                    abrir({
+                      tipo: "contrato",
+                      supplierId: c.supplierId,
+                      nome: c.nome,
+                      valor: c.valor ?? undefined,
+                      objetivoId: c.objetivoId,
+                      pendenciaId: a.destino.id,
+                    });
+                  } else if (a.destino.tipo === "pendencia") {
                     abrir({
                       tipo: "despesa",
                       descricao: a.titulo,
@@ -612,10 +625,13 @@ export function AbaVerba({
                     className="fe-link"
                     onClick={() =>
                       a.destino.tipo === "pendencia" &&
-                      descartarPendencia(a.destino.id)
+                      descartarPendencia(
+                        a.destino.id,
+                        a.destino.feito ? "resolvida" : "descartada"
+                      )
                     }
                   >
-                    não se aplica
+                    {a.destino.feito ? "já está feito" : "não se aplica"}
                   </button>
                 </span>
               )}

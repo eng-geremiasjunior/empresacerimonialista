@@ -16,7 +16,7 @@ import { assuntoDaDecisao } from "@/lib/assunto-da-tarefa";
 export type FornecedorDoFechado = { id: string; name: string };
 
 /** Fornecedor vinculado ao evento (o link do roteiro), com as categorias dele. */
-export type FornecedorVinculado = { nome: string; termos: string[] };
+export type FornecedorVinculado = { id?: string; nome: string; termos: string[] };
 
 const semAcento = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 
@@ -27,14 +27,18 @@ const semAcento = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLo
  * Na dúvida (dois candidatos), não chuta.
  */
 export function vinculadoDoAssunto(assunto: string, vinculados: FornecedorVinculado[]): string | null {
-  const palavra = semAcento(assunto).split(/[s-]+/)[0] ?? "";
+  return oVinculadoDoAssunto(assunto, vinculados)?.nome ?? null;
+}
+
+function oVinculadoDoAssunto(assunto: string, vinculados: FornecedorVinculado[]): FornecedorVinculado | null {
+  const palavra = semAcento(assunto).split(/[\s-]+/)[0] ?? "";
   const raiz = palavra.slice(0, Math.min(5, palavra.length));
   if (raiz.length < 2) return null;
   const achados = vinculados.filter((v) =>
-    v.termos.some((t) => semAcento(t).split(/[s/,-]+/).some((p) => p.startsWith(raiz)))
+    v.termos.some((t) => semAcento(t).split(/[\s/,-]+/).some((p) => p.startsWith(raiz)))
   );
   const nomes = [...new Set(achados.map((v) => v.nome))];
-  return nomes.length === 1 ? nomes[0] : null;
+  return nomes.length === 1 ? achados[0] : null;
 }
 
 /** O mínimo da decisão que o resumo usa (Decisao e Objetivo do planejamento cabem). */
@@ -171,4 +175,48 @@ export function oQueEstaFechado(
     grupos.push({ objetivo: o.nome, linhas });
   }
   return { grupos, decididas, comAnotacao, contratado };
+}
+
+/** O que a contratação anotou, no formato do contrato do Financeiro. */
+export type ContratoDoPlanejamento = {
+  supplierId: string;
+  nome: string;
+  valor: number | null;
+  objetivoId: string | null;
+};
+
+type CampoCru = {
+  tipo: string;
+  label: string;
+  valor_numero: number | string | null;
+  valor_supplier_id: string | null;
+};
+
+/**
+ * A pendência do Financeiro que nasceu de uma contratação (04/10/2026):
+ * se a decisão já anotou o fornecedor e o valor, o contrato abre preenchido
+ * com eles — ela confere e salva, em vez de digitar de novo o que o
+ * Planejamento já sabe. Sem fornecedor anotado, vale o vinculado ao evento
+ * (se for um só). Sem fornecedor nenhum, null: segue o lançamento comum.
+ */
+export function contratoDaDecisao(
+  decisao: { titulo: string; evento_objetivo_id: string | null; evento_campo_valor: CampoCru[] | null } | null,
+  nomesDosFornecedores: Map<string, string>,
+  vinculados: FornecedorVinculado[]
+): ContratoDoPlanejamento | null {
+  if (!decisao) return null;
+  const assunto = assuntoDaDecisao(decisao.titulo);
+  if (!assunto) return null;
+  const campos = decisao.evento_campo_valor ?? [];
+  const anotado = campos.find((c) => c.tipo === "fornecedor" && c.valor_supplier_id)?.valor_supplier_id ?? null;
+  const moeda = campos.find(
+    (c) => c.tipo === "moeda" && c.valor_numero != null && VALOR_PRINCIPAL.test(c.label.trim())
+  );
+  const valor = moeda ? Number(moeda.valor_numero) : null;
+  const objetivoId = decisao.evento_objetivo_id;
+  const nomeAnotado = anotado ? nomesDosFornecedores.get(anotado) : undefined;
+  if (anotado && nomeAnotado) return { supplierId: anotado, nome: nomeAnotado, valor, objetivoId };
+  const vinculado = oVinculadoDoAssunto(assunto, vinculados);
+  if (vinculado?.id) return { supplierId: vinculado.id, nome: vinculado.nome, valor, objetivoId };
+  return null;
 }

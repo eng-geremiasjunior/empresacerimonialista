@@ -52,6 +52,10 @@ export type Operacao =
       fornecedor?: LinhaDeFornecedor;
       objetivoId?: string | null;
       nome?: string;
+      /** vindos do Planejamento: a contratação já anotou fornecedor e valor */
+      supplierId?: string;
+      valor?: number;
+      pendenciaId?: string;
     }
   | { tipo: "verba" }
   | { tipo: "assContrato" }
@@ -172,6 +176,9 @@ export function ModalFinanceiro({
     if (operacao.tipo === "contrato" && forn?.contrato != null) {
       return mascararDinheiro(forn.contrato.toFixed(2).replace(".", ","));
     }
+    if (operacao.tipo === "contrato" && operacao.valor != null) {
+      return mascararDinheiro(operacao.valor.toFixed(2).replace(".", ","));
+    }
     if (operacao.tipo === "gerar") {
       return mascararDinheiro((forn?.faltaLancar ?? 0).toFixed(2).replace(".", ","));
     }
@@ -195,7 +202,9 @@ export function ModalFinanceiro({
       forn?.objetivoId ??
       ""
   );
-  const [supplierId, setSupplierId] = useState(forn?.supplierId ?? "");
+  const [supplierId, setSupplierId] = useState(
+    forn?.supplierId ?? (operacao.tipo === "contrato" ? (operacao.supplierId ?? "") : "")
+  );
   const [nome, setNome] = useState(
     forn?.nome ?? (operacao.tipo === "contrato" ? (operacao.nome ?? "") : "")
   );

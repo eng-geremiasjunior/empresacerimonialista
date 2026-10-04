@@ -12,20 +12,20 @@ export async function getVinculadosDoEvento(eventId: string): Promise<Fornecedor
   const supabase = createClient();
   const { data, error } = await supabase
     .from("roteiro_links")
-    .select("role, suppliers(name, category, supplier_categorias(categoria))")
+    .select("role, suppliers(id, name, category, supplier_categorias(categoria))")
     .eq("event_id", eventId);
   if (error || !data) return [];
   const lista: FornecedorVinculado[] = [];
   for (const v of data as unknown as {
     role: string | null;
-    suppliers: { name: string; category: string | null; supplier_categorias: { categoria: string }[] | null } | null;
+    suppliers: { id: string; name: string; category: string | null; supplier_categorias: { categoria: string }[] | null } | null;
   }[]) {
     const s = v.suppliers;
     if (!s?.name) continue;
     const termos = [v.role, s.category, ...(s.supplier_categorias ?? []).map((c) => c.categoria)].filter(
       (t): t is string => !!t && t.trim().length > 0
     );
-    lista.push({ nome: s.name, termos });
+    lista.push({ id: s.id, nome: s.name, termos });
   }
   return lista;
 }

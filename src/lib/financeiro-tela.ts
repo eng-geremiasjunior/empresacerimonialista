@@ -17,6 +17,7 @@ import {
   type Lancamento,
   type Tone,
 } from "./financeiro-core";
+import type { ContratoDoPlanejamento } from "./fechado";
 
 export const JANELA_PADRAO = 7;
 
@@ -345,13 +346,23 @@ export type AcaoNecessaria = {
     | { tipo: "agenda"; filtro: Filtro }
     | { tipo: "fornecedor"; id: string }
     | { tipo: "contrato"; objetivoId: string | null; nome: string }
-    | { tipo: "pendencia"; id: string };
+    | {
+        tipo: "pendencia";
+        id: string;
+        contrato?: ContratoDoPlanejamento;
+        /** o fornecedor da contratação, já com contrato aqui */
+        fornecedorId?: string;
+        /** contrato e parcelas já lançados: a pendência só falta fechar */
+        feito?: boolean;
+      };
 };
 
 export type PendenciaAberta = {
   id: string;
   titulo: string;
   valorSugerido: number | null;
+  /** fornecedor e valor que a contratação já anotou no Planejamento */
+  contrato?: ContratoDoPlanejamento | null;
 };
 
 /**
@@ -396,17 +407,43 @@ export function precisaDeAcao(
   }
 
   for (const p of pendencias) {
-    out.push({
-      chave: "pendencia-" + p.id,
-      tone: "neutral",
-      pill: "Pendência",
-      titulo: p.titulo,
-      meta:
-        p.valorSugerido != null
-          ? `${money(p.valorSugerido)} · lançar na verba`
-          : "lançar na verba",
-      destino: { tipo: "pendencia", id: p.id },
-    });
+    // a contratação já anotou fornecedor (e valor) no Planejamento, e o
+    // contrato dele ainda não está aqui: o clique abre o contrato preenchido
+    // contrato dele ainda não está aqui: o clique abre o contrato preenchido.
+    // Se o contrato já está, leva à linha do fornecedor (as parcelas); com
+    // as parcelas lançadas, só falta dar a pendência por feita.
+    const c = p.contrato;
+    const linha = c
+      ? fornecedores.find((f) => f.supplierId === c.supplierId && f.contrato != null)
+      : undefined;
+    const base = { chave: "pendencia-" + p.id, tone: "neutral" as Tone, pill: "Pendência", titulo: p.titulo };
+    if (c && linha) {
+      const feito = linha.parcelas.length > 0;
+      out.push({
+        ...base,
+        meta: `${linha.nome} · contrato ${money(linha.contrato ?? 0)} · ${
+          feito ? "parcelas lançadas" : "lançar as parcelas"
+        }`,
+        destino: { tipo: "pendencia", id: p.id, fornecedorId: linha.id, feito },
+      });
+    } else if (c) {
+      out.push({
+        ...base,
+        meta: [c.nome, c.valor != null ? money(c.valor) : null, "lançar o contrato"]
+          .filter(Boolean)
+          .join(" · "),
+        destino: { tipo: "pendencia", id: p.id, contrato: c },
+      });
+    } else {
+      out.push({
+        ...base,
+        meta:
+          p.valorSugerido != null
+            ? `${money(p.valorSugerido)} · lançar na verba`
+            : "lançar na verba",
+        destino: { tipo: "pendencia", id: p.id },
+      });
+    }
   }
 
   for (const f of fornecedores) {
