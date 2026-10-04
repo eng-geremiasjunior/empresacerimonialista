@@ -11,11 +11,13 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import {
+  ORDENS_DA_CERIMONIA,
   cortejoTradicional,
   ehPapelDoCortejo,
   emSequencia,
   normalizarEntradasLidas,
   posicaoDoPapel,
+  type RitoDaCerimonia,
 } from "@/lib/cortejo-casamento";
 import { separarCasal } from "@/components/wizard/nomesDoCasal";
 
@@ -250,6 +252,40 @@ export async function montarCortejoTradicional(eventId: string): Promise<Retorno
   if (!data || data.length === 0) return { error: "Você não tem permissão para editar este evento." };
   revalidar(eventId);
   return { ok: true };
+}
+
+/** "7. LOUVOR: (opcional)" → "louvor": para não repetir o que ela já escreveu. */
+const chaveDoMomento = (t: string) =>
+  t
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/\(.*?\)/g, "")
+    .replace(/[^a-z ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+/**
+ * A ordem da cerimônia depois das entradas: os momentos do rito escolhido
+ * (evangélica, católica, civil) entram no fim. O que ela já escreveu no
+ * cortejo ("7. LOUVOR", "ASSINATURA") não se repete.
+ */
+export async function montarOrdemDaCerimonia(eventId: string, rito: RitoDaCerimonia): Promise<Retorno> {
+  const ordem = ORDENS_DA_CERIMONIA[rito];
+  if (!ordem) return { error: "Escolha a cerimônia." };
+  const supabase = createClient();
+  const atuais = await lerSequencia(supabase, eventId);
+  // "Votos dos noivos" já é "Votos": um começa com o outro
+  const ja = atuais.map((l) => chaveDoMomento(l.nome)).filter(Boolean);
+  const faltam = ordem.momentos.filter((m) => {
+    const k = chaveDoMomento(m);
+    return !ja.some((j) => j.startsWith(k) || k.startsWith(j));
+  });
+  if (faltam.length === 0) return { ok: true };
+  return adicionarEntradas(eventId, {
+    papel: "momento",
+    entradas: faltam.map((nome) => ({ nome, par: null })),
+  });
 }
 
 /**

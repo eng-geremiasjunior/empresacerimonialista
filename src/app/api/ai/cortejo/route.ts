@@ -35,6 +35,7 @@ const INSTRUCAO =
   `Regras:\n` +
   `- "papel" é um destes códigos: ${PAPEIS}. Se nenhum servir, use "outro".\n` +
   `- Uma entrada é quem entra junto: um casal de padrinhos é UMA entrada ("nome" uma pessoa, "par" a outra). O noivo com a mãe é uma entrada de papel "noivo" com a mãe em "par". A noiva com o pai é "noiva" com o pai em "par".\n` +
+  `- Um momento da cerimônia em que ninguém entra (louvor, palavra do pastor, votos, ceia, assinatura, beijo, saída dos noivos) é papel "momento", com o momento em "nome" como está escrito e "par" null.\n` +
   `- "lado" só quando o texto disser de que lado é (padrinhos do noivo, pais da noiva…). Sem indicação, null.\n` +
   `- "musica" é a música daquela entrada, se o texto disser. "observacao" é SÓ uma instrução de bastidor que está ESCRITA no texto (ex.: "entram de 2 em 2", "aguardar sinal"), copiada como está, até 200 caracteres. Nunca escreva ali opinião, dica, aviso ou comentário seu; sem instrução no texto, null.\n` +
   `- Daminhas, pajens e quem leva as alianças: nomes juntos numa entrada só quando entram juntos ("par" pode ter o segundo nome).\n` +

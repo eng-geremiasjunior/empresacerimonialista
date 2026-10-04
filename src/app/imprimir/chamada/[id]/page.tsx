@@ -8,7 +8,8 @@ import {
   type PessoaCortejo,
 } from "@/lib/portal-pessoas-shared";
 import { BotaoImprimir } from "@/app/imprimir/mesas/[id]/BotaoImprimir";
-import { ROTULO_DO_LADO, emSequencia, papelDoCortejo, quemEntra } from "@/lib/cortejo-casamento";
+import { Fragment } from "react";
+import { ROTULO_DO_LADO, ehMomento, emSequencia, papelDoCortejo, quemEntra } from "@/lib/cortejo-casamento";
 import "@/app/imprimir/mesas/[id]/impressos.css";
 
 export const dynamic = "force-dynamic";
@@ -139,7 +140,7 @@ export default async function ImprimirChamadaPage({
 
       <div className="imp-cabecalho">
         <div className="imp-titulo">
-          {ehFormatura ? "Chamada nominal" : ehCasamento ? "Ordem do cortejo" : "Ordem de entrada"} — {titulo}
+          {ehFormatura ? "Chamada nominal" : ehCasamento ? (sequencia.some((p) => ehMomento(p.papel)) ? "Ordem da cerimônia" : "Ordem do cortejo") : "Ordem de entrada"} — {titulo}
         </div>
         <div className="imp-sub">
           {formatDate(ev.date)}
@@ -199,6 +200,32 @@ export default async function ImprimirChamadaPage({
           <tbody>
             {sequencia.map((p, i) => {
               const quem = quemEntra({ nome: p.nome, par: p.par ?? null });
+              // o momento da cerimônia (louvor, votos): uma linha só, sem "quem entra"
+              if (ehMomento(p.papel)) {
+                const primeiro = !ehMomento(sequencia[i - 1]?.papel ?? "momento");
+                return (
+                  <Fragment key={p.id}>
+                    {primeiro && (
+                      <tr>
+                        <td colSpan={6} style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: "#57534e", paddingTop: 14 }}>
+                          A cerimônia
+                        </td>
+                      </tr>
+                    )}
+                    <tr>
+                      <td className="imp-mesa-num">{i + 1}</td>
+                      <td colSpan={2}>
+                        <strong>{p.nome}</strong>
+                      </td>
+                      <td style={{ fontSize: 12.5 }}>{p.musica ?? ""}</td>
+                      <td style={{ fontSize: 12, color: "#44403c" }}>{p.observacao ?? ""}</td>
+                      <td style={{ textAlign: "center" }}>
+                        <span className="imp-caixinha" aria-hidden />
+                      </td>
+                    </tr>
+                  </Fragment>
+                );
+              }
               return (
                 <tr key={p.id}>
                   <td className="imp-mesa-num">{i + 1}</td>

@@ -11,18 +11,22 @@ import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, ClipboardList, FileUp, Music, Pencil, Printer, Trash2, X } from "lucide-react";
 import type { PessoaCortejo } from "@/lib/portal-pessoas-shared";
 import {
+  ORDENS_DA_CERIMONIA,
   PAPEIS_DO_CORTEJO,
   ROTULO_DO_LADO,
+  ehMomento,
   emSequencia,
   papelDoCortejo,
   quemEntra,
   separarPar,
   type LadoDoCortejo,
+  type RitoDaCerimonia,
 } from "@/lib/cortejo-casamento";
 import {
   adicionarEntradas,
   atualizarEntrada,
   montarCortejoTradicional,
+  montarOrdemDaCerimonia,
   reordenarCortejo,
 } from "@/app/(app)/eventos/[id]/cortejo/casamento-actions";
 import { removerPessoaEquipe } from "@/app/(app)/eventos/[id]/cortejo/actions";
@@ -96,8 +100,10 @@ export function CortejoCasamento({
     .filter(Boolean)
     .map(separarPar);
 
-  const pessoasNoCortejo = sequencia.reduce((n, e) => n + (e.nome.trim() ? 1 : 0) + ((e.par ?? "").trim() ? 1 : 0), 0);
-  const aDefinir = sequencia.filter((e) => !e.nome.trim()).length;
+  const entradas = sequencia.filter((e) => !ehMomento(e.papel));
+  const momentos = sequencia.length - entradas.length;
+  const pessoasNoCortejo = entradas.reduce((n, e) => n + (e.nome.trim() ? 1 : 0) + ((e.par ?? "").trim() ? 1 : 0), 0);
+  const aDefinir = entradas.filter((e) => !e.nome.trim()).length;
 
   function rodar(fn: () => Promise<Retorno>, depois?: () => void) {
     setErro(null);
@@ -158,13 +164,15 @@ export function CortejoCasamento({
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-gray-900">Cortejo</h2>
+          <h2 className="text-base font-semibold text-gray-900">Cortejo e cerimônia</h2>
           <p className="mt-0.5 text-sm text-gray-500">
             {sequencia.length === 0
-              ? "A ordem de entrada da cerimônia."
-              : `${sequencia.length} ${sequencia.length === 1 ? "entrada" : "entradas"} · ${pessoasNoCortejo} ${
+              ? "Quem entra, em que ordem, e o que acontece depois."
+              : `${entradas.length} ${entradas.length === 1 ? "entrada" : "entradas"} · ${pessoasNoCortejo} ${
                   pessoasNoCortejo === 1 ? "pessoa" : "pessoas"
-                }${aDefinir ? ` · ${aDefinir} a definir` : ""}`}
+                }${aDefinir ? ` · ${aDefinir} a definir` : ""}${
+                  momentos ? ` · ${momentos} ${momentos === 1 ? "momento" : "momentos"} da cerimônia` : ""
+                }`}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -175,7 +183,7 @@ export function CortejoCasamento({
           {sequencia.length > 0 && (
             <a href={`/imprimir/chamada/${printEventId ?? eventId}`} target="_blank" rel="noopener noreferrer" className={botaoClaro}>
               <Printer size={15} />
-              Imprimir a ordem do cortejo
+              {momentos ? "Imprimir a folha do celebrante" : "Imprimir a ordem do cortejo"}
             </a>
           )}
         </div>
@@ -235,9 +243,11 @@ export function CortejoCasamento({
               rows={6}
               autoFocus
               placeholder={
-                p.comPar
-                  ? "Cole a lista — um par por linha.\nAna Souza e Pedro Lima\nCarla Dias e Rafael Mota"
-                  : "Cole a lista — um nome por linha."
+                p.momento
+                  ? "Cole a ordem — um momento por linha.\nLouvor\nPalavra do pastor\nVotos"
+                  : p.comPar
+                    ? "Cole a lista — um par por linha.\nAna Souza e Pedro Lima\nCarla Dias e Rafael Mota"
+                    : "Cole a lista — um nome por linha."
               }
               className={inputCls}
             />
@@ -259,7 +269,7 @@ export function CortejoCasamento({
               value={nome}
               onChange={(e) => setNome(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && adicionar()}
-              placeholder="Nome"
+              placeholder={p.momento ? "O momento (ex.: Louvor)" : "Nome"}
               className={inputCls}
             />
             {p.comPar ? (
@@ -307,15 +317,27 @@ export function CortejoCasamento({
               />
             ) : (
               <li key={e.id} className="relative">
-                <span className="absolute -left-[31px] top-3 flex h-5 w-5 items-center justify-center rounded-full border-2 border-stone-300 bg-white text-[10px] font-bold tabular-nums text-stone-600">
+                {/* a cerimônia começa no primeiro momento depois das entradas */}
+                {ehMomento(e.papel) && !ehMomento(sequencia[i - 1]?.papel ?? "momento") && (
+                  <p className="mb-2 mt-4 text-[11px] font-semibold uppercase tracking-wider text-stone-500">
+                    A cerimônia
+                  </p>
+                )}
+                <span className="absolute -left-[31px] bottom-3 flex h-5 w-5 items-center justify-center rounded-full border-2 border-stone-300 bg-white text-[10px] font-bold tabular-nums text-stone-600">
                   {i + 1}
                 </span>
-                <div className="flex items-center gap-3 rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm">
+                <div
+                  className={`flex items-center gap-3 rounded-xl border px-4 ${
+                    ehMomento(e.papel) ? "border-stone-200 bg-[#FAF8F5] py-2.5" : "border-stone-200 bg-white py-3 shadow-sm"
+                  }`}
+                >
                   <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">
-                      {papelDoCortejo(e.papel).rotulo}
-                      {e.lado ? <span className="font-normal normal-case tracking-normal"> · {ROTULO_DO_LADO[e.lado]}</span> : null}
-                    </p>
+                    {!ehMomento(e.papel) && (
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">
+                        {papelDoCortejo(e.papel).rotulo}
+                        {e.lado ? <span className="font-normal normal-case tracking-normal"> · {ROTULO_DO_LADO[e.lado]}</span> : null}
+                      </p>
+                    )}
                     {quemEntra({ nome: e.nome, par: e.par ?? null }) ? (
                       <p className="mt-0.5 truncate text-[15px] font-medium text-gray-900">
                         {quemEntra({ nome: e.nome, par: e.par ?? null })}
@@ -379,6 +401,25 @@ export function CortejoCasamento({
             )
           )}
         </ol>
+      )}
+
+      {/* depois das entradas, a cerimônia: um ponto de partida por rito */}
+      {sequencia.length > 0 && momentos === 0 && (
+        <div className="flex flex-wrap items-center gap-2 border-t border-stone-200 pt-4">
+          <span className="mr-1 text-sm font-semibold text-gray-900">Ordem da cerimônia:</span>
+          {(Object.keys(ORDENS_DA_CERIMONIA) as RitoDaCerimonia[]).map((rito) => (
+            <button
+              key={rito}
+              type="button"
+              disabled={pendente}
+              onClick={() => rodar(() => montarOrdemDaCerimonia(eventId, rito))}
+              title={ORDENS_DA_CERIMONIA[rito].momentos.join(" · ")}
+              className={botaoClaro}
+            >
+              {ORDENS_DA_CERIMONIA[rito].rotulo}
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -451,7 +492,7 @@ function EdicaoDaEntrada({
             value={form.nome}
             onChange={(e) => setForm({ ...form, nome: e.target.value })}
             onKeyDown={(e) => e.key === "Enter" && salvar()}
-            placeholder="Nome"
+            placeholder={p.momento ? "O momento (ex.: Louvor)" : "Nome"}
             autoFocus
             className={inputCls}
           />
@@ -471,13 +512,15 @@ function EdicaoDaEntrada({
             placeholder="Música (opcional)"
             className={inputCls}
           />
-          <input
-            value={form.oQueLeva}
-            onChange={(e) => setForm({ ...form, oQueLeva: e.target.value })}
-            onKeyDown={(e) => e.key === "Enter" && salvar()}
-            placeholder="Leva (alianças, buquê, plaquinha…)"
-            className={inputCls}
-          />
+          {!p.momento && (
+            <input
+              value={form.oQueLeva}
+              onChange={(e) => setForm({ ...form, oQueLeva: e.target.value })}
+              onKeyDown={(e) => e.key === "Enter" && salvar()}
+              placeholder="Leva (alianças, buquê, plaquinha…)"
+              className={inputCls}
+            />
+          )}
           <input
             value={form.observacao}
             onChange={(e) => setForm({ ...form, observacao: e.target.value })}

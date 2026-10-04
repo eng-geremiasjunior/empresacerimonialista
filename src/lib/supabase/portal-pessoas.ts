@@ -107,7 +107,9 @@ async function lerCortejo(eventId: string, daEquipe = false): Promise<PessoaCort
  * cortejo tradicional (nome vazio, 192), que só fazem sentido para a equipe.
  */
 export const getCortejo = cache(async (eventId: string): Promise<PessoaCortejo[]> =>
-  (await lerCortejo(eventId)).filter((p) => p.nome.trim() !== "")
+  // o momento da cerimônia (louvor, votos) é da folha da equipe, não é
+  // "quem entra com vocês"
+  (await lerCortejo(eventId)).filter((p) => p.nome.trim() !== "" && p.papel !== "momento")
 );
 
 /** O cortejo da equipe: tudo, as entradas "a definir" incluídas. */

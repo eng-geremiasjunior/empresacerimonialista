@@ -19,6 +19,8 @@ export type PapelDoCortejo = {
   parDica?: string;
   /** o lado faz sentido nesta entrada */
   comLado?: boolean;
+  /** um momento da cerimônia (louvor, votos), não alguém entrando */
+  momento?: boolean;
 };
 
 /** Os papéis do casamento, na ordem em que costumam entrar. */
@@ -36,7 +38,11 @@ export const PAPEIS_DO_CORTEJO: PapelDoCortejo[] = [
   { papel: "porta_alianca", rotulo: "Alianças", comPar: true },
   { papel: "noiva", rotulo: "Noiva", comPar: true, parDica: "Entra com (o pai, por exemplo)" },
   { papel: "outro", rotulo: "Outra entrada", comPar: true, comLado: true },
+  // por último: o momento novo vai para o fim da sequência, depois da noiva
+  { papel: "momento", rotulo: "Momento da cerimônia", comPar: false, momento: true },
 ];
+
+export const ehMomento = (papel: string) => papel === "momento";
 
 const POR_PAPEL = new Map(PAPEIS_DO_CORTEJO.map((p) => [p.papel, p]));
 
@@ -46,10 +52,12 @@ export function papelDoCortejo(papel: string): PapelDoCortejo {
 
 export const ehPapelDoCortejo = (papel: string) => POR_PAPEL.has(papel);
 
-/** A posição do papel na ordem típica de entrada (desconhecido = antes da noiva). */
+const POSICAO_DA_NOIVA = PAPEIS_DO_CORTEJO.findIndex((p) => p.papel === "noiva");
+
+/** A posição do papel na ordem típica de entrada (desconhecido = junto da noiva). */
 export function posicaoDoPapel(papel: string): number {
   const i = PAPEIS_DO_CORTEJO.findIndex((p) => p.papel === papel);
-  return i >= 0 ? i : PAPEIS_DO_CORTEJO.length - 2;
+  return i >= 0 ? i : POSICAO_DA_NOIVA;
 }
 
 export const ROTULO_DO_LADO: Record<LadoDoCortejo, string> = {
@@ -150,3 +158,56 @@ export function normalizarEntradasLidas(cru: unknown): EntradaLida[] {
   }
   return saida;
 }
+
+/**
+ * A ordem da cerimônia depois das entradas (04/10/2026). A conta mais
+ * ativa escreveu a cerimônia inteira dentro do cortejo, como se fossem
+ * pessoas: "7. LOUVOR", "8. CEIA", "PALAVRA DO PASTOR", "12. ASSINATURA" —
+ * a folha do celebrante é o que ela precisava. Três pontos de partida; ela
+ * tira o que não tiver e arrasta o resto. A ordem muda de igreja para
+ * igreja: é rascunho, não regra.
+ */
+export const ORDENS_DA_CERIMONIA = {
+  evangelica: {
+    rotulo: "Evangélica",
+    momentos: [
+      "Louvor",
+      "Palavra do pastor",
+      "Votos",
+      "Troca das alianças",
+      "Ceia",
+      "Oração e bênção",
+      "Beijo",
+      "Assinatura",
+      "Saída dos noivos",
+    ],
+  },
+  catolica: {
+    rotulo: "Católica",
+    momentos: [
+      "Acolhida",
+      "Leituras",
+      "Homilia",
+      "Consentimento (votos)",
+      "Bênção e troca das alianças",
+      "Oração dos fiéis",
+      "Bênção final",
+      "Assinatura",
+      "Saída dos noivos",
+    ],
+  },
+  civil: {
+    rotulo: "Civil ou simbólica",
+    momentos: [
+      "Abertura do celebrante",
+      "História do casal",
+      "Votos",
+      "Troca das alianças",
+      "Assinatura",
+      "Beijo",
+      "Saída dos noivos",
+    ],
+  },
+} as const;
+
+export type RitoDaCerimonia = keyof typeof ORDENS_DA_CERIMONIA;
