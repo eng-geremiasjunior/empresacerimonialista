@@ -151,7 +151,7 @@ export default async function ConhecerPage() {
                     <a key={m} href={`/c/${siteDoCasamento.slug}?modelo=${m}`} className="cv-modelo" target="_blank" rel="noopener">
                       <img src={`/site/catalogo/modelo-${m}.webp`} alt={`O modelo ${nome}`} loading="lazy" />
                       <b>{nome}</b>
-                      {m === "violino" ? <small>Com som: o violino toca enquanto o convidado rola a página</small> : null}
+                      {m === "violino" ? <small>Com som: o violino toca conforme o convidado desce a página</small> : null}
                     </a>
                   );
                 })}
