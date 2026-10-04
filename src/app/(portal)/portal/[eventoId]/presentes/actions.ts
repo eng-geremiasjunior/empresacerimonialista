@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/server";
 import { problemaNoCadastro, resumoDoBanco, type DadosDoRecebedor } from "@/lib/lista-presentes";
 import { criarRecebedor, lerRecebedor, linkDaProvaDeVida } from "@/lib/pagarme-lista";
 import { listaDePresentesLiberada } from "@/lib/supabase/portal-presentes";
+import { avisarDonoDaContaQueRecebe } from "@/lib/email-prova-de-vida";
 
 type Retorno = { ok: true } | { error: string };
 
@@ -77,7 +78,7 @@ export async function cadastrarRecebedor(eventoId: string, dados: DadosDoRecebed
         r.status === 422 || r.status === 400
           ? "A Pagar.me recusou algum dado. Confira CPF, conta e endereço."
           : r.status === 412
-            ? "A Pagar.me ainda não liberou contas de recebimento. Fale com a cerimonialista."
+            ? "A conta que recebe ainda não está disponível. Tente de novo mais tarde."
             : "Não foi possível falar com a Pagar.me agora. Tente de novo em instantes.",
     };
   }
@@ -99,7 +100,34 @@ export async function cadastrarRecebedor(eventoId: string, dados: DadosDoRecebed
         // aprovada no meio do caminho (o aviso chegou): não troca
         .neq("status", "active")
     : await db.from("evento_recebedor").insert({ event_id: eventoId, ...linha });
-  if (error) return { error: "O cadastro foi feito na Pagar.me, mas não ficou salvo aqui. Fale com a cerimonialista." };
+  if (error) return { error: "Não foi possível terminar o cadastro agora. Tente de novo em alguns minutos." };
+
+  // o link da prova de vida, por enquanto, sai do painel da Pagar.me (a
+  // rota da API responde 401 para a nossa conta): quem cria e manda é o
+  // dono do sistema, avisado aqui. Aviso que falha não desfaz o cadastro.
+  try {
+    const { data: ev } = await db.from("events").select("name, type, date, empresa_id").eq("id", eventoId).maybeSingle();
+    const e = ev as { name: string | null; type: string | null; date: string | null; empresa_id: string } | null;
+    const { data: emp } = e
+      ? await db.from("empresas").select("nome, tipo").eq("id", e.empresa_id).maybeSingle()
+      : { data: null };
+    const em = emp as { nome: string | null; tipo: string | null } | null;
+    await avisarDonoDaContaQueRecebe({
+      festa: e?.name?.trim() || "Sem nome",
+      tipoDoEvento: e?.type ?? null,
+      dataDoEvento: e?.date ?? null,
+      daFamilia: em?.tipo === "familia",
+      cerimonialista: em?.nome ?? null,
+      quem: quem.nome,
+      email,
+      celular: dados.celular,
+      titular: linha.titular_nome,
+      recebedorId: r.dados.id,
+      refeito: !!atual,
+    });
+  } catch {
+    /* o aviso é de conveniência: o cadastro já está salvo */
+  }
   revalidatePath(`/portal/${eventoId}/presentes`);
   return { ok: true };
 }
@@ -203,8 +231,13 @@ export async function atualizarRecebedor(eventoId: string): Promise<Retorno> {
   return { ok: true };
 }
 
-/** O link da prova de vida — só para o responsável. */
-export async function provaDeVida(eventoId: string): Promise<{ url: string } | { error: string }> {
+/**
+ * O link da prova de vida — só para o responsável. Enquanto a Pagar.me
+ * responde 401 a esta rota para a nossa conta (03/10/2026: trava da
+ * operação, com o suporte), o link sai do painel dela pelas mãos do dono
+ * do sistema, que é avisado no cadastro: a tela diz isso, sem erro.
+ */
+export async function provaDeVida(eventoId: string): Promise<{ url: string } | { manual: string } | { error: string }> {
   const quem = await responsavel(eventoId);
   if (!quem) return { error: "Quem faz a prova de vida é o responsável." };
   const { data } = await servico().from("evento_recebedor").select("pagarme_recipient_id").eq("event_id", eventoId).maybeSingle();
@@ -212,13 +245,8 @@ export async function provaDeVida(eventoId: string): Promise<{ url: string } | {
   if (!id) return { error: "Cadastre a conta primeiro." };
   const r = await linkDaProvaDeVida(id);
   if (r.ok) return { url: r.url };
-  // 401 da Pagar.me = o pedido veio de um IP que a conta não autorizou
-  // (o link da prova de vida exige lista de IPs na produção): esperar não
-  // resolve, então a tela não manda esperar
-  return {
-    error:
-      r.status === 401 || r.status === 403
-        ? "A prova de vida não está disponível agora. Fale com a cerimonialista."
-        : "Não foi possível falar com a Pagar.me agora. Tente de novo em instantes.",
-  };
+  if (r.status === 401 || r.status === 403) {
+    return { manual: "O link da prova de vida chega por WhatsApp ou e-mail. Ele vale 20 minutos: abra assim que chegar." };
+  }
+  return { error: "Não foi possível falar com a Pagar.me agora. Tente de novo em instantes." };
 }

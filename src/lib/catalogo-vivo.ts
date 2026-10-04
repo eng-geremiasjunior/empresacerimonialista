@@ -72,6 +72,12 @@ export async function eventoEDoCatalogo(eventId: string | null | undefined): Pro
   return !error && data === true;
 }
 
+/** O site (pelo endereço) é o do evento de exemplo do catálogo? */
+export async function slugEhDoCatalogo(slug: string): Promise<boolean> {
+  const { data } = await servico().from("site_slugs").select("event_id").eq("slug", slug).maybeSingle();
+  return eventoEDoCatalogo((data as { event_id?: string } | null)?.event_id);
+}
+
 /** O link mágico do visitante, já no portal do evento. null = não deu. */
 export async function linkMagicoDoVisitante(): Promise<string | null> {
   const { data, error } = await servico().auth.admin.generateLink({ type: "magiclink", email: EMAIL_DO_VISITANTE });

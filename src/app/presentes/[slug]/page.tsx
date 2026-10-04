@@ -10,6 +10,7 @@ import type { SitePublico } from "@/lib/site-publico-tipos";
 import { ListaPublica, type ItemDaVitrine } from "@/components/lista-presentes/ListaPublica";
 import { temaDaLista } from "@/components/lista-presentes/tema";
 import { chavePublicaDaLista } from "@/lib/pagarme-lista";
+import { slugEhDoCatalogo } from "@/lib/catalogo-vivo";
 
 export const dynamic = "force-dynamic";
 
@@ -102,6 +103,11 @@ export default async function ListaDePresentesPage({ params }: { params: { slug:
     foto: fotoDoCatalogo(i.codigo),
   }));
   const tema = temaDaLista(site);
+  // a lista de exemplo do catálogo não recebe pagamento: no site de
+  // verdade, nem o cartão aparece (ninguém digita um cartão real para ver
+  // a recusa). Com a chave de teste, aparece — é nela que a prova roda.
+  const chave = chavePublicaDaLista();
+  const chaveDoCartao = chave && !chave.startsWith("pk_test_") && (await slugEhDoCatalogo(slug)) ? null : chave;
   const n = nomesDaLista(site);
 
   return (
@@ -117,7 +123,7 @@ export default async function ListaDePresentesPage({ params }: { params: { slug:
         mensagem={lista.mensagem?.trim() || null}
         taxaDoCasal={!!lista.taxa_do_casal}
         podePagar={!!lista.pode_pagar}
-        chaveDoCartao={chavePublicaDaLista()}
+        chaveDoCartao={chaveDoCartao}
         itens={itens}
         estilo={tema}
       />

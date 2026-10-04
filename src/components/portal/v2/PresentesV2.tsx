@@ -67,14 +67,19 @@ export function PresentesV2({
 
   function abrirProvaDeVida() {
     setErro(null);
+    setAviso(null);
     const aba = window.open("about:blank", "_blank");
     iniciar(async () => {
       const r = await provaDeVida(eventoId);
-      if ("error" in r) {
-        aba?.close();
-        setErro(r.error);
-      } else if (aba) aba.location.href = r.url;
-      else window.location.href = r.url;
+      if ("url" in r) {
+        if (aba) aba.location.href = r.url;
+        else window.location.href = r.url;
+        return;
+      }
+      aba?.close();
+      // por enquanto o link chega por fora (o dono do sistema manda): é aviso, não erro
+      if ("manual" in r) setAviso(r.manual);
+      else setErro(r.error);
     });
   }
 

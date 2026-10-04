@@ -223,7 +223,7 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
   // o evento de exemplo do catálogo nunca gera Pix de verdade (quem vem pela
   // vitrine só olha); com a chave de TESTE, sim — é nele que a prova roda
   if (!emTeste() && (await eventoEDoCatalogo(eventId))) {
-    return erro("Esta lista é um exemplo: o Pix não é gerado.", 409);
+    return erro("Esta lista é um exemplo: nenhum pagamento é feito aqui.", 409);
   }
   const [{ data: site }, { data: lista }, { data: presente }, { data: recebedor }] = await Promise.all([
     db.from("evento_site").select("publicado").eq("event_id", eventId).maybeSingle(),
