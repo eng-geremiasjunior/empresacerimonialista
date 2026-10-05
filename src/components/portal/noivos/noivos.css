@@ -595,6 +595,8 @@
 .pn-menu nav {
   display: flex;
   justify-content: space-around;
+  /* com 15 itens, os rótulos longos não encostam um no outro */
+  column-gap: 4px;
   padding: 18px 10px 16px;
   border-radius: 30px;
   background: #fff;
@@ -602,7 +604,10 @@
 }
 .pn-menu-item {
   width: 88px;
-  flex: none;
+  /* encolhe quando são muitos (os 15 da noiva sozinha cabem numa linha),
+     nunca abaixo da palavra mais longa do rótulo: "Planejamento" e
+     "Fornecedores" ficam com a largura delas, os outros cedem */
+  flex: 0 1 88px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -642,6 +647,20 @@
   line-height: 1.2;
   text-align: center;
   color: var(--pn-verde);
+}
+/* Presentes em destaque (pedido dele, 05/10/2026: é o que faz entrar
+   dinheiro): o círculo em pêssego, cheio, com um halo; aceso, fica verde
+   como os outros */
+.pn-menu-circulo.destaque:not(.ativo),
+.pn-menu-item:hover .pn-menu-circulo.destaque:not(.ativo) {
+  background: var(--pn-pessego);
+  box-shadow: 0 0 0 5px var(--pn-pessego-claro);
+}
+.pn-menu-circulo.destaque .pn-ic {
+  font-variation-settings: "FILL" 1;
+}
+.pn-menu-rotulo.destaque {
+  font-weight: 700;
 }
 .pn-mais {
   position: absolute;
@@ -966,6 +985,70 @@
   font-size: 20px;
   color: var(--pn-pessego);
 }
+
+/* o presente flutuante (pedido dele, 05/10/2026): o casal, enquanto a
+   lista não está no ar; no canto da moldura, mesmo na tela larga */
+.pn-presente-flutuante {
+  position: fixed;
+  right: max(24px, calc((100vw - 1280px) / 2 + 24px));
+  bottom: max(24px, env(safe-area-inset-bottom));
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 22px 8px 8px;
+  border-radius: 999px;
+  background: var(--pn-verde);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  box-shadow: 0 20px 40px -14px rgba(27, 42, 35, 0.6);
+  transition: opacity 0.3s ease, translate 0.3s ease, visibility 0s, transform 0.2s;
+}
+/* escondido enquanto o menu está na faixa de baixo da tela (e com o Mais aberto) */
+.pn-presente-flutuante[data-escondido="1"] {
+  opacity: 0;
+  translate: 0 16px;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.3s ease, translate 0.3s ease, visibility 0s 0.3s, transform 0.2s;
+}
+.pn .pn-presente-flutuante,
+.pn .pn-presente-flutuante:hover {
+  color: var(--pn-creme);
+}
+.pn-presente-flutuante:hover {
+  transform: translateY(-2px);
+}
+.pn-presente-flutuante-caixa {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--pn-pessego);
+  color: var(--pn-verde);
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.pn-presente-flutuante-caixa .pn-ic {
+  font-size: 26px;
+  font-variation-settings: "FILL" 1;
+  /* o presente balança de vez em quando, sem pressa */
+  animation: pn-presente-balanca 7s ease-in-out 3s infinite;
+}
+.pn-presente-flutuante .curto {
+  display: none;
+}
+@keyframes pn-presente-balanca {
+  0%, 86%, 100% { transform: rotate(0deg); }
+  89% { transform: rotate(-14deg); }
+  92% { transform: rotate(11deg); }
+  95% { transform: rotate(-6deg); }
+}
+/* o fim da página não fica escondido atrás do presente */
+.pn-conteudo.com-presente {
+  padding-bottom: 112px;
+}
 .pn-toast.erro .pn-ic {
   color: #f0a58f;
 }
@@ -1158,6 +1241,26 @@
   .pn-titulo-tela {
     font-size: 32px;
   }
+  .pn-presente-flutuante {
+    right: 16px;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    gap: 10px;
+    padding: 6px 18px 6px 6px;
+    font-size: 14px;
+  }
+  .pn-presente-flutuante-caixa {
+    width: 42px;
+    height: 42px;
+  }
+  .pn-presente-flutuante .longo {
+    display: none;
+  }
+  .pn-presente-flutuante .curto {
+    display: inline;
+  }
+  .pn-conteudo.com-presente {
+    padding-bottom: 92px;
+  }
 }
 
 /* movimento reduzido: sem Ken Burns, brilho, halo e confete (README) */
@@ -1173,6 +1276,12 @@
   }
   .pn-foto {
     transition: none;
+  }
+  .pn-presente-flutuante-caixa .pn-ic {
+    animation: none;
+  }
+  .pn-presente-flutuante[data-escondido="1"] {
+    translate: none;
   }
 }
 

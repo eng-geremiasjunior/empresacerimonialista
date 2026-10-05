@@ -20,9 +20,9 @@ const VAZIO: DadosDoRecebedor = {
 
 function estadoEmPalavras(status: RecebedorDoEvento["status"], cerimonialista: string): string {
   const t: Record<RecebedorDoEvento["status"], string> = {
-    registration: "Cadastro enviado. Falta a prova de vida de quem recebe.",
-    affiliation: "Falta a prova de vida de quem recebe.",
-    active: "Aprovada. A lista pode receber presentes.",
+    registration: "Cadastro enviado. Falta a prova de vida para transferir o dinheiro.",
+    affiliation: "Falta a prova de vida para transferir o dinheiro.",
+    active: "Aprovada. O dinheiro é transferido todo dia 5.",
     refused: `A Pagar.me não aprovou este cadastro. Fale com ${cerimonialista}.`,
     suspended: `A conta está suspensa na Pagar.me. Fale com ${cerimonialista}.`,
     blocked: `A conta está bloqueada na Pagar.me. Fale com ${cerimonialista}.`,
@@ -43,6 +43,7 @@ export function ContaQueRecebe({
   meuNome,
   meuEmail,
   cerimonialista,
+  jaRecebeu,
 }: {
   eventoId: string;
   recebedor: RecebedorDoEvento | null;
@@ -50,6 +51,8 @@ export function ContaQueRecebe({
   meuNome: string | null;
   meuEmail: string | null;
   cerimonialista: string;
+  /** já entrou presente nesta conta: ela não se troca mais por aqui */
+  jaRecebeu: boolean;
 }) {
   const router = useRouter();
   const [enviando, iniciar] = useTransition();
@@ -60,8 +63,9 @@ export function ContaQueRecebe({
   const [abrirForm, setAbrirForm] = useState(false);
   const muda = (c: Partial<DadosDoRecebedor>) => setD((x) => ({ ...x, ...c }));
   // conta cadastrada e ainda não aprovada: dá para refazer (a Pagar.me não
-  // deixa corrigir um dado depois — e-mail ou conta errada = cadastro novo)
-  const podeRefazer = !!recebedor && recebedor.status !== "active" && souResponsavel;
+  // deixa corrigir um dado depois — e-mail ou conta errada = cadastro novo),
+  // enquanto nenhum presente entrou nela (o dinheiro ficaria na antiga)
+  const podeRefazer = !!recebedor && recebedor.status !== "active" && souResponsavel && !jaRecebeu;
 
   async function buscarCep(cep: string) {
     if (so(cep).length !== 8) return;

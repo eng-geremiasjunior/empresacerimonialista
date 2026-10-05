@@ -124,6 +124,30 @@ contrato, muda só `TAXAS_DO_CARTAO` (`lib/lista-presentes.ts`).
 - **Falta**: a prova real em produção (a divisão no cartão, como a do
   Pix, só se prova lá) — depende de uma conta que recebe aprovada.
 
+## Sem esperar a prova de vida (05/10/2026, migração 200)
+
+Decisão dele: o pagamento do convidado (Pix ou cartão) depende só do
+processamento da Pagar.me; a prova de vida segura apenas a TRANSFERÊNCIA
+para a conta da noiva, e o link dela ele manda à mão, pelo WhatsApp.
+
+- **Regra**: a conta que recebe serve com o recebedor CADASTRADO e não
+  recusado, suspenso, bloqueado ou inativo (`contaRecebe` em
+  `src/lib/lista-presentes.ts`). A 200 troca essa mesma condição em
+  `portal_salvar_lista` (pôr no ar) e em `lista_publica` (`pode_pagar`);
+  a rota `/api/presentes/[slug]/pagar` e a tela seguem a mesma regra.
+- **Ordem**: a 200 vai ao banco ANTES do código; sem ela o banco ainda
+  recusa pôr no ar e o `pode_pagar` fica falso.
+- **Refazer o cadastro**: não troca a conta que já recebeu presente (nem
+  com um Pix aberto) — o dinheiro ficaria no recebedor antigo.
+- **No portal** (mesmo pedido): Presentes logo depois da Visão geral, em
+  pêssego, e o Site do casamento e o Convite em seguida (saíram do Mais);
+  "Crie sua lista de presentes agora mesmo" acima do Hoje da Visão geral;
+  o presente flutuante em toda tela menos Presentes. Banner e presente só
+  para o nível casal e só com a lista fora do ar (`chamarParaALista`);
+  o presente se esconde enquanto o menu está na faixa de baixo da tela.
+  No celular, a conta que recebe sobe para o topo de Presentes enquanto
+  pede ação. Prova: `ferramentas/sim/presentes-chamada-e2e.mjs`.
+
 ## O que falta
 
 - Ele reaplicar a 197 revisada; depois, a prova do Pix na loja de teste.
@@ -131,7 +155,7 @@ contrato, muda só `TAXAS_DO_CARTAO` (`lib/lista-presentes.ts`).
   do ferro, da parafusadeira e das 4 TVs, e os demais itens (lotes de 30).
 - Na Pagar.me de produção: marcar no webhook os avisos order.paid,
   order.canceled, order.payment_failed, charge.paid e charge.refunded.
-- A prova real em produção: um presente de R$ 50 com a conta que recebe
-  aprovada (a da esposa dele parou na prova de vida).
+- A prova real em produção: um presente de R$ 50 — desde a 200 basta a
+  conta cadastrada (a transferência espera a prova de vida).
 - Depois: foto própria com revisão, cotas, agradecer por e-mail,
   relatório da cerimonialista, produto por link de loja.

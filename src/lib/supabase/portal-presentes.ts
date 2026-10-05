@@ -43,3 +43,19 @@ export const listaDePresentesLiberada = cache(async (eventId: string): Promise<b
   const { data } = await db.from("contas_da_casa").select("empresa_id").eq("empresa_id", e.empresa_id).maybeSingle();
   return !!data;
 });
+
+/**
+ * A chamada para criar a lista (pedido dele, 05/10/2026): o banner da
+ * Visão geral e o presente flutuante. Só para o casal, que é quem monta e
+ * põe no ar (portal_salvar_lista), e só enquanto a lista não está no ar.
+ * Sem a 189 ou a 197 aplicadas, nada aparece.
+ */
+export const chamarParaALista = cache(async (eventId: string): Promise<boolean> => {
+  if (!(await listaDePresentesLiberada(eventId))) return false;
+  const supabase = createClient();
+  const { data: nivel, error: semNivel } = await supabase.rpc("portal_meu_nivel", { p_event_id: eventId });
+  if (semNivel || nivel !== "casal") return false;
+  const { data, error } = await supabase.rpc("portal_lista", { p_event_id: eventId });
+  if (error) return false;
+  return (data as { lista: { publicada: boolean } | null } | null)?.lista?.publicada !== true;
+});

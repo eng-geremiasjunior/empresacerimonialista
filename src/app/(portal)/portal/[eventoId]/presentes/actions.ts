@@ -10,7 +10,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient as criarSupabase } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { problemaNoCadastro, resumoDoBanco, type DadosDoRecebedor } from "@/lib/lista-presentes";
+import { contaRecebe, problemaNoCadastro, resumoDoBanco, type DadosDoRecebedor } from "@/lib/lista-presentes";
 import { criarRecebedor, lerRecebedor, linkDaProvaDeVida } from "@/lib/pagarme-lista";
 import { listaDePresentesLiberada } from "@/lib/supabase/portal-presentes";
 import { avisarDonoDaContaQueRecebe } from "@/lib/email-prova-de-vida";
@@ -55,7 +55,9 @@ async function responsavel(eventoId: string): Promise<{ userId: string; email: s
  * aprovada. A Pagar.me não deixa editar campo já preenchido de um
  * recebedor (e-mail, conta…): o conserto de um dado errado é um recebedor
  * novo, que toma o lugar do antigo aqui (o antigo fica sem uso lá) e pede
- * a prova de vida de novo. Conta aprovada não se troca por aqui.
+ * a prova de vida de novo. Conta aprovada não se troca por aqui — nem a que
+ * já recebeu presente (200: a lista recebe antes da prova de vida, e o
+ * dinheiro ficaria no recebedor antigo).
  */
 export async function cadastrarRecebedor(eventoId: string, dados: DadosDoRecebedor): Promise<Retorno> {
   const quem = await responsavel(eventoId);
@@ -68,6 +70,20 @@ export async function cadastrarRecebedor(eventoId: string, dados: DadosDoRecebed
   const { data: ja } = await db.from("evento_recebedor").select("status").eq("event_id", eventoId).maybeSingle();
   const atual = ja as { status?: string } | null;
   if (atual?.status === "active") return { error: "A conta deste evento já está aprovada." };
+  if (atual) {
+    const [{ count: pagos }, { count: abertos }] = await Promise.all([
+      db.from("presente_pagamento").select("id", { count: "exact", head: true }).eq("event_id", eventoId).eq("status", "pago"),
+      // um Pix ainda aberto também cairia no recebedor antigo
+      db
+        .from("presente_pagamento")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", eventoId)
+        .eq("status", "aguardando")
+        .gt("expira_em", new Date().toISOString()),
+    ]);
+    if ((pagos ?? 0) > 0) return { error: "Já entraram presentes nesta conta. Ela não pode mais ser trocada por aqui." };
+    if ((abertos ?? 0) > 0) return { error: "Há um presente sendo pago agora. Tente de novo em 20 minutos." };
+  }
 
   // o código do recebedor na Pagar.me: o do evento; no refazer, com um sufixo
   const codigo = atual ? `evento-${eventoId}-${Date.now().toString(36)}` : `evento-${eventoId}`;
@@ -153,8 +169,8 @@ const CATEGORIA = /^[a-z0-9-]{1,40}$/;
  * Grava a lista inteira (197): as escolhas e os presentes, na ordem. Quem
  * pode é o banco que decide (só o casal); aqui só a forma do envio, as
  * mensagens em português e uma regra: a lista só vai ao ar com a conta
- * que recebe aprovada — sem ela, o convidado veria presentes que não
- * consegue dar.
+ * que recebe cadastrada (200; a prova de vida só segura a transferência) —
+ * sem ela, o convidado veria presentes que não consegue dar.
  */
 export async function salvarLista(
   eventoId: string,
@@ -187,9 +203,10 @@ export async function salvarLista(
 
   if (!(await listaDePresentesLiberada(eventoId))) return { error: "A lista de presentes ainda não está disponível." };
   if (lista.publicada === true) {
+    // a conta CADASTRADA basta (200): a prova de vida só segura a transferência
     const { data } = await servico().from("evento_recebedor").select("status").eq("event_id", eventoId).maybeSingle();
-    if ((data as { status?: string } | null)?.status !== "active") {
-      return { error: "A lista vai ao ar quando a conta que recebe estiver aprovada." };
+    if (!contaRecebe(data as { status?: string } | null)) {
+      return { error: "A lista vai ao ar depois que vocês cadastrarem a conta que recebe." };
     }
   }
 
@@ -201,7 +218,7 @@ export async function salvarLista(
   if (error) {
     const m = error.message ?? "";
     if (/sem permissão/.test(m)) return { error: "Só o casal pode mudar a lista." };
-    if (/conta que recebe/.test(m)) return { error: "A lista vai ao ar quando a conta que recebe estiver aprovada." };
+    if (/conta que recebe/.test(m)) return { error: "A lista vai ao ar depois que vocês cadastrarem a conta que recebe." };
     if (/repetido/.test(m)) return { error: "Há um presente repetido na lista. Recarregue a página." };
     if (/outro evento/.test(m)) return { error: "Lista inválida. Recarregue a página." };
     if (/valores_check/.test(m)) return { error: "Algum presente não foi aceito. Confira os nomes e os valores (de R$ 50 a R$ 50.000)." };
@@ -209,7 +226,8 @@ export async function salvarLista(
     console.error("[eorganizei:lista] salvar: falhou");
     return { error: "Não foi possível salvar agora." };
   }
-  revalidatePath(`/portal/${eventoId}/presentes`);
+  // o portal inteiro: com a lista no ar, o banner e o presente flutuante somem
+  revalidatePath(`/portal/${eventoId}`, "layout");
   return { ok: true };
 }
 

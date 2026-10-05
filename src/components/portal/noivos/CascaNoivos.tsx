@@ -7,9 +7,11 @@
 //   · BARRA — marca, Planejando/É hoje, Entrada, sino, a pessoa;
 //   · CAPA — "O casamento de…", nome, data e local, contagem regressiva
 //     (no "É hoje": "É hoje." e quanto falta para o sim);
-//   · MENU — 11 ícones + "Mais" (8 itens em duas colunas); no "É hoje", a
-//     pílula de "funciona sem internet" no lugar do menu;
-//   · o conteúdo da tela e o rodapé (a frase e "Deixe o portal na tela").
+//   · MENU — os ícones + "Mais" (em duas colunas); no "É hoje", a pílula
+//     de "funciona sem internet" no lugar do menu;
+//   · o conteúdo da tela e o rodapé (a frase e "Deixe o portal na tela");
+//   · o PRESENTE FLUTUANTE — o casal, enquanto a lista não está no ar
+//     (pedido dele, 05/10/2026).
 //
 // A entrada toca uma vez por sessão (cookie da casca, como na v2) e o
 // botão "Entrada" repete. As telas são rotas: a casca fica (é layout) e só
@@ -54,6 +56,8 @@ type Props = {
   frase: string;
   /** o "É hoje" existe (a tela foi entregue e a data permite) */
   temHoje: boolean;
+  /** o presente flutuante: o casal, com a lista ainda fora do ar */
+  chamarLista: boolean;
   children: ReactNode;
 };
 
@@ -90,6 +94,7 @@ function Casca({
   mostrarEntrada,
   frase,
   temHoje,
+  chamarLista,
   children,
 }: Props) {
   const caminho = usePathname() ?? "";
@@ -171,6 +176,22 @@ function Casca({
   const iniA = casal?.a.charAt(0).toUpperCase() ?? "•";
   const iniB = casal?.b?.charAt(0).toUpperCase() ?? null;
   const ativoMais = mais.some((m) => m.chave === chave);
+  // some na própria tela de Presentes e no dia do casamento
+  const presenteFlutuante = chamarLista && !hoje && chave !== "presentes";
+  // e nunca cobre o menu: fica escondido enquanto o menu passa pela faixa de
+  // baixo da tela, onde ele mora (no celular, o menu abre lá)
+  const [menuEmBaixo, setMenuEmBaixo] = useState(true);
+  useEffect(() => {
+    const menu = menuRef.current;
+    if (!presenteFlutuante || !menu) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setMenuEmBaixo(false);
+      return;
+    }
+    const vigia = new IntersectionObserver(([e]) => setMenuEmBaixo(e.isIntersecting), { rootMargin: "-88% 0px 0px 0px" });
+    vigia.observe(menu);
+    return () => vigia.disconnect();
+  }, [presenteFlutuante, estado]);
 
   async function sair() {
     const supabase = createClient();
@@ -399,10 +420,10 @@ function Casca({
                         className="pn-menu-item"
                         aria-current={ativo ? "page" : undefined}
                       >
-                        <span className={`pn-menu-circulo${ativo ? " ativo" : ""}`}>
+                        <span className={`pn-menu-circulo${ativo ? " ativo" : ""}${d.destaque ? " destaque" : ""}`}>
                           <span className="pn-ic">{d.icone}</span>
                         </span>
-                        <span className="pn-menu-rotulo">{d.rotulo}</span>
+                        <span className={`pn-menu-rotulo${d.destaque ? " destaque" : ""}`}>{d.rotulo}</span>
                       </Link>
                     );
                   })}
@@ -452,10 +473,24 @@ function Casca({
               </div>
             )}
 
-            <div className="pn-conteudo">
+            <div className={`pn-conteudo${presenteFlutuante ? " com-presente" : ""}`}>
               {children}
               <Rodape frase={frase} />
             </div>
+
+            {presenteFlutuante && (
+              <Link
+                href={`${base}/presentes`}
+                className="pn-presente-flutuante"
+                data-escondido={menuEmBaixo || maisAberto ? "1" : undefined}
+              >
+                <span className="pn-presente-flutuante-caixa" aria-hidden="true">
+                  <span className="pn-ic">redeem</span>
+                </span>
+                <span className="longo">Crie sua lista de presentes</span>
+                <span className="curto">Crie sua lista</span>
+              </Link>
+            )}
           </div>
         )}
       </div>

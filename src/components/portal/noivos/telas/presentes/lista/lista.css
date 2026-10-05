@@ -578,8 +578,21 @@
 
 /* ---------- tablet e celular ---------- */
 @media (max-width: 1100px) {
+  /* uma coluna só, e a conta que pede ação (dados do banco, prova de vida)
+     antes dos presentes: as duas colunas se desfazem (contents) para a
+     ordem valer entre os blocos (pedido dele, 05/10/2026) */
   .pn-lista-grade {
-    grid-template-columns: minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+  .pn-lista-principal,
+  .pn-lista-lado {
+    display: contents;
+  }
+  .pn-lista-conta-lugar.primeiro {
+    order: -1;
   }
 }
 @media (max-width: 640px) {

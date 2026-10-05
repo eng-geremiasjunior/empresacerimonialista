@@ -73,11 +73,20 @@ export type DestinoNoivos = {
   seg: string;
   /** só no "Mais" */
   sub?: string;
+  /** o círculo em pêssego: o que faz entrar dinheiro (pedido dele, 05/10/2026) */
+  destaque?: boolean;
 };
 
-/** O menu de ícones, na ordem do desenho. */
+/**
+ * O menu de ícones. Logo depois da Visão geral, o que faz entrar dinheiro:
+ * Presentes em destaque, o Site do casamento e o Convite (pedido dele,
+ * 05/10/2026; antes os dois moravam no "Mais").
+ */
 export const MENU_NOIVOS: DestinoNoivos[] = [
   { chave: "visao", rotulo: "Visão geral", icone: "space_dashboard", seg: "" },
+  { chave: "presentes", rotulo: "Presentes", icone: "redeem", seg: "presentes", destaque: true },
+  { chave: "site", rotulo: "Site do casamento", icone: "link", seg: "site" },
+  { chave: "convite", rotulo: "Convite", icone: "mail", seg: "convite" },
   // só na conta da noiva que abriu sozinha (o layout tira dos outros)
   { chave: "planejamento", rotulo: "Planejamento", icone: "check_circle", seg: "planejamento" },
   { chave: "convidados", rotulo: "Convidados", icone: "group", seg: "convidados" },
@@ -88,7 +97,6 @@ export const MENU_NOIVOS: DestinoNoivos[] = [
   // só na conta da noiva que abriu sozinha (o layout tira dos outros)
   { chave: "agenda", rotulo: "Agenda", icone: "calendar_month", seg: "agenda" },
   { chave: "inspiracoes", rotulo: "Inspirações", icone: "photo_library", seg: "inspiracoes" },
-  { chave: "presentes", rotulo: "Presentes", icone: "redeem", seg: "presentes" },
   { chave: "roteiro", rotulo: "Roteiro do dia", icone: "schedule", seg: "cronograma" },
   { chave: "financeiro", rotulo: "Financeiro", icone: "savings", seg: "investimento" },
 ];
@@ -97,8 +105,6 @@ export const MENU_NOIVOS: DestinoNoivos[] = [
 export const MAIS_NOIVOS: DestinoNoivos[] = [
   { chave: "guia", rotulo: "Guia de estilo", icone: "palette", seg: "guia-estilo", sub: "Cores, flores e clima" },
   { chave: "escolhas", rotulo: "Escolhas do casal", icone: "favorite", seg: "escolhas", sub: "O que vocês já decidiram" },
-  { chave: "site", rotulo: "Site do casamento", icone: "link", seg: "site", sub: "Onde os convidados confirmam" },
-  { chave: "convite", rotulo: "Convite", icone: "mail", seg: "convite", sub: "O que chega no WhatsApp" },
   { chave: "cortejo", rotulo: "Cortejo", icone: "diversity_1", seg: "cortejo", sub: "Quem entra e em que ordem" },
   // só na conta da noiva que abriu sozinha (o layout tira dos outros); a
   // fonte de ícones do portal é um recorte: sem mesa nem cadeira, o garfo e a faca

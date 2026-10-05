@@ -19,7 +19,7 @@ import { CascaV2 } from "@/components/portal/v2/CascaV2";
 import { EntradaV2 } from "@/components/portal/v2/EntradaV2";
 import { destinosV2 } from "@/components/portal/v2/destinos";
 import { getEstiloDoPortal, getMeuAcesso } from "@/lib/supabase/portal-estilo";
-import { listaDePresentesLiberada } from "@/lib/supabase/portal-presentes";
+import { chamarParaALista, listaDePresentesLiberada } from "@/lib/supabase/portal-presentes";
 import { pessoaDoEvento, tituloDaFesta, usaPortalV2 } from "@/lib/portal-v2";
 import "@/components/portal/noivos/noivos.css";
 import { CascaNoivos } from "@/components/portal/noivos/CascaNoivos";
@@ -108,11 +108,13 @@ export default async function PortalEventoLayout({
   // toca uma vez por sessão, só no Início (cookie da casca, molde da v2).
   if (usaPortalNoivos(evento.tipo)) {
     const nome = nomeDeExibicao(evento);
-    const [contato, eu, fotoUrl, casal] = await Promise.all([
+    const [contato, eu, fotoUrl, casal, chamarLista] = await Promise.all([
       getContatoCerimonialista(evento.id),
       getMeuAcesso(evento.id),
       getFotoDoCasal(evento.id),
       getNomesDoCasal(evento.id, evento.nome),
+      // o presente flutuante: o casal, enquanto a lista não está no ar
+      chamarParaALista(evento.id),
     ]);
     const noInicio = headers().get("x-caminho") === `/portal/${evento.id}`;
     const jaAbriu = cookies().get(`pnab_${evento.id.slice(0, 8)}`)?.value === "1";
@@ -146,6 +148,7 @@ export default async function PortalEventoLayout({
               : "“Cada detalhe conta uma história. Estamos cuidando de tudo para que vocês vivam o inesquecível.”"
           }
           temHoje={TELAS_PRONTAS.has("hoje")}
+          chamarLista={chamarLista}
         >
           {children}
         </CascaNoivos>

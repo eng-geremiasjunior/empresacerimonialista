@@ -139,6 +139,69 @@
   margin-top: 10px;
 }
 
+/* ---------- a chamada para a lista de presentes (05/10/2026) ---------- */
+.pn .pn-visao-geral-lista {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 24px 28px;
+  border-radius: 30px;
+  background: var(--pn-pessego-claro);
+  line-height: normal;
+}
+.pn .pn-visao-geral-lista,
+.pn .pn-visao-geral-lista:hover {
+  color: var(--pn-verde);
+}
+.pn-visao-geral-lista-icone {
+  width: 64px;
+  height: 64px;
+  border-radius: 22px;
+  background: var(--pn-pessego);
+  color: var(--pn-verde);
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.pn-visao-geral-lista-icone .pn-ic {
+  font-size: 34px;
+}
+.pn-visao-geral-lista-textos {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pn-visao-geral-lista-titulo {
+  font-size: 28px;
+  line-height: 1.1;
+  color: var(--pn-verde);
+  text-wrap: balance;
+}
+.pn-visao-geral-lista-sub {
+  font-size: 16px;
+  color: var(--pn-marrom-escuro);
+}
+.pn-visao-geral-lista-botao {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 15px 22px;
+  border-radius: 18px;
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+  font-size: 16px;
+  font-weight: 700;
+  transition: transform 0.2s;
+}
+@media (hover: hover) {
+  .pn .pn-visao-geral-lista:hover .pn-visao-geral-lista-botao {
+    transform: scale(1.03);
+  }
+}
+
 /* ---------- os atalhos ---------- */
 .pn-visao-geral-atalhos {
   display: grid;
@@ -415,6 +478,31 @@
 
 /* celular: uma coluna, títulos menores, toques de 44px */
 @media (max-width: 767px) {
+  .pn .pn-visao-geral-lista {
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 22px 20px;
+    border-radius: 26px;
+  }
+  .pn-visao-geral-lista-icone {
+    width: 52px;
+    height: 52px;
+    border-radius: 18px;
+  }
+  .pn-visao-geral-lista-icone .pn-ic {
+    font-size: 28px;
+  }
+  .pn-visao-geral-lista-titulo {
+    font-size: 23px;
+  }
+  .pn-visao-geral-lista-sub {
+    font-size: 15px;
+  }
+  .pn-visao-geral-lista-botao {
+    width: 100%;
+    justify-content: center;
+    min-height: 48px;
+  }
   .pn-visao-geral-hoje {
     padding: 24px 20px;
     gap: 20px;

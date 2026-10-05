@@ -7,6 +7,17 @@
 // negativa (Pix 1,19% + R$ 0,55 fixos).
 
 export const TAXA_DA_LISTA = 0.0389;
+
+/**
+ * A conta que recebe já serve para a lista ir ao ar e o convidado pagar
+ * (05/10/2026, decisão dele): basta estar CADASTRADA na Pagar.me e não
+ * recusada, suspensa, bloqueada ou inativa. A prova de vida só segura a
+ * transferência para o banco do casal — isso é da Pagar.me, não da lista.
+ * A mesma regra está no banco (200: portal_salvar_lista e lista_publica).
+ */
+export const CONTA_QUE_NAO_RECEBE: ReadonlySet<string> = new Set(["refused", "suspended", "blocked", "inactive"]);
+export const contaRecebe = (r: { status?: string | null } | null | undefined): boolean =>
+  !!r && !!r.status && !CONTA_QUE_NAO_RECEBE.has(r.status);
 export const VALOR_MINIMO = 50;
 
 export const BANCOS: [string, string][] = [

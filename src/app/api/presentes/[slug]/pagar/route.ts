@@ -5,6 +5,7 @@ import { eventoEDoCatalogo } from "@/lib/catalogo-vivo";
 import {
   PARCELAS_NO_CARTAO,
   TOKEN_DO_CARTAO,
+  contaRecebe,
   problemaNoConvidado,
   problemaNoEnderecoDeCobranca,
   so,
@@ -241,7 +242,8 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
   const rc = recebedor as { status?: string; pagarme_recipient_id?: string } | null;
   if (!(site as { publicado?: boolean } | null)?.publicado || !l?.publicada) return erro("Lista não encontrada.", 404);
   if (!pr || pr.removido) return erro("Este presente saiu da lista.", 404);
-  if (rc?.status !== "active" || !rc.pagarme_recipient_id) return erro("A lista ainda não recebe presentes.", 409);
+  // a conta CADASTRADA recebe (200): a prova de vida só segura a transferência
+  if (!contaRecebe(rc) || !rc?.pagarme_recipient_id) return erro("A lista ainda não recebe presentes.", 409);
 
   const agoraIso = new Date().toISOString();
   const origem = origemDo(request);

@@ -19,7 +19,7 @@ import {
   fotoDoCatalogo,
   presenteDoCatalogo,
 } from "@/lib/catalogo-de-presentes";
-import { VALOR_MINIMO, TAXA_DA_LISTA, valoresDoPresente } from "@/lib/lista-presentes";
+import { VALOR_MINIMO, TAXA_DA_LISTA, contaRecebe, valoresDoPresente } from "@/lib/lista-presentes";
 import { formatarReais } from "@/lib/site-conteudo";
 import { salvarLista, type PresenteParaSalvar } from "@/app/(portal)/portal/[eventoId]/presentes/actions";
 import { Eyebrow, Icone } from "../../../primitivas";
@@ -123,7 +123,12 @@ export function TelaLista({ dados }: { dados: DadosDaTelaLista }) {
 
   const alterado = fotografia({ taxa, mensagem, linhas }) !== guardado;
   const podeEditar = dados.podeEditar && !dados.semMigracao;
-  const contaAtiva = dados.recebedor?.status === "active";
+  // a conta cadastrada basta para a lista ir ao ar (200)
+  const contaPronta = contaRecebe(dados.recebedor);
+  // quem cadastra ainda tem o que fazer (mandar os dados do banco ou a
+  // prova de vida): no celular a conta sobe para o topo (pedido dele,
+  // 05/10/2026); aprovada, ou para quem só olha, vai para o fim
+  const contaPedeAcao = dados.souResponsavel && dados.recebedor?.status !== "active";
 
   // ------------------------------------------------------------ catálogo
   const [catalogoAberto, setCatalogoAberto] = useState(false);
@@ -250,8 +255,8 @@ export function TelaLista({ dados }: { dados: DadosDaTelaLista }) {
   const totalRecebido = (dados.recebidos ?? []).reduce((s, r) => s + r.familiaCentavos, 0);
   const zap = dados.link ? `https://wa.me/?text=${encodeURIComponent(`Nossa lista de presentes: ${dados.link}`)}` : null;
 
-  const motivoParaNaoPublicar = !contaAtiva
-    ? "A lista vai ao ar quando a conta que recebe estiver aprovada."
+  const motivoParaNaoPublicar = !contaPronta
+    ? "A lista vai ao ar depois que vocês cadastrarem a conta que recebe."
     : linhas.length === 0
       ? "Adicione presentes para pôr a lista no ar."
       : null;
@@ -264,6 +269,7 @@ export function TelaLista({ dados }: { dados: DadosDaTelaLista }) {
       meuNome={dados.meuNome}
       meuEmail={dados.meuEmail}
       cerimonialista={dados.cerimonialista}
+      jaRecebeu={(dados.recebidos?.length ?? 0) > 0}
     />
   );
 
@@ -543,7 +549,7 @@ export function TelaLista({ dados }: { dados: DadosDaTelaLista }) {
             </div>
           )}
 
-          {!contaAtiva && conta}
+          {contaPedeAcao && <div className="pn-lista-conta-lugar primeiro">{conta}</div>}
 
           <div className="pn-lista-bloco">
             <h2 className="pn-lista-rotulo">No site</h2>
@@ -644,7 +650,7 @@ export function TelaLista({ dados }: { dados: DadosDaTelaLista }) {
             )}
           </div>
 
-          {contaAtiva && conta}
+          {!contaPedeAcao && conta}
         </div>
       </div>
     </section>

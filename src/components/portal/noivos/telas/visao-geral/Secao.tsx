@@ -1,6 +1,8 @@
 // A Visão geral do portal dos noivos (desenho v4, README §6), na ordem do
 // desenho: Hoje, só uma coisa → atalhos → linha do tempo → trilha →
 // Agenda + Perguntas → o cartão da cerimonialista (o rodapé é da casca).
+// Acima de tudo, enquanto a lista de presentes não está no ar, a chamada
+// para criá-la (pedido dele, 05/10/2026).
 //
 // Componente de SERVIDOR: lê tudo pela sessão da família (a RLS e as RPCs
 // decidem o que cada um vê) com os carregadores que o portal já tem — os
@@ -21,6 +23,7 @@ import { getConvidados } from "@/lib/supabase/portal-pessoas";
 import { getConvidadosV2 } from "@/lib/supabase/portal-salao";
 import { getFornecedoresDoPortal } from "@/lib/supabase/portal-fornecedores";
 import { getCuradoriasDoPortal } from "@/lib/supabase/curadoria";
+import { chamarParaALista } from "@/lib/supabase/portal-presentes";
 import { getNomesDoCasal } from "@/lib/supabase/portal-noivos";
 import { linkWhatsapp } from "@/lib/whatsapp-link";
 import { hojeBR } from "@/lib/tempo";
@@ -39,6 +42,7 @@ import {
   montarTarefasDoDia,
   type Atalho,
 } from "./montar";
+import { ChamadaDaLista } from "./ChamadaDaLista";
 import { HojeUmaCoisa } from "./HojeUmaCoisa";
 import { Atalhos } from "./Atalhos";
 import { AgendaEPerguntas } from "./AgendaEPerguntas";
@@ -54,7 +58,7 @@ export async function VisaoGeralSecao({ eventoId }: { eventoId: string }) {
 
   // uma leva só, em paralelo (o que é de cada nível é filtrado depois; a
   // RLS já devolve vazio o que o nível não alcança)
-  const [nivel, contato, tarefas, perguntas, casal, lista, salao, fornecedores, curadorias, investimento, convite] =
+  const [nivel, contato, tarefas, perguntas, casal, lista, salao, fornecedores, curadorias, investimento, convite, chamarLista] =
     await Promise.all([
       getNivelNoPortal(evento.id),
       getContatoCerimonialista(evento.id),
@@ -68,6 +72,8 @@ export async function VisaoGeralSecao({ eventoId }: { eventoId: string }) {
       getInvestimento(evento.id),
       // só lê o pedido esperando; o convite só existe na conta de família
       daFamilia ? estadoDoConvite(evento.id) : null,
+      // o layout já perguntou (cache)
+      chamarParaALista(evento.id),
     ]);
 
   // o nível (189): o padrinho não vê Convidados, Fornecedores nem a linha
@@ -156,6 +162,7 @@ export async function VisaoGeralSecao({ eventoId }: { eventoId: string }) {
 
   return (
     <>
+      {chamarLista && <ChamadaDaLista href={`${base}/presentes`} />}
       <HojeUmaCoisa
         tarefas={montarTarefasDoDia({ tarefas: tarefas.tarefas, hoje, cerimonialista })}
         podeMarcar={podeEscrever}
