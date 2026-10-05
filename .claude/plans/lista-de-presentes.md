@@ -151,8 +151,10 @@ para a conta da noiva, e o link dela ele manda à mão, pelo WhatsApp.
 ## O que falta
 
 - Ele reaplicar a 197 revisada; depois, a prova do Pix na loja de teste.
-- Fotos do catálogo: 29 de 139 entraram (02/10). Faltam versões sem marca
-  do ferro, da parafusadeira e das 4 TVs, e os demais itens (lotes de 30).
+- Fotos do catálogo: 35 de 139. Em 05/10 entraram as de marca (o ferro,
+  a parafusadeira e as 4 TVs; "as imagens são públicas", disse ele) e a
+  panela de pressão ganhou a foto que ele mandou. Faltam os outros 104
+  (lotes de 30).
 - Na Pagar.me de produção: marcar no webhook os avisos order.paid,
   order.canceled, order.payment_failed, charge.paid e charge.refunded.
 - A prova real em produção: um presente de R$ 50 — desde a 200 basta a

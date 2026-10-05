@@ -6,13 +6,15 @@
 // Só dados, sem tela e sem banco. O preço é o BASE, redondo, em reais: o
 // que a família recebe quando a taxa vai para o convidado (lista-presentes:
 // TAXA_DA_LISTA). Valores de referência do mercado em 2026, para o casal
-// ajustar. Nenhum item é de marca: a foto é de um objeto genérico, e o
-// casal compra o modelo que quiser com o dinheiro.
+// ajustar. Nenhum item é de marca: o casal compra o modelo que quiser com o
+// dinheiro, mesmo quando a foto mostra um aparelho de marca.
 //
 // Foto: /presentes-catalogo/<codigo>.webp (public/presentes-catalogo,
 // 600×600 — fora de /presentes, que é a rota da lista). Código sem foto
 // (FOTOS_DO_CATALOGO) aparece com a inicial do nome. As primeiras 29 (02/10)
-// ele mesmo escolheu; os logos de marca que apareciam foram desfocados.
+// ele mesmo escolheu; os logos de marca que apareciam foram desfocados. Em
+// 05/10 entraram, com o ok dele, as de marca grande (o ferro, a parafusadeira
+// e as 4 TVs), e a panela de pressão ganhou a foto que ele mandou.
 
 export type GrupoDoCatalogo = "casa" | "viagem" | "divertidos";
 
@@ -236,6 +238,7 @@ export const FOTOS_DO_CATALOGO: ReadonlySet<string> = new Set<string>([
   "jogo-de-cama", "jogo-de-copos", "jogo-de-facas", "jogo-de-panelas", "jogo-de-toalhas", "kit-de-drinks",
   "liquidificador", "maquina-lava-e-seca", "micro-ondas", "panela-de-pressao", "purificador-de-agua", "rack",
   "roupoes", "sofa", "tacas-de-vinho", "tapete-da-sala", "travesseiros", "utensilios-de-silicone",
+  "ferro-a-vapor", "parafusadeira", "smart-tv-32", "smart-tv-43", "smart-tv", "smart-tv-65",
 ]);
 
 const POR_CODIGO = new Map(CATALOGO.map((x) => [x.codigo, x]));
