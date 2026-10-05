@@ -247,7 +247,6 @@ export function RoteiroList({
         ) : (
           <div
             ref={listRef}
-            className={compacto ? "rounded-[14px] border border-[#E9E8F1] bg-white px-4" : undefined}
           >
             {ordered.map((item, idx) => {
               if (editingId === item.id) {
@@ -289,6 +288,7 @@ export function RoteiroList({
                     <LinhaDoRoteiro
                       item={item}
                       equipe={equipe}
+                      isLast={idx === ordered.length - 1}
                       onEditar={() => {
                         setEditingId(item.id);
                         setAdding(false);
