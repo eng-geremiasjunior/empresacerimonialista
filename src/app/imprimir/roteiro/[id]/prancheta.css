@@ -1,0 +1,86 @@
+/* Folha do roteiro, modelo Prancheta (04/10/2026).
+ *
+ * Feita para a prancheta do dia: o prendedor cobre o topo da folha, a
+ * leitura é de pé, a um braço de distância, e a caneta risca o que já
+ * foi. Monocromática (impressora de recepção de hotel), horário grande,
+ * item que não quebra no meio, caixa de marcar de verdade. */
+
+/* ---- a barra da tela (some no papel junto com .imp-acoes) ---- */
+.rp-barra { flex-wrap: wrap; row-gap: 10px; }
+.rp-grupo { display: inline-flex; border: 1px solid #d6d3d1; border-radius: 9px; padding: 2px; background: #fff; }
+.rp-op { padding: 6px 12px; font-size: 13px; font-weight: 600; color: #57534e; border-radius: 7px; text-decoration: none; }
+.rp-op:hover { color: #1c1917; }
+.rp-op-on { background: #1c1917; color: #fff; }
+.rp-op-on:hover { color: #fff; }
+.rp-marcar { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #57534e; text-decoration: none; padding: 6px 4px; }
+.rp-marcar:hover { color: #1c1917; }
+.rp-marcar-on { color: #1c1917; font-weight: 600; }
+.rp-marcar-caixa { width: 16px; height: 16px; border: 1.5px solid #a8a29e; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; line-height: 1; }
+.rp-marcar-on .rp-marcar-caixa { background: #1c1917; border-color: #1c1917; color: #fff; }
+
+/* ---- a folha ---- */
+.rp { --hora: 18px; --item: 15px; --quem: 12.5px; --obs: 12px; color: #1c1917; }
+.rp-grande { --hora: 22px; --item: 17.5px; --quem: 14px; --obs: 13.5px; }
+
+/* o topo fica sob o prendedor: o título começa abaixo dele */
+.rp-cabeca { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-top: 14mm; padding-bottom: 10px; border-bottom: 2.5px solid #1c1917; }
+.rp-titulo { font-size: 23px; font-weight: 800; letter-spacing: -0.015em; line-height: 1.15; margin: 0; }
+.rp-grande .rp-titulo { font-size: 27px; }
+.rp-fatos { font-size: 13.5px; font-weight: 600; margin: 5px 0 0; }
+.rp-fatos::first-letter { text-transform: uppercase; }
+.rp-local { font-size: 12.5px; color: #57534e; margin: 2px 0 0; }
+.rp-dela { font-size: 13px; font-weight: 700; margin: 6px 0 0; }
+.rp-versao { font-size: 10.5px; color: #78716c; text-align: right; margin: 0; line-height: 1.35; white-space: nowrap; }
+.rp-versao b { color: #1c1917; font-weight: 700; font-size: 12px; }
+.rp-vazio { font-size: 13px; color: #57534e; }
+
+/* o roteiro: hora · o quê/quem · caixa */
+.rp-roteiro { width: 100%; border-collapse: collapse; margin-top: 2px; }
+.rp-roteiro thead th { text-align: left; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #78716c; padding: 12px 6px 5px; border-bottom: 1px solid #1c1917; }
+.rp-roteiro .rp-col-hora { width: 19mm; }
+.rp-roteiro .rp-col-ok { width: 11mm; text-align: center; }
+.rp-roteiro tbody tr { break-inside: avoid; page-break-inside: avoid; }
+.rp-roteiro tbody td { border-bottom: 0.75px solid #d6d3d1; padding: 9px 6px; vertical-align: top; }
+.rp-hora { font-size: var(--hora); font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; line-height: 1.1; white-space: nowrap; }
+.rp-item { font-size: var(--item); font-weight: 700; line-height: 1.25; margin: 0; }
+.rp-quem { font-size: var(--quem); color: #292524; margin: 3px 0 0; white-space: pre-wrap; }
+.rp-deixa { font-size: var(--quem); margin: 4px 0 0; padding: 3px 7px; border-left: 3px solid #1c1917; background: #f5f5f4; }
+.rp-deixa b { text-transform: uppercase; font-size: 0.78em; letter-spacing: 0.06em; margin-right: 4px; }
+.rp-obs { font-size: var(--obs); color: #57534e; margin: 3px 0 0; }
+.rp-ok { text-align: center; }
+.rp-caixa { display: inline-block; width: 6mm; height: 6mm; border: 1.6px solid #1c1917; border-radius: 1.5mm; margin-top: 1px; }
+.rp-caixa-p { width: 4.2mm; height: 4.2mm; border-width: 1.3px; border-radius: 1mm; flex: none; margin-top: 2px; }
+
+/* seções depois do roteiro */
+.rp-secao { margin-top: 20px; break-inside: avoid-page; }
+.rp-secao-titulo { font-size: 15px; font-weight: 800; margin: 0 0 8px; padding-bottom: 5px; border-bottom: 1.5px solid #1c1917; }
+.rp-duas { column-count: 2; column-gap: 28px; }
+.rp-bloco { break-inside: avoid; margin-bottom: 12px; }
+.rp-bloco-titulo { font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #57534e; margin: 0 0 4px; }
+
+.rp-tel { list-style: none; margin: 0; padding: 0; }
+.rp-tel li { display: flex; justify-content: space-between; gap: 10px; padding: 4px 0; border-bottom: 0.75px solid #e7e5e4; font-size: var(--quem); break-inside: avoid; }
+.rp-tel-nome { font-weight: 600; min-width: 0; }
+.rp-tel-papel { font-weight: 400; color: #57534e; }
+.rp-tel-num { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
+
+.rp-check { list-style: none; margin: 0; padding: 0; }
+.rp-check li { display: flex; gap: 8px; align-items: flex-start; padding: 4px 0; font-size: var(--quem); line-height: 1.35; break-inside: avoid; }
+.rp-check-hora { font-variant-numeric: tabular-nums; margin-right: 6px; }
+
+.rp-notas .rp-linha { height: 9mm; border-bottom: 0.75px solid #a8a29e; }
+
+/* o prendedor cobre o topo de TODA folha, não só da primeira: a folha
+   inteira vai numa tabela cujo cabeçalho é uma faixa em branco — o
+   navegador repete o cabeçalho no alto de cada página impressa. (O @page
+   da moldura vale para todas as folhas do sistema; mexer nele mudaria as
+   outras.) */
+.rp-folha { width: 100%; border-collapse: collapse; }
+.rp-folha > tbody > tr > td { padding: 0; }
+.rp-prendedor { height: 0; padding: 0; }
+
+@media print {
+  .rp-deixa { background: #f5f5f4; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .rp-cabeca { margin-top: 0; }
+  .rp-prendedor { height: 13mm; }
+}
