@@ -203,7 +203,14 @@ type EventoLido = {
   name: string | null;
   empresa_id: string | null;
   clients: { name: string } | { name: string }[] | null;
+  /** a conta de família (187): quem abre o link é a noiva, pelo portal */
+  empresas: { tipo: string | null } | { tipo: string | null }[] | null;
 };
+
+function daFamilia(e: EventoLido | null): boolean {
+  const emp = e ? (Array.isArray(e.empresas) ? e.empresas[0] : e.empresas) : null;
+  return emp?.tipo === "familia";
+}
 
 function nomeDaCliente(e: EventoLido): string | null {
   const c = Array.isArray(e.clients) ? e.clients[0] : e.clients;
@@ -236,7 +243,7 @@ async function processarLinha(
     if (linha.origem === "evento") {
       const { data } = await db
         .from("events")
-        .select("id, type, date, location, status, name, empresa_id, clients(name)")
+        .select("id, type, date, location, status, name, empresa_id, clients(name), empresas(tipo)")
         .eq("id", linha.origem_id)
         // o evento de exemplo (174) nunca vai para a agenda dela
         .eq("exemplo", false)
@@ -247,7 +254,7 @@ async function processarLinha(
         item = {
           id: googleId,
           titulo: tituloDoEvento(e),
-          descricao: `Abrir no eOrganizei: ${appUrl()}/eventos/${e.id}`,
+          descricao: `Abrir no eOrganizei: ${appUrl()}${daFamilia(e) ? `/portal/${e.id}` : `/eventos/${e.id}`}`,
           local: e.location?.trim() || null,
           data: e.date.slice(0, 10),
           hora: null,
@@ -274,7 +281,7 @@ async function processarLinha(
       if (c && c.estado !== "cancelado") {
         const { data: ev } = await db
           .from("events")
-          .select("id, type, date, location, status, name, empresa_id, clients(name)")
+          .select("id, type, date, location, status, name, empresa_id, clients(name), empresas(tipo)")
           .eq("id", c.event_id)
           .maybeSingle();
         const e = ev as EventoLido | null;
@@ -284,7 +291,7 @@ async function processarLinha(
         item = {
           id: googleId,
           titulo: `${c.titulo.trim()}${doEvento}`,
-          descricao: `${fornecedor ? `Fornecedor: ${fornecedor}\n` : ""}Abrir no eOrganizei: ${appUrl()}/eventos/${c.event_id}/organizacao`,
+          descricao: `${fornecedor ? `Fornecedor: ${fornecedor}\n` : ""}Abrir no eOrganizei: ${appUrl()}${daFamilia(e) ? `/portal/${c.event_id}/agenda` : `/eventos/${c.event_id}/organizacao`}`,
           local: c.local?.trim() || null,
           data: c.data.slice(0, 10),
           hora: c.hora ? String(c.hora).slice(0, 5) : null,

@@ -85,6 +85,7 @@ export const MENU_NOIVOS: DestinoNoivos[] = [
   { chave: "documentos", rotulo: "Documentos", icone: "description", seg: "documentos" },
   { chave: "linha", rotulo: "Linha do tempo", icone: "timeline", seg: "linha-do-tempo" },
   { chave: "musicas", rotulo: "Músicas", icone: "music_note", seg: "trilha" },
+  // só na conta da noiva que abriu sozinha (o layout tira dos outros)
   { chave: "agenda", rotulo: "Agenda", icone: "calendar_month", seg: "agenda" },
   { chave: "inspiracoes", rotulo: "Inspirações", icone: "photo_library", seg: "inspiracoes" },
   { chave: "presentes", rotulo: "Presentes", icone: "redeem", seg: "presentes" },
@@ -131,6 +132,7 @@ export const TELAS_PRONTAS = new Set<string>([
   "convite",
   "cortejo",
   "mesas",
+  "agenda",
 ]);
 
 /** A chave da tela a partir do caminho (/portal/<id>/convidados → "convidados"). */

@@ -127,7 +127,14 @@ com o ok dele:
    (balde comprovantes, salvarComprovante). O arquivo abre por
    /portal/<id>/documentos/arquivo, que confere a dona e busca o caminho no
    banco: a /api/contrato fica fora do /portal, que o middleware barra.
-6. Calendário e Agenda do Google.
+6. Calendário e Agenda do Google — feito: a aba Agenda (só a dona) com o mês, "Próximos" e a
+   Agenda do Google. Compromissos = a tabela da cerimonialista (compromisso),
+   pelas ações dela (criarCompromisso / excluirCompromisso); a fila da 168 leva
+   cada mudança para o Google. Na conta de família o link que vai para o
+   Google aponta para o portal. Ligar usa as rotas de sempre: o middleware
+   deixa quem é do portal passar SÓ por /api/google/conectar e /retorno (que
+   exigem cargo — só a dona tem), e o destino de volta aceita
+   /portal/<id>/agenda.
 
 Migração só se uma ação do sistema da cerimonialista travar para a
 família (cada uma é conferida antes); se precisar, os 2 céticos revisam.

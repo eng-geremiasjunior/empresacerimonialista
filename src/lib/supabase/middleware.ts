@@ -231,13 +231,19 @@ export async function updateSession(request: NextRequest) {
   // termo de aceite a RLS do portal não entrega).
   // /api/trilha: a busca de músicas da trilha da noite (portal v2, 180) é
   // chamada pela família — a rota exige sessão e não lê banco nenhum.
+  // /api/google/conectar e /retorno: a noiva que abriu a conta sozinha
+  // (04/10/2026) liga a Agenda do Google pela mesma porta da
+  // cerimonialista — as rotas exigem sessão E cargo na empresa (meu_cargo),
+  // que só a dona da conta de família tem; a /api/google/fila fica fora.
   const isPublicConfirmar =
     pathname.startsWith("/confirmar/") ||
     pathname.startsWith("/c/") ||
     pathname.startsWith("/convites/") ||
     pathname.startsWith("/api/presentes/") ||
     pathname.startsWith("/api/documento/") ||
-    pathname.startsWith("/api/trilha");
+    pathname.startsWith("/api/trilha") ||
+    pathname === "/api/google/conectar" ||
+    pathname === "/api/google/retorno";
 
   // ------------------------------------------------------------------
   // As duas casas do sistema não se misturam.

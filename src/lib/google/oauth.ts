@@ -25,11 +25,12 @@ export const COOKIE_ESTADO = "eorg_google_estado";
 /** para onde a pessoa volta depois do Google (a tela de onde ela saiu) */
 export const COOKIE_VOLTA = "eorg_google_volta";
 
-// Só estes destinos: Configurações (o padrão) ou a Visão geral de um
-// evento. Nada que venha da URL vira redirecionamento sem passar aqui —
-// senão o botão de conectar viraria um redirecionador aberto.
+// Só estes destinos: Configurações (o padrão), a Visão geral de um
+// evento ou a Agenda do portal da noiva que abriu a conta sozinha
+// (04/10/2026). Nada que venha da URL vira redirecionamento sem passar
+// aqui — senão o botão de conectar viraria um redirecionador aberto.
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
-const DESTINO_DE_EVENTO = new RegExp(`^/eventos/${UUID}$`);
+const DESTINO_DE_EVENTO = new RegExp(`^(/eventos/${UUID}|/portal/${UUID}/agenda)$`);
 
 export function destinoDeVolta(v: string | null | undefined): string {
   return v && DESTINO_DE_EVENTO.test(v) ? v : "/configuracoes";

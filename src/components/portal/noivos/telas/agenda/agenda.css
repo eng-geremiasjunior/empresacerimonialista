@@ -1,0 +1,414 @@
+/* A Agenda da noiva que abriu a conta sozinha (04/10/2026): os cartões
+   brancos do portal; o mês em grade de 7 colunas, um ponto pêssego para
+   o compromisso e um cinza para a parcela, o dia do casamento em verde.
+   Cinza e uma cor de destaque. */
+
+.pn-agn {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  line-height: normal;
+  animation: pn-rise 0.5s ease both;
+}
+.pn-agn-card {
+  min-width: 0;
+  background: #fff;
+  border-radius: 30px;
+  padding: 30px 34px;
+  box-shadow: var(--pn-sombra-card);
+}
+.pn-agn-cab {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.pn-agn-mes {
+  margin: 6px 0 0;
+  font-size: 34px;
+  font-weight: 400;
+  color: var(--pn-verde);
+}
+.pn-agn-mes::first-letter {
+  text-transform: uppercase;
+}
+.pn-agn-h2 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 400;
+  color: var(--pn-verde);
+}
+.pn-agn-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pn-agn .pn-agn-nav button {
+  min-width: 40px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--pn-borda-2);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--pn-verde);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.pn-agn .pn-agn-nav button.hoje {
+  font-size: 14px;
+}
+.pn-agn .pn-agn-nav button:hover {
+  background: var(--pn-creme);
+}
+
+/* ---------- a grade do mês ---------- */
+.pn-agn-semana,
+.pn-agn-grade {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+.pn-agn-semana {
+  margin-top: 18px;
+}
+.pn-agn-semana span {
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pn-texto-3);
+}
+.pn-agn-grade {
+  margin-top: 8px;
+}
+.pn-agn .pn-agn-dia {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  min-height: 58px;
+  padding: 8px 0 6px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--pn-creme);
+  color: var(--pn-verde);
+  cursor: pointer;
+}
+.pn-agn .pn-agn-dia:hover {
+  background: var(--pn-pessego-claro);
+}
+.pn-agn .pn-agn-dia.passou {
+  color: var(--pn-texto-3);
+}
+.pn-agn .pn-agn-dia.hoje {
+  box-shadow: inset 0 0 0 2px var(--pn-verde);
+}
+.pn-agn .pn-agn-dia.sel {
+  background: var(--pn-pessego-claro);
+  box-shadow: inset 0 0 0 2px var(--pn-pessego);
+}
+.pn-agn .pn-agn-dia.casamento {
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+}
+.pn-agn-dia .num {
+  font-size: 15px;
+}
+.pn-agn-dia .pontos {
+  display: flex;
+  gap: 4px;
+}
+.pn-agn-dia .ponto {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.pn-agn-dia .ponto.compromisso {
+  background: var(--pn-pessego);
+}
+.pn-agn-dia .ponto.parcela {
+  background: var(--pn-texto-3);
+}
+.pn-agn-dia.casamento .ponto.parcela {
+  background: var(--pn-creme);
+}
+.pn-agn-vazia {
+  min-height: 58px;
+}
+.pn-agn-diasel {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--pn-trilho);
+}
+.pn-agn-diasel-tit {
+  font-size: 15px;
+  color: var(--pn-texto-2);
+}
+.pn-agn-diasel-tit::first-letter {
+  text-transform: uppercase;
+}
+
+/* ---------- as listas ---------- */
+.pn-agn-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.pn-agn-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: var(--pn-creme);
+}
+.pn-agn-item.casamento {
+  background: var(--pn-verde);
+  color: var(--pn-creme);
+}
+.pn-agn-quando {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  width: 46px;
+}
+.pn-agn-quando .dia {
+  font-size: 24px;
+  line-height: 1;
+}
+.pn-agn-quando .mes {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--pn-texto-3);
+}
+.pn-agn-item.casamento .pn-agn-quando .mes {
+  color: var(--pn-creme);
+  opacity: 0.75;
+}
+.pn-agn-texto {
+  flex: 1;
+  min-width: 0;
+}
+.pn-agn-texto .tit {
+  font-size: 15.5px;
+  overflow-wrap: anywhere;
+}
+.pn-agn-texto .hora {
+  margin-right: 8px;
+  font-weight: 700;
+}
+.pn-agn-texto .sub {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--pn-texto-3);
+  overflow-wrap: anywhere;
+}
+.pn-agn .pn-agn-lapis {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--pn-texto-3);
+  cursor: pointer;
+}
+.pn-agn .pn-agn-lapis:hover {
+  background: #fff;
+  color: var(--pn-verde);
+}
+.pn-agn .pn-agn-ir {
+  flex: none;
+  font-size: 13px;
+  color: var(--pn-texto-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.pn-agn-coracao {
+  flex: none;
+  color: var(--pn-pessego);
+}
+.pn-agn-nada {
+  margin: 14px 0 0;
+  font-size: 15px;
+  color: var(--pn-texto-2);
+}
+.pn-agn .pn-agn-marcar {
+  padding: 11px 18px;
+  font-size: 15px;
+}
+.pn-agn-form-li {
+  list-style: none;
+}
+
+/* ---------- o formulário ---------- */
+.pn-agn-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 18px;
+  border-radius: 20px;
+  background: var(--pn-creme);
+}
+.pn-agn-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.pn-agn-campo label {
+  font-size: 13.5px;
+  color: var(--pn-texto-2);
+}
+.pn-agn-campo .opcional {
+  color: var(--pn-texto-3);
+}
+.pn-agn-campo input {
+  width: 100%;
+  min-width: 0;
+  padding: 11px 14px;
+  border: 1px solid var(--pn-borda);
+  border-radius: 14px;
+  background: #fffdf9;
+  color: var(--pn-verde);
+  font: inherit;
+  /* 16px: o celular não amplia a tela ao tocar no campo */
+  font-size: 16px;
+}
+.pn-agn-campo input:focus {
+  border-color: var(--pn-verde);
+  outline: none;
+}
+.pn-agn-dupla {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.pn-agn-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+.pn-agn-acoes .pn-btn {
+  padding: 12px 26px;
+}
+.pn-agn .pn-agn-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pn-texto-2);
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.pn-agn .pn-agn-link.perigo {
+  color: var(--pn-marrom-escuro);
+}
+.pn-agn .pn-agn-link:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.pn-agn-tirar {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--pn-marrom-escuro);
+}
+
+/* ---------- a Agenda do Google ---------- */
+.pn-agn-google {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.pn-agn-google-ic {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--pn-creme);
+  color: var(--pn-verde);
+}
+.pn-agn-google-texto {
+  flex: 1;
+  min-width: 180px;
+}
+.pn-agn-google-texto .tit {
+  font-size: 16px;
+  color: var(--pn-verde);
+}
+.pn-agn-google-texto .sub {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--pn-texto-3);
+  overflow-wrap: anywhere;
+}
+.pn-agn .pn-agn-ligar {
+  padding: 12px 20px;
+  font-size: 15px;
+}
+
+.pn-agn .pn-agn-nav button:focus-visible,
+.pn-agn .pn-agn-dia:focus-visible,
+.pn-agn .pn-agn-lapis:focus-visible,
+.pn-agn .pn-agn-link:focus-visible,
+.pn-agn .pn-agn-ir:focus-visible {
+  outline: 2px solid var(--pn-verde);
+  outline-offset: 2px;
+}
+
+@media (max-width: 767px) {
+  .pn-agn {
+    gap: 16px;
+  }
+  .pn-agn-card {
+    padding: 24px 16px;
+    border-radius: 26px;
+  }
+  .pn-agn-mes {
+    font-size: 28px;
+  }
+  .pn-agn-semana,
+  .pn-agn-grade {
+    gap: 4px;
+  }
+  .pn-agn .pn-agn-dia {
+    min-height: 46px;
+    padding-top: 6px;
+    border-radius: 12px;
+  }
+  .pn-agn-vazia {
+    min-height: 46px;
+  }
+  .pn-agn-dia .num {
+    font-size: 14px;
+  }
+  .pn-agn-semana span {
+    font-size: 11px;
+    letter-spacing: 0.02em;
+  }
+}
+@media (max-width: 380px) {
+  .pn-agn-dupla {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
