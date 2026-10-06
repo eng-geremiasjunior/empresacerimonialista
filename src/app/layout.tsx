@@ -47,6 +47,11 @@ export const metadata: Metadata = {
     ],
     apple: "/apple-touch-icon.png",
   },
+  // verificação do domínio na Meta (06/10/2026): o Gerenciador de Negócios
+  // lê esta metatag na página inicial. É pública por natureza, não é segredo.
+  other: {
+    "facebook-domain-verification": "3j2iqe49tl636dqzx06bn3ra5b6rlj",
+  },
 };
 
 export default function RootLayout({
