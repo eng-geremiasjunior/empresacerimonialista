@@ -1,3 +1,4 @@
+import { soCampanha } from "@/lib/parametros-de-campanha";
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 import { appUrl, PREFIXOS_DO_PORTAL } from "@/lib/app-url";
@@ -43,7 +44,11 @@ function enderecoDoPortal(request: NextRequest): NextResponse | null {
   if (!PREFIXOS_DO_PORTAL.some((h) => host.startsWith(h))) return null;
   const p = request.nextUrl.pathname;
   if (p === "/" || p.startsWith("/login") || p === "/equipe") {
-    return NextResponse.redirect(new URL("/portal", `${request.nextUrl.protocol}//${host}`));
+    // com os parâmetros de CAMPANHA (fbclid, utm_…): precisam chegar à
+    // porta, onde o pixel lê — e só eles (lib/parametros-de-campanha)
+    return NextResponse.redirect(
+      new URL("/portal" + soCampanha(request.nextUrl.searchParams), `${request.nextUrl.protocol}//${host}`)
+    );
   }
   if (DO_PORTAL.some((prefixo) => p === prefixo || p.startsWith(prefixo))) return null;
   return NextResponse.redirect(new URL(p + request.nextUrl.search, appUrl()));

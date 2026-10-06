@@ -1,3 +1,4 @@
+import { soCampanha } from "@/lib/parametros-de-campanha";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { sessaoVencidaPorNaoLembrar } from "@/lib/lembrar-sessao";
@@ -215,6 +216,9 @@ export async function updateSession(request: NextRequest) {
     if (!paraOPortal && pathname !== "/") {
       url.searchParams.set("next", pathname + request.nextUrl.search);
     }
+    // na porta do portal, os parâmetros de CAMPANHA seguem junto (fbclid,
+    // utm_…): é lá que o pixel lê — e só eles (06/10/2026)
+    if (paraOPortal) url.search = soCampanha(request.nextUrl.searchParams);
     return NextResponse.redirect(url);
   }
 

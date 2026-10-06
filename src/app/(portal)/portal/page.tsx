@@ -1,3 +1,4 @@
+import { soCampanha } from "@/lib/parametros-de-campanha";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -18,13 +19,17 @@ export const dynamic = "force-dynamic";
 export default async function PortalHomePage({
   searchParams,
 }: {
-  searchParams?: { falhou?: string };
+  searchParams?: { falhou?: string } & Record<string, string | string[] | undefined>;
 }) {
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/portal/entrar");
+  if (!user) {
+    // sem sessão, segue para a porta levando os parâmetros de CAMPANHA
+    // (fbclid, utm_…) — a porta é onde o pixel lê, e só eles vão (06/10/2026)
+    redirect(`/portal/entrar${soCampanha(searchParams ?? {})}`);
+  }
 
   const eventos = await getEventosDaCliente();
 
