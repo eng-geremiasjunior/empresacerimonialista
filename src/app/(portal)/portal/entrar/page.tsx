@@ -5,6 +5,7 @@ import { PortalLoginForm } from "@/components/portal/PortalLoginForm";
 import { LoginNoivos } from "@/components/portal/noivos/login/LoginNoivos";
 import { SUBDOMINIO_DO_PORTAL } from "@/lib/app-url";
 import { marcellus, nunitoSans, simbolos } from "@/lib/fontes-noivos";
+import { Medicao } from "@/components/marketing/Medicao";
 
 // Porta de entrada do Portal da Cliente. Pública no middleware.
 // Neutra de propósito: neste momento o sistema ainda não sabe de quem ela
@@ -44,9 +45,16 @@ export default async function PortalEntrarPage({
     return (
       <div className={`${marcellus.variable} ${nunitoSans.variable} ${simbolos.variable}`}>
         <LoginNoivos erroInicial={searchParams?.erro} sessaoAtual={sessaoAtual} />
+        {/* pixel e tag (06/10/2026): o endereço desta porta não carrega credencial */}
+        <Medicao />
       </div>
     );
   }
 
-  return <PortalLoginForm erroInicial={searchParams?.erro} sessaoAtual={sessaoAtual} />;
+  return (
+    <>
+      <PortalLoginForm erroInicial={searchParams?.erro} sessaoAtual={sessaoAtual} />
+      <Medicao />
+    </>
+  );
 }

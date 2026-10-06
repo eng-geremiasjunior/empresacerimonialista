@@ -16,6 +16,8 @@ import { redirect } from "next/navigation";
 import { createClient as createServico } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import type { FamiliaPendente } from "../criar-conta/actions";
+import { registrarConversao } from "@/lib/conversoes";
+import { idDaContaDaFesta } from "@/lib/conta-da-festa";
 
 export const dynamic = "force-dynamic";
 
@@ -72,5 +74,26 @@ export async function GET() {
   // o token novo já sai sem a pendência (o /portal lê dele)
   await sessao.auth.refreshSession().catch(() => null);
 
-  redirect(typeof eventoId === "string" && !jaNasceu ? `/portal/${eventoId}` : "/portal");
+  if (typeof eventoId !== "string" || jaNasceu) redirect("/portal");
+
+  // A conversão (06/10/2026): a conta nasceu AGORA, não no formulário —
+  // cadastro que nunca abre o link não é conta. Pelo servidor, com a origem
+  // do anúncio guardada no cadastro; o pixel do navegador manda o mesmo id
+  // na passagem por /portal/conta-criada, e a Meta conta uma vez só.
+  await registrarConversao({
+    tipo: p.tipo === "casamento" ? "conta_noiva" : "conta_debutante",
+    email: fresco.user.email ?? null,
+    nome: p.nome,
+    idExterno: user.id,
+    idDoEvento: idDaContaDaFesta(user.id),
+    origem: {
+      fbp: p.origem?.fbp ?? null,
+      fbc: p.origem?.fbc ?? null,
+      gaClientId: p.origem?.ga ?? null,
+      ip: p.ip,
+      userAgent: p.user_agent,
+    },
+  });
+
+  redirect(`/portal/conta-criada?festa=${p.tipo === "casamento" ? "casamento" : "debutante"}`);
 }

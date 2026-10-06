@@ -41,8 +41,26 @@
 // pagamento, começou o teste, comprou) com o mesmo id que o servidor usa,
 // para a Meta contar cada fato uma vez só.
 
+// As três portas do cadastro dos noivos entraram em 06/10/2026 (dono: "coloca
+// um pixel nessa tela da noiva, faz por servidor também"). Olhadas uma a uma
+// pelo mesmo teste — o endereço não carrega credencial:
+//   · /portal/entrar      só recebe ?erro=link;
+//   · /portal/criar-conta não recebe nada;
+//   · /portal/conta-criada é a passagem depois do link do e-mail: só
+//     ?festa=casamento|debutante, e a sessão vai no cookie, não na URL.
+// O resto do /portal continua fora: /portal/<evento> e tudo abaixo dele.
+
 /** As telas onde a medição pode rodar. Comparação exata, sem prefixo. */
-const TELAS_DE_MARKETING = new Set(["/login", "/planos", "/precos", "/criar-conta", "/comecar"]);
+const TELAS_DE_MARKETING = new Set([
+  "/login",
+  "/planos",
+  "/precos",
+  "/criar-conta",
+  "/comecar",
+  "/portal/entrar",
+  "/portal/criar-conta",
+  "/portal/conta-criada",
+]);
 
 /**
  * A tela é a da oferta? Só ela dispara "viu o conteúdo" — o evento que
@@ -262,6 +280,24 @@ export function contaCriada(idDoEvento?: string): void {
     // medição nunca derruba cadastro: se o bloqueador de anúncio comeu o
     // script, a conta continua sendo criada e ninguém fica sabendo disso
     // pela tela de erro
+  }
+}
+
+/**
+ * A conta da festa nasceu (o casal ou a família abriu o link do e-mail).
+ * Evento PRÓPRIO, não o CompleteRegistration: este é o que as campanhas da
+ * cerimonialista otimizam, e cadastro de noiva ali ensinaria a Meta a
+ * procurar a pessoa errada. Mesmo id do servidor (conversoes.ts), para a
+ * Meta contar uma vez só.
+ */
+export function contaDaFestaCriada(tipo: "casamento" | "debutante", idDoEvento: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    const nome = tipo === "casamento" ? "CadastroNoiva" : "CadastroDebutante";
+    window.gtag?.("event", tipo === "casamento" ? "cadastro_noiva" : "cadastro_debutante");
+    window.fbq?.("trackCustom", nome, { currency: "BRL", value: 0 }, { eventID: idDoEvento });
+  } catch {
+    /* bloqueador de anúncio: a conta já existe, a medição não muda nada */
   }
 }
 

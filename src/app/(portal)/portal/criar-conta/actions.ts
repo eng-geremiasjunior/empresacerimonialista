@@ -26,12 +26,13 @@
 // conta": repetir o cadastro com o e-mail de outra pessoa não troca a
 // senha dela, não muda a festa pendente e não manda nada.
 
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient as createServico, type User } from "@supabase/supabase-js";
 import { portalBase } from "@/lib/app-url";
 import { enviarConfirmacaoDaConta } from "@/lib/email-conta-da-familia";
 import { TERMOS_VERSAO } from "@/lib/termos";
+import { COOKIE_ORIGEM } from "@/lib/marketing";
 
 export type TipoDaFesta = "casamento" | "debutante";
 export type PapelDaFamilia = "noiva" | "noivo" | "mae" | "pai" | "outro";
@@ -70,7 +71,28 @@ export type FamiliaPendente = {
   /** o aceite dos termos é do momento do cadastro, não do clique no link */
   ip: string | null;
   user_agent: string | null;
+  /**
+   * A origem do anúncio no momento do cadastro (06/10/2026): só os
+   * identificadores do clique (cookie do pixel, fbc, client_id do GA4) —
+   * nada de pessoa. A conversão sai na confirmação, às vezes em outro
+   * aparelho, e é com isto que a Meta sabe de qual anúncio ela veio.
+   */
+  origem?: { fbp: string | null; fbc: string | null; ga: string | null } | null;
 };
+
+/** O cookie que o navegador gravou (lib/marketing): só os três ids do clique. */
+function origemDoClique(): FamiliaPendente["origem"] {
+  try {
+    const cru = cookies().get(COOKIE_ORIGEM)?.value;
+    if (!cru) return null;
+    const o = JSON.parse(cru) as Record<string, unknown>;
+    const pegar = (k: string) => (typeof o[k] === "string" && (o[k] as string).trim() ? (o[k] as string).slice(0, 300) : null);
+    const origem = { fbp: pegar("fbp"), fbc: pegar("fbc"), ga: pegar("gaClientId") };
+    return origem.fbp || origem.fbc || origem.ga ? origem : null;
+  } catch {
+    return null;
+  }
+}
 
 function servico() {
   return createServico(
@@ -225,6 +247,7 @@ export async function criarContaDaFamilia(d: DadosDaFamilia): Promise<ResultadoD
     termos_versao: TERMOS_VERSAO,
     ip: ip === "desconhecido" ? null : ip.slice(0, 60),
     user_agent: headers().get("user-agent")?.slice(0, 300) ?? null,
+    origem: origemDoClique(),
   };
 
   // 1) o login, sem confirmar, com a senha e a festa pendente de uma vez

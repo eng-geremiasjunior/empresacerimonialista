@@ -58,7 +58,14 @@ export type OrigemDoClique = {
 
 export type Conversao = {
   /** o nome de cada lado é traduzido abaixo */
-  tipo: "conta_criada" | "primeiro_evento" | "checkout_iniciado" | "teste_iniciado" | "assinatura";
+  tipo:
+    | "conta_criada"
+    | "primeiro_evento"
+    | "checkout_iniciado"
+    | "teste_iniciado"
+    | "assinatura"
+    | "conta_noiva"
+    | "conta_debutante";
   /** e-mail de quem converteu; vira SHA-256 antes de sair */
   email?: string | null;
   valor?: number;
@@ -116,6 +123,11 @@ const NOME_META = {
   // agendada. Evento padrão da Meta, com o valor que vai ser cobrado.
   teste_iniciado: "StartTrial",
   assinatura: "Purchase",
+  // a conta da festa no portal (06/10/2026): eventos PRÓPRIOS, separados
+  // do CompleteRegistration da cerimonialista — cada campanha otimiza a
+  // sua pessoa (ver contaDaFestaCriada em marketing.ts)
+  conta_noiva: "CadastroNoiva",
+  conta_debutante: "CadastroDebutante",
 } as const;
 const NOME_GA = {
   conta_criada: "sign_up",
@@ -123,6 +135,8 @@ const NOME_GA = {
   checkout_iniciado: "begin_checkout",
   teste_iniciado: "teste_iniciado",
   assinatura: "purchase",
+  conta_noiva: "cadastro_noiva",
+  conta_debutante: "cadastro_debutante",
 } as const;
 
 /* ------------------------------------------------------------------ */

@@ -23,6 +23,7 @@ import {
 } from "@/app/(portal)/portal/criar-conta/actions";
 import { IconeAlerta, IconeCheck } from "./AcessoOrnamento";
 import { FOTO_CASAL_EXEMPLO } from "@/lib/portal-fotos";
+import { completarOrigemAntesDeEnviar, guardarOrigemDoClique } from "@/lib/marketing";
 
 const PAPEIS: Record<TipoDaFesta, { valor: PapelDaFamilia; rotulo: string }[]> = {
   casamento: [
@@ -65,6 +66,8 @@ export function CriarContaDaFamilia({
   const [reenviado, setReenviado] = useState(false);
   /** depois do "Errei o e-mail", o campo volta com o foco (quando existir) */
   const focarEmail = useRef(false);
+  // a marca do anúncio está na URL de agora; o cadastro pode levar minutos
+  useEffect(() => guardarOrigemDoClique(), []);
   useEffect(() => {
     if (!enviadoPara && focarEmail.current) {
       focarEmail.current = false;
@@ -83,6 +86,9 @@ export function CriarContaDaFamilia({
     setErro("");
     setJaTemConta(false);
     iniciar(async () => {
+      // a origem do anúncio (cookie do pixel, fbclid) vai junto: a conversão
+      // sai só quando o link do e-mail for aberto, talvez em outro aparelho
+      await completarOrigemAntesDeEnviar();
       const r = await criarContaDaFamilia({
         tipo, papel, festa, data, cidade, nome, email, senha, confirmacao, responsavel, termos, site,
       });
