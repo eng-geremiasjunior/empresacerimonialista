@@ -47,10 +47,16 @@ export const metadata: Metadata = {
     ],
     apple: "/apple-touch-icon.png",
   },
-  // verificação do domínio na Meta (06/10/2026): o Gerenciador de Negócios
-  // lê esta metatag na página inicial. É pública por natureza, não é segredo.
+  // verificação dos domínios na Meta (06/10/2026): o Gerenciador de Negócios
+  // lê a metatag na página inicial de cada domínio. Um código por domínio,
+  // e as duas em toda página — a Meta aceita várias e cada domínio confere
+  // a sua (a raiz do casamento. leva a /portal/entrar). Públicas por
+  // natureza, não são segredo.
   other: {
-    "facebook-domain-verification": "3j2iqe49tl636dqzx06bn3ra5b6rlj",
+    "facebook-domain-verification": [
+      "3j2iqe49tl636dqzx06bn3ra5b6rlj", // eorganizei.com.br
+      "cex7glxip8ojo7126ho7wbgivey85a", // casamento.eorganizei.com.br
+    ],
   },
 };
 
