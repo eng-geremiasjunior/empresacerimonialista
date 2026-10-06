@@ -8,9 +8,14 @@
 // A tela guarda a lista inteira e manda tudo de uma vez (portal_salvar_lista):
 // o banco confere quem pode (só o casal), os campos e os tamanhos. Os
 // outros da família veem a lista sem editar; os recebidos, só o casal.
+//
+// A foto própria (201, pedido dele em 05/10/2026): tocar no quadrado do
+// presente (ou no do "Outro presente") escolhe a foto, que sobe comprimida
+// direto para o balde 'site' por uma URL assinada e vale mais que a do
+// catálogo. O caminho vai com a lista quando ela é salva.
 
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   CATALOGO,
@@ -21,7 +26,13 @@ import {
 } from "@/lib/catalogo-de-presentes";
 import { VALOR_MINIMO, TAXA_DA_LISTA, contaRecebe, valoresDoPresente } from "@/lib/lista-presentes";
 import { formatarReais } from "@/lib/site-conteudo";
-import { salvarLista, type PresenteParaSalvar } from "@/app/(portal)/portal/[eventoId]/presentes/actions";
+import {
+  pedirEnvioDeFotoDoPresente,
+  salvarLista,
+  type PresenteParaSalvar,
+} from "@/app/(portal)/portal/[eventoId]/presentes/actions";
+import { comprimirFoto, validarArquivo } from "@/lib/portfolio";
+import { createClient } from "@/lib/supabase/client";
 import { Eyebrow, Icone } from "../../../primitivas";
 import { usePortalNoivos } from "../../../contexto";
 import { ContaQueRecebe } from "./ContaQueRecebe";
@@ -37,9 +48,13 @@ type Linha = {
   valor: string;
   quantidade: number;
   comprados: number;
+  /** a foto do casal: o caminho no balde 'site' */
+  foto: string | null;
 };
 
 const VALOR_MAXIMO = 50_000;
+/** o teto do balde 'site' (191) */
+const TETO_DA_FOTO = 3 * 1024 * 1024;
 const ORDEM_DAS_CATEGORIAS = new Map(CATEGORIAS.map((c, i) => [c.id, i]));
 const nomeDaCategoria = (id: string) => CATEGORIAS.find((c) => c.id === id)?.nome ?? "Outros";
 
@@ -87,11 +102,11 @@ function ordenar(linhas: Linha[]): Linha[] {
 function doCatalogo(codigo: string): Linha | null {
   const p = presenteDoCatalogo(codigo);
   if (!p) return null;
-  return { id: novoId(), codigo: p.codigo, categoria: p.categoria, titulo: p.titulo, valor: String(p.valor), quantidade: 1, comprados: 0 };
+  return { id: novoId(), codigo: p.codigo, categoria: p.categoria, titulo: p.titulo, valor: String(p.valor), quantidade: 1, comprados: 0, foto: null };
 }
 
 const fotografia = (l: { taxa: boolean; mensagem: string; linhas: Linha[] }) =>
-  JSON.stringify({ t: l.taxa, m: l.mensagem.trim(), i: l.linhas.map((x) => [x.id, x.titulo.trim(), x.valor.trim(), x.quantidade]) });
+  JSON.stringify({ t: l.taxa, m: l.mensagem.trim(), i: l.linhas.map((x) => [x.id, x.titulo.trim(), x.valor.trim(), x.quantidade, x.foto]) });
 
 export function TelaLista({ dados }: { dados: DadosDaTelaLista }) {
   const { base, avisar } = usePortalNoivos();
@@ -108,6 +123,7 @@ export function TelaLista({ dados }: { dados: DadosDaTelaLista }) {
         valor: centavosParaTexto(i.valorCentavos),
         quantidade: i.quantidade,
         comprados: i.comprados,
+        foto: i.foto,
       })),
     [dados.itens]
   );
@@ -142,7 +158,12 @@ export function TelaLista({ dados }: { dados: DadosDaTelaLista }) {
   }, [busca, categoria]);
 
   // o "outro presente" nasce na categoria que ela está olhando
-  const [outro, setOutro] = useState({ titulo: "", valor: "", categoria: CATEGORIAS[0].id });
+  const [outro, setOutro] = useState<{ titulo: string; valor: string; categoria: string; foto: string | null }>({
+    titulo: "",
+    valor: "",
+    categoria: CATEGORIAS[0].id,
+    foto: null,
+  });
   function escolherCategoria(id: string) {
     setCategoria(id);
     setOutro((o) => ({ ...o, categoria: id }));
@@ -169,9 +190,9 @@ export function TelaLista({ dados }: { dados: DadosDaTelaLista }) {
       return avisar(`O valor vai de ${formatarReais(VALOR_MINIMO * 100)} a ${formatarReais(VALOR_MAXIMO * 100)}`, true);
     setLinhas((x) => [
       ...x,
-      { id: novoId(), codigo: null, categoria: outro.categoria, titulo, valor: centavosParaTexto(c), quantidade: 1, comprados: 0 },
+      { id: novoId(), codigo: null, categoria: outro.categoria, titulo, valor: centavosParaTexto(c), quantidade: 1, comprados: 0, foto: outro.foto },
     ]);
-    setOutro((o) => ({ ...o, titulo: "", valor: "" }));
+    setOutro((o) => ({ ...o, titulo: "", valor: "", foto: null }));
   }
 
   const mudar = (id: string, campo: Partial<Linha>) => {
@@ -179,6 +200,49 @@ export function TelaLista({ dados }: { dados: DadosDaTelaLista }) {
     if (invalidas.has(id)) setInvalidas((s) => new Set([...s].filter((v) => v !== id)));
   };
   const tirar = (id: string) => setLinhas((x) => x.filter((l) => l.id !== id));
+
+  // ------------------------------------------------------------ a foto
+  // as recém-enviadas aparecem pela URL local até a assinada chegar
+  const [locais, setLocais] = useState<Record<string, string>>({});
+  const [enviandoFoto, setEnviandoFoto] = useState<string | null>(null);
+  const entradaDeFoto = useRef<HTMLInputElement>(null);
+  // a linha (id) ou o "outro" que vai receber a foto escolhida
+  const alvoDaFoto = useRef<string | null>(null);
+
+  const urlDaFoto = (l: { foto: string | null; codigo: string | null }) =>
+    (l.foto && (locais[l.foto] ?? dados.fotos[l.foto])) || fotoDoCatalogo(l.codigo);
+
+  function escolherFoto(alvo: string) {
+    if (enviandoFoto) return;
+    alvoDaFoto.current = alvo;
+    entradaDeFoto.current?.click();
+  }
+
+  async function enviarFoto(arquivo: File) {
+    const alvo = alvoDaFoto.current;
+    if (!alvo) return;
+    const invalido = validarArquivo(arquivo);
+    if (invalido) return avisar(`Essa foto não serve: ${invalido}`, true);
+    setEnviandoFoto(alvo);
+    try {
+      const blob = await comprimirFoto(arquivo, { ladoMaximo: 1200, sempreJpeg: true });
+      if (blob.type !== "image/jpeg" && blob.type !== "image/webp") return avisar("Use uma foto em JPG ou PNG", true);
+      if (blob.size > TETO_DA_FOTO) return avisar("A foto passou de 3 MB. Tente outra", true);
+      const pedido = await pedirEnvioDeFotoDoPresente(dados.eventoId);
+      if ("error" in pedido) return avisar(pedido.error, true);
+      const envio = await createClient()
+        .storage.from("site")
+        .uploadToSignedUrl(pedido.caminho, pedido.token, blob, { contentType: blob.type });
+      if (envio.error) return avisar("Não deu para enviar a foto. Tente de novo", true);
+      setLocais((m) => ({ ...m, [pedido.caminho]: URL.createObjectURL(blob) }));
+      if (alvo === "outro") setOutro((o) => ({ ...o, foto: pedido.caminho }));
+      else mudar(alvo, { foto: pedido.caminho });
+    } catch {
+      avisar("Não deu para enviar agora", true);
+    } finally {
+      setEnviandoFoto(null);
+    }
+  }
 
   // ------------------------------------------------------------ salvar
   function salvar(publicar: boolean) {
@@ -202,6 +266,7 @@ export function TelaLista({ dados }: { dados: DadosDaTelaLista }) {
         titulo,
         valor_centavos: c ?? 0,
         quantidade: Math.max(1, Math.min(50, l.quantidade)),
+        ...(l.foto ? { foto: l.foto } : {}),
       });
     }
     setInvalidas(erradas);
@@ -377,6 +442,20 @@ export function TelaLista({ dados }: { dados: DadosDaTelaLista }) {
                 <div className="pn-lista-outro">
                   <span className="pn-lista-rotulo">Outro presente</span>
                   <div className="pn-lista-outro-campos">
+                    <button
+                      type="button"
+                      className={`pn-lista-miniatura editavel${enviandoFoto === "outro" ? " enviando" : ""}`}
+                      aria-label={outro.foto ? "Trocar a foto do presente" : "Pôr uma foto no presente"}
+                      disabled={!!enviandoFoto}
+                      onClick={() => escolherFoto("outro")}
+                    >
+                      {outro.foto && locais[outro.foto] ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={locais[outro.foto]} alt="" />
+                      ) : (
+                        <Icone nome="add_photo_alternate" />
+                      )}
+                    </button>
                     <input
                       className="pn-lista-entrada"
                       value={outro.titulo}
@@ -423,18 +502,34 @@ export function TelaLista({ dados }: { dados: DadosDaTelaLista }) {
                 </h3>
                 <ul className="pn-lista-itens">
                   {itens.map((l) => {
-                    const foto = fotoDoCatalogo(l.codigo);
+                    const foto = urlDaFoto(l);
                     const errada = invalidas.has(l.id);
+                    const miniatura = foto ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={foto} alt="" loading="lazy" />
+                    ) : (
+                      l.titulo.trim().charAt(0).toUpperCase()
+                    );
                     return (
                       <li key={l.id} className="pn-lista-item">
-                        <span className="pn-lista-miniatura" aria-hidden="true">
-                          {foto ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={foto} alt="" loading="lazy" />
-                          ) : (
-                            l.titulo.trim().charAt(0).toUpperCase()
-                          )}
-                        </span>
+                        {podeEditar ? (
+                          <button
+                            type="button"
+                            className={`pn-lista-miniatura editavel${enviandoFoto === l.id ? " enviando" : ""}`}
+                            aria-label={foto ? `Trocar a foto de ${l.titulo}` : `Pôr uma foto em ${l.titulo}`}
+                            disabled={!!enviandoFoto}
+                            onClick={() => escolherFoto(l.id)}
+                          >
+                            {miniatura}
+                            <span className="pn-lista-miniatura-selo" aria-hidden="true">
+                              <Icone nome="add_photo_alternate" />
+                            </span>
+                          </button>
+                        ) : (
+                          <span className="pn-lista-miniatura" aria-hidden="true">
+                            {miniatura}
+                          </span>
+                        )}
                         {podeEditar ? (
                           <>
                             <div className="pn-lista-item-nome">
@@ -507,6 +602,22 @@ export function TelaLista({ dados }: { dados: DadosDaTelaLista }) {
               </div>
             ))}
           </div>
+
+          {podeEditar && (
+            <input
+              ref={entradaDeFoto}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+              hidden
+              tabIndex={-1}
+              aria-hidden="true"
+              onChange={(e) => {
+                const arquivo = e.target.files?.[0];
+                e.target.value = "";
+                if (arquivo) void enviarFoto(arquivo);
+              }}
+            />
+          )}
 
           {podeEditar && (
             <div className="pn-lista-salvar">

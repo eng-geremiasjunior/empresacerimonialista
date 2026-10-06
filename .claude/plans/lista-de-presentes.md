@@ -148,6 +148,26 @@ para a conta da noiva, e o link dela ele manda à mão, pelo WhatsApp.
   No celular, a conta que recebe sobe para o topo de Presentes enquanto
   pede ação. Prova: `ferramentas/sim/presentes-chamada-e2e.mjs`.
 
+## A foto própria no presente (05/10/2026, migração 201)
+
+Pedido dele: o casal cria o presente e não tinha como pôr a foto.
+
+- **Onde mora**: no balde 'site' (191), com o caminho das fotos do site
+  (`{evento}/{uuid}.jpg`) e o mesmo teto de 300 arquivos do evento. O
+  servidor emite a URL de envio assinada (`pedirEnvioDeFotoDoPresente`, só
+  o nível 'casal') e assina a de leitura (6 h) no portal e na página do
+  convidado; o banco guarda só o caminho (`evento_presente.foto`, conferido
+  por `site_foto_ok`).
+- **Banco (201)**: `portal_salvar_lista` aceita a chave `foto` (sem a
+  chave, a foto que estava fica); `portal_lista` e `lista_publica`
+  devolvem a foto. A regra da 200 continua.
+- **Tela**: o quadrado do presente virou botão, com o selo da câmera, e o
+  "Outro presente" ganhou o quadrado antes do nome; a foto sobe comprimida
+  (JPEG, até 1200 px) e vale mais que a do catálogo.
+- **Sem revisão**: vai ao ar com a lista, como o resto da lista.
+- Prova: `ferramentas/sim/foto-do-presente-e2e.mjs` (percebe se a 201
+  está aplicada; apaga as fotos do balde no fim).
+
 ## O que falta
 
 - Ele reaplicar a 197 revisada; depois, a prova do Pix na loja de teste.

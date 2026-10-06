@@ -14,6 +14,12 @@ import { contaRecebe, problemaNoCadastro, resumoDoBanco, type DadosDoRecebedor }
 import { criarRecebedor, lerRecebedor, linkDaProvaDeVida } from "@/lib/pagarme-lista";
 import { listaDePresentesLiberada } from "@/lib/supabase/portal-presentes";
 import { avisarDonoDaContaQueRecebe } from "@/lib/email-prova-de-vida";
+import {
+  TETO_DE_FOTOS_DO_SITE,
+  caminhoDoSiteValido,
+  contarFotosDoSite,
+  emitirEnvioDeFotoDoSite,
+} from "@/lib/supabase/assinar-midia-convite";
 
 type Retorno = { ok: true } | { error: string };
 
@@ -159,6 +165,8 @@ export type PresenteParaSalvar = {
   titulo: string;
   valor_centavos: number;
   quantidade: number;
+  /** a foto do casal (201): o caminho no balde 'site'. Ausente = a que já estava fica */
+  foto?: string | null;
 };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -198,7 +206,17 @@ export async function salvarLista(
     if (!Number.isInteger(quantidade) || quantidade < 1 || quantidade > 50) {
       return { error: `A quantidade de "${titulo}" vai de 1 a 50.` };
     }
-    limpos.push({ id: i.id, codigo: i.codigo, categoria: i.categoria, titulo, valor_centavos: valor, quantidade });
+    if (i.foto != null && !caminhoDoSiteValido(i.foto, eventoId)) return { error: "Lista inválida." };
+    limpos.push({
+      id: i.id,
+      codigo: i.codigo,
+      categoria: i.categoria,
+      titulo,
+      valor_centavos: valor,
+      quantidade,
+      // só vai quando tem: sem a 201 aplicada, a lista sem foto continua salvando
+      ...(i.foto ? { foto: i.foto } : {}),
+    });
   }
 
   if (!(await listaDePresentesLiberada(eventoId))) return { error: "A lista de presentes ainda não está disponível." };
@@ -220,6 +238,7 @@ export async function salvarLista(
     if (/sem permissão/.test(m)) return { error: "Só o casal pode mudar a lista." };
     if (/conta que recebe/.test(m)) return { error: "A lista vai ao ar depois que vocês cadastrarem a conta que recebe." };
     if (/repetido/.test(m)) return { error: "Há um presente repetido na lista. Recarregue a página." };
+    if (/campo desconhecido no presente: foto/.test(m)) return { error: "A foto do presente ainda não pode ser salva neste sistema." };
     if (/outro evento/.test(m)) return { error: "Lista inválida. Recarregue a página." };
     if (/valores_check/.test(m)) return { error: "Algum presente não foi aceito. Confira os nomes e os valores (de R$ 50 a R$ 50.000)." };
     if (/portal_salvar_lista/.test(m)) return { error: "A lista ainda não pode ser salva neste sistema." };
@@ -267,4 +286,37 @@ export async function provaDeVida(eventoId: string): Promise<{ url: string } | {
     return { manual: "O link da prova de vida chega por WhatsApp ou e-mail. Ele vale 20 minutos: abra assim que chegar." };
   }
   return { error: "Não foi possível falar com a Pagar.me agora. Tente de novo em instantes." };
+}
+
+// ---------------------------------------------------------------- a foto do presente
+
+/**
+ * A URL de envio de UMA foto de presente (201), no balde 'site' (191), com
+ * a forma das fotos do site: {evento}/{uuid}.jpg. Só o casal (quem salva a
+ * lista); o teto de arquivos do evento no balde é o mesmo do site. A tela
+ * sobe direto do navegador (uploadToSignedUrl) e guarda o caminho no
+ * presente, que vai com a lista em salvarLista.
+ */
+export async function pedirEnvioDeFotoDoPresente(
+  eventoId: string
+): Promise<{ ok: true; caminho: string; token: string } | { error: string }> {
+  if (typeof eventoId !== "string" || !UUID.test(eventoId)) return { error: "Lista inválida." };
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Entre de novo para enviar a foto." };
+  const [{ data: nivel }, { data: pode }] = await Promise.all([
+    supabase.rpc("portal_meu_nivel", { p_event_id: eventoId }),
+    supabase.rpc("portal_pode_fazer", { p_event_id: eventoId, p_area: "escrever" }),
+  ]);
+  if (nivel !== "casal" || pode !== true) return { error: "Só o casal pode mudar a lista." };
+  if (!(await listaDePresentesLiberada(eventoId))) return { error: "A lista de presentes ainda não está disponível." };
+
+  const total = await contarFotosDoSite(eventoId);
+  if (total === null) return { error: "Não foi possível enviar agora." };
+  if (total >= TETO_DE_FOTOS_DO_SITE) return { error: "O casamento chegou ao limite de fotos." };
+  const envio = await emitirEnvioDeFotoDoSite(eventoId);
+  if (!envio) return { error: "Não foi possível enviar agora." };
+  return { ok: true, caminho: envio.caminho, token: envio.token };
 }

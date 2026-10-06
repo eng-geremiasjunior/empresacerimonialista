@@ -11,6 +11,7 @@ import { ListaPublica, type ItemDaVitrine } from "@/components/lista-presentes/L
 import { temaDaLista } from "@/components/lista-presentes/tema";
 import { chavePublicaDaLista } from "@/lib/pagarme-lista";
 import { slugEhDoCatalogo } from "@/lib/catalogo-vivo";
+import { assinarCaminhosDoSite, caminhoDoSiteValido } from "@/lib/supabase/assinar-midia-convite";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,8 @@ type ListaDaRpc = {
     valor_centavos: number;
     quantidade: number;
     comprados: number;
+    /** a foto do casal (201): caminho no balde 'site'; ausente antes dela */
+    foto?: string | null;
   }[];
 };
 
@@ -93,14 +96,18 @@ export default async function ListaDePresentesPage({ params }: { params: { slug:
   // lista fora do ar: quem abriu vai para o site
   if (!lista) redirect(`/c/${slug}`);
 
-  const itens: ItemDaVitrine[] = (Array.isArray(lista.itens) ? lista.itens : []).map((i) => ({
+  const brutos = Array.isArray(lista.itens) ? lista.itens : [];
+  // a foto do casal vale mais que a do catálogo; o balde é privado, a URL
+  // sai assinada daqui (só as fotos dos presentes que a lista mostra)
+  const urls = await assinarCaminhosDoSite(brutos.map((i) => i.foto).filter((f): f is string => caminhoDoSiteValido(f)));
+  const itens: ItemDaVitrine[] = brutos.map((i) => ({
     id: String(i.id),
     categoria: String(i.categoria ?? ""),
     titulo: String(i.titulo ?? ""),
     valorCentavos: inteiro(i.valor_centavos, 0),
     quantidade: inteiro(i.quantidade, 1),
     comprados: inteiro(i.comprados, 0),
-    foto: fotoDoCatalogo(i.codigo),
+    foto: (i.foto && urls[i.foto]) || fotoDoCatalogo(i.codigo),
   }));
   const tema = temaDaLista(site);
   // a lista de exemplo do catálogo não recebe pagamento: no site de

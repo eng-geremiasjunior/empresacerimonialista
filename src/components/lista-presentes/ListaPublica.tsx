@@ -41,7 +41,7 @@ export type ItemDaVitrine = {
   valorCentavos: number;
   quantidade: number;
   comprados: number;
-  /** a foto do catálogo (/presentes/<código>.webp) ou nenhuma */
+  /** a foto do casal (201, URL assinada), a do catálogo (/presentes-catalogo/<código>.webp) ou nenhuma */
   foto: string | null;
 };
 

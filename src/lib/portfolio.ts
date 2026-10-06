@@ -36,10 +36,15 @@ export function validarArquivo(file: File): string | null {
 // Redimensiona para no máximo MAX_LADO no maior lado e reencoda em JPEG.
 // Se qualquer etapa falhar (formato exótico, canvas indisponível), devolve
 // o arquivo original — upload funcionando importa mais que compressão.
-export async function comprimirFoto(file: File): Promise<Blob> {
+// sempreJpeg: devolve o JPEG mesmo quando não ficou menor (o balde 'site'
+// só aceita JPEG e WebP; um PNG pequeno não pode passar como está).
+export async function comprimirFoto(
+  file: File,
+  opcoes?: { ladoMaximo?: number; sempreJpeg?: boolean }
+): Promise<Blob> {
   try {
     const bitmap = await createImageBitmap(file);
-    const escala = Math.min(1, MAX_LADO / Math.max(bitmap.width, bitmap.height));
+    const escala = Math.min(1, (opcoes?.ladoMaximo ?? MAX_LADO) / Math.max(bitmap.width, bitmap.height));
     const w = Math.round(bitmap.width * escala);
     const h = Math.round(bitmap.height * escala);
 
@@ -54,8 +59,8 @@ export async function comprimirFoto(file: File): Promise<Blob> {
     const blob = await new Promise<Blob | null>((resolve) =>
       canvas.toBlob(resolve, "image/jpeg", QUALIDADE)
     );
-    // Só troca se realmente ficou menor.
-    return blob && blob.size < file.size ? blob : file;
+    // Só troca se realmente ficou menor (ou se o JPEG é obrigatório).
+    return blob && (opcoes?.sempreJpeg || blob.size < file.size) ? blob : file;
   } catch {
     return file;
   }

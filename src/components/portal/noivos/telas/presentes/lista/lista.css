@@ -302,7 +302,8 @@
   gap: 8px;
   align-items: center;
 }
-.pn-lista-outro-campos > .pn-lista-entrada:first-child {
+/* o nome (o quadrado da foto vem antes dele, na mesma linha) */
+.pn-lista-outro-campos > input.pn-lista-entrada {
   flex: 1 1 200px;
 }
 .pn-lista-outro-campos > select.pn-lista-entrada {
@@ -362,6 +363,42 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+/* a foto própria (201): o quadrado vira botão, com o selo da câmera */
+.pn-lista .pn-lista-miniatura.editavel {
+  position: relative;
+  flex: none;
+  cursor: pointer;
+  transition: box-shadow 0.2s, opacity 0.2s;
+}
+.pn-lista .pn-lista-miniatura.editavel:hover:not(:disabled) {
+  box-shadow: 0 0 0 2px var(--pn-pessego);
+}
+.pn-lista .pn-lista-miniatura.editavel:disabled {
+  cursor: default;
+}
+.pn-lista .pn-lista-miniatura.enviando {
+  opacity: 0.45;
+  cursor: progress;
+}
+.pn-lista-miniatura.editavel > .pn-ic {
+  font-size: 22px;
+  color: var(--pn-verde);
+}
+.pn-lista-miniatura-selo {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--pn-verde);
+  display: grid;
+  place-items: center;
+}
+.pn-lista-miniatura-selo .pn-ic {
+  font-size: 14px;
 }
 .pn-lista-item-nome {
   display: flex;

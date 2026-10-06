@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getContatoCerimonialista } from "@/lib/supabase/portal";
 import { getMeuAcesso } from "@/lib/supabase/portal-estilo";
 import { getRecebedor, type RecebedorDoEvento } from "@/lib/supabase/portal-presentes";
+import { assinarCaminhosDoSite, caminhoDoSiteValido } from "@/lib/supabase/assinar-midia-convite";
 import { publicBase } from "@/lib/app-url";
 import { hojeBR, somarDias } from "@/lib/tempo";
 
@@ -21,6 +22,8 @@ export type PresenteDaLista = {
   quantidade: number;
   /** quantos já foram pagos (não deixa a quantidade descer abaixo disso) */
   comprados: number;
+  /** a foto do casal (201): o caminho no balde 'site'; null = a do catálogo ou a inicial */
+  foto: string | null;
 };
 
 export type PresenteRecebido = {
@@ -56,6 +59,8 @@ export type DadosDaTelaLista = {
   site: { publicado: boolean };
   /** o endereço da lista para os convidados (existe com o site tendo endereço) */
   link: string | null;
+  /** caminho da foto do casal → URL assinada (6 h) */
+  fotos: Record<string, string>;
 };
 
 type ListaDaRpc = {
@@ -69,6 +74,8 @@ type ListaDaRpc = {
     quantidade: number;
     ordem: number;
     comprados: number;
+    /** 201; ausente antes dela */
+    foto?: string | null;
   }[];
 } | null;
 
@@ -139,6 +146,8 @@ export async function getListaDoCasal(eventoId: string): Promise<DadosDaTelaList
 
   const site = siteBruto as { slug: string | null; publicado: boolean | null } | null;
   const slug = (site?.slug ?? "").trim() || null;
+  const fotoDo = (f: string | null | undefined) => (caminhoDoSiteValido(f, eventoId) ? f : null);
+  const fotos = await assinarCaminhosDoSite((salvo?.itens ?? []).map((i) => fotoDo(i.foto)).filter((f): f is string => !!f));
 
   return {
     eventoId,
@@ -162,6 +171,7 @@ export async function getListaDoCasal(eventoId: string): Promise<DadosDaTelaList
       valorCentavos: i.valor_centavos,
       quantidade: i.quantidade,
       comprados: Number(i.comprados) || 0,
+      foto: fotoDo(i.foto),
     })),
     // a RLS devolve vazio a quem não é do casal: aí a tela não mostra o bloco
     recebidos: ehCasal
@@ -179,5 +189,6 @@ export async function getListaDoCasal(eventoId: string): Promise<DadosDaTelaList
     recebedor,
     site: { publicado: site?.publicado === true && !!slug },
     link: slug ? `${publicBase()}/c/${slug}/presentes` : null,
+    fotos,
   };
 }
