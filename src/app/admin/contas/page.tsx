@@ -317,7 +317,17 @@ export default async function AdminContasPage({
   const agoraPor = await getAgoraDasContas();
   // a mesma pessoa com várias contas (07/10/2026): só na aba de clientes;
   // leitura que falha não derruba a lista
-  const semelhantes = f.grupo === "clientes" ? await getContasSemelhantes().catch(() => []) : [];
+  let semelhantes: Awaited<ReturnType<typeof getContasSemelhantes>> = [];
+  let erroSemelhantes: string | null = null;
+  if (f.grupo === "clientes") {
+    try {
+      semelhantes = await getContasSemelhantes();
+    } catch (e) {
+      // a lista segue; o aviso diz por que o bloco não veio
+      erroSemelhantes = e instanceof Error ? e.message : String(e);
+      console.error("[eorganizei:admin] contas semelhantes:", erroSemelhantes);
+    }
+  }
 
   return (
     <div data-adm-secao="contas" className="flex flex-col gap-4">
@@ -332,7 +342,11 @@ export default async function AdminContasPage({
 
       {abas}
 
-      <ContasSemelhantes grupos={semelhantes} />
+      {erroSemelhantes ? (
+        <Aviso>Não foi possível montar as contas semelhantes: {erroSemelhantes}</Aviso>
+      ) : (
+        <ContasSemelhantes grupos={semelhantes} />
+      )}
 
       <BarraDeFiltros f={f} doGrupo={doGrupo} agora={agora} />
 
