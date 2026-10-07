@@ -39,6 +39,7 @@
 import { cookies, headers } from "next/headers";
 import { createClient as createServico } from "@supabase/supabase-js";
 import { registrarConversao } from "@/lib/conversoes";
+import { emailMascarado } from "@/lib/contas-semelhantes";
 import { COOKIE_ORIGEM } from "@/lib/marketing";
 import { portaoDoTeste } from "@/lib/supabase/teste-gratis";
 import { normalizarDDI } from "@/lib/whatsapp-link";
@@ -213,6 +214,56 @@ function conferirDados(dados: DadosDoCadastro): { error: string } | Conferidos {
 }
 
 /**
+ * Uma conta por pessoa (07/10/2026): o mesmo navegador (o cookie do pixel
+ * ou o client_id do GA4 que o cadastro guardou) ou o mesmo WhatsApp de uma
+ * conta ATIVA barram a conta nova. Só os sinais fortes — IP sozinho não
+ * (casal, escritório, wi-fi de café). Contas da casa e de família não
+ * contam, e a encerrada também não. Devolve o e-mail mascarado da conta
+ * que já existe, ou null.
+ */
+async function contaAtivaSemelhante(db: ReturnType<typeof servico>, whatsapp: string): Promise<string | null> {
+  try {
+    const o = lerOrigemDoCookie();
+    // o cookie vem do navegador: só o formato de um id entra no filtro
+    const limpo = (v: string | undefined) => (v && /^[A-Za-z0-9._-]{6,300}$/.test(v) ? v : null);
+    const fbp = limpo(o?.fbp);
+    const ga = limpo(o?.ga_client_id);
+    const [porZap, porNavegador, casa] = await Promise.all([
+      db.from("membros_equipe").select("empresa_id").eq("is_owner", true).eq("whatsapp", whatsapp),
+      fbp || ga
+        ? db
+            .from("origem_do_clique")
+            .select("empresa_id")
+            .or([fbp ? `fbp.eq."${fbp}"` : null, ga ? `ga_client_id.eq."${ga}"` : null].filter(Boolean).join(","))
+        : Promise.resolve({ data: [] as { empresa_id: string }[] }),
+      db.from("contas_da_casa").select("empresa_id"),
+    ]);
+    const fora = new Set(((casa.data ?? []) as { empresa_id: string }[]).map((r) => r.empresa_id));
+    const ids = [
+      ...new Set(
+        [...((porZap.data ?? []) as { empresa_id: string }[]), ...((porNavegador.data ?? []) as { empresa_id: string }[])]
+          .map((r) => r.empresa_id)
+          .filter((id) => !fora.has(id))
+      ),
+    ];
+    if (ids.length === 0) return null;
+    const { data: empresas } = await db.from("empresas").select("id, tipo, owner_user_id").in("id", ids);
+    for (const e of (empresas ?? []) as { id: string; tipo: string | null; owner_user_id: string | null }[]) {
+      if (e.tipo === "familia" || !e.owner_user_id) continue;
+      const { data: u } = await db.auth.admin.getUserById(e.owner_user_id);
+      const banida = (u?.user as unknown as { banned_until?: string | null } | undefined)?.banned_until;
+      if (banida && new Date(banida).getTime() > Date.now()) continue;
+      return emailMascarado(u?.user?.email) ?? "";
+    }
+    return null;
+  } catch (e) {
+    // a checagem nunca impede um cadastro legítimo por falha dela mesma
+    console.error("[eorganizei:cadastro] conta semelhante:", String(e).slice(0, 120));
+    return null;
+  }
+}
+
+/**
  * A CONTA: login já confirmado (`email_confirm: true` entrega a sessão na
  * hora), empresa pelo gatilho de signup, WhatsApp na ficha da dona. Nada
  * de assinatura aqui — isso é de quem chama.
@@ -221,6 +272,18 @@ async function abrirConta(
   db: ReturnType<typeof servico>,
   d: Conferidos
 ): Promise<{ error: string; jaTemConta?: boolean } | { userId: string; empresaId: string }> {
+  const repetida = await contaAtivaSemelhante(db, d.whatsapp);
+  if (repetida !== null) {
+    return {
+      // tom impessoal de propósito (dono, 07/10/2026)
+      error:
+        "Identificamos uma conta já existente vinculada a este dispositivo ou WhatsApp" +
+        (repetida ? ` (${repetida})` : "") +
+        ". Somente 1 conta é permitida por usuário. Acesse a conta existente.",
+      jaTemConta: true,
+    };
+  }
+
   const { data: criada, error: erroCriar } = await db.auth.admin.createUser({
     email: d.email,
     password: d.senha,

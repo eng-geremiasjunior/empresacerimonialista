@@ -35,6 +35,8 @@ import { TabelaContas } from "./TabelaContas";
 import type { OpcaoDePlano } from "./EditorAssinatura";
 import { ListaDeContas } from "./ListaDeContas";
 import { ListaDoPortal } from "./ListaDoPortal";
+import { ContasSemelhantes } from "./ContasSemelhantes";
+import { getContasSemelhantes } from "@/lib/supabase/admin-semelhantes";
 
 export const dynamic = "force-dynamic";
 
@@ -313,6 +315,9 @@ export default async function AdminContasPage({
   const doGrupo = f.grupo === "casa" ? casa : clientes;
   const filtradas = ordenarContas(filtrarContas(todas, f, agora), f.ordem, agora);
   const agoraPor = await getAgoraDasContas();
+  // a mesma pessoa com várias contas (07/10/2026): só na aba de clientes;
+  // leitura que falha não derruba a lista
+  const semelhantes = f.grupo === "clientes" ? await getContasSemelhantes().catch(() => []) : [];
 
   return (
     <div data-adm-secao="contas" className="flex flex-col gap-4">
@@ -326,6 +331,8 @@ export default async function AdminContasPage({
       />
 
       {abas}
+
+      <ContasSemelhantes grupos={semelhantes} />
 
       <BarraDeFiltros f={f} doGrupo={doGrupo} agora={agora} />
 

@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { Building2, Eye, EyeOff, Lock, Mail, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { contaCriada, guardarOrigemDoClique } from "@/lib/marketing";
+import { recadoDaContaSuspensa } from "@/app/login/suspensa-actions";
 
 const inputClass =
   "w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-10 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100";
@@ -95,6 +96,14 @@ export function LoginForm({
         email,
         password,
       });
+      if (error?.code === "user_banned") {
+        // a conta foi suspensa (ou encerrada por repetir outra): dizer qual
+        // é a ativa em vez de "senha incorreta"
+        const recado = await recadoDaContaSuspensa(email, password);
+        setError(recado ?? "E-mail ou senha incorretos.");
+        setLoading(false);
+        return;
+      }
       if (error) {
         setError(
           error.code === "email_not_confirmed"

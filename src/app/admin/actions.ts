@@ -18,6 +18,7 @@ import {
   salvarPortaoDoTesteDb,
 } from "@/lib/supabase/admin-painel";
 import { prorrogarTesteDb, salvarNotaDb } from "@/lib/supabase/admin-contas";
+import { encerrarSemelhantesDb } from "@/lib/supabase/admin-semelhantes";
 import {
   type EmailDoPainel,
   enviarEmailDaContaDb,
@@ -128,6 +129,19 @@ export async function definirBanimento(
     return {
       error: e instanceof Error ? e.message : "Não foi possível alterar.",
     };
+  }
+}
+
+/** "Manter esta e encerrar as outras" — o grupo é relido no servidor. */
+export async function encerrarSemelhantes(manter: string): Promise<ResultadoAdmin & { encerradas?: number }> {
+  try {
+    if (!manter) return { error: "Conta inválida." };
+    const { encerradas } = await encerrarSemelhantesDb(manter);
+    revalidarPainel();
+    return { ok: true, encerradas };
+  } catch (e) {
+    console.error("[vela:admin] encerrarSemelhantes:", e);
+    return { error: e instanceof Error ? e.message : "Não foi possível encerrar." };
   }
 }
 

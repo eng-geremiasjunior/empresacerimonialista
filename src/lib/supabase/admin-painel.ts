@@ -181,6 +181,7 @@ export type AcaoDoPainel =
   | "teste_prorrogado"
   | "conta_suspensa"
   | "conta_reativada"
+  | "contas_semelhantes_encerradas"
   | "conta_da_casa"
   | "conta_de_cliente"
   | "portao_do_teste"

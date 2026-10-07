@@ -5,6 +5,7 @@ export const ACOES_DA_AUDITORIA: Record<string, string> = {
   teste_prorrogado: "prorrogou o teste",
   conta_suspensa: "suspendeu a conta",
   conta_reativada: "reativou a conta",
+  contas_semelhantes_encerradas: "manteve uma conta e encerrou as semelhantes",
   conta_da_casa: "moveu para as contas da casa",
   conta_de_cliente: "voltou a conta para clientes",
   portao_do_teste: "mudou o portão do teste grátis",
