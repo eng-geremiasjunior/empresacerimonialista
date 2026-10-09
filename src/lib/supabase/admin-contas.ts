@@ -15,6 +15,7 @@ import {
   tabelaAusente,
 } from "@/lib/supabase/admin-painel";
 import { todosOsLogins } from "@/lib/supabase/admin-logins";
+import { lerPortalDetalhado, type PortalDetalhado } from "@/lib/supabase/admin-portal";
 import type { ResumoDaConta } from "@/lib/admin/saude-da-conta";
 import { checkoutDasLinhas } from "@/lib/etapas-da-assinatura";
 import { hojeBR, somarDias } from "@/lib/tempo";
@@ -145,6 +146,8 @@ export type ContaDoPortal = {
   criadaEm: string;
   ultimoLogin: string | null;
   situacao: SituacaoNoPortal;
+  /** ao vivo, uso por tela, origem e o que já construiu (08/10/2026) */
+  detalhe: PortalDetalhado | null;
 };
 
 type FestaPendente = { festa?: unknown; data?: unknown; tipo?: unknown; cidade?: unknown; nome?: unknown; papel?: unknown };
@@ -166,18 +169,25 @@ export async function getContasDoPortal(): Promise<LeituraDoPainel<ContaDoPortal
     const ids = empresas.map((e) => e.id);
     const [{ data: eventos, error: e1 }, { data: acessos, error: e2 }] = ids.length
       ? await Promise.all([
-          db.from("events").select("empresa_id, type, date, city").in("empresa_id", ids).eq("exemplo", false).order("date"),
+          db.from("events").select("id, empresa_id, type, date, city").in("empresa_id", ids).eq("exemplo", false).order("date"),
           db.from("evento_acesso").select("empresa_id, user_id, nome, papel").in("empresa_id", ids),
         ])
       : [{ data: [], error: null }, { data: [], error: null }];
     if (e1 || e2) throw new Error((e1 ?? e2)?.message ?? "leitura");
 
-    type Evento = { empresa_id: string; type: string | null; date: string | null; city: string | null };
+    type Evento = { id: string; empresa_id: string; type: string | null; date: string | null; city: string | null };
     type Acesso = { empresa_id: string; user_id: string | null; nome: string | null; papel: string | null };
     const eventoPor = new Map<string, Evento>();
     for (const ev of (eventos ?? []) as Evento[]) if (!eventoPor.has(ev.empresa_id)) eventoPor.set(ev.empresa_id, ev);
     const loginPor = new Map(logins.map((u) => [u.id, u]));
     const agora = Date.now();
+    const detalhes = await lerPortalDetalhado(
+      db,
+      empresas.map((e) => ({ empresaId: e.id, userId: e.owner_user_id, eventoId: eventoPor.get(e.id)?.id ?? null }))
+    ).catch((err) => {
+      console.error("[eorganizei:admin] detalhe do portal:", String(err).slice(0, 120));
+      return new Map<string, PortalDetalhado>();
+    });
 
     const contas: ContaDoPortal[] = empresas.map((e) => {
       const u = loginPor.get(e.owner_user_id);
@@ -197,6 +207,7 @@ export async function getContasDoPortal(): Promise<LeituraDoPainel<ContaDoPortal
         criadaEm: e.created_at,
         ultimoLogin: u?.last_sign_in_at ?? null,
         situacao: banidoAte && new Date(banidoAte).getTime() > agora ? "suspensa" : "aberta",
+        detalhe: detalhes.get(e.id) ?? null,
       };
     });
 
@@ -220,6 +231,7 @@ export async function getContasDoPortal(): Promise<LeituraDoPainel<ContaDoPortal
         criadaEm: u.created_at,
         ultimoLogin: u.last_sign_in_at ?? null,
         situacao: u.email_confirmed_at ? "nasce_no_primeiro_login" : "esperando_email",
+        detalhe: null,
       });
     }
 

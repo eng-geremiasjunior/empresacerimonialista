@@ -55,10 +55,43 @@ const RAIZ: Record<string, string> = {
   tarefas: "Tarefas",
 };
 
+// As telas do portal dos noivos e da família (08/10/2026: o dono quer ver
+// no painel "se está online, mexendo no que, construindo o quê").
+const TELA_DO_PORTAL: Record<string, string> = {
+  agenda: "Agenda",
+  cerimonialista: "Cerimonialista",
+  convidados: "Convidados",
+  convite: "Convite",
+  cortejo: "Cortejo",
+  cronograma: "Roteiro",
+  documentos: "Documentos",
+  escolhas: "Escolhas",
+  fornecedores: "Fornecedores",
+  "guia-estilo": "Guia de estilo",
+  informacoes: "Informações",
+  inspiracoes: "Inspirações",
+  investimento: "Orçamento",
+  "linha-do-tempo": "Linha do tempo",
+  mesas: "Mesas",
+  pagamentos: "Pagamentos",
+  perguntas: "Perguntas",
+  planejamento: "Planejamento",
+  presentes: "Lista de presentes",
+  "prestacao-de-contas": "Prestação de contas",
+  site: "Site",
+  tarefas: "Tarefas",
+  trilha: "Trilha",
+};
+
 /** O nome da área de uma rota do app, sem nenhum id. */
 export function areaDaRota(pathname: string): string {
   const [a, b, c] = pathname.split(/[?#]/)[0].split("/").filter(Boolean);
   if (!a) return "Início";
+  if (a === "portal") {
+    // /portal/<evento>/<tela>: o id do evento nunca vai no nome
+    if (!b || !/^[0-9a-f-]{20,}$/i.test(b)) return "Portal › Entrada";
+    return `Portal › ${c ? (TELA_DO_PORTAL[c] ?? "Outra tela") : "Início"}`;
+  }
   if (a === "eventos") {
     if (!b) return "Eventos";
     if (b === "dashboard") return "Dashboard";

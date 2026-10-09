@@ -77,7 +77,16 @@ export type FamiliaPendente = {
    * nada de pessoa. A conversão sai na confirmação, às vezes em outro
    * aparelho, e é com isto que a Meta sabe de qual anúncio ela veio.
    */
-  origem?: { fbp: string | null; fbc: string | null; ga: string | null } | null;
+  origem?: {
+    fbp: string | null;
+    fbc: string | null;
+    ga: string | null;
+    /** a campanha (08/10/2026): o painel mostra de onde o casal veio */
+    utm_source?: string | null;
+    utm_medium?: string | null;
+    utm_campaign?: string | null;
+    utm_content?: string | null;
+  } | null;
 };
 
 /** O cookie que o navegador gravou (lib/marketing): só os três ids do clique. */
@@ -87,8 +96,16 @@ function origemDoClique(): FamiliaPendente["origem"] {
     if (!cru) return null;
     const o = JSON.parse(cru) as Record<string, unknown>;
     const pegar = (k: string) => (typeof o[k] === "string" && (o[k] as string).trim() ? (o[k] as string).slice(0, 300) : null);
-    const origem = { fbp: pegar("fbp"), fbc: pegar("fbc"), ga: pegar("gaClientId") };
-    return origem.fbp || origem.fbc || origem.ga ? origem : null;
+    const origem = {
+      fbp: pegar("fbp"),
+      fbc: pegar("fbc"),
+      ga: pegar("gaClientId"),
+      utm_source: pegar("utm_source"),
+      utm_medium: pegar("utm_medium"),
+      utm_campaign: pegar("utm_campaign"),
+      utm_content: pegar("utm_content"),
+    };
+    return Object.values(origem).some(Boolean) ? origem : null;
   } catch {
     return null;
   }

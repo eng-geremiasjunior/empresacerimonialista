@@ -76,6 +76,33 @@ export async function GET() {
 
   if (typeof eventoId !== "string" || jaNasceu) redirect("/portal");
 
+  // a origem do clique vai para a mesma tabela da cerimonialista (152), na
+  // empresa de família que acabou de nascer: o painel do dono mostra de
+  // onde o casal veio (08/10/2026). Falhar aqui não segura a conta.
+  try {
+    const { data: ev } = await db.from("events").select("empresa_id").eq("id", eventoId).maybeSingle();
+    const empresaId = (ev as { empresa_id?: string } | null)?.empresa_id;
+    if (empresaId) {
+      await db.from("origem_do_clique").upsert(
+        {
+          empresa_id: empresaId,
+          fbp: p.origem?.fbp ?? null,
+          fbc: p.origem?.fbc ?? null,
+          ga_client_id: p.origem?.ga ?? null,
+          utm_source: p.origem?.utm_source ?? null,
+          utm_medium: p.origem?.utm_medium ?? null,
+          utm_campaign: p.origem?.utm_campaign ?? null,
+          utm_content: p.origem?.utm_content ?? null,
+          ip: p.ip,
+          user_agent: p.user_agent,
+        },
+        { onConflict: "empresa_id", ignoreDuplicates: true }
+      );
+    }
+  } catch {
+    console.error("[eorganizei:familia] origem do clique não gravada");
+  }
+
   // A conversão (06/10/2026): a conta nasceu AGORA, não no formulário —
   // cadastro que nunca abre o link não é conta. Pelo servidor, com a origem
   // do anúncio guardada no cadastro; o pixel do navegador manda o mesmo id

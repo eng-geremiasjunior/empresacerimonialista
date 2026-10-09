@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { EB_Garamond, Jost } from "next/font/google";
 import "./portal.css";
 import "./portal-v2.css";
+import { Presenca } from "@/components/Presenca";
 
 // As duas famílias do portal, e nenhuma terceira. A EB Garamond faz o
 // gesto (nome do evento, títulos, números); a Jost desaparece atrás da
@@ -35,6 +36,12 @@ export default function PortalRootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className={`${garamond.variable} ${jost.variable}`}>{children}</div>
+    <div className={`${garamond.variable} ${jost.variable}`}>
+      {children}
+      {/* o sinal de "estou aqui" (08/10/2026): o painel do dono vê o casal
+          ao vivo e o uso por tela, como já via a cerimonialista. Sem sessão
+          (portas de entrar) ou sem vínculo de equipe, o banco ignora */}
+      <Presenca />
+    </div>
   );
 }
