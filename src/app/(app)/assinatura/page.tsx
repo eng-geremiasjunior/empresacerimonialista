@@ -167,7 +167,24 @@ export default async function AssinaturaPage({
           }
         : null;
 
+  // a conta marcada pelo dono por abuso do gratuito (09/10/2026): o recado
+  // é impessoal de propósito — é o sistema que detectou, não uma pessoa
+  const exigida = Boolean((user?.app_metadata as { exige_assinatura?: unknown } | undefined)?.exige_assinatura);
+
   return (
+    <>
+    {exigida && (
+      <div
+        role="alert"
+        className="mx-auto mb-6 max-w-3xl rounded-lg border border-[#e2c9c9] bg-[#fbf3f3] px-5 py-4 text-[14px] leading-relaxed text-[#6b2c2c]"
+      >
+        <p className="font-semibold">Nosso sistema detectou o uso de mais de 1 evento no plano gratuito.</p>
+        <p className="mt-1">
+          O plano gratuito permite 1 evento por conta. Para continuar utilizando o eorganizei, assine um dos planos
+          abaixo.
+        </p>
+      </div>
+    )}
     <AssinaturaTela
       estado={estado}
       planos={planos}
@@ -181,5 +198,6 @@ export default async function AssinaturaPage({
       cobrancaRecusada={operadoraRecusou(linha?.observacao)}
       cancelamentoPendente={pediuCancelar(linha?.observacao)}
     />
+    </>
   );
 }

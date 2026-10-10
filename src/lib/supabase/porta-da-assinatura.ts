@@ -73,9 +73,17 @@ export async function precisaAssinar(): Promise<boolean> {
   // dela, que a RLS já limita.
   const { data, error } = await supabase.from("assinaturas").select("*").maybeSingle();
 
+  // A conta que o dono marcou por abuso do gratuito (09/10/2026: montava o
+  // evento inteiro, apagava e começava outro): só entra assinando. A marca
+  // mora em app_metadata, que só o servidor escreve.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const exigida = Boolean((user?.app_metadata as { exige_assinatura?: unknown } | undefined)?.exige_assinatura);
+
   if (error) return false;
   // sem linha = o plano Gratuito (23/09/2026)
-  if (!data) return false;
+  if (!data) return exigida;
 
   const linha = data as {
     status?: string | null;
@@ -88,6 +96,8 @@ export async function precisaAssinar(): Promise<boolean> {
   };
   if (linha.status === "ativa" || linha.status === "pausada") return false;
   if (linha.ultimo_pagamento_em) return false;
+  // marcada pelo dono: teste e gratuito não bastam, só pagamento
+  if (exigida) return true;
   if (linha.status === "trial" && testeVivo(linha.teste_termina_em ?? null)) return false;
   // O TESTE COM CARTÃO (21/09/2026): no dia da primeira cobrança é a
   // operadora quem decide, e ela decide ao longo do dia — o aviso chega

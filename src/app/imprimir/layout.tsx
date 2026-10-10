@@ -9,7 +9,11 @@
 // (impressora de recepção de hotel): o "e" sai em cinza escuro no papel.
 
 import type { ReactNode } from "react";
+import Link from "next/link";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { getMeuCargo } from "@/lib/supabase/equipe";
+import { situacaoDoPlano } from "@/app/(app)/planos-actions";
 import { Simbolo, Palavra } from "@/components/marca/Marca";
 
 const CSS = `
@@ -59,8 +63,68 @@ async function nomeDaEmpresa(): Promise<string | null> {
   }
 }
 
+// As folhas impressas, por nome (o uso da conta mostra "Impressão › Roteiro").
+const FOLHA: Record<string, string> = {
+  roteiro: "Roteiro",
+  chamada: "Cortejo",
+  mesas: "Mesas",
+  musica: "Música",
+  operacao: "Operação",
+  prestacao: "Prestação de contas",
+  separacao: "Separação",
+};
+
+/**
+ * Imprimir é dos planos pagos (dono, 09/10/2026). Quem está em teste ou
+ * pagando imprime; a conta de família (o portal dos noivos, que é gratuito
+ * por definição) também. Na dúvida (sem sessão, leitura que falhou), não
+ * tranca: falta de informação nunca vira folha bloqueada.
+ */
+async function podeImprimir(): Promise<boolean> {
+  try {
+    const { empresaId } = await getMeuCargo();
+    if (!empresaId) return true;
+    const supabase = createClient();
+    const { data: emp } = await supabase.from("empresas").select("tipo").eq("id", empresaId).maybeSingle();
+    if ((emp as { tipo?: string | null } | null)?.tipo === "familia") return true;
+    const plano = await situacaoDoPlano();
+    if (!plano) return true;
+    return plano.pagante || plano.testando;
+  } catch {
+    return true;
+  }
+}
+
+/** Abrir a folha conta no uso da conta (antes não deixava rastro). */
+async function registrarFolha(): Promise<void> {
+  try {
+    const caminho = headers().get("x-caminho") ?? "";
+    const folha = FOLHA[caminho.split("/").filter(Boolean)[1] ?? ""] ?? "Outra folha";
+    await createClient().rpc("registrar_presenca", { p_area: `Impressão › ${folha}`, p_abriu: true });
+  } catch {
+    /* o registro nunca segura a folha */
+  }
+}
+
 export default async function MolduraDasFolhas({ children }: { children: ReactNode }) {
-  const empresa = await nomeDaEmpresa();
+  const [empresa, pode] = await Promise.all([nomeDaEmpresa(), podeImprimir(), registrarFolha()]);
+  if (!pode) {
+    return (
+      <div className="imp-moldura-topo" style={{ display: "block", maxWidth: 560, margin: "60px auto", padding: "0 24px" }}>
+        <p style={{ fontSize: 18, fontWeight: 700, color: "#1c1917" }}>Impressão disponível nos planos pagos</p>
+        <p style={{ marginTop: 8, fontSize: 14, lineHeight: 1.6, color: "#57534e" }}>
+          O plano gratuito não inclui a impressão das folhas do evento. Assine um dos planos para imprimir o roteiro,
+          a prancheta, o cortejo, as mesas e as demais folhas.
+        </p>
+        <Link
+          href="/assinatura"
+          style={{ display: "inline-block", marginTop: 16, padding: "10px 16px", borderRadius: 8, background: "#1c1917", color: "#fff", fontSize: 14, fontWeight: 600, textDecoration: "none" }}
+        >
+          Ver os planos
+        </Link>
+      </div>
+    );
+  }
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
