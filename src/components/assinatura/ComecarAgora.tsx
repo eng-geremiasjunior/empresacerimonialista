@@ -46,6 +46,7 @@ import {
 } from "@/components/assinatura/DadosDeCobranca";
 import { C, CSS_ASSINATURA, F_MONO, F_TITLE, F_UI } from "@/components/assinatura/estilo-assinatura";
 import { Simbolo } from "@/components/marca/Marca";
+import { ConfiraSeuEmail } from "@/components/auth/ConfiraSeuEmail";
 
 export type OfertaDoCheckout = {
   planoCodigo: string;
@@ -75,6 +76,8 @@ export function ComecarAgora({ oferta }: { oferta: OfertaDoCheckout }) {
   const [erro, setErro] = useState<string | null>(null);
   const [jaTemConta, setJaTemConta] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  // a conta nasceu e o link de confirmação foi para este e-mail (12/10/2026)
+  const [confirmar, setConfirmar] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   // A origem do clique (o anúncio de onde ela veio) mora num cookie que o
@@ -179,6 +182,13 @@ export function ComecarAgora({ oferta }: { oferta: OfertaDoCheckout }) {
       assinaturaFeita(oferta.planoCodigo, r.valor ?? oferta.precoAgora, r.idDoEvento);
     }
 
+    // a conta nova só abre pelo link do e-mail
+    if (r && "confirmarEmail" in r && r.confirmarEmail) {
+      setConfirmar(r.confirmarEmail);
+      setEnviando(false);
+      return;
+    }
+
     // A sessão nasce aqui, com a senha que ela acabou de escolher —
     // é o que a leva ao painel sem passar por tela de login.
     const supabase = createClient();
@@ -200,6 +210,8 @@ export function ComecarAgora({ oferta }: { oferta: OfertaDoCheckout }) {
       router.refresh();
     });
   }
+
+  if (confirmar) return <ConfiraSeuEmail email={confirmar} />;
 
   const etapas = ["Sua conta", "Endereço", "Pagamento"];
 

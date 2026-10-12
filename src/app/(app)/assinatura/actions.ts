@@ -11,7 +11,8 @@ import { revalidatePath } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServico } from "@supabase/supabase-js";
-import { documentoValido } from "@/lib/documento";
+import { documentoValido, soDigitos } from "@/lib/documento";
+import { DOCUMENTO_JA_USADO, documentoJaUsado, gravarDocumento } from "@/lib/supabase/documento-da-empresa";
 import { cepValido, telefoneValido, ufValida } from "@/lib/contato";
 import {
   atualizarCliente,
@@ -36,6 +37,8 @@ import {
 } from "@/lib/planos";
 import { registrarConversao } from "@/lib/conversoes";
 import { COOKIE_ORIGEM } from "@/lib/marketing";
+import { navegadorDoCookie, recusaDoCadastro } from "@/lib/bloqueios-de-cadastro";
+import { idDoLoginNaoConfirmado, mandarConfirmacaoDoCadastro } from "@/lib/supabase/confirmacao-de-cadastro";
 import { hojeBR } from "@/lib/tempo";
 import { TERMOS_VERSAO } from "@/lib/termos";
 import { CANCELAMENTO_PENDENTE } from "@/lib/assinatura/marcadores";
@@ -48,6 +51,8 @@ export type ResultadoAssinatura = {
   valor?: number;
   /** o pedido foi registrado, mas a operadora ainda não confirmou (a rotina diária insiste) */
   pendente?: boolean;
+  /** a conta nasceu sem confirmar e o link foi para este e-mail (12/10/2026) */
+  confirmarEmail?: string;
 };
 
 /** Um aviso no sino da dona da conta. Nunca lança. */
@@ -261,10 +266,9 @@ export async function assinar(
  * e-mail e voltar para pagar é perder no caminho quem já tinha decidido
  * pagar. Aqui a conta nasce e a cobrança acontece no mesmo envio.
  *
- * A conta nasce JÁ CONFIRMADA, e isso é decisão de produto, não atalho:
- * quem põe um cartão que a operadora aprova está mais verificada do que
- * quem clica num link de e-mail. A confirmação por e-mail continua ligada
- * para todo o resto do sistema.
+ * A conta nasce SEM CONFIRMAR (12/10/2026, regra do dono: todas as contas
+ * confirmadas): a assinatura acontece no mesmo envio, e a conta abre pelo
+ * link que chega no e-mail (confirmacao-de-cadastro.ts).
  *
  * A ORDEM É CONTA PRIMEIRO, COBRANÇA DEPOIS, e não há como ser diferente:
  * a cobrança precisa de uma empresa para pendurar a assinatura. Se o
@@ -303,14 +307,28 @@ export async function assinarCriandoConta(
   const pedido = conferirPedido(planoCodigo, cardToken, cobranca, aceitouTermos);
   if (pedido) return { error: pedido };
 
-  const db = servico();
+  // o navegador, o IP e o e-mail barrados (bloqueios-de-cadastro.ts)
+  const hIp = headers();
+  const ipDoPedido = hIp.get("x-forwarded-for")?.split(",")[0]?.trim() ?? hIp.get("x-real-ip") ?? null;
+  const nav = navegadorDoCookie();
+  const recusa = await recusaDoCadastro({ ip: ipDoPedido, fbp: nav.fbp, ga: nav.ga, email });
+  if (recusa) return { error: recusa };
 
-  // Cria a conta. `email_confirm: true` porque o cartão é a verificação —
-  // e porque, sem isso, ela não teria sessão para nada depois de pagar.
+  const db = servico();
+  // o CPF/CNPJ da cobrança é o da empresa (205): um documento, uma conta
+  const documento = soDigitos(cobranca?.documento ?? "");
+  if (await documentoJaUsado(db, documento)) {
+    // a própria compradora repetindo depois de um cartão recusado passa pela senha, logo abaixo
+    const { data: dona } = await db.from("empresas").select("owner_user_id").eq("documento", documento).maybeSingle();
+    const { data: porEmail } = dona?.owner_user_id ? await db.auth.admin.getUserById(dona.owner_user_id) : { data: null };
+    if ((porEmail?.user?.email ?? "").toLowerCase() !== email) return { error: DOCUMENTO_JA_USADO, jaTemConta: true };
+  }
+
+  // Cria a conta, AINDA SEM CONFIRMAR: o link vai por e-mail no fim.
   const { data: criada, error: erroCriar } = await db.auth.admin.createUser({
     email,
     password: senha,
-    email_confirm: true,
+    email_confirm: false,
     // as mesmas chaves que o gatilho de signup lê: 'empresa' vira o nome
     // da empresa, 'name' vira o nome da pessoa em membros_equipe
     user_metadata: { empresa: negocio, name: nome },
@@ -319,6 +337,8 @@ export async function assinarCriandoConta(
   let userId = criada?.user?.id ?? null;
   // só o caminho que criou a conta AGORA pode desfazê-la lá embaixo
   const contaNova = userId !== null;
+  // a conta que precisa do link de confirmação no fim
+  let aindaSemConfirmar = contaNova;
 
   if (erroCriar || !userId) {
     const jaExiste =
@@ -348,6 +368,12 @@ export async function assinarCriandoConta(
     userId = entrou?.user?.id ?? null;
     // a sessão criada só para conferir a senha não serve para mais nada
     await conferindo.auth.signOut();
+    // a conta que nasceu aqui e ainda não confirmou (o cartão recusado na
+    // primeira vez): a senha certa prova que é ela
+    if (!userId) {
+      userId = await idDoLoginNaoConfirmado(email, senha);
+      if (userId) aindaSemConfirmar = true;
+    }
     if (!userId) {
       return {
         error: "Já existe uma conta com este e-mail. Entre para assinar.",
@@ -369,6 +395,12 @@ export async function assinarCriandoConta(
       .maybeSingle();
     empresaId = vinculo?.empresa_id ?? null;
     if (!empresaId) await new Promise((r) => setTimeout(r, 250));
+  }
+  if (empresaId && contaNova && documento && !(await gravarDocumento(db, empresaId, documento))) {
+    await db.from("membros_equipe").delete().eq("user_id", userId);
+    await db.from("empresas").delete().eq("id", empresaId);
+    await db.auth.admin.deleteUser(userId);
+    return { error: DOCUMENTO_JA_USADO, jaTemConta: true };
   }
   if (!empresaId) {
     console.error("[vela:assinatura] empresa não provisionada para", userId);
@@ -429,6 +461,7 @@ export async function assinarCriandoConta(
   // Só desfaz o que ESTE pedido criou: quem entrou pelo ramo do e-mail
   // que já existia nunca perde a conta. Mesmo padrão de
   // `cerimonialistas-admin.ts`, que já desfaz login órfão.
+  let apagada = false;
   if (contaNova && resultado.error) {
     const { data: linha } = await db
       .from("assinaturas")
@@ -442,9 +475,16 @@ export async function assinarCriandoConta(
       if (erroApagar) {
         console.error("[vela:assinatura] conta órfã não apagada:", userId);
       }
+      apagada = true;
     }
   }
 
+  // a conta que ficou de pé (paga, ou com o cartão recusado para tentar de
+  // novo) só abre pelo link do e-mail
+  if (aindaSemConfirmar && !apagada) {
+    await mandarConfirmacaoDoCadastro(email, senha, "/eventos/exemplo");
+    return { ...resultado, confirmarEmail: email };
+  }
   return resultado;
 }
 

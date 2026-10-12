@@ -48,6 +48,7 @@ import { mascararCep, UFS } from "@/lib/contato";
 import { TERMOS_CAMINHO } from "@/lib/termos";
 import { EtapaDoPlano } from "@/components/planos/EtapaDoPlano";
 import type { DadosDoBanner } from "@/lib/planos-banner";
+import { ConfiraSeuEmail } from "./ConfiraSeuEmail";
 
 const C = {
   fundo: "#FAF8F5",
@@ -171,6 +172,8 @@ export function CriarContaDeTeste({
   const [whatsapp, setWhatsapp] = useState("");
   const [eventos3m, setEventos3m] = useState<Eventos3Meses | null>(null);
   const [instagram, setInstagram] = useState("");
+  // CPF ou CNPJ da empresa, obrigatório (205, 12/10/2026)
+  const [documento, setDocumento] = useState("");
 
   // etapa 2 — o cartão
   const [cobranca, setCobranca] = useState<CobrancaDoCadastro>({
@@ -192,6 +195,8 @@ export function CriarContaDeTeste({
   const [erro, setErro] = useState<string | null>(null);
   const [jaTemConta, setJaTemConta] = useState(false);
   const [enviando, setEnviando] = useState<null | "conferindo" | "abrindo">(null);
+  // a conta nasceu e o link de confirmação foi para este e-mail (12/10/2026)
+  const [confirmar, setConfirmar] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   // o clique que trouxe ela até aqui, guardado antes de qualquer coisa
@@ -208,6 +213,7 @@ export function CriarContaDeTeste({
     if (negocio.trim().length < 2) return "Escreva o nome do seu negócio.";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) return "Confira o e-mail digitado.";
     if (senha.length < 6) return "A senha precisa de pelo menos 6 caracteres.";
+    if (!documentoValido(documento)) return "Informe um CPF ou CNPJ válido.";
     if (normalizarDDI(whatsapp) === null) return "Confira o WhatsApp — com DDD, só números.";
     if (eventos3m === null) return "Diga quantos eventos você tem nos próximos 3 meses.";
     return null;
@@ -256,6 +262,8 @@ export function CriarContaDeTeste({
     const falta = faltaNaConta();
     setErro(falta);
     if (falta) return;
+    // o cartão pede o CPF/CNPJ da cobrança: já vem preenchido com o da conta
+    setCobranca((c) => (c.documento ? c : { ...c, documento }));
     setPasso(2);
     // se ela parar no cartão, o dono ainda sabe quem era (169). Sem
     // esperar: a tela do cartão não depende disto, e a senha não vai.
@@ -297,7 +305,7 @@ export function CriarContaDeTeste({
     await completarOrigemAntesDeEnviar();
     let r;
     try {
-      r = await criarContaGratuita({ nome, negocio, email, senha, whatsapp, eventos3m: eventos3m ?? "", instagram });
+      r = await criarContaGratuita({ nome, negocio, email, senha, whatsapp, eventos3m: eventos3m ?? "", instagram, documento });
     } catch {
       setErro("Não foi possível criar a conta agora. Tente de novo em alguns instantes.");
       setEnviando(null);
@@ -311,6 +319,12 @@ export function CriarContaDeTeste({
     }
     // o cadastro conta para o anúncio; teste não houve
     contaCriada(r.idDoEvento);
+    // a conta só abre pelo link do e-mail
+    if (r.confirmarEmail) {
+      setConfirmar(r.confirmarEmail);
+      setEnviando(null);
+      return;
+    }
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
@@ -359,7 +373,7 @@ export function CriarContaDeTeste({
     let r;
     try {
       r = await criarContaDeTeste(
-        { nome, negocio, email, senha, whatsapp, eventos3m: eventos3m ?? "", instagram },
+        { nome, negocio, email, senha, whatsapp, eventos3m: eventos3m ?? "", instagram, documento },
         { cardToken: t.token, cobranca, aceitouTermos: aceitei, plano: planoEscolhido }
       );
     } catch {
@@ -380,6 +394,12 @@ export function CriarContaDeTeste({
     // um cadastro e um início de teste, não dois de cada.
     contaCriada(r.idDoEvento);
     testeIniciado(r.idDoTeste, r.valorDoTeste ?? oferta.valorPrimeiro);
+    // a conta só abre pelo link do e-mail
+    if (r.confirmarEmail) {
+      setConfirmar(r.confirmarEmail);
+      setEnviando(null);
+      return;
+    }
 
     // A sessão nasce aqui, com a senha que ela acabou de escolher — é o
     // que a leva ao painel sem passar por tela de login.
@@ -402,6 +422,8 @@ export function CriarContaDeTeste({
       router.refresh();
     });
   }
+
+  if (confirmar) return <ConfiraSeuEmail email={confirmar} />;
 
   const travado = enviando !== null;
 
@@ -504,6 +526,20 @@ export function CriarContaDeTeste({
               style={campo}
             />
             <p style={dica}>Exclusivo para assessoras e cerimonialistas.</p>
+          </div>
+          <div>
+            <label htmlFor="cc-documento" style={rotulo}>
+              CPF ou CNPJ
+            </label>
+            <input
+              id="cc-documento"
+              inputMode="numeric"
+              value={documento}
+              onChange={(e) => setDocumento(mascararDocumento(e.target.value))}
+              placeholder="000.000.000-00"
+              style={campo}
+            />
+            <p style={dica}>Seu CPF ou o CNPJ da empresa. Um documento por conta.</p>
           </div>
           <div>
             <label htmlFor="cc-email" style={rotulo}>

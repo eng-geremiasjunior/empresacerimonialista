@@ -22,10 +22,10 @@
 //    operadora; assinatura já criada é cancelada. Não sobra cobrança sem
 //    dono, nem cartão de quem não tem conta.
 //
-// A conta nasce JÁ CONFIRMADA, de propósito (a mesma decisão da 154 e do
-// checkout): um clique em caixa de entrada no meio do caminho é onde a
-// maioria some, e quem pôs um cartão que o emissor aceitou está mais
-// verificada do que quem clica num link.
+// A conta NASCE SEM CONFIRMAR e só abre pelo link do e-mail (12/10/2026,
+// regra do dono desde o início: "todas as contas confirmadas"). Antes ela
+// nascia confirmada, e um usuário abriu contas em série com e-mails
+// inventados (confirmacao-de-cadastro.ts, bloqueios-de-cadastro.ts).
 //
 // O que impede a porta de virar problema continua o mesmo: o PORTÃO
 // (`teste_gratis.aberto`, no /admin), o RELÓGIO (`teste_termina_em`,
@@ -40,12 +40,15 @@ import { cookies, headers } from "next/headers";
 import { createClient as createServico } from "@supabase/supabase-js";
 import { registrarConversao } from "@/lib/conversoes";
 import { emailMascarado } from "@/lib/contas-semelhantes";
+import { MOTIVO_IMPESSOAL, recusaDoCadastro } from "@/lib/bloqueios-de-cadastro";
+import { mandarConfirmacaoDoCadastro } from "@/lib/supabase/confirmacao-de-cadastro";
 import { COOKIE_ORIGEM } from "@/lib/marketing";
 import { portaoDoTeste } from "@/lib/supabase/teste-gratis";
 import { normalizarDDI } from "@/lib/whatsapp-link";
 import { ehEventos3Meses, normalizarInstagram } from "@/lib/cadastro-qualificacao";
 import { enviarBoasVindas } from "@/lib/email-ativacao";
-import { documentoValido } from "@/lib/documento";
+import { documentoValido, soDigitos } from "@/lib/documento";
+import { DOCUMENTO_JA_USADO, documentoJaUsado, gravarDocumento } from "@/lib/supabase/documento-da-empresa";
 import { cepValido, ufValida } from "@/lib/contato";
 import {
   apagarCartao,
@@ -131,6 +134,8 @@ export type ResultadoCriarConta = {
   idDoTeste?: string;
   /** o que vai ser cobrado no oitavo dia: o valor do StartTrial no navegador */
   valorDoTeste?: number;
+  /** a conta nasceu e o link foi para este e-mail: a tela pede para confirmar */
+  confirmarEmail?: string;
 };
 
 /** O que a operadora exige de quem vai pagar, além do que a conta já tem. */
@@ -179,6 +184,8 @@ type DadosDoCadastro = {
   whatsapp: string;
   eventos3m: string;
   instagram?: string;
+  /** CPF ou CNPJ da empresa (205, 12/10/2026) */
+  documento?: string;
 };
 
 type Conferidos = {
@@ -189,6 +196,8 @@ type Conferidos = {
   whatsapp: string;
   eventos3m: string;
   instagram: string | null;
+  /** só os dígitos */
+  documento: string;
 };
 
 /** A etapa 1, conferida no servidor — as duas portas (gratuita e com cartão) passam por aqui. */
@@ -202,6 +211,8 @@ function conferirDados(dados: DadosDoCadastro): { error: string } | Conferidos {
   if (negocio.length < 2) return { error: "Escreva o nome do seu negócio." };
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { error: "Confira o e-mail digitado." };
   if (senha.length < 6) return { error: "A senha precisa de pelo menos 6 caracteres." };
+  const documento = soDigitos(dados.documento ?? "");
+  if (!documentoValido(documento)) return { error: "Informe um CPF ou CNPJ válido." };
   const whatsapp = normalizarDDI(dados.whatsapp);
   if (!whatsapp) return { error: "Confira o WhatsApp — com DDD, só números." };
   const eventos3m = dados.eventos3m;
@@ -210,7 +221,7 @@ function conferirDados(dados: DadosDoCadastro): { error: string } | Conferidos {
   }
   // opcional: um @ que não parece @ não recusa o cadastro, só não é guardado
   const instagram = normalizarInstagram(dados.instagram);
-  return { nome, negocio, email, senha, whatsapp, eventos3m, instagram };
+  return { nome, negocio, email, senha, whatsapp, eventos3m, instagram, documento };
 }
 
 /**
@@ -251,8 +262,10 @@ async function contaAtivaSemelhante(db: ReturnType<typeof servico>, whatsapp: st
     for (const e of (empresas ?? []) as { id: string; tipo: string | null; owner_user_id: string | null }[]) {
       if (e.tipo === "familia" || !e.owner_user_id) continue;
       const { data: u } = await db.auth.admin.getUserById(e.owner_user_id);
+      // a SUSPENSA também barra (12/10/2026): antes ela não contava, e cada
+      // suspensão liberava o mesmo navegador para abrir a conta seguinte
       const banida = (u?.user as unknown as { banned_until?: string | null } | undefined)?.banned_until;
-      if (banida && new Date(banida).getTime() > Date.now()) continue;
+      if (banida && new Date(banida).getTime() > Date.now()) return SUSPENSA;
       return emailMascarado(u?.user?.email) ?? "";
     }
     return null;
@@ -263,16 +276,25 @@ async function contaAtivaSemelhante(db: ReturnType<typeof servico>, whatsapp: st
   }
 }
 
+/** marca de contaAtivaSemelhante: o navegador ou o WhatsApp é de uma conta suspensa */
+const SUSPENSA = "__conta_suspensa__";
+
 /**
- * A CONTA: login já confirmado (`email_confirm: true` entrega a sessão na
+ * A CONTA: login AINDA NÃO confirmado (o link vai por e-mail no fim) (`email_confirm: true` entrega a sessão na
  * hora), empresa pelo gatilho de signup, WhatsApp na ficha da dona. Nada
  * de assinatura aqui — isso é de quem chama.
  */
 async function abrirConta(
   db: ReturnType<typeof servico>,
-  d: Conferidos
+  d: Conferidos,
+  ip: string
 ): Promise<{ error: string; jaTemConta?: boolean } | { userId: string; empresaId: string }> {
+  const o = lerOrigemDoCookie();
+  const recusa = await recusaDoCadastro({ ip: ip === "desconhecido" ? null : ip, fbp: o?.fbp, ga: o?.ga_client_id, email: d.email });
+  if (recusa) return { error: recusa };
   const repetida = await contaAtivaSemelhante(db, d.whatsapp);
+  if (repetida === SUSPENSA) return { error: MOTIVO_IMPESSOAL };
+  if (await documentoJaUsado(db, d.documento)) return { error: DOCUMENTO_JA_USADO, jaTemConta: true };
   if (repetida !== null) {
     return {
       // tom impessoal de propósito (dono, 07/10/2026)
@@ -287,7 +309,7 @@ async function abrirConta(
   const { data: criada, error: erroCriar } = await db.auth.admin.createUser({
     email: d.email,
     password: d.senha,
-    email_confirm: true,
+    email_confirm: false,
     // `empresa` e `name` são as chaves que o gatilho de signup lê; as
     // outras três são a qualificação do cadastro (cadastro-qualificacao.ts),
     // que o painel do dono mostra
@@ -335,6 +357,12 @@ async function abrirConta(
     console.error("[vela:teste] empresa não provisionada para", userId);
     await desfazerConta(db, userId, null);
     return { error: "Não foi possível abrir sua conta agora. Tente de novo em alguns instantes." };
+  }
+
+  // o CPF/CNPJ na empresa (205); outra conta pegou no meio do caminho = desfaz
+  if (!(await gravarDocumento(db, empresaId, d.documento))) {
+    await desfazerConta(db, userId, empresaId);
+    return { error: DOCUMENTO_JA_USADO, jaTemConta: true };
   }
 
   // O WhatsApp vai para a ficha dela na equipe — é de lá que o painel do
@@ -459,7 +487,7 @@ export async function criarContaGratuita(dados: DadosDoCadastro): Promise<Result
   if ("error" in d) return d;
 
   const db = servico();
-  const conta = await abrirConta(db, d);
+  const conta = await abrirConta(db, d, ip);
   if ("error" in conta) return conta;
 
   await depoisDeNascer(
@@ -467,7 +495,9 @@ export async function criarContaGratuita(dados: DadosDoCadastro): Promise<Result
     { ...conta, d, ip, userAgent: h0.get("user-agent")?.slice(0, 300) ?? null },
     null
   );
-  return { ok: true, idDoEvento: `conta:${conta.empresaId}` };
+  // a conta só abre pelo link (12/10/2026); se o e-mail não sair, ela pede de novo na porta de entrar
+  await mandarConfirmacaoDoCadastro(d.email, d.senha, "/eventos/novo");
+  return { ok: true, idDoEvento: `conta:${conta.empresaId}`, confirmarEmail: d.email };
 }
 
 export async function criarContaDeTeste(
@@ -517,7 +547,7 @@ export async function criarContaDeTeste(
   const db = servico();
 
   // 1) A CONTA.
-  const conta = await abrirConta(db, d);
+  const conta = await abrirConta(db, d, ip);
   if ("error" in conta) return conta;
   const { userId, empresaId } = conta;
 
@@ -661,11 +691,13 @@ export async function criarContaDeTeste(
     { valor: oferta.valorPrimeiro, termina: oferta.termina, primeiraCobranca }
   );
 
+  await mandarConfirmacaoDoCadastro(d.email, d.senha, "/eventos/exemplo");
   return {
     ok: true,
     idDoEvento: `conta:${empresaId}`,
     idDoTeste: `teste:${empresaId}`,
     valorDoTeste: oferta.valorPrimeiro,
+    confirmarEmail: d.email,
   };
 }
 
