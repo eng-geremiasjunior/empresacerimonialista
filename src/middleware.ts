@@ -2,6 +2,7 @@ import { soCampanha } from "@/lib/parametros-de-campanha";
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 import { appUrl, PREFIXOS_DO_PORTAL } from "@/lib/app-url";
+import { IPS_BLOQUEADOS, ipDoPedido } from "@/lib/ips-bloqueados";
 
 // O que o portal da debutante usa: as telas do portal, a entrada por
 // link (/auth/confirm), as rotas de API que as telas chamam e as páginas
@@ -55,6 +56,12 @@ function enderecoDoPortal(request: NextRequest): NextResponse | null {
 }
 
 export async function middleware(request: NextRequest) {
+  // IPs barrados no site inteiro (ips-bloqueados.ts, 12/10/2026)
+  const ip = ipDoPedido(request.headers);
+  if (ip && IPS_BLOQUEADOS.has(ip)) {
+    return new NextResponse("Acesso indisponível.", { status: 403, headers: { "content-type": "text/plain; charset=utf-8" } });
+  }
+
   // Webhooks são chamados por serviços externos (Meta/WhatsApp), sem
   // sessão. Precisam passar direto, sem redirecionar para /login.
   if (request.nextUrl.pathname.startsWith("/api/webhooks")) {
