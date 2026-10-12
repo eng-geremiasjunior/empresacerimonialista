@@ -9,7 +9,10 @@ import { createClient } from "@/lib/supabase/client";
 const MAX_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB
 
 export function validateLogoFile(file: File): string | null {
-  if (!file.type.startsWith("image/")) return "Escolha um arquivo de imagem.";
+  // o balde só aceita estes (206): SVG carrega script e fica de fora
+  if (!["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"].includes(file.type)) {
+    return "Use uma imagem PNG, JPG ou WebP.";
+  }
   if (file.size > MAX_SIZE_BYTES) return "A logo deve ter no máximo 2 MB.";
   return null;
 }
