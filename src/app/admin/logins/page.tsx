@@ -5,6 +5,7 @@
 
 import Link from "next/link";
 import { buscarLoginPorIdDb, buscarLoginsDb, type LoginDoPainel } from "@/lib/supabase/admin-logins";
+import { getTentativasBarradas, type TentativaBarrada } from "@/lib/supabase/admin-tentativas";
 import { AcoesDoLogin } from "./AcoesDoLogin";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +26,90 @@ const CARGO: Record<string, string> = {
   cerimonialista: "cerimonialista",
   assistente: "assistente",
 };
+
+const PORTA: Record<TentativaBarrada["porta"], string> = {
+  site: "site",
+  cadastro: "cadastro gratuito",
+  assinatura: "cadastro com cartão",
+};
+
+const MOTIVO: Record<TentativaBarrada["motivo"], string> = {
+  ip_bloqueado: "IP bloqueado",
+  navegador_barrado: "navegador barrado",
+  conta_suspensa: "mesmo navegador ou WhatsApp de conta suspensa",
+  email_descartavel: "e-mail temporário",
+  email_sem_caixa: "e-mail que não recebe mensagens",
+  documento_repetido: "CPF/CNPJ de outra conta",
+  conta_repetida: "já tem conta (mesmo navegador ou WhatsApp)",
+};
+
+function haQuanto(iso: string, agora: Date): string {
+  const min = Math.max(0, Math.round((agora.getTime() - new Date(iso).getTime()) / 60_000));
+  if (min < 60) return min <= 1 ? "agora há pouco" : `há ${min} min`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `há ${h} h`;
+  const d = Math.round(h / 24);
+  return d === 1 ? "ontem" : `há ${d} dias`;
+}
+
+/** As tentativas barradas dos últimos 7 dias (207): o resumo por motivo e as linhas. */
+function TentativasBarradas({ tentativas, tabela }: { tentativas: TentativaBarrada[]; tabela: boolean }) {
+  const agora = new Date();
+  if (!tabela) {
+    return <p className="text-sm text-stone-500">Ainda não há registro de tentativas barradas (falta aplicar a migração 207).</p>;
+  }
+  if (tentativas.length === 0) {
+    return <p className="text-sm text-stone-500">Nenhuma tentativa barrada nos últimos 7 dias.</p>;
+  }
+  const porMotivo = new Map<TentativaBarrada["motivo"], { vezes: number; ultima: string }>();
+  for (const t of tentativas) {
+    const m = porMotivo.get(t.motivo);
+    if (!m) porMotivo.set(t.motivo, { vezes: t.vezes, ultima: t.ultimaEm });
+    else {
+      m.vezes += t.vezes;
+      if (t.ultimaEm > m.ultima) m.ultima = t.ultimaEm;
+    }
+  }
+  return (
+    <div className="flex flex-col gap-3">
+      <ul className="flex flex-col gap-0.5 text-[13.5px] text-stone-800">
+        {[...porMotivo.entries()].map(([motivo, m]) => (
+          <li key={motivo}>
+            <span className="font-semibold">{MOTIVO[motivo]}</span>: {m.vezes} {m.vezes === 1 ? "vez" : "vezes"}, a última{" "}
+            {haQuanto(m.ultima, agora)}
+          </li>
+        ))}
+      </ul>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[560px] text-left text-[12.5px] text-stone-700">
+          <thead className="text-stone-500">
+            <tr>
+              <th className="py-1 pr-3 font-medium">Última vez</th>
+              <th className="py-1 pr-3 font-medium">Onde</th>
+              <th className="py-1 pr-3 font-medium">Motivo</th>
+              <th className="py-1 pr-3 font-medium">IP</th>
+              <th className="py-1 font-medium tabular-nums">Vezes na hora</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tentativas.slice(0, 40).map((t) => (
+              <tr key={`${t.hora}-${t.porta}-${t.motivo}-${t.ip}`} className="border-t border-stone-100">
+                <td className="py-1 pr-3 whitespace-nowrap">{DIA_E_HORA.format(new Date(t.ultimaEm))}</td>
+                <td className="py-1 pr-3">{PORTA[t.porta]}</td>
+                <td className="py-1 pr-3">{MOTIVO[t.motivo]}</td>
+                <td className="py-1 pr-3 whitespace-nowrap">
+                  {t.ip || "—"}
+                  {t.ipDaLista && <span className="text-stone-500"> · da lista de bloqueio</span>}
+                </td>
+                <td className="py-1 tabular-nums">{t.vezes}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
 
 function dataDoEvento(iso: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
@@ -56,7 +141,10 @@ export default async function LoginsPage({ searchParams }: { searchParams?: { bu
   const busca = (searchParams?.busca ?? "").trim();
   // ?id= vem do aviso de conflito: abre aquele login sem pôr o e-mail na URL
   const porId = (searchParams?.id ?? "").trim();
-  const logins = porId ? await buscarLoginPorIdDb(porId) : busca.length >= 3 ? await buscarLoginsDb(busca) : [];
+  const [logins, barradas] = await Promise.all([
+    porId ? buscarLoginPorIdDb(porId) : busca.length >= 3 ? buscarLoginsDb(busca) : Promise.resolve([] as LoginDoPainel[]),
+    getTentativasBarradas(new Date(Date.now() - 7 * 86_400_000).toISOString()),
+  ]);
   const donos = (process.env.SUPER_ADMIN_EMAILS ?? "")
     .split(",")
     .map((e) => e.trim().toLowerCase())
@@ -86,6 +174,11 @@ export default async function LoginsPage({ searchParams }: { searchParams?: { bu
         {busca.length >= 3 && logins.length === 0 && (
           <p className="text-sm text-stone-500">Nenhum login com &ldquo;{busca}&rdquo;.</p>
         )}
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <h2 className="text-[15px] font-semibold text-stone-900">Tentativas barradas</h2>
+        <TentativasBarradas tentativas={barradas.tentativas} tabela={barradas.tabela} />
       </section>
 
       {logins.length > 0 && (

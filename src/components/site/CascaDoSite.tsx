@@ -122,9 +122,6 @@ export function CascaDoSite({ children, hrefConta = "/criar-conta" }: { children
         </div>
         <div>
           <b>Contato</b>
-          <a href="https://wa.me/5533999478774" target="_blank" rel="noopener noreferrer">
-            WhatsApp
-          </a>
           <a href="https://instagram.com/eorganizei" target="_blank" rel="noopener noreferrer">
             Instagram
           </a>

@@ -41,6 +41,7 @@ import { createClient as createServico } from "@supabase/supabase-js";
 import { registrarConversao } from "@/lib/conversoes";
 import { emailMascarado } from "@/lib/contas-semelhantes";
 import { MOTIVO_IMPESSOAL, recusaDoCadastro } from "@/lib/bloqueios-de-cadastro";
+import { registrarTentativaBarrada } from "@/lib/tentativas-barradas";
 import { mandarConfirmacaoDoCadastro } from "@/lib/supabase/confirmacao-de-cadastro";
 import { COOKIE_ORIGEM } from "@/lib/marketing";
 import { portaoDoTeste } from "@/lib/supabase/teste-gratis";
@@ -290,12 +291,20 @@ async function abrirConta(
   ip: string
 ): Promise<{ error: string; jaTemConta?: boolean } | { userId: string; empresaId: string }> {
   const o = lerOrigemDoCookie();
-  const recusa = await recusaDoCadastro({ ip: ip === "desconhecido" ? null : ip, fbp: o?.fbp, ga: o?.ga_client_id, email: d.email });
+  const ipConhecido = ip === "desconhecido" ? null : ip;
+  const recusa = await recusaDoCadastro({ porta: "cadastro", ip: ipConhecido, fbp: o?.fbp, ga: o?.ga_client_id, email: d.email });
   if (recusa) return { error: recusa };
   const repetida = await contaAtivaSemelhante(db, d.whatsapp);
-  if (repetida === SUSPENSA) return { error: MOTIVO_IMPESSOAL };
-  if (await documentoJaUsado(db, d.documento)) return { error: DOCUMENTO_JA_USADO, jaTemConta: true };
+  if (repetida === SUSPENSA) {
+    await registrarTentativaBarrada("cadastro", "conta_suspensa", ipConhecido);
+    return { error: MOTIVO_IMPESSOAL };
+  }
+  if (await documentoJaUsado(db, d.documento)) {
+    await registrarTentativaBarrada("cadastro", "documento_repetido", ipConhecido);
+    return { error: DOCUMENTO_JA_USADO, jaTemConta: true };
+  }
   if (repetida !== null) {
+    await registrarTentativaBarrada("cadastro", "conta_repetida", ipConhecido);
     return {
       // tom impessoal de propósito (dono, 07/10/2026)
       error:

@@ -93,7 +93,11 @@ export function RoteiroList({
   }, [eventId]);
 
   useEffect(() => {
-    const t = setInterval(refresh, REFRESH_INTERVAL_MS);
+    // aba escondida não pergunta ao banco (13/10/2026: uma aba esquecida
+    // chamava o roteiro a cada minuto, dias a fio); a volta à tela atualiza
+    const t = setInterval(() => {
+      if (document.visibilityState === "visible") void refresh();
+    }, REFRESH_INTERVAL_MS);
     const onVisible = () => {
       if (document.visibilityState === "visible") refresh();
     };

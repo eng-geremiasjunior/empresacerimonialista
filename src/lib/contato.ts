@@ -9,7 +9,7 @@ export function soDigitos(valor: string): string {
   return String(valor ?? "").replace(/\D/g, "");
 }
 
-/** (33) 99947-8774 para celular; (33) 3321-4455 para fixo. */
+/** (11) 91234-5678 para celular; (11) 3321-4455 para fixo. */
 export function mascararTelefone(valor: string): string {
   const d = soDigitos(valor).slice(0, 11);
   if (d.length <= 2) return d.length ? `(${d}` : "";

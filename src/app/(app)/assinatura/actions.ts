@@ -38,6 +38,7 @@ import {
 import { registrarConversao } from "@/lib/conversoes";
 import { COOKIE_ORIGEM } from "@/lib/marketing";
 import { navegadorDoCookie, recusaDoCadastro } from "@/lib/bloqueios-de-cadastro";
+import { registrarTentativaBarrada } from "@/lib/tentativas-barradas";
 import { idDoLoginNaoConfirmado, mandarConfirmacaoDoCadastro } from "@/lib/supabase/confirmacao-de-cadastro";
 import { hojeBR } from "@/lib/tempo";
 import { TERMOS_VERSAO } from "@/lib/termos";
@@ -311,7 +312,7 @@ export async function assinarCriandoConta(
   const hIp = headers();
   const ipDoPedido = hIp.get("x-forwarded-for")?.split(",")[0]?.trim() ?? hIp.get("x-real-ip") ?? null;
   const nav = navegadorDoCookie();
-  const recusa = await recusaDoCadastro({ ip: ipDoPedido, fbp: nav.fbp, ga: nav.ga, email });
+  const recusa = await recusaDoCadastro({ porta: "assinatura", ip: ipDoPedido, fbp: nav.fbp, ga: nav.ga, email });
   if (recusa) return { error: recusa };
 
   const db = servico();
@@ -321,7 +322,10 @@ export async function assinarCriandoConta(
     // a própria compradora repetindo depois de um cartão recusado passa pela senha, logo abaixo
     const { data: dona } = await db.from("empresas").select("owner_user_id").eq("documento", documento).maybeSingle();
     const { data: porEmail } = dona?.owner_user_id ? await db.auth.admin.getUserById(dona.owner_user_id) : { data: null };
-    if ((porEmail?.user?.email ?? "").toLowerCase() !== email) return { error: DOCUMENTO_JA_USADO, jaTemConta: true };
+    if ((porEmail?.user?.email ?? "").toLowerCase() !== email) {
+      await registrarTentativaBarrada("assinatura", "documento_repetido", ipDoPedido);
+      return { error: DOCUMENTO_JA_USADO, jaTemConta: true };
+    }
   }
 
   // Cria a conta, AINDA SEM CONFIRMAR: o link vai por e-mail no fim.

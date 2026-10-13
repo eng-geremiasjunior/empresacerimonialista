@@ -18,6 +18,7 @@ import { promises as dns } from "node:dns";
 import { cookies } from "next/headers";
 import { COOKIE_ORIGEM } from "@/lib/marketing";
 import { IPS_BLOQUEADOS } from "@/lib/ips-bloqueados";
+import { registrarTentativaBarrada, type MotivoBarrado, type PortaBarrada } from "@/lib/tentativas-barradas";
 
 const NAVEGADORES = new Set([
   "fb.2.1790394401143.839815548599568106",
@@ -105,19 +106,25 @@ async function dominioRecebe(d: string): Promise<boolean> {
 
 /**
  * O cadastro pode seguir? Devolve null, ou a frase de recusa (impessoal
- * para o bloqueio; a do e-mail diz o que corrigir).
+ * para o bloqueio; a do e-mail diz o que corrigir). Cada recusa conta no
+ * /admin (207), com a porta e o motivo.
  */
 export async function recusaDoCadastro(p: {
+  porta: PortaBarrada;
   ip: string | null;
   fbp: string | null | undefined;
   ga: string | null | undefined;
   email: string;
 }): Promise<string | null> {
-  if (p.ip && IPS_BLOQUEADOS.has(p.ip)) return MOTIVO_IMPESSOAL;
-  if ((p.fbp && NAVEGADORES.has(p.fbp)) || (p.ga && NAVEGADORES.has(p.ga))) return MOTIVO_IMPESSOAL;
+  const barrar = async (motivo: MotivoBarrado, frase: string) => {
+    await registrarTentativaBarrada(p.porta, motivo, p.ip);
+    return frase;
+  };
+  if (p.ip && IPS_BLOQUEADOS.has(p.ip)) return barrar("ip_bloqueado", MOTIVO_IMPESSOAL);
+  if ((p.fbp && NAVEGADORES.has(p.fbp)) || (p.ga && NAVEGADORES.has(p.ga))) return barrar("navegador_barrado", MOTIVO_IMPESSOAL);
   const d = dominio(p.email);
-  if (DOMINIOS_DESCARTAVEIS.has(d)) return "Use um e-mail permanente — endereços temporários não são aceitos.";
-  if (!(await dominioRecebe(d))) return "Este endereço de e-mail não recebe mensagens. Confira o e-mail digitado.";
+  if (DOMINIOS_DESCARTAVEIS.has(d)) return barrar("email_descartavel", "Use um e-mail permanente — endereços temporários não são aceitos.");
+  if (!(await dominioRecebe(d))) return barrar("email_sem_caixa", "Este endereço de e-mail não recebe mensagens. Confira o e-mail digitado.");
   return null;
 }
 

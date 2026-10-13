@@ -168,10 +168,18 @@ export function ModoEvento({
         () => refetch()
       )
       .subscribe();
-    const poll = setInterval(refetch, POLL_MS);
+    // aba escondida não pergunta ao banco; a volta à tela atualiza na hora
+    const poll = setInterval(() => {
+      if (document.visibilityState === "visible") refetch();
+    }, POLL_MS);
+    const aoVoltar = () => {
+      if (document.visibilityState === "visible") refetch();
+    };
+    document.addEventListener("visibilitychange", aoVoltar);
     return () => {
       supabase.removeChannel(channel);
       clearInterval(poll);
+      document.removeEventListener("visibilitychange", aoVoltar);
     };
   }, [refetch]);
 
