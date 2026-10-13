@@ -204,6 +204,61 @@ export async function enviarBoasVindas(p: {
   }
 }
 
+/**
+ * Quando a conta confirma o e-mail (13/10/2026). Desde 12/10 toda conta
+ * nasce sem confirmar, e as boas-vindas saíam no cadastro — para um
+ * endereço que ainda não tinha provado ser de alguém. Agora saem do link
+ * de confirmação (/auth/confirm), uma vez só (a marca boas_vindas), e só
+ * para a dona de uma conta de cerimonial. Nunca lança.
+ */
+export async function enviarBoasVindasDepoisDaConfirmacao(userId: string): Promise<void> {
+  try {
+    const db = servico();
+    if (!db) return;
+    const { data } = await db.auth.admin.getUserById(userId);
+    const u = data?.user;
+    if (!u?.email || !u.email_confirmed_at || ehContaDaCasa(u.email)) return;
+    const marcas = marcasDe(u);
+    if (marcas.boas_vindas || marcas.sem_email) return;
+    const { data: m } = await db
+      .from("membros_equipe")
+      .select("empresa_id")
+      .eq("user_id", userId)
+      .eq("is_owner", true)
+      .limit(1)
+      .maybeSingle();
+    if (!m?.empresa_id) return;
+    const [{ data: empresa }, { data: a }] = await Promise.all([
+      db.from("empresas").select("tipo").eq("id", m.empresa_id).maybeSingle(),
+      db
+        .from("assinaturas")
+        .select("status, teste_termina_em, gateway_subscription_id, proximo_vencimento, valor_mensal")
+        .eq("empresa_id", m.empresa_id)
+        .maybeSingle(),
+    ]);
+    if (empresa?.tipo === "familia") return;
+    const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
+    const emTeste = a?.status === "trial";
+    const termina = emTeste ? ((a?.teste_termina_em as string | null) ?? null) : null;
+    await enviarBoasVindas({
+      userId,
+      email: u.email,
+      nome: String(meta.name ?? ""),
+      termina,
+      eventos3m: String(meta.eventos_3_meses ?? "") || null,
+      cobranca:
+        emTeste && a?.gateway_subscription_id
+          ? {
+              dia: (a.proximo_vencimento as string | null) ?? (termina ? somarDias(termina, 1) : hojeBR(new Date())),
+              valor: Number(a.valor_mensal) || 0,
+            }
+          : null,
+    });
+  } catch (e) {
+    console.error("[eorg:ativacao] boas-vindas na confirmação", String(e).slice(0, 200));
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /* A rotina diária                                                     */
 /* ------------------------------------------------------------------ */
@@ -362,6 +417,8 @@ export async function rodarAtivacao(agora = new Date()): Promise<ResumoAtivacao>
     const e = empresaPor.get(t.empresa_id);
     const u = e ? usuarioPor.get(e.owner_user_id) : undefined;
     if (!e || !u?.email || ehContaDaCasa(u.email)) continue;
+    // e-mail que ainda não foi confirmado não recebe a régua (13/10/2026)
+    if (!u.email_confirmed_at) continue;
     const banida = (u as unknown as { banned_until?: string | null }).banned_until;
     if (banida && new Date(banida) > agora) continue;
 

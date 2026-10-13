@@ -20,6 +20,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { PREFIXOS_DO_PORTAL } from "@/lib/app-url";
 import { COOKIE_NAO_LEMBRAR, COOKIE_SESSAO } from "@/lib/lembrar-sessao";
+import { enviarBoasVindasDepoisDaConfirmacao } from "@/lib/email-ativacao";
 
 export const dynamic = "force-dynamic";
 
@@ -90,12 +91,16 @@ export async function GET(request: NextRequest) {
   }
 
   if (token_hash && type) {
-    const { error } = await supabase.auth.verifyOtp({ type, token_hash });
+    const { data: verificado, error } = await supabase.auth.verifyOtp({ type, token_hash });
     if (error) {
       // Mesma porta de erro do fluxo com `code`. Este ramo tinha ficado
       // para trás e mandava a cerimonialista para a porta da CLIENTE —
       // o erro que o comentário acima já descrevia como corrigido.
       return NextResponse.redirect(`${origin}${portaDeErro}`);
+    }
+    // a conta acabou de confirmar o e-mail: agora sim, as boas-vindas
+    if (type === "signup" && verificado.user?.id) {
+      await enviarBoasVindasDepoisDaConfirmacao(verificado.user.id);
     }
     return entrou(request, `${origin}${destino}`);
   }

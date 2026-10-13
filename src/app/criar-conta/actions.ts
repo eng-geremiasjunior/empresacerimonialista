@@ -47,7 +47,6 @@ import { COOKIE_ORIGEM } from "@/lib/marketing";
 import { portaoDoTeste } from "@/lib/supabase/teste-gratis";
 import { normalizarDDI } from "@/lib/whatsapp-link";
 import { ehEventos3Meses, normalizarInstagram } from "@/lib/cadastro-qualificacao";
-import { enviarBoasVindas } from "@/lib/email-ativacao";
 import { documentoValido, soDigitos } from "@/lib/documento";
 import { DOCUMENTO_JA_USADO, documentoJaUsado, gravarDocumento } from "@/lib/supabase/documento-da-empresa";
 import { cepValido, ufValida } from "@/lib/contato";
@@ -454,16 +453,9 @@ async function depoisDeNascer(
   // dois portais; quem veio do anúncio de 15 anos abre nos 15 anos.
   await criarOsDoisExemplos(c.empresaId, c.userId, modeloPelaOrigem(lerOrigemDoCookie()));
 
-  // O primeiro e-mail. Com cartão, já diz o dia e o valor da primeira
-  // cobrança; no Gratuito, sem caixa de teste nenhuma.
-  await enviarBoasVindas({
-    userId: c.userId,
-    email: c.d.email,
-    nome: c.d.nome,
-    termina: teste?.termina ?? null,
-    eventos3m: c.d.eventos3m,
-    cobranca: teste ? { dia: teste.primeiraCobranca, valor: teste.valor } : null,
-  });
+  // O e-mail de boas-vindas não sai mais daqui (13/10/2026): a conta
+  // ainda não confirmou o e-mail. Sai do link de confirmação
+  // (enviarBoasVindasDepoisDaConfirmacao, em /auth/confirm).
 
   // Se ela tinha parado no cartão antes (169), sai da lista do dono: a
   // conta nasceu. Sem a 169, só não marca.
