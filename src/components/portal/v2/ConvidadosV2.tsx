@@ -70,7 +70,7 @@ export function ConvidadosV2({
   useEffect(() => {
     const id = setInterval(() => {
       if (document.visibilityState === "visible") router.refresh();
-    }, 30000);
+    }, 60000);
     return () => clearInterval(id);
   }, [router]);
 

@@ -18,7 +18,7 @@ export function RespostaSuporte({ userId }: { userId: string }) {
   useEffect(() => {
     const id = setInterval(() => {
       if (document.visibilityState === "visible") router.refresh();
-    }, 20_000);
+    }, 60_000);
     return () => clearInterval(id);
   }, [router]);
 

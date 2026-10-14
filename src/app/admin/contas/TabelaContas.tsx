@@ -358,7 +358,8 @@ export function TabelaContas({
         setAgoraPor(Object.fromEntries(contas.map((c) => [c.empresaId, r[c.empresaId] ?? null])));
       });
     };
-    const relogio = window.setInterval(renovar, 30_000);
+    // a cada 2 min (era 30 s): o ao vivo do painel era a rota que mais gastava CPU na Vercel (14/10/2026)
+    const relogio = window.setInterval(renovar, 120_000);
     document.addEventListener("visibilitychange", renovar);
     return () => {
       vivo = false;

@@ -28,8 +28,12 @@ import {
 
 /** Com a caixa aberta, a resposta do dono aparece rápido. */
 const POLL_ABERTA_MS = 20_000;
-/** Fechada, só para acender o pontinho de resposta nova. */
-const POLL_FECHADA_MS = 90_000;
+/**
+ * Fechada, só para acender o pontinho de resposta nova: a cada 5 min (era
+ * 90 s em TODA tela logada — CPU da Vercel, 14/10/2026). Ao voltar para a
+ * aba, confere na hora.
+ */
+const POLL_FECHADA_MS = 300_000;
 const INSTAGRAM = "https://instagram.com/eorganizei";
 
 function hora(iso: string) {
@@ -80,8 +84,18 @@ export function CaixaDeSuporte() {
   useEffect(() => {
     if (!montado) return;
     void carregar(aberta);
-    const id = setInterval(() => void carregar(aberta), aberta ? POLL_ABERTA_MS : POLL_FECHADA_MS);
-    return () => clearInterval(id);
+    // só com a aba à vista: escondida, ninguém lê a resposta
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") void carregar(aberta);
+    }, aberta ? POLL_ABERTA_MS : POLL_FECHADA_MS);
+    const aoVoltar = () => {
+      if (document.visibilityState === "visible") void carregar(aberta);
+    };
+    document.addEventListener("visibilitychange", aoVoltar);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", aoVoltar);
+    };
   }, [montado, aberta, carregar]);
 
   useEffect(() => {

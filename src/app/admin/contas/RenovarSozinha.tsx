@@ -1,12 +1,12 @@
 "use client";
 
 // A lista do portal se renova sozinha (o "ao vivo" e o uso andam): a cada
-// 30 s, só com a aba à vista — a mesma batida do ao vivo da cerimonialista.
+// 2 min, só com a aba à vista (era 30 s; CPU da Vercel, 14/10/2026).
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-export function RenovarSozinha({ cadaMs = 30_000 }: { cadaMs?: number }) {
+export function RenovarSozinha({ cadaMs = 120_000 }: { cadaMs?: number }) {
   const router = useRouter();
   useEffect(() => {
     const t = window.setInterval(() => {
