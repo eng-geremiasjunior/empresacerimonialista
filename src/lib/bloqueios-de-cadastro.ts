@@ -16,22 +16,13 @@ import "server-only";
 
 import { promises as dns } from "node:dns";
 import { cookies } from "next/headers";
+import { createClient } from "@supabase/supabase-js";
 import { COOKIE_ORIGEM } from "@/lib/marketing";
-import { IPS_BLOQUEADOS } from "@/lib/ips-bloqueados";
+import { COOKIE_IMPRESSAO, IMPRESSOES_BLOQUEADAS, IPS_BLOQUEADOS, NAVEGADORES_BLOQUEADOS } from "@/lib/ips-bloqueados";
 import { registrarTentativaBarrada, type MotivoBarrado, type PortaBarrada } from "@/lib/tentativas-barradas";
 
-const NAVEGADORES = new Set([
-  "fb.2.1790394401143.839815548599568106",
-  "fb.2.1791399788970.287078630822181963",
-  "fb.2.1791319453552.660017126648083256",
-  "fb.2.1791748466848.714113899513589500",
-  "fb.2.1791805105937.30482974370629429",
-  "1667814391.1790394400",
-  "1223678173.1791399788",
-  "943226356.1791319454",
-  "1003834915.1791748466",
-  "2035697192.1791805105",
-]);
+// a lista mora em ips-bloqueados.ts: o middleware (borda) também a lê
+const NAVEGADORES = NAVEGADORES_BLOQUEADOS;
 
 
 /** caixas descartáveis conhecidas (as dele e as mais comuns) */
@@ -105,6 +96,58 @@ async function dominioRecebe(d: string): Promise<boolean> {
 }
 
 /**
+ * O navegador (o cookie do pixel ou o id do Google Analytics) já abriu uma
+ * conta que está SUSPENSA? (14/10/2026: ele voltou pelo portal da noiva
+ * com um navegador limpo de cookies, mas o próximo cadastro do mesmo
+ * navegador fica barrado sem precisar entrar na lista acima.) Falha da
+ * leitura nunca recusa.
+ */
+/** A impressão digital do navegador (ImpressaoDoNavegador), do cookie; só o formato de um sha-256. */
+export function impressaoDoCookie(): string | null {
+  try {
+    const v = cookies().get(COOKIE_IMPRESSAO)?.value ?? "";
+    return /^[0-9a-f]{64}$/.test(v) ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+async function navegadorDeContaSuspensa(
+  fbp: string | null | undefined,
+  ga: string | null | undefined,
+  impressao: string | null = null
+): Promise<boolean> {
+  const limpo = (v: string | null | undefined) => (v && /^[A-Za-z0-9._-]{6,300}$/.test(v) ? v : null);
+  const f = limpo(fbp);
+  const g = limpo(ga);
+  const imp = impressao && /^[0-9a-f]{64}$/.test(impressao) ? impressao : null;
+  if (!f && !g && !imp) return false;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const chave = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !chave) return false;
+  try {
+    const db = createClient(url, chave, { auth: { persistSession: false } });
+    const { data } = await db
+      .from("origem_do_clique")
+      .select("empresa_id")
+      .or([f ? `fbp.eq."${f}"` : null, g ? `ga_client_id.eq."${g}"` : null, imp ? `impressao.eq.${imp}` : null].filter(Boolean).join(","))
+      .limit(20);
+    const ids = [...new Set(((data ?? []) as { empresa_id: string }[]).map((r) => r.empresa_id))];
+    if (!ids.length) return false;
+    const { data: empresas } = await db.from("empresas").select("owner_user_id").in("id", ids);
+    for (const e of (empresas ?? []) as { owner_user_id: string | null }[]) {
+      if (!e.owner_user_id) continue;
+      const { data: u } = await db.auth.admin.getUserById(e.owner_user_id);
+      const banida = (u?.user as unknown as { banned_until?: string | null } | undefined)?.banned_until;
+      if (banida && new Date(banida).getTime() > Date.now()) return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * O cadastro pode seguir? Devolve null, ou a frase de recusa (impessoal
  * para o bloqueio; a do e-mail diz o que corrigir). Cada recusa conta no
  * /admin (207), com a porta e o motivo.
@@ -122,6 +165,9 @@ export async function recusaDoCadastro(p: {
   };
   if (p.ip && IPS_BLOQUEADOS.has(p.ip)) return barrar("ip_bloqueado", MOTIVO_IMPESSOAL);
   if ((p.fbp && NAVEGADORES.has(p.fbp)) || (p.ga && NAVEGADORES.has(p.ga))) return barrar("navegador_barrado", MOTIVO_IMPESSOAL);
+  const impressao = impressaoDoCookie();
+  if (impressao && IMPRESSOES_BLOQUEADAS.has(impressao)) return barrar("impressao_digital", MOTIVO_IMPESSOAL);
+  if (await navegadorDeContaSuspensa(p.fbp, p.ga, impressao)) return barrar("conta_suspensa", MOTIVO_IMPESSOAL);
   const d = dominio(p.email);
   if (DOMINIOS_DESCARTAVEIS.has(d)) return barrar("email_descartavel", "Use um e-mail permanente — endereços temporários não são aceitos.");
   if (!(await dominioRecebe(d))) return barrar("email_sem_caixa", "Este endereço de e-mail não recebe mensagens. Confira o e-mail digitado.");

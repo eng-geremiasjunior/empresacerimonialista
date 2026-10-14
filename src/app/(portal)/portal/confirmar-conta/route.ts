@@ -95,6 +95,7 @@ export async function GET() {
           utm_content: p.origem?.utm_content ?? null,
           ip: p.ip,
           user_agent: p.user_agent,
+          impressao: p.impressao ?? null,
         },
         { onConflict: "empresa_id", ignoreDuplicates: true }
       );

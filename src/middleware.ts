@@ -2,7 +2,26 @@ import { soCampanha } from "@/lib/parametros-de-campanha";
 import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 import { appUrl, PREFIXOS_DO_PORTAL } from "@/lib/app-url";
-import { IPS_BLOQUEADOS, ipDoPedido } from "@/lib/ips-bloqueados";
+import {
+  COOKIE_BARRADO,
+  COOKIE_IMPRESSAO,
+  IMPRESSOES_BLOQUEADAS,
+  IPS_BLOQUEADOS,
+  NAVEGADORES_BLOQUEADOS,
+  ehRoboDeBuscaOuPrevia,
+  ipDoPedido,
+  navegadorDoPedido,
+  paisDoPedido,
+} from "@/lib/ips-bloqueados";
+
+// Chamados por serviços de fora do país, com segredo próprio: as rotinas
+// (Vercel) e a fila do Google (o banco, pelo pg_net). Os avisos da
+// Pagar.me e do WhatsApp (/api/webhooks) nem passam pelo middleware.
+const SEM_FRONTEIRA = ["/api/cron/", "/api/google/fila"];
+
+function barrar(): NextResponse {
+  return new NextResponse("Acesso indisponível.", { status: 403, headers: { "content-type": "text/plain; charset=utf-8" } });
+}
 import { registrarTentativaBarrada } from "@/lib/tentativas-barradas";
 
 // O que o portal da debutante usa: as telas do portal, a entrada por
@@ -57,12 +76,41 @@ function enderecoDoPortal(request: NextRequest): NextResponse | null {
 }
 
 export async function middleware(request: NextRequest, event: NextFetchEvent) {
-  // IPs barrados no site inteiro (ips-bloqueados.ts, 12/10/2026); cada
-  // tentativa conta no /admin (207), sem segurar a resposta
+  // Barrado no site inteiro (ips-bloqueados.ts): o IP, o navegador (os
+  // cookies do pixel e do Google) ou a marca que o site deixou na última
+  // vez. Quem é barrado ganha a marca por 1 ano: troca o IP e continua
+  // barrado. Cada tentativa conta no /admin (207), sem segurar a resposta.
   const ip = ipDoPedido(request.headers);
-  if (ip && IPS_BLOQUEADOS.has(ip)) {
-    event.waitUntil(registrarTentativaBarrada("site", "ip_bloqueado", ip));
-    return new NextResponse("Acesso indisponível.", { status: 403, headers: { "content-type": "text/plain; charset=utf-8" } });
+  const nav = navegadorDoPedido((n) => request.cookies.get(n)?.value);
+  const impressao = request.cookies.get(COOKIE_IMPRESSAO)?.value ?? null;
+  const porIp = !!ip && IPS_BLOQUEADOS.has(ip);
+  const porImpressao = !!impressao && IMPRESSOES_BLOQUEADAS.has(impressao);
+  const porNavegador =
+    (!!nav.fbp && NAVEGADORES_BLOQUEADOS.has(nav.fbp)) ||
+    (!!nav.ga && NAVEGADORES_BLOQUEADOS.has(nav.ga)) ||
+    request.cookies.get(COOKIE_BARRADO)?.value === "1";
+  if (porIp || porNavegador || porImpressao) {
+    event.waitUntil(
+      registrarTentativaBarrada("site", porIp ? "ip_bloqueado" : porImpressao ? "impressao_digital" : "navegador_barrado", ip)
+    );
+    const barrado = barrar();
+    barrado.cookies.set(COOKIE_BARRADO, "1", { maxAge: 60 * 60 * 24 * 365, path: "/", httpOnly: true, sameSite: "lax", secure: true });
+    return barrado;
+  }
+
+  // Só o Brasil (dono, 14/10/2026: "não atendo outros países"; VPN costuma
+  // sair por fora). Sem país (servidor local) não barra. Os robôs de busca
+  // e de prévia de link leem as páginas públicas; nada além de GET.
+  const pais = paisDoPedido(request.headers);
+  const caminho = request.nextUrl.pathname;
+  if (
+    pais &&
+    pais !== "BR" &&
+    !SEM_FRONTEIRA.some((p) => caminho.startsWith(p)) &&
+    !(request.method === "GET" && !caminho.startsWith("/api/") && ehRoboDeBuscaOuPrevia(request.headers.get("user-agent")))
+  ) {
+    event.waitUntil(registrarTentativaBarrada("site", "fora_do_brasil", ip));
+    return barrar();
   }
 
   // Webhooks são chamados por serviços externos (Meta/WhatsApp), sem

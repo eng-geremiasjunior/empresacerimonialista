@@ -37,7 +37,7 @@ import {
 } from "@/lib/planos";
 import { registrarConversao } from "@/lib/conversoes";
 import { COOKIE_ORIGEM } from "@/lib/marketing";
-import { navegadorDoCookie, recusaDoCadastro } from "@/lib/bloqueios-de-cadastro";
+import { impressaoDoCookie, navegadorDoCookie, recusaDoCadastro } from "@/lib/bloqueios-de-cadastro";
 import { registrarTentativaBarrada } from "@/lib/tentativas-barradas";
 import { idDoLoginNaoConfirmado, mandarConfirmacaoDoCadastro } from "@/lib/supabase/confirmacao-de-cadastro";
 import { hojeBR } from "@/lib/tempo";
@@ -828,6 +828,7 @@ async function assinarPara(
           ...origem,
           ip: h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
           user_agent: h.get("user-agent")?.slice(0, 300) ?? null,
+          impressao: impressaoDoCookie(),
         },
         { onConflict: "empresa_id", ignoreDuplicates: true }
       );

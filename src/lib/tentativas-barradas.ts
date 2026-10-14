@@ -6,7 +6,7 @@
 // Leve de propósito (só fetch, sem node: nem next/headers): o middleware
 // roda na borda. Nunca lança e nunca segura a resposta por mais de 2 s.
 
-export type PortaBarrada = "site" | "cadastro" | "assinatura";
+export type PortaBarrada = "site" | "cadastro" | "assinatura" | "portal";
 
 export type MotivoBarrado =
   | "ip_bloqueado"
@@ -15,7 +15,9 @@ export type MotivoBarrado =
   | "email_descartavel"
   | "email_sem_caixa"
   | "documento_repetido"
-  | "conta_repetida";
+  | "conta_repetida"
+  | "fora_do_brasil"
+  | "impressao_digital";
 
 export async function registrarTentativaBarrada(porta: PortaBarrada, motivo: MotivoBarrado, ip: string | null): Promise<void> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

@@ -33,6 +33,7 @@ import { portalBase } from "@/lib/app-url";
 import { enviarConfirmacaoDaConta } from "@/lib/email-conta-da-familia";
 import { TERMOS_VERSAO } from "@/lib/termos";
 import { COOKIE_ORIGEM } from "@/lib/marketing";
+import { impressaoDoCookie, recusaDoCadastro } from "@/lib/bloqueios-de-cadastro";
 
 export type TipoDaFesta = "casamento" | "debutante";
 export type PapelDaFamilia = "noiva" | "noivo" | "mae" | "pai" | "outro";
@@ -71,6 +72,8 @@ export type FamiliaPendente = {
   /** o aceite dos termos é do momento do cadastro, não do clique no link */
   ip: string | null;
   user_agent: string | null;
+  /** a impressão digital do navegador no cadastro (209); vai para origem_do_clique na confirmação */
+  impressao?: string | null;
   /**
    * A origem do anúncio no momento do cadastro (06/10/2026): só os
    * identificadores do clique (cookie do pixel, fbc, client_id do GA4) —
@@ -254,6 +257,18 @@ export async function criarContaDaFamilia(d: DadosDaFamilia): Promise<ResultadoD
   if (problema) return problema;
 
   const email = d.email.trim().toLowerCase();
+  // os mesmos bloqueios do cadastro da cerimonialista (14/10/2026: quem
+  // abriu contas em série voltou por aqui): IP, navegador barrado ou de
+  // conta suspensa, e-mail descartável ou sem caixa
+  const navegador = origemDoClique();
+  const recusa = await recusaDoCadastro({
+    porta: "portal",
+    ip: ip === "desconhecido" ? null : ip,
+    fbp: navegador?.fbp,
+    ga: navegador?.ga,
+    email,
+  });
+  if (recusa) return { error: recusa };
   const pendente: FamiliaPendente = {
     tipo: d.tipo,
     papel: d.papel,
@@ -264,6 +279,7 @@ export async function criarContaDaFamilia(d: DadosDaFamilia): Promise<ResultadoD
     termos_versao: TERMOS_VERSAO,
     ip: ip === "desconhecido" ? null : ip.slice(0, 60),
     user_agent: headers().get("user-agent")?.slice(0, 300) ?? null,
+    impressao: impressaoDoCookie(),
     origem: origemDoClique(),
   };
 

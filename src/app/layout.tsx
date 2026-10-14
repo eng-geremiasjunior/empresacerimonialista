@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, Instrument_Sans, Inter } from "next/font/google";
 import "./globals.css";
+import { ImpressaoDoNavegador } from "@/components/ImpressaoDoNavegador";
 
 // Faces reais do Celebra Pro Design System. Antes disto o app declarava as
 // famílias nos componentes mas nunca as carregava — caía no fallback do
@@ -72,6 +73,7 @@ export default function RootLayout({
         className={`${inter.variable} ${instrumentSans.variable} ${plexMono.variable} min-h-screen bg-stone-50 font-sans text-stone-900 antialiased`}
       >
         {children}
+        <ImpressaoDoNavegador />
       </body>
     </html>
   );

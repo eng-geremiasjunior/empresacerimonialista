@@ -31,6 +31,7 @@ const PORTA: Record<TentativaBarrada["porta"], string> = {
   site: "site",
   cadastro: "cadastro gratuito",
   assinatura: "cadastro com cartão",
+  portal: "cadastro no portal da noiva/debutante",
 };
 
 const MOTIVO: Record<TentativaBarrada["motivo"], string> = {
@@ -41,6 +42,8 @@ const MOTIVO: Record<TentativaBarrada["motivo"], string> = {
   email_sem_caixa: "e-mail que não recebe mensagens",
   documento_repetido: "CPF/CNPJ de outra conta",
   conta_repetida: "já tem conta (mesmo navegador ou WhatsApp)",
+  fora_do_brasil: "acesso de fora do Brasil",
+  impressao_digital: "impressão digital do navegador",
 };
 
 function haQuanto(iso: string, agora: Date): string {

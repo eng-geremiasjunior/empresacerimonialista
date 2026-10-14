@@ -40,7 +40,7 @@ import { cookies, headers } from "next/headers";
 import { createClient as createServico } from "@supabase/supabase-js";
 import { registrarConversao } from "@/lib/conversoes";
 import { emailMascarado } from "@/lib/contas-semelhantes";
-import { MOTIVO_IMPESSOAL, recusaDoCadastro } from "@/lib/bloqueios-de-cadastro";
+import { MOTIVO_IMPESSOAL, impressaoDoCookie, recusaDoCadastro } from "@/lib/bloqueios-de-cadastro";
 import { registrarTentativaBarrada } from "@/lib/tentativas-barradas";
 import { mandarConfirmacaoDoCadastro } from "@/lib/supabase/confirmacao-de-cadastro";
 import { COOKIE_ORIGEM } from "@/lib/marketing";
@@ -408,6 +408,7 @@ async function depoisDeNascer(
           ...o,
           ip: c.ip === "desconhecido" ? null : c.ip,
           user_agent: c.userAgent,
+          impressao: impressaoDoCookie(),
         },
         { onConflict: "empresa_id", ignoreDuplicates: true }
       );
