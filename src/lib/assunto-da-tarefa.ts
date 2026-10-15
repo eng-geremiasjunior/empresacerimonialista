@@ -9,12 +9,20 @@
 // Fora da Organização (que já agrupa pela decisão), o título leva o assunto
 // na frente: "Buffet · Registrar o valor no financeiro (1ª parcela)".
 
+// Desde a 210 (15/10/2026) o método já chama a contratação pelo nome do
+// serviço ("Buffet"); o assunto dela vem de CONTRATACOES_DO_METODO. A regra
+// do "Contratar…" fica para o título que a cerimonialista escreveu à mão.
+
+import { CONTRATACOES_DO_METODO } from "@/lib/contratacoes-do-metodo";
+
 const CONTRATAR = /^(degustar e )?contratar\s+/i;
 const ARTIGO = /^(o|a|os|as)\s+/i;
 
-/** "Contratar o buffet" → "Buffet". Só para contratações; o resto, null. */
+/** "Buffet" ou "Contratar o buffet" → "Buffet". Só para contratações; o resto, null. */
 export function assuntoDaDecisao(titulo: string | null | undefined): string | null {
   const t = (titulo ?? "").trim();
+  const doMetodo = CONTRATACOES_DO_METODO.get(t);
+  if (doMetodo) return doMetodo;
   if (!CONTRATAR.test(t)) return null;
   const resto = t.replace(CONTRATAR, "").replace(ARTIGO, "").trim();
   if (!resto) return null;

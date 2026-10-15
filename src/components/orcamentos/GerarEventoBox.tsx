@@ -48,7 +48,7 @@ export function GerarEventoBox({
         O cliente aprovou e enviou os dados.{" "}
         {dataEvento
           ? "Confira a data e gere o evento."
-          : "Faltou definir a data do evento — informe-a para criar o evento."}
+          : "Falta a data do evento: preencha para criar o evento."}
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <input

@@ -1849,7 +1849,7 @@ function BannerDataOrg({ eventId }: { eventId: string }) {
     >
       <div style={{ minWidth: 0, flex: 1 }}>
         <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "var(--text-strong)" }}>
-          Defina a data do casamento
+          Falta a data do casamento
         </p>
         <p style={{ margin: "1px 0 0", fontSize: 12.5, color: "var(--text-body)" }}>
           Sem data, as tarefas ficam sem prazo e a agenda perde referência.
@@ -1875,7 +1875,7 @@ function BannerDataOrg({ eventId }: { eventId: string }) {
         }
         disabled={!data || pend}
       >
-        {pend ? "Definindo…" : "Definir data"}
+        {pend ? "Salvando…" : "Salvar a data"}
       </Button>
     </div>
   );

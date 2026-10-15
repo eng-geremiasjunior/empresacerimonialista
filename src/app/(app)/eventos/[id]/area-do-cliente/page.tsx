@@ -138,7 +138,7 @@ export default async function AreaDoClientePage({
           A cliente verá &ldquo;Proprietária&rdquo; como o nome da
           cerimonialista.{" "}
           <Link href="/configuracoes" className="font-medium underline">
-            Defina seu nome em Configurações
+            Escreva seu nome em Configurações
           </Link>
           .
         </p>

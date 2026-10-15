@@ -68,7 +68,7 @@ export async function definirDataEvento(
     .update({ date: data })
     .eq("id", eventId);
 
-  if (error) return { error: "Não foi possível definir a data." };
+  if (error) return { error: "Não foi possível salvar a data." };
   revalidatePath(`/eventos/${eventId}/planejamento`);
   revalidatePath(`/eventos/${eventId}/organizacao`);
   revalidatePath(`/eventos/${eventId}`);

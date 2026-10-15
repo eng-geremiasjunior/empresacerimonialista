@@ -148,7 +148,7 @@ export async function enviarPorEmail(
     .select("id, type, name, date, time, location, city")
     .eq("id", eventId)
     .maybeSingle();
-  if (!ev?.date) return { enviados: 0, falharam: 0, restam: 0, error: "Defina a data do evento antes de mandar." };
+  if (!ev?.date) return { enviados: 0, falharam: 0, restam: 0, error: "Falta a data do evento: preencha antes de mandar." };
 
   let consulta = supabase
     .from("evento_convidado")

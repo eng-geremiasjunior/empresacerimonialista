@@ -89,7 +89,7 @@ export const GRUPOS_AJUDA: GrupoAjuda[] = [
         id: "guia-estilo",
         pergunta: "Como monto e envio o guia de estilo?",
         resposta:
-          "Dentro do Planejamento, na decisão \"Fazer o briefing de decoração\". Escolha uma paleta para começar, ajuste cores, flores, materiais e as referências da cliente, e toque em \"Mandar o casal ver\". A cliente aprova pelo portal — e só depois da aprovação o guia pode ser compartilhado com fornecedor.",
+          "Dentro do Planejamento, na decisão \"Briefing da decoração\". Escolha uma paleta para começar, ajuste cores, flores, materiais e as referências da cliente, e toque em \"Mandar o casal ver\". A cliente aprova pelo portal — e só depois da aprovação o guia pode ser compartilhado com fornecedor.",
       },
       {
         id: "guia-fornecedor",

@@ -32,7 +32,7 @@ function instrucao(assuntos: string[]) {
     `Devolva APENAS um JSON válido, sem comentários e sem markdown, neste formato:\n` +
     `{ "assuntos": [ { "nome": string, "decisoes": [ { "titulo": string, "dias_antes": number | null, "responsavel": "cerimonialista" | "cliente" | "ambos" } ] } ] }\n\n` +
     `Regras:\n` +
-    `- Cada item do checklist vira uma decisão, com título curto e no infinitivo ("Contratar o buffet", "Enviar os convites").\n` +
+    `- Cada item do checklist vira uma decisão, com título curto que diz o nome da coisa, como no caderno de uma cerimonialista ("Buffet", "Cardápio final", "Envio dos convites", "Entrada no cartório"). Nunca comece com "Definir", "Determinar" ou outro verbo repetido.\n` +
     `- Agrupe as decisões por ASSUNTO (buffet, decoração, foto, convidados…). Quando couber, use EXATAMENTE um destes nomes de assunto que ela já tem: ${assuntos.length ? assuntos.map((a) => `"${a}"`).join(", ") : "(nenhum)"}. Só crie assunto novo quando nenhum servir.\n` +
     `- "dias_antes": quantos dias antes do evento a decisão deve estar feita. "12 meses antes" = 360; "6 meses" = 180; "90 dias" = 90; "1 semana" = 7; "no dia" = 0. Se o checklist estiver dividido por mês ou fase, use o prazo da seção. Sem prazo no texto: null.\n` +
     `- "responsavel": "cliente" quando é da noiva, dos noivos, da família ou da cliente; "cerimonialista" quando é da assessoria/cerimonial; "ambos" quando é junto ou não está claro.\n` +

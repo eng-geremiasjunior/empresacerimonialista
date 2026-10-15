@@ -47,7 +47,7 @@ export default async function CerimonialistasPage() {
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Equipe</h1>
           <p className="text-sm text-gray-500">
-            Gerencie quem administra os eventos da sua empresa
+            Quem trabalha com você e o que cada pessoa pode fazer
           </p>
         </div>
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
@@ -77,8 +77,8 @@ export default async function CerimonialistasPage() {
         <h1 className="text-xl font-semibold text-gray-900">Equipe</h1>
         <p className="text-sm text-gray-500">
           {readOnly
-            ? "Equipe da empresa (visualização)"
-            : "Gerencie quem administra os eventos da sua empresa"}
+            ? "Quem trabalha com você na empresa"
+            : "Quem trabalha com você e o que cada pessoa pode fazer"}
         </p>
       </div>
 

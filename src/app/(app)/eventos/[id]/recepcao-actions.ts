@@ -63,7 +63,7 @@ function frase(mensagem: string, fallback: string): string {
     return "Você não tem permissão para editar este evento.";
   }
   if (mensagem.includes("evento_sem_data")) {
-    return "Defina a data do evento antes de abrir a recepção.";
+    return "Falta a data do evento: preencha antes de abrir a recepção.";
   }
   console.error("[eorganizei:recepcao]", mensagem);
   return fallback;

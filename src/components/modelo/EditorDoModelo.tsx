@@ -414,7 +414,7 @@ function ImportarChecklist({ tipo, rotulo }: { tipo: string; rotulo: (r: Respons
           </div>
           <textarea
             className={`${campo} mt-3 h-40 w-full font-mono text-[13px]`}
-            placeholder={"12 meses antes\n- Definir a data\n- Contratar o espaço\n\n6 meses antes\n- Degustação do buffet"}
+            placeholder={"12 meses antes\n- Data do casamento\n- Espaço da festa\n\n6 meses antes\n- Degustação do buffet"}
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
           />
