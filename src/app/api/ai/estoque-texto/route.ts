@@ -11,6 +11,7 @@ import { registrarUsoDaIa } from "@/lib/registro-do-sistema";
 import { redigirParaExtracao } from "@/lib/contrato-extracao-core";
 import { INSTRUCAO_ESTOQUE_TEXTO, normalizarNotaLida, notaVazia } from "@/lib/estoque-leitura-core";
 import { CARGOS_QUE_ESCREVEM } from "@/lib/estoque-core";
+import { possoUsar } from "@/lib/supabase/nivel-do-plano";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -28,6 +29,8 @@ export async function POST(req: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
+  // planos por recurso (09/10/2026): a leitura por IA é dos planos pagos
+  if (!(await possoUsar("leitura_ia"))) return NextResponse.json({ error: "A leitura de arquivos por inteligência artificial é dos planos pagos." }, { status: 403 });
 
   const { cargo } = await getMeuCargo();
   if (!(CARGOS_QUE_ESCREVEM as readonly string[]).includes(cargo ?? "")) {

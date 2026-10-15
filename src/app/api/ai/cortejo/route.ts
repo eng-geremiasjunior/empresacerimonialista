@@ -11,6 +11,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { registrarUsoDaIa } from "@/lib/registro-do-sistema";
 import { PAPEIS_DO_CORTEJO, normalizarEntradasLidas } from "@/lib/cortejo-casamento";
+import { possoUsar } from "@/lib/supabase/nivel-do-plano";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -50,6 +51,8 @@ export async function POST(req: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Entre de novo." }, { status: 401 });
+  // planos por recurso (09/10/2026): a leitura por IA é dos planos pagos
+  if (!(await possoUsar("leitura_ia"))) return NextResponse.json({ error: "A leitura de arquivos por inteligência artificial é dos planos pagos." }, { status: 403 });
 
   const { eventId, texto } = (await req.json().catch(() => ({}))) as { eventId?: string; texto?: string };
   if (!eventId || typeof texto !== "string") {

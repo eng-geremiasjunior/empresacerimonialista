@@ -15,6 +15,7 @@ import { createClient } from "@/lib/supabase/server";
 import { registrarUsoDaIa } from "@/lib/registro-do-sistema";
 import { montarContextoEvento } from "@/lib/supabase/assistente-evento";
 import { redigirContatos } from "@/lib/assistente-gate";
+import { possoUsar } from "@/lib/supabase/nivel-do-plano";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +43,8 @@ export async function POST(req: Request) {
   if (!user) {
     return NextResponse.json({ error: "não autenticado" }, { status: 401 });
   }
+  // planos por recurso (09/10/2026): o assistente é do Master
+  if (!(await possoUsar("ia"))) return NextResponse.json({ error: "O assistente do evento é do plano Master." }, { status: 403 });
 
   const { eventId, messages } = (await req.json()) as {
     eventId?: string;

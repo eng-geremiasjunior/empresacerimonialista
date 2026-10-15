@@ -18,6 +18,8 @@ export const AVISOS_GOOGLE: Record<string, string> = {
   recusado:
     "A conexão não foi feita: sem a permissão de criar uma agenda, o sistema não tem onde gravar. Tente de novo e marque as permissões.",
   erro: "Não foi possível conectar agora. Tente de novo em instantes.",
+  // planos por recurso (09/10/2026)
+  plano: "A Agenda do Google é dos planos pagos. Assine um plano para conectar.",
 };
 
 /** "2026-09-22T…" → "22/09" */

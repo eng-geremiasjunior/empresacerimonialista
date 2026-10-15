@@ -11,6 +11,7 @@ import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { appUrl } from "@/lib/app-url";
+import { possoUsar } from "@/lib/supabase/nivel-do-plano";
 import {
   COOKIE_ESTADO,
   COOKIE_VOLTA,
@@ -33,6 +34,9 @@ export async function GET(request: NextRequest) {
   if (!user) return NextResponse.redirect(new URL(`/login?next=${encodeURIComponent(destino)}`, appUrl()));
   const { data: cargo } = await supabase.rpc("meu_cargo");
   if (!(cargo as unknown[] | null)?.length) return voltar("erro");
+  // planos por recurso (09/10/2026): a Agenda do Google é dos planos pagos
+  // (a noiva da conta de família fica fora da matriz)
+  if (!(await possoUsar("google_agenda"))) return voltar("plano");
 
   const nonce = randomBytes(16).toString("hex");
   const resposta = NextResponse.redirect(urlDeAutorizacao(nonce));

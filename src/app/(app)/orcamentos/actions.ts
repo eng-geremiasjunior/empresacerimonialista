@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { enviarEmailOrcamento } from "@/lib/email";
 import { TEMPLATES_POR_TIPO } from "@/lib/proposta-templates";
 import type { EventType } from "@/lib/types";
+import { possoUsar } from "@/lib/supabase/nivel-do-plano";
 
 export type SalvarOrcamentoState =
   | { error: string }
@@ -364,6 +365,10 @@ export async function enviarOrcamento(
   if (!orc) return { error: "Orçamento não encontrado." };
   if (orc.status !== "rascunho") {
     return { error: "Este orçamento já foi enviado." };
+  }
+  // planos por recurso (09/10/2026): no gratuito ela monta, mas não envia
+  if (!(await possoUsar("proposta"))) {
+    return { error: "O envio de propostas é dos planos pagos. Assine um plano para enviar." };
   }
 
   const { error } = await supabase

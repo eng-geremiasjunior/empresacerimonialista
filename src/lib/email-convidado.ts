@@ -173,3 +173,36 @@ export async function enviarEmailConvidado(
 
   return enviarViaResend({ tipo: "convidado_lembrete", to: d.para, subject: assunto, html });
 }
+
+/**
+ * A entrada, mandada pela equipe (aba RSVP, 13/10/2026). Para quem foi
+ * confirmado à mão — respondeu no WhatsApp da cerimonialista — e por
+ * isso nunca viu o QR. O link é o pessoal: para quem confirmou, a página
+ * abre direto no QR, com "Guardar no meu WhatsApp".
+ */
+export async function enviarEntradaConvidado(
+  d: EmailConvidado
+): Promise<{ ok: boolean; error?: string }> {
+  const link = linkPublico(`/confirmar/${d.hash}`);
+  const quando = dataLonga(d.data) + (d.hora ? ` · ${d.hora.slice(0, 5)}` : "");
+  const onde = [d.local, d.cidade].filter(Boolean).join(" · ");
+  const assunto = `Sua entrada — ${conviteCom(d.convitePara, d.anfitrioes)}`;
+  const html = `
+  <div style="font-family:'Jost',system-ui,-apple-system,sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;color:#332B24;background:#FDFBF7">
+    <p style="margin:0 0 28px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:#776D60">Sua entrada</p>
+    <p style="margin:0 0 6px;font-size:15px">Olá, ${d.nome}!</p>
+    <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#463E36">
+      Sua presença está confirmada${d.pessoas > 1 ? ` para ${d.pessoas} pessoas` : ""} ${paraQuem(d)}.
+      Na entrada, é só mostrar o QR que está no link abaixo.
+    </p>
+    <div style="border:1px solid #E3D3B7;border-radius:12px;background:linear-gradient(135deg,#FDFAF4,#F8F1E4);padding:20px 22px;margin:0 0 24px">
+      <p style="margin:0 0 8px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:#776D60">Quando e onde</p>
+      <p style="margin:0;font-size:15px;line-height:1.7;color:#332B24">${quando}${onde ? `<br/>${onde}` : ""}</p>
+    </div>
+    <p style="margin:0 0 28px">
+      <a href="${link}" style="display:inline-block;border:1px solid #E2D6C2;border-radius:8px;background:#FDFBF7;color:#6E5533;text-decoration:none;padding:12px 20px;font-size:13px">Ver minha entrada</a>
+    </p>
+    <p style="margin:0;font-size:11px;line-height:1.6;color:#8B8072">Se o botão não abrir, copie este endereço:<br/>${link}</p>
+  </div>`;
+  return enviarViaResend({ tipo: "convidado_entrada", to: d.para, subject: assunto, html });
+}

@@ -73,6 +73,9 @@ const ROTINAS = [
   // ontem e cujo aviso não chegou vira assinante aqui — e a régua, logo
   // abaixo, já não fala com ela como se o teste tivesse acabado
   "cobranca-do-teste",
+  // logo depois: quem acabou de virar assinante não perde o RSVP, e o teste
+  // que venceu sem pagar fecha o link de confirmação (204)
+  "rsvp-do-plano",
   // A régua de e-mails do teste vem logo depois (17/09/2026): ela
   // ficava em 11º e não chegava a rodar — a função tem 60 segundos para
   // a lista inteira, e em 17/09 nenhuma conta de teste tinha recebido

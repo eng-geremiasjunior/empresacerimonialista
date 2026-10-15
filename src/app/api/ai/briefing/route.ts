@@ -14,6 +14,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { registrarUsoDaIa } from "@/lib/registro-do-sistema";
+import { possoUsar } from "@/lib/supabase/nivel-do-plano";
 import {
   briefingV2Vazio,
   CATEGORIAS_BRIEFING,
@@ -82,6 +83,8 @@ export async function POST(req: Request) {
   if (!user) {
     return NextResponse.json({ error: "não autenticado" }, { status: 401 });
   }
+  // planos por recurso (09/10/2026): a leitura por IA é dos planos pagos
+  if (!(await possoUsar("leitura_ia"))) return NextResponse.json({ error: "A leitura de arquivos por inteligência artificial é dos planos pagos." }, { status: 403 });
 
   const { texto } = (await req.json()) as { texto?: string };
   if (typeof texto !== "string" || texto.trim().length < 20) {

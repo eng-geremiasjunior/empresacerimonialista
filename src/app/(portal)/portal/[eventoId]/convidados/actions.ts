@@ -10,6 +10,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { nivelDoPlanoDoEvento } from "@/lib/supabase/nivel-do-plano";
 
 export type ConvidadoForm = {
   nome: string;
@@ -138,6 +139,11 @@ export async function fecharOuAbrirLink(
   eventoId: string,
   aberto: boolean
 ): Promise<Retorno> {
+  // a 204 não deixa abrir no evento de cerimonialista do Gratuito
+  if (aberto) {
+    const nivel = await nivelDoPlanoDoEvento(eventoId);
+    if (nivel === "gratuito") return { error: "A confirmação online não está disponível neste evento." };
+  }
   // Mesmo motivo do lembrete acima: sem RPC, a válvula não fechava nada
   // e a tela confirmava o encerramento que não aconteceu.
   const supabase = createClient();
