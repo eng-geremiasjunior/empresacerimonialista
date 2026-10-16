@@ -19,7 +19,7 @@ type Parte = { label: string; seg: string };
 
 const PARTES_CSS = `
 .mo-partes{display:flex; align-items:center; gap:28px; padding:10px 24px;
-  background:var(--mo-marfim); border-bottom:1px solid var(--mo-linha); font-size:14px; flex-wrap:wrap}
+  font-size:14px; flex-wrap:wrap; width:100%}
 .mo-parte{color:var(--mo-cinza-1); text-decoration:none; padding:2px 0}
 .mo-parte:hover{color:var(--mo-tinta)}
 .mo-parte-ativa{color:var(--mo-tinta); font-weight:600; text-decoration:underline; text-decoration-thickness:2px;

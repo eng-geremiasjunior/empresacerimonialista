@@ -1,23 +1,49 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { differenceInCalendarDays } from "date-fns";
+import { Pencil, Play } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { EventoContainer } from "@/components/evento/EventoContainer";
+import { CapaDoEvento } from "@/components/eventos/CapaDoEvento";
+import { LinksDoCabecalho } from "@/components/eventos/LinksDoCabecalho";
+import { AcoesDoEvento } from "@/components/eventos/AcoesDoEvento";
+import { PartesDoEvento } from "@/components/moldura/PartesDoEvento";
+import { FatosDaBarra } from "@/components/moldura/contexto";
 import { RequerAtencao } from "@/components/eventos/RequerAtencao";
 import { UltimaAba } from "@/components/eventos/UltimaAba";
 import { LembrarEvento } from "@/components/eventos/LembrarEvento";
-import { PartesDoEvento } from "@/components/moldura/PartesDoEvento";
-import { FatosDaBarra } from "@/components/moldura/contexto";
 import { getCabecalhoEvento } from "@/lib/supabase/resumo-evento";
 import { formatDate } from "@/lib/format";
-import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
+import { rotuloPublico } from "@/lib/capacidades";
+import {
+  EVENT_STATUS_LABELS,
+  EVENT_TYPE_LABELS,
+  type EventStatus,
+  type EventType,
+} from "@/lib/types";
 import { inicioDoDiaBR } from "@/lib/tempo";
 import { FaixaDoExemplo } from "@/components/evento/FaixaDoExemplo";
 import { AREAS_DO_EXEMPLO } from "@/lib/evento-exemplo";
 
-// Página do evento na moldura de programa (15/10/2026, handoff
-// design_handoff_eorganizei). O evento é o documento aberto na aba; a
-// segunda linha são as partes dele (PartesDoEvento) e a barra de status
-// diz quanto falta. "Requer atenção" continua uma linha, só com alerta.
+// Página do evento — Modelo A (28/09/2026, handoff do Claude Design), na
+// moldura de programa desde 15/10/2026: as partes do evento (PartesDoEvento)
+// ficam na faixa do alto e são a navegação; o cabeçalho com a foto grande
+// continua — é a identidade do evento (pedido dele, 16/10/2026). O bloco
+// das três fases saiu: a navegação passou para a faixa.
+// O cabeçalho tem a foto de capa à esquerda, o título em 40px, a linha
+// de data em mono e os três atalhos (Visão geral · O que o cliente vê ·
+// Histórico de alterações). Abaixo, o bloco de fases É a navegação: a
+// fase aberta mostra só as abas dela. "Requer atenção" é uma linha, só
+// quando há alerta.
+
+// Pílula de status: bolinha + rótulo. Confirmado em sálvia; o resto sem
+// comemoração (tokens --ev-st-* em globals.css).
+const STATUS_VARS: Record<EventStatus, string> = {
+  orcamento: "orcamento",
+  confirmado: "confirmado",
+  concluido: "concluido",
+  cancelado: "cancelado",
+};
 
 export default async function EventoLayout({
   children,
@@ -30,7 +56,9 @@ export default async function EventoLayout({
 
   const { data } = await supabase
     .from("events")
-    .select("id, type, name, date, location, city, exemplo, exemplo_visto, cover_image_url, clients(name)")
+    .select(
+      "id, type, name, date, time, location, city, status, guests, exemplo, exemplo_visto, cover_image_url, clients(name)"
+    )
     .eq("id", params.id)
     .single();
 
@@ -41,31 +69,61 @@ export default async function EventoLayout({
     type: EventType;
     name: string | null;
     date: string;
+    time: string | null;
     location: string | null;
     city: string | null;
+    status: EventStatus;
+    guests: number | null;
     exemplo: boolean | null;
     exemplo_visto: string[] | null;
     cover_image_url: string | null;
     clients: { name: string } | null;
   };
 
-  const { saude } = await getCabecalhoEvento(event.id, event.date);
+  const { saude } = await getCabecalhoEvento(
+    event.id,
+    event.date
+  );
 
   const tipoLabel = EVENT_TYPE_LABELS[event.type];
   const titulo =
     event.name ||
     `${tipoLabel}${event.clients?.name ? ` — ${event.clients.name}` : ""}`;
 
-  const dias = differenceInCalendarDays(new Date(`${event.date}T00:00:00`), inicioDoDiaBR());
+  const dias = differenceInCalendarDays(
+    new Date(`${event.date}T00:00:00`),
+    inicioDoDiaBR()
+  );
   const proximidade =
-    dias > 0 ? `faltam ${dias} dia${dias === 1 ? "" : "s"}` : dias === 0 ? "é hoje" : "já realizado";
-  const local = event.location || event.city;
+    dias > 0
+      ? `faltam ${dias} dia${dias === 1 ? "" : "s"}`
+      : dias === 0
+        ? "é hoje"
+        : "já realizado";
 
-  // Modo Evento: aparece na linha das partes na última semana (regra mantida).
+  // Linha de data (mono): 31/10/2026 · 10:00 · faltam 33 dias
+  const linhaData = [formatDate(event.date), event.time?.slice(0, 5), proximidade]
+    .filter(Boolean)
+    .join(" · ");
+
+  // Meta: Casamento · Orla · 400 convidados. O tipo só se repete quando o
+  // título não o diz (título com nome próprio).
+  const local = event.location || event.city;
+  const publico =
+    event.guests != null && event.guests > 0
+      ? event.type === "show"
+        ? `${event.guests.toLocaleString("pt-BR")} de público esperado`
+        : `${event.guests.toLocaleString("pt-BR")} ${rotuloPublico(event.type)}`
+      : null;
+  const meta = [event.name ? tipoLabel : null, local, publico].filter(Boolean).join(" · ");
+
+  // Modo Evento: destaque cresce com a proximidade (regra mantida).
   const modoDestaque = dias <= 7 && dias >= 0;
+  const modoHoje = dias === 0;
 
   // Evento sem nada montado: os alertas diriam "monte o checklist, vincule
-  // fornecedores, monte o roteiro" — os passos do "Para começar" do Resumo.
+  // fornecedores, monte o roteiro" — exatamente os passos do "Para começar"
+  // da Visão geral. Uma vez só.
   const alertas = saude.semDados ? [] : saude.alertas;
 
   // Os fatos da barra de status: quanto falta e onde.
@@ -73,15 +131,12 @@ export default async function EventoLayout({
 
   return (
     <EventoContainer>
-      {/* a moldura de programa (15/10/2026): as partes do evento são a
-          segunda linha; o cabeçalho com capa e o bloco de fases saíram.
-          A capa continua editável em Editar dados do evento. */}
       <PartesDoEvento
         eventId={event.id}
         tipo={event.type}
         nome={titulo}
         data={event.date}
-        modoEventoPerto={modoDestaque}
+        modoEventoPerto={false}
       />
       <FatosDaBarra texto={fatos} />
       <UltimaAba eventId={event.id} />
@@ -101,6 +156,140 @@ export default async function EventoLayout({
           tipo={event.type}
         />
       )}
+
+      <div>
+
+        {/* CABEÇALHO DO EVENTO */}
+        {/* sem overflow:hidden no cartão: o menu "Ações ▾" nasce dentro
+            dele e precisa sair por baixo. Os cantos da foto são arredondados
+            na própria foto (.ev-capa). */}
+        <header
+          className="ev-cabecalho"
+          style={{
+            display: "flex",
+            minHeight: 190,
+            background: "var(--ev-card-bg)",
+            border: "1px solid var(--ev-card-border)",
+            borderRadius: 14,
+          }}
+        >
+          <CapaDoEvento eventId={event.id} atual={event.cover_image_url} />
+
+          <div
+            className="ev-cabecalho-texto"
+            style={{
+              flex: 1,
+              minWidth: 0,
+              padding: "24px 28px 20px",
+              display: "flex",
+              flexWrap: "wrap",
+              justifyContent: "space-between",
+              gap: "16px 24px",
+              alignItems: "flex-end",
+            }}
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0, maxWidth: "100%" }}>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignSelf: "flex-start",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "3px 9px",
+                  borderRadius: 999,
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  background: `var(--ev-st-${STATUS_VARS[event.status]}-bg)`,
+                  color: `var(--ev-st-${STATUS_VARS[event.status]}-fg)`,
+                }}
+              >
+                <span aria-hidden style={{ width: 6, height: 6, borderRadius: 999, background: "currentColor" }} />
+                {EVENT_STATUS_LABELS[event.status]}
+              </span>
+
+              <div style={{ display: "flex", alignItems: "baseline", gap: 12, minWidth: 0 }}>
+                <h1
+                  className="ev-titulo"
+                  title={titulo}
+                  style={{
+                    margin: 0,
+                    fontFamily: "var(--font-title)",
+                    fontWeight: 500,
+                    fontSize: 40,
+                    lineHeight: 1.05,
+                    letterSpacing: "-0.025em",
+                    color: "var(--ev-text-strong)",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    minWidth: 0,
+                  }}
+                >
+                  {titulo}
+                </h1>
+                <Link
+                  href={`/eventos/${event.id}/editar`}
+                  aria-label="Editar dados do evento"
+                  title="Editar dados do evento"
+                  className="shrink-0 rounded p-1 text-[color:var(--ev-text-faint)] hover:bg-black/5 hover:text-[color:var(--ev-text-body)]"
+                >
+                  <Pencil size={15} />
+                </Link>
+              </div>
+
+              <p
+                style={{
+                  margin: 0,
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 13,
+                  letterSpacing: "0.01em",
+                  color: "var(--ev-text-body)",
+                  whiteSpace: "nowrap",
+                  fontWeight: modoDestaque ? 600 : 400,
+                }}
+              >
+                {linhaData}
+              </p>
+
+              {meta && (
+                <p style={{ margin: 0, fontFamily: "var(--font-ui)", fontSize: 14, color: "var(--ev-text-muted)" }}>
+                  {meta}
+                </p>
+              )}
+
+              <LinksDoCabecalho eventId={event.id} />
+            </div>
+
+            <div style={{ display: "flex", flex: "none", gap: 8, alignItems: "center", whiteSpace: "nowrap" }}>
+              <Link
+                href={`/eventos/${event.id}/modo-evento`}
+                className={modoDestaque ? "ev-btn-primario ev-foco" : "ev-btn-secundario ev-foco"}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  height: 40,
+                  padding: "0 16px",
+                  borderRadius: 10,
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 13.5,
+                  fontWeight: 600,
+                  border: modoDestaque ? "1px solid transparent" : "1px solid var(--ev-card-border)",
+                  background: modoDestaque ? "var(--ev-cta)" : "var(--ev-card-bg)",
+                  color: modoDestaque ? "#fff" : "var(--ev-text-strong)",
+                  boxShadow: modoHoje ? "0 0 0 3px var(--ev-cta-ring)" : "none",
+                  transition: "background 140ms ease, border-color 140ms ease",
+                }}
+              >
+                <Play size={14} strokeWidth={2} />
+                Modo Evento
+              </Link>
+              <AcoesDoEvento eventId={event.id} secundario={modoDestaque} />
+            </div>
+          </div>
+        </header>
+      </div>
 
       <RequerAtencao alertas={alertas} eventId={event.id} />
 

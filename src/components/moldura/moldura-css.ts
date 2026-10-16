@@ -12,34 +12,35 @@ export const MOLDURA_CSS = `
   --mo-titulo:var(--font-title), Inter, sans-serif;
   --mo-texto:var(--font-ui), "Instrument Sans", sans-serif;
   --mo-mono:var(--font-mono), "IBM Plex Mono", monospace;
-  min-height:100vh; display:flex; flex-direction:column;
+  min-height:100vh; display:flex;
   background:var(--mo-marfim); color:var(--mo-tinta); font-family:var(--mo-texto);
 }
 .mo-raiz button{font-family:inherit}
 
-/* ---------- faixa das abas (computador) ---------- */
-.mo-cabeca{position:sticky; top:0; z-index:30}
-.mo-faixa{display:flex; align-items:flex-end; gap:4px;
-  padding:8px 16px 0; background:var(--mo-nevoa); border-bottom:1px solid var(--mo-linha)}
-.mo-logo{flex:none; align-self:center; padding:0 22px 8px 4px; font-family:var(--mo-titulo);
-  font-weight:700; font-size:18px; letter-spacing:-0.02em; line-height:1; text-decoration:none}
+/* ---------- o menu primário à esquerda (16/10/2026) ---------- */
+.mo-lateral{flex:none; width:200px; position:sticky; top:0; height:100vh; display:flex; flex-direction:column; gap:22px;
+  padding:16px 12px; background:var(--mo-nevoa); border-right:1px solid var(--mo-linha)}
+.mo-logo{font-family:var(--mo-titulo); font-weight:700; font-size:18px; letter-spacing:-0.02em; line-height:1; text-decoration:none; padding:6px 10px}
 .mo-logo .e{color:var(--mo-tinta)} .mo-logo .o{color:var(--mo-ameixa)}
-.mo-abas{display:flex; align-items:flex-end; gap:4px; min-width:0; overflow:hidden}
-.mo-aba{display:inline-flex; align-items:baseline; gap:8px; padding:7px 14px; white-space:nowrap;
-  font-size:14px; color:var(--mo-cinza-1); text-decoration:none; border:1px solid var(--mo-linha);
-  border-bottom:0; border-radius:4px 4px 0 0; background:transparent; max-width:260px}
-.mo-aba:hover{color:var(--mo-tinta)}
-.mo-aba-nome{overflow:hidden; text-overflow:ellipsis}
-.mo-aba-ativa{position:relative; margin-bottom:-1px; padding-bottom:8px; background:var(--mo-marfim);
-  color:var(--mo-tinta); font-weight:600; border-top:2px solid var(--mo-ameixa); padding-top:6px}
+.mo-primario{display:flex; flex-direction:column; gap:2px}
+.mo-prim{display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:4px; border-left:2px solid transparent;
+  font-size:15px; font-weight:500; color:var(--mo-cinza-1); text-decoration:none}
+.mo-prim svg{width:18px; height:18px; flex:none}
+.mo-prim:hover{color:var(--mo-tinta); background:var(--mo-marfim)}
+.mo-prim-ativo{color:var(--mo-tinta); font-weight:600; background:var(--mo-marfim); border-left-color:var(--mo-ameixa)}
+.mo-coluna{flex:1; min-width:0; min-height:100vh; display:flex; flex-direction:column}
 .mo-aba-conta{font-family:var(--mo-mono); font-size:12px; font-weight:400; color:var(--mo-cinza-2)}
-.mo-aba-x{border:0; background:none; padding:0 0 0 2px; font-size:14px; line-height:1; color:var(--mo-cinza-2); cursor:pointer}
-.mo-aba-x:hover{color:var(--mo-tinta)}
-.mo-aba-solta{border-color:transparent}
-.mo-escritorio-btn{flex:none; align-self:center; margin:0 0 8px auto; padding:5px 12px; border-radius:4px;
-  font-size:14px; font-weight:500; color:var(--mo-tinta); background:transparent;
-  border:1px solid var(--mo-linha); cursor:pointer}
-.mo-escritorio-btn[aria-pressed="true"]{background:var(--mo-ameixa-clara); color:var(--mo-ameixa); border-color:var(--mo-ameixa-clara)}
+
+/* ---------- faixa fina no alto: partes do evento + o ☰ ---------- */
+.mo-cabeca{position:sticky; top:0; z-index:30; display:flex; align-items:stretch; min-height:44px;
+  background:var(--mo-marfim); border-bottom:1px solid var(--mo-linha)}
+#mo-segunda-linha{flex:1; min-width:0; display:flex; align-items:center}
+.mo-menu-btn{flex:none; width:48px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+  border:0; border-left:1px solid var(--mo-linha); background:transparent; cursor:pointer}
+.mo-menu-btn span{display:block; width:18px; height:2px; border-radius:1px; background:var(--mo-tinta)}
+.mo-menu-btn:hover{background:var(--mo-nevoa)}
+.mo-menu-btn[aria-pressed="true"]{background:var(--mo-ameixa-clara)}
+.mo-menu-btn[aria-pressed="true"] span{background:var(--mo-ameixa)}
 
 /* ---------- corpo ---------- */
 .mo-corpo{flex:1; display:flex; min-height:0}
@@ -96,7 +97,8 @@ a.mo-grupo-titulo:hover{text-decoration:underline; text-underline-offset:3px}
 .mo-topo-cel{display:none}
 .mo-rodape-cel{display:none}
 @media (max-width: 1023px){
-  .mo-faixa,.mo-status,.mo-painel,#mo-segunda-linha{display:none}
+  .mo-raiz{flex-direction:column}
+  .mo-lateral,.mo-cabeca,.mo-status,.mo-painel{display:none}
   .mo-topo-cel{display:block; position:sticky; top:0; z-index:30; background:var(--mo-nevoa);
     padding:12px 16px; border-bottom:1px solid var(--mo-linha)}
   .mo-topo-cel .mo-logo{display:inline-block; font-size:16px; padding:0 0 10px}

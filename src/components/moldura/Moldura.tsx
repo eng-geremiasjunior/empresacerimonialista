@@ -1,14 +1,14 @@
 "use client";
 
-// A moldura de programa (15/10/2026, handoff design_handoff_eorganizei).
-// Substitui a barra lateral escura do AppShell por três níveis:
-//   1. abas de evento no alto, como pastas (Hoje, os 3 mais próximos, os
-//      que ela abriu, Todos, + Novo evento);
-//   2. o painel Escritório à direita (fora do evento) — dentro do evento a
-//      segunda linha são as partes dele (PartesDoEvento, no layout do evento);
+// A moldura de programa (15/10/2026, handoff design_handoff_eorganizei),
+// revista por ele em 16/10/2026:
+//   1. o menu primário à esquerda — só o principal do principal: Dashboard,
+//      Eventos e Novo evento;
+//   2. o menu secundário à direita, aberto pelo ☰ no alto (fora do evento);
+//      dentro do evento, a faixa do alto mostra as partes dele (PartesDoEvento);
 //   3. a barra de status fina embaixo: fatos à esquerda; vistas, avisos,
 //      suporte, ajuda e a conta à direita.
-// No celular as abas viram um seletor no topo e a barra vira o rodapé.
+// No celular o menu vira um seletor no topo e a barra vira o rodapé.
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -17,14 +17,13 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { CaixaDeSuporte } from "@/components/suporte/CaixaDeSuporte";
 import { ProvedorDasExplicacoes } from "@/components/ajuda/ContextoDasExplicacoes";
 import { definirExplicacoes } from "@/app/(app)/actions";
-import { MENU_DO_APP as NAV } from "@/lib/menu-do-app";
+import { ICONES_DO_MENU, MENU_DO_APP as NAV } from "@/lib/menu-do-app";
 import { VISOES_FORNECEDORES, VISOES_ORCAMENTOS } from "@/lib/visoes";
 import { FOTO_DA_AREA } from "@/lib/fotos-de-evento";
 import { CHAVE_ULTIMA_TELA, gravar } from "@/lib/ultima-tela";
 import {
   EVENTO_ABAS,
   contagemDaAba,
-  fecharAbaExtra,
   fraseDaProximaFesta,
   lerAbasExtras,
   type AbaDeEvento,
@@ -198,22 +197,18 @@ function Casca(props: Props) {
   const noNovo = pathname === "/eventos/novo";
   const emTodos = pathname === "/eventos" || pathname === "/calendario";
 
-  // ---- abas extras (no aparelho) ----
-  const [extras, setExtras] = useState<AbaDeEvento[]>([]);
+  // ---- o nome do evento aberto (para o seletor do celular) ----
+  const [eventoAberto, setEventoAberto] = useState<AbaDeEvento | null>(null);
   useEffect(() => {
-    const ler = () => setExtras(lerAbasExtras());
-    ler();
+    if (!idDoEvento) return;
+    const doServidor = proximos.find((p) => p.id === idDoEvento);
+    setEventoAberto(doServidor ?? lerAbasExtras().find((a) => a.id === idDoEvento) ?? null);
+    const ler = () => setEventoAberto(lerAbasExtras().find((a) => a.id === idDoEvento) ?? doServidor ?? null);
     window.addEventListener(EVENTO_ABAS, ler);
-    window.addEventListener("storage", ler);
-    return () => {
-      window.removeEventListener(EVENTO_ABAS, ler);
-      window.removeEventListener("storage", ler);
-    };
-  }, []);
-  const idsProximos = new Set(proximos.map((p) => p.id));
-  const extrasVisiveis = extras.filter((e) => !idsProximos.has(e.id));
+    return () => window.removeEventListener(EVENTO_ABAS, ler);
+  }, [idDoEvento, proximos]);
 
-  // ---- painel Escritório: aberto no Hoje a partir de 1280, fechado no evento ----
+  // ---- o menu (☰) à direita: aberto no Dashboard a partir de 1280, fechado no evento ----
   const [painel, setPainel] = useState(false);
   useEffect(() => {
     if (idDoEvento) setPainel(false);
@@ -281,40 +276,23 @@ function Casca(props: Props) {
   const fatos = m?.fatos ?? fraseDaProximaFesta(proximos, hoje);
   const vistas = idDoEvento ? m?.vistas ?? null : null;
 
-  const abaDeEvento = (a: AbaDeEvento, fechavel: boolean) => {
-    const ativa = idDoEvento === a.id;
-    const conta = contagemDaAba(a.data, hoje);
-    return (
-      <span key={a.id} className={`mo-aba ${ativa ? "mo-aba-ativa" : ""}`}>
-        <Link href={`/eventos/${a.id}`} style={{ color: "inherit", textDecoration: "none", display: "inline-flex", gap: 8, alignItems: "baseline", minWidth: 0 }}>
-          <span className="mo-aba-nome">{a.nome}</span>
-          {conta && <span className="mo-aba-conta">{conta}</span>}
-        </Link>
-        {fechavel && (
-          <button
-            type="button"
-            className="mo-aba-x"
-            aria-label={`Fechar a aba ${a.nome}`}
-            onClick={() => {
-              fecharAbaExtra(a.id);
-              if (ativa) window.location.assign("/eventos/dashboard");
-            }}
-          >
-            ×
-          </button>
-        )}
-      </span>
-    );
-  };
+  // o menu primário (16/10/2026, pedido dele): só o principal do principal
+  const primario = [
+    { label: "Dashboard", href: "/eventos/dashboard", ativo: naHoje, icone: ICONES_DO_MENU.dashboard },
+    { label: "Eventos", href: "/eventos", ativo: emTodos || !!idDoEvento, icone: ICONES_DO_MENU.eventos },
+    { label: "Novo evento", href: "/eventos/novo", ativo: noNovo, icone: "M12 4.5v15m7.5-7.5h-15" },
+  ];
 
   // o que o seletor do celular mostra fechado
   const rotuloAtual = (() => {
-    if (naHoje) return { nome: "Hoje", conta: null as string | null };
+    if (naHoje) return { nome: "Dashboard", conta: null as string | null };
     if (noNovo) return { nome: "Novo evento", conta: null };
-    if (emTodos) return { nome: "Todos os eventos", conta: null };
+    if (emTodos) return { nome: "Eventos", conta: null };
     if (idDoEvento) {
-      const a = [...proximos, ...extras].find((x) => x.id === idDoEvento);
-      return { nome: a?.nome ?? "Evento", conta: a ? contagemDaAba(a.data, hoje) : null };
+      return {
+        nome: eventoAberto?.nome ?? "Evento",
+        conta: eventoAberto ? contagemDaAba(eventoAberto.data, hoje) : null,
+      };
     }
     for (const it of escritorio) {
       const s = it.sub?.find((x) => ativoExato(pathname, x.href));
@@ -328,35 +306,38 @@ function Casca(props: Props) {
     <div className="mo-raiz">
       <style dangerouslySetInnerHTML={{ __html: MOLDURA_CSS }} />
 
-      {/* ===== computador: faixa das abas + a segunda linha do evento ===== */}
-      <div className="mo-cabeca">
-      <div className="mo-faixa">
+      {/* ===== computador: o menu primário à esquerda ===== */}
+      <aside className="mo-lateral" aria-label="Menu primário">
         <Logo />
-        <nav className="mo-abas" aria-label="Eventos abertos">
-          <Link href="/eventos/dashboard" className={`mo-aba ${naHoje ? "mo-aba-ativa" : ""}`}>Hoje</Link>
-          {proximos.map((a) => abaDeEvento(a, false))}
-          {extrasVisiveis.map((a) => abaDeEvento(a, true))}
-          <Link href="/eventos" className={`mo-aba ${emTodos ? "mo-aba-ativa" : ""}`}>Todos</Link>
-          {noNovo ? (
-            <span className="mo-aba mo-aba-ativa">
-              Novo evento
-              <Link href="/eventos/dashboard" className="mo-aba-x" aria-label="Fechar o novo evento" style={{ textDecoration: "none" }}>×</Link>
-            </span>
-          ) : (
-            <Link href="/eventos/novo" className="mo-aba mo-aba-solta">+ Novo evento</Link>
-          )}
+        <nav className="mo-primario">
+          {primario.map((p) => (
+            <Link key={p.href} href={p.href} className={`mo-prim ${p.ativo ? "mo-prim-ativo" : ""}`}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d={p.icone} />
+              </svg>
+              {p.label}
+            </Link>
+          ))}
         </nav>
+      </aside>
+
+      <div className="mo-coluna">
+      {/* ===== computador: faixa fina no alto — as partes do evento (por
+          portal, PartesDoEvento) e o ☰ do menu secundário ===== */}
+      <div className="mo-cabeca">
+        <div id="mo-segunda-linha" />
         <button
           type="button"
-          className="mo-escritorio-btn"
+          className="mo-menu-btn"
           aria-pressed={painel}
+          aria-label={painel ? "Fechar o menu" : "Abrir o menu"}
+          title="Menu"
           onClick={() => setPainel((p) => !p)}
         >
-          Escritório
+          <span aria-hidden />
+          <span aria-hidden />
+          <span aria-hidden />
         </button>
-      </div>
-      {/* as partes do evento entram aqui por portal (PartesDoEvento) */}
-      <div id="mo-segunda-linha" />
       </div>
 
       {/* ===== celular: seletor no topo ===== */}
@@ -369,15 +350,9 @@ function Casca(props: Props) {
         </button>
         {seletor && (
           <nav className="mo-lista-cel" aria-label="Ir para">
-            <Link href="/eventos/dashboard">Hoje</Link>
-            {[...proximos, ...extrasVisiveis].map((a) => (
-              <Link key={a.id} href={`/eventos/${a.id}`}>
-                <span>{a.nome}</span>
-                <span className="mo-aba-conta">{contagemDaAba(a.data, hoje)}</span>
-              </Link>
+            {primario.map((p) => (
+              <Link key={p.href} href={p.href}>{p.href === "/eventos/novo" ? "+ Novo evento" : p.label}</Link>
             ))}
-            <Link href="/eventos">Todos</Link>
-            <Link href="/eventos/novo">+ Novo evento</Link>
             {escritorio.map((it, i) => (
               <span key={it.href} style={{ display: "contents" }}>
                 {it.sub ? (
@@ -407,9 +382,9 @@ function Casca(props: Props) {
         </main>
 
         {painel && (
-          <aside className="mo-painel" aria-label="Escritório">
+          <aside className="mo-painel" aria-label="Menu">
             <div className="mo-painel-topo">
-              <span className="mo-rotulo">Escritório</span>
+              <span className="mo-rotulo">Menu</span>
               <button type="button" className="mo-fechar" onClick={() => setPainel(false)}>fechar</button>
             </div>
             {escritorio.map((it) => (
@@ -488,6 +463,7 @@ function Casca(props: Props) {
           </div>
         </footer>
       )}
+      </div>
     </div>
   );
 }
