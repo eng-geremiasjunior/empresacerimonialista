@@ -103,7 +103,7 @@ function itensDoEscritorio(cargo: string | null): Item[] {
       sub: VISOES_FORNECEDORES.filter((x) => pode(x.cargos)).map((x) => ({ label: x.label, href: x.href })),
     });
   }
-  if (visivel("/clientes")) itens.push({ label: "Clientes", href: "/clientes" });
+  // Clientes foi para o menu primário (16/10/2026, pedido dele)
   if (visivel("/estoque")) itens.push({ label: "Estoque", href: "/estoque" });
   // Tarefas e Solicitações saem do menu quando o Hoje as absorver; até lá
   // ficam aqui, para nada sumir de quem usa.
@@ -298,6 +298,7 @@ function Casca(props: Props) {
   const primario = [
     { label: "Dashboard", href: "/eventos/dashboard", ativo: naHoje, icone: ICONES_DO_MENU.dashboard },
     { label: "Eventos", href: "/eventos", ativo: emTodos || !!idDoEvento, icone: ICONES_DO_MENU.eventos },
+    { label: "Clientes", href: "/clientes", ativo: ativoExato(pathname, "/clientes"), icone: ICONES_DO_MENU.clientes },
     { label: "Novo evento", href: "/eventos/novo", ativo: noNovo, icone: "M12 4.5v15m7.5-7.5h-15" },
   ];
 
