@@ -87,20 +87,22 @@ function itensDoEscritorio(cargo: string | null): Item[] {
     return !!i && pode(i.cargos);
   };
   const rotulo: Record<string, string> = { "Vitrine profissional": "Vitrine" };
-  const itens: Item[] = [{ label: "Agenda", href: "/calendario" }];
+  // Propostas, Fornecedores (cadastro), Agenda e Financeiro foram para
+  // "Ferramentas", no menu da esquerda (16/10/2026); aqui fica o resto
+  const itens: Item[] = [];
   if (visivel("/orcamentos")) {
     const v = VISOES_ORCAMENTOS.filter((x) => pode(x.cargos));
     // a ordem do desenho: Propostas, Pedidos, Vitrine, Catálogo, Relatório
     const ordem = ["/orcamentos", "/orcamentos/pedidos", "/orcamentos/pagina", "/catalogo", "/orcamentos/relatorio"];
     v.sort((a, b) => ordem.indexOf(a.href) - ordem.indexOf(b.href));
-    itens.push({ label: "Comercial", href: "/orcamentos", sub: v.map((x) => ({ label: rotulo[x.label] ?? x.label, href: x.href })) });
+    const sub = v.filter((x) => x.href !== "/orcamentos").map((x) => ({ label: rotulo[x.label] ?? x.label, href: x.href }));
+    if (sub.length) itens.push({ label: "Comercial", href: sub[0].href, sub });
   }
-  if (visivel("/financeiro")) itens.push({ label: "Financeiro", href: "/financeiro" });
   if (visivel("/fornecedores")) {
     itens.push({
       label: "Fornecedores",
-      href: "/fornecedores",
-      sub: VISOES_FORNECEDORES.filter((x) => pode(x.cargos)).map((x) => ({ label: x.label, href: x.href })),
+      href: "/contratos",
+      sub: VISOES_FORNECEDORES.filter((x) => pode(x.cargos) && x.href !== "/fornecedores").map((x) => ({ label: x.label, href: x.href })),
     });
   }
   // Clientes foi para o menu primário (16/10/2026, pedido dele)
@@ -110,6 +112,42 @@ function itensDoEscritorio(cargo: string | null): Item[] {
   if (visivel("/tarefas")) itens.push({ label: "Tarefas", href: "/tarefas" });
   if (visivel("/solicitacoes")) itens.push({ label: "Solicitações", href: "/solicitacoes" });
   return itens;
+}
+
+type ItemDoMenuEsquerdo = { label: string; href: string; icone: string; ativo: (p: string) => boolean; sub?: boolean };
+
+/** O menu da esquerda (16/10/2026, aprovado por ele com a Wedy de referência). */
+function ferramentasDoMenu(cargo: string | null): ItemDoMenuEsquerdo[] {
+  const pode = (href: string) => {
+    const i = NAV.find((x) => x.href === href);
+    return !!i && (!i.cargos || (cargo !== null && i.cargos.includes(cargo)));
+  };
+  const OUTRAS_DO_COMERCIAL = ["/orcamentos/pedidos", "/orcamentos/pagina", "/orcamentos/relatorio"];
+  const itens: ItemDoMenuEsquerdo[] = [];
+  if (pode("/orcamentos"))
+    itens.push({
+      label: "Propostas",
+      href: "/orcamentos",
+      icone: ICONES_DO_MENU.cotacoes,
+      ativo: (p) => (p === "/orcamentos" || p.startsWith("/orcamentos/")) && !OUTRAS_DO_COMERCIAL.some((o) => p.startsWith(o)),
+    });
+  if (pode("/fornecedores"))
+    itens.push({ label: "Fornecedores", href: "/fornecedores", icone: ICONES_DO_MENU.fornecedores, ativo: (p) => p === "/fornecedores" || p.startsWith("/fornecedores/") });
+  itens.push({ label: "Agenda", href: "/calendario", icone: ICONES_DO_MENU.calendario, ativo: (p) => p.startsWith("/calendario") });
+  if (pode("/financeiro"))
+    itens.push({ label: "Financeiro", href: "/financeiro", icone: ICONES_DO_MENU.financeiro, ativo: (p) => p.startsWith("/financeiro") });
+  return itens;
+}
+
+function LinkDoMenu({ p, ativo }: { p: { label: string; href: string; icone: string; sub?: boolean }; ativo: boolean }) {
+  return (
+    <Link href={p.href} className={`mo-prim ${p.sub ? "mo-prim-sub" : ""} ${ativo ? "mo-prim-ativo" : ""}`}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d={p.icone} />
+      </svg>
+      {p.label}
+    </Link>
+  );
 }
 
 /** A frase da faixa da conta cancelada (151) — mesma regra do AppShell. */
@@ -213,7 +251,7 @@ function Casca(props: Props) {
   const idDoEvento = UUID.exec(pathname)?.[1] ?? null;
   const naHoje = pathname === "/eventos/dashboard";
   const noNovo = pathname === "/eventos/novo";
-  const emTodos = pathname === "/eventos" || pathname === "/calendario";
+  const emTodos = pathname === "/eventos";
 
   // ---- o nome do evento aberto (para o seletor do celular) ----
   const [eventoAberto, setEventoAberto] = useState<AbaDeEvento | null>(null);
@@ -298,9 +336,14 @@ function Casca(props: Props) {
   const primario = [
     { label: "Dashboard", href: "/eventos/dashboard", ativo: naHoje, icone: ICONES_DO_MENU.dashboard },
     { label: "Eventos", href: "/eventos", ativo: emTodos || !!idDoEvento, icone: ICONES_DO_MENU.eventos },
+    ...(cargo === "proprietaria"
+      ? [{ label: "Modelos", href: "/configuracoes/modelo", ativo: pathname.startsWith("/configuracoes/modelo"), icone: ICONES_DO_MENU.catalogo, sub: true }]
+      : []),
     { label: "Clientes", href: "/clientes", ativo: ativoExato(pathname, "/clientes"), icone: ICONES_DO_MENU.clientes },
     { label: "Novo evento", href: "/eventos/novo", ativo: noNovo, icone: "M12 4.5v15m7.5-7.5h-15" },
   ];
+
+  const ferramentas = ferramentasDoMenu(cargo);
 
   // o que o seletor do celular mostra fechado
   const rotuloAtual = (() => {
@@ -332,14 +375,17 @@ function Casca(props: Props) {
         <Logo />
         <nav className="mo-primario">
           {primario.map((p) => (
-            <Link key={p.href} href={p.href} className={`mo-prim ${p.ativo ? "mo-prim-ativo" : ""}`}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d={p.icone} />
-              </svg>
-              {p.label}
-            </Link>
+            <LinkDoMenu key={p.href} p={p} ativo={p.ativo} />
           ))}
         </nav>
+        {ferramentas.length > 0 && (
+          <nav className="mo-primario mo-ferramentas" aria-label="Ferramentas">
+            <span className="mo-grupo-rotulo">Ferramentas</span>
+            {ferramentas.map((p) => (
+              <LinkDoMenu key={p.href} p={p} ativo={p.ativo(pathname)} />
+            ))}
+          </nav>
+        )}
         </div>
       </aside>
 
@@ -383,14 +429,18 @@ function Casca(props: Props) {
         {seletor && (
           <nav className="mo-lista-cel" aria-label="Ir para">
             {primario.map((p) => (
-              <Link key={p.href} href={p.href}>{p.href === "/eventos/novo" ? "+ Novo evento" : p.label}</Link>
+              <Link key={p.href} href={p.href} className={"sub" in p && p.sub ? "mo-sub" : ""}>{p.href === "/eventos/novo" ? "+ Novo evento" : p.label}</Link>
+            ))}
+            {ferramentas.length > 0 && <span className="mo-cabeca-grupo mo-fio-tinta">Ferramentas</span>}
+            {ferramentas.map((p) => (
+              <Link key={p.href} href={p.href} className="mo-sub">{p.label}</Link>
             ))}
             {escritorio.map((it, i) => (
               <span key={it.href} style={{ display: "contents" }}>
                 {it.sub ? (
-                  <span className={`mo-cabeca-grupo ${i === 0 ? "mo-fio-tinta" : ""}`}>{it.label}</span>
+                  <span className={`mo-cabeca-grupo ${i === 0 ? "mo-fio-cinza" : ""}`}>{it.label}</span>
                 ) : (
-                  <Link href={it.href} className={i === 0 ? "mo-fio-tinta" : ""}>{it.label}</Link>
+                  <Link href={it.href}>{it.label}</Link>
                 )}
                 {it.sub?.map((s) => (
                   <Link key={s.href} href={s.href} className="mo-sub">{s.label}</Link>

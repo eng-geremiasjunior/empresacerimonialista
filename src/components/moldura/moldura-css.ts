@@ -33,6 +33,13 @@ export const MOLDURA_CSS = `
 .mo-lateral:hover .mo-prim,.mo-lateral:focus-within .mo-prim{flex-direction:row; justify-content:flex-start; gap:12px; padding:9px 12px; font-size:15px}
 .mo-prim:hover{color:var(--mo-tinta); background:var(--mo-marfim)}
 .mo-prim-ativo{color:var(--mo-tinta); font-weight:600; background:var(--mo-marfim); border-left-color:var(--mo-ameixa)}
+.mo-ferramentas{margin-top:4px; padding-top:12px; border-top:1px solid var(--mo-linha)}
+.mo-grupo-rotulo{display:none; padding:0 12px 4px; font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--mo-cinza-2); white-space:nowrap}
+.mo-lateral:hover .mo-grupo-rotulo,.mo-lateral:focus-within .mo-grupo-rotulo{display:block}
+.mo-prim-sub svg{width:16px; height:16px}
+.mo-prim-sub{font-size:10px}
+.mo-lateral:hover .mo-prim-sub,.mo-lateral:focus-within .mo-prim-sub{padding-left:38px; font-size:14px}
+.mo-lateral-dentro{overflow-y:auto}
 .mo-coluna{flex:1; min-width:0; min-height:100vh; display:flex; flex-direction:column}
 .mo-aba-conta{font-family:var(--mo-mono); font-size:12px; font-weight:400; color:var(--mo-cinza-2)}
 
