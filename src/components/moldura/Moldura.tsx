@@ -41,8 +41,6 @@ type Props = {
   proximos: AbaDeEvento[];
   /** "2026-10-15", em horário de Brasília (servidor) */
   hoje: string;
-  prazosFrase: string | null;
-  esperaFrase: string | null;
   congelamento: Congelamento | null;
   explicacoes: boolean;
   signOut: () => Promise<void>;
@@ -407,13 +405,6 @@ function Casca(props: Props) {
                 )}
               </div>
             ))}
-            {(props.prazosFrase || props.esperaFrase) && (
-              <div className="mo-radar">
-                <span className="mo-rotulo">Radar</span>
-                {props.prazosFrase && <p>{props.prazosFrase}</p>}
-                {props.esperaFrase && <p>{props.esperaFrase}</p>}
-              </div>
-            )}
           </aside>
         )}
       </div>

@@ -1,9 +1,7 @@
-import Link from "next/link";
 import { limparExemploVisto } from "@/app/(app)/eventos/exemplo-actions";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  AlertTriangle,
   Calendar,
   DollarSign,
   FileText,
@@ -11,7 +9,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
-import { CopilotoDia } from "@/components/dashboard/CopilotoDia";
+import { RadarDoDia, type LinhaDoRadar } from "@/components/dashboard/RadarDoDia";
 import { ResumoFinanceiro } from "@/components/dashboard/ResumoFinanceiro";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { DonutCard } from "@/components/dashboard/DonutCard";
@@ -41,7 +39,7 @@ const SAUDE_VAZIA: Saude = {
   semDados: true,
 };
 import { getSaldoEmpresaMes } from "@/lib/supabase/financeiro-empresa";
-import { SAUDE_UI, saudeEmPalavras, type Saude } from "@/lib/saude-evento";
+import type { Saude } from "@/lib/saude-evento";
 import { getMeuCargo } from "@/lib/supabase/equipe";
 import { conhecaPorDentroDaConta } from "@/lib/conheca-por-dentro";
 import { ConhecaPorDentro } from "@/components/evento/ConhecaPorDentro";
@@ -53,7 +51,7 @@ import {
   type EventType,
 } from "@/lib/types";
 import type { DonutSlice, Kpi } from "@/lib/dashboard-mock";
-import { hojeBR, horaBR, horaMinutoBR } from "@/lib/tempo";
+import { hojeBR, horaBR, horaMinutoBR, somarDias } from "@/lib/tempo";
 import { getPrimeiroAcesso } from "@/lib/supabase/primeiro-acesso";
 import { BoasVindas } from "@/components/dashboard/BoasVindas";
 import { PassosQueFaltam } from "@/components/dashboard/PassosQueFaltam";
@@ -166,6 +164,17 @@ export default async function DashboardPage() {
 
   const upcoming = (data ?? []) as unknown as UpcomingEvent[];
 
+  // as tarefas dos próximos 7 dias (o radar da semana); falha vira lista vazia
+  const fimDaSemana = somarDias(todayIso, 7);
+  const { data: tarefasDaSemana } = await supabase
+    .from("tasks")
+    .select("id, title, due_date, event_id, events(name, type, clients(name))")
+    .gte("due_date", todayIso)
+    .lte("due_date", fimDaSemana)
+    .neq("status", "concluido")
+    .order("due_date", { ascending: true })
+    .limit(30);
+
   const [
     saudes,
     briefing,
@@ -248,16 +257,6 @@ export default async function DashboardPage() {
   const areas = areasDoSistema(cargo);
   const areaEventos = areas.find((a) => a.href === "/eventos");
   const areaClientes = areas.find((a) => a.href === "/clientes");
-  const outrasAreas = areas.filter((a) => a.href !== "/eventos" && a.href !== "/clientes");
-
-  const dateLabel = (() => {
-    // formata a DATA de Brasília, não a do processo — senão a linha embaixo
-    // da saudação anuncia o dia seguinte a partir das 21h
-    const raw = format(new Date(`${todayIso}T12:00:00`), "EEEE, d 'de' MMMM 'de' yyyy", {
-      locale: ptBR,
-    });
-    return raw.charAt(0).toUpperCase() + raw.slice(1);
-  })();
 
   const kpis: { kpi: Kpi; icon: LucideIcon }[] = [
     {
@@ -308,125 +307,133 @@ export default async function DashboardPage() {
     { label: "Tarefas concluídas este mês", value: performance.tarefasConcluidas },
   ];
 
-  return (
-    <div className="space-y-6">
-      <CopilotoDia
-        greeting={greeting(horaBR(now))}
-        dateLabel={dateLabel}
-        eventosHoje={briefing.eventosHoje}
-        tarefasHoje={briefing.tarefasHoje}
-        alertas={alertas}
-      />
+  // ---- o radar (desenho 7a): em tempo, nunca em status ----
+  const diaCurto = (iso: string) => {
+    if (iso === todayIso) return "hoje";
+    if (iso === somarDias(todayIso, 1)) return "amanhã";
+    const d = format(new Date(`${iso}T12:00:00`), "EEE d", { locale: ptBR });
+    return d.replace(".", "");
+  };
+  const haQuanto = (ref: string) => {
+    const dias = Math.round((Date.parse(`${todayIso}T00:00:00Z`) - Date.parse(`${ref.slice(0, 10)}T00:00:00Z`)) / 86_400_000);
+    if (dias <= 0) return dias === 0 ? "hoje" : `em ${-dias} dias`;
+    return dias === 1 ? "ontem" : `há ${dias} dias`;
+  };
+  const ESPERA = new Set(["fornecedor", "pedido", "aceite"]);
+  const linhaDoAlerta = (a: (typeof alertas)[number]): LinhaDoRadar => ({
+    chave: a.id,
+    quando: haQuanto(a.ref),
+    texto: a.texto,
+    href: a.href,
+  });
+  const esperando = alertas.filter((a) => ESPERA.has(a.tipo)).slice(0, 8).map(linhaDoAlerta);
+  const atrasado = alertas.filter((a) => !ESPERA.has(a.tipo)).slice(0, 8).map(linhaDoAlerta);
+  const nomeDoEvento = (e: { name: string | null; type: EventType; clients: { name: string } | null } | null) =>
+    e ? e.name || e.clients?.name || EVENT_TYPE_LABELS[e.type] : null;
+  const semana: LinhaDoRadar[] = [
+    ...upcoming
+      .filter((e) => !e.exemplo && e.date <= fimDaSemana)
+      .map((e) => ({
+        chave: `ev-${e.id}`,
+        ref: e.date,
+        quando: diaCurto(e.date),
+        destaque: e.date === todayIso,
+        evento: nomeDoEvento(e),
+        texto: `o evento${e.time ? ` às ${e.time.slice(0, 5)}` : ""}${e.location ? ` · ${e.location}` : ""}`,
+        href: `/eventos/${e.id}`,
+      })),
+    ...((tarefasDaSemana ?? []) as unknown as {
+      id: string;
+      title: string;
+      due_date: string;
+      event_id: string | null;
+      events: { name: string | null; type: EventType; clients: { name: string } | null } | null;
+    }[]).map((t) => ({
+      chave: `t-${t.id}`,
+      ref: t.due_date,
+      quando: diaCurto(t.due_date),
+      destaque: t.due_date === todayIso,
+      evento: nomeDoEvento(t.events),
+      texto: t.title,
+      href: t.event_id ? `/eventos/${t.event_id}/organizacao` : "/tarefas",
+    })),
+  ]
+    .sort((a, b) => a.ref.localeCompare(b.ref))
+    .slice(0, 12)
+    .map(({ ref: _ref, ...l }) => l);
 
-      {/* os passos que faltam depois do primeiro evento (fornecedores,
-          equipe), até serem feitos ou dispensados */}
+  // a data do alto e a frase em tempo
+  const dataDoAlto = (() => {
+    const raw = format(new Date(`${todayIso}T12:00:00`), "EEEE, d 'de' MMMM", { locale: ptBR }).replace("-feira", "");
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
+  })();
+  const paraHoje = briefing.eventosHoje + briefing.tarefasHoje;
+  const frase = [
+    paraHoje > 0 ? `${paraHoje} ${paraHoje === 1 ? "coisa" : "coisas"} para hoje` : "Nada marcado para hoje",
+    esperando.length > 0 ? `${esperando.length} ${esperando.length === 1 ? "resposta esperando" : "respostas esperando"}` : null,
+    atrasado.length > 0 ? `${atrasado.length} ${atrasado.length === 1 ? "pendência atrasada" : "pendências atrasadas"}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 28, maxWidth: 1000 }}>
+      {/* a data e a frase (7a) — o lugar do antigo "Boa tarde" */}
+      <header>
+        <h1
+          style={{
+            margin: 0,
+            fontFamily: "var(--font-title), Inter, sans-serif",
+            fontWeight: 500,
+            fontSize: "clamp(28px, 4vw, 40px)",
+            letterSpacing: "-0.02em",
+            color: "#221E1B",
+          }}
+        >
+          {dataDoAlto}
+        </h1>
+        <p style={{ margin: "6px 0 0", fontSize: "clamp(16px, 2vw, 18px)", color: "#6B6259" }}>{frase}</p>
+      </header>
+
+      {/* os passos que faltam depois do primeiro evento, até serem feitos ou dispensados */}
       {primeiroAcesso.passos && <PassosQueFaltam passos={primeiroAcesso.passos} />}
 
       {porDentro?.mostrar && <ConhecaPorDentro exemploCasamento={porDentro.exemploCasamento} />}
 
-      {/* Radar primeiro: o Copiloto acima, os eventos com o ponto de saúde
-          logo abaixo, e os números do negócio só para a dona, em três
-          cartões. Rosquinhas, desempenho e resumo financeiro não somem:
-          ficam recolhidos em "Números do mês", no fim — quem quer, abre. */}
-      {dona && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {kpis.map(({ kpi, icon }) => (
-            <KpiCard key={kpi.title} kpi={kpi} icon={icon} />
-          ))}
-        </div>
-      )}
-
+      {/* o slide dos próximos eventos — pedido dele: fica */}
       <ProximosEventosCard eventos={proximos} />
 
+      {/* só os 2 de "continuar de onde parou"; as áreas estão no menu ☰ */}
       {areaEventos && areaClientes && (
-        <AreasDoPainel semMemoriaTela={areaEventos} semMemoriaEvento={areaClientes} areas={outrasAreas} />
+        <AreasDoPainel titulo="De onde você parou" semMemoriaTela={areaEventos} semMemoriaEvento={areaClientes} areas={[]} />
       )}
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="space-y-3 lg:col-span-2">
-          <h2 className="text-sm font-semibold text-gray-700">
-            Próximos eventos
-          </h2>
-          {eventsWithHealth.length === 0 ? (
-            <div className="rounded-lg border-2 border-dashed border-gray-200 bg-white p-10 text-center text-gray-500">
-              Nenhum evento em andamento.{" "}
-              <Link
-                href="/eventos/novo"
-                className="font-medium text-gray-900 underline underline-offset-4"
-              >
-                Criar evento
-              </Link>
+      <RadarDoDia esperando={esperando} atrasado={atrasado} semana={semana} />
+
+      {/* os números do negócio e a atividade: recolhidos, só para a dona */}
+      {dona && (
+        <details className="group rounded border border-[#E6E0D8] bg-white">
+          <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 marker:content-none [&::-webkit-details-marker]:hidden">
+            Números do mês
+            <span className="text-xs text-gray-400 group-open:hidden">mostrar</span>
+            <span className="hidden text-xs text-gray-400 group-open:inline">esconder</span>
+          </summary>
+          <div className="space-y-4 border-t border-gray-100 p-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {kpis.map(({ kpi, icon }) => (
+                <KpiCard key={kpi.title} kpi={kpi} icon={icon} />
+              ))}
             </div>
-          ) : (
-            <ul className="space-y-3">
-              {eventsWithHealth.map(({ event, saude }) => {
-                const ui = SAUDE_UI[saude.nivel];
-                return (
-                  <li key={event.id}>
-                    <Link
-                      href={`/eventos/${event.id}`}
-                      className="block rounded-lg border border-gray-200 bg-white p-4 transition hover:border-gray-300"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="truncate font-medium text-gray-900">
-                            {EVENT_TYPE_LABELS[event.type]}
-                            {event.clients?.name
-                              ? ` — ${event.clients.name}`
-                              : ""}
-                          </p>
-                          <p className="mt-0.5 text-sm text-gray-500">
-                            {formatDate(event.date)}
-                            {event.location ? ` · ${event.location}` : ""}
-                          </p>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          <span
-                            className={`h-2 w-2 rounded-full ${ui.bar}`}
-                            aria-hidden
-                          />
-                          <span className="text-xs font-medium text-gray-500">
-                            {saudeEmPalavras(saude)}
-                          </span>
-                        </div>
-                      </div>
-                      {saude.alertas.length > 0 && (
-                        <p className="mt-2 flex items-center gap-1.5 truncate text-xs text-gray-500">
-                          <AlertTriangle size={12} className="shrink-0 text-gray-400" />
-                          {saude.alertas.map((a) => a.texto).join(" · ")}
-                        </p>
-                      )}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
-
-        <div className="space-y-4">
-          <ActivityFeed
-            activities={activities}
-            referenceIso={now.toISOString()}
-          />
-        </div>
-      </div>
-
-      <details className="group rounded-xl border border-gray-200 bg-white">
-        <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 marker:content-none [&::-webkit-details-marker]:hidden">
-          Números do mês
-          <span className="text-xs text-gray-400 group-open:hidden">mostrar</span>
-          <span className="hidden text-xs text-gray-400 group-open:inline">esconder</span>
-        </summary>
-        <div className="space-y-4 border-t border-gray-100 p-4">
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <DonutCard title="Eventos por status" unit="eventos" data={statusSlices} />
-            <DonutCard title="Eventos por tipo" unit="eventos" data={typeSlices} />
-            <MonthPerformance items={performanceItems} />
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+              <DonutCard title="Eventos por status" unit="eventos" data={statusSlices} />
+              <DonutCard title="Eventos por tipo" unit="eventos" data={typeSlices} />
+              <MonthPerformance items={performanceItems} />
+            </div>
+            <ResumoFinanceiro data={financeiro} empresa={saldoEmpresa} />
+            <ActivityFeed activities={activities} referenceIso={now.toISOString()} />
           </div>
-          <ResumoFinanceiro data={financeiro} empresa={saldoEmpresa} />
-        </div>
-      </details>
+        </details>
+      )}
     </div>
   );
 }

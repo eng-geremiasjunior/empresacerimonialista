@@ -22,7 +22,10 @@ export function AreasDoPainel({
   semMemoriaTela,
   semMemoriaEvento,
   areas,
+  titulo = "O que você encontra aqui",
 }: {
+  /** o nome do bloco (o Dashboard da moldura nova usa "De onde você parou") */
+  titulo?: string;
   /** o bloco que fica enquanto não há última tela (Eventos) */
   semMemoriaTela: AreaDoPainel;
   /** o bloco que fica enquanto não há último evento (Clientes) */
@@ -52,9 +55,9 @@ export function AreasDoPainel({
       : semMemoriaEvento;
 
   return (
-    <section aria-label="O que você encontra aqui" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <section aria-label={titulo} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <h2 style={{ margin: 0, fontFamily: "var(--font-title), Inter, sans-serif", fontWeight: 600, fontSize: 15, color: "#221E1B" }}>
-        O que você encontra aqui
+        {titulo}
       </h2>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(max(220px, calc((100% - 24px) / 3)), 1fr))", gap: 12 }}>
         {tela ? (

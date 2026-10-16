@@ -3,13 +3,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { garantirEmpresaDoUsuario, getMeuCargo } from "@/lib/supabase/equipe";
 import { precisaAssinar } from "@/lib/supabase/porta-da-assinatura";
-import { getEspera } from "@/lib/supabase/espera-solicitacoes";
 import { getExplicacoesLigadas } from "@/lib/supabase/explicacoes";
 import { getEstadoDoGuia } from "@/lib/supabase/guia-vivo";
 import { passoAtual, terminou } from "@/lib/guia-vivo";
-import { fraseDoCopiloto } from "@/lib/espera-core";
-import { getAlertasCopiloto } from "@/lib/supabase/queries";
-import { frasePrazos, resumirPrazos } from "@/lib/copiloto-prazos";
 import { Moldura, type Congelamento } from "@/components/moldura/Moldura";
 import { hojeBR } from "@/lib/tempo";
 import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
@@ -125,34 +121,13 @@ export default async function AppLayout({
     redirect("/assinatura");
   }
 
-  // A linha dos prazos vem da MESMA fonte que o bloco do dashboard: antes
-  // eram duas contas diferentes (a sidebar somava saúde<80 + dois gatilhos;
-  // o dashboard listava alertas por data) e os números discordavam na cara
-  // dela. Erro não vira "tudo em dia" de mentira — vira traço.
-  // A linha da espera no Copiloto — só para quem conduz. O erro não vira
-  // "em dia" de mentira: vira a frase que diz que não deu para checar.
-  const conduz =
-    cargo === "proprietaria" ||
-    cargo === "coordenadora" ||
-    cargo === "cerimonialista";
-
-  // Em série, cada navegação do app esperava as 3 consultas dos prazos
-  // TERMINAREM antes de começar as da espera. Nada aqui depende do outro.
+  // O Radar (prazos e espera) saiu da moldura em 16/10/2026: o Dashboard
+  // novo mostra "Esperando resposta" e "Atrasado" com a mesma fonte
+  // (getAlertasCopiloto), e o layout deixa de fazer essas consultas a cada
+  // troca de tela.
   const hoje = hojeBR();
-  const [prazosFrase, esperaFrase, congelamento, explicacoes, estadoDoGuia, proximos, empresaNome] =
+  const [congelamento, explicacoes, estadoDoGuia, proximos, empresaNome] =
     await Promise.all([
-    getAlertasCopiloto()
-      .then((alertas) => frasePrazos(resumirPrazos(alertas.map((a) => a.tipo))))
-      .catch(() => null),
-    conduz
-      ? getEspera()
-          .then((espera) =>
-            espera
-              ? fraseDoCopiloto(espera.resumo)
-              : "Não deu para checar os fornecedores agora."
-          )
-          .catch(() => "Não deu para checar os fornecedores agora.")
-      : Promise.resolve(null),
     congelamentoDaConta().catch(() => null),
     // O "?" ao lado de cada item do menu (159). Falha vira `true` dentro
     // da própria leitura: o padrão tem de servir a quem está chegando.
@@ -172,8 +147,6 @@ export default async function AppLayout({
         empresaNome={empresaNome}
         proximos={proximos}
         hoje={hoje}
-        prazosFrase={prazosFrase}
-        esperaFrase={esperaFrase}
         congelamento={congelamento}
         explicacoes={explicacoes}
         signOut={signOut}
