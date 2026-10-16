@@ -6,7 +6,12 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { NotificationItem } from "@/components/NotificationItem";
 import type { NotificationRow } from "@/lib/notifications-db";
 
-export function NotificationBell() {
+/**
+ * `texto`: a barra de status da moldura de programa (15/10/2026) não tem
+ * ícone sozinho — o sino vira a palavra "Avisos" com a contagem, e a lista
+ * abre para CIMA, porque a barra fica no pé da tela.
+ */
+export function NotificationBell({ variante = "icone" }: { variante?: "icone" | "texto" } = {}) {
   const router = useRouter();
   const { notifications, unread, markRead, markAll, remove } =
     useNotifications();
@@ -36,6 +41,17 @@ export function NotificationBell() {
 
   return (
     <div className="relative" ref={containerRef}>
+      {variante === "texto" ? (
+        <button
+          type="button"
+          onClick={() => setOpen((prev) => !prev)}
+          className="mo-item-status"
+          aria-expanded={open}
+        >
+          Avisos
+          {unread > 0 && <span className="mo-contagem-forte">{unread > 9 ? "9+" : unread}</span>}
+        </button>
+      ) : (
       <button
         onClick={() => setOpen((prev) => !prev)}
         title="Notificações"
@@ -60,9 +76,14 @@ export function NotificationBell() {
           </span>
         )}
       </button>
+      )}
 
       {open && (
-        <div className="absolute right-0 top-full z-40 mt-2 w-80 overflow-hidden rounded-xl border border-stone-200 bg-white shadow-lg">
+        <div
+          className={`absolute right-0 z-40 w-80 overflow-hidden rounded-xl border border-stone-200 bg-white shadow-lg ${
+            variante === "texto" ? "bottom-full mb-2" : "top-full mt-2"
+          }`}
+        >
           <div className="flex items-center justify-between border-b border-stone-100 px-4 py-2.5">
             <p className="text-sm font-semibold">Notificações</p>
             {unread > 0 && (

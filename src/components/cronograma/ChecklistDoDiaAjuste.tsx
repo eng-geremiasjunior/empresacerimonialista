@@ -158,7 +158,7 @@ function BlocoAjuste({
   }
 
   return (
-    <div className="rounded-xl border border-stone-200 bg-white p-4">
+    <div className="min-w-0 rounded-xl border border-stone-200 bg-white p-4">
       <h3 className="text-sm font-semibold text-stone-700">{label}</h3>
 
       <ul className="mt-3 space-y-1.5">
@@ -241,7 +241,7 @@ function LinhaAjuste({
 
   return (
     <li
-      className={`group flex items-center gap-2 rounded-lg px-1 py-0.5 ${
+      className={`group flex min-w-0 flex-wrap items-center gap-2 rounded-lg px-1 py-0.5 ${
         item.ativo ? "" : "opacity-45"
       }`}
     >

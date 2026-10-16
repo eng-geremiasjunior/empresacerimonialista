@@ -46,7 +46,12 @@ function hora(iso: string) {
   });
 }
 
-export function CaixaDeSuporte() {
+/**
+ * `linha`: na moldura de programa (15/10/2026) o suporte é uma palavra na
+ * barra de status, com um ponto quando a equipe respondeu; a conversa abre
+ * no canto de baixo à direita, acima da barra.
+ */
+export function CaixaDeSuporte({ variante = "cartao" }: { variante?: "cartao" | "linha" } = {}) {
   const pathname = usePathname();
   const [montado, setMontado] = useState(false);
   const [aberta, setAberta] = useState(false);
@@ -123,6 +128,12 @@ export function CaixaDeSuporte() {
 
   return (
     <>
+      {variante === "linha" ? (
+        <button type="button" onClick={() => setAberta(true)} className="mo-item-status">
+          Suporte
+          {ponto && <span className="mo-ponto" aria-label="A equipe respondeu" />}
+        </button>
+      ) : (
       <div
         style={{
           background: "#292524",
@@ -191,6 +202,7 @@ export function CaixaDeSuporte() {
           Fale com o suporte
         </button>
       </div>
+      )}
 
       {/* PORTAL, não filho da barra: a <aside> tem transform (é gaveta
           no celular), e transform num ancestral faz `position: fixed`
@@ -201,7 +213,11 @@ export function CaixaDeSuporte() {
         <div
           role="dialog"
           aria-label="Suporte"
-          className="fixed bottom-4 left-4 right-4 z-[65] flex max-h-[72vh] flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-2xl lg:left-[272px] lg:right-auto lg:w-[360px]"
+          className={`fixed left-4 right-4 z-[65] flex max-h-[72vh] flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-2xl ${
+            variante === "linha"
+              ? "bottom-16 lg:bottom-10 lg:left-auto lg:w-[360px]"
+              : "bottom-4 lg:left-[272px] lg:right-auto lg:w-[360px]"
+          }`}
         >
           <header className="flex items-start justify-between gap-3 border-b border-stone-100 px-4 py-3">
             <div>

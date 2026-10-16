@@ -10,7 +10,10 @@ import { passoAtual, terminou } from "@/lib/guia-vivo";
 import { fraseDoCopiloto } from "@/lib/espera-core";
 import { getAlertasCopiloto } from "@/lib/supabase/queries";
 import { frasePrazos, resumirPrazos } from "@/lib/copiloto-prazos";
-import { AppShell, type Congelamento } from "@/components/AppShell";
+import { Moldura, type Congelamento } from "@/components/moldura/Moldura";
+import { hojeBR } from "@/lib/tempo";
+import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
+import type { AbaDeEvento } from "@/lib/abas-de-evento";
 import { TaskNotifications } from "@/components/TaskNotifications";
 import { Presenca } from "@/components/Presenca";
 import { GuiaVivo } from "@/components/guia/GuiaVivo";
@@ -35,6 +38,33 @@ import { signOut } from "./actions";
  * mais à tela de assinatura, e a coordenadora e a cerimonialista nem têm
  * essa tela.
  */
+/**
+ * As abas da moldura (15/10/2026): os 3 eventos mais próximos que ela
+ * enxerga, de hoje em diante, sem os cancelados e concluídos. Falha vira
+ * lista vazia — a moldura continua com Hoje e Todos.
+ */
+async function proximosEventos(hoje: string): Promise<AbaDeEvento[]> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("events")
+    .select("id, name, type, date, clients(name)")
+    .gte("date", hoje)
+    .in("status", ["orcamento", "confirmado"])
+    .order("date", { ascending: true })
+    .limit(3);
+  return ((data ?? []) as unknown as { id: string; name: string | null; type: EventType; date: string | null; clients: { name: string } | null }[]).map((e) => ({
+    id: e.id,
+    nome: e.name?.trim() || e.clients?.name?.trim() || EVENT_TYPE_LABELS[e.type] || "Evento",
+    data: e.date,
+  }));
+}
+
+async function nomeDaEmpresa(): Promise<string | null> {
+  const supabase = createClient();
+  const { data } = await supabase.from("empresas").select("nome").limit(1).maybeSingle();
+  return (data as { nome?: string } | null)?.nome ?? null;
+}
+
 async function congelamentoDaConta(): Promise<Congelamento | null> {
   const supabase = createClient();
   const { data } = await supabase.rpc("meu_congelamento");
@@ -108,7 +138,8 @@ export default async function AppLayout({
 
   // Em série, cada navegação do app esperava as 3 consultas dos prazos
   // TERMINAREM antes de começar as da espera. Nada aqui depende do outro.
-  const [prazosFrase, esperaFrase, congelamento, explicacoes, estadoDoGuia] =
+  const hoje = hojeBR();
+  const [prazosFrase, esperaFrase, congelamento, explicacoes, estadoDoGuia, proximos, empresaNome] =
     await Promise.all([
     getAlertasCopiloto()
       .then((alertas) => frasePrazos(resumirPrazos(alertas.map((a) => a.tipo))))
@@ -129,25 +160,26 @@ export default async function AppLayout({
     // O guia do primeiro acesso (160): as duas datas e os cinco fatos
     // numa viagem so. Falha vira null — sem guia, nunca tela quebrada.
     getEstadoDoGuia(),
+    proximosEventos(hoje).catch(() => []),
+    nomeDaEmpresa().catch(() => null),
   ]);
 
   return (
     <>
-      <AppShell
+      <Moldura
         userEmail={user.email ?? ""}
         cargo={cargo}
+        empresaNome={empresaNome}
+        proximos={proximos}
+        hoje={hoje}
         prazosFrase={prazosFrase}
         esperaFrase={esperaFrase}
         congelamento={congelamento}
         explicacoes={explicacoes}
-        avatarUrl={
-          ((user.user_metadata as { avatar_url?: string | null } | null)
-            ?.avatar_url as string | null) ?? null
-        }
         signOut={signOut}
       >
         {children}
-      </AppShell>
+      </Moldura>
       {/* Fora do AppShell: o recorte cobre a tela inteira, barra lateral
           inclusive, e o passo 1 aponta justamente para um botao de fora
           do conteudo. */}
