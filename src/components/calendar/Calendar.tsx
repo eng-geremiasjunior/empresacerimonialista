@@ -16,6 +16,7 @@ import { ptBR } from "date-fns/locale";
 import {
   EVENT_STATUS_LABELS,
   EVENT_TYPE_LABELS,
+  type CalendarCompromissoItem,
   type CalendarEventItem,
   type CalendarTaskItem,
   type EventStatus,
@@ -74,15 +75,29 @@ function EventChip({ event }: { event: CalendarEventItem }) {
 type Props = {
   events: CalendarEventItem[];
   tasks: CalendarTaskItem[];
+  /** compromissos livres (213) e reuniões dos eventos (069) */
+  compromissos?: CalendarCompromissoItem[];
+  /** proprietária, coordenadora e cerimonialista marcam compromisso */
+  podeEscrever?: boolean;
 };
 
-export function Calendar({ events: allEvents, tasks }: Props) {
+function CompromissoChip({ c }: { c: CalendarCompromissoItem }) {
+  return (
+    <p className="flex items-center gap-1 truncate rounded px-1.5 py-0.5 text-xs text-stone-700 ring-1 ring-inset ring-stone-200">
+      {c.hora && <span className="shrink-0 font-mono text-[11px] text-stone-500">{c.hora}</span>}
+      <span className="truncate">{c.titulo}</span>
+    </p>
+  );
+}
+
+export function Calendar({ events: allEvents, tasks, compromissos = [], podeEscrever = false }: Props) {
   const [current, setCurrent] = useState(() => startOfMonth(new Date()));
   const [typeFilter, setTypeFilter] = useState<"todos" | EventType>("todos");
   const [statusFilter, setStatusFilter] = useState<"todos" | EventStatus>(
     "todos"
   );
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [abrirNovo, setAbrirNovo] = useState(false);
 
   const years = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -128,6 +143,17 @@ export function Calendar({ events: allEvents, tasks }: Props) {
     return map;
   }, [tasks]);
 
+  const compromissosByDate = useMemo(() => {
+    const map = new Map<string, CalendarCompromissoItem[]>();
+    for (const c of compromissos) {
+      const list = map.get(c.date) ?? [];
+      list.push(c);
+      map.set(c.date, list);
+    }
+    for (const list of map.values()) list.sort((a, b) => (a.hora ?? "99").localeCompare(b.hora ?? "99"));
+    return map;
+  }, [compromissos]);
+
   const days = useMemo(
     () =>
       eachDayOfInterval({
@@ -144,10 +170,11 @@ export function Calendar({ events: allEvents, tasks }: Props) {
         const key = format(day, "yyyy-MM-dd");
         return (
           (eventsByDate.get(key) ?? []).length > 0 ||
-          (tasksByDate.get(key) ?? []).length > 0
+          (tasksByDate.get(key) ?? []).length > 0 ||
+          (compromissosByDate.get(key) ?? []).length > 0
         );
       }),
-    [days, current, eventsByDate, tasksByDate]
+    [days, current, eventsByDate, tasksByDate, compromissosByDate]
   );
 
   const selectedKey = selectedDay ? format(selectedDay, "yyyy-MM-dd") : "";
@@ -215,6 +242,18 @@ export function Calendar({ events: allEvents, tasks }: Props) {
         </div>
 
         <div className="ml-auto flex items-center gap-2">
+          {podeEscrever && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedDay(new Date());
+                setAbrirNovo(true);
+              }}
+              className="rounded-lg bg-stone-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-stone-700"
+            >
+              + Compromisso
+            </button>
+          )}
           <select
             aria-label="Filtrar por tipo"
             value={typeFilter}
@@ -260,6 +299,7 @@ export function Calendar({ events: allEvents, tasks }: Props) {
             const key = format(day, "yyyy-MM-dd");
             const dayEvents = eventsByDate.get(key) ?? [];
             const dayTasks = tasksByDate.get(key) ?? [];
+            const dayComp = compromissosByDate.get(key) ?? [];
             const inMonth = isSameMonth(day, current);
 
             return (
@@ -267,7 +307,10 @@ export function Calendar({ events: allEvents, tasks }: Props) {
                 key={key}
                 role="button"
                 tabIndex={0}
-                onClick={() => setSelectedDay(day)}
+                onClick={() => {
+                  setAbrirNovo(false);
+                  setSelectedDay(day);
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") setSelectedDay(day);
                 }}
@@ -295,6 +338,12 @@ export function Calendar({ events: allEvents, tasks }: Props) {
                       +{dayEvents.length - 2} mais
                     </p>
                   )}
+                  {dayComp.slice(0, 2).map((c) => (
+                    <CompromissoChip key={c.id} c={c} />
+                  ))}
+                  {dayComp.length > 2 && (
+                    <p className="px-1.5 text-xs font-medium text-stone-400">+{dayComp.length - 2} compromissos</p>
+                  )}
                   {dayTasks.length > 0 && (
                     <p className="flex items-center gap-1 px-1.5 text-xs text-stone-400">
                       <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
@@ -313,18 +362,22 @@ export function Calendar({ events: allEvents, tasks }: Props) {
       <div className="mt-4 space-y-3 md:hidden">
         {monthDaysWithContent.length === 0 ? (
           <div className="rounded-xl border border-dashed border-stone-300 bg-white p-8 text-center text-sm text-stone-500">
-            Nada agendado neste mês.
+            Nada marcado neste mês.
           </div>
         ) : (
           monthDaysWithContent.map((day) => {
             const key = format(day, "yyyy-MM-dd");
             const dayEvents = eventsByDate.get(key) ?? [];
             const dayTasks = tasksByDate.get(key) ?? [];
+            const dayComp = compromissosByDate.get(key) ?? [];
 
             return (
               <button
                 key={key}
-                onClick={() => setSelectedDay(day)}
+                onClick={() => {
+                  setAbrirNovo(false);
+                  setSelectedDay(day);
+                }}
                 className="block w-full rounded-xl border border-stone-200 bg-white p-4 text-left shadow-sm"
               >
                 <p
@@ -355,6 +408,9 @@ export function Calendar({ events: allEvents, tasks }: Props) {
                         {EVENT_STATUS_LABELS[event.status]}
                       </span>
                     </div>
+                  ))}
+                  {dayComp.map((c) => (
+                    <CompromissoChip key={c.id} c={c} />
                   ))}
                   {dayTasks.length > 0 && (
                     <p className="flex items-center gap-1.5 px-2 text-xs text-stone-400">
@@ -388,7 +444,13 @@ export function Calendar({ events: allEvents, tasks }: Props) {
           date={selectedDay}
           events={eventsByDate.get(selectedKey) ?? []}
           tasks={tasksByDate.get(selectedKey) ?? []}
-          onClose={() => setSelectedDay(null)}
+          compromissos={compromissosByDate.get(selectedKey) ?? []}
+          podeEscrever={podeEscrever}
+          abrirNovo={abrirNovo}
+          onClose={() => {
+            setSelectedDay(null);
+            setAbrirNovo(false);
+          }}
         />
       )}
     </div>

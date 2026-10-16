@@ -1,11 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { apagarCompromissoLivre, criarCompromissoLivre } from "@/app/(app)/calendario/actions";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   EVENT_STATUS_LABELS,
   EVENT_TYPE_LABELS,
+  type CalendarCompromissoItem,
   type CalendarEventItem,
   type CalendarTaskItem,
   type EventStatus,
@@ -41,10 +45,56 @@ type Props = {
   date: Date;
   events: CalendarEventItem[];
   tasks: CalendarTaskItem[];
+  compromissos?: CalendarCompromissoItem[];
+  podeEscrever?: boolean;
+  /** veio do botão "+ Compromisso": o formulário já abre */
+  abrirNovo?: boolean;
   onClose: () => void;
 };
 
-export function DayModal({ date, events, tasks, onClose }: Props) {
+const campo =
+  "w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none";
+
+function NovoCompromisso({ data, aoSalvar }: { data: string; aoSalvar: () => void }) {
+  const [titulo, setTitulo] = useState("");
+  const [hora, setHora] = useState("");
+  const [local, setLocal] = useState("");
+  const [obs, setObs] = useState("");
+  const [dia, setDia] = useState(data);
+  const [erro, setErro] = useState<string | null>(null);
+  const [salvando, iniciar] = useTransition();
+  return (
+    <form
+      className="mt-2 space-y-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        setErro(null);
+        iniciar(async () => {
+          const r = await criarCompromissoLivre({ titulo, data: dia, hora: hora || null, local, observacao: obs });
+          if (!r.ok) setErro(r.erro);
+          else aoSalvar();
+        });
+      }}
+    >
+      <input autoFocus required maxLength={120} value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="O quê? Ex.: visita ao salão, reunião com cliente" className={campo} />
+      <div className="grid grid-cols-2 gap-2">
+        <input type="date" required value={dia} onChange={(e) => setDia(e.target.value)} className={campo} aria-label="Dia" />
+        <input type="time" value={hora} onChange={(e) => setHora(e.target.value)} className={campo} aria-label="Hora" />
+      </div>
+      <input maxLength={160} value={local} onChange={(e) => setLocal(e.target.value)} placeholder="Onde (opcional)" className={campo} />
+      <textarea maxLength={500} value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Observação (opcional)" rows={2} className={campo} />
+      {erro && <p className="text-xs text-red-700">{erro}</p>}
+      <button type="submit" disabled={salvando} className="w-full rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-60">
+        {salvando ? "Salvando…" : "Salvar compromisso"}
+      </button>
+    </form>
+  );
+}
+
+export function DayModal({ date, events, tasks, compromissos = [], podeEscrever = false, abrirNovo = false, onClose }: Props) {
+  const router = useRouter();
+  const [novo, setNovo] = useState(abrirNovo);
+  const [apagando, iniciarApagar] = useTransition();
   const raw = format(date, "EEEE, d 'de' MMMM", { locale: ptBR });
   const label = raw.charAt(0).toUpperCase() + raw.slice(1);
 
@@ -77,6 +127,62 @@ export function DayModal({ date, events, tasks, onClose }: Props) {
         </div>
 
         <div className="mt-4 space-y-4">
+          <section>
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-400">Compromissos</h3>
+              {podeEscrever && !novo && (
+                <button type="button" onClick={() => setNovo(true)} className="text-xs font-semibold text-stone-700 underline underline-offset-2 hover:text-stone-900">
+                  + Compromisso
+                </button>
+              )}
+            </div>
+            {novo && (
+              <NovoCompromisso
+                data={format(date, "yyyy-MM-dd")}
+                aoSalvar={() => {
+                  setNovo(false);
+                  router.refresh();
+                }}
+              />
+            )}
+            {compromissos.length === 0 ? (
+              !novo && <p className="mt-2 text-sm text-stone-500">Nenhum compromisso neste dia.</p>
+            ) : (
+              <ul className="mt-2 space-y-1.5">
+                {compromissos.map((c) => (
+                  <li key={c.id} className="flex items-start gap-2 text-sm">
+                    <span className="w-11 shrink-0 font-mono text-xs leading-5 text-stone-500">{c.hora ?? "—"}</span>
+                    <div className="min-w-0 flex-1">
+                      {c.href ? (
+                        <Link href={c.href} className="text-stone-800 hover:underline">{c.titulo}</Link>
+                      ) : (
+                        <p className="text-stone-800">{c.titulo}</p>
+                      )}
+                      {(c.local || c.evento_label) && (
+                        <p className="text-xs text-stone-400">{[c.local, c.evento_label].filter(Boolean).join(" · ")}</p>
+                      )}
+                    </div>
+                    {c.origem === "livre" && podeEscrever && (
+                      <button
+                        type="button"
+                        disabled={apagando}
+                        onClick={() =>
+                          iniciarApagar(async () => {
+                            await apagarCompromissoLivre(c.id);
+                            router.refresh();
+                          })
+                        }
+                        className="shrink-0 text-xs text-stone-400 hover:text-stone-800"
+                      >
+                        apagar
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
           <section>
             <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-400">
               Eventos
@@ -151,7 +257,7 @@ export function DayModal({ date, events, tasks, onClose }: Props) {
         <div className="mt-5 border-t border-stone-200 pt-4">
           <Link
             href="/eventos/novo"
-            className="block w-full rounded-lg bg-stone-900 px-4 py-2 text-center text-sm font-medium text-white hover:bg-stone-700"
+            className="block w-full rounded-lg border border-stone-300 px-4 py-2 text-center text-sm font-medium text-stone-800 hover:border-stone-500"
           >
             + Novo evento
           </Link>

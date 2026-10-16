@@ -111,6 +111,19 @@ export type CalendarTaskItem = {
   event_label: string | null;
 };
 
+/** Um compromisso na Agenda: livre (213) ou reunião de um evento (069). */
+export type CalendarCompromissoItem = {
+  id: string;
+  date: string; // yyyy-MM-dd
+  hora: string | null; // HH:mm
+  titulo: string;
+  local: string | null;
+  /** livre = da agenda da empresa, apagável aqui; evento = reunião de um evento */
+  origem: "livre" | "evento";
+  evento_label: string | null;
+  href: string | null;
+};
+
 export type TaskStatus = "pendente" | "em_progresso" | "concluido";
 
 export type TaskPriority = "alta" | "media" | "baixa";
