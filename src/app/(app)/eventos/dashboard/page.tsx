@@ -9,7 +9,8 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
-import { RadarDoDia, type LinhaDoRadar } from "@/components/dashboard/RadarDoDia";
+import { CSS_DO_DASHBOARD, Cartao, ListaDoRadar, type LinhaDoRadar } from "@/components/dashboard/RadarDoDia";
+import { FiltroDoDashboard } from "@/components/dashboard/FiltroDoDashboard";
 import { ResumoFinanceiro } from "@/components/dashboard/ResumoFinanceiro";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { DonutCard } from "@/components/dashboard/DonutCard";
@@ -123,7 +124,7 @@ const TYPE_COLORS: Record<EventType, string> = {
   outro: "#9ca3af", // gray-400
 };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams?: { evento?: string } }) {
   // o exemplo que ela já viu inteiro sai de cena aqui (174)
   await limparExemploVisto();
   const supabase = createClient();
@@ -162,7 +163,10 @@ export default async function DashboardPage() {
     .order("date", { ascending: true })
     .limit(10);
 
-  const upcoming = (data ?? []) as unknown as UpcomingEvent[];
+  const todosOsProximos = (data ?? []) as unknown as UpcomingEvent[];
+  // o filtro do alto (16/10/2026): todos os eventos ou um só
+  const filtro = todosOsProximos.find((e) => e.id === searchParams?.evento)?.id ?? null;
+  const upcoming = filtro ? todosOsProximos.filter((e) => e.id === filtro) : todosOsProximos;
 
   // as tarefas dos próximos 7 dias (o radar da semana); falha vira lista vazia
   const fimDaSemana = somarDias(todayIso, 7);
@@ -173,7 +177,7 @@ export default async function DashboardPage() {
     .lte("due_date", fimDaSemana)
     .neq("status", "concluido")
     .order("due_date", { ascending: true })
-    .limit(30);
+    .limit(filtro ? 60 : 30);
 
   const [
     saudes,
@@ -326,8 +330,10 @@ export default async function DashboardPage() {
     texto: a.texto,
     href: a.href,
   });
-  const esperando = alertas.filter((a) => ESPERA.has(a.tipo)).slice(0, 8).map(linhaDoAlerta);
-  const atrasado = alertas.filter((a) => !ESPERA.has(a.tipo)).slice(0, 8).map(linhaDoAlerta);
+  // com filtro, só os alertas daquele evento (o endereço de cada um leva a ele)
+  const doFiltro = filtro ? alertas.filter((a) => a.href.includes(filtro)) : alertas;
+  const esperando = doFiltro.filter((a) => ESPERA.has(a.tipo)).slice(0, 8).map(linhaDoAlerta);
+  const atrasado = doFiltro.filter((a) => !ESPERA.has(a.tipo)).slice(0, 8).map(linhaDoAlerta);
   const nomeDoEvento = (e: { name: string | null; type: EventType; clients: { name: string } | null } | null) =>
     e ? e.name || e.clients?.name || EVENT_TYPE_LABELS[e.type] : null;
   const semana: LinhaDoRadar[] = [
@@ -348,7 +354,7 @@ export default async function DashboardPage() {
       due_date: string;
       event_id: string | null;
       events: { name: string | null; type: EventType; clients: { name: string } | null } | null;
-    }[]).map((t) => ({
+    }[]).filter((t) => !filtro || t.event_id === filtro).map((t) => ({
       chave: `t-${t.id}`,
       ref: t.due_date,
       quando: diaCurto(t.due_date),
@@ -376,64 +382,109 @@ export default async function DashboardPage() {
     .filter(Boolean)
     .join(" · ");
 
+  const opcoesDoFiltro = todosOsProximos
+    .filter((e) => !e.exemplo)
+    .map((e) => ({ id: e.id, nome: nomeDoEvento(e) ?? "Evento" }));
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 28, maxWidth: 1000 }}>
-      {/* a data e a frase (7a) — o lugar do antigo "Boa tarde" */}
-      <header>
-        <h1
-          style={{
-            margin: 0,
-            fontFamily: "var(--font-title), Inter, sans-serif",
-            fontWeight: 500,
-            fontSize: "clamp(28px, 4vw, 40px)",
-            letterSpacing: "-0.02em",
-            color: "#221E1B",
-          }}
-        >
-          {dataDoAlto}
-        </h1>
-        <p style={{ margin: "6px 0 0", fontSize: "clamp(16px, 2vw, 18px)", color: "#6B6259" }}>{frase}</p>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <style dangerouslySetInnerHTML={{ __html: CSS_DO_DASHBOARD }} />
+      {/* a data, a frase e o filtro */}
+      <header style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
+        <div>
+          <h1
+            style={{
+              margin: 0,
+              fontFamily: "var(--font-title), Inter, sans-serif",
+              fontWeight: 500,
+              fontSize: "clamp(28px, 4vw, 40px)",
+              letterSpacing: "-0.02em",
+              color: "#221E1B",
+            }}
+          >
+            {dataDoAlto}
+          </h1>
+          <p style={{ margin: "6px 0 0", fontSize: "clamp(16px, 2vw, 18px)", color: "#6B6259" }}>{frase}</p>
+        </div>
+        {opcoesDoFiltro.length > 1 && <FiltroDoDashboard eventos={opcoesDoFiltro} />}
       </header>
 
       {/* os passos que faltam depois do primeiro evento, até serem feitos ou dispensados */}
       {primeiroAcesso.passos && <PassosQueFaltam passos={primeiroAcesso.passos} />}
-
       {porDentro?.mostrar && <ConhecaPorDentro exemploCasamento={porDentro.exemploCasamento} />}
 
-      {/* o slide dos próximos eventos — pedido dele: fica */}
-      <ProximosEventosCard eventos={proximos} />
+      <div className="db-grade">
+        {/* o que pede você: esperando e atrasado, lado a lado */}
+        <Cartao
+          titulo="Precisa de você"
+          conta={esperando.length + atrasado.length}
+          classe="db-inteiro"
+        >
+          <div className="db-duas">
+            <div>
+              <p className="db-sub">Esperando resposta</p>
+              <ListaDoRadar linhas={esperando} vazio="Ninguém esperando resposta." />
+            </div>
+            <div>
+              <p className="db-sub">Atrasado</p>
+              <ListaDoRadar linhas={atrasado} vazio="Nada atrasado." />
+            </div>
+          </div>
+        </Cartao>
 
-      {/* só os 2 de "continuar de onde parou"; as áreas estão no menu ☰ */}
-      {areaEventos && areaClientes && (
-        <AreasDoPainel titulo="De onde você parou" semMemoriaTela={areaEventos} semMemoriaEvento={areaClientes} areas={[]} />
-      )}
+        {/* o slide dos próximos eventos — pedido dele: fica */}
+        <div className="db-largo" style={{ minWidth: 0 }}>
+          <ProximosEventosCard eventos={proximos} />
+        </div>
 
-      <RadarDoDia esperando={esperando} atrasado={atrasado} semana={semana} />
+        <Cartao titulo="Próximos 7 dias" conta={semana.length} pe={{ href: "/calendario", rotulo: "Ver a agenda" }}>
+          <ListaDoRadar linhas={semana} vazio="Nada marcado para esta semana." />
+        </Cartao>
 
-      {/* os números do negócio e a atividade: recolhidos, só para a dona */}
-      {dona && (
-        <details className="group rounded border border-[#E6E0D8] bg-white">
-          <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 marker:content-none [&::-webkit-details-marker]:hidden">
-            Números do mês
-            <span className="text-xs text-gray-400 group-open:hidden">mostrar</span>
-            <span className="hidden text-xs text-gray-400 group-open:inline">esconder</span>
-          </summary>
-          <div className="space-y-4 border-t border-gray-100 p-4">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              {kpis.map(({ kpi, icon }) => (
-                <KpiCard key={kpi.title} kpi={kpi} icon={icon} />
+        {/* só os 2 de "continuar de onde parou"; as áreas estão no menu ☰ */}
+        {areaEventos && areaClientes && (
+          <div className="db-largo" style={{ minWidth: 0 }}>
+            <AreasDoPainel titulo="De onde você parou" semMemoriaTela={areaEventos} semMemoriaEvento={areaClientes} areas={[]} />
+          </div>
+        )}
+
+        {dona ? (
+          <Cartao titulo="Este mês" pe={{ href: "/financeiro", rotulo: "Ver o financeiro" }}>
+            <div className="db-numeros">
+              {kpis.map(({ kpi }) => (
+                <div key={kpi.title} className="db-numero">
+                  <span>{kpi.title}</span>
+                  <b>{kpi.value}</b>
+                </div>
               ))}
             </div>
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-              <DonutCard title="Eventos por status" unit="eventos" data={statusSlices} />
-              <DonutCard title="Eventos por tipo" unit="eventos" data={typeSlices} />
-              <MonthPerformance items={performanceItems} />
-            </div>
-            <ResumoFinanceiro data={financeiro} empresa={saldoEmpresa} />
+          </Cartao>
+        ) : null}
+
+        {dona && (
+          <Cartao titulo="Atividade recente" classe="db-largo">
             <ActivityFeed activities={activities} referenceIso={now.toISOString()} />
-          </div>
-        </details>
-      )}
+          </Cartao>
+        )}
+
+        {dona && (
+          <Cartao titulo="Eventos por tipo e situação">
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "8px 0" }}>
+              <DonutCard title="Por situação" unit="eventos" data={statusSlices} />
+              <DonutCard title="Por tipo" unit="eventos" data={typeSlices} />
+            </div>
+          </Cartao>
+        )}
+
+        {dona && (
+          <Cartao titulo="Desempenho e caixa" classe="db-inteiro">
+            <div style={{ display: "grid", gap: 16, padding: "8px 0" }}>
+              <MonthPerformance items={performanceItems} />
+              <ResumoFinanceiro data={financeiro} empresa={saldoEmpresa} />
+            </div>
+          </Cartao>
+        )}
+      </div>
     </div>
   );
 }

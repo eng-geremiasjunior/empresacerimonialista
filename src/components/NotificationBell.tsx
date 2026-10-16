@@ -11,7 +11,7 @@ import type { NotificationRow } from "@/lib/notifications-db";
  * ícone sozinho — o sino vira a palavra "Avisos" com a contagem, e a lista
  * abre para CIMA, porque a barra fica no pé da tela.
  */
-export function NotificationBell({ variante = "icone" }: { variante?: "icone" | "texto" } = {}) {
+export function NotificationBell({ variante = "icone" }: { variante?: "icone" | "texto" | "topo" } = {}) {
   const router = useRouter();
   const { notifications, unread, markRead, markAll, remove } =
     useNotifications();
@@ -56,7 +56,7 @@ export function NotificationBell({ variante = "icone" }: { variante?: "icone" | 
         onClick={() => setOpen((prev) => !prev)}
         title="Notificações"
         aria-label="Notificações"
-        className="relative rounded-full p-2 text-stone-500 hover:bg-stone-100"
+        className={variante === "topo" ? "mo-acao-topo" : "relative rounded-full p-2 text-stone-500 hover:bg-stone-100"}
       >
         <svg
           viewBox="0 0 24 24"
@@ -70,6 +70,7 @@ export function NotificationBell({ variante = "icone" }: { variante?: "icone" | 
         >
           <path d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
         </svg>
+        {variante === "topo" && <span className="mo-acao-rotulo">Avisos</span>}
         {unread > 0 && (
           <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
             {unread > 9 ? "9+" : unread}

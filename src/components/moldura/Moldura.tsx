@@ -29,6 +29,7 @@ import {
   type AbaDeEvento,
 } from "@/lib/abas-de-evento";
 import { MOLDURA_CSS } from "./moldura-css";
+import { Aparencia, SCRIPT_APARENCIA } from "./Aparencia";
 import { ProvedorDaMoldura, useMoldura } from "./contexto";
 
 export type Congelamento = { congelada: boolean; congelaEm: string | null };
@@ -37,6 +38,7 @@ type Props = {
   userEmail: string;
   cargo: string | null;
   empresaNome: string | null;
+  avatarUrl: string | null;
   /** os 3 eventos mais próximos, já em ordem de data (servidor) */
   proximos: AbaDeEvento[];
   /** "2026-10-15", em horário de Brasília (servidor) */
@@ -146,16 +148,26 @@ function Logo() {
   );
 }
 
+function Iniciais({ nome, foto }: { nome: string; foto: string | null }) {
+  const ini = nome.trim().split(/s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("") || "?";
+  // eslint-disable-next-line @next/next/no-img-element
+  return foto ? <img src={foto} alt="" className="mo-avatar" /> : <span className="mo-avatar" aria-hidden>{ini}</span>;
+}
+
 function MenuDaConta({
   cargo,
   nome,
   signOut,
   aoNavegar,
+  foto,
+  noTopo = false,
 }: {
   cargo: string | null;
   nome: string;
   signOut: () => Promise<void>;
   aoNavegar?: () => void;
+  foto?: string | null;
+  noTopo?: boolean;
 }) {
   const [aberto, setAberto] = useState(false);
   const ref = useFora(aberto, () => setAberto(false));
@@ -167,11 +179,19 @@ function MenuDaConta({
   };
   return (
     <div ref={ref} style={{ position: "relative" }}>
-      <button type="button" className="mo-item-status" aria-expanded={aberto} onClick={() => setAberto((a) => !a)}>
-        {nome} ▾
-      </button>
+      {noTopo ? (
+        <button type="button" className="mo-acao-topo" aria-expanded={aberto} aria-label={`Conta: ${nome}`} onClick={() => setAberto((a) => !a)}>
+          <Iniciais nome={nome} foto={foto ?? null} />
+          <span className="mo-acao-rotulo">Conta</span>
+        </button>
+      ) : (
+        <button type="button" className="mo-item-status" aria-expanded={aberto} onClick={() => setAberto((a) => !a)}>
+          {nome} ▾
+        </button>
+      )}
       {aberto && (
-        <div className="mo-menu mo-menu-cima">
+        <div className={`mo-menu ${noTopo ? "mo-menu-baixo" : "mo-menu-cima"}`}>
+          {noTopo && <span className="mo-menu-nome">{nome}</span>}
           {equipe && <Link href="/cerimonialistas" onClick={fechar}>Equipe</Link>}
           <Link href="/configuracoes" onClick={fechar}>Configurações</Link>
           {dona && <Link href="/assinatura" onClick={fechar}>Assinatura</Link>}
@@ -302,10 +322,12 @@ function Casca(props: Props) {
 
   return (
     <div className="mo-raiz">
+      <script dangerouslySetInnerHTML={{ __html: SCRIPT_APARENCIA }} />
       <style dangerouslySetInnerHTML={{ __html: MOLDURA_CSS }} />
 
       {/* ===== computador: o menu primário à esquerda ===== */}
       <aside className="mo-lateral" aria-label="Menu primário">
+        <div className="mo-lateral-dentro">
         <Logo />
         <nav className="mo-primario">
           {primario.map((p) => (
@@ -317,6 +339,7 @@ function Casca(props: Props) {
             </Link>
           ))}
         </nav>
+        </div>
       </aside>
 
       <div className="mo-coluna">
@@ -324,6 +347,13 @@ function Casca(props: Props) {
           portal, PartesDoEvento) e o ☰ do menu secundário ===== */}
       <div className="mo-cabeca">
         <div id="mo-segunda-linha" />
+        {!celular && (
+          <div className="mo-acoes">
+            <Aparencia />
+            <NotificationBell variante="topo" />
+            <MenuDaConta cargo={cargo} nome={nomeDaConta} signOut={props.signOut} foto={props.avatarUrl} noTopo />
+          </div>
+        )}
         <button
           type="button"
           className="mo-menu-btn"
@@ -332,9 +362,12 @@ function Casca(props: Props) {
           title="Menu"
           onClick={() => setPainel((p) => !p)}
         >
-          <span aria-hidden />
-          <span aria-hidden />
-          <span aria-hidden />
+          <span className="mo-barras" aria-hidden>
+            <span />
+            <span />
+            <span />
+          </span>
+          <span className="mo-acao-rotulo">Menu</span>
         </button>
       </div>
 
@@ -429,12 +462,8 @@ function Casca(props: Props) {
             </div>
           )}
           <div className="mo-status-grupo">
-            <NotificationBell variante="texto" />
             <CaixaDeSuporte variante="linha" />
             <Link href="/ajuda" className="mo-item-status">Ajuda</Link>
-          </div>
-          <div className="mo-status-grupo">
-            <MenuDaConta cargo={cargo} nome={nomeDaConta} signOut={props.signOut} />
           </div>
         </div>
       </footer>

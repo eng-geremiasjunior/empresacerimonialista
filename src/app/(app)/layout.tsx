@@ -145,6 +145,9 @@ export default async function AppLayout({
         userEmail={user.email ?? ""}
         cargo={cargo}
         empresaNome={empresaNome}
+        avatarUrl={
+          ((user.user_metadata as { avatar_url?: string | null } | null)?.avatar_url as string | null) ?? null
+        }
         proximos={proximos}
         hoje={hoje}
         congelamento={congelamento}
