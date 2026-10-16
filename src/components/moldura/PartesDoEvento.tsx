@@ -83,6 +83,8 @@ export function PartesDoEvento({
     ...(cerimonia ? [{ label: "Cerimônia", seg: "cortejo" }] : []),
     { label: "Fornecedores", seg: "fornecedores" },
     ...(convidados ? [{ label: "Convidados", seg: "rsvp" }] : []),
+    // em evidência (16/10/2026): a cerimonialista abre e manda o acesso à cliente
+    { label: "Portal da cliente", seg: "area-do-cliente" },
   ];
   const mais: Parte[] = [
     { label: "Resumo", seg: "" },
@@ -92,7 +94,6 @@ export function PartesDoEvento({
     { label: "Dinheiro", seg: "financeiro" },
     { label: "Operação", seg: "operacao" },
     ...(tem(tipo, "mesas") ? [{ label: "Mesas", seg: "mesas" }] : []),
-    { label: "Área da família", seg: "area-do-cliente" },
     { label: "Histórico", seg: "historico" },
   ];
   const href = (s: string) => (s ? `${base}/${s}` : base);

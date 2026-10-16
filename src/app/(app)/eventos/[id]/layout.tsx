@@ -80,10 +80,17 @@ export default async function EventoLayout({
     clients: { name: string } | null;
   };
 
-  const { saude } = await getCabecalhoEvento(
-    event.id,
-    event.date
-  );
+  const [{ saude }, { count: comAcesso }] = await Promise.all([
+    getCabecalhoEvento(event.id, event.date),
+    // o portal da cliente em evidência (16/10/2026): quantas pessoas da
+    // família já entram; falha vira null e o botão só diz "Portal da cliente"
+    supabase
+      .from("evento_acesso")
+      .select("id", { count: "exact", head: true })
+      .eq("event_id", params.id)
+      .eq("status", "ativo"),
+  ]);
+  const acessos = typeof comAcesso === "number" ? comAcesso : null;
 
   const tipoLabel = EVENT_TYPE_LABELS[event.type];
   const titulo =
@@ -261,7 +268,35 @@ export default async function EventoLayout({
               <LinksDoCabecalho eventId={event.id} />
             </div>
 
-            <div style={{ display: "flex", flex: "none", gap: 8, alignItems: "center", whiteSpace: "nowrap" }}>
+            <div style={{ display: "flex", flex: "0 1 auto", maxWidth: "100%", gap: 8, alignItems: "center", whiteSpace: "nowrap", flexWrap: "wrap" }}>
+              {/* o portal da cliente, em evidência: entrar e mandar o acesso */}
+              <Link
+                href={`/eventos/${event.id}/area-do-cliente`}
+                className="ev-foco"
+                style={{
+                  display: "inline-flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  height: 40,
+                  padding: "0 14px",
+                  borderRadius: 10,
+                  fontFamily: "var(--font-ui)",
+                  border: "1px solid #6E3F5F",
+                  background: "#F3EBF0",
+                  color: "#6E3F5F",
+                  lineHeight: 1.15,
+                  textDecoration: "none",
+                }}
+              >
+                <span style={{ fontSize: 13.5, fontWeight: 600 }}>Portal da cliente</span>
+                <span style={{ fontSize: 11.5, opacity: 0.85 }}>
+                  {acessos === null
+                    ? "abrir e enviar o acesso"
+                    : acessos === 0
+                      ? "ainda sem acesso · enviar"
+                      : `${acessos} ${acessos === 1 ? "pessoa entra" : "pessoas entram"} · enviar mais`}
+                </span>
+              </Link>
               <Link
                 href={`/eventos/${event.id}/modo-evento`}
                 className={modoDestaque ? "ev-btn-primario ev-foco" : "ev-btn-secundario ev-foco"}
