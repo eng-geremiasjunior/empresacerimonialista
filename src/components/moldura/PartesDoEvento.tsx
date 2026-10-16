@@ -105,6 +105,7 @@ export function PartesDoEvento({
   useEffect(() => {
     if (!setVistas) return;
     const FOLHA: Record<string, string> = {
+      planejamento: `/imprimir/planejamento/${eventId}`,
       roteiro: `/imprimir/roteiro/${eventId}`,
       mesas: `/imprimir/mesas/${eventId}`,
       operacao: `/imprimir/operacao/${eventId}`,

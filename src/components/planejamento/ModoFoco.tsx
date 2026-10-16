@@ -647,7 +647,8 @@ export function ModoFoco({
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: `repeat(${Math.min(3, criticas.length)}, 1fr)`,
+              // minmax: no celular os cartões descem um por linha (antes estouravam a tela)
+              gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${criticas.length >= 3 ? 230 : 280}px), 1fr))`,
               gap: 14,
             }}
           >
