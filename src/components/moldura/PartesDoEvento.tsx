@@ -33,7 +33,9 @@ const PARTES_CSS = `
 .mo-folha-cel{display:none}
 @media (max-width:1023px){
   .mo-partes{display:none}
-  .mo-barra-cel{display:block; position:fixed; left:0; right:0; bottom:0; z-index:35}
+  /* no celular vale o modelo anterior (18/10/2026): os blocos das fases no
+     topo do evento (BlocoDeFases, no layout); a barra de baixo não aparece */
+  .mo-barra-cel{display:none}
   .mo-barra-cel-status{background:var(--mo-nevoa); border-top:1px solid var(--mo-linha); padding:6px 16px; font-size:12px; color:var(--mo-cinza-1);
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .mo-barra-cel-partes{display:grid; grid-template-columns:repeat(5,1fr); background:var(--mo-marfim); border-top:1px solid var(--mo-linha)}
@@ -45,7 +47,6 @@ const PARTES_CSS = `
     max-height:75vh; overflow-y:auto; padding:8px 0 16px}
   .mo-folha-cel a{display:block; padding:12px 16px; font-size:15px; color:var(--mo-tinta); text-decoration:none; border-top:1px solid var(--mo-linha)}
   .mo-folha-cel a:first-child{border-top:0}
-  .mo-principal{padding-bottom:120px}
 }
 `;
 

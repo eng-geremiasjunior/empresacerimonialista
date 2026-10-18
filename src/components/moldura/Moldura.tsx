@@ -8,7 +8,7 @@
 //      dentro do evento, a faixa do alto mostra as partes dele (PartesDoEvento);
 //   3. a barra de status fina embaixo: fatos à esquerda; vistas, avisos,
 //      suporte, ajuda e a conta à direita.
-// No celular o menu vira um seletor no topo e a barra vira o rodapé.
+// No celular vale o modelo anterior (MenuDoCelular, 18/10/2026).
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -21,15 +21,10 @@ import { ICONES_DO_MENU, MENU_DO_APP as NAV } from "@/lib/menu-do-app";
 import { VISOES_FORNECEDORES, VISOES_ORCAMENTOS } from "@/lib/visoes";
 import { FOTO_DA_AREA } from "@/lib/fotos-de-evento";
 import { CHAVE_ULTIMA_TELA, gravar } from "@/lib/ultima-tela";
-import {
-  EVENTO_ABAS,
-  contagemDaAba,
-  fraseDaProximaFesta,
-  lerAbasExtras,
-  type AbaDeEvento,
-} from "@/lib/abas-de-evento";
+import { fraseDaProximaFesta, type AbaDeEvento } from "@/lib/abas-de-evento";
 import { MOLDURA_CSS } from "./moldura-css";
 import { Aparencia, SCRIPT_APARENCIA } from "./Aparencia";
+import { MenuDoCelular } from "./MenuDoCelular";
 import { ProvedorDaMoldura, useMoldura } from "./contexto";
 
 export type Congelamento = { congelada: boolean; congelaEm: string | null };
@@ -253,17 +248,6 @@ function Casca(props: Props) {
   const noNovo = pathname === "/eventos/novo";
   const emTodos = pathname === "/eventos";
 
-  // ---- o nome do evento aberto (para o seletor do celular) ----
-  const [eventoAberto, setEventoAberto] = useState<AbaDeEvento | null>(null);
-  useEffect(() => {
-    if (!idDoEvento) return;
-    const doServidor = proximos.find((p) => p.id === idDoEvento);
-    setEventoAberto(doServidor ?? lerAbasExtras().find((a) => a.id === idDoEvento) ?? null);
-    const ler = () => setEventoAberto(lerAbasExtras().find((a) => a.id === idDoEvento) ?? doServidor ?? null);
-    window.addEventListener(EVENTO_ABAS, ler);
-    return () => window.removeEventListener(EVENTO_ABAS, ler);
-  }, [idDoEvento, proximos]);
-
   // ---- o menu (☰) à direita: aberto no Dashboard a partir de 1280, fechado no evento ----
   const [painel, setPainel] = useState(false);
   useEffect(() => {
@@ -281,10 +265,6 @@ function Casca(props: Props) {
     mq.addEventListener("change", ler);
     return () => mq.removeEventListener("change", ler);
   }, []);
-
-  // ---- seletor do celular ----
-  const [seletor, setSeletor] = useState(false);
-  useEffect(() => setSeletor(false), [pathname]);
 
   const escritorio = itensDoEscritorio(cargo);
 
@@ -345,25 +325,6 @@ function Casca(props: Props) {
 
   const ferramentas = ferramentasDoMenu(cargo);
 
-  // o que o seletor do celular mostra fechado
-  const rotuloAtual = (() => {
-    if (naHoje) return { nome: "Dashboard", conta: null as string | null };
-    if (noNovo) return { nome: "Novo evento", conta: null };
-    if (emTodos) return { nome: "Eventos", conta: null };
-    if (idDoEvento) {
-      return {
-        nome: eventoAberto?.nome ?? "Evento",
-        conta: eventoAberto ? contagemDaAba(eventoAberto.data, hoje) : null,
-      };
-    }
-    for (const it of escritorio) {
-      const s = it.sub?.find((x) => ativoExato(pathname, x.href));
-      if (s) return { nome: s.label, conta: null };
-      if (ativoExato(pathname, it.href)) return { nome: it.label, conta: null };
-    }
-    return { nome: "eorganizei", conta: null };
-  })();
-
   return (
     <div className="mo-raiz">
       <script dangerouslySetInnerHTML={{ __html: SCRIPT_APARENCIA }} />
@@ -418,38 +379,10 @@ function Casca(props: Props) {
         </button>
       </div>
 
-      {/* ===== celular: seletor no topo ===== */}
-      <div className="mo-topo-cel">
-        <Logo />
-        <button type="button" className="mo-seletor" aria-expanded={seletor} onClick={() => setSeletor((s) => !s)}>
-          <span className="mo-seletor-nome">{rotuloAtual.nome}</span>
-          {rotuloAtual.conta && <span className="mo-aba-conta">{rotuloAtual.conta}</span>}
-          <span className="mo-seletor-seta">{seletor ? "▴" : "▾"}</span>
-        </button>
-        {seletor && (
-          <nav className="mo-lista-cel" aria-label="Ir para">
-            {primario.map((p) => (
-              <Link key={p.href} href={p.href} className={"sub" in p && p.sub ? "mo-sub" : ""}>{p.href === "/eventos/novo" ? "+ Novo evento" : p.label}</Link>
-            ))}
-            {ferramentas.length > 0 && <span className="mo-cabeca-grupo mo-fio-tinta">Ferramentas</span>}
-            {ferramentas.map((p) => (
-              <Link key={p.href} href={p.href} className="mo-sub">{p.label}</Link>
-            ))}
-            {escritorio.map((it, i) => (
-              <span key={it.href} style={{ display: "contents" }}>
-                {it.sub ? (
-                  <span className={`mo-cabeca-grupo ${i === 0 ? "mo-fio-cinza" : ""}`}>{it.label}</span>
-                ) : (
-                  <Link href={it.href}>{it.label}</Link>
-                )}
-                {it.sub?.map((s) => (
-                  <Link key={s.href} href={s.href} className="mo-sub">{s.label}</Link>
-                ))}
-              </span>
-            ))}
-          </nav>
-        )}
-      </div>
+      {/* ===== celular: o modelo anterior (18/10/2026, pedido dele) ===== */}
+      {celular && (
+        <MenuDoCelular cargo={cargo} userEmail={props.userEmail} avatarUrl={props.avatarUrl} signOut={props.signOut} />
+      )}
 
       {faixa && (
         <div className="mo-faixa-aviso">
@@ -520,20 +453,6 @@ function Casca(props: Props) {
       </footer>
       )}
 
-      {/* ===== celular: rodapé fora do evento (dentro, as partes ocupam) ===== */}
-      {celular && !idDoEvento && (
-        <footer className="mo-rodape-cel">
-          <span>{fatos}</span>
-          <div className="mo-rodape-linha">
-            <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-              <NotificationBell variante="texto" />
-              <CaixaDeSuporte variante="linha" />
-              <Link href="/ajuda" className="mo-item-status">Ajuda</Link>
-            </div>
-            <MenuDaConta cargo={cargo} nome={nomeDaConta} signOut={props.signOut} />
-          </div>
-        </footer>
-      )}
       </div>
     </div>
   );

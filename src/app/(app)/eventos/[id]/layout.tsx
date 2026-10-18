@@ -8,6 +8,8 @@ import { CapaDoEvento } from "@/components/eventos/CapaDoEvento";
 import { LinksDoCabecalho } from "@/components/eventos/LinksDoCabecalho";
 import { AcoesDoEvento } from "@/components/eventos/AcoesDoEvento";
 import { PartesDoEvento } from "@/components/moldura/PartesDoEvento";
+import { BlocoDeFases } from "@/components/eventos/BlocoDeFases";
+import { faseDoSegmento, type FaseDoEvento } from "@/lib/fases-do-evento";
 import { FatosDaBarra } from "@/components/moldura/contexto";
 import { RequerAtencao } from "@/components/eventos/RequerAtencao";
 import { UltimaAba } from "@/components/eventos/UltimaAba";
@@ -80,7 +82,7 @@ export default async function EventoLayout({
     clients: { name: string } | null;
   };
 
-  const [{ saude }, { count: comAcesso }] = await Promise.all([
+  const [{ saude, fases, contadores }, { count: comAcesso }] = await Promise.all([
     getCabecalhoEvento(event.id, event.date),
     // o portal da cliente em evidência (16/10/2026): quantas pessoas da
     // família já entram; falha vira null e o botão só diz "Portal da cliente"
@@ -132,6 +134,13 @@ export default async function EventoLayout({
   // fornecedores, monte o roteiro" — exatamente os passos do "Para começar"
   // da Visão geral. Uma vez só.
   const alertas = saude.semDados ? [] : saude.alertas;
+
+  // Pendências por fase (os blocos das fases do celular)
+  const pendencias: Record<FaseDoEvento, number> = { planejar: 0, organizar: 0, executar: 0 };
+  for (const a of alertas) {
+    const f = faseDoSegmento(a.destino);
+    if (f) pendencias[f] += 1;
+  }
 
   // Os fatos da barra de status: quanto falta e onde.
   const fatos = [proximidade, local].filter(Boolean).join(" · ");
@@ -324,6 +333,26 @@ export default async function EventoLayout({
             </div>
           </div>
         </header>
+      </div>
+
+      {/* no celular, os blocos das fases são a navegação (o modelo anterior) */}
+      <style dangerouslySetInnerHTML={{ __html: ".ev-so-celular{display:none}@media (max-width:1023px){.ev-so-celular{display:block}}" }} />
+      <div className="ev-so-celular">
+        <BlocoDeFases
+          eventId={event.id}
+          fases={fases}
+          tipoEvento={event.type}
+          counters={{
+            fornecedores: contadores.fornecedoresPendentes,
+            comunicacao: contadores.comunicacaoNaoLidas,
+            financeiro: contadores.financeiroVencendo,
+            planejamento: contadores.planejamentoDaCliente,
+            contratos: contadores.contratosAguardando,
+            tarefas: contadores.tarefasVencidas,
+          }}
+          pendencias={pendencias}
+          respostasDaCliente={contadores.planejamentoDaCliente}
+        />
       </div>
 
       <RequerAtencao alertas={alertas} eventId={event.id} />
