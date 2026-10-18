@@ -5,10 +5,24 @@
 
 export const MOLDURA_CSS = `
 .mo-raiz{
-  --mo-marfim:#FAF8F5; --mo-nevoa:#F2EEE9; --mo-papel:#FFFFFF;
-  --mo-tinta:#221E1B; --mo-cinza-1:#6B6259; --mo-cinza-2:#928A81;
-  --mo-linha:#E6E0D8; --mo-ameixa:#6E3F5F; --mo-ameixa-clara:#F3EBF0;
-  --mo-salvia:#6E7F63; --mo-veu:rgba(34,30,27,.28);
+  /* revisão visual de 18/10/2026 (pedido dele: "a cor pálida vai mudar").
+     O DESTAQUE da interface vive aqui, num lugar só: trocar a cor de
+     destaque é trocar estas três linhas. O logo continua ameixa (marca). */
+  --mo-destaque:#A34F3E; --mo-destaque-escuro:#86402F; --mo-destaque-claro:#F6E8E3;
+  --mo-marfim:#F8F6F2; --mo-nevoa:#F0ECE5; --mo-papel:#FFFEFC;
+  --mo-tinta:#252525; --mo-cinza-1:#68645E; --mo-cinza-2:#736D65;
+  --mo-linha:#D8D1C7; --mo-ameixa:var(--mo-destaque); --mo-ameixa-clara:var(--mo-destaque-claro);
+  --mo-marca:#6E3F5F;
+  --mo-salvia:#55684A; --mo-atraso:#9A3B2E; --mo-veu:rgba(37,37,37,.32);
+  /* a fonte do app inteiro dentro da moldura: Inter (já carregada), firme;
+     Instrument Sans fica para o portal e o site */
+  --font-ui:var(--font-title);
+  /* o cabeçalho e as fases do evento leem os --ev-*: mesma paleta */
+  --ev-marfim:#F8F6F2; --ev-nevoa:#F0ECE5; --ev-card-bg:#FFFEFC;
+  --ev-card-border:#D8D1C7; --ev-card-border-soft:#E2DCD3;
+  --ev-text-strong:#252525; --ev-text-body:#4F4B46; --ev-text-muted:#68645E; --ev-text-faint:#8C857C;
+  --ev-accent:#A34F3E; --ev-accent-hover:#86402F; --ev-accent-tint:#F6E8E3;
+  --ev-cta:#252525; --ev-ok:#55684A; --ev-ok-dark:#425238; --ev-late:#9A3B2E;
   --mo-titulo:var(--font-title), Inter, sans-serif;
   --mo-texto:var(--font-ui), "Instrument Sans", sans-serif;
   --mo-mono:var(--font-mono), "IBM Plex Mono", monospace;
@@ -18,21 +32,22 @@ export const MOLDURA_CSS = `
 .mo-raiz button{font-family:inherit}
 
 /* ---------- o menu primário à esquerda: retraído, abre ao passar o mouse (16/10/2026) ---------- */
-.mo-lateral{flex:none; width:80px; position:sticky; top:0; height:100vh; z-index:40}
-.mo-lateral-dentro{position:absolute; top:0; left:0; bottom:0; width:80px; display:flex; flex-direction:column; gap:18px;
+.mo-lateral{flex:none; width:88px; position:sticky; top:0; height:100vh; z-index:40}
+.mo-lateral-dentro{position:absolute; top:0; left:0; bottom:0; width:88px; display:flex; flex-direction:column; gap:18px;
   padding:14px 8px; background:var(--mo-nevoa); border-right:1px solid var(--mo-linha); overflow:hidden; transition:width 160ms ease}
 .mo-lateral:hover .mo-lateral-dentro,.mo-lateral:focus-within .mo-lateral-dentro{width:220px}
 .mo-logo{font-family:var(--mo-titulo); font-weight:700; font-size:18px; letter-spacing:-0.02em; line-height:1; text-decoration:none;
   padding:6px 14px; white-space:nowrap}
-.mo-logo .e{color:var(--mo-tinta)} .mo-logo .o{color:var(--mo-ameixa); transition:opacity 160ms ease}
+.mo-logo .e{color:var(--mo-tinta)} .mo-logo .o{color:var(--mo-marca); transition:opacity 160ms ease}
 .mo-lateral:not(:hover):not(:focus-within) .mo-logo .o{opacity:0}
 .mo-primario{display:flex; flex-direction:column; gap:4px}
 .mo-prim{display:flex; flex-direction:column; align-items:center; gap:4px; padding:8px 2px; border-radius:6px; border-left:2px solid transparent;
-  font-size:10.5px; font-weight:500; color:var(--mo-cinza-1); text-decoration:none; white-space:nowrap; text-align:center}
+  font-size:11px; font-weight:500; color:var(--mo-cinza-1); text-decoration:none; white-space:nowrap; text-align:center}
 .mo-prim svg{width:20px; height:20px; flex:none}
-.mo-lateral:hover .mo-prim,.mo-lateral:focus-within .mo-prim{flex-direction:row; justify-content:flex-start; gap:12px; padding:9px 12px; font-size:15px}
+.mo-lateral:hover .mo-prim,.mo-lateral:focus-within .mo-prim{flex-direction:row; justify-content:flex-start; gap:12px; padding:9px 12px; font-size:14px}
 .mo-prim:hover{color:var(--mo-tinta); background:var(--mo-marfim)}
-.mo-prim-ativo{color:var(--mo-tinta); font-weight:600; background:var(--mo-marfim); border-left-color:var(--mo-ameixa)}
+.mo-prim-ativo{color:var(--mo-destaque); font-weight:600; background:var(--mo-destaque-claro); border-left-color:var(--mo-destaque)}
+.mo-prim:focus-visible,.mo-acao-topo:focus-visible,.mo-menu-btn:focus-visible{outline:2px solid var(--mo-destaque); outline-offset:-2px}
 .mo-ferramentas{margin-top:4px; padding-top:12px; border-top:1px solid var(--mo-linha)}
 .mo-grupo-rotulo{display:none; padding:0 12px 4px; font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--mo-cinza-2); white-space:nowrap}
 .mo-lateral:hover .mo-grupo-rotulo,.mo-lateral:focus-within .mo-grupo-rotulo{display:block}
@@ -53,7 +68,7 @@ export const MOLDURA_CSS = `
   min-width:66px; padding:4px 8px; border:0; background:transparent; color:var(--mo-cinza-1); cursor:pointer}
 .mo-acao-topo:hover{color:var(--mo-tinta); background:var(--mo-nevoa)}
 .mo-acao-topo[aria-expanded="true"]{color:var(--mo-tinta); background:var(--mo-nevoa)}
-.mo-acao-rotulo{font-size:10.5px; line-height:1}
+.mo-acao-rotulo{font-size:11px; font-weight:500; line-height:1}
 .mo-avatar{width:22px; height:22px; border-radius:999px; object-fit:cover; background:var(--mo-ameixa); color:#fff;
   font-size:10px; font-weight:600; display:inline-flex; align-items:center; justify-content:center}
 .mo-menu-btn{flex:none; min-width:66px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;

@@ -20,10 +20,11 @@ type Parte = { label: string; seg: string };
 const PARTES_CSS = `
 .mo-partes{display:flex; align-items:center; gap:28px; padding:10px 24px;
   font-size:14px; flex-wrap:wrap; width:100%}
-.mo-parte{color:var(--mo-cinza-1); text-decoration:none; padding:2px 0}
+.mo-parte{color:var(--mo-cinza-1); font-weight:500; text-decoration:none; padding:2px 0}
+.mo-parte:focus-visible{outline:2px solid var(--mo-destaque); outline-offset:3px; border-radius:2px}
 .mo-parte:hover{color:var(--mo-tinta)}
 .mo-parte-ativa{color:var(--mo-tinta); font-weight:600; text-decoration:underline; text-decoration-thickness:2px;
-  text-underline-offset:13px; text-decoration-color:var(--mo-tinta)}
+  text-underline-offset:13px; text-decoration-color:var(--mo-destaque)}
 .mo-mais{position:relative}
 .mo-mais>button{border:0; background:none; padding:2px 0; font-size:14px; color:var(--mo-cinza-1); cursor:pointer}
 .mo-mais>button:hover{color:var(--mo-tinta)}

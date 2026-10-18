@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getDossie, quandoEmPalavras } from "@/lib/supabase/dossie";
 import { CSS_DO_DASHBOARD, Cartao } from "@/components/dashboard/RadarDoDia";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { hojeBR } from "@/lib/tempo";
 
 export const dynamic = "force-dynamic";
 
@@ -13,13 +14,22 @@ export const dynamic = "force-dynamic";
 
 const CSS = `
 .pn-lista{list-style:none;margin:0;padding:0}
-.pn-lista li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--mo-linha,#E6E0D8);font-size:14px;color:#221E1B}
+.pn-lista li{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--mo-linha,#D8D1C7);font-size:14px;font-weight:450;line-height:1.4;color:var(--mo-tinta,#252525)}
 .pn-lista li:last-child{border-bottom:0}
-.pn-lista .pn-dir{flex:none;font-family:var(--font-mono),"IBM Plex Mono",monospace;font-size:12.5px;color:#6B6259}
-.pn-resumo{margin:10px 0 4px;font-size:14px;color:#3a3532}
-.pn-resumo b{font-family:var(--font-mono),"IBM Plex Mono",monospace;font-weight:500;color:#221E1B}
-.pn-vazio{margin:10px 0;font-size:14px;color:#6B6259}
-.pn-atraso{color:#8a2f2f}
+.pn-lista .pn-dir{flex:none;font-family:var(--font-mono),"IBM Plex Mono",monospace;font-size:12.5px;color:var(--mo-cinza-1,#68645E)}
+.pn-resumo{margin:12px 0 4px;font-size:14px;color:var(--mo-cinza-1,#68645E)}
+.pn-resumo b{font-family:var(--font-mono),"IBM Plex Mono",monospace;font-weight:600;color:var(--mo-tinta,#252525)}
+.pn-vazio{margin:12px 0;font-size:14px;color:var(--mo-cinza-1,#68645E)}
+.pn-atraso{color:var(--mo-atraso,#9A3B2E) !important;font-weight:600}
+.pn-titulo{margin:0;font-family:var(--font-title),Inter,sans-serif;font-weight:700;font-size:28px;letter-spacing:-0.02em;color:var(--mo-tinta,#252525)}
+.pn-quando{margin:4px 0 0;font-size:15px;color:var(--mo-cinza-1,#68645E)}
+.pn-proximo{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;padding:12px 16px;border-left:3px solid var(--mo-destaque,#A34F3E);
+  background:var(--mo-destaque-claro,#F6E8E3);border-radius:0 6px 6px 0}
+.pn-proximo span{font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mo-destaque-escuro,#86402F)}
+.pn-proximo b{font-size:16px;font-weight:600;color:var(--mo-tinta,#252525)}
+.pn-imprimir{border-radius:6px;padding:9px 16px;font-size:14px;font-weight:600;background:var(--mo-destaque,#A34F3E);color:#fff;text-decoration:none}
+.pn-imprimir:hover{background:var(--mo-destaque-escuro,#86402F)}
+.pn-imprimir:focus-visible{outline:2px solid var(--mo-destaque,#A34F3E);outline-offset:2px}
 `;
 
 function dataCurta(iso: string | null) {
@@ -30,7 +40,9 @@ export default async function PanoramaPage({ params }: { params: { id: string } 
   const d = await getDossie(params.id);
   if (!d) notFound();
   const base = `/eventos/${params.id}`;
+  const hoje = hojeBR();
   const atrasadas = d.tarefas.filter((t) => t.atrasada);
+  const decisoesVencidas = d.faltam.filter((f) => f.prazo && f.prazo < hoje);
   const proximo =
     atrasadas[0]?.titulo ??
     d.faltam[0]?.titulo ??
@@ -42,35 +54,36 @@ export default async function PanoramaPage({ params }: { params: { id: string } 
       <style dangerouslySetInnerHTML={{ __html: CSS_DO_DASHBOARD + CSS }} />
       <header style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
         <div>
-          <h1 style={{ margin: 0, fontFamily: "var(--font-title), Inter, sans-serif", fontWeight: 600, fontSize: 26, color: "#221E1B" }}>
-            Panorama
-          </h1>
-          <p style={{ margin: "4px 0 0", fontSize: 15, color: "#6B6259" }}>
-            {quandoEmPalavras(d.diasAte)}
-            {proximo ? ` · próximo passo: ${proximo}` : ""}
-          </p>
+          <h1 className="pn-titulo">Panorama</h1>
+          <p className="pn-quando">{quandoEmPalavras(d.diasAte)}</p>
         </div>
         <Link
           href={`/imprimir/evento/${params.id}`}
           target="_blank"
-          style={{
-            borderRadius: 6,
-            padding: "8px 14px",
-            fontSize: 14,
-            fontWeight: 600,
-            background: "#221E1B",
-            color: "#fff",
-            textDecoration: "none",
-          }}
+          className="pn-imprimir"
         >
           Imprimir evento
         </Link>
       </header>
 
+      {/* o próximo passo, em destaque (o atraso vem primeiro) */}
+      {proximo && (
+        <div className="pn-proximo">
+          <span>{atrasadas.length > 0 || decisoesVencidas.some((f) => f.titulo === proximo) ? "Atrasado · faça primeiro" : "Próximo passo"}</span>
+          <b>{proximo}</b>
+        </div>
+      )}
+
       <div className="db-grade">
         <Cartao titulo="Planejamento" conta={d.faltam.length} pe={{ href: `${base}/planejamento`, rotulo: "Abrir o planejamento" }}>
           <p className="pn-resumo">
             <b>{d.totalDecididas}</b> decididos · <b>{d.faltam.length}</b> faltam
+            {decisoesVencidas.length > 0 && (
+              <>
+                {" · "}
+                <b className="pn-atraso">{decisoesVencidas.length}</b> <span className="pn-atraso">com prazo vencido</span>
+              </>
+            )}
           </p>
           {d.faltam.length === 0 ? (
             <p className="pn-vazio">Tudo decidido.</p>
@@ -79,7 +92,11 @@ export default async function PanoramaPage({ params }: { params: { id: string } 
               {d.faltam.slice(0, 5).map((f) => (
                 <li key={`${f.assunto}-${f.titulo}`}>
                   <span>{f.titulo}</span>
-                  <span className="pn-dir">até {dataCurta(f.prazo)}</span>
+                  {f.prazo && f.prazo < hoje ? (
+                    <span className="pn-dir pn-atraso">venceu {dataCurta(f.prazo)}</span>
+                  ) : (
+                    <span className="pn-dir">até {dataCurta(f.prazo)}</span>
+                  )}
                 </li>
               ))}
             </ul>
