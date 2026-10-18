@@ -224,7 +224,7 @@ function LinhaDecisao({
             display: "block",
             marginTop: 2,
             fontFamily: F_MONO,
-            fontSize: 10,
+            fontSize: 11,
             lineHeight: "14px",
             // resposta da cliente fura a cascata também na COR: na lista,
             // o olho acha o tom pendente sem ler linha a linha
@@ -322,7 +322,7 @@ function LinhaObjetivo({
           // "depois" é esmaecido porque ainda não é a vez dele; resolvido
           // não — está pronto, e ler o que já se conquistou vale
           opacity:
-            compactar === "depois" && objetivo.bucket !== "concluido" ? 0.62 : 1,
+            compactar === "depois" && objetivo.bucket !== "concluido" ? 0.9 : 1,
           cursor: "pointer",
         }}
         onClick={onToggle}
@@ -357,7 +357,7 @@ function LinhaObjetivo({
               display: "block",
               marginTop: 2,
               fontFamily: F_MONO,
-              fontSize: 10,
+              fontSize: 11,
               lineHeight: "14px",
               color: C.meta,
             }}
@@ -749,7 +749,7 @@ export function ModoFoco({
                     gap: 12,
                     padding: "10px 16px 10px 30px",
                     borderBottom: `1px solid ${C.bordaSutil}`,
-                    opacity: 0.55,
+                    opacity: 0.8,
                   }}
                 >
                   <span

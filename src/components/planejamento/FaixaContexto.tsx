@@ -275,7 +275,7 @@ function VerbaEditavel({
         </span>
       )}
       {total !== null && (
-        <span style={{ fontFamily: F_MONO, fontSize: 10, color: C.fantasma }}>
+        <span style={{ fontFamily: F_MONO, fontSize: 11, color: C.fantasma }}>
           editar
         </span>
       )}

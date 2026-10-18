@@ -19,9 +19,9 @@ export const C = {
   divisoria2: "#F0F1F2",
   tinta: "#23262A",
   corpo: "#3C4145",
-  secundario: "#5B6167",
-  meta: "#8A9096",
-  fantasma: "#9AA0A6",
+  secundario: "#4A5056",
+  meta: "#5F656B",
+  fantasma: "#6F757B",
   ameixa: "#6E3F5F",
   ameixaEscura: "#4A2A40",
   ameixaClara: "#B98FAC",
@@ -42,10 +42,11 @@ export const F_TITLE = "var(--font-title), system-ui, sans-serif";
 export const F_UI = "var(--font-ui), system-ui, sans-serif";
 export const F_MONO = "var(--font-mono), ui-monospace, monospace";
 
-// Rótulo mono uppercase 10px (rótulo de campo / cabeçalho de grupo)
+// Rótulo mono uppercase 11px (rótulo de campo / cabeçalho de grupo).
+// 18/10/2026: os cinzas e os tamanhos subiram — ele não conseguia ler.
 export const monoLabel: CSSProperties = {
   fontFamily: F_MONO,
-  fontSize: 10,
+  fontSize: 11,
   lineHeight: "14px",
   letterSpacing: "0.06em",
   textTransform: "uppercase",

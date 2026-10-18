@@ -42,6 +42,11 @@ const CSS = `
 .tg-chip:hover{color:var(--tg-tinta);border-color:var(--tg-c2)}
 .tg-ia-linha{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
 .tg-aviso{font-size:13px;color:var(--tg-c1)}
+.tg-lido{margin-top:12px;padding:12px 14px;border:1px solid var(--tg-ameixa);border-radius:4px;background:#F3EBF0}
+.tg-lido-titulo{margin:0 0 6px;font-size:14px;font-weight:600}
+.tg-lido ul{margin:0 0 10px;padding-left:18px;font-size:14px;line-height:1.6}
+.tg-lido b{font-weight:600}
+.tg-pelo{margin-left:8px;font-size:11.5px;font-weight:600;color:var(--tg-ameixa)}
 .tg-aviso a{color:var(--tg-tinta);font-weight:600;text-underline-offset:3px}
 .tg-grupo{margin-top:22px}
 .tg-grupo-topo{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-bottom:8px;border-bottom:1px solid var(--tg-linha)}
@@ -49,9 +54,9 @@ const CSS = `
 .tg-conta{font-family:var(--font-mono),"IBM Plex Mono",monospace;font-size:12px;color:var(--tg-c2);font-weight:400;margin-left:8px}
 .tg-item{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:16px;padding:9px 0;border-bottom:1px solid var(--tg-linha)}
 .tg-titulo{font-size:15px}
-.tg-venceu{font-size:13px;color:var(--tg-c2);white-space:nowrap}
+.tg-venceu{font-size:13px;color:var(--tg-c1);white-space:nowrap}
 .tg-seg{display:inline-flex;border:1px solid var(--tg-linha);border-radius:4px;overflow:hidden}
-.tg-seg button{border:0;border-left:1px solid var(--tg-linha);background:#fff;padding:6px 11px;font-size:13px;color:var(--tg-c2);cursor:pointer;white-space:nowrap}
+.tg-seg button{border:0;border-left:1px solid var(--tg-linha);background:#fff;padding:6px 11px;font-size:13px;color:var(--tg-c1);cursor:pointer;white-space:nowrap}
 .tg-seg button:first-child{border-left:0}
 .tg-seg button[aria-pressed="true"]{background:var(--tg-nevoa);color:var(--tg-tinta);font-weight:600;box-shadow:inset 0 0 0 1px var(--tg-tinta)}
 .tg-mais{margin-top:8px;border:0;background:none;padding:0;font-size:13px;color:var(--tg-c1);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
@@ -94,7 +99,8 @@ export function TriagemDoPlanejamento({
   const [inteiros, setInteiros] = useState<Record<string, boolean>>({});
   const [texto, setTexto] = useState("");
   const [lendo, setLendo] = useState(false);
-  const [lidas, setLidas] = useState<number | null>(null);
+  // o que a leitura do resumo marcou: aparece em lista, com o botão de gravar ao lado
+  const [lidas, setLidas] = useState<{ id: string; escolha: EscolhaDaTriagem }[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [gravando, iniciar] = useTransition();
 
@@ -141,7 +147,7 @@ export function TriagemDoPlanejamento({
       // abre os grupos que a leitura mexeu, para ela conferir
       const mexidos = new Set(marcadas.map((m) => itens.find((i) => i.id === m.id)?.grupo));
       setAbertos((a) => ({ ...a, ...Object.fromEntries([...mexidos].filter(Boolean).map((g) => [g as string, true])) }));
-      setLidas(marcadas.length);
+      setLidas(marcadas);
     } finally {
       setLendo(false);
     }
@@ -183,19 +189,42 @@ export function TriagemDoPlanejamento({
         <div className="tg-ia-linha">
           {leituraLiberada ? (
             <button type="button" className="tg-btn" disabled={lendo || texto.trim().length < 3} onClick={ler}>
-              {lendo ? "Lendo…" : "Ler e marcar"}
+              {lendo ? "Lendo…" : "Ler o resumo"}
             </button>
           ) : (
             <span className="tg-aviso">
               A leitura do resumo é dos planos pagos. <Link href="/assinatura">Ver os planos</Link>
             </span>
           )}
-          {lidas !== null && (
-            <span className="tg-aviso">
-              {lidas === 0 ? "O resumo não mencionou nenhum item da lista." : `${lidas} ${lidas === 1 ? "item marcado" : "itens marcados"} pelo resumo. Confira e confirme.`}
-            </span>
+          {lidas !== null && lidas.length === 0 && (
+            <span className="tg-aviso">O resumo não falou de nenhum item da lista abaixo.</span>
           )}
         </div>
+        {lidas !== null && lidas.length > 0 && (
+          <div className="tg-lido">
+            <p className="tg-lido-titulo">
+              A leitura marcou {lidas.length} {lidas.length === 1 ? "item" : "itens"}:
+            </p>
+            <ul>
+              {lidas.map((m) => {
+                const item = itens.find((i) => i.id === m.id);
+                return item ? (
+                  <li key={m.id}>
+                    <b>{item.titulo}</b> → {ROTULO_DA_ESCOLHA[escolhas[m.id] ?? m.escolha]}
+                  </li>
+                ) : null;
+              })}
+            </ul>
+            <div className="tg-ia-linha">
+              <button type="button" className="tg-btn tg-prim" disabled={gravando} onClick={() => gravar(itens)}>
+                {gravando ? "Gravando…" : "Gravar"}
+              </button>
+              <span className="tg-aviso">
+                Grava estas marcações e a sugestão dos outros {itens.length - lidas.length} itens. Para trocar algum, mude na lista abaixo antes.
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {grupos.map((g) => {
@@ -222,7 +251,10 @@ export function TriagemDoPlanejamento({
               <>
                 {lista.map((i) => (
                   <div key={i.id} className="tg-item">
-                    <span className="tg-titulo">{i.titulo}</span>
+                    <span className="tg-titulo">
+                      {i.titulo}
+                      {lidas?.some((m) => m.id === i.id) && <span className="tg-pelo">pelo resumo</span>}
+                    </span>
                     <span className="tg-venceu">{vencidoEmPalavras(i.vencidoHaDias)}</span>
                     <span className="tg-seg" role="group" aria-label={`Resposta para ${i.titulo}`}>
                       {ESCOLHAS.map((e) => (

@@ -410,7 +410,7 @@ function Referencias({
 
   return (
     <div style={{ marginBottom: 12 }}>
-      <span style={{ ...monoLabel, fontSize: 10 }}>
+      <span style={{ ...monoLabel, fontSize: 11 }}>
         Referências da cliente · {dentro} de {referencias.length} no guia
       </span>
       <div
@@ -460,7 +460,7 @@ function Referencias({
                   background: C.ameixa,
                   color: "#fff",
                   fontFamily: F_UI,
-                  fontSize: 9,
+                  fontSize: 11,
                   lineHeight: 1,
                   padding: "3px 5px",
                   borderRadius: 4,
@@ -494,7 +494,7 @@ function Restricoes({
 
   return (
     <div style={{ marginBottom: 12 }}>
-      <span style={{ ...monoLabel, fontSize: 10 }}>O que não pode mudar</span>
+      <span style={{ ...monoLabel, fontSize: 11 }}>O que não pode mudar</span>
       <textarea
         value={texto}
         onChange={(e) => setTexto(e.target.value)}
@@ -547,7 +547,7 @@ function ListaSimples({
 
   return (
     <div style={{ marginBottom: 12 }}>
-      <span style={{ ...monoLabel, fontSize: 10 }}>{rotulo}</span>
+      <span style={{ ...monoLabel, fontSize: 11 }}>{rotulo}</span>
       <div style={{ display: "flex", flexDirection: "column", gap: 3, marginTop: 5 }}>
         {itens.map((i) => (
           <div
@@ -683,7 +683,7 @@ function FloresVetadas({
 
   return (
     <div style={{ marginBottom: 12 }}>
-      <span style={{ ...monoLabel, fontSize: 10 }}>Deixar de fora</span>
+      <span style={{ ...monoLabel, fontSize: 11 }}>Deixar de fora</span>
       <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 5 }}>
         {vetadas.map((v) => (
           <div key={v.id} style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
@@ -698,17 +698,17 @@ function FloresVetadas({
               >
                 {v.nome}
                 {v.sensibilidade === "alergia" && (
-                  <span style={{ marginLeft: 6, fontSize: 10, color: C.pendenteFg }}>
+                  <span style={{ marginLeft: 6, fontSize: 11, color: C.pendenteFg }}>
                     saúde
                   </span>
                 )}
               </p>
               {v.motivoInterno && (
-                <p style={{ ...notaStyle, fontSize: 10 }}>
+                <p style={{ ...notaStyle, fontSize: 11 }}>
                   interno: {v.motivoInterno}
                 </p>
               )}
-              <p style={{ ...notaStyle, fontSize: 10 }}>
+              <p style={{ ...notaStyle, fontSize: 11 }}>
                 fornecedor vê: {v.motivoFornecedor?.trim() || "não usar"}
               </p>
             </div>
@@ -878,7 +878,7 @@ function Envio({
               >
                 {e.nome}
               </p>
-              <p style={{ ...notaStyle, fontSize: 10 }}>
+              <p style={{ ...notaStyle, fontSize: 11 }}>
                 vê: {e.secoes.map((s) => SECAO_ROTULO[s as SecaoGuia] ?? s).join(", ")}
               </p>
               <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
@@ -912,7 +912,7 @@ function Envio({
         </div>
       )}
 
-      <span style={{ ...monoLabel, fontSize: 10 }}>Enviar para</span>
+      <span style={{ ...monoLabel, fontSize: 11 }}>Enviar para</span>
       <select
         style={{ ...campo, marginTop: 5 }}
         value={alvo}

@@ -392,7 +392,7 @@ function CampoFornecedor({
             background: C.tint,
             color: C.ameixa,
             fontFamily: F_UI,
-            fontSize: 10,
+            fontSize: 11,
             fontWeight: 600,
             display: "flex",
             alignItems: "center",
@@ -594,7 +594,7 @@ function CampoAnexo({
             }}
             style={{
               fontFamily: F_MONO,
-              fontSize: 10,
+              fontSize: 11,
               textTransform: "uppercase",
               letterSpacing: "0.06em",
               color: C.meta,
@@ -880,7 +880,7 @@ export function DrawerDecisao({
             style={{
               marginTop: 4,
               fontFamily: F_MONO,
-              fontSize: 10,
+              fontSize: 11,
               lineHeight: "14px",
               color: C.meta,
             }}
@@ -1099,7 +1099,7 @@ export function DrawerDecisao({
                     background: "transparent",
                     cursor: "pointer",
                     fontFamily: F_MONO,
-                    fontSize: 10,
+                    fontSize: 11,
                     letterSpacing: "0.06em",
                     textTransform: "uppercase",
                     color: campo.visivelPortal === false ? C.atrasadaFg : C.fantasma,

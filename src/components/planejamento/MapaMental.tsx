@@ -552,7 +552,7 @@ export function MapaMental({
             borderRadius: 999,
             background: C.zona,
             fontFamily: F_MONO,
-            fontSize: 10,
+            fontSize: 11,
             textTransform: "uppercase",
             letterSpacing: "0.06em",
             color: C.secundario,
@@ -796,7 +796,7 @@ export function MapaMental({
                       style={{
                         display: "block",
                         fontFamily: F_MONO,
-                        fontSize: 10.5,
+                        fontSize: 11.5,
                         color: C.meta,
                       }}
                     >
@@ -852,7 +852,7 @@ export function MapaMental({
                 display: "block",
                 marginTop: 8,
                 fontFamily: F_MONO,
-                fontSize: 10,
+                fontSize: 11,
                 textTransform: "uppercase",
                 letterSpacing: "0.06em",
                 color: C.meta,
@@ -928,7 +928,7 @@ export function MapaMental({
                     marginTop: 14,
                     marginBottom: 8,
                     fontFamily: F_MONO,
-                    fontSize: 10,
+                    fontSize: 11,
                     textTransform: "uppercase",
                     letterSpacing: "0.06em",
                     color: C.meta,
@@ -974,7 +974,7 @@ export function MapaMental({
                     <span
                       style={{
                         fontFamily: F_MONO,
-                        fontSize: 10,
+                        fontSize: 11,
                         color: C.fantasma,
                         flexShrink: 0,
                       }}
@@ -988,7 +988,7 @@ export function MapaMental({
                     style={{
                       marginTop: 6,
                       fontFamily: F_MONO,
-                      fontSize: 10.5,
+                      fontSize: 11.5,
                       color: C.fantasma,
                     }}
                   >
@@ -1069,7 +1069,7 @@ export function MapaMental({
                     display: "flex",
                     justifyContent: "space-between",
                     fontFamily: F_MONO,
-                    fontSize: 10.5,
+                    fontSize: 11.5,
                     color: C.secundario,
                     marginBottom: 6,
                   }}

@@ -642,7 +642,7 @@ export function AnotacoesDaDecisao({
 
   return (
     <div style={{ borderTop: `1px solid ${C.bordaSutil}`, paddingTop: 12 }}>
-      <p style={{ fontFamily: F_MONO, fontSize: 10.5, letterSpacing: ".06em", textTransform: "uppercase", color: C.secundario, margin: 0 }}>
+      <p style={{ fontFamily: F_MONO, fontSize: 11.5, letterSpacing: ".06em", textTransform: "uppercase", color: C.secundario, margin: 0 }}>
         anotações
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 6 }}>
