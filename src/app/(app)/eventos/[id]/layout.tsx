@@ -5,7 +5,6 @@ import { Pencil, Play } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { EventoContainer } from "@/components/evento/EventoContainer";
 import { CapaDoEvento } from "@/components/eventos/CapaDoEvento";
-import { LinksDoCabecalho } from "@/components/eventos/LinksDoCabecalho";
 import { AcoesDoEvento } from "@/components/eventos/AcoesDoEvento";
 import { PartesDoEvento } from "@/components/moldura/PartesDoEvento";
 import { BlocoDeFases } from "@/components/eventos/BlocoDeFases";
@@ -274,7 +273,26 @@ export default async function EventoLayout({
                 </p>
               )}
 
-              <LinksDoCabecalho eventId={event.id} />
+              {/* Panorama e Imprimir evento (18/10/2026) no lugar dos três atalhos:
+                  "O que o cliente vê" virou o botão Portal da cliente; Resumo e
+                  Histórico ficam no Mais da faixa do alto */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+                <Link
+                  href={`/eventos/${event.id}/panorama`}
+                  className="ev-foco"
+                  style={{ display: "inline-flex", alignItems: "center", height: 34, padding: "0 14px", borderRadius: 8, border: "1px solid var(--ev-card-border)", background: "var(--ev-marfim)", fontFamily: "var(--font-ui)", fontSize: 13.5, fontWeight: 600, color: "var(--ev-text-strong)", textDecoration: "none" }}
+                >
+                  Panorama do evento
+                </Link>
+                <Link
+                  href={`/imprimir/evento/${event.id}`}
+                  target="_blank"
+                  className="ev-foco"
+                  style={{ display: "inline-flex", alignItems: "center", height: 34, padding: "0 14px", borderRadius: 8, border: "1px solid var(--ev-card-border)", background: "var(--ev-marfim)", fontFamily: "var(--font-ui)", fontSize: 13.5, fontWeight: 600, color: "var(--ev-text-strong)", textDecoration: "none" }}
+                >
+                  Imprimir evento
+                </Link>
+              </div>
             </div>
 
             <div style={{ display: "flex", flex: "0 1 auto", maxWidth: "100%", gap: 8, alignItems: "center", whiteSpace: "nowrap", flexWrap: "wrap" }}>

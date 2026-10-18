@@ -92,7 +92,7 @@ export function PartesDoEvento({
     { label: "Tarefas", seg: "organizacao" },
     { label: "Contratos", seg: "contratos" },
     { label: "Comunicação", seg: "comunicacao" },
-    { label: "Dinheiro", seg: "financeiro" },
+    { label: "Financeiro", seg: "financeiro" },
     { label: "Operação", seg: "operacao" },
     ...(tem(tipo, "mesas") ? [{ label: "Mesas", seg: "mesas" }] : []),
     { label: "Histórico", seg: "historico" },
@@ -108,6 +108,7 @@ export function PartesDoEvento({
     if (!setVistas) return;
     const FOLHA: Record<string, string> = {
       planejamento: `/imprimir/planejamento/${eventId}`,
+      panorama: `/imprimir/evento/${eventId}`,
       roteiro: `/imprimir/roteiro/${eventId}`,
       mesas: `/imprimir/mesas/${eventId}`,
       operacao: `/imprimir/operacao/${eventId}`,
