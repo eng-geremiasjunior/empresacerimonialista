@@ -1,4 +1,4 @@
-// A vitrine profissional, modelo Capítulos (desenho do Claude Design,
+// A página profissional, modelo Capítulos (desenho do Claude Design,
 // "Modelo 3 — Capítulos", 16/09/2026).
 //
 // A página é lida como um caderno: depois da abertura vêm as três
@@ -8,7 +8,7 @@
 // app/cerimonialista/capitulos.css.
 //
 // Mesmos campos e mesma lógica do modelo Clássico (medição, pedido,
-// pixel, estado da vitrine); muda só o desenho. Seção opcional some
+// pixel, estado da página); muda só o desenho. Seção opcional some
 // inteira quando não tem conteúdo, e a numeração segue o que ficou: um
 // capítulo que some não deixa buraco na contagem.
 
@@ -106,7 +106,7 @@ export function PaginaCapitulos({
 
         {previa && (
           <div className="cp-previa">
-            <span>Prévia: sua vitrine ainda não está no ar, só você vê.</span>
+            <span>Prévia: sua página ainda não está no ar, só você vê.</span>
             <Link href="/orcamentos/pagina" className="cp-previa-link">
               Voltar ao editor
             </Link>
@@ -299,7 +299,7 @@ export function PaginaCapitulos({
           <div className="cp-rodape-nome">{nome}</div>
           {cidade && <div>{cidade}</div>}
           <div>
-            {/* página inteira nova, como os outros links para fora da vitrine:
+            {/* página inteira nova, como os outros links para fora da página:
                 o pixel dela nunca segue na mesma aba para outra tela */}
             <a href="/privacidade#vitrine">Privacidade</a>
           </div>

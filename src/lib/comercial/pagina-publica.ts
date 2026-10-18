@@ -19,7 +19,7 @@ import type { PaletaDaVitrine } from "./paletas";
 export type ServicoDaPagina = { nome: string; descricao?: string | null };
 
 /**
- * O desenho da vitrine (16/09/2026; o terceiro em 18/09/2026). Os campos
+ * O desenho da página (16/09/2026; o terceiro em 18/09/2026). Os campos
  * são os mesmos em todos; só a forma muda. O banco guarda a escolha em
  * empresa_pagina.modelo (165).
  */
@@ -72,7 +72,7 @@ export type PaginaEditavel = {
    * salvo; null = tirar o retrato.
    */
   retratoUrl?: string | null;
-  /** a cor da vitrine (lib/comercial/paletas.ts); ausente = não muda */
+  /** a cor da página (lib/comercial/paletas.ts); ausente = não muda */
   paleta?: PaletaDaVitrine;
   /**
    * O vídeo de apresentação (modelo Curadoria) e a capa tirada dele.
@@ -257,7 +257,7 @@ export function faltaParaPublicar(p: {
   tiposAtendidos: string[];
 }): string[] {
   const falta: string[] = [];
-  if (!p.slug) falta.push("Escolha o endereço da sua vitrine.");
+  if (!p.slug) falta.push("Escolha o endereço da sua página.");
   if (!p.whatsapp) falta.push("Informe o WhatsApp que recebe os contatos.");
   if (!p.posicionamento?.trim()) {
     falta.push("Escreva a apresentação: quem você é e como trabalha.");
@@ -291,7 +291,7 @@ export function textoParaBio(endereco: string): string {
 
 /**
  * "Como funciona" — quatro passos, com o nome dela no meio. O texto é o
- * do desenho da vitrine (Claude Design, 16/09/2026).
+ * do desenho da página (Claude Design, 16/09/2026).
  *
  * Fixo de propósito: é a parte que explica o ATENDIMENTO, e quem chega na
  * página quer saber o que acontece depois de mandar a mensagem. O último

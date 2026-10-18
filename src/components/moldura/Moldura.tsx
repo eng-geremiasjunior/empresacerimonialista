@@ -81,25 +81,10 @@ function itensDoEscritorio(cargo: string | null): Item[] {
     const i = nav(href);
     return !!i && pode(i.cargos);
   };
-  const rotulo: Record<string, string> = { "Vitrine profissional": "Vitrine" };
-  // Propostas, Fornecedores (cadastro), Agenda e Financeiro foram para
-  // "Ferramentas", no menu da esquerda (16/10/2026); aqui fica o resto
+  // O Comercial inteiro, Fornecedores (cadastro), Agenda e Financeiro
+  // estão nas "Ferramentas comerciais", no menu da esquerda (16 e
+  // 18/10/2026); aqui fica o resto
   const itens: Item[] = [];
-  if (visivel("/orcamentos")) {
-    const v = VISOES_ORCAMENTOS.filter((x) => pode(x.cargos));
-    // a ordem do desenho: Propostas, Pedidos, Vitrine, Catálogo, Relatório
-    const ordem = ["/orcamentos", "/orcamentos/pedidos", "/orcamentos/pagina", "/catalogo", "/orcamentos/relatorio"];
-    v.sort((a, b) => ordem.indexOf(a.href) - ordem.indexOf(b.href));
-    const sub = v.filter((x) => x.href !== "/orcamentos").map((x) => ({ label: rotulo[x.label] ?? x.label, href: x.href }));
-    if (sub.length) itens.push({ label: "Comercial", href: sub[0].href, sub });
-  }
-  if (visivel("/fornecedores")) {
-    itens.push({
-      label: "Fornecedores",
-      href: "/contratos",
-      sub: VISOES_FORNECEDORES.filter((x) => pode(x.cargos) && x.href !== "/fornecedores").map((x) => ({ label: x.label, href: x.href })),
-    });
-  }
   // Clientes foi para o menu primário (16/10/2026, pedido dele)
   if (visivel("/estoque")) itens.push({ label: "Estoque", href: "/estoque" });
   // Tarefas e Solicitações saem do menu quando o Hoje as absorver; até lá
@@ -109,38 +94,89 @@ function itensDoEscritorio(cargo: string | null): Item[] {
   return itens;
 }
 
-type ItemDoMenuEsquerdo = { label: string; href: string; icone: string; ativo: (p: string) => boolean; sub?: boolean };
+type SubDoMenu = { label: string; href: string };
+type ItemDoMenuEsquerdo = {
+  label: string;
+  href: string;
+  icone: string;
+  ativo: (p: string) => boolean;
+  sub?: boolean;
+  /** as partes que abrem ao lado quando o mouse passa (o jeito do Google Ads) */
+  partes?: SubDoMenu[];
+};
 
-/** O menu da esquerda (16/10/2026, aprovado por ele com a Wedy de referência). */
+/** Qual parte está aberta: a de endereço mais longo que casa (Propostas é
+ *  /orcamentos, prefixo das outras abas do Comercial). */
+function parteAtiva(partes: SubDoMenu[], p: string): string | null {
+  const casam = partes.filter((s) => p === s.href || p.startsWith(`${s.href}/`));
+  casam.sort((a, b) => b.href.length - a.href.length);
+  return casam[0]?.href ?? null;
+}
+
+/** O menu da esquerda (16/10/2026, aprovado por ele com a Wedy de
+ *  referência; 18/10/2026: "Ferramentas comerciais", e o Comercial e os
+ *  Fornecedores abrem as suas partes ao lado). */
 function ferramentasDoMenu(cargo: string | null): ItemDoMenuEsquerdo[] {
+  const podeCargo = (cargos?: string[]) => !cargos || (cargo !== null && cargos.includes(cargo));
   const pode = (href: string) => {
     const i = NAV.find((x) => x.href === href);
-    return !!i && (!i.cargos || (cargo !== null && i.cargos.includes(cargo)));
+    return !!i && podeCargo(i.cargos);
   };
-  const OUTRAS_DO_COMERCIAL = ["/orcamentos/pedidos", "/orcamentos/pagina", "/orcamentos/relatorio"];
   const itens: ItemDoMenuEsquerdo[] = [];
-  if (pode("/orcamentos"))
+  if (pode("/orcamentos")) {
+    const partes = VISOES_ORCAMENTOS.filter((x) => podeCargo(x.cargos)).map((x) => ({ label: x.label, href: x.href }));
     itens.push({
-      label: "Propostas",
-      href: "/orcamentos",
+      label: "Comercial",
+      href: partes[0]?.href ?? "/orcamentos",
       icone: ICONES_DO_MENU.cotacoes,
-      ativo: (p) => (p === "/orcamentos" || p.startsWith("/orcamentos/")) && !OUTRAS_DO_COMERCIAL.some((o) => p.startsWith(o)),
+      ativo: (p) => p.startsWith("/orcamentos") || p.startsWith("/catalogo"),
+      partes,
     });
-  if (pode("/fornecedores"))
-    itens.push({ label: "Fornecedores", href: "/fornecedores", icone: ICONES_DO_MENU.fornecedores, ativo: (p) => p === "/fornecedores" || p.startsWith("/fornecedores/") });
+  }
+  if (pode("/fornecedores")) {
+    const partes = VISOES_FORNECEDORES.filter((x) => podeCargo(x.cargos)).map((x) => ({ label: x.label, href: x.href }));
+    itens.push({
+      label: "Fornecedores",
+      href: "/fornecedores",
+      icone: ICONES_DO_MENU.fornecedores,
+      ativo: (p) => partes.some((s) => p === s.href || p.startsWith(`${s.href}/`)),
+      partes,
+    });
+  }
   itens.push({ label: "Agenda", href: "/calendario", icone: ICONES_DO_MENU.calendario, ativo: (p) => p.startsWith("/calendario") });
   if (pode("/financeiro"))
     itens.push({ label: "Financeiro", href: "/financeiro", icone: ICONES_DO_MENU.financeiro, ativo: (p) => p.startsWith("/financeiro") });
   return itens;
 }
 
-function LinkDoMenu({ p, ativo }: { p: { label: string; href: string; icone: string; sub?: boolean }; ativo: boolean }) {
+function LinkDoMenu({
+  p,
+  ativo,
+  abre,
+  aberto,
+}: {
+  p: { label: string; href: string; icone: string; sub?: boolean };
+  ativo: boolean;
+  /** o item abre as partes ao lado: mostra a setinha */
+  abre?: boolean;
+  aberto?: boolean;
+}) {
   return (
-    <Link href={p.href} className={`mo-prim ${p.sub ? "mo-prim-sub" : ""} ${ativo ? "mo-prim-ativo" : ""}`}>
+    <Link
+      href={p.href}
+      className={`mo-prim ${p.sub ? "mo-prim-sub" : ""} ${ativo ? "mo-prim-ativo" : ""} ${aberto ? "mo-prim-aberto" : ""}`}
+      aria-haspopup={abre ? "true" : undefined}
+      aria-expanded={abre ? !!aberto : undefined}
+    >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
         <path d={p.icone} />
       </svg>
       {p.label}
+      {abre && (
+        <span className="mo-seta" aria-hidden>
+          ›
+        </span>
+      )}
     </Link>
   );
 }
@@ -328,6 +364,26 @@ function Casca(props: Props) {
 
   const ferramentas = ferramentasDoMenu(cargo);
 
+  // o submenu que abre ao passar o mouse (18/10/2026, pedido dele: "igual
+  // o Google Ads faz"). Uma folga curta ao sair, para dar tempo de o
+  // mouse atravessar do item para o submenu.
+  const [voo, setVoo] = useState<{ label: string; partes: SubDoMenu[]; top: number } | null>(null);
+  const tempoDoVoo = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const manterVoo = () => {
+    if (tempoDoVoo.current) clearTimeout(tempoDoVoo.current);
+  };
+  const abrirVoo = (p: ItemDoMenuEsquerdo, el: HTMLElement) => {
+    manterVoo();
+    const lateral = el.closest(".mo-lateral");
+    const topo = lateral ? lateral.getBoundingClientRect().top : 0;
+    setVoo({ label: p.label, partes: p.partes ?? [], top: el.getBoundingClientRect().top - topo });
+  };
+  const fecharVoo = () => {
+    manterVoo();
+    tempoDoVoo.current = setTimeout(() => setVoo(null), 160);
+  };
+  useEffect(() => setVoo(null), [pathname]);
+
   return (
     <div className="mo-raiz">
       <script dangerouslySetInnerHTML={{ __html: SCRIPT_APARENCIA }} />
@@ -343,14 +399,50 @@ function Casca(props: Props) {
           ))}
         </nav>
         {ferramentas.length > 0 && (
-          <nav className="mo-primario mo-ferramentas" aria-label="Ferramentas">
-            <span className="mo-grupo-rotulo">Ferramentas</span>
-            {ferramentas.map((p) => (
-              <LinkDoMenu key={p.href} p={p} ativo={p.ativo(pathname)} />
-            ))}
+          <nav className="mo-primario mo-ferramentas" aria-label="Ferramentas comerciais">
+            <span className="mo-grupo-rotulo">Ferramentas comerciais</span>
+            {ferramentas.map((p) =>
+              p.partes && p.partes.length > 1 ? (
+                <div
+                  key={p.href}
+                  onMouseEnter={(e) => abrirVoo(p, e.currentTarget)}
+                  onMouseLeave={fecharVoo}
+                  onFocus={(e) => abrirVoo(p, e.currentTarget)}
+                  onBlur={fecharVoo}
+                >
+                  <LinkDoMenu p={p} ativo={p.ativo(pathname)} abre aberto={voo?.label === p.label} />
+                </div>
+              ) : (
+                <LinkDoMenu key={p.href} p={p} ativo={p.ativo(pathname)} />
+              ),
+            )}
           </nav>
         )}
         </div>
+        {/* as partes do item, ao lado (fora do miolo, que rola e cortaria) */}
+        {voo && (
+          <nav
+            className="mo-voo"
+            style={{ top: voo.top }}
+            aria-label={voo.label}
+            onMouseEnter={manterVoo}
+            onMouseLeave={fecharVoo}
+            onFocus={manterVoo}
+            onBlur={fecharVoo}
+          >
+            <span className="mo-voo-titulo">{voo.label}</span>
+            {voo.partes.map((s) => (
+              <Link
+                key={s.href}
+                href={s.href}
+                className={parteAtiva(voo.partes, pathname) === s.href ? "mo-voo-ativo" : ""}
+                onClick={() => setVoo(null)}
+              >
+                {s.label}
+              </Link>
+            ))}
+          </nav>
+        )}
       </aside>
 
       <div className="mo-coluna">

@@ -228,7 +228,7 @@ export const GRUPOS_AJUDA: GrupoAjuda[] = [
         id: "mandar-proposta",
         pergunta: "Como mando uma proposta para uma cliente?",
         resposta:
-          "Em Gestão comercial → Novo orçamento: monte os itens e os pacotes e envie o link. A cliente abre uma página com a sua marca, escolhe o pacote, ajusta os extras e assina na tela — você recebe o aceite na hora.",
+          "Em Comercial → Novo orçamento: monte os itens e os pacotes e envie o link. A cliente abre uma página com a sua marca, escolhe o pacote, ajusta os extras e assina na tela — você recebe o aceite na hora.",
       },
       {
         id: "proposta-aceita",
@@ -246,13 +246,13 @@ export const GRUPOS_AJUDA: GrupoAjuda[] = [
         id: "pagina-publica",
         pergunta: "Como divulgo meu trabalho e recebo pedidos de orçamento?",
         resposta:
-          "Em Gestão comercial → Vitrine profissional: escreva a apresentação, escolha os tipos de evento, os serviços, as fotos e os depoimentos que vão aparecer, e publique. O endereço é seu para pôr na bio do Instagram. Quem preencher o formulário da vitrine chega em Gestão comercial, na aba Pedidos, com o evento já descrito, e um clique abre a proposta preenchida. O botão de WhatsApp da vitrine abre a conversa com você; o sistema conta o toque, mas não sabe se a mensagem foi enviada. Se você anuncia na Meta, cole o número do seu pixel: ele só é ativado para quem permitir.",
+          "Em Comercial → Página profissional: escreva a apresentação, escolha os tipos de evento, os serviços, as fotos e os depoimentos que vão aparecer, e publique. O endereço é seu para pôr na bio do Instagram. Quem preencher o formulário da página chega em Comercial, na aba Oportunidades, com o evento já descrito, e um clique abre a proposta preenchida. O botão de WhatsApp da página abre a conversa com você; o sistema conta o toque, mas não sabe se a mensagem foi enviada. Se você anuncia na Meta, cole o número do seu pixel: ele só é ativado para quem permitir.",
       },
       {
         id: "relatorio-comercial",
         pergunta: "Como vejo quantas propostas fechei no mês?",
         resposta:
-          "Em Gestão comercial → Relatório, que a proprietária e a coordenação veem: escolha o período e veja quantas propostas saíram, quantas foram aceitas e o valor fechado. O quadro mostra onde cada negociação está agora (pedido esperando você, proposta enviada, link já aberto pela cliente) e o que foi aceito ou perdido no período, com os motivos. Link aberto não quer dizer proposta lida: o sistema só sabe que o link foi aberto.",
+          "Em Comercial → Relatório, que a proprietária e a coordenação veem: escolha o período e veja quantas propostas saíram, quantas foram aceitas e o valor fechado. O quadro mostra onde cada negociação está agora (pedido esperando você, proposta enviada, link já aberto pela cliente) e o que foi aceito ou perdido no período, com os motivos. Link aberto não quer dizer proposta lida: o sistema só sabe que o link foi aberto.",
       },
       {
         id: "validade-proposta",

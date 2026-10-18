@@ -55,6 +55,18 @@ export const MOLDURA_CSS = `
 .mo-prim-sub{font-size:10px}
 .mo-lateral:hover .mo-prim-sub,.mo-lateral:focus-within .mo-prim-sub{padding-left:38px; font-size:14px}
 .mo-lateral-dentro{overflow-y:auto}
+/* o submenu ao lado (18/10/2026, "igual o Google Ads"): nasce na altura do
+   item, encostado no menu aberto (220px) */
+.mo-seta{display:none; margin-left:auto; font-size:16px; line-height:1; color:var(--mo-cinza-2)}
+.mo-lateral:hover .mo-seta,.mo-lateral:focus-within .mo-seta{display:block}
+.mo-prim-aberto{color:var(--mo-tinta); background:var(--mo-marfim)}
+.mo-voo{position:absolute; left:220px; min-width:232px; display:flex; flex-direction:column; padding:6px;
+  background:var(--mo-papel); border:1px solid var(--mo-linha); border-radius:6px; box-shadow:0 10px 28px rgba(37,37,37,.14); z-index:45}
+.mo-voo-titulo{padding:8px 12px 6px; font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--mo-cinza-2)}
+.mo-voo a{padding:9px 12px; border-radius:4px; font-size:14px; color:var(--mo-tinta); text-decoration:none; white-space:nowrap}
+.mo-voo a:hover{background:var(--mo-marfim)}
+.mo-voo a:focus-visible{outline:2px solid var(--mo-destaque); outline-offset:-2px}
+.mo-voo a.mo-voo-ativo{color:var(--mo-destaque); font-weight:600; background:var(--mo-destaque-claro)}
 .mo-coluna{flex:1; min-width:0; min-height:100vh; display:flex; flex-direction:column}
 .mo-aba-conta{font-family:var(--mo-mono); font-size:12px; font-weight:400; color:var(--mo-cinza-2)}
 
@@ -98,6 +110,8 @@ html[data-tema="noturno"] img,html[data-tema="noturno"] video,html[data-tema="no
 html[data-tema="noturno"] iframe,html[data-tema="noturno"] .mo-amostra{filter:invert(1) hue-rotate(180deg)}
 html[data-tema="ameixa"] .mo-lateral-dentro{background:#4A2A40; border-right-color:#4A2A40}
 html[data-tema="ameixa"] .mo-logo .e{color:#FAF8F5}
+html[data-tema="ameixa"] .mo-seta{color:#E5D6E0}
+html[data-tema="ameixa"] .mo-prim-aberto{color:#fff; background:rgba(255,255,255,.08)}
 html[data-tema="ameixa"] .mo-logo .o{color:#D9B8CE}
 html[data-tema="ameixa"] .mo-prim{color:#E5D6E0}
 html[data-tema="ameixa"] .mo-prim:hover{color:#fff; background:rgba(255,255,255,.08)}

@@ -332,7 +332,7 @@ export function FichaPedido({
         )}
       </form>
       {previa && (
-        <p className="cp-aviso-previa">Desativado na prévia. Publique a vitrine para receber pedidos.</p>
+        <p className="cp-aviso-previa">Desativado na prévia. Publique a página para receber pedidos.</p>
       )}
     </>
   );

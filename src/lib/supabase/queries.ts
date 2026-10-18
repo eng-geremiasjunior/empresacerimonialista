@@ -524,7 +524,7 @@ export const getAlertasCopiloto = cache(async function (): Promise<
       id: `pedido-${row.id}`,
       tipo: "pedido",
       texto: `Pedido de orçamento sem resposta: ${row.nome} — ${EVENT_TYPE_LABELS[row.tipo_evento] ?? "evento"}`,
-      href: "/orcamentos/pedidos",
+      href: "/orcamentos/oportunidades",
       ref: row.created_at.slice(0, 10),
     });
   }

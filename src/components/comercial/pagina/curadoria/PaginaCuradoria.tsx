@@ -1,4 +1,4 @@
-// A vitrine profissional, modelo Curadoria (desenho do Claude Design,
+// A página profissional, modelo Curadoria (desenho do Claude Design,
 // "Modelo 5 — Curadoria", 18/09/2026).
 //
 // O argumento do modelo é curadoria: a página não empurra uma lista, ela
@@ -9,7 +9,7 @@
 // Os estilos moram em app/cerimonialista/curadoria.css.
 //
 // Mesmos campos e mesma lógica dos outros modelos (medição, pedido, pixel,
-// estado da vitrine). Seção opcional some inteira quando está vazia, e o
+// estado da página). Seção opcional some inteira quando está vazia, e o
 // item dela sai do menu: o menu nasce das mesmas condições que escondem as
 // seções, nunca de uma lista fixa.
 //
@@ -105,7 +105,7 @@ export function PaginaCuradoria({
 
         {previa && (
           <div className="cu-previa">
-            <span>Prévia: sua vitrine ainda não está no ar, só você vê.</span>
+            <span>Prévia: sua página ainda não está no ar, só você vê.</span>
             <Link href="/orcamentos/pagina" className="cu-previa-link">
               Voltar ao editor
             </Link>
@@ -361,7 +361,7 @@ export function PaginaCuradoria({
                   </LinkMedido>
                 )}
                 {cidade && <span className="cu-rodape-miudo">{cidade}</span>}
-                {/* página inteira nova, como os outros links para fora da vitrine:
+                {/* página inteira nova, como os outros links para fora da página:
                     o pixel dela nunca segue na mesma aba para outra tela */}
                 <a href="/privacidade#vitrine" className="cu-rodape-link">
                   Privacidade

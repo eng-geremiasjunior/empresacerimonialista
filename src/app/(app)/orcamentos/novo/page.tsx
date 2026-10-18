@@ -82,10 +82,10 @@ export default async function NovoOrcamentoPage({
   return (
     <div className="mx-auto max-w-3xl">
       <Link
-        href={doPedido ? "/orcamentos/pedidos" : "/orcamentos"}
+        href={doPedido ? "/orcamentos/oportunidades" : "/orcamentos"}
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900"
       >
-        <ArrowLeft size={15} /> {doPedido ? "Voltar para os pedidos" : "Voltar para as propostas"}
+        <ArrowLeft size={15} /> {doPedido ? "Voltar para as oportunidades" : "Voltar para as propostas"}
       </Link>
       <h1 className="mb-5 text-xl font-semibold text-gray-900">
         Novo orçamento

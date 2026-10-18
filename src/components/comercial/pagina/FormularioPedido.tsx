@@ -1,6 +1,6 @@
 "use client";
 
-// O pedido de orçamento, na vitrine (modelo Clássico).
+// O pedido de orçamento, na página (modelo Clássico).
 //
 // Seis perguntas e uma mensagem. A lógica (campos, validação, envio) mora
 // em usePedidoDaVitrine, a mesma do modelo Capítulos; aqui fica só o
@@ -9,7 +9,7 @@
 // Todos os erros aparecem de uma vez, cada um embaixo do seu campo, e
 // somem quando o campo é editado. Nada do que a pessoa digitou é apagado.
 //
-// O tipo escolhido e o "enviado" moram no estado da vitrine: o primeiro
+// O tipo escolhido e o "enviado" moram no estado da página: o primeiro
 // muda o depoimento em destaque, o segundo troca o botão da barra fixa.
 //
 // O formulário promete que os dados vão só para ela. Com o pixel da Meta
@@ -326,7 +326,7 @@ export function FormularioPedido({
       </form>
       {previa && (
         <p className="vt-aviso-previa">
-          Desativado na prévia. Publique a vitrine para receber pedidos.
+          Desativado na prévia. Publique a página para receber pedidos.
         </p>
       )}
     </>

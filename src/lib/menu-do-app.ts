@@ -75,7 +75,7 @@ export const MENU_DO_APP: ItemDoMenu[] = [
   { label: "Eventos", icon: "eventos", href: "/eventos", grupo: "Principal" },
   // "Gestão comercial" (dono, 16/09/2026): propostas, pedidos, vitrine e
   // catálogo. A rota continua /orcamentos.
-  { label: "Gestão comercial", icon: "cotacoes", href: "/orcamentos", grupo: "Comercial" },
+  { label: "Comercial", icon: "cotacoes", href: "/orcamentos", grupo: "Comercial" },
   { label: "Clientes", icon: "clientes", href: "/clientes", grupo: "Comercial" },
   {
     label: "Solicitações",

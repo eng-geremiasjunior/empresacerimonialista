@@ -35,7 +35,7 @@ const ABA_DO_EVENTO: Record<string, string> = {
 const VISAO_COMERCIAL: Record<string, string> = {
   pedidos: "Pedidos",
   relatorio: "Relatório",
-  pagina: "Vitrine profissional",
+  pagina: "Página profissional",
   novo: "Nova proposta",
   modelos: "Modelos de proposta",
 };

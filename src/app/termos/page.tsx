@@ -169,18 +169,18 @@ export default function TermosPage() {
           nós. Não vendemos dados e não os usamos para publicidade.
         </p>
         <p style={p}>
-          <b>Sua vitrine profissional.</b> Se você publicar a sua vitrine (a
+          <b>Sua página profissional.</b> Se você publicar a sua página (a
           página de apresentação), o conteúdo dela — textos, logo, fotos do portfólio e depoimentos — é
           seu e fica visível para qualquer pessoa na internet, inclusive para
           buscadores. Você responde pelo que publica: pelo direito de uso das
           fotos e pelo <b>consentimento de quem aparece nelas</b>, e pela
           autorização de quem assina os depoimentos. Quem pede orçamento pela
-          sua vitrine é <b>seu</b> contato: você é a controladora desses dados,
+          sua página é <b>seu</b> contato: você é a controladora desses dados,
           e nós os guardamos e mostramos só para você. Se você cadastrar o{" "}
-          <b>pixel da Meta</b> na vitrine, ele só é ativado para quem
+          <b>pixel da Meta</b> na página, ele só é ativado para quem
           permitir, e você também é a controladora do que a Meta receber para
           os seus anúncios. Mantenha desligada a correspondência avançada
-          automática no Gerenciador de Eventos: a vitrine promete a quem pede
+          automática no Gerenciador de Eventos: a página promete a quem pede
           orçamento que os dados do pedido vão só para você.
         </p>
         <p style={p}>

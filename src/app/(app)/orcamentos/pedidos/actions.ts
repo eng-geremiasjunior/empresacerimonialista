@@ -38,6 +38,7 @@ export async function encerrarPedido(
   if (!data || data.length === 0) return { error: "Pedido não encontrado." };
 
   revalidatePath("/orcamentos/pedidos");
+  revalidatePath("/orcamentos/oportunidades");
   revalidatePath("/orcamentos");
   return { ok: true };
 }

@@ -470,7 +470,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
                 <b>{formatCurrency(carteira.recebidoMes)}</b>
               </div>
               <div>
-                <span>Fechado pela vitrine</span>
+                <span>Fechado pela página</span>
                 <b>{formatCurrency(carteira.vitrine.valor)}</b>
               </div>
               <div>

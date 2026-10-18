@@ -131,7 +131,7 @@ export type CampoDoPedido = (typeof CAMPOS_DO_PEDIDO)[number];
 
 /**
  * Uma frase por problema, curta e sem ponto: aparece embaixo do campo,
- * como no desenho da vitrine. A rota devolve a mesma frase, então a tela
+ * como no desenho da página. A rota devolve a mesma frase, então a tela
  * fala igual quando o erro vem do servidor.
  */
 export const ERROS_DO_PEDIDO = {
@@ -267,7 +267,7 @@ export const ORIGEM_LABEL: Record<OrigemDoAcesso, string> = {
 };
 
 /**
- * "pela vitrine (Instagram)" — de onde o pedido veio, em palavras.
+ * "pela sua página (Instagram)" — de onde o pedido veio, em palavras.
  *
  * A campanha só aparece quando existe: quem não anuncia não precisa ver
  * um campo vazio explicando que não anuncia.
@@ -283,8 +283,8 @@ export function origemEmPalavras(p: {
   const campanha = p.utm_campaign?.trim();
   const origem = ORIGEM_LABEL[p.origem_acesso] ?? ORIGEM_LABEL.outro;
   return campanha
-    ? `pela vitrine (${origem} · ${campanha})`
-    : `pela vitrine (${origem})`;
+    ? `pela sua página (${origem} · ${campanha})`
+    : `pela sua página (${origem})`;
 }
 
 /**

@@ -124,15 +124,15 @@ export default async function CarteiraPage() {
           )}
         </Cartao>
 
-        <Cartao titulo="Fechado pela vitrine" pe={{ href: "/orcamentos/relatorio", rotulo: "Abrir o relatório" }}>
+        <Cartao titulo="Fechado pela página" pe={{ href: "/orcamentos/relatorio", rotulo: "Abrir o relatório" }}>
           {c.vitrine.contratos === 0 ? (
-            <p className="ct-vazio">Nenhuma proposta fechada pela vitrine ainda.</p>
+            <p className="ct-vazio">Nenhuma proposta fechada pela página ainda.</p>
           ) : (
             <>
               <p className="ct-grande">{formatCurrency(c.vitrine.valor)}</p>
               <p className="ct-nota">
                 {c.vitrine.contratos} {c.vitrine.contratos === 1 ? "proposta aceita" : "propostas aceitas"} que
-                começaram num pedido da sua vitrine
+                começaram num pedido da sua página
               </p>
             </>
           )}

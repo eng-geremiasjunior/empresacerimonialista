@@ -19,6 +19,7 @@ export type IconeDaVisao =
   | "calendario"
   | "propostas"
   | "pedidos"
+  | "oportunidades"
   | "relatorio"
   | "pagina"
   | "catalogo"
@@ -38,17 +39,18 @@ export const VISOES_EVENTOS: Visao[] = [
   { label: "Calendário", href: "/calendario", icone: "calendario" },
 ];
 
-// Vitrine profissional (16/09/2026): o começo do caminho comercial — a página
-// traz o pedido, o pedido vira proposta. Só a dona, como o Catálogo: é a
-// cara da empresa lá fora.
+// Comercial (18/10/2026, pedido dele: "desorganizado, misturado"): o
+// caminho inteiro em abas, na ordem do trabalho — as oportunidades (o
+// funil que anda sozinho), as propostas, a página profissional que traz o
+// pedido, os resultados e o catálogo. "Vitrine" saiu de tudo; Pedidos
+// virou a primeira coluna das Oportunidades.
 export const VISOES_ORCAMENTOS: Visao[] = [
+  { label: "Oportunidades", href: "/orcamentos/oportunidades", icone: "oportunidades", cargos: CONDUZ },
   { label: "Propostas", href: "/orcamentos", icone: "propostas" },
-  // quem pediu orçamento pela página: responde quem conduz proposta
-  { label: "Pedidos", href: "/orcamentos/pedidos", icone: "pedidos", cargos: CONDUZ },
+  { label: "Página profissional", href: "/orcamentos/pagina", icone: "pagina", cargos: ["proprietaria"] },
   // o resultado da empresa (valores fechados): dona e coordenadora, as
   // mesmas que já veem todas as propostas
-  { label: "Relatório", href: "/orcamentos/relatorio", icone: "relatorio", cargos: ["proprietaria", "coordenadora"] },
-  { label: "Vitrine profissional", href: "/orcamentos/pagina", icone: "pagina", cargos: ["proprietaria"] },
+  { label: "Resultados", href: "/orcamentos/relatorio", icone: "relatorio", cargos: ["proprietaria", "coordenadora"] },
   { label: "Catálogo", href: "/catalogo", icone: "catalogo", cargos: ["proprietaria"] },
 ];
 

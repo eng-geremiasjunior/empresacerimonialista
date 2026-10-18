@@ -300,7 +300,7 @@ export function FichaCuradoria({
         )}
       </form>
       {previa && (
-        <p className="cu-aviso-previa">Desativado na prévia. Publique a vitrine para receber pedidos.</p>
+        <p className="cu-aviso-previa">Desativado na prévia. Publique a página para receber pedidos.</p>
       )}
     </>
   );

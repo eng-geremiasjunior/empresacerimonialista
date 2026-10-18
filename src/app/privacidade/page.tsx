@@ -138,8 +138,8 @@ export default function PrivacidadePage() {
         art. 7º, IX) e o apagamos depois de 13 meses.
       </Secao>
 
-      <Secao id="vitrine" titulo="Pedido de orçamento pela vitrine da cerimonialista">
-        Cada cerimonialista pode publicar uma vitrine profissional, uma página de apresentação com um
+      <Secao id="vitrine" titulo="Pedido de orçamento pela página da cerimonialista">
+        Cada cerimonialista pode publicar uma página profissional: a apresentação dela, com um
         formulário de pedido de orçamento. Quando você envia esse formulário,
         o nome, o WhatsApp, o e-mail (se informado) e os dados do evento que
         você descreveu são entregues <b>a essa cerimonialista</b>, que é a{" "}
@@ -149,15 +149,15 @@ export default function PrivacidadePage() {
         compartilhamos com outras cerimonialistas.
         <p style={{ marginTop: 10 }}>
           <b>Pixel da Meta da cerimonialista.</b> Se a cerimonialista cadastrou
-          o pixel da Meta dela, a vitrine pergunta antes se você permite
+          o pixel da Meta dela, a página pergunta antes se você permite
           ativá-lo. Sem a sua permissão, o código da Meta nem é carregado. Com
           ela, a Meta passa a receber dados de navegação (como a página
           visitada e os cookies dela no seu navegador), tratados conforme a
           política de privacidade da Meta, para os anúncios dessa
-          cerimonialista. A vitrine envia à Meta só três avisos: a visita, o
+          cerimonialista. A página envia à Meta só três avisos: a visita, o
           toque no botão do WhatsApp e o envio do pedido, sem o seu nome,
           WhatsApp, e-mail ou mensagem. Você muda a escolha quando quiser, pelo
-          link no rodapé da vitrine.
+          link no rodapé da página.
         </p>
         <p style={{ marginTop: 10 }}>
           Pedidos encerrados são mantidos por até <b>24 meses</b> e depois

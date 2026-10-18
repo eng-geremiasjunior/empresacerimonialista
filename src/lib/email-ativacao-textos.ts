@@ -376,7 +376,7 @@ export function htmlDia2(d: DadosDoEmail & { evento: EventoDela | null; hoje: st
   };
 }
 
-/** Dia 3 — a vitrine: o link que traz cliente novo. */
+/** Dia 3 — a página: o link que traz cliente novo. */
 export function htmlDia3(d: DadosDoEmail & { termina: string | null }): EmailPronto {
   const destino = "/orcamentos/pagina";
   return {
@@ -386,10 +386,10 @@ export function htmlDia3(d: DadosDoEmail & { termina: string | null }): EmailPro
       titulo: "Seu endereço para receber pedidos",
       saudacao: oi(d.nome),
       paragrafos: [
-        "A <strong>Vitrine profissional</strong> é uma página com o seu nome no endereço, as suas fotos, os seus serviços e um formulário.",
+        "A <strong>Página profissional</strong> é uma página com o seu nome no endereço, as suas fotos, os seus serviços e um formulário.",
         "O pedido cai na sua Gestão comercial e vira proposta já preenchida.",
       ],
-      botao: { texto: "Publicar minha vitrine", caminho: destino },
+      botao: { texto: "Publicar minha página", caminho: destino },
       sair: d.sair,
     }),
   };
@@ -587,7 +587,7 @@ export function htmlPos2(d: DadosDoEmail & { eventos: number; cobranca?: Cobranc
   };
 }
 
-/** +7 dias: a vitrine, o argumento de cliente novo. */
+/** +7 dias: a página, o argumento de cliente novo. */
 export function htmlPos7(d: DadosDoEmail): EmailPronto {
   const destino = "/orcamentos/pagina";
   return {
@@ -597,9 +597,9 @@ export function htmlPos7(d: DadosDoEmail): EmailPronto {
       titulo: "O link que traz pedido de orçamento",
       saudacao: oi(d.nome),
       paragrafos: [
-        "A cliente pede pela sua vitrine, o pedido vira proposta em um clique, ela assina pelo celular e o evento nasce do aceite.",
+        "A cliente pede pela sua página, o pedido vira proposta em um clique, ela assina pelo celular e o evento nasce do aceite.",
       ],
-      botao: { texto: "Ver como fica a minha vitrine", caminho: destino },
+      botao: { texto: "Ver como fica a minha página", caminho: destino },
       sair: d.sair,
     }),
   };
@@ -669,7 +669,7 @@ export function htmlPos45(d: DadosDoEmail): EmailPronto {
       titulo: "O que entrou desde o seu teste",
       saudacao: oi(d.nome),
       paragrafos: [
-        "Vitrine profissional com pedido de orçamento, proposta que a cliente assina pelo celular, check-in dos convidados por QR code e um assistente que responde sobre o evento.",
+        "Página profissional com pedido de orçamento, proposta que a cliente assina pelo celular, check-in dos convidados por QR code e um assistente que responde sobre o evento.",
       ],
       botao: { texto: "Ver o que mudou", caminho: destino },
       sair: d.sair,

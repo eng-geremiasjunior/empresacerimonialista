@@ -1,4 +1,4 @@
-// A vitrine profissional — a página pública da cerimonialista.
+// A página profissional — a página pública da cerimonialista.
 //
 // O desenho é o do Claude Design (16/09/2026, "Pagina do cerimonialista -
 // eOrganizei"): foto de abertura com o nome por cima, rótulo pequeno e
@@ -85,7 +85,7 @@ export function PaginaCerimonialista({
   const medir = contar && !previa;
   const wa = linkWhatsapp(pagina.whatsapp, textoWhatsappPagina());
   const insta = pagina.instagram ? `https://instagram.com/${pagina.instagram}` : null;
-  // o pixel dela: só na vitrine publicada, para quem não é da casa (e,
+  // o pixel dela: só na página publicada, para quem não é da casa (e,
   // dentro do componente, só depois de a pessoa permitir)
   const pixel = medir ? normalizarPixelMeta(pagina.pixel_meta) : null;
 
@@ -118,7 +118,7 @@ export function PaginaCerimonialista({
 
         {previa && (
           <div className="vt-previa">
-            <span>Prévia: sua vitrine ainda não está no ar, só você vê.</span>
+            <span>Prévia: sua página ainda não está no ar, só você vê.</span>
             <Link href="/orcamentos/pagina" className="vt-previa-link">
               Voltar ao editor
             </Link>
@@ -286,7 +286,7 @@ export function PaginaCerimonialista({
             {cidade ? ` · ${cidade}` : ""}
           </div>
           <div>
-            {/* página inteira nova, como os outros links para fora da vitrine:
+            {/* página inteira nova, como os outros links para fora da página:
                 o pixel dela nunca segue na mesma aba para outra tela */}
             <a href="/privacidade#vitrine">Privacidade</a>
           </div>

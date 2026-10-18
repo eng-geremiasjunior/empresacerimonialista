@@ -98,7 +98,7 @@ type Props = {
     modelo: ModeloDaVitrine;
     /** o retrato dela (modelo Curadoria) */
     retratoUrl: string | null;
-    /** as cores da vitrine */
+    /** as cores da página */
     paleta: PaletaDaVitrine;
     /** o vídeo de apresentação (modelo Curadoria) e a capa */
     video: VideoDaVitrine | null;
@@ -332,7 +332,7 @@ export function EditorPagina({
       }
       const { data } = supabase.storage.from("portfolio-fotos").getPublicUrl(caminho);
       setRetratoUrl(data.publicUrl);
-      mostrar("retrato", "ok", "Foto pronta. Salve para ela entrar na vitrine.");
+      mostrar("retrato", "ok", "Foto pronta. Salve para ela entrar na página.");
     } finally {
       setEnviandoRetrato(false);
     }
@@ -364,7 +364,7 @@ export function EditorPagina({
         return;
       }
       setVideo({ url: enviado.videoUrl, capaUrl: enviado.capaUrl });
-      mostrar("video", "ok", "Vídeo pronto. Salve para ele entrar na vitrine.");
+      mostrar("video", "ok", "Vídeo pronto. Salve para ele entrar na página.");
     } finally {
       setEnviandoVideo(null);
     }
@@ -406,7 +406,7 @@ export function EditorPagina({
       const r = await publicarPagina();
       if ("error" in r) return mostrar("status", "erro", r.error);
       setPublicada(true);
-      mostrar("status", "ok", "A vitrine está no ar.");
+      mostrar("status", "ok", "A página está no ar.");
     });
   }
 
@@ -416,7 +416,7 @@ export function EditorPagina({
       const r = await despublicarPagina();
       if ("error" in r) return mostrar("status", "erro", r.error);
       setPublicada(false);
-      mostrar("status", "ok", "A vitrine saiu do ar.");
+      mostrar("status", "ok", "A página saiu do ar.");
     });
   }
 
@@ -480,7 +480,7 @@ export function EditorPagina({
                 className={botaoSecundario}
               >
                 <ExternalLink size={13} />
-                {publicada ? "Abrir a vitrine" : "Ver como fica"}
+                {publicada ? "Abrir a página" : "Ver como fica"}
               </a>
             )}
             {publicada ? (
@@ -535,7 +535,7 @@ export function EditorPagina({
 
         {!logoUrl && (
           <p className="mt-4 text-xs text-gray-500">
-            A vitrine vai sem logo.{" "}
+            A página vai sem logo.{" "}
             <Link href="/configuracoes" className="underline hover:text-gray-800">
               Adicionar em Configurações
             </Link>
@@ -553,7 +553,7 @@ export function EditorPagina({
       {/* ------------------------------------------------ endereço */}
       <section className={secaoClass}>
         <label htmlFor="pagina-slug" className={labelClass}>
-          Endereço da vitrine
+          Endereço da página
         </label>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <span className="shrink-0 text-sm text-gray-500">{host}/cerimonialista/</span>
@@ -585,13 +585,13 @@ export function EditorPagina({
 
       {/* ------------------------------------------------ modelo */}
       <section className={secaoClass}>
-        <h2 className="text-sm font-semibold text-gray-900">Modelo da vitrine</h2>
+        <h2 className="text-sm font-semibold text-gray-900">Modelo da página</h2>
         <p className="mt-1 text-sm text-gray-600">
           Os mesmos textos, fotos e depoimentos; muda só o desenho.
         </p>
-        {/* A miniatura é a página de verdade, fotografada com uma vitrine de
+        {/* A miniatura é a página de verdade, fotografada com uma página de
             exemplo: ela vê o desenho ali mesmo, sem sair do editor. */}
-        <div role="radiogroup" aria-label="Modelo da vitrine" className="mt-4 grid gap-3 sm:grid-cols-3">
+        <div role="radiogroup" aria-label="Modelo da página" className="mt-4 grid gap-3 sm:grid-cols-3">
           {MODELOS_DA_VITRINE.map((m) => {
             const ativo = m.codigo === modelo;
             return (
@@ -640,7 +640,7 @@ export function EditorPagina({
             miniaturas acima trocam junto. */}
         <div className="mt-5">
           <span className={labelClass}>Cores</span>
-          <div role="radiogroup" aria-label="Cores da vitrine" className="flex flex-wrap gap-2">
+          <div role="radiogroup" aria-label="Cores da página" className="flex flex-wrap gap-2">
             {PALETAS_DA_VITRINE.map((p) => {
               const ativa = p.codigo === paleta;
               return (
@@ -686,15 +686,15 @@ export function EditorPagina({
         {slug && (modelo !== salvoConteudo.modelo || paleta !== salvoConteudo.paleta) && (
           <p className="mt-3 text-xs text-gray-500">
             {modelo !== salvoConteudo.modelo
-              ? "Salve para ver a vitrine no modelo novo."
-              : "Salve para ver a vitrine nas cores novas."}
+              ? "Salve para ver a página no modelo novo."
+              : "Salve para ver a página nas cores novas."}
           </p>
         )}
       </section>
 
       {/* ------------------------------------------------ apresentação */}
       <section className={`${secaoClass} space-y-5`}>
-        <h2 className="text-sm font-semibold text-gray-900">O que a vitrine diz</h2>
+        <h2 className="text-sm font-semibold text-gray-900">O que a página diz</h2>
 
         <div>
           <label htmlFor="pagina-titulo" className={labelClass}>
@@ -740,7 +740,7 @@ export function EditorPagina({
               </div>
               <div className="min-w-0 flex-1 space-y-2">
                 <p className="text-sm text-gray-600">
-                  Uma foto sua ou da equipe. Com ela, a vitrine ganha o bloco &ldquo;Quem assina&rdquo;;
+                  Uma foto sua ou da equipe. Com ela, a página ganha o bloco &ldquo;Quem assina&rdquo;;
                   sem ela, a apresentação fica na abertura.
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -1032,7 +1032,7 @@ export function EditorPagina({
           className={`${inputClass} sm:max-w-xs`}
         />
         <p className="mt-2 text-xs leading-relaxed text-gray-500">
-          O pixel só é ativado para quem permitir. A vitrine envia à Meta a visita, o
+          O pixel só é ativado para quem permitir. A página envia à Meta a visita, o
           toque no WhatsApp e o pedido enviado, sem nome, telefone ou e-mail. No
           Gerenciador de Eventos, deixe desligada a correspondência avançada automática.
         </p>
@@ -1041,7 +1041,7 @@ export function EditorPagina({
       {/* ------------------------------------------------ fotos */}
       <section className={secaoClass}>
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-sm font-semibold text-gray-900">Fotos na vitrine</h2>
+          <h2 className="text-sm font-semibold text-gray-900">Fotos na página</h2>
           {fotos.length > 0 && (
             <div className="flex gap-2">
               <button
@@ -1074,10 +1074,10 @@ export function EditorPagina({
           <>
             <p className="mt-1 text-xs text-gray-500">
               {fotosMarcadas === 0
-                ? "Nenhuma marcada: a vitrine vai sem fotos."
+                ? "Nenhuma marcada: a página vai sem fotos."
                 : fotosMarcadas > FOTOS_NA_PAGINA
-                  ? `${fotosMarcadas} marcadas; a vitrine mostra as ${FOTOS_NA_PAGINA} primeiras.`
-                  : `${fotosMarcadas} de ${fotos.length} vão para a vitrine.`}
+                  ? `${fotosMarcadas} marcadas; a página mostra as ${FOTOS_NA_PAGINA} primeiras.`
+                  : `${fotosMarcadas} de ${fotos.length} vão para a página.`}
             </p>
             <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-6">
               {fotos.map((f) => (
@@ -1108,7 +1108,7 @@ export function EditorPagina({
 
       {/* ------------------------------------------------ depoimentos */}
       <section className={secaoClass}>
-        <h2 className="text-sm font-semibold text-gray-900">Depoimentos na vitrine</h2>
+        <h2 className="text-sm font-semibold text-gray-900">Depoimentos na página</h2>
         {depoimentos.length === 0 ? (
           <p className="mt-2 text-sm text-gray-500">
             Nenhum depoimento cadastrado.{" "}
@@ -1236,7 +1236,7 @@ function ModeloAmpliado({
           />
         </div>
         <div className="flex items-center justify-end gap-2 border-t border-gray-100 px-5 py-3">
-          <p className="mr-auto text-xs text-gray-500">Exemplo com uma vitrine de demonstração.</p>
+          <p className="mr-auto text-xs text-gray-500">Exemplo com uma página de demonstração.</p>
           {escolhido ? (
             <span className="text-sm font-medium text-gray-700">Este é o seu modelo</span>
           ) : (

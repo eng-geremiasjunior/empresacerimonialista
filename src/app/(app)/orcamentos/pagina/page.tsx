@@ -16,7 +16,7 @@ import { paletaDaVitrine } from "@/lib/comercial/paletas";
 import type { EventType } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Vitrine profissional — eorganizei" };
+export const metadata = { title: "Página profissional — eorganizei" };
 
 export default async function PaginaPublicaEditorPage() {
   const supabase = createClient();
@@ -30,9 +30,9 @@ export default async function PaginaPublicaEditorPage() {
     return (
       <div className="mx-auto max-w-3xl space-y-6">
         <SubNav itens={VISOES_ORCAMENTOS} cargo={cargo?.cargo ?? null} />
-        <h1 className="text-xl font-semibold text-gray-900">Vitrine profissional</h1>
+        <h1 className="text-xl font-semibold text-gray-900">Página profissional</h1>
         <p className="rounded-lg border border-gray-200 bg-white p-6 text-sm text-gray-500">
-          Só a proprietária edita a vitrine da empresa.
+          Só a proprietária edita a página da empresa.
         </p>
       </div>
     );
@@ -89,7 +89,7 @@ export default async function PaginaPublicaEditorPage() {
     return (
       <div className="mx-auto max-w-3xl space-y-6">
         <SubNav itens={VISOES_ORCAMENTOS} cargo={cargo.cargo} />
-        <h1 className="text-xl font-semibold text-gray-900">Vitrine profissional</h1>
+        <h1 className="text-xl font-semibold text-gray-900">Página profissional</h1>
         <p className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
           Esta parte ainda não está disponível. Avise a gente.
         </p>
@@ -154,7 +154,7 @@ export default async function PaginaPublicaEditorPage() {
     <div className="mx-auto max-w-3xl space-y-6">
       <SubNav itens={VISOES_ORCAMENTOS} cargo={cargo.cargo} />
       <div>
-        <h1 className="text-xl font-semibold text-gray-900">Vitrine profissional</h1>
+        <h1 className="text-xl font-semibold text-gray-900">Página profissional</h1>
         <p className="text-sm text-gray-500">
           O endereço para divulgar o seu trabalho e receber pedidos de orçamento
         </p>

@@ -77,7 +77,7 @@ function fraseDoBanco(mensagem: string | undefined, padrao: string): string {
 /** O conteúdo da página. Não mexe no endereço nem na publicação. */
 export async function salvarPagina(dados: PaginaEditavel): Promise<Resultado> {
   const ctx = await daDona();
-  if (!ctx) return { error: "Só a proprietária edita a vitrine." };
+  if (!ctx) return { error: "Só a proprietária edita a página." };
 
   const texto = (v: string | null | undefined, max: number) => {
     const t = (v ?? "").trim();
@@ -120,12 +120,12 @@ export async function salvarPagina(dados: PaginaEditavel): Promise<Resultado> {
   if (dados.retratoUrl !== undefined) {
     const url = dados.retratoUrl?.trim() || null;
     if (url && !url.includes(`/storage/v1/object/public/portfolio-fotos/${ctx.empresaId}/`)) {
-      return { error: "Envie o retrato por aqui, pelo botão da vitrine." };
+      return { error: "Envie o retrato por aqui, pelo botão da página." };
     }
     retrato = { retrato_url: url ? url.slice(0, 400) : null };
   }
 
-  // O vídeo só entra se for do balde da vitrine e a capa do balde de fotos,
+  // O vídeo só entra se for do balde da página e a capa do balde de fotos,
   // os dois na pasta desta empresa (o banco confere de novo).
   let video: { video_url: string | null; video_capa_url: string | null } | Record<string, never> = {};
   if (dados.video !== undefined) {
@@ -138,7 +138,7 @@ export async function salvarPagina(dados: PaginaEditavel): Promise<Resultado> {
         !url.includes(`/storage/v1/object/public/vitrine-videos/${ctx.empresaId}/`) ||
         (capa && !capa.includes(`/storage/v1/object/public/portfolio-fotos/${ctx.empresaId}/`))
       ) {
-        return { error: "Envie o vídeo por aqui, pelo botão da vitrine." };
+        return { error: "Envie o vídeo por aqui, pelo botão da página." };
       }
       video = { video_url: url.slice(0, 400), video_capa_url: capa ? capa.slice(0, 400) : null };
     }
@@ -177,7 +177,7 @@ export async function salvarPagina(dados: PaginaEditavel): Promise<Resultado> {
     if (error.message?.includes("video")) {
       return {
         error: error.message.includes("check")
-          ? "Envie o vídeo por aqui, pelo botão da vitrine."
+          ? "Envie o vídeo por aqui, pelo botão da página."
           : "O vídeo ainda não está disponível. Tente de novo mais tarde.",
       };
     }
@@ -187,7 +187,7 @@ export async function salvarPagina(dados: PaginaEditavel): Promise<Resultado> {
     if (error.message?.includes("retrato")) {
       return {
         error: error.message.includes("check")
-          ? "Envie o retrato por aqui, pelo botão da vitrine."
+          ? "Envie o retrato por aqui, pelo botão da página."
           : "O retrato ainda não está disponível. Tente de novo mais tarde.",
       };
     }
@@ -197,11 +197,11 @@ export async function salvarPagina(dados: PaginaEditavel): Promise<Resultado> {
     if (error.message?.includes("antes de publicar")) {
       return {
         error: comMaiuscula(
-          "a vitrine está no ar: " + error.message.replace(" antes de publicar", "")
+          "a página está no ar: " + error.message.replace(" antes de publicar", "")
         ),
       };
     }
-    return { error: fraseDoBanco(error.message, "Não foi possível salvar a vitrine.") };
+    return { error: fraseDoBanco(error.message, "Não foi possível salvar a página.") };
   }
 
   if (trocaArquivo) await limparArquivosSoltos(ctx.supabase, ctx.empresaId, antes);
@@ -211,7 +211,7 @@ export async function salvarPagina(dados: PaginaEditavel): Promise<Resultado> {
 }
 
 /* ------------------------------------------------------------------ */
-/* Os arquivos que a vitrine deixa para trás                           */
+/* Os arquivos que a página deixa para trás                           */
 /* ------------------------------------------------------------------ */
 
 /** Retrato, vídeo e capa que a página usa agora (endereços públicos). */
@@ -271,7 +271,7 @@ export async function definirEndereco(
   slug: string
 ): Promise<{ ok: true; slug: string } | { error: string }> {
   const ctx = await daDona();
-  if (!ctx) return { error: "Só a proprietária define o endereço da vitrine." };
+  if (!ctx) return { error: "Só a proprietária define o endereço da página." };
 
   const s = slug.trim().toLowerCase();
   const erro = erroDoSlug(s);
@@ -301,7 +301,7 @@ export async function definirEndereco(
  */
 export async function publicarPagina(): Promise<Resultado> {
   const ctx = await daDona();
-  if (!ctx) return { error: "Só a proprietária publica a vitrine." };
+  if (!ctx) return { error: "Só a proprietária publica a página." };
 
   const { data: pag } = await ctx.supabase
     .from("empresa_pagina")
@@ -323,8 +323,8 @@ export async function publicarPagina(): Promise<Resultado> {
     .eq("empresa_id", ctx.empresaId)
     .select("empresa_id");
 
-  if (error) return { error: fraseDoBanco(error.message, "Não foi possível publicar a vitrine.") };
-  if (!data || data.length === 0) return { error: "Salve a vitrine antes de publicar." };
+  if (error) return { error: fraseDoBanco(error.message, "Não foi possível publicar a página.") };
+  if (!data || data.length === 0) return { error: "Salve a página antes de publicar." };
 
   revalidatePath("/orcamentos/pagina");
   return { ok: true };
@@ -333,14 +333,14 @@ export async function publicarPagina(): Promise<Resultado> {
 /** Tira do ar. O endereço continua dela; quem abrir o link vê "página não encontrada". */
 export async function despublicarPagina(): Promise<Resultado> {
   const ctx = await daDona();
-  if (!ctx) return { error: "Só a proprietária tira a vitrine do ar." };
+  if (!ctx) return { error: "Só a proprietária tira a página do ar." };
 
   const { error } = await ctx.supabase
     .from("empresa_pagina")
     .update({ publicada: false, atualizado_por: ctx.userId })
     .eq("empresa_id", ctx.empresaId);
 
-  if (error) return { error: fraseDoBanco(error.message, "Não foi possível tirar a vitrine do ar.") };
+  if (error) return { error: fraseDoBanco(error.message, "Não foi possível tirar a página do ar.") };
   revalidatePath("/orcamentos/pagina");
   return { ok: true };
 }
@@ -355,7 +355,7 @@ export async function marcarNaPagina(
   valor: boolean
 ): Promise<Resultado> {
   const ctx = await daDona();
-  if (!ctx) return { error: "Só a proprietária escolhe o que aparece na vitrine." };
+  if (!ctx) return { error: "Só a proprietária escolhe o que aparece na página." };
 
   const lista = ids.filter((id) => UUID.test(id)).slice(0, 200);
   if (lista.length === 0) return { ok: true };

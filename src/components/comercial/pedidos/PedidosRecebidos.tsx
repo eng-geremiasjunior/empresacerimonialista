@@ -23,7 +23,7 @@ export async function PedidosRecebidos() {
             : `${pedidos.length} pedidos de orçamento esperando resposta`}
         </h2>
         {pedidos.length > NO_BLOCO && (
-          <Link href="/orcamentos/pedidos" className="text-sm text-gray-500 underline hover:text-gray-800">
+          <Link href="/orcamentos/oportunidades" className="text-sm text-gray-500 underline hover:text-gray-800">
             Ver todos
           </Link>
         )}

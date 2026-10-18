@@ -3,7 +3,7 @@
 //
 // Seção sem dado é uma frase, nunca uma fileira de zeros. Tudo em cinza,
 // sem caixa em volta: a divisória de cima basta para separar uma da outra.
-// No celular as tabelas cabem na largura: a barra do mês some e a vitrine
+// No celular as tabelas cabem na largura: a barra do mês some e a página
 // vira uma linha por origem.
 
 import {
@@ -107,7 +107,7 @@ function DeOndeVem({ origens }: { origens: Origens }) {
   const direta =
     diretas.enviadas > 0 ? (
       <p className="mt-3 text-[13px]" style={{ color: CORES.nav }}>
-        Propostas sem pedido da vitrine: {diretas.enviadas}{" "}
+        Propostas sem pedido da página: {diretas.enviadas}{" "}
         {plural(diretas.enviadas, "enviada", "enviadas")} · {diretas.aceitas}{" "}
         {plural(diretas.aceitas, "aceita", "aceitas")}
       </p>
@@ -116,7 +116,7 @@ function DeOndeVem({ origens }: { origens: Origens }) {
   if (linhas.length === 0) {
     return (
       <>
-        <Vazio>Nenhum pedido pela vitrine no período.</Vazio>
+        <Vazio>Nenhum pedido pela página no período.</Vazio>
         {direta}
       </>
     );
@@ -255,10 +255,10 @@ function Perdidas({ perdas }: { perdas: Perdas }) {
 function NaVitrine({ vitrine }: { vitrine: Vitrine }) {
   const t = vitrine.total;
   if (t.aberturas + t.whatsapp + t.instagram + t.pedidos === 0) {
-    return <Vazio>Nenhuma abertura da vitrine no período.</Vazio>;
+    return <Vazio>Nenhuma abertura da página no período.</Vazio>;
   }
   const numeros: [string, number][] = [
-    ["Aberturas da vitrine", t.aberturas],
+    ["Aberturas da página", t.aberturas],
     ["Toques no WhatsApp", t.whatsapp],
     ["Toques no Instagram", t.instagram],
     ["Formulários enviados", t.pedidos],
@@ -337,7 +337,7 @@ export function SecoesDoRelatorio({ relatorio: r }: { relatorio: Relatorio }) {
         <Secao id="relatorio-perdas" titulo="Perdidas">
           <Perdidas perdas={r.perdas} />
         </Secao>
-        <Secao id="relatorio-vitrine" titulo="Vitrine profissional">
+        <Secao id="relatorio-vitrine" titulo="Página profissional">
           <NaVitrine vitrine={r.vitrine} />
         </Secao>
       </div>
