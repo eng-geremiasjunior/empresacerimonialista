@@ -14,7 +14,10 @@ import { LIMITES_PEDIDO, type CampoDoPedido } from "@/lib/comercial/pedidos";
 import { exemploDeWhatsapp } from "@/lib/comercial/pagina-publica";
 import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
 import { LinkMedido } from "../MedirPagina";
+import { useMemo } from "react";
 import { AVISO_PERTO_DO_LIMITE, usePedidoDaVitrine } from "../usePedidoDaVitrine";
+import { PerguntasDela, camposDela } from "../PerguntasDela";
+import { lerFormulario } from "@/lib/comercial/formulario";
 
 const ORDEM: readonly CampoDoPedido[] = ["nome", "whatsapp", "tipoEvento", "email", "dataEvento", "convidados"];
 
@@ -54,6 +57,7 @@ export function FichaPedido({
   whatsappEmpresa,
   contar,
   previa,
+  formulario,
 }: {
   slug: string;
   nomeEmpresa: string;
@@ -61,8 +65,21 @@ export function FichaPedido({
   whatsappEmpresa: string | null;
   contar: boolean;
   previa: boolean;
+  /** o formulário dela (214), como veio do banco */
+  formulario?: unknown;
 }) {
-  const f = usePedidoDaVitrine({ slug, tipos, whatsappEmpresa, previa, ordemDosCampos: ORDEM });
+  const form = useMemo(() => lerFormulario(formulario), [formulario]);
+  const f = usePedidoDaVitrine({ slug, tipos, whatsappEmpresa, previa, ordemDosCampos: ORDEM, formulario: form });
+  // a numeração da pauta segue os campos que aparecem (ela liga e desliga)
+  const doisDigitos = (n: number) => String(n).padStart(2, "0");
+  let numero = 4;
+  const nEmail = form.mostrar.email ? doisDigitos(numero++) : "";
+  const nData = doisDigitos(numero++);
+  const nCidade = doisDigitos(numero++);
+  const nConvidados = form.mostrar.convidados ? doisDigitos(numero++) : "";
+  const inicioDela = numero;
+  numero += camposDela(f);
+  const nMensagem = doisDigitos(numero);
 
   if (f.enviado) {
     return (
@@ -99,9 +116,9 @@ export function FichaPedido({
 
   return (
     <>
-      <h2 className="cp-h2-ficha">Conte sobre o seu evento</h2>
+      <h2 className="cp-h2-ficha">{form.intro_titulo ?? "Conte sobre o seu evento"}</h2>
       <p className="cp-intro cp-intro-ficha">
-        Oito linhas. As três primeiras bastam para {nomeEmpresa} responder.
+        {form.intro_texto ?? `As três primeiras linhas bastam para ${nomeEmpresa} responder.`}
       </p>
 
       <form onSubmit={f.enviar} noValidate>
@@ -169,27 +186,29 @@ export function FichaPedido({
             {erroDe("tipoEvento")}
           </div>
 
-          <div className="cp-campo">
-            <Cabeca n="04" para="pedido-email">
-              E-mail (opcional)
-            </Cabeca>
-            <input
-              id="pedido-email"
-              type="email"
-              className="cp-entrada"
-              placeholder="voce@email.com"
-              value={f.email}
-              onChange={(e) => f.editar("email", f.setEmail)(e.target.value)}
-              maxLength={LIMITES_PEDIDO.email}
-              autoComplete="email"
-              disabled={f.travado}
-              {...f.marcasDeErro("email")}
-            />
-            {erroDe("email")}
-          </div>
+          {form.mostrar.email && (
+            <div className="cp-campo">
+              <Cabeca n={nEmail} para="pedido-email">
+                E-mail (opcional)
+              </Cabeca>
+              <input
+                id="pedido-email"
+                type="email"
+                className="cp-entrada"
+                placeholder="voce@email.com"
+                value={f.email}
+                onChange={(e) => f.editar("email", f.setEmail)(e.target.value)}
+                maxLength={LIMITES_PEDIDO.email}
+                autoComplete="email"
+                disabled={f.travado}
+                {...f.marcasDeErro("email")}
+              />
+              {erroDe("email")}
+            </div>
+          )}
 
           <div className="cp-campo">
-            <Cabeca n="05" para={f.semData ? undefined : "pedido-dataEvento"}>
+            <Cabeca n={nData} para={f.semData ? undefined : "pedido-dataEvento"}>
               Data do evento
             </Cabeca>
             <div
@@ -222,7 +241,7 @@ export function FichaPedido({
           </div>
 
           <div className="cp-campo">
-            <Cabeca n="06" para="pedido-cidade">
+            <Cabeca n={nCidade} para="pedido-cidade">
               Cidade ou local (opcional)
             </Cabeca>
             <input
@@ -238,54 +257,78 @@ export function FichaPedido({
             />
           </div>
 
-          <div className="cp-campo">
-            <Cabeca n="07" para="pedido-convidados">
-              Convidados, aproximado (opcional)
-            </Cabeca>
-            <input
-              id="pedido-convidados"
-              type="text"
-              className="cp-entrada"
-              placeholder="120"
-              value={f.convidados}
-              onChange={(e) =>
-                f.editar("convidados", f.setConvidados)(e.target.value.replace(/[^0-9]/g, ""))
-              }
-              inputMode="numeric"
-              disabled={f.travado}
-              {...f.marcasDeErro("convidados")}
-            />
-            {erroDe("convidados")}
-          </div>
+          {form.mostrar.convidados && (
+            <div className="cp-campo">
+              <Cabeca n={nConvidados} para="pedido-convidados">
+                Convidados, aproximado (opcional)
+              </Cabeca>
+              <input
+                id="pedido-convidados"
+                type="text"
+                className="cp-entrada"
+                placeholder="120"
+                value={f.convidados}
+                onChange={(e) =>
+                  f.editar("convidados", f.setConvidados)(e.target.value.replace(/[^0-9]/g, ""))
+                }
+                inputMode="numeric"
+                disabled={f.travado}
+                {...f.marcasDeErro("convidados")}
+              />
+              {erroDe("convidados")}
+            </div>
+          )}
 
-          <div className="cp-campo cp-campo-largo">
-            <Cabeca
-              n="08"
-              para="pedido-mensagem"
-              depois={
-                <span
-                  className="cp-contagem"
-                  data-visivel={f.mensagem.length ? "" : undefined}
-                  data-alta={f.mensagem.length > AVISO_PERTO_DO_LIMITE ? "" : undefined}
-                  aria-live="polite"
-                >
-                  {f.mensagem.length} / {LIMITES_PEDIDO.mensagem}
-                </span>
-              }
-            >
-              Conte um pouco do que você imagina (opcional)
-            </Cabeca>
-            <textarea
-              id="pedido-mensagem"
-              className="cp-area"
-              placeholder="Estilo, horário, o que não pode faltar"
-              value={f.mensagem}
-              onChange={(e) => f.setMensagem(e.target.value.slice(0, LIMITES_PEDIDO.mensagem))}
-              maxLength={LIMITES_PEDIDO.mensagem}
-              rows={f.linhas}
-              disabled={f.travado}
-            />
-          </div>
+          <PerguntasDela
+            f={f}
+            inicio={inicioDela}
+            cabeca={({ n, para, children }) => (
+              <Cabeca n={n} para={para}>
+                {children}
+              </Cabeca>
+            )}
+            cl={{
+              campo: "cp-campo",
+              largo: "cp-campo cp-campo-largo",
+              rotulo: "cp-campo-rotulo",
+              entrada: "cp-entrada",
+              selecao: "cp-entrada cp-selecao",
+              area: "cp-area",
+              erro: "cp-erro",
+              caixa: "cp-caixa",
+            }}
+          />
+
+          {form.mostrar.mensagem && (
+            <div className="cp-campo cp-campo-largo">
+              <Cabeca
+                n={nMensagem}
+                para="pedido-mensagem"
+                depois={
+                  <span
+                    className="cp-contagem"
+                    data-visivel={f.mensagem.length ? "" : undefined}
+                    data-alta={f.mensagem.length > AVISO_PERTO_DO_LIMITE ? "" : undefined}
+                    aria-live="polite"
+                  >
+                    {f.mensagem.length} / {LIMITES_PEDIDO.mensagem}
+                  </span>
+                }
+              >
+                Conte um pouco do que você imagina (opcional)
+              </Cabeca>
+              <textarea
+                id="pedido-mensagem"
+                className="cp-area"
+                placeholder="Estilo, horário, o que não pode faltar"
+                value={f.mensagem}
+                onChange={(e) => f.setMensagem(e.target.value.slice(0, LIMITES_PEDIDO.mensagem))}
+                maxLength={LIMITES_PEDIDO.mensagem}
+                rows={f.linhas}
+                disabled={f.travado}
+              />
+            </div>
+          )}
         </div>
 
         {/* A isca: invisível e fora da ordem de tabulação. Pessoa não preenche. */}

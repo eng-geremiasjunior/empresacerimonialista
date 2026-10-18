@@ -24,6 +24,7 @@ import {
 import { paletaDaVitrine } from "@/lib/comercial/paletas";
 import { normalizarWhatsapp, whatsappValido } from "@/lib/comercial/pedidos";
 import { EVENT_TYPE_LABELS } from "@/lib/types";
+import { erroDoFormulario, formularioParaGravar, lerFormulario } from "@/lib/comercial/formulario";
 
 type Resultado = { ok: true } | { error: string };
 
@@ -371,6 +372,40 @@ export async function marcarNaPagina(
     console.error("[eorg:pagina] marcar:", tipo, error.code, (error.message ?? "").slice(0, 120));
     return { error: "Não foi possível salvar a escolha. Tente de novo." };
   }
+  revalidatePath("/orcamentos/pagina");
+  return { ok: true };
+}
+
+/* ------------------------------------------------------------------ */
+/* O formulário dela (214)                                             */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Grava o formulário da página: introdução, opcionais, opções de serviço
+ * e as perguntas dela. O que chega do navegador passa de novo por
+ * lerFormulario (descarta o torto) e por erroDoFormulario (diz o que
+ * falta); o banco confere outra vez (formulario_valido, 214).
+ */
+export async function salvarFormulario(cru: unknown): Promise<Resultado> {
+  const ctx = await daDona();
+  if (!ctx) return { error: "Só a proprietária edita o formulário." };
+  const f = lerFormulario(cru);
+  const erro = erroDoFormulario(f);
+  if (erro) return { error: erro };
+
+  const { data, error } = await ctx.supabase
+    .from("empresa_pagina")
+    .update({ formulario: formularioParaGravar(f) })
+    .eq("empresa_id", ctx.empresaId)
+    .select("empresa_id");
+  if (error) {
+    if (error.code === "42703" || error.code === "PGRST204") {
+      return { error: "O formulário ainda não está disponível. Avise a gente." };
+    }
+    console.error("[eorg:pagina] formulário:", error.code, (error.message ?? "").slice(0, 120));
+    return { error: "Não foi possível salvar o formulário." };
+  }
+  if (!data || data.length === 0) return { error: "Salve a página antes de montar o formulário." };
   revalidatePath("/orcamentos/pagina");
   return { ok: true };
 }

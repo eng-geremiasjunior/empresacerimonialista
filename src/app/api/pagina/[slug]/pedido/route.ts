@@ -23,6 +23,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { clienteAnonimoPublico } from "@/lib/supabase/anon-publico";
 import { validarPedido } from "@/lib/comercial/pedidos";
+import { lerFormulario, validarRespostas } from "@/lib/comercial/formulario";
 import type { PaginaPublica } from "@/lib/comercial/pagina-publica";
 import { emailDoAvisoDePedido } from "@/lib/comercial/email-do-aviso";
 import {
@@ -55,7 +56,8 @@ function demaisEnvios(chave: string): boolean {
 
 /** Abaixo disto, quem preencheu o formulário não foi uma pessoa. */
 const TEMPO_MINIMO_MS = 3000;
-const TETO_CORPO = 16_000;
+// cabe a base, a mensagem e as 10 perguntas dela (214) com folga
+const TETO_CORPO = 24_000;
 
 type Corpo = {
   nome?: unknown;
@@ -74,6 +76,10 @@ type Corpo = {
   utmSource?: unknown;
   utmMedium?: unknown;
   utmCampaign?: unknown;
+  /** "que tipo de serviço procura" (214) */
+  servico?: unknown;
+  /** as respostas às perguntas dela: { [id]: texto | lista } (214) */
+  respostas?: unknown;
 };
 
 const texto = (v: unknown): string | null => (typeof v === "string" ? v : null);
@@ -159,6 +165,21 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
     return NextResponse.json({ ok: false, erro: v.erro, campo: v.campo }, { status: 400 });
   }
 
+  // O formulário DELA (214): o serviço e as perguntas conferidos contra o
+  // que a página mostra — id desconhecido some, opção fora da lista é 400.
+  // Campo opcional que ela desligou não é gravado, mesmo se vier.
+  const formulario = lerFormulario(pagina.formulario);
+  const extras = validarRespostas(formulario, corpo.servico, corpo.respostas);
+  if (!extras.ok) {
+    return NextResponse.json({ ok: false, erro: extras.erro, campo: extras.campo }, { status: 400 });
+  }
+  const dados = {
+    ...v.dados,
+    email: formulario.mostrar.email ? v.dados.email : null,
+    convidados: formulario.mostrar.convidados ? v.dados.convidados : null,
+    mensagem: formulario.mostrar.mensagem ? v.dados.mensagem : null,
+  };
+
   const admin = servico();
   if (!admin) {
     console.error("[eorg:pedido] chave de serviço ausente");
@@ -170,14 +191,14 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
 
   const { data, error } = await admin.rpc("registrar_pedido_publico", {
     p_ref: slug,
-    p_nome: v.dados.nome,
-    p_whatsapp: v.dados.whatsapp,
-    p_email: v.dados.email,
-    p_tipo: v.dados.tipoEvento,
-    p_data: v.dados.dataEvento,
-    p_cidade: v.dados.cidade,
-    p_convidados: v.dados.convidados,
-    p_mensagem: v.dados.mensagem,
+    p_nome: dados.nome,
+    p_whatsapp: dados.whatsapp,
+    p_email: dados.email,
+    p_tipo: dados.tipoEvento,
+    p_data: dados.dataEvento,
+    p_cidade: dados.cidade,
+    p_convidados: dados.convidados,
+    p_mensagem: dados.mensagem,
     p_origem: texto(corpo.origem) ?? "direto",
     p_utm_source: texto(corpo.utmSource),
     p_utm_medium: texto(corpo.utmMedium),
@@ -198,6 +219,7 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
     ok?: boolean;
     error?: string;
     anexado?: boolean;
+    pedido_id?: string;
     nome_empresa?: string;
   } | null;
   if (!r?.ok) {
@@ -206,6 +228,27 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
       { ok: false, erro: frase.charAt(0).toUpperCase() + frase.slice(1) + "." },
       { status: 400 }
     );
+  }
+
+  // O serviço e as respostas (214), já conferidos acima. Vão por um
+  // segundo passo, pela chave de serviço e pelo id que a função devolveu:
+  // a função pública do pedido não muda. Só preenche o que está VAZIO —
+  // a mesma régua da 165 para o reenvio: quem sabe o telefone de alguém
+  // anexa ao pedido dela, mas não apaga o que ela respondeu. Falhar aqui
+  // não desfaz o pedido.
+  if (r.pedido_id) {
+    const preencher = async (coluna: "servico_desejado" | "respostas", valor: unknown) => {
+      const { error: erroExtras } = await admin
+        .from("pedido_orcamento")
+        .update({ [coluna]: valor })
+        .eq("id", r.pedido_id as string)
+        .is(coluna, null);
+      if (erroExtras) {
+        console.error("[eorg:pedido] respostas:", erroExtras.code, (erroExtras.message ?? "").slice(0, 120));
+      }
+    };
+    if (extras.servico) await preencher("servico_desejado", extras.servico);
+    if (extras.respostas.length > 0) await preencher("respostas", extras.respostas);
   }
 
   // Os e-mails. Melhor esforço: o pedido já está gravado e já tocou o sino.
@@ -218,7 +261,7 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
     const empresaId = (endereco as { empresa_id?: string } | null)?.empresa_id;
     const nomeEmpresa = r.nome_empresa ?? pagina.nome_empresa ?? "";
     const avisoPara = empresaId
-      ? await emailDoAvisoDePedido(admin, empresaId, v.dados.tipoEvento, {
+      ? await emailDoAvisoDePedido(admin, empresaId, dados.tipoEvento, {
           usarLoginDaDona: true,
         })
       : null;
@@ -229,17 +272,17 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
         enviarEmailPedidoParaCerimonialista({
           to: avisoPara,
           nomeEmpresa,
-          pedido: { ...v.dados, repetido: Boolean(r.anexado) },
+          pedido: { ...dados, repetido: Boolean(r.anexado) },
         })
       );
     }
     // A confirmação sai só no PRIMEIRO envio: o destino é digitado por
     // quem preenche, e reenvios repetidos virariam um jeito de fazer o
     // nosso domínio mandar vários e-mails para um terceiro.
-    if (v.dados.email && !r.anexado) {
+    if (dados.email && !r.anexado) {
       envios.push(
         enviarEmailConfirmacaoPedido({
-          to: v.dados.email,
+          to: dados.email,
           nomeEmpresa,
           replyTo: avisoPara,
         })

@@ -110,6 +110,8 @@ export type PaginaPublica = {
   /** o vídeo de apresentação e a capa (165, noite de 18/09/2026) */
   video_url?: string | null;
   video_capa_url?: string | null;
+  /** o formulário dela (214); lido por lerFormulario, que põe os padrões */
+  formulario?: unknown;
   fotos: { url: string; legenda: string | null; tipo_evento: EventType }[];
   /**
    * `tipo_evento` é o que deixa o depoimento em destaque acompanhar o

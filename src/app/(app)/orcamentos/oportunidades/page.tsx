@@ -17,6 +17,7 @@ import {
   type CartaoDaOportunidade,
 } from "@/lib/comercial/oportunidades";
 import { EncerrarPedido } from "@/components/comercial/oportunidades/EncerrarPedido";
+import { MarcarReuniao } from "@/components/comercial/oportunidades/MarcarReuniao";
 import { formatCurrency } from "@/lib/format";
 import { hojeBR } from "@/lib/tempo";
 
@@ -54,6 +55,7 @@ const CSS = `
 .op-valor{flex:none;font-family:var(--font-mono),"IBM Plex Mono",monospace;font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--mo-tinta,#252525)}
 .op-evento{font-size:13px;color:var(--mo-cinza-1,#68645E)}
 .op-origem{font-size:12.5px;color:var(--mo-cinza-2,#736D65)}
+.op-reuniao{font-size:12.5px;font-weight:600;color:var(--mo-destaque-escuro,#86402F)}
 .op-linha{font-family:var(--font-mono),"IBM Plex Mono",monospace;font-size:12px;color:var(--mo-cinza-1,#68645E)}
 .op-cartao.urgente .op-linha{color:var(--mo-atraso,#9A3B2E);font-weight:600}
 .op-acoes{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px}
@@ -99,7 +101,7 @@ const hrefDoCartao = (c: CartaoDaOportunidade) =>
       ? `/orcamentos/pedidos#pedido-${c.id}`
       : `/orcamentos/pedidos?estado=encerrados#pedido-${c.id}`;
 
-function Cartao({ c }: { c: CartaoDaOportunidade }) {
+function Cartao({ c, emAberto }: { c: CartaoDaOportunidade; emAberto: boolean }) {
   return (
     <article className={`op-cartao ${c.urgente ? "urgente" : ""}`}>
       <div className="op-nome">
@@ -108,10 +110,13 @@ function Cartao({ c }: { c: CartaoDaOportunidade }) {
       </div>
       <span className="op-evento">{c.evento}</span>
       {c.origem && <span className="op-origem">{c.origem}</span>}
+      {c.servico && <span className="op-origem">serviço: {c.servico}</span>}
+      {c.reuniao && <span className="op-reuniao">{c.reuniao}</span>}
       <span className="op-linha">{c.linha}</span>
-      {(c.acao || c.encerravel) && (
+      {(c.acao || c.encerravel || emAberto) && (
         <div className="op-acoes">
           <Acao c={c} forte={c.urgente || c.tipo === "pedido"} />
+          {emAberto && !c.reuniao && <MarcarReuniao tipo={c.tipo} id={c.id} />}
           {c.encerravel && <EncerrarPedido id={c.id} />}
         </div>
       )}
@@ -208,7 +213,9 @@ export default async function OportunidadesPage() {
               {col.cartoes.length === 0 ? (
                 <p className="op-vazio">{col.vazio}</p>
               ) : (
-                col.cartoes.map((c) => <Cartao key={c.chave} c={c} />)
+                col.cartoes.map((c) => (
+                  <Cartao key={c.chave} c={c} emAberto={col.chave === "novos" || col.chave === "negociacao"} />
+                ))
               )}
             </section>
           ))}

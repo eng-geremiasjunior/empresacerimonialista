@@ -11,14 +11,60 @@ import { VISOES_ORCAMENTOS } from "@/lib/visoes";
 import { createClient } from "@/lib/supabase/server";
 import { appUrl } from "@/lib/app-url";
 import { EditorPagina } from "@/components/comercial/pagina/EditorPagina";
-import { modeloDaVitrine, type ServicoDaPagina } from "@/lib/comercial/pagina-publica";
+import { EditorDoFormulario } from "@/components/comercial/pagina/EditorDoFormulario";
+import { DivulgarPagina } from "@/components/comercial/pagina/DivulgarPagina";
+import {
+  enderecoDaPagina,
+  modeloDaVitrine,
+  textoParaBio,
+  type ServicoDaPagina,
+} from "@/lib/comercial/pagina-publica";
+import { lerFormulario } from "@/lib/comercial/formulario";
+import { qrDataUri, qrSvg } from "@/lib/qr";
 import { paletaDaVitrine } from "@/lib/comercial/paletas";
 import type { EventType } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Página profissional — eorganizei" };
 
-export default async function PaginaPublicaEditorPage() {
+// As três partes da aba (214, 18/10/2026): a página, o formulário dela e
+// a divulgação. Uma rota só, a parte vem no endereço.
+const PARTES = [
+  { chave: "pagina", rotulo: "Página" },
+  { chave: "formulario", rotulo: "Formulário" },
+  { chave: "divulgar", rotulo: "Divulgar" },
+] as const;
+type Parte = (typeof PARTES)[number]["chave"];
+
+function PartesDaPagina({ ativa }: { ativa: Parte }) {
+  return (
+    <nav aria-label="Partes da página profissional" className="flex flex-wrap gap-2">
+      {PARTES.map((p) => (
+        <Link
+          key={p.chave}
+          href={p.chave === "pagina" ? "/orcamentos/pagina" : `/orcamentos/pagina?parte=${p.chave}`}
+          aria-current={ativa === p.chave ? "page" : undefined}
+          className={`rounded-full border px-3.5 py-1.5 text-sm font-medium ${
+            ativa === p.chave
+              ? "border-gray-900 bg-gray-900 text-white"
+              : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+          }`}
+        >
+          {p.rotulo}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+export default async function PaginaPublicaEditorPage({
+  searchParams,
+}: {
+  searchParams?: { parte?: string };
+}) {
+  const parte: Parte = PARTES.some((p) => p.chave === searchParams?.parte)
+    ? (searchParams?.parte as Parte)
+    : "pagina";
   const supabase = createClient();
   const {
     data: { user },
@@ -80,6 +126,12 @@ export default async function PaginaPublicaEditorPage() {
         .limit(1),
       supabase.from("empresa_pagina_slug").select("slug").eq("empresa_id", empresaId),
     ]);
+  // o formulário (214) à parte: antes da migração, a coluna não existe e
+  // o editor da página segue de pé
+  const formularioRes =
+    parte === "formulario"
+      ? await supabase.from("empresa_pagina").select("formulario").eq("empresa_id", empresaId).maybeSingle()
+      : null;
 
   if (paginaRes.error || fotosRes.error || depoimentosRes.error) {
     console.error(
@@ -160,6 +212,44 @@ export default async function PaginaPublicaEditorPage() {
         </p>
       </div>
 
+      <PartesDaPagina ativa={parte} />
+
+      {parte === "formulario" ? (
+        formularioRes?.error ? (
+          <p className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
+            O formulário ainda não está disponível. Avise a gente.
+          </p>
+        ) : !pag ? (
+          <p className="rounded-lg border border-gray-200 bg-white p-6 text-sm text-gray-500">
+            Salve a página primeiro; o formulário vem logo depois.
+          </p>
+        ) : (
+          <EditorDoFormulario
+            inicial={lerFormulario((formularioRes?.data as { formulario?: unknown } | null)?.formulario)}
+            enderecoPublico={pag.publicada && pag.slug ? enderecoDaPagina(appUrl(), pag.slug) : null}
+          />
+        )
+      ) : parte === "divulgar" ? (
+        pag?.publicada && pag.slug ? (
+          await (async () => {
+            const endereco = enderecoDaPagina(appUrl(), pag.slug as string);
+            const [svg, png] = await Promise.all([qrSvg(endereco), qrDataUri(endereco)]);
+            return (
+              <DivulgarPagina
+                endereco={endereco}
+                textoBio={textoParaBio(endereco)}
+                textoWhatsapp={`Conheça o meu trabalho e peça seu orçamento: ${endereco}`}
+                qrSvg={svg}
+                qrPng={png}
+              />
+            );
+          })()
+        ) : (
+          <p className="rounded-lg border border-gray-200 bg-white p-6 text-sm text-gray-500">
+            Publique a página para ter o link, o texto e o QR Code.
+          </p>
+        )
+      ) : (
       <EditorPagina
         base={appUrl()}
         empresaId={empresaId}
@@ -190,7 +280,9 @@ export default async function PaginaPublicaEditorPage() {
         fotos={fotos}
         depoimentos={depoimentos}
       />
+      )}
 
+      {parte === "pagina" && (
       <p className="text-xs text-gray-400">
         Fotos e depoimentos são cadastrados no{" "}
         <Link href="/catalogo" className="underline hover:text-gray-600">
@@ -202,6 +294,7 @@ export default async function PaginaPublicaEditorPage() {
         </Link>
         .
       </p>
+      )}
     </div>
   );
 }

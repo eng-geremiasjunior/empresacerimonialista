@@ -60,6 +60,9 @@ const carregarPrevia = cache(async (ref: string): Promise<PaginaPublica | null> 
   const lerPagina = async () => {
     const ler = (extras: string) =>
       supabase.from("empresa_pagina").select(`${COLUNAS}${extras}`).eq("empresa_id", empresaId).maybeSingle();
+    // o formulário é da 214: antes dela aplicada, a prévia segue sem ele
+    const comFormulario = await ler(", retrato_url, paleta, video_url, video_capa_url, formulario");
+    if (!comFormulario.error) return comFormulario;
     const tudo = await ler(", retrato_url, paleta, video_url, video_capa_url");
     if (!tudo.error) return tudo;
     const comRetrato = await ler(", retrato_url");
@@ -114,6 +117,7 @@ const carregarPrevia = cache(async (ref: string): Promise<PaginaPublica | null> 
     paleta?: string | null;
     video_url?: string | null;
     video_capa_url?: string | null;
+    formulario?: unknown;
   } | null;
   const atual = (atualRes.data as { slug?: string } | null)?.slug;
   if (!pag || !atual) return null;
@@ -138,6 +142,7 @@ const carregarPrevia = cache(async (ref: string): Promise<PaginaPublica | null> 
     paleta: pag.paleta ?? null,
     video_url: pag.video_url ?? null,
     video_capa_url: pag.video_capa_url ?? null,
+    formulario: pag.formulario ?? null,
     fotos: ((fotosRes.data ?? []) as PaginaPublica["fotos"]),
     depoimentos: ((depRes.data ?? []) as PaginaPublica["depoimentos"]),
   };

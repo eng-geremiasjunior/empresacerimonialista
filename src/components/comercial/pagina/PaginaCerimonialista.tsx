@@ -263,6 +263,7 @@ export function PaginaCerimonialista({
             whatsappEmpresa={pagina.whatsapp}
             contar={medir}
             previa={previa}
+            formulario={pagina.formulario}
           />
         </section>
 

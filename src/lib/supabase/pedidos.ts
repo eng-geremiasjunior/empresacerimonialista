@@ -20,6 +20,8 @@ import type { EventType } from "@/lib/types";
 
 const COLUNAS =
   "id, canal, origem_acesso, utm_campaign, nome, whatsapp, email, tipo_evento, data_evento, cidade, convidados, mensagem, repeticoes, client_id, status, orcamento_id, motivo_encerramento, created_at";
+/** o serviço e as respostas do formulário dela (214) */
+const COLUNAS_214 = ", servico_desejado, respostas";
 
 type Linha = {
   id: string;
@@ -40,7 +42,18 @@ type Linha = {
   orcamento_id: string | null;
   motivo_encerramento: string | null;
   created_at: string;
+  servico_desejado?: string | null;
+  respostas?: unknown;
 };
+
+/** As respostas gravadas, só as bem formadas (o banco já conferiu). */
+function respostasLidas(cru: unknown): { titulo: string; resposta: string }[] {
+  if (!Array.isArray(cru)) return [];
+  return cru
+    .map((r) => (r && typeof r === "object" ? (r as Record<string, unknown>) : {}))
+    .filter((r) => typeof r.titulo === "string" && typeof r.resposta === "string" && r.resposta)
+    .map((r) => ({ titulo: r.titulo as string, resposta: r.resposta as string }));
+}
 
 function paraVista(p: Linha, agora: Date): PedidoVisto {
   return {
@@ -57,6 +70,8 @@ function paraVista(p: Linha, agora: Date): PedidoVisto {
     status: p.status,
     orcamentoId: p.orcamento_id,
     motivoEncerramento: p.motivo_encerramento,
+    servico: p.servico_desejado ?? null,
+    respostas: respostasLidas(p.respostas),
   };
 }
 
@@ -65,18 +80,22 @@ export async function lerPedidos(
   limite = 100
 ): Promise<{ pedidos: PedidoVisto[]; falhou: boolean }> {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .from("pedido_orcamento")
-    .select(COLUNAS)
-    .eq("status", status)
-    .order("created_at", { ascending: false })
-    .limit(limite);
+  const ler = (colunas: string) =>
+    supabase
+      .from("pedido_orcamento")
+      .select(colunas)
+      .eq("status", status)
+      .order("created_at", { ascending: false })
+      .limit(limite);
+  // antes da 214 aplicada, as colunas novas não existem: lê sem elas
+  let { data, error } = await ler(COLUNAS + COLUNAS_214);
+  if (error && (error.code === "42703" || error.code === "PGRST204")) ({ data, error } = await ler(COLUNAS));
   if (error) {
     console.error("[eorg:pedidos] leitura:", error.code, (error.message ?? "").slice(0, 120));
     return { pedidos: [], falhou: true };
   }
   const agora = new Date();
-  return { pedidos: ((data ?? []) as Linha[]).map((p) => paraVista(p, agora)), falhou: false };
+  return { pedidos: ((data ?? []) as unknown as Linha[]).map((p) => paraVista(p, agora)), falhou: false };
 }
 
 export async function contarPedidos(): Promise<Record<PedidoStatus, number>> {

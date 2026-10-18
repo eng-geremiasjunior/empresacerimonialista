@@ -27,6 +27,12 @@ import { eventoDoPixel } from "@/lib/comercial/pixel-vitrine";
 import type { EventType } from "@/lib/types";
 import { chegadaDaAba } from "./MedirPagina";
 import { useVitrine } from "./VitrineViva";
+import {
+  FORMULARIO_PADRAO,
+  validarRespostas,
+  type FormularioDaPagina,
+  type ValorDaResposta,
+} from "@/lib/comercial/formulario";
 
 // o texto livre cresce com o que a pessoa escreve (valores do desenho)
 const LINHAS_MIN = 3;
@@ -34,10 +40,12 @@ const LINHAS_MAX = 8;
 const CARACTERES_POR_LINHA = 120;
 export const AVISO_PERTO_DO_LIMITE = 460;
 
-export type ErrosDoPedido = Partial<Record<CampoDoPedido, string>>;
+/** os campos da base e, desde a 214, "servico" e "pergunta_<id>" */
+export type ErrosDoPedido = Partial<Record<string, string>>;
 
-const ehCampo = (c: unknown): c is CampoDoPedido =>
-  typeof c === "string" && (CAMPOS_DO_PEDIDO as readonly string[]).includes(c);
+const ehCampo = (c: unknown): c is string =>
+  typeof c === "string" &&
+  ((CAMPOS_DO_PEDIDO as readonly string[]).includes(c) || c === "servico" || c.startsWith("pergunta_"));
 
 export function usePedidoDaVitrine({
   slug,
@@ -45,6 +53,7 @@ export function usePedidoDaVitrine({
   whatsappEmpresa,
   previa,
   ordemDosCampos = CAMPOS_DO_PEDIDO,
+  formulario = FORMULARIO_PADRAO,
 }: {
   slug: string;
   tipos: EventType[];
@@ -52,6 +61,8 @@ export function usePedidoDaVitrine({
   previa: boolean;
   /** a ordem em que os campos aparecem: o primeiro com erro recebe o foco */
   ordemDosCampos?: readonly CampoDoPedido[];
+  /** o formulário dela (214): opcionais, serviço e perguntas */
+  formulario?: FormularioDaPagina;
 }) {
   const { tipo, escolherTipo, enviado, marcarEnviado } = useVitrine();
   const [nome, setNome] = useState("");
@@ -63,6 +74,8 @@ export function usePedidoDaVitrine({
   const [convidados, setConvidados] = useState("");
   const [mensagem, setMensagem] = useState("");
   const [site, setSite] = useState(""); // a isca
+  const [servico, setServico] = useState("");
+  const [respostas, setRespostas] = useState<Record<string, ValorDaResposta>>({});
   const [erros, setErros] = useState<ErrosDoPedido>({});
   const [erroGeral, setErroGeral] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -88,7 +101,7 @@ export function usePedidoDaVitrine({
 
   /** muda o campo e apaga o erro dele */
   const editar =
-    <T,>(campo: CampoDoPedido | null, definir: (v: T) => void) =>
+    <T,>(campo: string | null, definir: (v: T) => void) =>
     (valor: T) => {
       definir(valor);
       if (campo && erros[campo]) {
@@ -100,8 +113,23 @@ export function usePedidoDaVitrine({
       }
     };
 
+  /** a resposta de uma pergunta dela; apaga o erro dela */
+  function responder(id: string, valor: ValorDaResposta) {
+    setRespostas((r) => ({ ...r, [id]: valor }));
+    const campo = `pergunta_${id}`;
+    if (erros[campo]) {
+      setErros((e) => {
+        const resto = { ...e };
+        delete resto[campo];
+        return resto;
+      });
+    }
+  }
+
   function focarPrimeiro(e: ErrosDoPedido) {
-    const campo = ordemDosCampos.find((c) => e[c]);
+    // a base primeiro, na ordem do desenho; depois o serviço e as perguntas
+    const ordem = [...ordemDosCampos, "servico", ...formulario.perguntas.map((p) => `pergunta_${p.id}`)];
+    const campo = ordem.find((c) => e[c]);
     const el = campo ? document.getElementById(`pedido-${campo}`) : null;
     if (!el) return;
     el.scrollIntoView({ block: "center" });
@@ -123,9 +151,11 @@ export function usePedidoDaVitrine({
       convidados,
       mensagem,
     };
-    const achados = errosDoPedido(entrada, hojeBR(), tipos);
+    const achados: ErrosDoPedido = errosDoPedido(entrada, hojeBR(), tipos);
     const v = validarPedido(entrada, hojeBR(), tipos);
-    if (!v.ok) {
+    const extras = validarRespostas(formulario, servico, respostas);
+    if (!extras.ok) achados[extras.campo] = extras.erro;
+    if (!v.ok || !extras.ok) {
       setErros(achados);
       focarPrimeiro(achados);
       return;
@@ -147,6 +177,8 @@ export function usePedidoDaVitrine({
           cidade: v.dados.cidade,
           convidados: v.dados.convidados,
           mensagem: v.dados.mensagem,
+          servico: servico || null,
+          respostas,
           site,
           abertoEm: abertoEm.current,
           origem: chegada.origem,
@@ -183,7 +215,7 @@ export function usePedidoDaVitrine({
   const linhas = Math.min(LINHAS_MAX, LINHAS_MIN + Math.floor(mensagem.length / CARACTERES_POR_LINHA));
 
   /** as marcas de acessibilidade de um campo com erro */
-  const marcasDeErro = (campo: CampoDoPedido) =>
+  const marcasDeErro = (campo: string) =>
     erros[campo]
       ? {
           "data-erro": "",
@@ -214,6 +246,11 @@ export function usePedidoDaVitrine({
     setMensagem,
     site,
     setSite,
+    servico,
+    setServico,
+    respostas,
+    responder,
+    formulario,
     erros,
     erroGeral,
     enviando,

@@ -31,6 +31,10 @@ export type PedidoVisto = {
   status: PedidoStatus;
   orcamentoId: string | null;
   motivoEncerramento: string | null;
+  /** "que tipo de serviço procura" (214) */
+  servico?: string | null;
+  /** as respostas às perguntas dela, com o título da hora (214) */
+  respostas?: { titulo: string; resposta: string }[];
 };
 
 const botaoPrincipal =
@@ -120,6 +124,23 @@ export function PedidoCartao({ pedido, compacto = false }: { pedido: PedidoVisto
         {whatsappFormatado(pedido.whatsapp)}
         {pedido.email ? ` · ${pedido.email}` : ""}
       </p>
+
+      {(pedido.servico || (pedido.respostas?.length ?? 0) > 0) && (
+        <dl className="mt-3 space-y-1.5 text-sm">
+          {pedido.servico && (
+            <div>
+              <dt className="text-xs text-gray-500">Serviço que procura</dt>
+              <dd className="text-gray-800">{pedido.servico}</dd>
+            </div>
+          )}
+          {pedido.respostas?.map((r, i) => (
+            <div key={i}>
+              <dt className="text-xs text-gray-500">{r.titulo}</dt>
+              <dd className="whitespace-pre-line text-gray-800">{r.resposta}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
 
       {pedido.mensagem && (
         <div className="mt-3">

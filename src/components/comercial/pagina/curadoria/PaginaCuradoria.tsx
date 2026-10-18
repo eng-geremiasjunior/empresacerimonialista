@@ -342,6 +342,7 @@ export function PaginaCuradoria({
                   whatsappEmpresa={pagina.whatsapp}
                   contar={medir}
                   previa={previa}
+                  formulario={pagina.formulario}
                 />
               </div>
             </section>

@@ -994,6 +994,8 @@ comment on function public.liberar_slug_pagina(text) is
 -- qual é o atual e a rota redireciona. Endereço inexistente e página não
 -- publicada dão a mesma resposta (null): não serve para descobrir quais
 -- empresas existem.
+-- (18/10/2026) A 214 redefine esta função, com o formulário da página.
+-- Reaplicar a 165 exige reaplicar a 214 logo depois.
 create or replace function public.pagina_publica(p_ref text)
 returns json
 language plpgsql

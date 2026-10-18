@@ -46,6 +46,8 @@ export type PedidoDaOportunidade = {
   created_at: string;
   encerrado_em: string | null;
   motivo_encerramento: string | null;
+  /** "que tipo de serviço procura" (214); ausente antes dela */
+  servico_desejado?: string | null;
 };
 
 export type PropostaDaOportunidade = {
@@ -77,6 +79,8 @@ export type DadosDasOportunidades = {
   aceites: { orcamento_id: string; created_at: string }[];
   /** o comentário mais recente da cliente em cada proposta */
   comentarios: { orcamento_id: string; created_at: string }[];
+  /** reuniões marcadas de hoje em diante, ligadas a pedido ou proposta (214) */
+  reunioes?: { data: string; hora: string | null; orcamento_id: string | null; pedido_id: string | null }[];
 };
 
 export type AcaoDoCartao = {
@@ -105,6 +109,12 @@ export type CartaoDaOportunidade = {
   encerravel: boolean;
   /** para ordenar a faixa de retorno: o mais antigo primeiro */
   desde: string;
+  /** "reunião sáb 25/10 às 14h", a próxima marcada */
+  reuniao?: string | null;
+  /** o serviço que a cliente disse procurar no pedido */
+  servico?: string | null;
+  /** o pedido de origem (para achar a reunião marcada nele) */
+  pedidoId?: string | null;
 };
 
 export type ChaveDaColuna = "novos" | "negociacao" | "fechados" | "perdidos";
@@ -125,6 +135,18 @@ function eventoEmPalavras(tipo: string, data: string | null): string {
   if (!data) return `${rotulo} · data a definir`;
   const [a, m, d] = data.split("-");
   return `${rotulo} · ${d}/${m}/${a}`;
+}
+
+const DIAS_DA_SEMANA = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
+
+/** "reunião hoje às 14h", "reunião sáb 25/10 às 9h30" */
+export function reuniaoEmPalavras(dia: string, hora: string | null, hoje: string): string {
+  const [a, m, d] = dia.split("-").map(Number);
+  const semana = DIAS_DA_SEMANA[new Date(Date.UTC(a, m - 1, d)).getUTCDay()];
+  const quando = dia === hoje ? "hoje" : diasEntre(hoje, dia) === 1 ? "amanhã" : `${semana} ${dataCurta(dia)}`;
+  if (!hora) return `reunião ${quando}`;
+  const [h, min] = hora.split(":");
+  return `reunião ${quando} às ${Number(h)}h${min && min !== "00" ? min : ""}`;
 }
 
 const dataCurta = (dia: string) => {
@@ -163,6 +185,8 @@ function cartaoDoPedido(p: PedidoDaOportunidade, agora: Date): CartaoDaOportunid
     acao: { rotulo: "Responder com proposta", href: `/orcamentos/novo?pedido=${p.id}` },
     encerravel: true,
     desde: p.created_at,
+    servico: p.servico_desejado ?? null,
+    pedidoId: p.id,
   };
 }
 
@@ -324,6 +348,8 @@ export function montarOportunidades(
     const p = o.pedido_id ? pedidoPorId.get(o.pedido_id) : undefined;
     return p ? origemEmPalavras(p) : null;
   };
+  const servicoDa = (o: PropostaDaOportunidade) =>
+    (o.pedido_id ? pedidoPorId.get(o.pedido_id)?.servico_desejado : null) ?? null;
 
   const novos: CartaoDaOportunidade[] = [];
   const negociacao: CartaoDaOportunidade[] = [];
@@ -388,8 +414,25 @@ export function montarOportunidades(
     }
 
     if (o.status === "rascunho" || o.status === "enviado") {
-      negociacao.push(emNegociacao(o, origem, comentarioPor.get(o.id) ?? null, hoje));
+      negociacao.push({
+        ...emNegociacao(o, origem, comentarioPor.get(o.id) ?? null, hoje),
+        servico: servicoDa(o),
+        pedidoId: o.pedido_id,
+      });
     }
+  }
+
+  // a próxima reunião marcada de cada oportunidade (na proposta ou no
+  // pedido que a originou)
+  const proximas = [...(dados.reunioes ?? [])]
+    .filter((r) => r.data >= hoje)
+    .sort((a, b) => (a.data + (a.hora ?? "")).localeCompare(b.data + (b.hora ?? "")));
+  for (const c of [...novos, ...negociacao]) {
+    const r = proximas.find(
+      (x) =>
+        (c.tipo === "proposta" && x.orcamento_id === c.id) || (!!c.pedidoId && x.pedido_id === c.pedidoId)
+    );
+    c.reuniao = r ? reuniaoEmPalavras(r.data, r.hora ? r.hora.slice(0, 5) : null, hoje) : null;
   }
 
   // o que pede ação primeiro; dentro disso, o mais antigo primeiro

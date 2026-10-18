@@ -28,12 +28,30 @@ const COLUNAS_PROPOSTA =
 const COLUNAS_PEDIDO =
   "id, nome, whatsapp, tipo_evento, data_evento, status, canal, origem_acesso, utm_campaign, orcamento_id, created_at, encerrado_em, motivo_encerramento";
 
+/** Lê com as colunas da 214; antes dela aplicada, sem elas. */
+async function comOuSem<T extends { error: { code?: string } | null }>(
+  com: () => PromiseLike<T>,
+  sem: () => PromiseLike<T>
+): Promise<T> {
+  const r = await com();
+  if (r.error && (r.error.code === "42703" || r.error.code === "PGRST204")) return sem();
+  return r;
+}
+
 export async function lerOportunidades(): Promise<{ dados: DadosDasOportunidades; falhou: boolean }> {
   const supabase = createClient();
   const desde = somarDias(hojeBR(), -DIAS_DO_HISTORICO);
   const desdeInstante = `${desde}T00:00:00-03:00`;
 
-  const [propostas, pedidos, aceites, comentarios] = await Promise.all([
+  const lerPedidos = (extras: string) =>
+    supabase
+      .from("pedido_orcamento")
+      .select(COLUNAS_PEDIDO + extras)
+      .or(`status.eq.novo,encerrado_em.gte."${desdeInstante}",created_at.gte."${desdeInstante}"`)
+      .order("created_at", { ascending: false })
+      .limit(LIMITE);
+
+  const [propostas, pedidos, aceites, comentarios, reunioes] = await Promise.all([
     // em aberto (rascunho e enviada), mais o que mudou de estado na janela
     supabase
       .from("orcamentos")
@@ -43,12 +61,10 @@ export async function lerOportunidades(): Promise<{ dados: DadosDasOportunidades
       )
       .order("data_criacao", { ascending: false })
       .limit(LIMITE),
-    supabase
-      .from("pedido_orcamento")
-      .select(COLUNAS_PEDIDO)
-      .or(`status.eq.novo,encerrado_em.gte."${desdeInstante}",created_at.gte."${desdeInstante}"`)
-      .order("created_at", { ascending: false })
-      .limit(LIMITE),
+    comOuSem(
+      () => lerPedidos(", servico_desejado"),
+      () => lerPedidos("")
+    ),
     supabase
       .from("orcamento_aceites")
       .select("orcamento_id, created_at")
@@ -58,6 +74,13 @@ export async function lerOportunidades(): Promise<{ dados: DadosDasOportunidades
       .from("orcamento_comentarios")
       .select("orcamento_id, created_at")
       .gte("created_at", somarDias(desde, -60) + "T00:00:00-03:00")
+      .limit(LIMITE),
+    // a ligação com a oportunidade é da 214: antes dela, nenhuma reunião ligada
+    supabase
+      .from("agenda_item")
+      .select("data, hora, orcamento_id, pedido_id")
+      .gte("data", hojeBR())
+      .or("orcamento_id.not.is.null,pedido_id.not.is.null")
       .limit(LIMITE),
   ]);
 
@@ -77,6 +100,14 @@ export async function lerOportunidades(): Promise<{ dados: DadosDasOportunidades
       pedidos: (pedidos.data ?? []) as unknown as PedidoDaOportunidade[],
       aceites: (aceites.data ?? []) as { orcamento_id: string; created_at: string }[],
       comentarios: (comentarios.data ?? []) as { orcamento_id: string; created_at: string }[],
+      reunioes: reunioes.error
+        ? []
+        : ((reunioes.data ?? []) as {
+            data: string;
+            hora: string | null;
+            orcamento_id: string | null;
+            pedido_id: string | null;
+          }[]),
     },
     falhou,
   };

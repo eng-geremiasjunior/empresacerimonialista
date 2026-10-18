@@ -280,6 +280,7 @@ export function PaginaCapitulos({
               whatsappEmpresa={pagina.whatsapp}
               contar={medir}
               previa={previa}
+              formulario={pagina.formulario}
             />
             {insta && (
               <LinkMedido

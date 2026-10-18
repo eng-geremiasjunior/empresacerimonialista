@@ -22,7 +22,10 @@ import { LIMITES_PEDIDO, type CampoDoPedido } from "@/lib/comercial/pedidos";
 import { exemploDeWhatsapp } from "@/lib/comercial/pagina-publica";
 import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
 import { LinkMedido } from "./MedirPagina";
+import { useMemo } from "react";
 import { AVISO_PERTO_DO_LIMITE, usePedidoDaVitrine } from "./usePedidoDaVitrine";
+import { PerguntasDela } from "./PerguntasDela";
+import { lerFormulario } from "@/lib/comercial/formulario";
 
 export function FormularioPedido({
   slug,
@@ -31,6 +34,7 @@ export function FormularioPedido({
   whatsappEmpresa,
   contar,
   previa,
+  formulario,
 }: {
   slug: string;
   nomeEmpresa: string;
@@ -38,7 +42,11 @@ export function FormularioPedido({
   whatsappEmpresa: string | null;
   contar: boolean;
   previa: boolean;
+  /** o formulário dela (214), como veio do banco */
+  formulario?: unknown;
 }) {
+  const form = useMemo(() => lerFormulario(formulario), [formulario]);
+  const f = usePedidoDaVitrine({ slug, tipos, whatsappEmpresa, previa, formulario: form });
   const {
     tipo,
     escolherTipo,
@@ -72,7 +80,7 @@ export function FormularioPedido({
     editar,
     enviar,
     marcasDeErro,
-  } = usePedidoDaVitrine({ slug, tipos, whatsappEmpresa, previa });
+  } = f;
 
   if (enviado) {
     return (
@@ -109,7 +117,8 @@ export function FormularioPedido({
   return (
     <>
       <form onSubmit={enviar} noValidate className="vt-formulario">
-        <h2 className="vt-h2-formulario">Conte sobre o seu evento</h2>
+        <h2 className="vt-h2-formulario">{form.intro_titulo ?? "Conte sobre o seu evento"}</h2>
+        {form.intro_texto && <p className="vt-corpo">{form.intro_texto}</p>}
 
         <div className="vt-campo">
           <label htmlFor="pedido-nome" className="vt-campo-rotulo">
@@ -151,24 +160,26 @@ export function FormularioPedido({
           {erroDe("whatsapp")}
         </div>
 
-        <div className="vt-campo">
-          <label htmlFor="pedido-email" className="vt-campo-rotulo">
-            E-mail (opcional)
-          </label>
-          <input
-            id="pedido-email"
-            type="email"
-            className="vt-entrada"
-            placeholder="voce@email.com"
-            value={email}
-            onChange={(e) => editar("email", setEmail)(e.target.value)}
-            maxLength={LIMITES_PEDIDO.email}
-            autoComplete="email"
-            disabled={travado}
-            {...marcasDeErro("email")}
-          />
-          {erroDe("email")}
-        </div>
+        {form.mostrar.email && (
+          <div className="vt-campo">
+            <label htmlFor="pedido-email" className="vt-campo-rotulo">
+              E-mail (opcional)
+            </label>
+            <input
+              id="pedido-email"
+              type="email"
+              className="vt-entrada"
+              placeholder="voce@email.com"
+              value={email}
+              onChange={(e) => editar("email", setEmail)(e.target.value)}
+              maxLength={LIMITES_PEDIDO.email}
+              autoComplete="email"
+              disabled={travado}
+              {...marcasDeErro("email")}
+            />
+            {erroDe("email")}
+          </div>
+        )}
 
         <div className="vt-campo">
           <label htmlFor="pedido-tipoEvento" className="vt-campo-rotulo">
@@ -248,51 +259,69 @@ export function FormularioPedido({
           />
         </div>
 
-        <div className="vt-campo">
-          <label htmlFor="pedido-convidados" className="vt-campo-rotulo">
-            Convidados, aproximado (opcional)
-          </label>
-          <input
-            id="pedido-convidados"
-            type="text"
-            className="vt-entrada"
-            placeholder="120"
-            value={convidados}
-            onChange={(e) =>
-              editar("convidados", setConvidados)(e.target.value.replace(/[^0-9]/g, ""))
-            }
-            inputMode="numeric"
-            disabled={travado}
-            {...marcasDeErro("convidados")}
-          />
-          {erroDe("convidados")}
-        </div>
-
-        <div className="vt-campo-largo">
-          <div className="vt-campo-cabeca">
-            <label htmlFor="pedido-mensagem" className="vt-campo-rotulo-largo">
-              Conte um pouco do que você imagina (opcional)
+        {form.mostrar.convidados && (
+          <div className="vt-campo">
+            <label htmlFor="pedido-convidados" className="vt-campo-rotulo">
+              Convidados, aproximado (opcional)
             </label>
-            <span
-              className="vt-contagem"
-              data-visivel={mensagem.length ? "" : undefined}
-              data-alta={mensagem.length > AVISO_PERTO_DO_LIMITE ? "" : undefined}
-              aria-live="polite"
-            >
-              {mensagem.length} / {LIMITES_PEDIDO.mensagem}
-            </span>
+            <input
+              id="pedido-convidados"
+              type="text"
+              className="vt-entrada"
+              placeholder="120"
+              value={convidados}
+              onChange={(e) =>
+                editar("convidados", setConvidados)(e.target.value.replace(/[^0-9]/g, ""))
+              }
+              inputMode="numeric"
+              disabled={travado}
+              {...marcasDeErro("convidados")}
+            />
+            {erroDe("convidados")}
           </div>
-          <textarea
-            id="pedido-mensagem"
-            className="vt-area"
-            placeholder="Estilo, horário, o que não pode faltar"
-            value={mensagem}
-            onChange={(e) => setMensagem(e.target.value.slice(0, LIMITES_PEDIDO.mensagem))}
-            maxLength={LIMITES_PEDIDO.mensagem}
-            rows={linhas}
-            disabled={travado}
-          />
-        </div>
+        )}
+
+        <PerguntasDela
+          f={f}
+          cl={{
+            campo: "vt-campo",
+            largo: "vt-campo-largo",
+            rotulo: "vt-campo-rotulo",
+            entrada: "vt-entrada",
+            selecao: "vt-entrada",
+            area: "vt-area",
+            erro: "vt-erro",
+            caixa: "vt-caixa",
+          }}
+        />
+
+        {form.mostrar.mensagem && (
+          <div className="vt-campo-largo">
+            <div className="vt-campo-cabeca">
+              <label htmlFor="pedido-mensagem" className="vt-campo-rotulo-largo">
+                Conte um pouco do que você imagina (opcional)
+              </label>
+              <span
+                className="vt-contagem"
+                data-visivel={mensagem.length ? "" : undefined}
+                data-alta={mensagem.length > AVISO_PERTO_DO_LIMITE ? "" : undefined}
+                aria-live="polite"
+              >
+                {mensagem.length} / {LIMITES_PEDIDO.mensagem}
+              </span>
+            </div>
+            <textarea
+              id="pedido-mensagem"
+              className="vt-area"
+              placeholder="Estilo, horário, o que não pode faltar"
+              value={mensagem}
+              onChange={(e) => setMensagem(e.target.value.slice(0, LIMITES_PEDIDO.mensagem))}
+              maxLength={LIMITES_PEDIDO.mensagem}
+              rows={linhas}
+              disabled={travado}
+            />
+          </div>
+        )}
 
         {/* A isca: invisível e fora da ordem de tabulação. Pessoa não preenche. */}
         <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">

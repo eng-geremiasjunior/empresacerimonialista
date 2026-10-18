@@ -12,7 +12,10 @@ import { LIMITES_PEDIDO, type CampoDoPedido } from "@/lib/comercial/pedidos";
 import { exemploDeWhatsapp } from "@/lib/comercial/pagina-publica";
 import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
 import { LinkMedido } from "../MedirPagina";
+import { useMemo } from "react";
 import { AVISO_PERTO_DO_LIMITE, usePedidoDaVitrine } from "../usePedidoDaVitrine";
+import { PerguntasDela } from "../PerguntasDela";
+import { lerFormulario } from "@/lib/comercial/formulario";
 
 const ORDEM: readonly CampoDoPedido[] = ["nome", "whatsapp", "email", "tipoEvento", "dataEvento", "convidados"];
 
@@ -23,6 +26,7 @@ export function FichaCuradoria({
   whatsappEmpresa,
   contar,
   previa,
+  formulario,
 }: {
   slug: string;
   nomeEmpresa: string;
@@ -30,8 +34,11 @@ export function FichaCuradoria({
   whatsappEmpresa: string | null;
   contar: boolean;
   previa: boolean;
+  /** o formulário dela (214), como veio do banco */
+  formulario?: unknown;
 }) {
-  const f = usePedidoDaVitrine({ slug, tipos, whatsappEmpresa, previa, ordemDosCampos: ORDEM });
+  const form = useMemo(() => lerFormulario(formulario), [formulario]);
+  const f = usePedidoDaVitrine({ slug, tipos, whatsappEmpresa, previa, ordemDosCampos: ORDEM, formulario: form });
 
   if (f.enviado) {
     return (
@@ -69,10 +76,10 @@ export function FichaCuradoria({
   return (
     <>
       <p className="cu-rotulo">Orçamento</p>
-      <h2 className="cu-h2-ficha">Conte sobre o seu evento</h2>
+      <h2 className="cu-h2-ficha">{form.intro_titulo ?? "Conte sobre o seu evento"}</h2>
       <p className="cu-intro-ficha">
-        Escreva do jeito que preferir. Quanto mais você contar, mais a proposta chega perto do que
-        você imagina.
+        {form.intro_texto ??
+          "Escreva do jeito que preferir. Quanto mais você contar, mais a proposta chega perto do que você imagina."}
       </p>
 
       <form onSubmit={f.enviar} noValidate>
@@ -117,24 +124,26 @@ export function FichaCuradoria({
             {erroDe("whatsapp")}
           </div>
 
-          <div className="cu-campo">
-            <label htmlFor="pedido-email" className="cu-campo-rotulo">
-              E-mail (opcional)
-            </label>
-            <input
-              id="pedido-email"
-              type="email"
-              className="cu-entrada"
-              placeholder="voce@email.com"
-              value={f.email}
-              onChange={(e) => f.editar("email", f.setEmail)(e.target.value)}
-              maxLength={LIMITES_PEDIDO.email}
-              autoComplete="email"
-              disabled={f.travado}
-              {...f.marcasDeErro("email")}
-            />
-            {erroDe("email")}
-          </div>
+          {form.mostrar.email && (
+            <div className="cu-campo">
+              <label htmlFor="pedido-email" className="cu-campo-rotulo">
+                E-mail (opcional)
+              </label>
+              <input
+                id="pedido-email"
+                type="email"
+                className="cu-entrada"
+                placeholder="voce@email.com"
+                value={f.email}
+                onChange={(e) => f.editar("email", f.setEmail)(e.target.value)}
+                maxLength={LIMITES_PEDIDO.email}
+                autoComplete="email"
+                disabled={f.travado}
+                {...f.marcasDeErro("email")}
+              />
+              {erroDe("email")}
+            </div>
+          )}
 
           <div className="cu-campo">
             <label htmlFor="pedido-tipoEvento" className="cu-campo-rotulo">
@@ -211,51 +220,69 @@ export function FichaCuradoria({
             />
           </div>
 
-          <div className="cu-campo">
-            <label htmlFor="pedido-convidados" className="cu-campo-rotulo">
-              Convidados, aproximado (opcional)
-            </label>
-            <input
-              id="pedido-convidados"
-              type="text"
-              className="cu-entrada"
-              placeholder="120"
-              value={f.convidados}
-              onChange={(e) =>
-                f.editar("convidados", f.setConvidados)(e.target.value.replace(/[^0-9]/g, ""))
-              }
-              inputMode="numeric"
-              disabled={f.travado}
-              {...f.marcasDeErro("convidados")}
-            />
-            {erroDe("convidados")}
-          </div>
-
-          <div className="cu-campo cu-campo-largo">
-            <div className="cu-campo-cabeca">
-              <label htmlFor="pedido-mensagem" className="cu-campo-rotulo">
-                Conte um pouco do que você imagina (opcional)
+          {form.mostrar.convidados && (
+            <div className="cu-campo">
+              <label htmlFor="pedido-convidados" className="cu-campo-rotulo">
+                Convidados, aproximado (opcional)
               </label>
-              <span
-                className="cu-contagem"
-                data-visivel={f.mensagem.length ? "" : undefined}
-                data-alta={f.mensagem.length > AVISO_PERTO_DO_LIMITE ? "" : undefined}
-                aria-live="polite"
-              >
-                {f.mensagem.length} / {LIMITES_PEDIDO.mensagem}
-              </span>
+              <input
+                id="pedido-convidados"
+                type="text"
+                className="cu-entrada"
+                placeholder="120"
+                value={f.convidados}
+                onChange={(e) =>
+                  f.editar("convidados", f.setConvidados)(e.target.value.replace(/[^0-9]/g, ""))
+                }
+                inputMode="numeric"
+                disabled={f.travado}
+                {...f.marcasDeErro("convidados")}
+              />
+              {erroDe("convidados")}
             </div>
-            <textarea
-              id="pedido-mensagem"
-              className="cu-area"
-              placeholder="Estilo, horário, o que não pode faltar"
-              value={f.mensagem}
-              onChange={(e) => f.setMensagem(e.target.value.slice(0, LIMITES_PEDIDO.mensagem))}
-              maxLength={LIMITES_PEDIDO.mensagem}
-              rows={f.linhas}
-              disabled={f.travado}
-            />
-          </div>
+          )}
+
+          <PerguntasDela
+            f={f}
+            cl={{
+              campo: "cu-campo",
+              largo: "cu-campo cu-campo-largo",
+              rotulo: "cu-campo-rotulo",
+              entrada: "cu-entrada",
+              selecao: "cu-entrada cu-selecao",
+              area: "cu-area",
+              erro: "cu-erro",
+              caixa: "cu-caixa",
+            }}
+          />
+
+          {form.mostrar.mensagem && (
+            <div className="cu-campo cu-campo-largo">
+              <div className="cu-campo-cabeca">
+                <label htmlFor="pedido-mensagem" className="cu-campo-rotulo">
+                  Conte um pouco do que você imagina (opcional)
+                </label>
+                <span
+                  className="cu-contagem"
+                  data-visivel={f.mensagem.length ? "" : undefined}
+                  data-alta={f.mensagem.length > AVISO_PERTO_DO_LIMITE ? "" : undefined}
+                  aria-live="polite"
+                >
+                  {f.mensagem.length} / {LIMITES_PEDIDO.mensagem}
+                </span>
+              </div>
+              <textarea
+                id="pedido-mensagem"
+                className="cu-area"
+                placeholder="Estilo, horário, o que não pode faltar"
+                value={f.mensagem}
+                onChange={(e) => f.setMensagem(e.target.value.slice(0, LIMITES_PEDIDO.mensagem))}
+                maxLength={LIMITES_PEDIDO.mensagem}
+                rows={f.linhas}
+                disabled={f.travado}
+              />
+            </div>
+          )}
         </div>
 
         {/* A isca: invisível e fora da ordem de tabulação. Pessoa não preenche. */}
