@@ -315,6 +315,9 @@ function Casca(props: Props) {
   // o menu primário (16/10/2026, pedido dele): só o principal do principal
   const primario = [
     { label: "Dashboard", href: "/eventos/dashboard", ativo: naHoje, icone: ICONES_DO_MENU.dashboard },
+    ...(cargo === "proprietaria"
+      ? [{ label: "Carteira", href: "/carteira", ativo: pathname.startsWith("/carteira"), icone: ICONES_DO_MENU.carteira }]
+      : []),
     { label: "Eventos", href: "/eventos", ativo: emTodos || !!idDoEvento, icone: ICONES_DO_MENU.eventos },
     ...(cargo === "proprietaria"
       ? [{ label: "Modelos", href: "/configuracoes/modelo", ativo: pathname.startsWith("/configuracoes/modelo"), icone: ICONES_DO_MENU.catalogo, sub: true }]

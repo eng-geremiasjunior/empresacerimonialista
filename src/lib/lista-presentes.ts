@@ -143,6 +143,20 @@ export function valoresDoPresente(
     : { total: preco + taxa, taxa, familia: preco, plataforma: taxa };
 }
 
+/** A tarifa da Pagar.me no Pix: 1,19% do total + R$ 0,55 (centavos). */
+export const tarifaDoPix = (totalCentavos: number) => Math.round(totalCentavos * 0.0119) + 55;
+
+/**
+ * A parte da cerimonialista num presente pago (centavos): metade do que
+ * sobra da taxa da plataforma depois da tarifa (decisão dele, 26/09/2026).
+ * No cartão a tarifa e o antifraude vêm no acréscimo de quem presenteia,
+ * e a plataforma fica com o mesmo que no Pix — a conta é a mesma.
+ */
+export function comissaoDaCerimonialista(p: { taxa_centavos: number; total_centavos: number; taxa_cartao_centavos?: number | null }): number {
+  const totalSemCartao = p.total_centavos - (p.taxa_cartao_centavos ?? 0);
+  return Math.max(0, Math.floor((p.taxa_centavos - tarifaDoPix(totalSemCartao)) / 2));
+}
+
 /** O preço que a lista mostra ao convidado (o que ele vai pagar). */
 export const precoNaLista = (precoCentavos: number, taxaDoCasal: boolean) =>
   valoresDoPresente(precoCentavos, taxaDoCasal).total;

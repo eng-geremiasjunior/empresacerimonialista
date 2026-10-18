@@ -43,6 +43,7 @@ const VISAO_COMERCIAL: Record<string, string> = {
 const RAIZ: Record<string, string> = {
   agenda: "Agenda",
   ajuda: "Ajuda",
+  carteira: "Carteira",
   estoque: "Estoque",
   assinatura: "Assinatura",
   calendario: "Calendário",

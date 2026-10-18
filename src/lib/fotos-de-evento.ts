@@ -74,4 +74,5 @@ export const FOTO_DA_AREA: Record<string, { src: string; posicao: string }> = {
   "/fornecedores": { src: "/primeiro-acesso/fornecedores.webp", posicao: "48% 42%" },
   "/cerimonialistas": { src: "/primeiro-acesso/equipe.webp", posicao: "50% 38%" },
   "/financeiro": { src: "/primeiro-acesso/financeiro.webp", posicao: "50% 50%" },
+  "/carteira": { src: "/primeiro-acesso/financeiro.webp", posicao: "50% 50%" },
 };

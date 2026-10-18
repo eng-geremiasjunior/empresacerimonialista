@@ -40,6 +40,7 @@ const SAUDE_VAZIA: Saude = {
   semDados: true,
 };
 import { getSaldoEmpresaMes } from "@/lib/supabase/financeiro-empresa";
+import { getCarteira } from "@/lib/supabase/carteira";
 import type { Saude } from "@/lib/saude-evento";
 import { getMeuCargo } from "@/lib/supabase/equipe";
 import { conhecaPorDentroDaConta } from "@/lib/conheca-por-dentro";
@@ -75,6 +76,18 @@ type UpcomingEvent = {
 };
 
 /** "hoje", "amanhã", "em 12 dias" — falar em tempo, não em data */
+// o cartão "Sua carteira": quatro valores lado a lado, o primeiro maior
+const CSS_DA_CARTEIRA = `
+.db-carteira{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0}
+.db-carteira>div{display:flex;flex-direction:column;gap:4px;padding:14px 16px 12px;border-left:1px solid var(--mo-linha,#D8D1C7);min-width:0}
+.db-carteira>div:first-child{border-left:0;padding-left:0}
+.db-carteira span{font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mo-cinza-1,#68645E)}
+.db-carteira b{font-family:var(--font-title),Inter,sans-serif;font-size:22px;font-weight:700;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;color:var(--mo-tinta,#252525)}
+.db-carteira b.db-carteira-forte{font-size:28px;color:var(--mo-destaque,#A34F3E)}
+.db-carteira em{font-style:normal;font-size:13px;font-weight:600;color:var(--mo-atraso,#9A3B2E)}
+@media (max-width:760px){.db-carteira{grid-template-columns:1fr 1fr}.db-carteira>div{padding-left:0;border-left:0;border-top:1px solid var(--mo-linha,#D8D1C7)}.db-carteira>div:nth-child(-n+2){border-top:0}}
+`;
+
 function quandoFalta(dataIso: string, hojeIso: string): string {
   const dias = Math.round(
     (Date.UTC(+dataIso.slice(0, 4), +dataIso.slice(5, 7) - 1, +dataIso.slice(8, 10)) -
@@ -192,6 +205,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
     typeCounts,
     performance,
     saldoEmpresa,
+    carteira,
   ] = await Promise.all([
     // Eram 10 chamadas de getSaudeEvento e cada uma faz 4 consultas: 40
     // idas ao banco para desenhar 10 anéis. getSaudeBulk faz as mesmas 4
@@ -208,6 +222,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
     getEventsByType(),
     getPerformanceMes(),
     getSaldoEmpresaMes(),
+    getCarteira(),
   ]);
   // Os números do negócio (faturamento, eventos em andamento, em
   // orçamento) são da dona; quem conduz um evento abre o Dashboard para
@@ -388,7 +403,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <style dangerouslySetInnerHTML={{ __html: CSS_DO_DASHBOARD }} />
+      <style dangerouslySetInnerHTML={{ __html: CSS_DO_DASHBOARD + CSS_DA_CARTEIRA }} />
       {/* a data, a frase e o filtro */}
       <header style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
         <div>
@@ -440,6 +455,31 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
         <Cartao titulo="Próximos 7 dias" conta={semana.length} pe={{ href: "/calendario", rotulo: "Ver a agenda" }}>
           <ListaDoRadar linhas={semana} vazio="Nada marcado para esta semana." />
         </Cartao>
+
+        {/* a Carteira da dona (18/10/2026): o dinheiro dela em destaque */}
+        {carteira && (
+          <Cartao titulo="Sua carteira" classe="db-inteiro" pe={{ href: "/carteira", rotulo: "Abrir a carteira" }}>
+            <div className="db-carteira">
+              <div>
+                <span>A receber das clientes</span>
+                <b className="db-carteira-forte">{formatCurrency(carteira.aReceber)}</b>
+                {carteira.atrasado > 0 && <em>{formatCurrency(carteira.atrasado)} atrasados</em>}
+              </div>
+              <div>
+                <span>Recebido este mês</span>
+                <b>{formatCurrency(carteira.recebidoMes)}</b>
+              </div>
+              <div>
+                <span>Fechado pela vitrine</span>
+                <b>{formatCurrency(carteira.vitrine.valor)}</b>
+              </div>
+              <div>
+                <span>Sua parte nos presentes</span>
+                <b>{formatCurrency(carteira.presentes.comissao)}</b>
+              </div>
+            </div>
+          </Cartao>
+        )}
 
         {/* só os 2 de "continuar de onde parou"; as áreas estão no menu ☰ */}
         {areaEventos && areaClientes && (
