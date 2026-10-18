@@ -31,6 +31,7 @@ export const MENU_DO_SITE: EntradaDoMenu[] = [
   {
     rotulo: "Funcionalidades",
     itens: [
+      { rotulo: "Comercial", href: "/funcionalidades/comercial", nota: "do pedido ao contrato" },
       { rotulo: "Roteiro do dia e fornecedores", href: "/funcionalidades/roteiro-do-dia", nota: "cada um com a hora dele" },
       { rotulo: "Portal da família", href: "/funcionalidades/portal-da-familia", nota: "a família acompanha tudo" },
       { rotulo: "Planejamento", href: "/funcionalidades/planejamento", nota: "as decisões, com prazo" },

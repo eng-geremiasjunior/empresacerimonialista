@@ -154,6 +154,40 @@ const DEB_ROTEIRO: PassoDaApresentacao = {
   recorte: r("deb-roteiro", 760, 608),
 };
 
+/* o comercial (18/10/2026): conquiste, feche, execute — telas da produção,
+   conta-vitrine, fotografadas por ferramentas/video/cenas/site-comercial.mjs */
+const PEDIDO: PassoDaApresentacao = {
+  id: "pedido",
+  rotulo: "Conquiste",
+  titulo: "A sua página recebe o pedido, com as perguntas que você escolher.",
+  texto: "Seu trabalho, suas fotos e um formulário que você monta: o que perguntar, o que é obrigatório e que tipo de serviço a pessoa procura.",
+  tela: "/site/tela-com-pedido.webp",
+  recorte: r("com-pedido", 720, 632),
+};
+const DIVULGAR: PassoDaApresentacao = {
+  id: "divulgar",
+  rotulo: "Divulgue",
+  titulo: "Um link para a bio, o WhatsApp e o cartão de visita.",
+  texto: "O texto pronto para a bio do Instagram e para o WhatsApp, e o QR Code para baixar e imprimir.",
+  tela: "/site/tela-com-divulgar.webp",
+  recorte: r("com-divulgar", 720, 490),
+};
+const OPORTUNIDADES: PassoDaApresentacao = {
+  id: "oportunidades",
+  rotulo: "Feche",
+  titulo: "Você vê quem precisa de retorno antes de esquecer.",
+  texto: "Cada pedido e cada proposta na coluna do que aconteceu: pediu, recebeu a proposta, abriu, aceitou. O próximo passo vem com a mensagem pronta para o seu WhatsApp.",
+  tela: "/site/tela-com-oportunidades.webp",
+  recorte: r("com-oportunidades", 720, 800),
+};
+const EXECUTE: PassoDaApresentacao = {
+  ...EVENTO,
+  id: "execute",
+  rotulo: "Execute",
+  titulo: "Aceitou, o evento já existe.",
+  texto: "A proposta é assinada pelo celular e o evento nasce com os dados da cliente e o que ela respondeu no pedido.",
+};
+
 export const PASSOS_DA_HOME: PassoDaApresentacao[] = [EVENTO, PLANEJAMENTO, FORNECEDORES, PORTAL, DIA, FINANCEIRO];
 
 /* ------------------------------------------------------------------ */
@@ -253,6 +287,36 @@ export const PAGINAS_POR_EVENTO: PaginaDoSite[] = [
 ];
 
 export const PAGINAS_POR_FUNCIONALIDADE: PaginaDoSite[] = [
+  {
+    slug: "comercial",
+    meta: {
+      titulo: "Comercial para cerimonialistas: do pedido ao contrato — eorganizei",
+      descricao: "Sua página recebe o pedido, cada proposta tem o próximo passo e o aceite cria o evento.",
+    },
+    sobre: "Comercial",
+    titulo: "Do pedido ao contrato. {O evento já nasce pronto.}",
+    sub: "Conquiste, feche e execute no mesmo sistema: a sua página recebe o pedido, cada proposta tem o próximo passo e o aceite cria o evento.",
+    apresentacao: {
+      sobre: "Conquiste, feche, execute",
+      titulo: "Da primeira mensagem ao evento criado.",
+      passos: [PEDIDO, DIVULGAR, OPORTUNIDADES, EXECUTE],
+    },
+    perguntas: [
+      ["Quem pede orçamento precisa criar conta?", "Não. A pessoa preenche o formulário da sua página, sem cadastro."],
+      [
+        "Posso mudar as perguntas do formulário?",
+        "Pode. Nome, WhatsApp, tipo, data e cidade são fixos; o resto você liga, desliga, e ainda cria até 10 perguntas suas.",
+      ],
+      [
+        "O sistema manda mensagem por mim?",
+        "Não. Ele mostra quem precisa de retorno e abre o seu WhatsApp com a mensagem pronta; quem envia é você.",
+      ],
+      [
+        "O que acontece quando a proposta é aceita?",
+        "A proposta é assinada pelo celular e o evento é criado com os dados da cliente e o que ela respondeu no pedido.",
+      ],
+    ],
+  },
   {
     slug: "roteiro-do-dia",
     meta: {
