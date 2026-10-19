@@ -72,6 +72,8 @@ type Corpo = {
   site?: unknown;
   /** quando o formulário foi aberto (ms), para o tempo mínimo */
   abertoEm?: unknown;
+  /** quanto tempo o formulário ficou aberto, medido no aparelho (ms) */
+  tempoAbertoMs?: unknown;
   origem?: unknown;
   utmSource?: unknown;
   utmMedium?: unknown;
@@ -123,12 +125,20 @@ export async function POST(request: NextRequest, { params }: { params: { slug: s
 
   // Isca preenchida ou envio rápido demais: responde como se tivesse dado
   // certo e não grava nada. Robô que recebe erro aprende a desviar.
-  const abertoEm = Number(corpo.abertoEm);
-  if (
-    (texto(corpo.site) ?? "").trim() !== "" ||
-    !Number.isFinite(abertoEm) ||
-    Date.now() - abertoEm < TEMPO_MINIMO_MS
-  ) {
+  //
+  // O tempo aberto vem MEDIDO NO APARELHO de quem pede (19/10/2026): antes
+  // a rota subtraía a hora do aparelho da hora do servidor, e um relógio
+  // adiantado (o do dono estava 3min41s à frente) fazia todo pedido parecer
+  // "rápido demais" e sumir calado, com "Pedido enviado" na tela. A conta
+  // antiga só vale para quem ainda tem a página velha aberta.
+  const tempoAberto =
+    typeof corpo.tempoAbertoMs === "number" && Number.isFinite(corpo.tempoAbertoMs)
+      ? corpo.tempoAbertoMs
+      : Date.now() - Number(corpo.abertoEm);
+  const isca = (texto(corpo.site) ?? "").trim() !== "";
+  if (isca || !Number.isFinite(tempoAberto) || tempoAberto < TEMPO_MINIMO_MS) {
+    // nunca calado de novo: o descarte fica no log (sem nada do que foi digitado)
+    console.warn("[eorg:pedido] descartado:", isca ? "isca" : `tempo ${Math.round(tempoAberto)}ms`);
     return recebido();
   }
 

@@ -181,6 +181,9 @@ export function usePedidoDaVitrine({
           respostas,
           site,
           abertoEm: abertoEm.current,
+          // quanto tempo o formulário ficou aberto, medido SÓ neste aparelho:
+          // relógio adiantado não pode virar "rápido demais" no servidor
+          tempoAbertoMs: Date.now() - abertoEm.current,
           origem: chegada.origem,
           utmSource: chegada.utmSource,
           utmMedium: chegada.utmMedium,

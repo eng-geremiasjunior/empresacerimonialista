@@ -57,6 +57,11 @@ export const MOLDURA_CSS = `
 .mo-lateral-dentro{overflow-y:auto}
 /* o submenu ao lado (18/10/2026, "igual o Google Ads"): nasce na altura do
    item, encostado no menu aberto (220px) */
+.mo-prim{position:relative}
+.mo-aviso{position:absolute; top:4px; right:14px; min-width:18px; height:18px; padding:0 5px; border-radius:9px;
+  background:var(--mo-destaque); color:#fff; font-size:11px; font-weight:700; line-height:18px; text-align:center}
+.mo-lateral:hover .mo-aviso,.mo-lateral:focus-within .mo-aviso{position:static; margin-left:auto}
+.mo-lateral:hover .mo-aviso + .mo-seta,.mo-lateral:focus-within .mo-aviso + .mo-seta{margin-left:6px}
 .mo-seta{display:none; margin-left:auto; font-size:16px; line-height:1; color:var(--mo-cinza-2)}
 .mo-lateral:hover .mo-seta,.mo-lateral:focus-within .mo-seta{display:block}
 .mo-prim-aberto{color:var(--mo-tinta); background:var(--mo-marfim)}

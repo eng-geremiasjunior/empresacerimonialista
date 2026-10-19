@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useNotifications } from "@/hooks/useNotifications";
 import { NotificationItem } from "@/components/NotificationItem";
 import type { NotificationRow } from "@/lib/notifications-db";
+import { linkDoAviso } from "@/lib/avisos-comerciais";
 
 /**
  * `texto`: a barra de status da moldura de programa (15/10/2026) não tem
@@ -34,8 +35,9 @@ export function NotificationBell({ variante = "icone" }: { variante?: "icone" | 
       markRead(notification.id);
     }
     setOpen(false);
-    if (notification.link) {
-      router.push(notification.link);
+    const destino = linkDoAviso(notification);
+    if (destino) {
+      router.push(destino);
     }
   }
 

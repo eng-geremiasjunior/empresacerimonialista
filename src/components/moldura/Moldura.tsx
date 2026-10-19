@@ -25,6 +25,7 @@ import { fraseDaProximaFesta, type AbaDeEvento } from "@/lib/abas-de-evento";
 import { MOLDURA_CSS } from "./moldura-css";
 import { Aparencia, SCRIPT_APARENCIA } from "./Aparencia";
 import { MenuDoCelular } from "./MenuDoCelular";
+import { useAvisosComerciais } from "@/hooks/useAvisosComerciais";
 import { ProvedorDaMoldura, useMoldura } from "./contexto";
 
 export type Congelamento = { congelada: boolean; congelaEm: string | null };
@@ -154,9 +155,12 @@ function LinkDoMenu({
   ativo,
   abre,
   aberto,
+  conta,
 }: {
   p: { label: string; href: string; icone: string; sub?: boolean };
   ativo: boolean;
+  /** avisos não vistos deste item (o Comercial) */
+  conta?: number;
   /** o item abre as partes ao lado: mostra a setinha */
   abre?: boolean;
   aberto?: boolean;
@@ -172,6 +176,11 @@ function LinkDoMenu({
         <path d={p.icone} />
       </svg>
       {p.label}
+      {!!conta && conta > 0 && (
+        <span className="mo-aviso" aria-label={`${conta} ${conta === 1 ? "aviso novo" : "avisos novos"}`}>
+          {conta > 9 ? "9+" : conta}
+        </span>
+      )}
       {abre && (
         <span className="mo-seta" aria-hidden>
           ›
@@ -363,6 +372,8 @@ function Casca(props: Props) {
   ];
 
   const ferramentas = ferramentasDoMenu(cargo);
+  // os avisos do Comercial (19/10/2026): o número no item, ao vivo
+  const avisosComerciais = useAvisosComerciais(ferramentas.some((f) => f.label === "Comercial"));
 
   // o submenu que abre ao passar o mouse (18/10/2026, pedido dele: "igual
   // o Google Ads faz"). Uma folga curta ao sair, para dar tempo de o
@@ -410,7 +421,13 @@ function Casca(props: Props) {
                   onFocus={(e) => abrirVoo(p, e.currentTarget)}
                   onBlur={fecharVoo}
                 >
-                  <LinkDoMenu p={p} ativo={p.ativo(pathname)} abre aberto={voo?.label === p.label} />
+                  <LinkDoMenu
+                    p={p}
+                    ativo={p.ativo(pathname)}
+                    abre
+                    aberto={voo?.label === p.label}
+                    conta={p.label === "Comercial" ? avisosComerciais : undefined}
+                  />
                 </div>
               ) : (
                 <LinkDoMenu key={p.href} p={p} ativo={p.ativo(pathname)} />
@@ -476,7 +493,7 @@ function Casca(props: Props) {
 
       {/* ===== celular: o modelo anterior (18/10/2026, pedido dele) ===== */}
       {celular && (
-        <MenuDoCelular cargo={cargo} userEmail={props.userEmail} avatarUrl={props.avatarUrl} signOut={props.signOut} />
+        <MenuDoCelular cargo={cargo} userEmail={props.userEmail} avatarUrl={props.avatarUrl} signOut={props.signOut} avisosComerciais={avisosComerciais} />
       )}
 
       {faixa && (

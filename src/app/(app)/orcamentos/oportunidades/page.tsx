@@ -18,6 +18,7 @@ import {
 } from "@/lib/comercial/oportunidades";
 import { EncerrarPedido } from "@/components/comercial/oportunidades/EncerrarPedido";
 import { MarcarReuniao } from "@/components/comercial/oportunidades/MarcarReuniao";
+import { AvisosVistos } from "@/components/comercial/oportunidades/AvisosVistos";
 import { formatCurrency } from "@/lib/format";
 import { hojeBR } from "@/lib/tempo";
 
@@ -167,6 +168,7 @@ export default async function OportunidadesPage() {
     <div className="mx-auto max-w-[1320px] space-y-5">
       <SubNav itens={VISOES_ORCAMENTOS} cargo={cargo} />
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
+      <AvisosVistos />
       <div className="op">
         <header>
           <h1 className="op-titulo">Oportunidades</h1>
