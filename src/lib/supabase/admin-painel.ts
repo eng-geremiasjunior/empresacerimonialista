@@ -178,6 +178,7 @@ export async function idsDeFamilia(db: Servico): Promise<Set<string>> {
 
 export type AcaoDoPainel =
   | "assinatura_alterada"
+  | "paleta_do_sistema"
   | "teste_prorrogado"
   | "conta_suspensa"
   | "conta_reativada"
@@ -1034,6 +1035,42 @@ export async function salvarPortaoDoTesteDb(input: {
     acao: "portao_do_teste",
     antes: antes ? { aberto: antes.aberto, dias: antes.dias } : null,
     depois: { aberto: input.aberto, dias },
+  });
+}
+
+// ------------------------------------------------------------------
+// A paleta do sistema (218, 19/10/2026)
+// ------------------------------------------------------------------
+// Uma linha só, como o portão: a chave da paleta. As cores moram em
+// src/lib/paletas-do-sistema.ts. Só o painel escreve, pela chave de
+// serviço; cada troca fica no registro do painel.
+
+export async function getPaletaDoSistema(): Promise<string | null | undefined> {
+  await exigirSuperAdmin();
+  const { data, error } = await servico().from("paleta_do_sistema").select("paleta").maybeSingle();
+  // sem a 218 aplicada: undefined, e a tela mostra o aviso
+  if (error) return undefined;
+  return (data as { paleta?: string } | null)?.paleta ?? null;
+}
+
+export async function salvarPaletaDoSistemaDb(paleta: string): Promise<void> {
+  const quem = await exigirSuperAdmin();
+  const db = servico();
+  const { data: antes } = await db.from("paleta_do_sistema").select("paleta").maybeSingle();
+  const { error } = await db
+    .from("paleta_do_sistema")
+    .upsert({ id: true, paleta, atualizado_em: new Date().toISOString() }, { onConflict: "id" });
+  if (error) {
+    throw new Error(
+      error.code === "42P01" || error.code === "PGRST205"
+        ? "A migração 218 ainda não foi aplicada neste banco."
+        : `Não foi possível salvar a paleta: ${error.message}`
+    );
+  }
+  await registrarAcaoAdmin(db, quem, {
+    acao: "paleta_do_sistema",
+    antes: antes ? { paleta: (antes as { paleta?: string }).paleta } : null,
+    depois: { paleta },
   });
 }
 

@@ -4,7 +4,9 @@
 // percebe sozinho.
 
 import Link from "next/link";
-import { getPortaoDoTeste, getSerieMensal } from "@/lib/supabase/admin-painel";
+import { getPaletaDoSistema, getPortaoDoTeste, getSerieMensal } from "@/lib/supabase/admin-painel";
+import { FormPaleta } from "../FormPaleta";
+import { paletaDe } from "@/lib/paletas-do-sistema";
 import {
   CATEGORIAS_DE_CUSTO,
   getAjustes,
@@ -58,7 +60,7 @@ export default async function AdminAjustesPage({
   const mesAtual = hoje.slice(0, 7);
   const mes = /^\d{4}-\d{2}$/.test(searchParams?.mes ?? "") ? searchParams!.mes! : mesAtual;
 
-  const [portao, serie, custos, caixa, ajustes, planos, degraus, assinam] = await Promise.all([
+  const [portao, serie, custos, caixa, ajustes, planos, degraus, assinam, paleta] = await Promise.all([
     getPortaoDoTeste(),
     getSerieMensal(mes, 1),
     getCustos(mes, mes),
@@ -67,6 +69,7 @@ export default async function AdminAjustesPage({
     getPlanosParaEditar(),
     getDegrausParaEditar(),
     getQuantasAssinam(),
+    getPaletaDoSistema(),
   ]);
 
   const doMes = custos.custos;
@@ -107,6 +110,14 @@ export default async function AdminAjustesPage({
           <FormPortaoDoTeste aberto={portao.aberto} dias={portao.dias} />
         ) : (
           <Aviso>O portão do teste grátis ainda não existe neste banco: aplique a migração 154.</Aviso>
+        )}
+      </Secao>
+
+      <Secao titulo="Paleta do sistema" nota="A cor do app para todas as contas. Vale na próxima tela que cada pessoa abrir; o vermelho de atraso não muda.">
+        {paleta === undefined ? (
+          <Aviso>A escolha de paleta ainda não existe neste banco: aplique a migração 218.</Aviso>
+        ) : (
+          <FormPaleta atual={paletaDe(paleta).chave} />
         )}
       </Secao>
 

@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { alternarTarefaLivre, apagarTarefaLivre } from "@/app/(app)/tarefas/actions";
 import { formatDate } from "@/lib/format";
 import {
   TASK_PRIORITY_DOT,
@@ -10,17 +11,28 @@ import {
   type TaskStatus,
 } from "@/lib/types";
 
-type ConsolidatedTask = TaskItem & { eventLabel: string | null };
+/** livre: a tarefa dela, sem evento (217) — marca feita e apaga aqui mesmo */
+export type ConsolidatedTask = TaskItem & { eventLabel: string | null; livre?: boolean };
 
-type TabKey = "hoje" | "amanha" | "atrasadas" | "concluidas" | "todas";
+type TabKey = "abertas" | "hoje" | "amanha" | "atrasadas" | "concluidas";
 
+// "Abertas" primeiro (19/10/2026): abrir em "Hoje" mostrava a tela vazia
+// sempre que nada vencia no dia, mesmo com tarefas pela frente
 const TABS: { key: TabKey; label: string }[] = [
+  { key: "abertas", label: "Abertas" },
   { key: "hoje", label: "Hoje" },
   { key: "amanha", label: "Amanhã" },
   { key: "atrasadas", label: "Atrasadas" },
   { key: "concluidas", label: "Concluídas" },
-  { key: "todas", label: "Todas" },
 ];
+
+const VAZIO: Record<TabKey, string> = {
+  abertas: "Nenhuma tarefa por fazer.",
+  hoje: "Nada vence hoje.",
+  amanha: "Nada vence amanhã.",
+  atrasadas: "Nada atrasado.",
+  concluidas: "Nenhuma tarefa concluída ainda.",
+};
 
 const STATUS_STYLES: Record<TaskStatus, string> = {
   pendente: "border-l-gray-400",
@@ -35,13 +47,21 @@ type Props = {
 };
 
 export function ConsolidatedTasks({ tasks, todayIso, tomorrowIso }: Props) {
-  const [tab, setTab] = useState<TabKey>("hoje");
+  const [tab, setTab] = useState<TabKey>("abertas");
   const router = useRouter();
+  const [, iniciar] = useTransition();
+  const mexer = (fn: () => Promise<unknown>) =>
+    iniciar(async () => {
+      await fn();
+      router.refresh();
+    });
 
   const filtered = useMemo(() => {
-    return tasks.filter((t) => {
+    const lista = tasks.filter((t) => {
       const open = t.status !== "concluido";
       switch (tab) {
+        case "abertas":
+          return open;
         case "hoje":
           return open && t.due_date === todayIso;
         case "amanha":
@@ -50,10 +70,10 @@ export function ConsolidatedTasks({ tasks, todayIso, tomorrowIso }: Props) {
           return open && t.due_date !== null && t.due_date < todayIso;
         case "concluidas":
           return t.status === "concluido";
-        case "todas":
-          return true;
       }
     });
+    // o que tem prazo vem primeiro, do mais antigo (o atrasado) ao mais novo
+    return [...lista].sort((a, b) => (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999"));
   }, [tasks, tab, todayIso, tomorrowIso]);
 
   return (
@@ -76,7 +96,7 @@ export function ConsolidatedTasks({ tasks, todayIso, tomorrowIso }: Props) {
 
       {filtered.length === 0 ? (
         <div className="rounded-xl border-2 border-dashed border-stone-300 bg-white p-10 text-center text-stone-500">
-          Nenhuma tarefa aqui.
+          {VAZIO[tab]}
         </div>
       ) : (
         <ul className="space-y-2.5">
@@ -85,6 +105,38 @@ export function ConsolidatedTasks({ tasks, todayIso, tomorrowIso }: Props) {
               task.status !== "concluido" &&
               task.due_date !== null &&
               task.due_date < todayIso;
+            if (task.livre) {
+              const feita = task.status === "concluido";
+              return (
+                <li
+                  key={task.id}
+                  className={`flex items-start gap-3 rounded-xl border border-stone-200 border-l-4 ${STATUS_STYLES[task.status]} bg-white p-4 shadow-sm`}
+                >
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 shrink-0"
+                    checked={feita}
+                    aria-label={feita ? "Marcar como não feita" : "Marcar como feita"}
+                    onChange={(e) => mexer(() => alternarTarefaLivre(task.id, e.target.checked))}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className={`font-medium ${feita ? "text-stone-400 line-through" : "text-stone-900"}`}>{task.title}</p>
+                    {task.due_date && (
+                      <p className={`mt-1 text-xs ${overdue ? "font-semibold text-red-600" : "text-stone-500"}`}>
+                        {formatDate(task.due_date)}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => mexer(() => apagarTarefaLivre(task.id))}
+                    className="shrink-0 rounded-md px-2 py-1 text-xs text-stone-400 hover:bg-stone-100 hover:text-stone-700"
+                  >
+                    Apagar
+                  </button>
+                </li>
+              );
+            }
             return (
               <li key={task.id}>
                 <button

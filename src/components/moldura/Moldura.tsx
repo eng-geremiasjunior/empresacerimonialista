@@ -26,6 +26,7 @@ import { MOLDURA_CSS } from "./moldura-css";
 import { Aparencia, SCRIPT_APARENCIA } from "./Aparencia";
 import { MenuDoCelular } from "./MenuDoCelular";
 import { useAvisosComerciais } from "@/hooks/useAvisosComerciais";
+import { paletaDe, variaveisDaPaleta } from "@/lib/paletas-do-sistema";
 import { ProvedorDaMoldura, useMoldura } from "./contexto";
 
 export type Congelamento = { congelada: boolean; congelaEm: string | null };
@@ -39,6 +40,8 @@ type Props = {
   proximos: AbaDeEvento[];
   /** "2026-10-15", em horário de Brasília (servidor) */
   hoje: string;
+  /** a paleta escolhida no painel do dono (218); nula = a padrão */
+  paleta?: string | null;
   congelamento: Congelamento | null;
   explicacoes: boolean;
   signOut: () => Promise<void>;
@@ -86,7 +89,10 @@ function itensDoEscritorio(cargo: string | null): Item[] {
   // estão nas "Ferramentas comerciais", no menu da esquerda (16 e
   // 18/10/2026); aqui fica o resto
   const itens: Item[] = [];
-  // Clientes foi para o menu primário (16/10/2026, pedido dele)
+  // Clientes foi para o menu primário (16/10/2026, pedido dele); o
+  // Financeiro veio da esquerda para cá (19/10/2026): a Carteira, no menu
+  // de cima, já mostra o dinheiro do dia a dia
+  if (visivel("/financeiro")) itens.push({ label: "Financeiro", href: "/financeiro" });
   if (visivel("/estoque")) itens.push({ label: "Estoque", href: "/estoque" });
   // Tarefas e Solicitações saem do menu quando o Hoje as absorver; até lá
   // ficam aqui, para nada sumir de quem usa.
@@ -104,6 +110,8 @@ type ItemDoMenuEsquerdo = {
   sub?: boolean;
   /** as partes que abrem ao lado quando o mouse passa (o jeito do Google Ads) */
   partes?: SubDoMenu[];
+  /** o grupo do menu da esquerda (19/10/2026): Comercial ou Operação */
+  grupo?: "Comercial" | "Operação";
 };
 
 /** Qual parte está aberta: a de endereço mais longo que casa (Propostas é
@@ -115,8 +123,10 @@ function parteAtiva(partes: SubDoMenu[], p: string): string | null {
 }
 
 /** O menu da esquerda (16/10/2026, aprovado por ele com a Wedy de
- *  referência; 18/10/2026: "Ferramentas comerciais", e o Comercial e os
- *  Fornecedores abrem as suas partes ao lado). */
+ *  referência; 18/10/2026: o Comercial e os Fornecedores abrem as partes
+ *  ao lado; 19/10/2026: dois grupos com nome verdadeiro — Comercial e
+ *  Operação. A Agenda subiu para o grupo de cima e o Financeiro foi para o
+ *  ☰, porque nenhum dos dois é ferramenta comercial). */
 function ferramentasDoMenu(cargo: string | null): ItemDoMenuEsquerdo[] {
   const podeCargo = (cargos?: string[]) => !cargos || (cargo !== null && cargos.includes(cargo));
   const pode = (href: string) => {
@@ -132,6 +142,7 @@ function ferramentasDoMenu(cargo: string | null): ItemDoMenuEsquerdo[] {
       icone: ICONES_DO_MENU.cotacoes,
       ativo: (p) => p.startsWith("/orcamentos") || p.startsWith("/catalogo"),
       partes,
+      grupo: "Comercial",
     });
   }
   if (pode("/fornecedores")) {
@@ -142,11 +153,9 @@ function ferramentasDoMenu(cargo: string | null): ItemDoMenuEsquerdo[] {
       icone: ICONES_DO_MENU.fornecedores,
       ativo: (p) => partes.some((s) => p === s.href || p.startsWith(`${s.href}/`)),
       partes,
+      grupo: "Operação",
     });
   }
-  itens.push({ label: "Agenda", href: "/calendario", icone: ICONES_DO_MENU.calendario, ativo: (p) => p.startsWith("/calendario") });
-  if (pode("/financeiro"))
-    itens.push({ label: "Financeiro", href: "/financeiro", icone: ICONES_DO_MENU.financeiro, ativo: (p) => p.startsWith("/financeiro") });
   return itens;
 }
 
@@ -368,6 +377,8 @@ function Casca(props: Props) {
       ? [{ label: "Modelos", href: "/configuracoes/modelo", ativo: pathname.startsWith("/configuracoes/modelo"), icone: ICONES_DO_MENU.catalogo, sub: true }]
       : []),
     { label: "Clientes", href: "/clientes", ativo: ativoExato(pathname, "/clientes"), icone: ICONES_DO_MENU.clientes },
+    // a Agenda (19/10/2026): uso de todo dia, recebe as reuniões do Comercial
+    { label: "Agenda", href: "/calendario", ativo: pathname.startsWith("/calendario"), icone: ICONES_DO_MENU.calendario },
     { label: "Novo evento", href: "/eventos/novo", ativo: noNovo, icone: "M12 4.5v15m7.5-7.5h-15" },
   ];
 
@@ -396,7 +407,7 @@ function Casca(props: Props) {
   useEffect(() => setVoo(null), [pathname]);
 
   return (
-    <div className="mo-raiz">
+    <div className="mo-raiz" style={variaveisDaPaleta(paletaDe(props.paleta)) as React.CSSProperties}>
       <script dangerouslySetInnerHTML={{ __html: SCRIPT_APARENCIA }} />
       <style dangerouslySetInnerHTML={{ __html: MOLDURA_CSS }} />
 
@@ -409,10 +420,13 @@ function Casca(props: Props) {
             <LinkDoMenu key={p.href} p={p} ativo={p.ativo} />
           ))}
         </nav>
-        {ferramentas.length > 0 && (
-          <nav className="mo-primario mo-ferramentas" aria-label="Ferramentas comerciais">
-            <span className="mo-grupo-rotulo">Ferramentas comerciais</span>
-            {ferramentas.map((p) =>
+        {(["Comercial", "Operação"] as const).map((grupo) => {
+          const doGrupo = ferramentas.filter((p) => p.grupo === grupo);
+          if (doGrupo.length === 0) return null;
+          return (
+          <nav key={grupo} className="mo-primario mo-ferramentas" aria-label={grupo}>
+            <span className="mo-grupo-rotulo">{grupo}</span>
+            {doGrupo.map((p) =>
               p.partes && p.partes.length > 1 ? (
                 <div
                   key={p.href}
@@ -434,7 +448,8 @@ function Casca(props: Props) {
               ),
             )}
           </nav>
-        )}
+          );
+        })}
         </div>
         {/* as partes do item, ao lado (fora do miolo, que rola e cortaria) */}
         {voo && (

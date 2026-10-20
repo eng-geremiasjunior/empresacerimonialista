@@ -28,13 +28,15 @@ export const metadata = { title: "Oportunidades — eorganizei" };
 const CONDUZEM = ["proprietaria", "coordenadora", "cerimonialista"];
 
 const CSS = `
-.op{display:flex;flex-direction:column;gap:18px;font-family:var(--font-ui),Inter,sans-serif;color:var(--mo-tinta,#252525)}
+.op{display:flex;flex-direction:column;gap:18px;font-family:var(--font-ui),Inter,sans-serif;color:var(--mo-tinta,#292D2C)}
+.op-cabeca{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
+.op-selo{display:inline-block;border-radius:999px;padding:4px 11px;font-size:12.5px;font-weight:600;background:var(--mo-destaque-claro,#E3ECEC);color:var(--mo-destaque-escuro,#1A3A3D)}
 .op-titulo{margin:0;font-family:var(--font-title),Inter,sans-serif;font-weight:700;font-size:28px;letter-spacing:-0.02em}
-.op-frase{margin:4px 0 0;font-size:15px;color:var(--mo-cinza-1,#68645E)}
-.op-frase b{font-weight:600;color:var(--mo-tinta,#252525)}
-.op-retorno{background:var(--mo-papel,#FFFEFC);border:1px solid var(--mo-linha,#D8D1C7);border-left:3px solid var(--mo-destaque,#A34F3E);border-radius:6px}
+.op-frase{margin:4px 0 0;font-size:15px;color:var(--mo-cinza-1,#4F5558)}
+.op-frase b{font-weight:600;color:var(--mo-tinta,#292D2C)}
+.op-retorno{background:var(--mo-papel,#FFFEFC);border:1px solid var(--mo-linha,#D8D1C7);border-left:3px solid var(--mo-destaque,#244C50);border-radius:6px}
 .op-retorno h2{margin:0;padding:12px 16px;font-size:15px;font-weight:600;border-bottom:1px solid var(--mo-linha,#D8D1C7);display:flex;gap:8px;align-items:baseline}
-.op-retorno h2 span{font-family:var(--font-mono),"IBM Plex Mono",monospace;font-size:12px;font-weight:500;color:var(--mo-cinza-1,#68645E)}
+.op-retorno h2 span{font-family:var(--font-mono),"IBM Plex Mono",monospace;font-size:12px;font-weight:500;color:var(--mo-cinza-1,#4F5558)}
 .op-retorno ul{list-style:none;margin:0;padding:0 16px}
 .op-retorno li{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:10px 0;border-bottom:1px solid var(--mo-linha,#D8D1C7)}
 .op-retorno li:last-child{border-bottom:0}
@@ -45,36 +47,36 @@ const CSS = `
 .op-coluna{background:var(--mo-nevoa,#F1EEE9);border:1px solid var(--mo-linha,#D8D1C7);border-radius:6px;padding:10px;min-width:0;display:flex;flex-direction:column;gap:8px}
 .op-coluna-cabeca{display:flex;align-items:baseline;gap:8px;padding:2px 4px 6px}
 .op-coluna-cabeca h2{margin:0;font-size:14px;font-weight:600}
-.op-conta{font-family:var(--font-mono),"IBM Plex Mono",monospace;font-size:12px;color:var(--mo-cinza-1,#68645E)}
-.op-coluna-valor{margin-left:auto;font-family:var(--font-mono),"IBM Plex Mono",monospace;font-size:12px;color:var(--mo-cinza-1,#68645E);font-variant-numeric:tabular-nums}
-.op-vazio{margin:0;padding:14px 6px;font-size:13.5px;color:var(--mo-cinza-1,#68645E)}
+.op-conta{font-family:var(--font-mono),"IBM Plex Mono",monospace;font-size:12px;color:var(--mo-cinza-1,#4F5558)}
+.op-coluna-valor{margin-left:auto;font-family:var(--font-mono),"IBM Plex Mono",monospace;font-size:12px;color:var(--mo-cinza-1,#4F5558);font-variant-numeric:tabular-nums}
+.op-vazio{margin:0;padding:14px 6px;font-size:13.5px;color:var(--mo-cinza-1,#4F5558)}
 .op-cartao{background:var(--mo-papel,#FFFEFC);border:1px solid var(--mo-linha,#D8D1C7);border-radius:6px;padding:12px;display:flex;flex-direction:column;gap:4px;min-width:0}
-.op-cartao.urgente{border-color:var(--mo-destaque,#A34F3E)}
+.op-cartao.urgente{border-color:var(--mo-destaque,#244C50)}
 .op-nome{display:flex;gap:8px;align-items:baseline;justify-content:space-between}
-.op-nome a{font-size:14.5px;font-weight:600;color:var(--mo-tinta,#252525);text-decoration:none;min-width:0;overflow-wrap:anywhere}
+.op-nome a{font-size:14.5px;font-weight:600;color:var(--mo-tinta,#292D2C);text-decoration:none;min-width:0;overflow-wrap:anywhere}
 .op-nome a:hover{text-decoration:underline;text-underline-offset:3px}
-.op-valor{flex:none;font-family:var(--font-mono),"IBM Plex Mono",monospace;font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--mo-tinta,#252525)}
-.op-evento{font-size:13px;color:var(--mo-cinza-1,#68645E)}
-.op-origem{font-size:12.5px;color:var(--mo-cinza-2,#736D65)}
-.op-reuniao{font-size:12.5px;font-weight:600;color:var(--mo-destaque-escuro,#86402F)}
-.op-linha{font-family:var(--font-mono),"IBM Plex Mono",monospace;font-size:12px;color:var(--mo-cinza-1,#68645E)}
+.op-valor{flex:none;font-family:var(--font-mono),"IBM Plex Mono",monospace;font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--mo-tinta,#292D2C)}
+.op-evento{font-size:13px;color:var(--mo-cinza-1,#4F5558)}
+.op-origem{font-size:12.5px;color:var(--mo-cinza-2,#6B7275)}
+.op-reuniao{font-size:12.5px;font-weight:600;color:var(--mo-destaque-escuro,#1A3A3D)}
+.op-linha{font-family:var(--font-mono),"IBM Plex Mono",monospace;font-size:12px;color:var(--mo-cinza-1,#4F5558)}
 .op-cartao.urgente .op-linha{color:var(--mo-atraso,#9A3B2E);font-weight:600}
 .op-acoes{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px}
-.op-acao{display:inline-block;border-radius:6px;padding:7px 12px;font-size:13px;font-weight:600;text-decoration:none;border:1px solid var(--mo-linha,#D8D1C7);color:var(--mo-tinta,#252525);background:var(--mo-papel,#FFFEFC)}
-.op-acao:hover{background:var(--mo-marfim,#F8F6F2)}
-.op-acao.forte{background:var(--mo-destaque,#A34F3E);border-color:var(--mo-destaque,#A34F3E);color:#fff}
-.op-acao.forte:hover{background:var(--mo-destaque-escuro,#86402F)}
-.op-acao:focus-visible,.op-encerrar:focus-visible{outline:2px solid var(--mo-destaque,#A34F3E);outline-offset:2px}
-.op-encerrar{border:0;background:none;padding:4px 2px;font-size:12.5px;color:var(--mo-cinza-1,#68645E);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.op-acao{display:inline-block;border-radius:6px;padding:7px 12px;font-size:13px;font-weight:600;text-decoration:none;border:1px solid var(--mo-linha,#D8D1C7);color:var(--mo-tinta,#292D2C);background:var(--mo-papel,#FFFEFC)}
+.op-acao:hover{background:var(--mo-marfim,#F7F5F0)}
+.op-acao.forte{background:var(--mo-destaque,#244C50);border-color:var(--mo-destaque,#244C50);color:#fff}
+.op-acao.forte:hover{background:var(--mo-destaque-escuro,#1A3A3D)}
+.op-acao:focus-visible,.op-encerrar:focus-visible{outline:2px solid var(--mo-destaque,#244C50);outline-offset:2px}
+.op-encerrar{border:0;background:none;padding:4px 2px;font-size:12.5px;color:var(--mo-cinza-1,#4F5558);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 .op-encerrar-caixa{width:100%;display:flex;flex-direction:column;gap:6px;margin-top:4px}
-.op-encerrar-caixa label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--mo-cinza-1,#68645E)}
-.op-encerrar-caixa input{border:1px solid var(--mo-linha,#D8D1C7);border-radius:6px;padding:7px 9px;font:inherit;font-size:13.5px;color:var(--mo-tinta,#252525);background:var(--mo-papel,#FFFEFC)}
+.op-encerrar-caixa label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--mo-cinza-1,#4F5558)}
+.op-encerrar-caixa input{border:1px solid var(--mo-linha,#D8D1C7);border-radius:6px;padding:7px 9px;font:inherit;font-size:13.5px;color:var(--mo-tinta,#292D2C);background:var(--mo-papel,#FFFEFC)}
 .op-encerrar-botoes{display:flex;gap:8px}
-.op-encerrar-botoes button{border-radius:6px;padding:6px 10px;font-size:13px;font-weight:600;border:1px solid var(--mo-tinta,#252525);background:var(--mo-tinta,#252525);color:#fff;cursor:pointer}
-.op-encerrar-botoes .op-voltar{background:none;color:var(--mo-tinta,#252525);border-color:var(--mo-linha,#D8D1C7)}
+.op-encerrar-botoes button{border-radius:6px;padding:6px 10px;font-size:13px;font-weight:600;border:1px solid var(--mo-tinta,#292D2C);background:var(--mo-tinta,#292D2C);color:#fff;cursor:pointer}
+.op-encerrar-botoes .op-voltar{background:none;color:var(--mo-tinta,#292D2C);border-color:var(--mo-linha,#D8D1C7)}
 .op-erro{margin:0;font-size:12.5px;color:var(--mo-atraso,#9A3B2E)}
-.op-rodape{font-size:13.5px;color:var(--mo-cinza-1,#68645E)}
-.op-rodape a{color:var(--mo-destaque,#A34F3E);font-weight:600;text-decoration:none}
+.op-rodape{font-size:13.5px;color:var(--mo-cinza-1,#4F5558)}
+.op-rodape a{color:var(--mo-destaque,#244C50);font-weight:600;text-decoration:none}
 .op-rodape a:hover{text-decoration:underline;text-underline-offset:3px}
 @media (max-width:1180px){.op-quadro{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:700px){.op-quadro{grid-template-columns:1fr}}
@@ -171,7 +173,14 @@ export default async function OportunidadesPage() {
       <AvisosVistos />
       <div className="op">
         <header>
-          <h1 className="op-titulo">Oportunidades</h1>
+          <div className="op-cabeca">
+            <h1 className="op-titulo">Oportunidades</h1>
+            {novos > 0 && (
+              <span className="op-selo">
+                {novos} {novos === 1 ? "novo pedido" : "novos pedidos"}
+              </span>
+            )}
+          </div>
           <p className="op-frase">
             {frase.length === 0
               ? "Nada esperando você agora."

@@ -145,7 +145,7 @@ export function MenuDoCelular({
                           <Icon name={item.icon} className="h-5 w-5 shrink-0" />
                           <span className="truncate">{item.label}</span>
                           {item.href === "/orcamentos" && avisosComerciais > 0 && (
-                            <span className="ml-auto rounded-full bg-[#A34F3E] px-2 py-0.5 text-xs font-semibold text-white">
+                            <span className="ml-auto rounded-full bg-[var(--mo-destaque)] px-2 py-0.5 text-xs font-semibold text-white">
                               {avisosComerciais > 9 ? "9+" : avisosComerciais}
                             </span>
                           )}

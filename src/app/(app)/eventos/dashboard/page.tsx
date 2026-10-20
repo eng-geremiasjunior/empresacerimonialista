@@ -81,9 +81,9 @@ const CSS_DA_CARTEIRA = `
 .db-carteira{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0}
 .db-carteira>div{display:flex;flex-direction:column;gap:4px;padding:14px 16px 12px;border-left:1px solid var(--mo-linha,#D8D1C7);min-width:0}
 .db-carteira>div:first-child{border-left:0;padding-left:0}
-.db-carteira span{font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mo-cinza-1,#68645E)}
-.db-carteira b{font-family:var(--font-title),Inter,sans-serif;font-size:22px;font-weight:700;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;color:var(--mo-tinta,#252525)}
-.db-carteira b.db-carteira-forte{font-size:28px;color:var(--mo-destaque,#A34F3E)}
+.db-carteira span{font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mo-cinza-1,#4F5558)}
+.db-carteira b{font-family:var(--font-title),Inter,sans-serif;font-size:22px;font-weight:700;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;color:var(--mo-tinta,#292D2C)}
+.db-carteira b.db-carteira-forte{font-size:28px;color:var(--mo-destaque,#244C50)}
 .db-carteira em{font-style:normal;font-size:13px;font-weight:600;color:var(--mo-atraso,#9A3B2E)}
 @media (max-width:760px){.db-carteira{grid-template-columns:1fr 1fr}.db-carteira>div{padding-left:0;border-left:0;border-top:1px solid var(--mo-linha,#D8D1C7)}.db-carteira>div:nth-child(-n+2){border-top:0}}
 `;

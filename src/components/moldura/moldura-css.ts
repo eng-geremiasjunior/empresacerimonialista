@@ -7,10 +7,14 @@ export const MOLDURA_CSS = `
 .mo-raiz{
   /* revisão visual de 18/10/2026 (pedido dele: "a cor pálida vai mudar").
      O DESTAQUE da interface vive aqui, num lugar só: trocar a cor de
-     destaque é trocar estas três linhas. O logo continua ameixa (marca). */
-  --mo-destaque:#A34F3E; --mo-destaque-escuro:#86402F; --mo-destaque-claro:#F6E8E3;
-  --mo-marfim:#F8F6F2; --mo-nevoa:#F0ECE5; --mo-papel:#FFFEFC;
-  --mo-tinta:#252525; --mo-cinza-1:#68645E; --mo-cinza-2:#736D65;
+     destaque é trocar estas três linhas. O logo continua ameixa (marca).
+     19/10/2026: o destaque passou de terracota a azul petróleo (#244C50),
+     o fundo a marfim #F7F5F0, o texto a grafite #292D2C e os cinzas de
+     apoio (texto secundário, menu) a cinza chumbo #4F5558, frio, que
+     conversa com o azul; as divisórias seguem em cinza quente. */
+  --mo-destaque:#244C50; --mo-destaque-escuro:#1A3A3D; --mo-destaque-claro:#E3ECEC;
+  --mo-marfim:#F7F5F0; --mo-nevoa:#F0ECE5; --mo-papel:#FFFEFC;
+  --mo-tinta:#292D2C; --mo-cinza-1:#4F5558; --mo-cinza-2:#6B7275;
   --mo-linha:#D8D1C7; --mo-ameixa:var(--mo-destaque); --mo-ameixa-clara:var(--mo-destaque-claro);
   --mo-marca:#6E3F5F;
   --mo-salvia:#55684A; --mo-atraso:#9A3B2E; --mo-veu:rgba(37,37,37,.32);
@@ -18,11 +22,11 @@ export const MOLDURA_CSS = `
      Instrument Sans fica para o portal e o site */
   --font-ui:var(--font-title);
   /* o cabeçalho e as fases do evento leem os --ev-*: mesma paleta */
-  --ev-marfim:#F8F6F2; --ev-nevoa:#F0ECE5; --ev-card-bg:#FFFEFC;
+  --ev-marfim:#F7F5F0; --ev-nevoa:#F0ECE5; --ev-card-bg:#FFFEFC;
   --ev-card-border:#D8D1C7; --ev-card-border-soft:#E2DCD3;
-  --ev-text-strong:#252525; --ev-text-body:#4F4B46; --ev-text-muted:#68645E; --ev-text-faint:#8C857C;
-  --ev-accent:#A34F3E; --ev-accent-hover:#86402F; --ev-accent-tint:#F6E8E3;
-  --ev-cta:#252525; --ev-ok:#55684A; --ev-ok-dark:#425238; --ev-late:#9A3B2E;
+  --ev-text-strong:#292D2C; --ev-text-body:#3F4447; --ev-text-muted:#4F5558; --ev-text-faint:#7A8083;
+  --ev-accent:#244C50; --ev-accent-hover:#1A3A3D; --ev-accent-tint:#E3ECEC;
+  --ev-cta:#292D2C; --ev-ok:#55684A; --ev-ok-dark:#425238; --ev-late:#9A3B2E;
   --mo-titulo:var(--font-title), Inter, sans-serif;
   --mo-texto:var(--font-ui), "Instrument Sans", sans-serif;
   --mo-mono:var(--font-mono), "IBM Plex Mono", monospace;

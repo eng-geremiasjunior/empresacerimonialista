@@ -55,6 +55,14 @@ async function proximosEventos(hoje: string): Promise<AbaDeEvento[]> {
   }));
 }
 
+/** A paleta escolhida no painel do dono (218); sem a tabela, a padrão. */
+async function paletaDoSistema(): Promise<string | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase.from("paleta_do_sistema").select("paleta").maybeSingle();
+  if (error) return null;
+  return (data as { paleta?: string } | null)?.paleta ?? null;
+}
+
 async function nomeDaEmpresa(): Promise<string | null> {
   const supabase = createClient();
   const { data } = await supabase.from("empresas").select("nome").limit(1).maybeSingle();
@@ -126,7 +134,7 @@ export default async function AppLayout({
   // (getAlertasCopiloto), e o layout deixa de fazer essas consultas a cada
   // troca de tela.
   const hoje = hojeBR();
-  const [congelamento, explicacoes, estadoDoGuia, proximos, empresaNome] =
+  const [congelamento, explicacoes, estadoDoGuia, proximos, empresaNome, paleta] =
     await Promise.all([
     congelamentoDaConta().catch(() => null),
     // O "?" ao lado de cada item do menu (159). Falha vira `true` dentro
@@ -137,6 +145,7 @@ export default async function AppLayout({
     getEstadoDoGuia(),
     proximosEventos(hoje).catch(() => []),
     nomeDaEmpresa().catch(() => null),
+    paletaDoSistema().catch(() => null),
   ]);
 
   return (
@@ -150,6 +159,7 @@ export default async function AppLayout({
         }
         proximos={proximos}
         hoje={hoje}
+        paleta={paleta}
         congelamento={congelamento}
         explicacoes={explicacoes}
         signOut={signOut}

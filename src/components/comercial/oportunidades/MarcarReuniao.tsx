@@ -18,7 +18,7 @@ export function MarcarReuniao({ tipo, id }: { tipo: "pedido" | "proposta"; id: s
 
   if (!aberto) {
     return (
-      <button type="button" className="op-encerrar" onClick={() => setAberto(true)}>
+      <button type="button" className="op-acao" onClick={() => setAberto(true)}>
         Marcar reunião
       </button>
     );

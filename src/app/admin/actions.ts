@@ -16,6 +16,7 @@ import {
   salvarAssinaturaDb,
   salvarGastoDb,
   salvarPortaoDoTesteDb,
+  salvarPaletaDoSistemaDb,
 } from "@/lib/supabase/admin-painel";
 import { prorrogarTesteDb, salvarNotaDb } from "@/lib/supabase/admin-contas";
 import { encerrarSemelhantesDb } from "@/lib/supabase/admin-semelhantes";
@@ -45,6 +46,7 @@ import {
   trocarEmailDoLoginDb,
 } from "@/lib/supabase/admin-logins";
 import { ehCodigoDoPlano } from "@/lib/planos";
+import { PALETAS } from "@/lib/paletas-do-sistema";
 
 export type ResultadoAdmin = { ok?: boolean; error?: string };
 
@@ -595,5 +597,26 @@ export async function agirNoLogin(_prev: ResultadoDoLogin, formData: FormData): 
   } catch (e) {
     console.error("[eorganizei:admin] login:", acao, e instanceof Error ? e.message.slice(0, 120) : "erro");
     return { error: e instanceof Error ? e.message : "Não foi possível agora." };
+  }
+}
+
+/**
+ * A paleta do sistema (218, 19/10/2026): o dono troca a cor do app pelo
+ * painel. Vale na próxima tela que cada pessoa abrir.
+ */
+export async function salvarPaletaDoSistema(
+  _prev: ResultadoAdmin,
+  formData: FormData
+): Promise<ResultadoAdmin> {
+  try {
+    const paleta = String(formData.get("paleta") ?? "");
+    if (!PALETAS.some((p) => p.chave === paleta)) return { error: "Escolha uma das paletas." };
+    await salvarPaletaDoSistemaDb(paleta);
+    revalidarPainel();
+    revalidatePath("/", "layout");
+    return { ok: true };
+  } catch (e) {
+    console.error("[vela:admin] salvarPaletaDoSistema:", e);
+    return { error: e instanceof Error ? e.message : "Não foi possível salvar." };
   }
 }

@@ -3,6 +3,7 @@
 import { revalidarTarefas } from "@/lib/revalidar-tarefas";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { criarTarefa } from "@/app/(app)/eventos/[id]/organizacao/actions";
 import type { TaskCategory, TaskPriority, TaskStatus } from "@/lib/types";
 
 export type TaskFormState = { error: string } | { success: true } | null;
@@ -100,3 +101,69 @@ export async function createTask(
 // como uma correção entra numa e não na outra.
 //
 // createTask fica: AcoesRapidas.tsx ainda a usa.
+
+/* ------------------------------------------------------------------ */
+/* A tarefa dela, com ou sem evento (217, 19/10/2026)                  */
+/* ------------------------------------------------------------------ */
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const DATA = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * "+ Tarefa" na tela de Tarefas: com evento escolhido, vira tarefa do
+ * evento (a mesma ação da Organização); sem evento, vira tarefa livre,
+ * dela. O prazo é opcional nos dois.
+ */
+export async function novaTarefa(entrada: {
+  titulo: string;
+  prazo?: string | null;
+  eventId?: string | null;
+}): Promise<{ ok: true } | { ok: false; erro: string }> {
+  const titulo = (entrada.titulo ?? "").trim().slice(0, 200);
+  if (!titulo) return { ok: false, erro: "Escreva a tarefa." };
+  const prazo = entrada.prazo && DATA.test(entrada.prazo) ? entrada.prazo : null;
+
+  if (entrada.eventId) {
+    if (!UUID.test(entrada.eventId)) return { ok: false, erro: "Evento não encontrado." };
+    const r = await criarTarefa(entrada.eventId, { titulo, dueDate: prazo });
+    return "error" in r && r.error ? { ok: false, erro: r.error } : { ok: true };
+  }
+
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+  const { error } = await supabase.from("tarefa_livre").insert({ titulo, prazo, criado_por: user.id });
+  if (error) {
+    console.error("[tarefas] livre:", error.code);
+    return {
+      ok: false,
+      erro:
+        error.code === "42P01" || error.code === "PGRST205"
+          ? "A tarefa sem evento ainda não está disponível. Avise a gente."
+          : "Não foi possível salvar a tarefa.",
+    };
+  }
+  revalidarTarefas();
+  return { ok: true };
+}
+
+export async function alternarTarefaLivre(id: string, feita: boolean): Promise<{ ok: boolean }> {
+  if (!UUID.test(id)) return { ok: false };
+  const { error } = await createClient()
+    .from("tarefa_livre")
+    .update({ feita_em: feita ? new Date().toISOString() : null })
+    .eq("id", id);
+  if (error) console.error("[tarefas] alternar livre:", error.code);
+  revalidarTarefas();
+  return { ok: !error };
+}
+
+export async function apagarTarefaLivre(id: string): Promise<{ ok: boolean }> {
+  if (!UUID.test(id)) return { ok: false };
+  const { error } = await createClient().from("tarefa_livre").delete().eq("id", id);
+  if (error) console.error("[tarefas] apagar livre:", error.code);
+  revalidarTarefas();
+  return { ok: !error };
+}
