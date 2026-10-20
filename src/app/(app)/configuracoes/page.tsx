@@ -158,6 +158,7 @@ export default async function ConfiguracoesPage({
         initialName={name}
         initialWhatsapp={whatsapp}
         initialAvisarWhatsapp={avisarWhatsapp}
+        initialResumoEmail={(user?.user_metadata as { resumo_tarefas_email?: boolean } | null)?.resumo_tarefas_email !== false}
         // token E template: com o token no ambiente e nenhum template
         // criado na Meta, o interruptor aparecia habilitado e o aviso não
         // chegava — a frase honesta já estava escrita e nunca aparecia

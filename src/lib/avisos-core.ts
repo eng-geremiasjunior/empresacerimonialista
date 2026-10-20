@@ -25,7 +25,8 @@ export type TarefaDeVespera = {
   dueDate: string;
   status: string;
   priority: string | null;
-  eventId: string;
+  /** nulo na tarefa dela, sem evento (217) */
+  eventId: string | null;
   /** nome do evento ou, na falta, da cliente */
   eventoNome: string | null;
   eventoStatus: string | null;

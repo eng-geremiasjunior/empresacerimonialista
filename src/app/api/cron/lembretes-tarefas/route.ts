@@ -99,7 +99,25 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: erroLeitura.message }, { status: 500 });
   }
 
-  if (!linhas || linhas.length === 0) {
+  // As tarefas dela, sem evento (217/219): a mesma janela, para quem criou.
+  // Falha aqui não derruba o aviso das tarefas dos eventos — só fica no log.
+  const { data: livresCru, error: erroLivres } = await supabase
+    .from("tarefa_livre")
+    .select("id, titulo, prazo, criado_por, empresa_id")
+    .in("prazo", [janela.hoje, janela.amanha])
+    .eq("avisada", false)
+    .is("feita_em", null);
+  if (erroLivres) console.error(`[vela:lembretes] tarefas livres: ${erroLivres.message}`);
+  const livres = (erroLivres ? [] : livresCru ?? []) as {
+    id: string;
+    titulo: string;
+    prazo: string;
+    criado_por: string | null;
+    empresa_id: string | null;
+  }[];
+  const idsLivres = new Set(livres.map((t) => t.id));
+
+  if ((!linhas || linhas.length === 0) && livres.length === 0) {
     return NextResponse.json({
       ok: true,
       ...janela,
@@ -114,7 +132,7 @@ export async function GET(request: NextRequest) {
   // Preferência: a responsável pelo evento (022). Sem ela, quem criou.
   // Nos dois casos a pessoa precisa estar ATIVA na equipe — quem saiu
   // não recebe mais aviso nenhum.
-  type Linha = (typeof linhas)[number];
+  type Linha = NonNullable<typeof linhas>[number];
   const evDe = (l: Linha) =>
     um(l.events as never) as {
       name?: string | null;
@@ -127,16 +145,16 @@ export async function GET(request: NextRequest) {
 
   const membroIds = [
     ...new Set(
-      linhas
+      (linhas ?? [])
         .map((l) => evDe(l)?.cerimonialista_responsavel_id)
         .filter((v): v is string => Boolean(v))
     ),
   ];
   const criadorIds = [
     ...new Set(
-      linhas
-        .map((l) => evDe(l)?.cerimonialista_id)
-        .filter((v): v is string => Boolean(v))
+      [...(linhas ?? []).map((l) => evDe(l)?.cerimonialista_id), ...livres.map((t) => t.criado_por)].filter(
+        (v): v is string => Boolean(v)
+      )
     ),
   ];
 
@@ -195,7 +213,30 @@ export async function GET(request: NextRequest) {
   const semDestinatario: string[] = [];
   const tarefas: TarefaDeVespera[] = [];
 
-  for (const l of linhas) {
+  for (const t of livres) {
+    const perfil = t.criado_por ? perfilPorUsuario.get(t.criado_por) : null;
+    if (!perfil) {
+      semDestinatario.push(t.id);
+      continue;
+    }
+    tarefas.push({
+      id: t.id,
+      titulo: t.titulo,
+      dueDate: t.prazo,
+      status: "pendente",
+      priority: null,
+      eventId: null,
+      eventoNome: null,
+      eventoStatus: null,
+      destinatarioUserId: perfil.userId,
+      destinatarioNome: perfil.nome,
+      destinatarioWhatsapp: perfil.whatsapp,
+      destinatarioAceitaWhatsapp: perfil.aceitaWhatsapp,
+      empresaId: t.empresa_id,
+    });
+  }
+
+  for (const l of linhas ?? []) {
     const ev = evDe(l);
     const cli = um((ev?.clients ?? null) as never) as { name?: string } | null;
 
@@ -229,17 +270,31 @@ export async function GET(request: NextRequest) {
   }
 
   // ---- montar e entregar ------------------------------------------
-  const lembretes = montarLembretes(tarefas, janela, appUrl());
+  // ?para=<id> (atrás da mesma senha): avisa só esta conta — para testar
+  // sem tocar o sino de mais ninguém
+  const so = request.nextUrl.searchParams.get("para");
+  const lembretes = montarLembretes(
+    so ? tarefas.filter((t) => t.destinatarioUserId === so) : tarefas,
+    janela,
+    appUrl()
+  );
   const entregas = [];
 
   for (const lembrete of lembretes) {
     const r = await entregarLembrete(supabase, lembrete);
 
     if (r.sino) {
-      const { error: erroMarca } = await supabase
-        .from("tasks")
-        .update({ notified: true })
-        .in("id", lembrete.tarefaIds);
+      // cada uma na sua tabela: a do evento em tasks, a dela em tarefa_livre
+      const doEvento = lembrete.tarefaIds.filter((id) => !idsLivres.has(id));
+      const dela = lembrete.tarefaIds.filter((id) => idsLivres.has(id));
+      if (dela.length > 0) {
+        const { error: erroLivre } = await supabase.from("tarefa_livre").update({ avisada: true }).in("id", dela);
+        if (erroLivre) console.error(`[vela:lembretes] marca livre falhou: ${erroLivre.message}`);
+      }
+      const { error: erroMarca } =
+        doEvento.length > 0
+          ? await supabase.from("tasks").update({ notified: true }).in("id", doEvento)
+          : { error: null };
       if (erroMarca) {
         // entregou mas não marcou: sai de novo amanhã. Duplicar um aviso
         // é menos ruim que engolir um — mas precisa aparecer no log.
@@ -269,7 +324,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     ok: true,
     ...janela,
-    lidas: linhas.length,
+    lidas: (linhas?.length ?? 0) + livres.length,
     avisadas,
     semDestinatario: semDestinatario.length,
     entregas,

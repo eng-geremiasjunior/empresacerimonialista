@@ -94,6 +94,9 @@ const ROTINAS = [
   // por último de propósito: só avisa do que vence amanhã depois que
   // concluir-eventos já tirou de cena os eventos que acabaram ontem
   "lembretes-tarefas",
+  // o resumo por e-mail (19/10/2026): depois do aviso da véspera no sino,
+  // com as mesmas regras de quem recebe
+  "resumo-tarefas",
   // a tela nunca recusa um cancelamento, nem quando a operadora falha —
   // esta rotina é quem insiste até a operadora confirmar, para não
   // existir "cancelada aqui, cobrando lá"

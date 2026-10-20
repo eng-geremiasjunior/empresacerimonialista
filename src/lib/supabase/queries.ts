@@ -337,6 +337,35 @@ async function aceitesParaConferir(
  * vira lista vazia e não derruba as outras espécies. A RLS já limita aos
  * cargos que respondem pedido; para a assistente a lista vem vazia.
  */
+/**
+ * As tarefas dela, sem evento (217), que passaram do prazo: só as de quem
+ * está logado — o bloco é "Precisa de você". Como pedidosSemResposta,
+ * nunca lança: sem a tabela, a lista segue sem elas.
+ */
+async function tarefasLivresAtrasadas(
+  supabase: ReturnType<typeof createClient>,
+  hoje: string
+): Promise<{ id: string; titulo: string; prazo: string }[]> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return [];
+    const { data, error } = await supabase
+      .from("tarefa_livre")
+      .select("id, titulo, prazo")
+      .eq("criado_por", user.id)
+      .is("feita_em", null)
+      .lt("prazo", hoje)
+      .order("prazo", { ascending: true })
+      .limit(50);
+    if (error) return [];
+    return (data ?? []) as { id: string; titulo: string; prazo: string }[];
+  } catch {
+    return [];
+  }
+}
+
 async function pedidosSemResposta(
   supabase: ReturnType<typeof createClient>
 ): Promise<{ id: string; nome: string; tipo_evento: EventType; created_at: string }[]> {
@@ -386,7 +415,7 @@ export const getAlertasCopiloto = cache(async function (): Promise<
   const fim = emDiasBR(7);
   const alertas: CopilotoAlerta[] = [];
 
-  const [tarefasRes, fornecedoresRes, pagamentosRes, aceites, pedidos] = await Promise.all([
+  const [tarefasRes, fornecedoresRes, pagamentosRes, aceites, pedidos, livres] = await Promise.all([
     supabase
       .from("tasks")
       .select("id, title, due_date, event_id, events!inner(date, status, archived)")
@@ -420,6 +449,7 @@ export const getAlertasCopiloto = cache(async function (): Promise<
     // conforme o fuso do processo.
     aceitesParaConferir(supabase, `${emDiasBR(-7)}T00:00:00-03:00`),
     pedidosSemResposta(supabase),
+    tarefasLivresAtrasadas(supabase, hoje),
   ]);
 
   // Falha de leitura não pode virar "Nada a cobrar por enquanto.". Essa
@@ -447,6 +477,17 @@ export const getAlertasCopiloto = cache(async function (): Promise<
       texto: `Tarefa atrasada: ${row.title}`,
       href: `/eventos/${row.event_id}/organizacao?tarefa=${row.id}`,
       ref: row.due_date,
+    });
+  }
+
+  // as tarefas dela, sem evento (217)
+  for (const row of livres) {
+    alertas.push({
+      id: `tarefa-livre-${row.id}`,
+      tipo: "tarefa",
+      texto: `Tarefa atrasada: ${row.titulo}`,
+      href: "/tarefas",
+      ref: row.prazo,
     });
   }
 

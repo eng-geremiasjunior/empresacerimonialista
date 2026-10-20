@@ -191,6 +191,21 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
     .neq("status", "concluido")
     .order("due_date", { ascending: true })
     .limit(filtro ? 60 : 30);
+  // as dela, sem evento (217): só sem filtro de evento; sem a tabela, nada
+  const {
+    data: { user: quemEsta },
+  } = await supabase.auth.getUser();
+  const { data: livresDaSemana } = filtro
+    ? { data: [] }
+    : await supabase
+        .from("tarefa_livre")
+        .select("id, titulo, prazo")
+        .is("feita_em", null)
+        .gte("prazo", todayIso)
+        .lte("prazo", fimDaSemana)
+        .eq("criado_por", quemEsta?.id ?? "")
+        .order("prazo", { ascending: true })
+        .limit(15);
 
   const [
     saudes,
@@ -348,7 +363,13 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
   // com filtro, só os alertas daquele evento (o endereço de cada um leva a ele)
   const doFiltro = filtro ? alertas.filter((a) => a.href.includes(filtro)) : alertas;
   const esperando = doFiltro.filter((a) => ESPERA.has(a.tipo)).slice(0, 8).map(linhaDoAlerta);
-  const atrasado = doFiltro.filter((a) => !ESPERA.has(a.tipo)).slice(0, 8).map(linhaDoAlerta);
+  // o que atrasou por último vem primeiro (19/10/2026): é o mais acionável;
+  // o atrasado de semanas continua inteiro em Tarefas → Atrasadas
+  const atrasado = doFiltro
+    .filter((a) => !ESPERA.has(a.tipo))
+    .sort((a, b) => b.ref.localeCompare(a.ref))
+    .slice(0, 8)
+    .map(linhaDoAlerta);
   const nomeDoEvento = (e: { name: string | null; type: EventType; clients: { name: string } | null } | null) =>
     e ? e.name || e.clients?.name || EVENT_TYPE_LABELS[e.type] : null;
   const semana: LinhaDoRadar[] = [
@@ -377,6 +398,15 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
       evento: nomeDoEvento(t.events),
       texto: t.title,
       href: t.event_id ? `/eventos/${t.event_id}/organizacao` : "/tarefas",
+    })),
+    ...((livresDaSemana ?? []) as { id: string; titulo: string; prazo: string }[]).map((t) => ({
+      chave: `tl-${t.id}`,
+      ref: t.prazo,
+      quando: diaCurto(t.prazo),
+      destaque: t.prazo === todayIso,
+      evento: null,
+      texto: t.titulo,
+      href: "/tarefas",
     })),
   ]
     .sort((a, b) => a.ref.localeCompare(b.ref))

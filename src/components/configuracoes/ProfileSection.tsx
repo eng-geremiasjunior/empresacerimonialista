@@ -11,6 +11,7 @@ import {
   validateAvatarFile,
 } from "@/lib/avatar";
 import { definirAvisoWhatsapp } from "@/lib/avisos-cliente";
+import { createClient as createBrowserClient } from "@/lib/supabase/client";
 
 const inputClass =
   "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-100";
@@ -22,6 +23,8 @@ type Props = {
   initialAvisarWhatsapp: boolean;
   /** o número oficial do sistema já existe no ambiente */
   transporteWhatsappAtivo: boolean;
+  /** o resumo diário de tarefas por e-mail (19/10/2026); ligado por padrão */
+  initialResumoEmail?: boolean;
   email: string;
   initials: string;
 };
@@ -32,6 +35,7 @@ export function ProfileSection({
   initialWhatsapp,
   initialAvisarWhatsapp,
   transporteWhatsappAtivo,
+  initialResumoEmail = true,
   email,
   initials,
 }: Props) {
@@ -45,6 +49,7 @@ export function ProfileSection({
   const [name, setName] = useState(initialName);
   const [whatsapp, setWhatsapp] = useState(initialWhatsapp);
   const [avisar, setAvisar] = useState(initialAvisarWhatsapp);
+  const [resumoEmail, setResumoEmail] = useState(initialResumoEmail);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{
     kind: "error" | "ok";
@@ -111,6 +116,19 @@ export function ProfileSection({
       return;
     }
     setAvisar(r.ativo);
+  }
+
+  // O resumo de tarefas por e-mail mora na conta (user_metadata): é da
+  // pessoa, não da empresa. Salva na hora, como o aviso do WhatsApp.
+  async function handleResumoEmail(proximo: boolean) {
+    const anterior = resumoEmail;
+    setResumoEmail(proximo);
+    setMessage(null);
+    const { error } = await createBrowserClient().auth.updateUser({ data: { resumo_tarefas_email: proximo } });
+    if (error) {
+      setResumoEmail(anterior);
+      setMessage({ kind: "error", text: "Não foi possível mudar o resumo agora." });
+    }
   }
 
   async function handleSaveName(e: React.FormEvent) {
@@ -274,6 +292,20 @@ export function ProfileSection({
             disabled
             className={`${inputClass} cursor-not-allowed bg-gray-50 text-gray-500`}
           />
+          <label className="mt-3 flex cursor-pointer items-start gap-2.5">
+            <input
+              type="checkbox"
+              checked={resumoEmail}
+              onChange={(e) => handleResumoEmail(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-gray-900 accent-gray-900"
+            />
+            <span className="text-sm text-gray-700">
+              Resumo das tarefas por e-mail
+              <span className="mt-0.5 block text-xs text-gray-400">
+                Às 9h, só quando algo vence amanhã ou atrasou.
+              </span>
+            </span>
+          </label>
         </div>
 
         {message && (
