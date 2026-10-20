@@ -286,6 +286,11 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
       };
     });
 
+  // o banner do portal dos noivos (20/10/2026): "Liberar para um casal" abre
+  // o Portal da cliente do próximo casamento, quando houver um
+  const proximoCasamento =
+    eventsWithHealth.find(({ event }) => !event.exemplo && event.type === "casamento")?.event.id ?? null;
+
   // "O que você encontra aqui": Eventos e Clientes ficam só enquanto não
   // há última tela / último evento neste navegador
   const areas = areasDoSistema(cargo);
@@ -479,7 +484,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
 
         {/* o slide dos próximos eventos — pedido dele: fica */}
         <div className="db-largo" style={{ minWidth: 0 }}>
-          <ProximosEventosCard eventos={proximos} />
+          <ProximosEventosCard
+            eventos={proximos}
+            anuncio={cargo !== "assistente" ? { liberarHref: proximoCasamento ? `/eventos/${proximoCasamento}/area-do-cliente` : null } : null}
+          />
         </div>
 
         <Cartao titulo="Próximos 7 dias" conta={semana.length} pe={{ href: "/calendario", rotulo: "Ver a agenda" }}>

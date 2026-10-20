@@ -32,17 +32,46 @@ export type ProximoEvento = {
   sugestoes: { texto: string; acao: string; href: string }[];
 };
 
-export function ProximosEventosCard({ eventos }: { eventos: ProximoEvento[] }) {
-  const album = useAlbum(eventos.length);
-  if (eventos.length === 0) return null;
+/** O banner do portal dos noivos (20/10/2026, pedido dele): o primeiro
+ *  slide, antes dos eventos. A foto é o site de verdade do casal de
+ *  exemplo (modelo Clássico), fotografado em tela larga. */
+export type AnuncioDoPortal = {
+  /** o Portal da cliente do próximo casamento; nulo sem casamento à frente */
+  liberarHref: string | null;
+};
 
-  const slides: SlideDoAlbum[] = eventos.map((e) => ({
-    chave: e.id,
-    foto: e.foto,
-    externa: e.externa,
-    selo: e.quando,
-    rotulo: e.titulo,
-  }));
+const FOTO_DO_ANUNCIO: FotoDeEvento = {
+  src: "/site/banner-portal-noivos.webp",
+  posicao: "50% 35%",
+  zoom: 1,
+  foco: "50% 50%",
+  alt: "O site do casamento de um casal, com o monograma e os nomes",
+};
+
+export function ProximosEventosCard({
+  eventos,
+  anuncio = null,
+}: {
+  eventos: ProximoEvento[];
+  anuncio?: AnuncioDoPortal | null;
+}) {
+  const extra = anuncio ? 1 : 0;
+  const album = useAlbum(eventos.length + extra);
+  if (eventos.length + extra === 0) return null;
+
+  const slides: SlideDoAlbum[] = [
+    ...(anuncio
+      ? [{ chave: "anuncio-portal", foto: FOTO_DO_ANUNCIO, selo: "PORTAL DOS NOIVOS", rotulo: "Site e lista de presentes" }]
+      : []),
+    ...eventos.map((e) => ({
+      chave: e.id,
+      foto: e.foto,
+      externa: e.externa,
+      selo: e.quando,
+      rotulo: e.titulo,
+    })),
+  ];
+  const anuncioAtivo = !!anuncio && album.visivel === 0;
 
   return (
     <section
@@ -64,8 +93,58 @@ export function ProximosEventosCard({ eventos }: { eventos: ProximoEvento[] }) {
       {/* os textos de todos os eventos empilhados no mesmo lugar: a altura
           do cartão é a do mais alto, e nada pula quando a foto troca */}
       <div style={{ display: "grid", minWidth: 0, flex: 1 }}>
+        {anuncio && (
+          <div
+            aria-hidden={!anuncioAtivo}
+            style={{
+              gridArea: "1 / 1",
+              padding: 24,
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+              justifyContent: "center",
+              minWidth: 0,
+              visibility: anuncioAtivo ? "visible" : "hidden",
+              opacity: anuncioAtivo ? 1 : 0,
+              transition: "opacity 600ms ease",
+            }}
+          >
+            <span style={{ fontFamily: F_MONO, fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", color: "var(--ev-accent)" }}>
+              PARA OS SEUS CASAIS
+            </span>
+            <h2 style={{ margin: 0, fontFamily: F_TITLE, fontWeight: 600, fontSize: 22, lineHeight: 1.25, letterSpacing: "-0.02em", color: TINTA }}>
+              Site do casamento e lista de presentes, no portal dos noivos.
+            </h2>
+            <ul style={{ listStyle: "none", margin: "2px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+              {[
+                "O casal escolhe o modelo do site e publica pelo celular.",
+                "Presentes em Pix ou cartão em até 6x. Metade da taxa é sua.",
+              ].map((t) => (
+                <li key={t} style={{ display: "flex", gap: 8, fontSize: 13.5, lineHeight: 1.45, color: CORPO }}>
+                  <span aria-hidden style={{ flex: "none", width: 5, height: 5, borderRadius: 999, background: "var(--ev-accent)", marginTop: 8 }} />
+                  {t}
+                </li>
+              ))}
+            </ul>
+            <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 16px" }}>
+              <Link
+                href="/conhecer"
+                tabIndex={anuncioAtivo ? undefined : -1}
+                className="ev-btn-primario ev-foco"
+                style={{ display: "inline-flex", alignItems: "center", height: 40, padding: "0 18px", borderRadius: 10, background: "var(--ev-accent)", color: "#fff", fontSize: 14, fontWeight: 600, transition: "background 140ms ease" }}
+              >
+                Ver o portal dos noivos
+              </Link>
+              {anuncio.liberarHref && (
+                <Link href={anuncio.liberarHref} tabIndex={anuncioAtivo ? undefined : -1} style={{ fontSize: 13.5, fontWeight: 600, color: "#3B3835" }}>
+                  Liberar para um casal →
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
         {eventos.map((e, i) => {
-          const ativo = i === album.visivel;
+          const ativo = i + extra === album.visivel;
           return (
             <div
               key={e.id}
