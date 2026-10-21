@@ -31,7 +31,9 @@ export type MotivoDaFalha =
   /** outro erro do provedor, ou a resposta veio vazia */
   | "provedor"
   /** a chamada nem chegou (rede, tempo esgotado) */
-  | "rede";
+  | "rede"
+  /** a resposta passou do tamanho máximo e veio cortada no meio */
+  | "cortada";
 
 export type RespostaDaIa = { ok: true; conteudo: string } | { ok: false; motivo: MotivoDaFalha };
 
@@ -52,8 +54,10 @@ export function configuracaoDa(tarefa: TarefaDaIa): Configuracao {
   };
 }
 
-/** o gpt-oss pensa antes de responder; "low" basta para extrair */
-const extraDo = (modelo: string) => (modelo.includes("gpt-oss") ? { reasoning_effort: "low" } : {});
+const extraDo = (modelo: string, raciocinio: Raciocinio) => (modelo.includes("gpt-oss") ? { reasoning_effort: raciocinio } : {});
+
+/** quanto o modelo pensa antes de responder: "low" basta para extrair; montar pede mais */
+export type Raciocinio = "low" | "medium" | "high";
 
 const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -71,6 +75,10 @@ export async function chamarModelo(p: {
   mensagens: MensagemDaIa[];
   temperatura?: number;
   tarefa?: TarefaDaIa;
+  raciocinio?: Raciocinio;
+  /** teto da resposta (o raciocínio do gpt-oss conta junto). Na Groq
+   *  gratuita o teto entra na conta do limite por minuto: não exagerar. */
+  maxTokens?: number;
 }): Promise<RespostaDaIa> {
   const cfg = configuracaoDa(p.tarefa ?? "texto");
   if (!cfg.apiKey) {
@@ -81,7 +89,8 @@ export async function chamarModelo(p: {
   const corpo = JSON.stringify({
     model: cfg.modelo,
     temperature: p.temperatura ?? 0,
-    ...extraDo(cfg.modelo),
+    ...extraDo(cfg.modelo, p.raciocinio ?? "low"),
+    ...(p.maxTokens ? { max_completion_tokens: p.maxTokens } : {}),
     messages: p.mensagens,
   });
 
@@ -116,6 +125,7 @@ export async function chamarModelo(p: {
         tokensEntrada: Number(data?.usage?.prompt_tokens) || 0,
         tokensSaida: Number(data?.usage?.completion_tokens) || 0,
       });
+      if (data?.choices?.[0]?.finish_reason === "length") return { ok: false, motivo: "cortada" };
       const conteudo = String(data?.choices?.[0]?.message?.content ?? "").trim();
       return conteudo ? { ok: true, conteudo } : { ok: false, motivo: "provedor" };
     }

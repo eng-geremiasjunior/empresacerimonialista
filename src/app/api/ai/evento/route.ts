@@ -28,6 +28,7 @@ const FALHA: Record<Exclude<MotivoDaFalha, "sem_chave">, string> = {
   chave: "chave do assistente rejeitada pelo provedor.",
   provedor: "o assistente não respondeu agora. Tente de novo.",
   rede: "falha ao falar com o assistente.",
+  cortada: "a resposta ficou longa demais. Pergunte de um jeito mais curto.",
 };
 
 type Msg = { role: "user" | "assistant"; content: string };

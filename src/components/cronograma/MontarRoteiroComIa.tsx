@@ -139,8 +139,13 @@ export function MontarRoteiroComIa({
   }
 
   const ops = pacote?.operacoes ?? [];
-  const entram = ops.filter((o) => o.op === "criar") as Extract<OperacaoDoRoteiro, { op: "criar" }>[];
-  const mudam = ops.filter((o) => o.op === "mudar") as Extract<OperacaoDoRoteiro, { op: "mudar" }>[];
+  // na ordem do dia, não na ordem do texto
+  const entram = (ops.filter((o) => o.op === "criar") as Extract<OperacaoDoRoteiro, { op: "criar" }>[]).sort((a, b) =>
+    a.horario.localeCompare(b.horario)
+  );
+  const mudam = (ops.filter((o) => o.op === "mudar") as Extract<OperacaoDoRoteiro, { op: "mudar" }>[]).sort((a, b) =>
+    (a.depois.horario ?? "").localeCompare(b.depois.horario ?? "")
+  );
   const saem = ops.filter((o) => o.op === "remover") as Extract<OperacaoDoRoteiro, { op: "remover" }>[];
   const desfazivel = feito ? { trabalhoId: feito.trabalhoId } : ultimo;
 
@@ -230,6 +235,7 @@ export function MontarRoteiroComIa({
                     <span className="block text-sm text-gray-900">
                       {o.titulo}
                       {o.fornecedorNome && <span className="text-stone-500"> · {o.fornecedorNome}</span>}
+                      {o.responsavel && <span className="text-stone-500"> · {o.responsavel}</span>}
                     </span>
                     {o.origem === "padrao" ? (
                       <span className="block text-[12px] text-stone-500">do seu padrão · confirmar com a família</span>

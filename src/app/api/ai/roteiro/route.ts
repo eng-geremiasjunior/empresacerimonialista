@@ -101,6 +101,9 @@ export async function POST(req: Request) {
   const r = await chamarModelo({
     rota: "roteiro",
     userId: user.id,
+    // medido em 21/10 com o PDF de teste: "médio" gasta o dobro e não
+    // acertou mais o responsável; a regra do código resolve
+    maxTokens: 6000,
     mensagens: [
       {
         role: "system",
@@ -125,6 +128,12 @@ export async function POST(req: Request) {
   if (!r.ok) {
     // a leitura não aconteceu: não conta na cota
     await reserva.devolver();
+    if (r.motivo === "cortada") {
+      return NextResponse.json(
+        { error: "O cronograma é longo demais para ler de uma vez. Leia em duas partes (manhã e tarde)." },
+        { status: 422 }
+      );
+    }
     return r.motivo === "sem_chave"
       ? NextResponse.json({ error: "A leitura está indisponível agora." }, { status: 503 })
       : NextResponse.json({ error: "A leitura não respondeu agora. Tente de novo em instantes." }, { status: 502 });

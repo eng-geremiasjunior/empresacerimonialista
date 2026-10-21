@@ -21,10 +21,17 @@ export async function extrairTextoDePdf(
   for (let i = 1; i <= paginas; i++) {
     const pg = await doc.getPage(i);
     const tc = await pg.getTextContent();
+    // com as quebras de linha do próprio PDF (21/10/2026): sem elas, a
+    // página inteira virava uma linha só e as colunas de uma tabela se
+    // misturavam ("motorista Seu Raimundo  Pai da noiva")
     texto +=
       tc.items
-        .map((it) => ("str" in it ? (it as { str: string }).str : ""))
-        .join(" ") + "\n";
+        .map((it) => {
+          const t = it as { str?: string; hasEOL?: boolean };
+          return typeof t.str === "string" ? t.str + (t.hasEOL ? "\n" : " ") : "";
+        })
+        .join("")
+        .replace(/[ \t]+\n/g, "\n") + "\n";
   }
   return texto;
 }
