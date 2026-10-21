@@ -135,6 +135,7 @@ export function instrucaoDoRoteiro(p: {
     `Regras:\n` +
     regraDaFonte +
     `- "atual": o número do item do ROTEIRO ATUAL quando for o MESMO momento do dia (ex.: "Entrada da noiva" e "Entrada da noiva com o pai"). Se não houver, null. Cada número aparece no máximo uma vez.\n` +
+    `- Montar, testar, chegar ou preparar um serviço NÃO é o mesmo momento em que ele acontece: "Som e iluminação: o DJ monta a pista" não é "Abertura da pista"; "Chegada do buffet" não é "Jantar". Na dúvida, "atual": null.\n` +
     `- "fornecedor": o número da lista quando o texto cita aquele fornecedor pelo nome, ou quando o item é claramente do serviço daquela categoria (ex.: "chegada do buffet" → o buffet). Na dúvida, null.\n` +
     `- "responsavel": a pessoa que o texto aponta como responsável pelo item, pelo nome ou pelo papel (ex.: "Carla", "pai da noiva"). Quem só é citado no item (um motorista, um fornecedor) não é responsável. Na dúvida, null.\n` +
     `- "horario" no formato 24 h, "HH:MM".\n` +
