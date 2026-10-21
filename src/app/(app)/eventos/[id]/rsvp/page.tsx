@@ -122,6 +122,12 @@ export default async function RsvpPage({ params }: { params: { id: string } }) {
       link,
       whatsEntrada: wa(`Olá, ${c.nome}! Este é o seu acesso de entrada para ${nomeDoEvento}. Apresente o QR Code na recepção: ${link}`),
       whatsPedido: wa(`Olá, ${c.nome}! Confirme sua presença em ${nomeDoEvento} por este link: ${link}`),
+      // a 2ª vez da rodada de confirmação (21/10/2026): o lembrete
+      whatsLembrete: wa(
+        `Olá, ${c.nome}! Passando para lembrar da confirmação de presença em ${nomeDoEvento}${
+          ev.date ? `, no dia ${String(ev.date).slice(8, 10)}/${String(ev.date).slice(5, 7)}` : ""
+        }. É rapidinho, por este link: ${link}`
+      ),
       entrada,
       pedido: x?.pedido_enviado_em ? { via: x.pedido_enviado_via ?? "whatsapp", em: x.pedido_enviado_em } : null,
     };

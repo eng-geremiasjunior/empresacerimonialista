@@ -62,6 +62,8 @@ import { AreasDoPainel } from "@/components/dashboard/AreasDoPainel";
 import { areasDoSistema } from "@/lib/areas-do-painel";
 import { fotoDoTipo } from "@/lib/fotos-de-evento";
 import { estadoDaIa } from "@/lib/ia-ajustes";
+import { pode } from "@/lib/recursos-do-plano";
+import { meuNivelDoPlano } from "@/lib/supabase/nivel-do-plano";
 import { DIAS_DA_SEMANA_DO_EVENTO } from "@/lib/ia-semana";
 
 type UpcomingEvent = {
@@ -369,7 +371,34 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
   });
   // com filtro, só os alertas daquele evento (o endereço de cada um leva a ele)
   const doFiltro = filtro ? alertas.filter((a) => a.href.includes(filtro)) : alertas;
-  const esperando = doFiltro.filter((a) => ESPERA.has(a.tipo)).slice(0, 8).map(linhaDoAlerta);
+  // RSVP (21/10/2026, prioridade dele): o evento a até 45 dias com
+  // convidados sem resposta. Regra, sem IA; só nos planos com RSVP.
+  const rsvpPerto = (pode(await meuNivelDoPlano(), "rsvp") ? upcoming : []).filter(
+    (e) => !e.exemplo && e.date <= somarDias(todayIso, 45)
+  );
+  const semResposta = new Map<string, number>();
+  if (rsvpPerto.length) {
+    const { data } = await supabase
+      .from("evento_convidado")
+      .select("event_id")
+      .eq("confirmacao", "aguardando")
+      .in(
+        "event_id",
+        rsvpPerto.map((e) => e.id)
+      )
+      .limit(5000);
+    for (const c of (data ?? []) as { event_id: string }[]) semResposta.set(c.event_id, (semResposta.get(c.event_id) ?? 0) + 1);
+  }
+  const linhasDoRsvp: LinhaDoRadar[] = rsvpPerto
+    .filter((e) => (semResposta.get(e.id) ?? 0) > 0)
+    .map((e) => ({
+      chave: `rsvp-${e.id}`,
+      quando: diaCurto(e.date),
+      evento: e.name || e.clients?.name || EVENT_TYPE_LABELS[e.type],
+      texto: `RSVP: ${semResposta.get(e.id)} sem resposta`,
+      href: `/eventos/${e.id}/rsvp`,
+    }));
+  const esperando = [...linhasDoRsvp, ...doFiltro.filter((a) => ESPERA.has(a.tipo)).map(linhaDoAlerta)].slice(0, 8);
   // o que atrasou por último vem primeiro (19/10/2026): é o mais acionável;
   // o atrasado de semanas continua inteiro em Tarefas → Atrasadas
   const atrasado = doFiltro

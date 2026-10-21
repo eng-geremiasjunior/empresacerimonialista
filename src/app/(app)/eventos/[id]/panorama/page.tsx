@@ -197,7 +197,7 @@ export default async function PanoramaPage({ params }: { params: { id: string } 
           </Cartao>
         )}
 
-        <Cartao titulo="Convidados" pe={{ href: `${base}/rsvp`, rotulo: "Abrir os convidados" }}>
+        <Cartao titulo="Convidados" pe={{ href: `${base}/rsvp`, rotulo: "Abrir o RSVP" }}>
           {d.convidadosRsvp.total === 0 ? (
             <p className="pn-vazio">{d.convidados ? `Previstos ${d.convidados}; a lista ainda não entrou.` : "A lista ainda não entrou."}</p>
           ) : (

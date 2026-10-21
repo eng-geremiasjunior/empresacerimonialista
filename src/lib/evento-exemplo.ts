@@ -24,7 +24,7 @@ export const AREAS_DO_EXEMPLO = [
   { area: "fornecedores", rotulo: "Fornecedores", caminho: "/fornecedores" },
   { area: "roteiro", rotulo: "Roteiro do dia", caminho: "/roteiro" },
   { area: "financeiro", rotulo: "Financeiro", caminho: "/financeiro" },
-  { area: "rsvp", rotulo: "Convidados", caminho: "/rsvp" },
+  { area: "rsvp", rotulo: "RSVP", caminho: "/rsvp" },
   // o portal da família (27/09/2026): não é tela do evento — abre numa aba
   // nova, com o login dela, como a cliente vê. caminho null = botão
   { area: "portal", rotulo: "Portal da família", caminho: null },

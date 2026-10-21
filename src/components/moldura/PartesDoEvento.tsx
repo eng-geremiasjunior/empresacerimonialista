@@ -87,7 +87,8 @@ export function PartesDoEvento({
     { label: "Roteiro", seg: "roteiro" },
     ...(cerimonia ? [{ label: "Cerimônia", seg: "cortejo" }] : []),
     { label: "Fornecedores", seg: "fornecedores" },
-    ...(convidados ? [{ label: "Convidados", seg: "rsvp" }] : []),
+    // "RSVP" (21/10/2026): é a palavra que o público busca e o mercado usa
+    ...(convidados ? [{ label: "RSVP", seg: "rsvp" }] : []),
     // em evidência (16/10/2026): a cerimonialista abre e manda o acesso à cliente
     { label: "Portal da cliente", seg: "area-do-cliente" },
   ];

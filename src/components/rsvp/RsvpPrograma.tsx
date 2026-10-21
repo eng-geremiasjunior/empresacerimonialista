@@ -28,6 +28,7 @@ import type { ChegadasProps } from "@/components/operacao/ChegadasAoVivo";
 import { CSS_RSVP } from "@/components/rsvp/rsvp-programa.css";
 import { PortariaDoRsvp } from "@/components/rsvp/PortariaDoRsvp";
 import { ImportarLista } from "@/components/rsvp/ImportarLista";
+import { RodadaDeConfirmacao, filaDaRodada } from "@/components/rsvp/RodadaDeConfirmacao";
 import {
   abrirOuFecharConfirmacoes,
   adicionarConvidadoPelaEquipe,
@@ -53,6 +54,8 @@ export type ConvidadoNaFicha = {
   link: string;
   whatsEntrada: string | null;
   whatsPedido: string | null;
+  /** a mensagem da 2ª vez em diante, na rodada de confirmação */
+  whatsLembrete?: string | null;
   /** a entrada (o QR): entrou, viu ao confirmar, mandada por e-mail ou WhatsApp, ou ainda não tem */
   entrada: { estado: "entrou" | "viu" | "email" | "whatsapp" | "sem"; em: string | null };
   pedido: { via: "whatsapp" | "email"; em: string } | null;
@@ -153,6 +156,7 @@ export function RsvpPrograma({
   const [sel, setSel] = useState<string | null>(null);
   const [folha, setFolha] = useState<"ficha" | "portaria" | null>(null);
   const [importando, setImportando] = useState(false);
+  const [rodando, setRodando] = useState(false);
   const [novoNome, setNovoNome] = useState("");
   const [novoTel, setNovoTel] = useState("");
   const [aviso, setAviso] = useState<{ texto: string; ok?: boolean } | null>(null);
@@ -493,6 +497,11 @@ export function RsvpPrograma({
             </span>
           )}
           <div className="rp-acoes">
+            {filaDaRodada(convidados).length > 0 && (
+              <button type="button" className="rp-btn p" onClick={() => setRodando(true)}>
+                Rodada de confirmação ({filaDaRodada(convidados).length})
+              </button>
+            )}
             <button type="button" className="rp-btn" onClick={() => setImportando(true)}>
               Importar lista
             </button>
@@ -734,6 +743,30 @@ export function RsvpPrograma({
         </FolhaNoCelular>
       )}
 
+      {rodando && (
+        <RodadaDeConfirmacao
+          convidados={convidados}
+          soEmail={convidados.filter((c) => c.confirmacao === "aguardando" && !c.whatsPedido && c.email).length}
+          aoAbrir={(c, link) => {
+            window.open(link, "_blank", "noopener,noreferrer");
+            const agora = new Date().toISOString();
+            setConvidados((l) => l.map((x) => (x.id === c.id ? { ...x, pedido: { via: "whatsapp", em: agora } } : x)));
+            void registrarWhatsappAberto(eventId, c.id, "pedido");
+          }}
+          aoResponder={(c, r) => responder(c, r)}
+          aoMandarEmails={() => {
+            setRodando(false);
+            emLote(
+              "pedido",
+              convidados.filter((c) => c.confirmacao === "aguardando" && !c.whatsPedido && c.email).map((c) => c.id)
+            );
+          }}
+          aoFechar={() => {
+            setRodando(false);
+            router.refresh();
+          }}
+        />
+      )}
       {importando && (
         <ImportarLista
           eventId={eventId}
