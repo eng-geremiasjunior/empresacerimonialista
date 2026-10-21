@@ -10,6 +10,7 @@
 // fechado por padrão, nunca aberto por esquecimento.
 
 import "server-only";
+import { ajustesDaLinha, type AjustesDaIa } from "@/lib/ia-cota";
 import { createClient as createSupabase } from "@supabase/supabase-js";
 import { createClient as createSessao } from "@/lib/supabase/server";
 import {
@@ -179,6 +180,7 @@ export async function idsDeFamilia(db: Servico): Promise<Set<string>> {
 export type AcaoDoPainel =
   | "assinatura_alterada"
   | "paleta_do_sistema"
+  | "ia_ajustes"
   | "teste_prorrogado"
   | "conta_suspensa"
   | "conta_reativada"
@@ -1071,6 +1073,61 @@ export async function salvarPaletaDoSistemaDb(paleta: string): Promise<void> {
     acao: "paleta_do_sistema",
     antes: antes ? { paleta: (antes as { paleta?: string }).paleta } : null,
     depois: { paleta },
+  });
+}
+
+// ------------------------------------------------------------------
+// A IA que trabalha (220, 21/10/2026)
+// ------------------------------------------------------------------
+// O interruptor, a liberação (só contas da casa ou todas) e as cotas por
+// plano. Uma linha só; só o painel escreve, e cada mudança fica no
+// registro. Sem a 220: undefined, e a tela mostra o aviso.
+
+export async function getAjustesDaIaAdmin(): Promise<
+  { ajustes: AjustesDaIa; usoDoMes: { contas: number; acoes: number } } | undefined
+> {
+  await exigirSuperAdmin();
+  const db = servico();
+  const { data, error } = await db.from("ia_ajustes").select("*").eq("id", 1).maybeSingle();
+  if (error || !data) return undefined;
+  const hoje = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+  const { data: consumo } = await db.from("ia_consumo").select("acoes").eq("mes", `${hoje.slice(0, 7)}-01`);
+  const linhas = ((consumo ?? []) as { acoes: number | null }[]).map((l) => Number(l.acoes) || 0);
+  return {
+    ajustes: ajustesDaLinha(data as Record<string, unknown>),
+    usoDoMes: { contas: linhas.filter((n) => n > 0).length, acoes: linhas.reduce((s, n) => s + n, 0) },
+  };
+}
+
+export async function salvarAjustesDaIaDb(a: AjustesDaIa): Promise<void> {
+  const quem = await exigirSuperAdmin();
+  const db = servico();
+  const { data: antes } = await db.from("ia_ajustes").select("*").eq("id", 1).maybeSingle();
+  const depois = {
+    ligada: a.ligada,
+    para_todos: a.paraTodos,
+    cota_essencial: a.cotaEssencial,
+    cota_profissional: a.cotaProfissional,
+    cota_master: a.cotaMaster,
+    audio_min_essencial: a.audioMinEssencial,
+    audio_min_profissional: a.audioMinProfissional,
+    audio_min_master: a.audioMinMaster,
+  };
+  const { error } = await db
+    .from("ia_ajustes")
+    .upsert({ id: 1, ...depois, atualizado_em: new Date().toISOString() }, { onConflict: "id" });
+  if (error) {
+    throw new Error(
+      error.code === "42P01" || error.code === "PGRST205"
+        ? "A migração 220 ainda não foi aplicada neste banco."
+        : `Não foi possível salvar: ${error.message}`
+    );
+  }
+  const a0 = antes as Record<string, unknown> | null;
+  await registrarAcaoAdmin(db, quem, {
+    acao: "ia_ajustes",
+    antes: a0 ? Object.fromEntries(Object.keys(depois).map((k) => [k, a0[k]])) : null,
+    depois,
   });
 }
 

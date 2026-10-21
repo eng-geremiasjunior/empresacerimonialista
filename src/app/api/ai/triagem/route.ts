@@ -10,7 +10,7 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { registrarUsoDaIa } from "@/lib/registro-do-sistema";
+import { chamarModelo, lerJsonDaIa } from "@/lib/ia-provedor";
 import { possoUsar } from "@/lib/supabase/nivel-do-plano";
 import { getTriagem } from "@/lib/supabase/triagem";
 import { redigirParaExtracao } from "@/lib/contrato-extracao-core";
@@ -19,9 +19,6 @@ import { ehEscolha, type EscolhaDaTriagem } from "@/lib/triagem";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const BASE_URL = process.env.LLAMA_BASE_URL || "https://api.groq.com/openai/v1";
-const MODELO = process.env.LLAMA_MODEL || "openai/gpt-oss-120b";
-const EXTRA = MODELO.includes("gpt-oss") ? { reasoning_effort: "low" } : {};
 const TETO_TEXTO = 4000;
 const UUID = /^[0-9a-f-]{36}$/i;
 
@@ -58,12 +55,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Escreva um resumo do que já está resolvido e do que falta." }, { status: 400 });
   }
 
-  const apiKey = process.env.LLAMA_API_KEY;
-  if (!apiKey) {
-    console.error("LLAMA_API_KEY ausente no ambiente desta implantação");
-    return NextResponse.json({ error: "Leitura indisponível agora." }, { status: 503 });
-  }
-
   // os itens vêm da sessão (RLS): só o que ela enxerga deste evento
   const itens = await getTriagem(eventId);
   if (itens.length === 0) return NextResponse.json({ marcacoes: [] });
@@ -71,40 +62,21 @@ export async function POST(req: Request) {
   const { texto: limpo } = redigirParaExtracao(texto.slice(0, TETO_TEXTO));
 
   try {
-    const res = await fetch(`${BASE_URL}/chat/completions`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: MODELO,
-        temperature: 0,
-        ...EXTRA,
-        messages: [
-          { role: "system", content: instrucao(lista) },
-          { role: "user", content: `=== RESUMO ===\n${limpo}\n=== FIM ===` },
-        ],
-      }),
-    });
-    if (!res.ok) {
-      await registrarUsoDaIa({ userId: user.id, rota: "triagem", ok: false });
-      console.error(`triagem: provedor respondeu ${res.status}`);
-      return NextResponse.json({ error: "A leitura não respondeu agora. Tente de novo." }, { status: 502 });
-    }
-    const data = await res.json();
-    await registrarUsoDaIa({
-      userId: user.id,
+    const r = await chamarModelo({
       rota: "triagem",
-      ok: true,
-      tokensEntrada: Number(data?.usage?.prompt_tokens) || 0,
-      tokensSaida: Number(data?.usage?.completion_tokens) || 0,
+      userId: user.id,
+      mensagens: [
+        { role: "system", content: instrucao(lista) },
+        { role: "user", content: `=== RESUMO ===\n${limpo}\n=== FIM ===` },
+      ],
     });
-    const cru = String(data.choices?.[0]?.message?.content ?? "")
-      .replace(/^```(?:json)?/m, "")
-      .replace(/```\s*$/m, "")
-      .trim();
-    let json: unknown;
-    try {
-      json = JSON.parse(cru);
-    } catch {
+    if (!r.ok) {
+      return r.motivo === "sem_chave"
+        ? NextResponse.json({ error: "Leitura indisponível agora." }, { status: 503 })
+        : NextResponse.json({ error: "A leitura não respondeu agora. Tente de novo." }, { status: 502 });
+    }
+    const json = lerJsonDaIa(r.conteudo);
+    if (json === null) {
       return NextResponse.json({ error: "A leitura veio ilegível. Tente de novo." }, { status: 502 });
     }
 

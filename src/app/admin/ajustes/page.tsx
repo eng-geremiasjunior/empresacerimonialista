@@ -4,8 +4,9 @@
 // percebe sozinho.
 
 import Link from "next/link";
-import { getPaletaDoSistema, getPortaoDoTeste, getSerieMensal } from "@/lib/supabase/admin-painel";
+import { getAjustesDaIaAdmin, getPaletaDoSistema, getPortaoDoTeste, getSerieMensal } from "@/lib/supabase/admin-painel";
 import { FormPaleta } from "../FormPaleta";
+import { FormIa } from "../FormIa";
 import { paletaDe } from "@/lib/paletas-do-sistema";
 import {
   CATEGORIAS_DE_CUSTO,
@@ -60,7 +61,7 @@ export default async function AdminAjustesPage({
   const mesAtual = hoje.slice(0, 7);
   const mes = /^\d{4}-\d{2}$/.test(searchParams?.mes ?? "") ? searchParams!.mes! : mesAtual;
 
-  const [portao, serie, custos, caixa, ajustes, planos, degraus, assinam, paleta] = await Promise.all([
+  const [portao, serie, custos, caixa, ajustes, planos, degraus, assinam, paleta, ia] = await Promise.all([
     getPortaoDoTeste(),
     getSerieMensal(mes, 1),
     getCustos(mes, mes),
@@ -70,6 +71,7 @@ export default async function AdminAjustesPage({
     getDegrausParaEditar(),
     getQuantasAssinam(),
     getPaletaDoSistema(),
+    getAjustesDaIaAdmin(),
   ]);
 
   const doMes = custos.custos;
@@ -118,6 +120,17 @@ export default async function AdminAjustesPage({
           <Aviso>A escolha de paleta ainda não existe neste banco: aplique a migração 218.</Aviso>
         ) : (
           <FormPaleta atual={paletaDe(paleta).chave} />
+        )}
+      </Secao>
+
+      <Secao
+        titulo="Inteligência artificial"
+        nota="Os trabalhos novos de IA. Enquanto não estiver liberada para todas as contas, só as contas da casa veem. As 7 leituras que já existiam não mudam."
+      >
+        {ia === undefined ? (
+          <Aviso>A IA que trabalha ainda não existe neste banco: aplique a migração 220.</Aviso>
+        ) : (
+          <FormIa atual={ia.ajustes} usoDoMes={ia.usoDoMes} />
         )}
       </Secao>
 

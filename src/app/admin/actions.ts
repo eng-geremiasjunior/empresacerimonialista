@@ -17,6 +17,7 @@ import {
   salvarGastoDb,
   salvarPortaoDoTesteDb,
   salvarPaletaDoSistemaDb,
+  salvarAjustesDaIaDb,
 } from "@/lib/supabase/admin-painel";
 import { prorrogarTesteDb, salvarNotaDb } from "@/lib/supabase/admin-contas";
 import { encerrarSemelhantesDb } from "@/lib/supabase/admin-semelhantes";
@@ -597,6 +598,36 @@ export async function agirNoLogin(_prev: ResultadoDoLogin, formData: FormData): 
   } catch (e) {
     console.error("[eorganizei:admin] login:", acao, e instanceof Error ? e.message.slice(0, 120) : "erro");
     return { error: e instanceof Error ? e.message : "Não foi possível agora." };
+  }
+}
+
+/**
+ * A IA que trabalha (220, 21/10/2026): ligar, liberar para todos e as
+ * cotas por plano. Vale na próxima ação de cada conta.
+ */
+export async function salvarAjustesDaIa(_prev: ResultadoAdmin, formData: FormData): Promise<ResultadoAdmin> {
+  try {
+    const num = (campo: string) => {
+      const n = Number(formData.get(campo));
+      if (!Number.isInteger(n) || n < 0 || n > 100000) throw new Error("As cotas são números inteiros de 0 a 100.000.");
+      return n;
+    };
+    await salvarAjustesDaIaDb({
+      ligada: formData.get("ligada") === "on",
+      paraTodos: formData.get("para_todos") === "on",
+      cotaEssencial: num("cota_essencial"),
+      cotaProfissional: num("cota_profissional"),
+      cotaMaster: num("cota_master"),
+      audioMinEssencial: num("audio_min_essencial"),
+      audioMinProfissional: num("audio_min_profissional"),
+      audioMinMaster: num("audio_min_master"),
+    });
+    revalidarPainel();
+    revalidatePath("/", "layout");
+    return { ok: true };
+  } catch (e) {
+    console.error("[eorganizei:admin] salvarAjustesDaIa:", e instanceof Error ? e.message.slice(0, 120) : "erro");
+    return { error: e instanceof Error ? e.message : "Não foi possível salvar." };
   }
 }
 

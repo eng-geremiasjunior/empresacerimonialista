@@ -9,16 +9,12 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { registrarUsoDaIa } from "@/lib/registro-do-sistema";
+import { chamarModelo, lerJsonDaIa } from "@/lib/ia-provedor";
 import { PAPEIS_DO_CORTEJO, normalizarEntradasLidas } from "@/lib/cortejo-casamento";
 import { possoUsar } from "@/lib/supabase/nivel-do-plano";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
-
-const BASE_URL = process.env.LLAMA_BASE_URL || "https://api.groq.com/openai/v1";
-const MODELO = process.env.LLAMA_MODEL || "openai/gpt-oss-120b";
-const EXTRA = MODELO.includes("gpt-oss") ? { reasoning_effort: "low" } : {};
 
 // um cortejo cabe em poucas páginas; 30 mil caracteres é folga
 const TETO_TEXTO = 30_000;
@@ -69,48 +65,22 @@ export async function POST(req: Request) {
   const { data: ev } = await supabase.from("events").select("type").eq("id", eventId).maybeSingle();
   if (!ev || ev.type !== "casamento") return NextResponse.json({ error: "Evento não encontrado." }, { status: 404 });
 
-  const apiKey = process.env.LLAMA_API_KEY;
-  if (!apiKey) {
-    console.error("LLAMA_API_KEY ausente no ambiente desta implantação");
-    return NextResponse.json({ error: "A leitura está indisponível agora." }, { status: 503 });
-  }
-
   try {
-    const res = await fetch(`${BASE_URL}/chat/completions`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: MODELO,
-        temperature: 0,
-        ...EXTRA,
-        messages: [
-          { role: "system", content: INSTRUCAO },
-          { role: "user", content: `=== TEXTO ===\n${texto.slice(0, TETO_TEXTO)}\n=== FIM DO TEXTO ===` },
-        ],
-      }),
-    });
-    if (!res.ok) {
-      await registrarUsoDaIa({ userId: user.id, rota: "cortejo", ok: false });
-      console.error(`cortejo: provedor respondeu ${res.status} — ${(await res.text().catch(() => "")).slice(0, 300)}`);
-      return NextResponse.json({ error: "A leitura não respondeu agora. Tente de novo em instantes." }, { status: 502 });
-    }
-    const data = await res.json();
-    // só a contagem que o provedor devolve; nada da pergunta nem da resposta
-    await registrarUsoDaIa({
-      userId: user.id,
+    const r = await chamarModelo({
       rota: "cortejo",
-      ok: true,
-      tokensEntrada: Number(data?.usage?.prompt_tokens) || 0,
-      tokensSaida: Number(data?.usage?.completion_tokens) || 0,
+      userId: user.id,
+      mensagens: [
+        { role: "system", content: INSTRUCAO },
+        { role: "user", content: `=== TEXTO ===\n${texto.slice(0, TETO_TEXTO)}\n=== FIM DO TEXTO ===` },
+      ],
     });
-    const cru = String(data.choices?.[0]?.message?.content ?? "")
-      .replace(/^```(?:json)?/m, "")
-      .replace(/```\s*$/m, "")
-      .trim();
-    let json: unknown;
-    try {
-      json = JSON.parse(cru);
-    } catch {
+    if (!r.ok) {
+      return r.motivo === "sem_chave"
+        ? NextResponse.json({ error: "A leitura está indisponível agora." }, { status: 503 })
+        : NextResponse.json({ error: "A leitura não respondeu agora. Tente de novo em instantes." }, { status: 502 });
+    }
+    const json = lerJsonDaIa(r.conteudo);
+    if (json === null) {
       return NextResponse.json({ error: "A leitura voltou bagunçada. Tente de novo." }, { status: 502 });
     }
     const entradas = normalizarEntradasLidas((json as { entradas?: unknown })?.entradas);

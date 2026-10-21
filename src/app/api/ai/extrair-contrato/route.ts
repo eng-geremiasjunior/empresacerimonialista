@@ -13,7 +13,7 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { registrarUsoDaIa } from "@/lib/registro-do-sistema";
+import { chamarModelo, lerJsonDaIa } from "@/lib/ia-provedor";
 import { possoUsar } from "@/lib/supabase/nivel-do-plano";
 import {
   normalizarProposta,
@@ -23,10 +23,6 @@ import {
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
-
-const BASE_URL = process.env.LLAMA_BASE_URL || "https://api.groq.com/openai/v1";
-const MODELO = process.env.LLAMA_MODEL || "openai/gpt-oss-120b";
-const EXTRA = MODELO.includes("gpt-oss") ? { reasoning_effort: "low" } : {};
 
 // teto do texto: contratos reais têm 2-8 páginas; 60k chars cobre com
 // folga e segura o custo por chamada em centavos
@@ -108,15 +104,6 @@ export async function POST(req: Request) {
     );
   }
 
-  const apiKey = process.env.LLAMA_API_KEY;
-  if (!apiKey) {
-    console.error("LLAMA_API_KEY ausente no ambiente desta implantação");
-    return NextResponse.json(
-      { error: "extração indisponível: falta a chave LLAMA_API_KEY neste servidor." },
-      { status: 503 }
-    );
-  }
-
   // cinto e suspensório: o navegador já redigiu; o servidor redige de novo
   const { texto: seguro, redigidos } = redigirParaExtracao(
     texto.slice(0, TETO_TEXTO)
@@ -128,61 +115,25 @@ export async function POST(req: Request) {
   }
 
   try {
-    const res = await fetch(`${BASE_URL}/chat/completions`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: MODELO,
-        temperature: 0,
-        ...EXTRA,
-        messages: [
-          { role: "system", content: INSTRUCAO },
-          {
-            role: "user",
-            content: `=== CONTRATO ===\n${seguro}\n=== FIM DO CONTRATO ===`,
-          },
-        ],
-      }),
-    });
-
-    if (!res.ok) {
-      await registrarUsoDaIa({ userId: user.id, rota: "contrato", ok: false });
-      const detalhe = await res.text().catch(() => "");
-      console.error(
-        `extracao: provedor respondeu ${res.status} — ${detalhe.slice(0, 300)}`
-      );
-      return NextResponse.json(
-        { error: "a leitura não respondeu agora. Tente de novo." },
-        { status: 502 }
-      );
-    }
-
-    const data = await res.json();
-    // só a contagem que o provedor devolve; nada da pergunta nem da resposta
-    await registrarUsoDaIa({
-      userId: user.id,
+    const r = await chamarModelo({
       rota: "contrato",
-      ok: true,
-      tokensEntrada: Number(data?.usage?.prompt_tokens) || 0,
-      tokensSaida: Number(data?.usage?.completion_tokens) || 0,
+      userId: user.id,
+      mensagens: [
+        { role: "system", content: INSTRUCAO },
+        {
+          role: "user",
+          content: `=== CONTRATO ===\n${seguro}\n=== FIM DO CONTRATO ===`,
+        },
+      ],
     });
-    const cru = String(data.choices?.[0]?.message?.content ?? "")
-      .replace(/^```(?:json)?/m, "")
-      .replace(/```\s*$/m, "")
-      .trim();
-
-    let json: unknown;
-    try {
-      json = JSON.parse(cru);
-    } catch {
-      console.error(`extracao: resposta não é JSON — ${cru.slice(0, 200)}`);
-      return NextResponse.json(
-        { error: "a leitura veio ilegível. Tente de novo." },
-        { status: 502 }
-      );
+    if (!r.ok) {
+      return r.motivo === "sem_chave"
+        ? NextResponse.json({ error: "extração indisponível: falta a chave LLAMA_API_KEY neste servidor." }, { status: 503 })
+        : NextResponse.json({ error: "a leitura não respondeu agora. Tente de novo." }, { status: 502 });
+    }
+    const json = lerJsonDaIa(r.conteudo);
+    if (json === null) {
+      return NextResponse.json({ error: "a leitura veio ilegível. Tente de novo." }, { status: 502 });
     }
 
     // a allowlist: só o que o contrato do documento prevê atravessa
