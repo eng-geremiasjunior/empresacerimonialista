@@ -7,6 +7,7 @@
 // para desfazer por 24 h. O arquivo é lido NO NAVEGADOR: só o texto vai.
 
 import { useRef, useState, useTransition, type ReactNode } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FileUp, X } from "lucide-react";
 import { ACEITOS, textoDoArquivo } from "@/lib/ler-checklist";
@@ -27,11 +28,14 @@ type Pacote = { trabalhoId: string; operacoes: OperacaoDoRoteiro[]; conflitos: s
 
 export function MontarRoteiroComIa({
   eventId,
+  semana,
   temPadrao,
   aviso,
   ultimo,
 }: {
   eventId: string;
+  /** o evento está perto: atalho para "Preparar a semana" */
+  semana: boolean;
   /** há eventos anteriores dela, do mesmo tipo, com roteiro */
   temPadrao: boolean;
   /** "restam 30 ações…" a partir de 80% da cota */
@@ -160,6 +164,11 @@ export function MontarRoteiroComIa({
             <button onClick={() => void ler("", "Montando pelo seu padrão…")} disabled={!!lendo} className={secundario}>
               {lendo ?? "Montar pelo seu padrão"}
             </button>
+          )}
+          {semana && (
+            <Link href={`/eventos/${eventId}/semana`} className={secundario}>
+              Preparar a semana
+            </Link>
           )}
           {desfazivel && (
             <button onClick={() => desfazer(desfazivel.trabalhoId)} disabled={pendente} className={discreto}>

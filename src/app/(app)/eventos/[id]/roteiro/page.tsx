@@ -20,6 +20,8 @@ import type { Supplier } from "@/lib/types";
 import { MontarRoteiroComIa } from "@/components/cronograma/MontarRoteiroComIa";
 import { estadoDaIa } from "@/lib/ia-ajustes";
 import { lerEventoDoRoteiro, lerPadraoDoRoteiro } from "@/lib/supabase/ia-roteiro-dados";
+import { DIAS_DA_SEMANA_DO_EVENTO } from "@/lib/ia-semana";
+import { hojeBR } from "@/lib/tempo";
 
 // Os links dos fornecedores. roteiro_enviado_em é da 199: sem ela aplicada,
 // a leitura vai sem a coluna — senão os fornecedores sumiriam da tela.
@@ -39,6 +41,7 @@ async function dadosDaIaNoRoteiro(supabase: ReturnType<typeof createClient>, eve
   const ia = await estadoDaIa();
   if (!ia.liberada) return null;
   const ev = await lerEventoDoRoteiro(supabase, eventId);
+  const faltam = ev ? Math.round((Date.parse(`${ev.date}T00:00:00Z`) - Date.parse(`${hojeBR()}T00:00:00Z`)) / 86_400_000) : -1;
   const [padrao, ultimo] = await Promise.all([
     ev?.time ? lerPadraoDoRoteiro(supabase, ev) : Promise.resolve([]),
     supabase
@@ -55,6 +58,7 @@ async function dadosDaIaNoRoteiro(supabase: ReturnType<typeof createClient>, eve
   const u = ultimo.data as { id: string; confirmado_em: string } | null;
   return {
     temPadrao: padrao.length > 0,
+    semana: faltam >= 0 && faltam <= DIAS_DA_SEMANA_DO_EVENTO,
     aviso: ia.aviso,
     ultimo: u
       ? {
@@ -232,7 +236,7 @@ export default async function RoteiroPage({
       />
 
       {iaRoteiro && (
-        <MontarRoteiroComIa eventId={event.id} temPadrao={iaRoteiro.temPadrao} aviso={iaRoteiro.aviso} ultimo={iaRoteiro.ultimo} />
+        <MontarRoteiroComIa eventId={event.id} semana={iaRoteiro.semana} temPadrao={iaRoteiro.temPadrao} aviso={iaRoteiro.aviso} ultimo={iaRoteiro.ultimo} />
       )}
 
       <FilaSugestoes

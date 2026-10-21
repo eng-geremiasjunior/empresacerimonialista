@@ -61,6 +61,8 @@ import { ProximosEventosCard, type ProximoEvento } from "@/components/dashboard/
 import { AreasDoPainel } from "@/components/dashboard/AreasDoPainel";
 import { areasDoSistema } from "@/lib/areas-do-painel";
 import { fotoDoTipo } from "@/lib/fotos-de-evento";
+import { estadoDaIa } from "@/lib/ia-ajustes";
+import { DIAS_DA_SEMANA_DO_EVENTO } from "@/lib/ia-semana";
 
 type UpcomingEvent = {
   id: string;
@@ -377,7 +379,40 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
     .map(linhaDoAlerta);
   const nomeDoEvento = (e: { name: string | null; type: EventType; clients: { name: string } | null } | null) =>
     e ? e.name || e.clients?.name || EVENT_TYPE_LABELS[e.type] : null;
+  // "preparar a semana" (21/10/2026, IA que trabalha): o evento que chega
+  // perto e ainda não teve a semana preparada nos últimos 7 dias. Só com a
+  // IA nova liberada (contas da casa, até o dono ligar "para todos").
+  const perto = (await estadoDaIa()).liberada
+    ? upcoming.filter((e) => !e.exemplo && e.date <= somarDias(todayIso, DIAS_DA_SEMANA_DO_EVENTO))
+    : [];
+  const jaPreparados = new Set<string>();
+  if (perto.length) {
+    const { data } = await supabase
+      .from("ia_trabalho")
+      .select("event_id")
+      .eq("tipo", "preparar_semana")
+      .in("estado", ["pronto", "confirmado"])
+      .gte("created_at", new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString())
+      .in(
+        "event_id",
+        perto.map((e) => e.id)
+      );
+    for (const t of (data ?? []) as { event_id: string }[]) jaPreparados.add(t.event_id);
+  }
+  const prepararSemana = perto
+    .filter((e) => !jaPreparados.has(e.id))
+    .map((e) => ({
+      chave: `ps-${e.id}`,
+      ref: todayIso,
+      quando: diaCurto(e.date),
+      destaque: false,
+      evento: nomeDoEvento(e),
+      texto: "preparar a semana",
+      href: `/eventos/${e.id}/semana`,
+    }));
+
   const semana: LinhaDoRadar[] = [
+    ...prepararSemana,
     ...upcoming
       .filter((e) => !e.exemplo && e.date <= fimDaSemana)
       .map((e) => ({

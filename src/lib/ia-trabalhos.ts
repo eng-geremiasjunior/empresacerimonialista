@@ -21,7 +21,7 @@ function servico() {
   });
 }
 
-export type TipoDeTrabalho = "montar_roteiro";
+export type TipoDeTrabalho = "montar_roteiro" | "preparar_semana";
 
 /** Cria o trabalho já pronto para conferir. Devolve o id, ou null. */
 export async function criarTrabalho(p: {
