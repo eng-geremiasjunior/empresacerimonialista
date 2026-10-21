@@ -17,6 +17,9 @@ import { publicBase } from "@/lib/app-url";
 import { alergiaCompartilhavel } from "./alergia-actions";
 import type { CronogramaItem } from "@/lib/cronograma";
 import type { Supplier } from "@/lib/types";
+import { MontarRoteiroComIa } from "@/components/cronograma/MontarRoteiroComIa";
+import { estadoDaIa } from "@/lib/ia-ajustes";
+import { lerEventoDoRoteiro, lerPadraoDoRoteiro } from "@/lib/supabase/ia-roteiro-dados";
 
 // Os links dos fornecedores. roteiro_enviado_em é da 199: sem ela aplicada,
 // a leitura vai sem a coluna — senão os fornecedores sumiriam da tela.
@@ -28,6 +31,38 @@ async function lerLinks(supabase: ReturnType<typeof createClient>, eventId: stri
     .eq("event_id", eventId);
   if (!r.error || (r.error.code !== "42703" && r.error.code !== "PGRST204")) return r;
   return supabase.from("roteiro_links").select(base).eq("event_id", eventId);
+}
+
+// A IA que monta o roteiro (21/10/2026): só para quem tem a IA nova
+// liberada (contas da casa, até o dono ligar "para todos").
+async function dadosDaIaNoRoteiro(supabase: ReturnType<typeof createClient>, eventId: string) {
+  const ia = await estadoDaIa();
+  if (!ia.liberada) return null;
+  const ev = await lerEventoDoRoteiro(supabase, eventId);
+  const [padrao, ultimo] = await Promise.all([
+    ev?.time ? lerPadraoDoRoteiro(supabase, ev) : Promise.resolve([]),
+    supabase
+      .from("ia_trabalho")
+      .select("id, confirmado_em")
+      .eq("event_id", eventId)
+      .eq("tipo", "montar_roteiro")
+      .eq("estado", "confirmado")
+      .gte("confirmado_em", new Date(Date.now() - 24 * 3600 * 1000).toISOString())
+      .order("confirmado_em", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  const u = ultimo.data as { id: string; confirmado_em: string } | null;
+  return {
+    temPadrao: padrao.length > 0,
+    aviso: ia.aviso,
+    ultimo: u
+      ? {
+          trabalhoId: u.id,
+          quando: `às ${new Date(u.confirmado_em).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" })}`,
+        }
+      : null,
+  };
 }
 
 export default async function RoteiroPage({
@@ -104,6 +139,7 @@ export default async function RoteiroPage({
   }
 
   const event = eventData as { id: string; date: string };
+  const iaRoteiro = await dadosDaIaNoRoteiro(supabase, params.id);
 
   const checklist: ItemChecklistAjuste[] = (
     (checklistResult.data ?? []) as {
@@ -194,6 +230,10 @@ export default async function RoteiroPage({
         base={publicBase()}
         eventoNome={nomeDoEvento}
       />
+
+      {iaRoteiro && (
+        <MontarRoteiroComIa eventId={event.id} temPadrao={iaRoteiro.temPadrao} aviso={iaRoteiro.aviso} ultimo={iaRoteiro.ultimo} />
+      )}
 
       <FilaSugestoes
         eventId={event.id}
