@@ -5,6 +5,9 @@
 // assunto, cada um com a sugestão pela data já marcada; ela confirma tudo,
 // um grupo ou troca item a item. A caixa de cima lê um resumo dela com a
 // IA e só ajusta as marcações — gravar é sempre o botão dela.
+//
+// Fechada por padrão (21/10/2026, pedido do dono): uma linha com quantos
+// itens venceram antes do cadastro e "Revisar"; abre no clique.
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -61,6 +64,11 @@ const CSS = `
 .tg-seg button[aria-pressed="true"]{background:var(--tg-nevoa);color:var(--tg-tinta);font-weight:600;box-shadow:inset 0 0 0 1px var(--tg-tinta)}
 .tg-mais{margin-top:8px;border:0;background:none;padding:0;font-size:13px;color:var(--tg-c1);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 .tg-erro{margin-top:10px;font-size:13px;color:#8a2f2f}
+.tg-fechada{padding:12px 0;margin-bottom:20px}
+.tg-fechada .tg-topo{margin:0}
+.tg-fechada b{font-weight:600;color:var(--tg-tinta)}
+.tg-cabeca{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.tg-fechar{border:0;background:none;padding:0;font-size:13px;color:var(--tg-c1);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 @media (max-width:760px){
   .tg-item{grid-template-columns:1fr auto;gap:6px 10px}
   .tg-seg{grid-column:1 / -1;width:100%}
@@ -103,8 +111,28 @@ export function TriagemDoPlanejamento({
   const [lidas, setLidas] = useState<{ id: string; escolha: EscolhaDaTriagem }[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [gravando, iniciar] = useTransition();
+  const [aberta, setAberta] = useState(false);
 
   if (itens.length === 0) return null;
+
+  if (!aberta) {
+    return (
+      <section className="tg tg-fechada" aria-label="Triagem do planejamento">
+        <style dangerouslySetInnerHTML={{ __html: CSS }} />
+        <div className="tg-topo">
+          <span className="tg-sub">
+            <b>
+              {itens.length} {itens.length === 1 ? "item venceu" : "itens venceram"}
+            </b>{" "}
+            antes de o evento entrar no sistema
+          </span>
+          <button type="button" className="tg-btn" onClick={() => setAberta(true)}>
+            Revisar
+          </button>
+        </div>
+      </section>
+    );
+  }
 
   const gravar = (lista: ItemDaTriagem[]) => {
     setErro(null);
@@ -156,7 +184,12 @@ export function TriagemDoPlanejamento({
   return (
     <section className="tg" aria-label="Triagem do planejamento">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      <h2>Antes de você entrar, isto já estava resolvido?</h2>
+      <div className="tg-cabeca">
+        <h2>Antes de você entrar, isto já estava resolvido?</h2>
+        <button type="button" className="tg-fechar" onClick={() => setAberta(false)}>
+          Fechar
+        </button>
+      </div>
       <div className="tg-topo">
         <span className="tg-sub">
           {itens.length} {itens.length === 1 ? "item venceu" : "itens venceram"} antes do cadastro
