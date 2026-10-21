@@ -8,6 +8,7 @@
 import { useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { MarcaDaIa } from "@/components/MarcaDaIa";
 import { linkCompartilharWhatsapp, linkWhatsapp } from "@/lib/whatsapp-link";
 import { dataBR, type PacoteDaSemana } from "@/lib/ia-semana";
 import { marcarRoteiroEnviado } from "@/app/(app)/eventos/[id]/roteiro/envio-actions";
@@ -124,7 +125,10 @@ export function PrepararSemana({ eventId, dias, aviso, inicial }: { eventId: str
     <div className="mx-auto max-w-[880px] pb-12">
       <header className="mb-5 flex flex-wrap items-baseline justify-between gap-2">
         <div>
-          <h1 className="text-[20px] font-semibold tracking-tight text-gray-900">Preparar a semana</h1>
+          <h1 className="flex items-center gap-2 text-[20px] font-semibold tracking-tight text-gray-900">
+            <MarcaDaIa tamanho={16} />
+            Preparar a semana
+          </h1>
           <p className="text-[13px] text-stone-500">{quando}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -158,6 +162,11 @@ export function PrepararSemana({ eventId, dias, aviso, inicial }: { eventId: str
                         className="text-left text-sm font-semibold text-gray-900 hover:underline"
                       >
                         {m.para}
+                        {m.origem === "ia" && (
+                          <span className="ml-1.5">
+                            <MarcaDaIa tamanho={12} titulo="Escrita pela inteligência artificial: confira antes de mandar" />
+                          </span>
+                        )}
                         {m.supplierId && (
                           <span className={`ml-2 text-[12px] font-normal ${m.confirmado ? "text-stone-500" : "text-[#9a3412]"}`}>
                             {m.confirmado ? "confirmou" : "ainda não confirmou"}

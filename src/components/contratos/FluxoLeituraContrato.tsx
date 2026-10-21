@@ -8,6 +8,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { MarcaDaIa } from "@/components/MarcaDaIa";
 import { lerContratoNoNavegador } from "@/lib/pdf-texto-cliente";
 import {
   redigirParaExtracao,
@@ -92,7 +93,7 @@ export function FluxoLeituraContrato({
             onClick={ler}
             className="rounded-lg bg-amber-600 px-3 py-1.5 text-[12.5px] font-semibold text-white hover:bg-amber-700"
           >
-            Ler o contrato
+            <span className="inline-flex items-center gap-1.5"><MarcaDaIa naCorDoTexto />Ler o contrato</span>
           </button>
         )}
         {fase.nome === "lendo" && (

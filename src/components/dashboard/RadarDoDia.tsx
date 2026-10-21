@@ -1,11 +1,21 @@
 import Link from "next/link";
+import { MarcaDaIa } from "@/components/MarcaDaIa";
 
 // O Dashboard em cartões (16/10/2026, pedido dele com o Google Ads de
 // referência): camadas brancas, cada uma com um assunto, sobre o fundo da
 // moldura; o filtro de evento no alto deixa tudo dinâmico. As linhas falam
 // em tempo ("há 3 dias", "sáb 17"), nunca em status.
 
-export type LinhaDoRadar = { chave: string; quando: string; destaque?: boolean; evento?: string | null; texto: string; href: string };
+export type LinhaDoRadar = {
+  chave: string;
+  quando: string;
+  destaque?: boolean;
+  evento?: string | null;
+  texto: string;
+  href: string;
+  /** um trabalho que a IA faz (o sinal ao lado do texto) */
+  ia?: boolean;
+};
 
 export const CSS_DO_DASHBOARD = `
 .db-grade{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;font-family:var(--font-ui),Inter,sans-serif}
@@ -83,7 +93,14 @@ export function ListaDoRadar({ linhas, vazio }: { linhas: LinhaDoRadar[]; vazio:
             <span className={`db-quando ${l.destaque ? "forte" : ""}`}>{l.quando}</span>
             <span>
               {l.evento && <span className="db-evento">{l.evento}</span>}
-              <span className="db-texto">{l.texto}</span>
+              <span className="db-texto">
+                {l.ia && (
+                  <>
+                    <MarcaDaIa tamanho={12} />{" "}
+                  </>
+                )}
+                {l.texto}
+              </span>
             </span>
           </Link>
         </li>

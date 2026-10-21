@@ -16,6 +16,7 @@
 
 import { useState } from "react";
 import { ClipboardPaste } from "lucide-react";
+import { MarcaDaIa } from "@/components/MarcaDaIa";
 import {
   pseudonimizar,
   restaurarProposta,
@@ -118,7 +119,7 @@ export function ColarBriefing({
               className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
               disabled={!texto.trim()}
             >
-              Ler o briefing
+              <span className="inline-flex items-center gap-1.5"><MarcaDaIa naCorDoTexto />Ler o briefing</span>
             </button>
             <button
               onClick={() => {

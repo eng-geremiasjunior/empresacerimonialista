@@ -10,6 +10,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { MarcaDaIa } from "@/components/MarcaDaIa";
 import {
   adicionarAssunto,
   adicionarDecisao,
@@ -425,7 +426,7 @@ function ImportarChecklist({ tipo, rotulo }: { tipo: string; rotulo: (r: Respons
               onClick={ler}
               className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
             >
-              {lendo ? "Lendo…" : "Ler o checklist"}
+              <span className="inline-flex items-center gap-1.5"><MarcaDaIa naCorDoTexto />{lendo ? "Lendo…" : "Ler o checklist"}</span>
             </button>
           </div>
         </>

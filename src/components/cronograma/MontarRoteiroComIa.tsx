@@ -9,6 +9,7 @@
 import { useRef, useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { MarcaDaIa } from "@/components/MarcaDaIa";
 import { FileUp, X } from "lucide-react";
 import { ACEITOS, textoDoArquivo } from "@/lib/ler-checklist";
 import type { OperacaoDoRoteiro } from "@/lib/ia-roteiro";
@@ -158,15 +159,17 @@ export function MontarRoteiroComIa({
       {!aberto && !pacote && (
         <div className="flex flex-wrap items-center gap-2">
           <button onClick={() => setAberto(true)} className={primario}>
-            Trazer o seu cronograma
+            <span className="inline-flex items-center gap-1.5"><MarcaDaIa naCorDoTexto />Trazer o seu cronograma</span>
           </button>
           {temPadrao && (
             <button onClick={() => void ler("", "Montando pelo seu padrão…")} disabled={!!lendo} className={secundario}>
+              <MarcaDaIa />
               {lendo ?? "Montar pelo seu padrão"}
             </button>
           )}
           {semana && (
             <Link href={`/eventos/${eventId}/semana`} className={secundario}>
+              <MarcaDaIa />
               Preparar a semana
             </Link>
           )}

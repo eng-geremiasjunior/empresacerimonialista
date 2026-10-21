@@ -11,6 +11,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { MarcaDaIa } from "@/components/MarcaDaIa";
 import { useMemo, useState, useTransition } from "react";
 import {
   ROTULO_DA_ESCOLHA,
@@ -222,7 +223,7 @@ export function TriagemDoPlanejamento({
         <div className="tg-ia-linha">
           {leituraLiberada ? (
             <button type="button" className="tg-btn" disabled={lendo || texto.trim().length < 3} onClick={ler}>
-              {lendo ? "Lendo…" : "Ler o resumo"}
+              <span className="inline-flex items-center gap-1.5"><MarcaDaIa />{lendo ? "Lendo…" : "Ler o resumo"}</span>
             </button>
           ) : (
             <span className="tg-aviso">

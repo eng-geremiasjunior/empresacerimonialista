@@ -7,6 +7,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { MarcaDaIa } from "@/components/MarcaDaIa";
 import { FileUp, X } from "lucide-react";
 import { ACEITOS, textoDoArquivo } from "@/lib/ler-checklist";
 import { ROTULO_DO_LADO, papelDoCortejo, quemEntra, type EntradaLida } from "@/lib/cortejo-casamento";
@@ -125,7 +126,7 @@ export function ImportarCortejo({
               className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm focus:border-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-200"
             />
             <button onClick={() => void ler(texto)} disabled={lendo || texto.trim().length < 10} className={`${botaoEscuro} mt-2`}>
-              {lendo && !nomeDoArquivo ? "Lendo…" : "Ler o texto"}
+              <span className="inline-flex items-center gap-1.5"><MarcaDaIa naCorDoTexto />{lendo && !nomeDoArquivo ? "Lendo…" : "Ler o texto"}</span>
             </button>
           </div>
         </div>

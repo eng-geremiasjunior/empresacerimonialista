@@ -9,6 +9,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { MarcaDaIa } from "@/components/MarcaDaIa";
 import {
   categoriaSugerida,
   codigoDoItem,
@@ -204,7 +205,10 @@ export function RegistrarCompra({
               style={{ border: "1px solid var(--linha)", borderRadius: 12, padding: "12px 14px", background: "var(--papel)" }}
               onClick={p.origem === "manual" ? () => { setCab(CAB_VAZIO()); setArquivo(null); setOrigem("manual"); setLinhas([]); acrescentar(); } : undefined}
             >
-              <span style={{ fontSize: 14, fontWeight: 600, color: "var(--tinta)" }}>{lendo ? "Lendo…" : p.titulo}</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: "var(--tinta)", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                {p.origem === "pdf" && <MarcaDaIa />}
+                {lendo ? "Lendo…" : p.titulo}
+              </span>
               <span style={{ fontSize: 12.5, color: "var(--cinza)" }}>{p.texto}</span>
               {p.aceita && (
                 <input

@@ -409,6 +409,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
       evento: nomeDoEvento(e),
       texto: "preparar a semana",
       href: `/eventos/${e.id}/semana`,
+      ia: true,
     }));
 
   const semana: LinhaDoRadar[] = [
