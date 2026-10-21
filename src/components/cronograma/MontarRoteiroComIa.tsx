@@ -10,6 +10,7 @@ import { useRef, useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MarcaDaIa } from "@/components/MarcaDaIa";
+import { AudioParaTexto } from "@/components/AudioParaTexto";
 import { FileUp, X } from "lucide-react";
 import { ACEITOS, textoDoArquivo } from "@/lib/ler-checklist";
 import type { OperacaoDoRoteiro } from "@/lib/ia-roteiro";
@@ -221,6 +222,7 @@ export function MontarRoteiroComIa({
               placeholder={"ou cole o texto aqui\n\n08:00 Montagem da decoração\n15:30 Chegada da noiva\n16:00 Cerimônia…"}
               className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm focus:border-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-200"
             />
+            <AudioParaTexto onTexto={(t) => setTexto((x) => (x.trim() ? `${x.trim()}\n${t}` : t))} />
             <button onClick={() => void ler(texto, "Lendo…")} disabled={!!lendo || texto.trim().length < 10} className={primario}>
               {lendo ?? "Ler o cronograma"}
             </button>

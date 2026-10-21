@@ -136,6 +136,52 @@ export async function chamarModelo(p: {
   }
 }
 
+/**
+ * Áudio → texto (Whisper, na Groq por padrão). O áudio passa pela memória
+ * do servidor e vai ao provedor; não é guardado em lugar nenhum. O modelo
+ * de áudio é outro: IA_AUDIO_MODEL, senão o Whisper turbo.
+ */
+export async function transcreverAudio(p: {
+  rota: string;
+  userId: string;
+  arquivo: Blob;
+  nome: string;
+}): Promise<RespostaDaIa> {
+  const cfg = configuracaoDa("audio");
+  if (!cfg.apiKey) {
+    console.error(`[eorg:ia:${p.rota}] chave ausente no ambiente desta implantação`);
+    return { ok: false, motivo: "sem_chave" };
+  }
+  const forma = new FormData();
+  forma.append("file", p.arquivo, p.nome);
+  forma.append("model", process.env.IA_AUDIO_MODEL || "whisper-large-v3-turbo");
+  forma.append("language", "pt");
+  forma.append("response_format", "json");
+  forma.append("temperature", "0");
+  try {
+    const res = await fetch(`${cfg.baseUrl}/audio/transcriptions`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${cfg.apiKey}` },
+      body: forma,
+      signal: AbortSignal.timeout(TEMPO_MAXIMO_MS),
+    });
+    if (!res.ok) {
+      const detalhe = await res.text().catch(() => "");
+      await registrarUsoDaIa({ userId: p.userId, rota: p.rota, ok: false });
+      console.error(`[eorg:ia:${p.rota}] provedor respondeu ${res.status} — ${detalhe.slice(0, 300)}`);
+      return { ok: false, motivo: motivoDoStatus(res.status, detalhe) };
+    }
+    const data = (await res.json()) as { text?: string };
+    await registrarUsoDaIa({ userId: p.userId, rota: p.rota, ok: true });
+    const conteudo = String(data?.text ?? "").trim();
+    return { ok: true, conteudo };
+  } catch (e) {
+    await registrarUsoDaIa({ userId: p.userId, rota: p.rota, ok: false });
+    console.error(`[eorg:ia:${p.rota}] a chamada falhou —`, String(e).slice(0, 200));
+    return { ok: false, motivo: "rede" };
+  }
+}
+
 /** o JSON da resposta, sem a cerca de markdown; null quando não é JSON */
 export function lerJsonDaIa(conteudo: string): unknown | null {
   const cru = conteudo

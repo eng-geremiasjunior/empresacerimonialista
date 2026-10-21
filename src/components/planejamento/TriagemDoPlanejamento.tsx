@@ -12,6 +12,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MarcaDaIa } from "@/components/MarcaDaIa";
+import { AudioParaTexto } from "@/components/AudioParaTexto";
 import { useMemo, useState, useTransition } from "react";
 import {
   ROTULO_DA_ESCOLHA,
@@ -91,11 +92,14 @@ export function TriagemDoPlanejamento({
   eventId,
   itens,
   leituraLiberada,
+  audio = false,
 }: {
   eventId: string;
   itens: ItemDaTriagem[];
   /** o plano tem a leitura por IA (leitura_ia) */
   leituraLiberada: boolean;
+  /** a IA nova liberada: o resumo também pode ser falado */
+  audio?: boolean;
 }) {
   const router = useRouter();
   const grupos = useMemo(() => agruparTriagem(itens), [itens]);
@@ -208,6 +212,11 @@ export function TriagemDoPlanejamento({
           onChange={(e) => setTexto(e.target.value)}
           placeholder="Ex.: buffet e foto fechados, falta decoração e bolo, cerimônia civil na praia"
         />
+        {audio && leituraLiberada && (
+          <div style={{ marginTop: 8 }}>
+            <AudioParaTexto onTexto={(t) => setTexto((x) => (x.trim() ? `${x.trim()}\n${t}` : t))} />
+          </div>
+        )}
         <div className="tg-chips">
           {PERGUNTAS.map((p) => (
             <button

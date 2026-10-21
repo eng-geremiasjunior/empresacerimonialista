@@ -23,6 +23,7 @@ import {
   type EventType,
 } from "@/lib/types";
 import { inicioDoDiaBR } from "@/lib/tempo";
+import { estadoDaIa } from "@/lib/ia-ajustes";
 import { FaixaDoExemplo } from "@/components/evento/FaixaDoExemplo";
 import { AREAS_DO_EXEMPLO } from "@/lib/evento-exemplo";
 
@@ -81,7 +82,7 @@ export default async function EventoLayout({
     clients: { name: string } | null;
   };
 
-  const [{ saude, fases, contadores }, { count: comAcesso }] = await Promise.all([
+  const [{ saude, fases, contadores }, { count: comAcesso }, ia] = await Promise.all([
     getCabecalhoEvento(event.id, event.date),
     // o portal da cliente em evidência (16/10/2026): quantas pessoas da
     // família já entram; falha vira null e o botão só diz "Portal da cliente"
@@ -90,6 +91,7 @@ export default async function EventoLayout({
       .select("id", { count: "exact", head: true })
       .eq("event_id", params.id)
       .eq("status", "ativo"),
+    estadoDaIa(),
   ]);
   const acessos = typeof comAcesso === "number" ? comAcesso : null;
 
@@ -152,6 +154,7 @@ export default async function EventoLayout({
         nome={titulo}
         data={event.date}
         modoEventoPerto={false}
+        ia={ia.liberada}
       />
       <FatosDaBarra texto={fatos} />
       <UltimaAba eventId={event.id} />

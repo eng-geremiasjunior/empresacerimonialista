@@ -167,7 +167,7 @@ const HORA = /\b([01]?\d|2[0-3])[:h]([0-5]\d)\b/g;
 const DATA = /\b(\d{1,2})\/(\d{1,2})\b/g;
 
 /** os horários e datas que a mensagem pode citar; o resto é invenção */
-function citaSoOQueExiste(texto: string, horarios: string[], datas: string[]): boolean {
+export function citaSoOQueExiste(texto: string, horarios: string[], datas: string[]): boolean {
   const hs = new Set(horarios);
   for (const m of texto.matchAll(HORA)) {
     if (!hs.has(`${m[1].padStart(2, "0")}:${m[2]}`)) return false;

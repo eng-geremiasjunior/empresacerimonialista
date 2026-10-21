@@ -6,6 +6,7 @@ import { TemaNeutro } from "@/components/planejamento/TemaNeutro";
 import { TriagemDoPlanejamento } from "@/components/planejamento/TriagemDoPlanejamento";
 import { getTriagem } from "@/lib/supabase/triagem";
 import { possoUsar } from "@/lib/supabase/nivel-do-plano";
+import { estadoDaIa } from "@/lib/ia-ajustes";
 import type { Arquetipos } from "@/components/planejamento/celebra";
 import type { NotaDoCaderno, ReuniaoDoCaderno } from "./caderno-actions";
 
@@ -51,6 +52,7 @@ export default async function EventoPlanejamentoPage({
     getTriagem(eventId).catch(() => []),
     possoUsar("leitura_ia").catch(() => false),
   ]);
+  const iaNova = (await estadoDaIa()).liberada;
 
   const arquetipos: Arquetipos = { escala: [], cenario: [] };
   for (const a of (arqs ?? []) as { eixo: string; codigo: string; nome: string }[]) {
@@ -110,7 +112,7 @@ export default async function EventoPlanejamentoPage({
   return (
     <>
       <TemaNeutro />
-      <TriagemDoPlanejamento eventId={eventId} itens={triagem} leituraLiberada={leituraLiberada} />
+      <TriagemDoPlanejamento eventId={eventId} itens={triagem} leituraLiberada={leituraLiberada} audio={iaNova} />
       <PlanejamentoEvento
         eventId={eventId}
         inicial={planejamento}

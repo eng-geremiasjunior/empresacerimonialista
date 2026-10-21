@@ -57,6 +57,7 @@ export function PartesDoEvento({
   nome,
   data,
   modoEventoPerto,
+  ia = false,
 }: {
   eventId: string;
   tipo: string;
@@ -64,6 +65,8 @@ export function PartesDoEvento({
   data: string | null;
   /** faltam 7 dias ou menos: o Modo Evento aparece na linha */
   modoEventoPerto: boolean;
+  /** a IA nova liberada (contas da casa, até o dono ligar "para todos") */
+  ia?: boolean;
 }) {
   const pathname = usePathname() ?? "";
   const seg = segmentoDoCaminho(pathname, eventId);
@@ -96,6 +99,7 @@ export function PartesDoEvento({
     { label: "Financeiro", seg: "financeiro" },
     { label: "Operação", seg: "operacao" },
     ...(tem(tipo, "mesas") ? [{ label: "Mesas", seg: "mesas" }] : []),
+    ...(ia ? [{ label: "Reuniões", seg: "reunioes" }] : []),
     { label: "Histórico", seg: "historico" },
   ];
   const href = (s: string) => (s ? `${base}/${s}` : base);
