@@ -21,6 +21,7 @@ import { LandingImagemForm } from "@/components/configuracoes/LandingImagemForm"
 import { VideoTeaserForm } from "@/components/configuracoes/VideoTeaserForm";
 import { PacotesForm } from "@/components/configuracoes/PacotesForm";
 import { ExtrasForm } from "@/components/configuracoes/ExtrasForm";
+import { tem } from "@/lib/capacidades";
 import { RegraConvidadosForm } from "@/components/configuracoes/RegraConvidadosForm";
 import { ContratoModeloForm } from "@/components/configuracoes/ContratoModeloForm";
 import {
@@ -268,7 +269,7 @@ export default async function CatalogoTipoPage({
               titulo="Extras opcionais"
               descricao="Itens que o cliente pode somar ao pacote."
             >
-              <ExtrasForm tipoEvento={tipo} inicial={extras} />
+              <ExtrasForm tipoEvento={tipo} inicial={extras} rsvp={tem(tipo, "listaNominal")} />
             </SubSecao>
 
             <SubSecao

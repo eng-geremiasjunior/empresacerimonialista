@@ -22,7 +22,7 @@
 //   · no celular (container estreito), a lista ocupa a tela, os filtros
 //     viram uma faixa, e a ficha e a portaria abrem numa folha por baixo.
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { ChegadasProps } from "@/components/operacao/ChegadasAoVivo";
 import { CSS_RSVP } from "@/components/rsvp/rsvp-programa.css";
@@ -31,6 +31,7 @@ import { ImportarLista } from "@/components/rsvp/ImportarLista";
 import { RodadaDeConfirmacao, filaDaRodada } from "@/components/rsvp/RodadaDeConfirmacao";
 import { FecharLista } from "@/components/rsvp/FecharLista";
 import { RespostasEmLote } from "@/components/rsvp/RespostasEmLote";
+import { RelatorioAoCasal } from "@/components/rsvp/RelatorioAoCasal";
 import { MarcaDaIa } from "@/components/MarcaDaIa";
 import type { LinhaOperacional } from "@/lib/rsvp-fechamento";
 import {
@@ -131,6 +132,66 @@ function vespera(data: string) {
   return d.toISOString().slice(0, 10);
 }
 
+function MenuDaLista({ itens }: { itens: { rotulo: string; acao: () => void }[] }) {
+  const [aberto, setAberto] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!aberto) return;
+    const fora = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setAberto(false);
+    };
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setAberto(false);
+    document.addEventListener("mousedown", fora);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("mousedown", fora);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [aberto]);
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button type="button" className="rp-btn" aria-haspopup="menu" aria-expanded={aberto} onClick={() => setAberto((x) => !x)}>
+        Lista ▾
+      </button>
+      {aberto && (
+        <div
+          role="menu"
+          style={{
+            position: "absolute",
+            top: "calc(100% + 4px)",
+            left: 0,
+            zIndex: 20,
+            minWidth: 190,
+            display: "flex",
+            flexDirection: "column",
+            padding: 4,
+            background: "var(--papel)",
+            border: "1px solid var(--cinza2)",
+            borderRadius: 6,
+            boxShadow: "0 6px 18px rgba(34,30,27,.12)",
+          }}
+        >
+          {itens.map((i) => (
+            <button
+              key={i.rotulo}
+              type="button"
+              role="menuitem"
+              className="rp-btn"
+              style={{ border: "none", textAlign: "left", height: 34 }}
+              onClick={() => {
+                setAberto(false);
+                i.acao();
+              }}
+            >
+              {i.rotulo}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function RsvpPrograma({
   eventId,
   nomeDoEvento,
@@ -142,6 +203,7 @@ export function RsvpPrograma({
   chegadas,
   fechamento = null,
   ia = false,
+  cliente = null,
 }: {
   eventId: string;
   nomeDoEvento: string;
@@ -155,6 +217,8 @@ export function RsvpPrograma({
   fechamento?: { linhas: LinhaOperacional[]; ultimo: string | null; prazo: string | null; hoje: string } | null;
   /** a IA liberada para a conta (220): as respostas em lote */
   ia?: boolean;
+  /** a cliente do evento: o relatório ao casal vai para o WhatsApp dela */
+  cliente?: { nome: string | null; telefone: string | null } | null;
 }) {
   const router = useRouter();
   const [convidados, setConvidados] = useState(convidadosProp);
@@ -169,6 +233,7 @@ export function RsvpPrograma({
   const [rodando, setRodando] = useState(false);
   const [fechando, setFechando] = useState(false);
   const [colando, setColando] = useState(false);
+  const [relatando, setRelatando] = useState(false);
   const [novoNome, setNovoNome] = useState("");
   const [novoTel, setNovoTel] = useState("");
   const [aviso, setAviso] = useState<{ texto: string; ok?: boolean } | null>(null);
@@ -520,14 +585,18 @@ export function RsvpPrograma({
                 Colar respostas
               </button>
             )}
-            {fechamento && fechamento.linhas.length > 0 && (
-              <button type="button" className="rp-btn" onClick={() => setFechando(true)}>
-                Fechar a lista
-              </button>
-            )}
-            <button type="button" className="rp-btn" onClick={() => setImportando(true)}>
-              Importar lista
-            </button>
+            {/* o que se usa de vez em quando fica num menu só (22/10/2026: a barra estourava) */}
+            <MenuDaLista
+              itens={[
+                { rotulo: "Importar lista", acao: () => setImportando(true) },
+                ...(fechamento && fechamento.linhas.length > 0
+                  ? [
+                      { rotulo: "Relatório ao casal", acao: () => setRelatando(true) },
+                      { rotulo: "Fechar a lista", acao: () => setFechando(true) },
+                    ]
+                  : []),
+              ]}
+            />
             {linkDoEvento && (
               <>
                 <button type="button" className="rp-btn" onClick={() => copiar("convite", linkDoEvento)}>
@@ -766,6 +835,17 @@ export function RsvpPrograma({
         </FolhaNoCelular>
       )}
 
+      {relatando && fechamento && (
+        <RelatorioAoCasal
+          nomeDoEvento={nomeDoEvento}
+          dataEvento={dataEvento}
+          hoje={fechamento.hoje}
+          prazo={fechamento.prazo}
+          linhas={fechamento.linhas}
+          cliente={cliente}
+          aoFechar={() => setRelatando(false)}
+        />
+      )}
       {colando && (
         <RespostasEmLote
           eventId={eventId}

@@ -72,7 +72,7 @@ export default async function RsvpPage({ params }: { params: { id: string } }) {
 
   const { data: ev } = await supabase
     .from("events")
-    .select("id, type, name, date, time, rsvp_hash, rsvp_aberto, clients(name)")
+    .select("id, type, name, date, time, rsvp_hash, rsvp_aberto, clients(name, phone)")
     .eq("id", eventId)
     .maybeSingle();
 
@@ -130,7 +130,8 @@ export default async function RsvpPage({ params }: { params: { id: string } }) {
   const extraDe = new Map(extras.map((x) => [x.id, x]));
 
   const base = publicBase();
-  const cliente = (ev.clients as unknown as { name?: string } | null)?.name ?? null;
+  const dadosDoCliente = ev.clients as unknown as { name?: string | null; phone?: string | null } | null;
+  const cliente = dadosDoCliente?.name ?? null;
   const nomeDoEvento = ev.name || cliente || "o evento";
 
   // O WhatsApp de cada convidado é montado AQUI, no servidor: a mensagem
@@ -205,6 +206,7 @@ export default async function RsvpPage({ params }: { params: { id: string } }) {
       convidados={lista}
       chegadas={chegadas}
       ia={ia.liberada}
+      cliente={{ nome: cliente, telefone: dadosDoCliente?.phone ?? null }}
       fechamento={{
         linhas: operacional,
         ultimo: (ultimoFechamento.data as { created_at: string } | null)?.created_at ?? null,

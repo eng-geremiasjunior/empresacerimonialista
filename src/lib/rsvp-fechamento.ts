@@ -126,3 +126,61 @@ export function planilhaDaLista(linhas: LinhaOperacional[]): string {
     });
   return "﻿" + [cab.join(";"), ...corpo].join("\r\n");
 }
+
+// ------------------------------------------------------------------
+// O relatório ao casal (22/10/2026, C3 do RSVP): o andamento das
+// confirmações, para a família ver o serviço que contratou. Números
+// exatos, sem IA — é conta. Sem telefone, sem e-mail, sem nome de quem
+// não respondeu (a lista de nomes fica no portal).
+// ------------------------------------------------------------------
+
+const ROTULO_DO_LADO: Record<string, string> = { noiva: "do lado da noiva", noivo: "do lado do noivo" };
+
+/** Onde estão os sem resposta: os 3 grupos (ou lados) com mais gente esperando. */
+export function semRespostaPorGrupo(linhas: LinhaOperacional[]): { rotulo: string; n: number }[] {
+  const conta = new Map<string, number>();
+  for (const l of linhas) {
+    if (l.confirmacao !== "aguardando") continue;
+    const g = l.grupo?.trim();
+    const rotulo = g ? `${g}${l.lado ? ` ${ROTULO_DO_LADO[l.lado] ?? ""}`.trimEnd() : ""}` : l.lado ? ROTULO_DO_LADO[l.lado] ?? "" : "";
+    if (!rotulo) continue;
+    conta.set(rotulo, (conta.get(rotulo) ?? 0) + 1);
+  }
+  return Array.from(conta, ([rotulo, n]) => ({ rotulo, n }))
+    .sort((a, b) => b.n - a.n || a.rotulo.localeCompare(b.rotulo))
+    .slice(0, 3);
+}
+
+export function textoDoRelatorioAoCasal(
+  linhas: LinhaOperacional[],
+  evento: { nome: string; data: string | null },
+  hoje: string,
+  prazo: string | null,
+  saudacao: string | null
+): string {
+  const r = resumoDaLista(linhas, null);
+  const total = linhas.length;
+  const responderam = r.confirmados + r.naoVao;
+  const partes = [
+    `${saudacao ? `Olá, ${saudacao}! ` : ""}Como estão as confirmações de ${evento.nome}${evento.data ? ` (${dataBR(evento.data)})` : ""}, em ${dataBR(hoje)}:`,
+    "",
+    `${responderam} de ${total} ${total === 1 ? "convite respondeu" : "convites responderam"}.`,
+    `Vão: ${r.pessoas} ${r.pessoas === 1 ? "pessoa" : "pessoas"} (${r.adultos} ${r.adultos === 1 ? "adulto" : "adultos"} e ${r.criancas} ${r.criancas === 1 ? "criança" : "crianças"}), em ${r.confirmados} ${r.confirmados === 1 ? "convite" : "convites"}.`,
+    `Não vão: ${r.naoVao} ${r.naoVao === 1 ? "convite" : "convites"}.`,
+  ];
+  if (r.aguardando) {
+    const grupos = semRespostaPorGrupo(linhas);
+    partes.push(
+      `Sem resposta: ${r.aguardando} ${r.aguardando === 1 ? "convite" : "convites"}` +
+        (grupos.length ? ` (${grupos.map((g) => `${g.n} ${g.rotulo}`).join(", ")})` : "") +
+        "."
+    );
+  }
+  if (prazo && prazo >= hoje) {
+    const faltam = Math.round((Date.parse(`${prazo}T00:00:00Z`) - Date.parse(`${hoje}T00:00:00Z`)) / 86_400_000);
+    partes.push(`Prazo de resposta: ${dataBR(prazo)}${faltam > 0 ? `, faltam ${faltam} ${faltam === 1 ? "dia" : "dias"}` : ", é hoje"}.`);
+  }
+  if (r.restricoes.length) partes.push(`Restrições alimentares: ${r.restricoes.map((x) => `${x.texto} (${x.n})`).join(", ")}.`);
+  if (r.aguardando) partes.push("", "Seguimos falando com quem ainda não respondeu.");
+  return partes.join("\n");
+}

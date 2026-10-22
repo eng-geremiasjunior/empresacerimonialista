@@ -16,11 +16,22 @@ type Linha = ExtraEntrada & { key: string };
 let seq = 0;
 const novaKey = () => `ext-${++seq}-${Date.now()}`;
 
+// O RSVP como serviço que ela cobra (22/10/2026, frente D do RSVP): o item
+// pronto, com o texto escrito; o preço é dela.
+const GESTAO_DE_RSVP = {
+  nome: "Gestão de RSVP",
+  descricao:
+    "Cobramos a resposta de cada convidado no WhatsApp, cuidamos de acompanhantes e restrições, fechamos os números com o buffet e mandamos o andamento a vocês.",
+};
+
 export function ExtrasForm({
   tipoEvento,
   inicial,
+  rsvp = false,
 }: {
   tipoEvento: EventType;
+  /** o tipo tem lista de convidados: oferece o item pronto "Gestão de RSVP" */
+  rsvp?: boolean;
   inicial: {
     nome: string;
     descricao: string | null;
@@ -54,6 +65,8 @@ export function ExtrasForm({
 
   function salvar() {
     setErro(null);
+    const semPreco = linhas.find((l) => l.nome.trim() && l.ativo && !String(l.preco).trim());
+    if (semPreco) return setErro(`Informe o preço de "${semPreco.nome.trim()}".`);
     startTransition(async () => {
       const res = await salvarExtras(
         tipoEvento,
@@ -154,6 +167,14 @@ export function ExtrasForm({
         >
           <Plus size={15} /> Adicionar extra
         </button>
+        {rsvp && !linhas.some((l) => /rsvp/i.test(l.nome)) && (
+          <button
+            onClick={() => setLinhas((p) => [...p, { key: novaKey(), ...GESTAO_DE_RSVP, preco: "", ativo: true }])}
+            className="flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:border-gray-400"
+          >
+            <Plus size={15} /> Gestão de RSVP
+          </button>
+        )}
         <button
           onClick={salvar}
           disabled={pending}
