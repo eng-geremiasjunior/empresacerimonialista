@@ -7,6 +7,15 @@ import { lerPainel } from "@/app/(app)/eventos/[id]/recepcao-actions";
 import { qrSvg } from "@/lib/qr";
 import { paraFormatoMeta } from "@/lib/whatsapp";
 import { RsvpPrograma, type ConvidadoNaFicha } from "@/components/rsvp/RsvpPrograma";
+import { hojeBR } from "@/lib/tempo";
+import { MARCA_DO_FECHAMENTO, type LinhaOperacional } from "@/lib/rsvp-fechamento";
+
+// O fechamento da lista (21/10/2026): as colunas da conta do buffet, da
+// mais nova para a mais antiga — sem eh_crianca/acessibilidade, degrada.
+const COLUNAS_DO_FECHAMENTO = [
+  "id, nome, grupo, lado, confirmacao, acompanhantes, criancas, eh_crianca, restricao_alimentar, acessibilidade, telefone, email, confirmado_em",
+  "id, nome, grupo, lado, confirmacao, acompanhantes, criancas, restricao_alimentar, telefone, email, confirmado_em",
+];
 import type { ChegadasProps } from "@/components/operacao/ChegadasAoVivo";
 
 export const dynamic = "force-dynamic";
@@ -48,7 +57,7 @@ type Extra = {
 /** O telefone como gente lê: (11) 98765-4321. */
 function telefoneLegivel(t: string | null): string | null {
   if (!t) return null;
-  const d = t.replace(/D/g, "").replace(/^55(?=d{10,11}$)/, "");
+  const d = t.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "");
   if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
   if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
   return t.trim();
@@ -79,7 +88,43 @@ export default async function RsvpPage({ params }: { params: { id: string } }) {
     }
     return [];
   };
-  const [convidados, painel, extras] = await Promise.all([getConvidados(eventId), lerPainel(eventId), lerExtras()]);
+  const lerOperacional = async (): Promise<LinhaOperacional[]> => {
+    for (const colunas of COLUNAS_DO_FECHAMENTO) {
+      const { data, error } = await supabase.from("evento_convidado").select(colunas).eq("event_id", eventId);
+      if (error) continue;
+      return ((data ?? []) as unknown as Record<string, unknown>[]).map((c) => ({
+        id: c.id as string,
+        nome: c.nome as string,
+        grupo: (c.grupo as string | null) ?? null,
+        lado: (c.lado as string | null) ?? null,
+        confirmacao: c.confirmacao as LinhaOperacional["confirmacao"],
+        acompanhantes: Number(c.acompanhantes) || 0,
+        criancas: Number(c.criancas) || 0,
+        ehCrianca: c.eh_crianca === true,
+        restricao: (c.restricao_alimentar as string | null) ?? null,
+        acessibilidade: (c.acessibilidade as string | null) ?? null,
+        telefone: (c.telefone as string | null) ?? null,
+        email: (c.email as string | null) ?? null,
+        confirmadoEm: (c.confirmado_em as string | null) ?? null,
+      }));
+    }
+    return [];
+  };
+  const [convidados, painel, extras, operacional, ultimoFechamento, site] = await Promise.all([
+    getConvidados(eventId),
+    lerPainel(eventId),
+    lerExtras(),
+    lerOperacional(),
+    supabase
+      .from("event_notes")
+      .select("created_at")
+      .eq("event_id", eventId)
+      .like("content", `${MARCA_DO_FECHAMENTO}%`)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase.from("evento_site").select("rsvp_prazo").eq("event_id", eventId).maybeSingle(),
+  ]);
   const extraDe = new Map(extras.map((x) => [x.id, x]));
 
   const base = publicBase();
@@ -157,6 +202,12 @@ export default async function RsvpPage({ params }: { params: { id: string } }) {
       confirmacoesAbertas={ev.rsvp_aberto !== false}
       convidados={lista}
       chegadas={chegadas}
+      fechamento={{
+        linhas: operacional,
+        ultimo: (ultimoFechamento.data as { created_at: string } | null)?.created_at ?? null,
+        prazo: (site.data as { rsvp_prazo: string | null } | null)?.rsvp_prazo ?? null,
+        hoje: hojeBR(),
+      }}
     />
   );
 }

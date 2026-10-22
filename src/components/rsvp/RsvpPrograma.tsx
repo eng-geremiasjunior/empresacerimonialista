@@ -29,6 +29,8 @@ import { CSS_RSVP } from "@/components/rsvp/rsvp-programa.css";
 import { PortariaDoRsvp } from "@/components/rsvp/PortariaDoRsvp";
 import { ImportarLista } from "@/components/rsvp/ImportarLista";
 import { RodadaDeConfirmacao, filaDaRodada } from "@/components/rsvp/RodadaDeConfirmacao";
+import { FecharLista } from "@/components/rsvp/FecharLista";
+import type { LinhaOperacional } from "@/lib/rsvp-fechamento";
 import {
   abrirOuFecharConfirmacoes,
   adicionarConvidadoPelaEquipe,
@@ -136,6 +138,7 @@ export function RsvpPrograma({
   confirmacoesAbertas,
   convidados: convidadosProp,
   chegadas,
+  fechamento = null,
 }: {
   eventId: string;
   nomeDoEvento: string;
@@ -145,6 +148,8 @@ export function RsvpPrograma({
   confirmacoesAbertas: boolean;
   convidados: ConvidadoNaFicha[];
   chegadas: ChegadasProps | null;
+  /** fechar a lista (21/10/2026): as linhas da conta do buffet, o último fechamento e o prazo do site */
+  fechamento?: { linhas: LinhaOperacional[]; ultimo: string | null; prazo: string | null; hoje: string } | null;
 }) {
   const router = useRouter();
   const [convidados, setConvidados] = useState(convidadosProp);
@@ -157,6 +162,7 @@ export function RsvpPrograma({
   const [folha, setFolha] = useState<"ficha" | "portaria" | null>(null);
   const [importando, setImportando] = useState(false);
   const [rodando, setRodando] = useState(false);
+  const [fechando, setFechando] = useState(false);
   const [novoNome, setNovoNome] = useState("");
   const [novoTel, setNovoTel] = useState("");
   const [aviso, setAviso] = useState<{ texto: string; ok?: boolean } | null>(null);
@@ -502,6 +508,11 @@ export function RsvpPrograma({
                 Rodada de confirmação ({filaDaRodada(convidados).length})
               </button>
             )}
+            {fechamento && fechamento.linhas.length > 0 && (
+              <button type="button" className="rp-btn" onClick={() => setFechando(true)}>
+                Fechar a lista
+              </button>
+            )}
             <button type="button" className="rp-btn" onClick={() => setImportando(true)}>
               Importar lista
             </button>
@@ -743,6 +754,18 @@ export function RsvpPrograma({
         </FolhaNoCelular>
       )}
 
+      {fechando && fechamento && (
+        <FecharLista
+          eventId={eventId}
+          nomeDoEvento={nomeDoEvento}
+          dataEvento={dataEvento}
+          hoje={fechamento.hoje}
+          linhas={fechamento.linhas}
+          ultimoFechamento={fechamento.ultimo}
+          prazo={fechamento.prazo}
+          aoFechar={() => setFechando(false)}
+        />
+      )}
       {rodando && (
         <RodadaDeConfirmacao
           convidados={convidados}

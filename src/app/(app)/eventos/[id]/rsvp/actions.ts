@@ -21,6 +21,26 @@ import { possoUsar } from "@/lib/supabase/nivel-do-plano";
 
 type Retorno = { ok?: true; error?: string };
 
+/**
+ * Fechar a lista (21/10/2026): o fechamento vai para o Caderno do evento,
+ * com os números do dia. A data dessa nota é o que o próximo fechamento
+ * compara ("o que mudou desde…").
+ */
+export async function registrarFechamento(eventId: string, texto: string): Promise<Retorno> {
+  const conteudo = texto.trim().slice(0, 4000);
+  if (!conteudo.startsWith("Lista fechada em")) return { error: "Fechamento inválido." };
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Entre de novo para continuar." };
+  const { error } = await supabase.from("event_notes").insert({ event_id: eventId, author_id: user.id, content: conteudo });
+  if (error) return { error: "Não foi possível registrar o fechamento." };
+  revalidatePath(`/eventos/${eventId}/rsvp`);
+  revalidatePath(`/eventos/${eventId}/planejamento`);
+  return { ok: true };
+}
+
 const limpo = (v: string | null | undefined, max = 120) =>
   v && v.trim() ? v.trim().slice(0, max) : null;
 
