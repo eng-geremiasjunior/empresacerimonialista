@@ -20,7 +20,7 @@ export type SlideDoAlbum = {
   foto: FotoDeEvento;
   /** foto de fora (capa no Storage): <img>, sem o otimizador do Next */
   externa?: boolean;
-  /** o texto do selo no canto ("Formatura", "Amanhã") */
+  /** o texto do selo no canto ("Formatura", "Amanhã"); vazio = sem selo */
   selo: string;
   /** rótulo do tracinho ("Mostrar …") */
   rotulo: string;
@@ -136,6 +136,7 @@ export function FotosDoAlbum({
       })}
       {/* véu embaixo: o selo e os tracinhos leem em qualquer foto */}
       <div aria-hidden style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(20,16,14,.42), rgba(20,16,14,0) 42%)", pointerEvents: "none" }} />
+      {slide.selo && (
       <span
         key={`selo-${slide.chave}`}
         className="pa-selo"
@@ -143,6 +144,7 @@ export function FotosDoAlbum({
       >
         {slide.selo}
       </span>
+      )}
       {!semMovimento && slides.length > 1 && (
         <div role="group" aria-label={rotuloDoGrupo} style={{ position: "absolute", right: 8, bottom: 8, display: "flex", gap: 2 }}>
           {slides.map((s, i) => (

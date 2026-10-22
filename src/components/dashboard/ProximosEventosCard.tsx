@@ -8,6 +8,7 @@
 // de resolver). O mesmo álbum do "Comece aqui" (Album.tsx).
 
 import Link from "next/link";
+import { Smartphone, Users, Zap } from "lucide-react";
 import { FotosDoAlbum, useAlbum, type SlideDoAlbum } from "@/components/dashboard/Album";
 import type { FotoDeEvento } from "@/lib/fotos-de-evento";
 
@@ -48,14 +49,39 @@ const FOTO_DO_ANUNCIO: FotoDeEvento = {
   alt: "O site do casamento de um casal, com o monograma e os nomes",
 };
 
+/** O banner do RSVP (21/10/2026, a arte que ele escolheu): o segundo slide.
+ *  A foto é ilustrativa (a tela do celular não é a nossa); dentro do
+ *  sistema ela clica e vê a tela real logo depois. */
+export type AnuncioDoRsvp = {
+  /** o RSVP do próximo evento com lista de convidados; nulo sem evento */
+  href: string | null;
+};
+
+const FOTO_DO_RSVP: FotoDeEvento = {
+  src: "/site/banner-confirmacao.webp",
+  posicao: "50% 40%",
+  zoom: 1,
+  foco: "50% 50%",
+  alt: "Uma mão segurando o celular com a tela de confirmação de presença, numa mesa com flores",
+};
+
+const BENEFICIOS_DO_RSVP = [
+  { icone: Smartphone, texto: "Funciona em qualquer celular" },
+  { icone: Zap, texto: "Resposta em segundos" },
+  { icone: Users, texto: "Você já sabe quem vai" },
+];
+
 export function ProximosEventosCard({
   eventos,
   anuncio = null,
+  rsvp = null,
 }: {
   eventos: ProximoEvento[];
   anuncio?: AnuncioDoPortal | null;
+  rsvp?: AnuncioDoRsvp | null;
 }) {
-  const extra = anuncio ? 1 : 0;
+  const indiceDoRsvp = rsvp ? (anuncio ? 1 : 0) : -1;
+  const extra = (anuncio ? 1 : 0) + (rsvp ? 1 : 0);
   const album = useAlbum(eventos.length + extra);
   if (eventos.length + extra === 0) return null;
 
@@ -63,6 +89,7 @@ export function ProximosEventosCard({
     ...(anuncio
       ? [{ chave: "anuncio-portal", foto: FOTO_DO_ANUNCIO, selo: "PORTAL DOS NOIVOS", rotulo: "Site e lista de presentes" }]
       : []),
+    ...(rsvp ? [{ chave: "anuncio-rsvp", foto: FOTO_DO_RSVP, selo: "RSVP", rotulo: "RSVP" }] : []),
     ...eventos.map((e) => ({
       chave: e.id,
       foto: e.foto,
@@ -72,6 +99,7 @@ export function ProximosEventosCard({
     })),
   ];
   const anuncioAtivo = !!anuncio && album.visivel === 0;
+  const rsvpAtivo = !!rsvp && album.visivel === indiceDoRsvp;
 
   return (
     <section
@@ -141,6 +169,55 @@ export function ProximosEventosCard({
                 </Link>
               )}
             </div>
+          </div>
+        )}
+        {rsvp && (
+          <div
+            aria-hidden={!rsvpAtivo}
+            style={{
+              gridArea: "1 / 1",
+              padding: 24,
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+              justifyContent: "center",
+              minWidth: 0,
+              visibility: rsvpAtivo ? "visible" : "hidden",
+              opacity: rsvpAtivo ? 1 : 0,
+              transition: "opacity 600ms ease",
+            }}
+          >
+            <span style={{ fontFamily: F_MONO, fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", color: "var(--ev-accent)" }}>
+              CONFIRMAÇÃO DE PRESENÇA
+            </span>
+            <h2 style={{ margin: 0, fontFamily: F_TITLE, fontWeight: 600, fontSize: 22, lineHeight: 1.25, letterSpacing: "-0.02em", color: TINTA }}>
+              Torne a experiência do seu evento ainda mais especial.
+            </h2>
+            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.5, color: CORPO }}>
+              Com o RSVP, seus convidados confirmam presença de forma simples, rápida e prática.
+            </p>
+            <ul style={{ listStyle: "none", margin: "4px 0 0", padding: 0, display: "flex", flexWrap: "wrap", gap: "8px 22px" }}>
+              {BENEFICIOS_DO_RSVP.map(({ icone: Icone, texto }) => (
+                <li key={texto} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: CORPO }}>
+                  <span aria-hidden style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 999, background: "#F2EEE9", color: TINTA }}>
+                    <Icone size={14} strokeWidth={1.8} />
+                  </span>
+                  {texto}
+                </li>
+              ))}
+            </ul>
+            {rsvp.href && (
+              <div style={{ marginTop: 6 }}>
+                <Link
+                  href={rsvp.href}
+                  tabIndex={rsvpAtivo ? undefined : -1}
+                  className="ev-btn-primario ev-foco"
+                  style={{ display: "inline-flex", alignItems: "center", height: 40, padding: "0 18px", borderRadius: 10, background: "var(--ev-accent)", color: "#fff", fontSize: 14, fontWeight: 600, transition: "background 140ms ease" }}
+                >
+                  Abrir o RSVP →
+                </Link>
+              </div>
+            )}
           </div>
         )}
         {eventos.map((e, i) => {

@@ -62,6 +62,7 @@ import { AreasDoPainel } from "@/components/dashboard/AreasDoPainel";
 import { areasDoSistema } from "@/lib/areas-do-painel";
 import { fotoDoTipo } from "@/lib/fotos-de-evento";
 import { estadoDaIa } from "@/lib/ia-ajustes";
+import { tem } from "@/lib/capacidades";
 import { pode } from "@/lib/recursos-do-plano";
 import { meuNivelDoPlano } from "@/lib/supabase/nivel-do-plano";
 import { DIAS_DA_SEMANA_DO_EVENTO } from "@/lib/ia-semana";
@@ -294,6 +295,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
   // o Portal da cliente do próximo casamento, quando houver um
   const proximoCasamento =
     eventsWithHealth.find(({ event }) => !event.exemplo && event.type === "casamento")?.event.id ?? null;
+  // o banner do RSVP (21/10/2026): "Abrir o RSVP" leva ao próximo evento
+  // que tem lista de convidados
+  const proximoComConvidados =
+    eventsWithHealth.find(({ event }) => !event.exemplo && tem(event.type, "listaNominal"))?.event.id ?? null;
 
   // "O que você encontra aqui": Eventos e Clientes ficam só enquanto não
   // há última tela / último evento neste navegador
@@ -552,6 +557,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
           <ProximosEventosCard
             eventos={proximos}
             anuncio={cargo !== "assistente" ? { liberarHref: proximoCasamento ? `/eventos/${proximoCasamento}/area-do-cliente` : null } : null}
+            rsvp={cargo !== "assistente" ? { href: proximoComConvidados ? `/eventos/${proximoComConvidados}/rsvp` : null } : null}
           />
         </div>
 
