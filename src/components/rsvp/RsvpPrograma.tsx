@@ -814,6 +814,7 @@ export function RsvpPrograma({
         <ImportarLista
           eventId={eventId}
           nomesAtuais={convidados.map((c) => c.nome)}
+          ia={ia}
           aoFechar={() => setImportando(false)}
           aoTerminar={(frase) => {
             setImportando(false);

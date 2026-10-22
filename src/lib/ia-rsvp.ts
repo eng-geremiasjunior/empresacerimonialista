@@ -119,7 +119,7 @@ export function casarNome(
 // A conversa exportada: o número de quem mandou vira o nome
 // ------------------------------------------------------------------
 
-const TELEFONE = /(?:\+?55[\s.-]?)?\(?\d{2}\)?[\s.-]?9?\d{4}[\s.-]?\d{4}/g;
+const TELEFONE = /(?:\+?55[ .-]?)?\(?\d{2}\)?[ .-]?9?\d{4}[ .-]?\d{4}/g;
 const finalDe = (t: string) => t.replace(/\D/g, "").slice(-8);
 
 /**

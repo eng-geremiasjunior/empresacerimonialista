@@ -256,6 +256,7 @@ export async function importarConvidados(
         grupo: limpo(l.grupo, 60),
         lado: l.lado === "noiva" || l.lado === "noivo" ? l.lado : null,
         acompanhantes: Math.max(0, Math.min(20, Math.round(Number(l.acompanhantes) || 0))),
+        criancas: Math.max(0, Math.min(20, Math.round(Number(l.criancas) || 0))),
       },
     ];
   });

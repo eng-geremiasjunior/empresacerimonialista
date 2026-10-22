@@ -12,6 +12,8 @@ export type LinhaImportada = {
   grupo: string | null;
   lado: "noiva" | "noivo" | null;
   acompanhantes: number;
+  /** só a leitura com IA preenche (22/10/2026); a regra não conta crianças */
+  criancas?: number;
 };
 
 export const MAX_IMPORTACAO = 1500;
