@@ -44,6 +44,8 @@ type Props = {
   paleta?: string | null;
   congelamento: Congelamento | null;
   explicacoes: boolean;
+  /** Trial, Free ou Pro embaixo da marca; null = não mostra */
+  selo?: SeloDoPlano | null;
   signOut: () => Promise<void>;
   children: React.ReactNode;
 };
@@ -226,12 +228,22 @@ function useFora(aberto: boolean, fechar: () => void) {
   return ref;
 }
 
-function Logo() {
+/** Trial (em teste), Free (o Gratuito) ou Pro (pagante), embaixo da marca (22/10/2026). */
+export type SeloDoPlano = "Trial" | "Free" | "Pro";
+
+function Logo({ selo = null }: { selo?: SeloDoPlano | null }) {
   return (
-    <Link href="/eventos/dashboard" className="mo-logo" aria-label="eorganizei, início">
-      <span className="e">e</span>
-      <span className="o">organizei</span>
-    </Link>
+    <div className="mo-marca-e-selo">
+      <Link href="/eventos/dashboard" className="mo-logo" aria-label="eorganizei, início">
+        <span className="e">e</span>
+        <span className="o">organizei</span>
+      </Link>
+      {selo && (
+        <Link href="/assinatura" className="mo-selo" title={selo === "Trial" ? "Em teste" : selo === "Free" ? "Plano Gratuito" : "Plano pago"}>
+          {selo}
+        </Link>
+      )}
+    </div>
   );
 }
 
@@ -414,7 +426,7 @@ function Casca(props: Props) {
       {/* ===== computador: o menu primário à esquerda ===== */}
       <aside className="mo-lateral" aria-label="Menu primário">
         <div className="mo-lateral-dentro">
-        <Logo />
+        <Logo selo={props.selo} />
         <nav className="mo-primario">
           {primario.map((p) => (
             <LinkDoMenu key={p.href} p={p} ativo={p.ativo} />

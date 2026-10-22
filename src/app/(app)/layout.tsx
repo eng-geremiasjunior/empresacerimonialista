@@ -6,7 +6,8 @@ import { precisaAssinar } from "@/lib/supabase/porta-da-assinatura";
 import { getExplicacoesLigadas } from "@/lib/supabase/explicacoes";
 import { getEstadoDoGuia } from "@/lib/supabase/guia-vivo";
 import { passoAtual, terminou } from "@/lib/guia-vivo";
-import { Moldura, type Congelamento } from "@/components/moldura/Moldura";
+import { Moldura, type Congelamento, type SeloDoPlano } from "@/components/moldura/Moldura";
+import { situacaoDoPlano } from "@/app/(app)/planos-actions";
 import { hojeBR } from "@/lib/tempo";
 import { EVENT_TYPE_LABELS, type EventType } from "@/lib/types";
 import type { AbaDeEvento } from "@/lib/abas-de-evento";
@@ -134,7 +135,7 @@ export default async function AppLayout({
   // (getAlertasCopiloto), e o layout deixa de fazer essas consultas a cada
   // troca de tela.
   const hoje = hojeBR();
-  const [congelamento, explicacoes, estadoDoGuia, proximos, empresaNome, paleta] =
+  const [congelamento, explicacoes, estadoDoGuia, proximos, empresaNome, paleta, plano] =
     await Promise.all([
     congelamentoDaConta().catch(() => null),
     // O "?" ao lado de cada item do menu (159). Falha vira `true` dentro
@@ -146,7 +147,10 @@ export default async function AppLayout({
     proximosEventos(hoje).catch(() => []),
     nomeDaEmpresa().catch(() => null),
     paletaDoSistema().catch(() => null),
+    situacaoDoPlano().catch(() => null),
   ]);
+  // embaixo da marca (22/10/2026): Trial no teste, Free no Gratuito, Pro pagando
+  const selo: SeloDoPlano | null = !plano ? null : plano.pagante ? "Pro" : plano.testando ? "Trial" : "Free";
 
   return (
     <>
@@ -162,6 +166,7 @@ export default async function AppLayout({
         paleta={paleta}
         congelamento={congelamento}
         explicacoes={explicacoes}
+        selo={selo}
         signOut={signOut}
       >
         {children}

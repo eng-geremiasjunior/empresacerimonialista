@@ -42,6 +42,9 @@ export const MOLDURA_CSS = `
 .mo-lateral:hover .mo-lateral-dentro,.mo-lateral:focus-within .mo-lateral-dentro{width:220px}
 .mo-logo{font-family:var(--mo-titulo); font-weight:700; font-size:18px; letter-spacing:-0.02em; line-height:1; text-decoration:none;
   padding:6px 14px; white-space:nowrap}
+.mo-marca-e-selo{display:flex; flex-direction:column; align-items:flex-start; gap:2px}
+.mo-selo{margin-left:14px; font-family:var(--mo-mono); font-size:11px; font-weight:600; letter-spacing:.02em; line-height:1; text-decoration:none; color:var(--mo-cinza-1)}
+.mo-selo:hover{color:var(--mo-destaque)}
 .mo-logo .e{color:var(--mo-tinta)} .mo-logo .o{color:var(--mo-marca); transition:opacity 160ms ease}
 .mo-lateral:not(:hover):not(:focus-within) .mo-logo .o{opacity:0}
 .mo-primario{display:flex; flex-direction:column; gap:4px}
