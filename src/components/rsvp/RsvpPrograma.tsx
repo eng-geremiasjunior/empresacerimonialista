@@ -30,6 +30,8 @@ import { PortariaDoRsvp } from "@/components/rsvp/PortariaDoRsvp";
 import { ImportarLista } from "@/components/rsvp/ImportarLista";
 import { RodadaDeConfirmacao, filaDaRodada } from "@/components/rsvp/RodadaDeConfirmacao";
 import { FecharLista } from "@/components/rsvp/FecharLista";
+import { RespostasEmLote } from "@/components/rsvp/RespostasEmLote";
+import { MarcaDaIa } from "@/components/MarcaDaIa";
 import type { LinhaOperacional } from "@/lib/rsvp-fechamento";
 import {
   abrirOuFecharConfirmacoes,
@@ -139,6 +141,7 @@ export function RsvpPrograma({
   convidados: convidadosProp,
   chegadas,
   fechamento = null,
+  ia = false,
 }: {
   eventId: string;
   nomeDoEvento: string;
@@ -150,6 +153,8 @@ export function RsvpPrograma({
   chegadas: ChegadasProps | null;
   /** fechar a lista (21/10/2026): as linhas da conta do buffet, o último fechamento e o prazo do site */
   fechamento?: { linhas: LinhaOperacional[]; ultimo: string | null; prazo: string | null; hoje: string } | null;
+  /** a IA liberada para a conta (220): as respostas em lote */
+  ia?: boolean;
 }) {
   const router = useRouter();
   const [convidados, setConvidados] = useState(convidadosProp);
@@ -163,6 +168,7 @@ export function RsvpPrograma({
   const [importando, setImportando] = useState(false);
   const [rodando, setRodando] = useState(false);
   const [fechando, setFechando] = useState(false);
+  const [colando, setColando] = useState(false);
   const [novoNome, setNovoNome] = useState("");
   const [novoTel, setNovoTel] = useState("");
   const [aviso, setAviso] = useState<{ texto: string; ok?: boolean } | null>(null);
@@ -508,6 +514,12 @@ export function RsvpPrograma({
                 Rodada de confirmação ({filaDaRodada(convidados).length})
               </button>
             )}
+            {ia && convidados.length > 0 && (
+              <button type="button" className="rp-btn" onClick={() => setColando(true)} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <MarcaDaIa tamanho={12} />
+                Colar respostas
+              </button>
+            )}
             {fechamento && fechamento.linhas.length > 0 && (
               <button type="button" className="rp-btn" onClick={() => setFechando(true)}>
                 Fechar a lista
@@ -754,6 +766,14 @@ export function RsvpPrograma({
         </FolhaNoCelular>
       )}
 
+      {colando && (
+        <RespostasEmLote
+          eventId={eventId}
+          convidados={convidados}
+          aoFechar={() => setColando(false)}
+          aoTerminar={() => router.refresh()}
+        />
+      )}
       {fechando && fechamento && (
         <FecharLista
           eventId={eventId}

@@ -8,6 +8,7 @@ import { qrSvg } from "@/lib/qr";
 import { paraFormatoMeta } from "@/lib/whatsapp";
 import { RsvpPrograma, type ConvidadoNaFicha } from "@/components/rsvp/RsvpPrograma";
 import { hojeBR } from "@/lib/tempo";
+import { estadoDaIa } from "@/lib/ia-ajustes";
 import { MARCA_DO_FECHAMENTO, type LinhaOperacional } from "@/lib/rsvp-fechamento";
 
 // O fechamento da lista (21/10/2026): as colunas da conta do buffet, da
@@ -110,7 +111,7 @@ export default async function RsvpPage({ params }: { params: { id: string } }) {
     }
     return [];
   };
-  const [convidados, painel, extras, operacional, ultimoFechamento, site] = await Promise.all([
+  const [convidados, painel, extras, operacional, ultimoFechamento, site, ia] = await Promise.all([
     getConvidados(eventId),
     lerPainel(eventId),
     lerExtras(),
@@ -124,6 +125,7 @@ export default async function RsvpPage({ params }: { params: { id: string } }) {
       .limit(1)
       .maybeSingle(),
     supabase.from("evento_site").select("rsvp_prazo").eq("event_id", eventId).maybeSingle(),
+    estadoDaIa(),
   ]);
   const extraDe = new Map(extras.map((x) => [x.id, x]));
 
@@ -202,6 +204,7 @@ export default async function RsvpPage({ params }: { params: { id: string } }) {
       confirmacoesAbertas={ev.rsvp_aberto !== false}
       convidados={lista}
       chegadas={chegadas}
+      ia={ia.liberada}
       fechamento={{
         linhas: operacional,
         ultimo: (ultimoFechamento.data as { created_at: string } | null)?.created_at ?? null,
