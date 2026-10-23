@@ -41,6 +41,22 @@ export async function registrarFechamento(eventId: string, texto: string): Promi
   return { ok: true };
 }
 
+/**
+ * O prazo de resposta (22/10/2026, 221): a data-limite das confirmações,
+ * definida pela equipe. Null tira o prazo da equipe (volta a valer o do
+ * site do casal, se houver).
+ */
+export async function definirPrazoDoRsvp(eventId: string, prazo: string | null): Promise<Retorno> {
+  if (prazo !== null && !/^\d{4}-\d{2}-\d{2}$/.test(prazo)) return { error: "Data inválida." };
+  if (prazo !== null && (prazo < "2020-01-01" || prazo > "2100-12-31")) return { error: "Data inválida." };
+  const supabase = createClient();
+  const { data, error } = await supabase.from("events").update({ rsvp_prazo: prazo }).eq("id", eventId).select("id");
+  if (error) return { error: "Não foi possível guardar o prazo." };
+  if (!data?.length) return { error: "Você não pode mudar este evento." };
+  revalidatePath(`/eventos/${eventId}/rsvp`);
+  return { ok: true };
+}
+
 const limpo = (v: string | null | undefined, max = 120) =>
   v && v.trim() ? v.trim().slice(0, max) : null;
 

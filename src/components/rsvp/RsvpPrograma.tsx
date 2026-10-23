@@ -32,6 +32,7 @@ import { RodadaDeConfirmacao, filaDaRodada } from "@/components/rsvp/RodadaDeCon
 import { FecharLista } from "@/components/rsvp/FecharLista";
 import { RespostasEmLote } from "@/components/rsvp/RespostasEmLote";
 import { RelatorioAoCasal } from "@/components/rsvp/RelatorioAoCasal";
+import { PrazoDeResposta } from "@/components/rsvp/PrazoDeResposta";
 import { MarcaDaIa } from "@/components/MarcaDaIa";
 import type { LinhaOperacional } from "@/lib/rsvp-fechamento";
 import {
@@ -213,8 +214,15 @@ export function RsvpPrograma({
   confirmacoesAbertas: boolean;
   convidados: ConvidadoNaFicha[];
   chegadas: ChegadasProps | null;
-  /** fechar a lista (21/10/2026): as linhas da conta do buffet, o último fechamento e o prazo do site */
-  fechamento?: { linhas: LinhaOperacional[]; ultimo: string | null; prazo: string | null; hoje: string } | null;
+  /** fechar a lista (21/10/2026): as linhas da conta do buffet, o último fechamento e o prazo (o da equipe, 221, senão o do site) */
+  fechamento?: {
+    linhas: LinhaOperacional[];
+    ultimo: string | null;
+    prazo: string | null;
+    prazoDaEquipe?: string | null;
+    prazoDoSite?: string | null;
+    hoje: string;
+  } | null;
   /** a IA liberada para a conta (220): as respostas em lote */
   ia?: boolean;
   /** a cliente do evento: o relatório ao casal vai para o WhatsApp dela */
@@ -234,6 +242,7 @@ export function RsvpPrograma({
   const [fechando, setFechando] = useState(false);
   const [colando, setColando] = useState(false);
   const [relatando, setRelatando] = useState(false);
+  const [prazando, setPrazando] = useState(false);
   const [novoNome, setNovoNome] = useState("");
   const [novoTel, setNovoTel] = useState("");
   const [aviso, setAviso] = useState<{ texto: string; ok?: boolean } | null>(null);
@@ -589,6 +598,7 @@ export function RsvpPrograma({
             <MenuDaLista
               itens={[
                 { rotulo: "Importar lista", acao: () => setImportando(true) },
+                ...(fechamento ? [{ rotulo: "Prazo de resposta", acao: () => setPrazando(true) }] : []),
                 ...(fechamento && fechamento.linhas.length > 0
                   ? [
                       { rotulo: "Relatório ao casal", acao: () => setRelatando(true) },
@@ -825,6 +835,15 @@ export function RsvpPrograma({
           <span>{conta.por.aguardando} aguardando</span>
           <span>{conta.por.nao_vai} não {conta.por.nao_vai === 1 ? "vai" : "vão"}</span>
           {conta.entraram > 0 && <span>{conta.entraram} {conta.entraram === 1 ? "entrou" : "entraram"}</span>}
+          {fechamento?.prazo && (
+            <span style={{ marginLeft: "auto" }}>
+              prazo de resposta {dataCurta(fechamento.prazo).slice(0, 5)}
+              {(() => {
+                const f = Math.round((Date.parse(`${fechamento.prazo}T00:00:00Z`) - Date.parse(`${fechamento.hoje}T00:00:00Z`)) / 86_400_000);
+                return f > 0 ? ` · faltam ${f} ${f === 1 ? "dia" : "dias"}` : f === 0 ? " · é hoje" : " · já passou";
+              })()}
+            </span>
+          )}
         </div>
       </div>
 
@@ -835,6 +854,20 @@ export function RsvpPrograma({
         </FolhaNoCelular>
       )}
 
+      {prazando && fechamento && (
+        <PrazoDeResposta
+          eventId={eventId}
+          dataEvento={dataEvento}
+          hoje={fechamento.hoje}
+          daEquipe={fechamento.prazoDaEquipe ?? null}
+          doSite={fechamento.prazoDoSite ?? null}
+          aoFechar={() => setPrazando(false)}
+          aoGravar={() => {
+            setPrazando(false);
+            router.refresh();
+          }}
+        />
+      )}
       {relatando && fechamento && (
         <RelatorioAoCasal
           nomeDoEvento={nomeDoEvento}

@@ -111,7 +111,7 @@ export default async function RsvpPage({ params }: { params: { id: string } }) {
     }
     return [];
   };
-  const [convidados, painel, extras, operacional, ultimoFechamento, site, ia] = await Promise.all([
+  const [convidados, painel, extras, operacional, ultimoFechamento, site, ia, prazoDaEquipe] = await Promise.all([
     getConvidados(eventId),
     lerPainel(eventId),
     lerExtras(),
@@ -126,7 +126,15 @@ export default async function RsvpPage({ params }: { params: { id: string } }) {
       .maybeSingle(),
     supabase.from("evento_site").select("rsvp_prazo").eq("event_id", eventId).maybeSingle(),
     estadoDaIa(),
+    // o prazo da equipe (221); sem a coluna no banco, só não lê
+    supabase
+      .from("events")
+      .select("rsvp_prazo")
+      .eq("id", eventId)
+      .maybeSingle()
+      .then((r) => (r.error ? null : ((r.data as { rsvp_prazo: string | null } | null)?.rsvp_prazo ?? null))),
   ]);
+  const prazoDoSite = (site.data as { rsvp_prazo: string | null } | null)?.rsvp_prazo ?? null;
   const extraDe = new Map(extras.map((x) => [x.id, x]));
 
   const base = publicBase();
@@ -210,7 +218,9 @@ export default async function RsvpPage({ params }: { params: { id: string } }) {
       fechamento={{
         linhas: operacional,
         ultimo: (ultimoFechamento.data as { created_at: string } | null)?.created_at ?? null,
-        prazo: (site.data as { rsvp_prazo: string | null } | null)?.rsvp_prazo ?? null,
+        prazo: prazoDaEquipe ?? prazoDoSite,
+        prazoDaEquipe,
+        prazoDoSite,
         hoje: hojeBR(),
       }}
     />
