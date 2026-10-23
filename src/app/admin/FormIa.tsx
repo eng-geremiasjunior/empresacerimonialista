@@ -73,6 +73,32 @@ export function FormIa({ atual, usoDoMes }: { atual: AjustesDaIa; usoDoMes: { co
         {usoDoMes.contas === 1 ? "conta" : "contas"}. O Gratuito não tem IA; as contas da casa não têm limite.
       </p>
 
+      {/* a referência de como a cota conta (22/10/2026, pedido dele): fica aqui para consulta */}
+      <details className="rounded-md border border-[#e4e4e0] bg-[#fafaf8] px-3 py-2 text-[12.5px] leading-relaxed text-[#3d3e44]">
+        <summary className="cursor-pointer font-semibold text-[#1c1d21]">Como a cota funciona</summary>
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          <li>
+            A cota é contada no banco <b>antes</b> de cada uso, com trava, então duas abas abertas não passam do limite. Se a IA
+            falhar ou não responder, a ação volta para a conta.
+          </li>
+          <li>
+            Padrão: Essencial 150 ações e 60 min de áudio por mês; Profissional 400 e 180; Master 1.500 e 600. Os números da
+            tabela acima são os que valem.
+          </li>
+          <li>
+            Gastam 1 ação cada: montar o roteiro, preparar a semana (só quando há mensagem para escrever), registrar a reunião,
+            colar respostas do RSVP e organizar a lista de convidados com IA.
+          </li>
+          <li>O áudio gasta só os minutos, pela duração de cada gravação. O áudio não é guardado.</li>
+          <li>
+            A partir de 80% usado, o roteiro, a semana e as reuniões avisam quantas ações restam. Acabou, qualquer função de IA
+            responde que a cota volta no dia 1º; nada do que ela já tem é bloqueado.
+          </li>
+          <li>A cota vira no dia 1º de cada mês. A assistente não usa IA; o Gratuito não tem; as contas da casa não têm limite.</li>
+          <li>Antes de liberar para todas as contas: passar a Groq para o plano pago (a gratuita recusa pedidos em sequência).</li>
+        </ul>
+      </details>
+
       <div className="flex flex-wrap items-center gap-3">
         <Botao />
         {estado.ok && <span className="text-[12px] text-[#57534e]">Salvo. Vale na próxima ação de cada conta.</span>}
